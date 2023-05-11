@@ -1,0 +1,3 @@
+/docs/*.map
+/node_modules
+.env
