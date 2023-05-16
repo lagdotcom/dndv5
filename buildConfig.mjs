@@ -1,6 +1,7 @@
 /*eslint-env node*/
 
 import { config as loadDotEnvConfig } from "dotenv";
+import { postcssModules, sassPlugin } from "esbuild-sass-plugin";
 
 import CDNModule from "./CDNModule.mjs";
 
@@ -28,7 +29,13 @@ const config = {
   outfile: "docs/bundle.js",
   define,
   // minify: true,
-  plugins: [CDNModule],
+  plugins: [
+    CDNModule,
+    sassPlugin({
+      filter: /\.module\.scss$/,
+      transform: postcssModules({ basedir: "./src" }),
+    }),
+  ],
   loader: {
     ".json": "file",
     ".ogg": "file",

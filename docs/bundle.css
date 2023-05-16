@@ -1,0 +1,66 @@
+/* src/ui/ui.css */
+:root {
+  --scale: 100px;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/Battlefield.module.scss */
+._main_1fv7t_1 {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
+:root {
+  --movebtn-size: 30px;
+}
+._main_epbg7_5 {
+  position: absolute;
+}
+._token_epbg7_9 {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+._moveButton_epbg7_15 {
+  position: absolute;
+  width: var(--movebtn-size);
+  height: var(--movebtn-size);
+  margin: 0;
+  padding: 0;
+  font-size: 20px;
+  cursor: pointer;
+  background: #ccc;
+  z-index: 100;
+}
+._moveButton_epbg7_15:hover {
+  background: #eee;
+}
+._moveN_epbg7_30 {
+  top: 0;
+}
+._moveE_epbg7_34 {
+  right: 0;
+}
+._moveS_epbg7_38 {
+  bottom: 0;
+}
+._moveW_epbg7_42 {
+  left: 0;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/Menu.module.scss */
+._main_2qfwl_1 {
+  position: absolute;
+  display: flex;
+  z-index: 200;
+  margin: 0;
+  padding: 5px;
+  background-color: white;
+}
+._main_2qfwl_1 li {
+  list-style: none;
+}
+/*# sourceMappingURL=bundle.css.map */

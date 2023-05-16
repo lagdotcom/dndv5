@@ -1,0 +1,12 @@
+.main {
+  position: absolute;
+  display: flex;
+  z-index: 200;
+  margin: 0;
+  padding: 5px;
+  background-color: white;
+
+  li {
+    list-style: none;
+  }
+}
