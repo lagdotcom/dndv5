@@ -205,13 +205,33 @@
       return getAbilityBonus(this.chaScore);
     }
     get ac() {
-      return 10 + this.dex;
+      return this.g.getAC(this);
     }
     get sizeInUnits() {
       return convertSizeToUnit(this.size);
     }
+    get weapons() {
+      const weapons = [];
+      for (const weapon of this.naturalWeapons)
+        weapons.push(weapon);
+      for (const item of this.equipment)
+        if (item.itemType === "weapon")
+          weapons.push(item);
+      return weapons;
+    }
+    get armor() {
+      for (const item of this.equipment) {
+        if (isSuitOfArmor(item))
+          return item;
+      }
+    }
+    get shield() {
+      for (const item of this.equipment) {
+        if (isShield(item))
+          return item;
+      }
+    }
     don(item) {
-      var _a;
       if (item.itemType === "armor") {
         const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
         for (const o of this.equipment) {
@@ -220,13 +240,10 @@
         }
       }
       this.equipment.add(item);
-      (_a = item.donned) == null ? void 0 : _a.call(item, this);
     }
     doff(item) {
-      var _a;
       if (this.equipment.delete(item)) {
         this.inventory.add(item);
-        (_a = item.doffed) == null ? void 0 : _a.call(item, this);
       }
     }
     getProficiencyMultiplier(thing) {
@@ -303,17 +320,32 @@
   };
 
   // src/DndRules.ts
-  var CombatantAttackRule = class {
+  var CombatantArmourCalculation = class {
+    constructor(g) {
+      this.g = g;
+      g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+        var _a, _b;
+        const { armor, dex, shield } = who;
+        const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
+        const shieldAC = (_b = shield == null ? void 0 : shield.ac) != null ? _b : 0;
+        const uses = /* @__PURE__ */ new Set();
+        if (armor)
+          uses.add(armor);
+        if (shield)
+          uses.add(shield);
+        const name = armor ? `${armor.category} armor` : "unarmored";
+        const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex;
+        methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
+      });
+    }
+  };
+  var CombatantWeaponAttacks = class {
     constructor(g) {
       this.g = g;
       g.events.on("getActions", ({ detail: { who, target, actions } }) => {
         if (who !== target) {
-          for (const weapon of who.naturalWeapons)
+          for (const weapon of who.weapons)
             actions.push(new WeaponAttack(who, weapon));
-          for (const item of who.equipment) {
-            if (item.itemType === "weapon")
-              actions.push(new WeaponAttack(who, item));
-          }
         }
       });
     }
@@ -321,7 +353,8 @@
   var DndRules = class {
     constructor(g) {
       this.g = g;
-      new CombatantAttackRule(g);
+      new CombatantArmourCalculation(g);
+      new CombatantWeaponAttacks(g);
     }
   };
 
@@ -391,6 +424,13 @@
         callback,
         options
       );
+    }
+  };
+
+  // src/events/GetACMethodsEvent.ts
+  var GetACMethodsEvent = class extends EventBase {
+    constructor(detail) {
+      super("getACMethods", detail);
     }
   };
 
@@ -856,6 +896,14 @@
         return e.detail.actions;
       });
     }
+    getAC(who) {
+      const e = new GetACMethodsEvent({ who, methods: [] });
+      this.events.fire(e);
+      return e.detail.methods.reduce(
+        (best, method) => method.ac > best ? method.ac : best,
+        0
+      );
+    }
   };
 
   // src/utils/dice.ts
@@ -996,7 +1044,7 @@
       this.intScore = 10;
       this.wisScore = 10;
       this.chaScore = 11;
-      this.skills.set("intimidation", 1);
+      this.skills.set("Intimidation", 1);
       this.languages.add("common");
       this.pb = 2;
       this.don(new Mace(g), true);

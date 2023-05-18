@@ -1,13 +1,12 @@
 import Ability from "../types/Ability";
 import Combatant from "../types/Combatant";
-import Item, { WeaponItem } from "../types/Item";
-import Predicate from "../types/Predicate";
+import Item, { ArmorItem, WeaponItem } from "../types/Item";
 import isDefined from "./isDefined";
 
-export const isSuitOfArmor: Predicate<Item> = (item) =>
+export const isSuitOfArmor = (item: Item): item is ArmorItem =>
   item.itemType === "armor" && item.category !== "shield";
 
-export const isShield: Predicate<Item> = (item) =>
+export const isShield = (item: Item): item is ArmorItem =>
   item.itemType === "armor" && item.category === "shield";
 
 export function getWeaponAbility(who: Combatant, weapon: WeaponItem): Ability {

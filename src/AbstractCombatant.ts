@@ -146,12 +146,32 @@ export default abstract class AbstractCombatant implements Combatant {
     return getAbilityBonus(this.chaScore);
   }
 
-  get ac() {
-    return 10 + this.dex;
+  get ac(): number {
+    return this.g.getAC(this);
   }
 
   get sizeInUnits() {
     return convertSizeToUnit(this.size);
+  }
+
+  get weapons() {
+    const weapons: WeaponItem[] = [];
+    for (const weapon of this.naturalWeapons) weapons.push(weapon);
+    for (const item of this.equipment)
+      if (item.itemType === "weapon") weapons.push(item);
+    return weapons;
+  }
+
+  get armor() {
+    for (const item of this.equipment) {
+      if (isSuitOfArmor(item)) return item;
+    }
+  }
+
+  get shield() {
+    for (const item of this.equipment) {
+      if (isShield(item)) return item;
+    }
   }
 
   don(item: Item) {
@@ -163,15 +183,13 @@ export default abstract class AbstractCombatant implements Combatant {
       }
     }
 
-    // TODO error conditions, time to equip, etc.
+    // TODO error conditions, hands, time to equip, etc.
     this.equipment.add(item);
-    item.donned?.(this);
   }
 
   doff(item: Item) {
     if (this.equipment.delete(item)) {
       this.inventory.add(item);
-      item.doffed?.(this);
     }
   }
 

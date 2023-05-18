@@ -7,6 +7,7 @@ import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import CombatantPlacedEvent from "./events/CombatantPlacedEvent";
 import DiceRolledEvent from "./events/DiceRolledEvent";
 import Dispatcher from "./events/Dispatcher";
+import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import Action from "./types/Action";
@@ -141,5 +142,14 @@ export default class Engine {
     const e = new GetActionsEvent({ who, target, actions: [] });
     this.events.fire(e);
     return e.detail.actions;
+  }
+
+  getAC(who: Combatant) {
+    const e = new GetACMethodsEvent({ who, methods: [] });
+    this.events.fire(e);
+    return e.detail.methods.reduce(
+      (best, method) => (method.ac > best ? method.ac : best),
+      0
+    );
   }
 }

@@ -1,8 +1,10 @@
 export const DamageTypes = [
+  "acid",
   "bludgeoning",
   "cold",
   "fire",
   "force",
+  "lightning",
   "necrotic",
   "piercing",
   "poison",

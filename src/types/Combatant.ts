@@ -1,5 +1,5 @@
 import CreatureType from "./CreatureType";
-import Item, { WeaponItem } from "./Item";
+import Item, { ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
 import SenseName from "./SenseName";
@@ -42,6 +42,10 @@ interface Combatant {
   inventory: Set<Item>;
   senses: Map<SenseName, number>;
   naturalWeapons: Set<WeaponItem>;
+
+  weapons: WeaponItem[];
+  armor?: ArmorItem;
+  shield?: ArmorItem;
 
   getProficiencyMultiplier(thing: Item | SkillName): number;
 }

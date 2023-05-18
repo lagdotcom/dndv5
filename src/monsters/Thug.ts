@@ -22,7 +22,7 @@ export default class Thug extends Monster {
     this.intScore = 10;
     this.wisScore = 10;
     this.chaScore = 11;
-    this.skills.set("intimidation", 1);
+    this.skills.set("Intimidation", 1);
     this.languages.add("common");
     this.pb = 2;
 

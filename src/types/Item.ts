@@ -1,12 +1,9 @@
 import Ability from "./Ability";
-import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 
 export interface BaseItem {
   name: string;
   hands: number;
-  donned?: (who: Combatant) => void;
-  doffed?: (who: Combatant) => void;
 }
 
 export const WeaponCategories = ["natural", "simple", "martial"] as const;
