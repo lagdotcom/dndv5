@@ -616,7 +616,9 @@
       this.onTurnStarted = ({ detail: { who } }) => {
         this.isMyTurn(who === this.who);
       };
-      this.element = make("div", { className: Unit_module_default.main });
+      this.element = g.ui.battlefield.element.appendChild(
+        make("div", { className: Unit_module_default.main })
+      );
       this.token = this.element.appendChild(
         make("img", {
           className: Unit_module_default.token,
@@ -634,7 +636,6 @@
       scale.on(this.update);
       this.update();
       this.isMyTurn(false);
-      g.ui.battlefield.element.appendChild(this.element);
       g.events.on("combatantDied", this.onCombatantDied);
       g.events.on("combatantMoved", this.onCombatantMoved);
       g.events.on("turnStarted", this.onTurnStarted);
@@ -673,13 +674,10 @@
           (e) => this.onClickCombatant(who, e)
         );
       };
-      this.element = make(
-        "div",
-        { className: Battlefield_module_default.main },
-        { click: onClickBattlefield }
-      );
       this.units = /* @__PURE__ */ new Set();
-      g.container.appendChild(this.element);
+      this.element = g.container.appendChild(
+        make("div", { className: Battlefield_module_default.main }, { click: onClickBattlefield })
+      );
       g.events.on("combatantPlaced", this.onCombatantPlaced);
     }
   };
@@ -694,13 +692,14 @@
     constructor(g, onClick) {
       this.g = g;
       this.onClick = onClick;
-      this.element = make("menu", { className: Menu_module_default.main });
+      this.element = g.container.appendChild(
+        make("menu", { className: Menu_module_default.main })
+      );
       this.empty = this.element.appendChild(
         make("div", { textContent: "(empty)" })
       );
       this.list = [];
       this.hide();
-      g.container.appendChild(this.element);
     }
     show(x, y) {
       this.element.style.display = "";

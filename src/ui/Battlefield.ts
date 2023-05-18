@@ -14,14 +14,11 @@ export default class Battlefield {
     onClickBattlefield: (e: MouseEvent) => void,
     private onClickCombatant: (who: Combatant, e: MouseEvent) => void
   ) {
-    this.element = make(
-      "div",
-      { className: styles.main },
-      { click: onClickBattlefield }
-    );
     this.units = new Set();
+    this.element = g.container.appendChild(
+      make("div", { className: styles.main }, { click: onClickBattlefield })
+    );
 
-    g.container.appendChild(this.element);
     g.events.on("combatantPlaced", this.onCombatantPlaced);
   }
 

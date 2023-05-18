@@ -73,7 +73,9 @@ export default class Unit {
     public y: number,
     private onRemove: (u: Unit) => void
   ) {
-    this.element = make("div", { className: styles.main });
+    this.element = g.ui.battlefield.element.appendChild(
+      make("div", { className: styles.main })
+    );
     this.token = this.element.appendChild(
       make("img", {
         className: styles.token,
@@ -93,7 +95,6 @@ export default class Unit {
     this.update();
     this.isMyTurn(false);
 
-    g.ui.battlefield.element.appendChild(this.element);
     g.events.on("combatantDied", this.onCombatantDied);
     g.events.on("combatantMoved", this.onCombatantMoved);
     g.events.on("turnStarted", this.onTurnStarted);

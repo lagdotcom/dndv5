@@ -8,14 +8,14 @@ export default class Menu<T> {
   list: HTMLLIElement[];
 
   constructor(public g: Engine, private onClick: (value: T) => void) {
-    this.element = make("menu", { className: styles.main });
+    this.element = g.container.appendChild(
+      make("menu", { className: styles.main })
+    );
     this.empty = this.element.appendChild(
       make("div", { textContent: "(empty)" })
     );
     this.list = [];
     this.hide();
-
-    g.container.appendChild(this.element);
   }
 
   show(x: number, y: number) {
