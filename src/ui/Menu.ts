@@ -1,5 +1,5 @@
 import Engine from "../Engine";
-import { configure, make, px } from "../utils/dom";
+import { make, px } from "../utils/dom";
 import styles from "./Menu.module.scss";
 
 export default class Menu<T> {
@@ -8,9 +8,9 @@ export default class Menu<T> {
   list: HTMLLIElement[];
 
   constructor(public g: Engine, private onClick: (value: T) => void) {
-    this.element = configure(make("menu"), { className: styles.main });
+    this.element = make("menu", { className: styles.main });
     this.empty = this.element.appendChild(
-      configure(make("div"), { textContent: "(empty)" })
+      make("div", { textContent: "(empty)" })
     );
     this.list = [];
     this.hide();
@@ -37,8 +37,8 @@ export default class Menu<T> {
   add(label: string, value: T) {
     const li = this.element.appendChild(make("li"));
     li.appendChild(
-      configure(
-        make("button"),
+      make(
+        "button",
         { textContent: label },
         { click: () => this.onClick(value) }
       )

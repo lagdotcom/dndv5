@@ -434,8 +434,8 @@
   };
 
   // src/utils/dom.ts
-  var make = document.createElement.bind(document);
-  function configure(element, patch, events = {}) {
+  function make(tag, patch = {}, events = {}) {
+    const element = document.createElement(tag);
     Object.assign(element, patch);
     for (const name of Object.keys(events))
       element.addEventListener(
@@ -522,8 +522,8 @@
       };
       const { className, label } = buttonTypes[type];
       this.element = parent.appendChild(
-        configure(
-          make("button"),
+        make(
+          "button",
           {
             className: `${Unit_module_default.moveButton} ${className}`,
             textContent: label
@@ -576,9 +576,9 @@
       this.onTurnStarted = ({ detail: { who } }) => {
         this.isMyTurn(who === this.who);
       };
-      this.element = configure(make("div"), { className: Unit_module_default.main });
+      this.element = make("div", { className: Unit_module_default.main });
       this.token = this.element.appendChild(
-        configure(make("img"), {
+        make("img", {
           className: Unit_module_default.token,
           alt: who.name,
           src: who.img
@@ -633,8 +633,8 @@
           (e) => this.onClickCombatant(who, e)
         );
       };
-      this.element = configure(
-        make("div"),
+      this.element = make(
+        "div",
         { className: Battlefield_module_default.main },
         { click: onClickBattlefield }
       );
@@ -654,9 +654,9 @@
     constructor(g, onClick) {
       this.g = g;
       this.onClick = onClick;
-      this.element = configure(make("menu"), { className: Menu_module_default.main });
+      this.element = make("menu", { className: Menu_module_default.main });
       this.empty = this.element.appendChild(
-        configure(make("div"), { textContent: "(empty)" })
+        make("div", { textContent: "(empty)" })
       );
       this.list = [];
       this.hide();
@@ -679,8 +679,8 @@
     add(label, value) {
       const li = this.element.appendChild(make("li"));
       li.appendChild(
-        configure(
-          make("button"),
+        make(
+          "button",
           { textContent: label },
           { click: () => this.onClick(value) }
         )

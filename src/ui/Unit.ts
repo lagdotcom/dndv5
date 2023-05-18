@@ -4,7 +4,7 @@ import CombatantMovedEvent from "../events/CombatantMovedEvent";
 import TurnStartedEvent from "../events/TurnStartedEvent";
 import { busy, moveButtonSize, scale } from "../globals";
 import Combatant from "../types/Combatant";
-import { configure, make, px } from "../utils/dom";
+import { make, px } from "../utils/dom";
 import styles from "./Unit.module.scss";
 
 const buttonTypes = {
@@ -32,8 +32,8 @@ class UnitMoveButton {
     const { className, label } = buttonTypes[type];
 
     this.element = parent.appendChild(
-      configure(
-        make("button"),
+      make(
+        "button",
         {
           className: `${styles.moveButton} ${className}`,
           textContent: label,
@@ -73,9 +73,9 @@ export default class Unit {
     public y: number,
     private onRemove: (u: Unit) => void
   ) {
-    this.element = configure(make("div"), { className: styles.main });
+    this.element = make("div", { className: styles.main });
     this.token = this.element.appendChild(
-      configure(make("img"), {
+      make("img", {
         className: styles.token,
         alt: who.name,
         src: who.img,

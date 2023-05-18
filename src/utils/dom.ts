@@ -1,5 +1,3 @@
-export const make = document.createElement.bind(document);
-
 type EventHandlers<T> = {
   [K in keyof HTMLElementEventMap]: (
     this: T,
@@ -7,11 +5,11 @@ type EventHandlers<T> = {
   ) => unknown;
 };
 
-export function configure<T extends HTMLElement>(
-  element: T,
-  patch: Partial<T>,
-  events: Partial<EventHandlers<T>> = {}
-) {
+export function make<
+  K extends keyof HTMLElementTagNameMap,
+  T = HTMLElementTagNameMap[K]
+>(tag: K, patch: Partial<T> = {}, events: Partial<EventHandlers<T>> = {}) {
+  const element = document.createElement(tag);
   Object.assign(element, patch);
   for (const name of Object.keys(events))
     element.addEventListener(

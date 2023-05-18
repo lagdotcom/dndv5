@@ -1,7 +1,7 @@
 import Engine from "../Engine";
 import CombatantPlacedEvent from "../events/CombatantPlacedEvent";
 import Combatant from "../types/Combatant";
-import { configure, make } from "../utils/dom";
+import { make } from "../utils/dom";
 import styles from "./Battlefield.module.scss";
 import Unit from "./Unit";
 
@@ -14,8 +14,8 @@ export default class Battlefield {
     onClickBattlefield: (e: MouseEvent) => void,
     private onClickCombatant: (who: Combatant, e: MouseEvent) => void
   ) {
-    this.element = configure(
-      make("div"),
+    this.element = make(
+      "div",
       { className: styles.main },
       { click: onClickBattlefield }
     );
