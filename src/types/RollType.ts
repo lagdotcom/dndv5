@@ -1,13 +1,23 @@
+import Ability from "./Ability";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
+import { WeaponItem } from "./Item";
 
-export type AttackRoll = { type: "attack"; who: Combatant; target: Combatant };
+export type AttackRoll = {
+  type: "attack";
+  who: Combatant;
+  target: Combatant;
+  weapon?: WeaponItem;
+  ability: Ability;
+};
 export type DamageRoll = {
   type: "damage";
   attacker: Combatant;
   target: Combatant;
   size: number;
-  damage: DamageType;
+  damageType: DamageType;
+  weapon?: WeaponItem;
+  ability: Ability;
 };
 export type InitiativeRoll = { type: "initiative"; who: Combatant };
 

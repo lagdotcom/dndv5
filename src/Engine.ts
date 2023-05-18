@@ -12,9 +12,7 @@ import TurnStartedEvent from "./events/TurnStartedEvent";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
-import DamageType from "./types/DamageType";
-import Dice from "./types/Dice";
-import RollType from "./types/RollType";
+import RollType, { DamageRoll } from "./types/RollType";
 import Source from "./types/Source";
 import UI from "./ui/UI";
 import { orderedKeys } from "./utils/map";
@@ -55,22 +53,13 @@ export default class Engine {
     this.nextTurn();
   }
 
-  async rollDamage(
-    { count, size }: Dice,
-    damage: DamageType,
-    attacker: Combatant,
-    target: Combatant
-  ) {
+  async rollDamage(count: number, e: Omit<DamageRoll, "type">) {
     let total = 0;
 
     for (let i = 0; i < count; i++) {
-      const roll = await this.roll({
-        type: "damage",
-        attacker,
-        target,
-        size,
-        damage,
-      });
+      const roll = await this.roll(
+        Object.assign({ type: "damage" as const }, e)
+      );
       total += roll.value;
     }
 

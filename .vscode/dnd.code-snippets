@@ -1,0 +1,34 @@
+{
+  "Armor Template": {
+    "scope": "typescript",
+    "prefix": "armor",
+    "body": [
+      "export class $1Armor extends AbstractArmor {",
+      "constructor(public g: Engine) {",
+      "super(\"$1 armor\", \"$2\", $3);",
+      "}",
+      "}"
+    ]
+  },
+
+  "Enum Type": {
+    "scope": "typescript",
+    "prefix": "enumtype",
+    "body": [
+      "export const $1s = [$0] as const;",
+      "export type $1 = (typeof $1s)[number];"
+    ]
+  },
+
+  "Weapon Template": {
+    "scope": "typescript",
+    "prefix": "weapon",
+    "body": [
+      "export class $1 extends AbstractWeapon {",
+      "constructor(public g: Engine) {",
+      "super(\"$1\", \"$2\", \"$3\", dd($4)$0);",
+      "}",
+      "}"
+    ]
+  }
+}

@@ -1,5 +1,10 @@
 import CreatureType from "./CreatureType";
+import Item, { WeaponItem } from "./Item";
+import LanguageName from "./LanguageName";
+import MovementType from "./MovementType";
+import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
+import SkillName from "./SkillName";
 
 interface Combatant {
   img: string;
@@ -8,10 +13,14 @@ interface Combatant {
   size: SizeCategory;
   sizeInUnits: number;
   side: number;
+  hands: number;
+  reach: number;
 
   diesAtZero: boolean;
   hp: number;
+  hpMax: number;
   ac: number;
+  pb: number;
 
   str: number;
   dex: number;
@@ -25,5 +34,15 @@ interface Combatant {
   intScore: number;
   wisScore: number;
   chaScore: number;
+
+  movement: Map<MovementType, number>;
+  skills: Map<SkillName, number>;
+  languages: Set<LanguageName>;
+  equipment: Set<Item>;
+  inventory: Set<Item>;
+  senses: Map<SenseName, number>;
+  naturalWeapons: Set<WeaponItem>;
+
+  getProficiencyMultiplier(thing: Item | SkillName): number;
 }
 export default Combatant;

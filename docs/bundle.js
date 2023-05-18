@@ -82,6 +82,32 @@
     return Math.floor((ability - 10) / 2);
   }
 
+  // src/utils/isDefined.ts
+  function isDefined(value) {
+    return typeof value !== "undefined";
+  }
+
+  // src/utils/items.ts
+  var isSuitOfArmor = (item) => item.itemType === "armor" && item.category !== "shield";
+  var isShield = (item) => item.itemType === "armor" && item.category === "shield";
+  function getWeaponAbility(who, weapon) {
+    if (weapon.forceAbilityScore)
+      return weapon.forceAbilityScore;
+    const { str, dex } = who;
+    if (weapon.properties.has("finesse")) {
+      if (dex >= str)
+        return "dex";
+    }
+    if (weapon.rangeCategory === "ranged")
+      return "dex";
+    return "str";
+  }
+  function getWeaponRange(who, weapon) {
+    if (isDefined(weapon.longRange))
+      return weapon.longRange;
+    return who.reach;
+  }
+
   // src/utils/units.ts
   var categoryUnits = {
     tiny: 1,
@@ -96,22 +122,69 @@
   }
 
   // src/AbstractCombatant.ts
+  var defaultHandsAmount = {
+    aberration: 0,
+    beast: 0,
+    celestial: 2,
+    construct: 0,
+    dragon: 0,
+    elemental: 0,
+    fey: 2,
+    fiend: 2,
+    giant: 2,
+    humanoid: 2,
+    monstrosity: 0,
+    ooze: 0,
+    plant: 0,
+    undead: 2
+  };
   var AbstractCombatant = class {
-    constructor(g, name, type, size, img, side, diesAtZero) {
+    constructor(g, name, {
+      img,
+      side,
+      size,
+      type,
+      diesAtZero = true,
+      hands = defaultHandsAmount[type],
+      hpMax = 1,
+      hp = hpMax,
+      pb = 2,
+      reach = 5,
+      chaScore = 10,
+      conScore = 10,
+      dexScore = 10,
+      intScore = 10,
+      strScore = 10,
+      wisScore = 10
+    }) {
       this.g = g;
       this.name = name;
-      this.type = type;
-      this.size = size;
-      this.img = img;
-      this.side = side;
       this.diesAtZero = diesAtZero;
-      this.strScore = 10;
-      this.dexScore = 10;
-      this.conScore = 10;
-      this.intScore = 10;
-      this.wisScore = 10;
-      this.chaScore = 10;
-      this.hp = 0;
+      this.hands = hands;
+      this.hp = hp;
+      this.hpMax = hpMax;
+      this.img = img;
+      this.pb = pb;
+      this.reach = reach;
+      this.side = side;
+      this.size = size;
+      this.type = type;
+      this.strScore = strScore;
+      this.dexScore = dexScore;
+      this.conScore = conScore;
+      this.intScore = intScore;
+      this.wisScore = wisScore;
+      this.chaScore = chaScore;
+      this.movement = /* @__PURE__ */ new Map();
+      this.skills = /* @__PURE__ */ new Map();
+      this.languages = /* @__PURE__ */ new Set();
+      this.equipment = /* @__PURE__ */ new Set();
+      this.inventory = /* @__PURE__ */ new Set();
+      this.senses = /* @__PURE__ */ new Map();
+      this.armorProficiencies = /* @__PURE__ */ new Set();
+      this.weaponCategoryProficiencies = /* @__PURE__ */ new Set();
+      this.weaponProficiencies = /* @__PURE__ */ new Set();
+      this.naturalWeapons = /* @__PURE__ */ new Set();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -137,6 +210,40 @@
     get sizeInUnits() {
       return convertSizeToUnit(this.size);
     }
+    don(item) {
+      var _a;
+      if (item.itemType === "armor") {
+        const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
+        for (const o of this.equipment) {
+          if (predicate(o))
+            this.doff(o);
+        }
+      }
+      this.equipment.add(item);
+      (_a = item.donned) == null ? void 0 : _a.call(item, this);
+    }
+    doff(item) {
+      var _a;
+      if (this.equipment.delete(item)) {
+        this.inventory.add(item);
+        (_a = item.doffed) == null ? void 0 : _a.call(item, this);
+      }
+    }
+    getProficiencyMultiplier(thing) {
+      var _a;
+      if (typeof thing === "string")
+        return (_a = this.skills.get(thing)) != null ? _a : 0;
+      if (thing.itemType === "weapon") {
+        if (this.weaponProficiencies.has(thing.weaponType))
+          return 1;
+        if (this.weaponCategoryProficiencies.has(thing.category))
+          return 1;
+        return 0;
+      }
+      if (this.armorProficiencies.has(thing.category))
+        return 1;
+      return 0;
+    }
   };
 
   // src/resolvers/TargetResolver.ts
@@ -150,21 +257,46 @@
     }
   };
 
-  // src/actions/UnarmedStrike.ts
-  var UnarmedStrike = class {
-    constructor(who) {
+  // src/actions/WeaponAttack.ts
+  var WeaponAttack = class {
+    constructor(who, weapon) {
       this.who = who;
-      this.config = { target: new TargetResolver(5) };
-      this.name = "Unarmed Strike";
+      this.weapon = weapon;
+      const range = getWeaponRange(who, weapon);
+      this.ability = getWeaponAbility(who, weapon);
+      this.config = { target: new TargetResolver(range) };
+      this.name = weapon.name;
     }
     apply(_0, _1) {
       return __async(this, arguments, function* (g, { target }) {
-        const { who } = this;
-        const attack = yield g.roll({ type: "attack", who, target });
-        const bonus = who.str;
-        if (attack.value + bonus >= target.ac) {
-          const damage = new DamageMap(["bludgeoning", 1 + who.str]);
-          yield g.damage(damage, { source: this, attacker: who, target });
+        const { ability, weapon, who } = this;
+        const attack = yield g.roll({
+          type: "attack",
+          who,
+          target,
+          weapon,
+          ability
+        });
+        const proficiencyBonus = weapon ? who.getProficiencyMultiplier(weapon) * who.pb : 0;
+        const abilityBonus = who[ability];
+        const total = attack.value + proficiencyBonus + abilityBonus;
+        if (total >= target.ac) {
+          const map = new DamageMap();
+          const { damage } = weapon;
+          if (damage.type === "dice") {
+            const { count, size } = damage.amount;
+            const amount = yield g.rollDamage(count, {
+              size,
+              damageType: damage.damageType,
+              attacker: who,
+              target,
+              ability,
+              weapon
+            });
+            map.add(damage.damageType, amount + abilityBonus);
+          } else
+            map.add(damage.damageType, damage.amount + abilityBonus);
+          yield g.damage(map, { source: this, attacker: who, target });
         }
       });
     }
@@ -175,8 +307,14 @@
     constructor(g) {
       this.g = g;
       g.events.on("getActions", ({ detail: { who, target, actions } }) => {
-        if (who !== target)
-          actions.push(new UnarmedStrike(who));
+        if (who !== target) {
+          for (const weapon of who.naturalWeapons)
+            actions.push(new WeaponAttack(who, weapon));
+          for (const item of who.equipment) {
+            if (item.itemType === "weapon")
+              actions.push(new WeaponAttack(who, item));
+          }
+        }
       });
     }
   };
@@ -638,17 +776,13 @@
         this.nextTurn();
       });
     }
-    rollDamage(_0, _1, _2, _3) {
-      return __async(this, arguments, function* ({ count, size }, damage, attacker, target) {
+    rollDamage(count, e) {
+      return __async(this, null, function* () {
         let total = 0;
         for (let i = 0; i < count; i++) {
-          const roll = yield this.roll({
-            type: "damage",
-            attacker,
-            target,
-            size,
-            damage
-          });
+          const roll = yield this.roll(
+            Object.assign({ type: "damage" }, e)
+          );
           total += roll.value;
         }
         return total;
@@ -724,17 +858,149 @@
     }
   };
 
-  // src/Monster.ts
-  var Monster = class extends AbstractCombatant {
-    constructor(g, name, type, size, img) {
-      super(g, name, type, size, img, 1, true);
+  // src/utils/dice.ts
+  var dd = (count, size, damage) => ({
+    type: "dice",
+    amount: { count, size },
+    damageType: damage
+  });
+
+  // src/items/weapons.ts
+  var AbstractWeapon = class {
+    constructor(name, category, rangeCategory, damage, properties = [], shortRange, longRange) {
+      this.name = name;
+      this.category = category;
+      this.rangeCategory = rangeCategory;
+      this.damage = damage;
+      this.shortRange = shortRange;
+      this.longRange = longRange;
+      this.hands = 1;
+      this.itemType = "weapon";
+      this.weaponType = name;
+      this.properties = new Set(properties);
+    }
+  };
+  var Mace = class extends AbstractWeapon {
+    constructor(g) {
+      super("mace", "simple", "melee", dd(1, 6, "bludgeoning"));
+      this.g = g;
+    }
+  };
+  var HeavyCrossbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        "heavy crossbow",
+        "martial",
+        "ranged",
+        dd(1, 10, "piercing"),
+        ["ammunition", "heavy", "loading", "two-handed"],
+        100,
+        400
+      );
+      this.g = g;
+      this.ammunitionTag = "crossbow";
     }
   };
 
-  // src/PC.ts
-  var PC = class extends AbstractCombatant {
-    constructor(g, name, raceName, img) {
-      super(g, name, "humanoid", "medium", img, 0, false);
+  // src/Monster.ts
+  var Monster = class extends AbstractCombatant {
+    constructor(g, name, cr, type, size, img) {
+      super(g, name, { type, size, img, side: 1 });
+      this.cr = cr;
+    }
+    don(item, giveProficiency = false) {
+      super.don(item);
+      if (giveProficiency) {
+        if (item.itemType === "weapon")
+          this.weaponProficiencies.add(item.weaponType);
+        else if (item.itemType === "armor")
+          this.armorProficiencies.add(item.category);
+      }
+    }
+  };
+
+  // src/monsters/Badger.ts
+  var Bite = class extends AbstractWeapon {
+    constructor(g) {
+      super("bite", "natural", "melee", {
+        type: "flat",
+        amount: 1,
+        damageType: "piercing"
+      });
+      this.g = g;
+      this.hands = 0;
+      this.forceAbilityScore = "dex";
+    }
+  };
+  var Badger = class extends Monster {
+    constructor(g) {
+      super(
+        g,
+        "badger",
+        0,
+        "beast",
+        "tiny",
+        "https://5e.tools/img/MM/Badger.png"
+      );
+      this.hp = this.hpMax = 3;
+      this.movement.set("speed", 20);
+      this.movement.set("burrow", 5);
+      this.strScore = 4;
+      this.dexScore = 11;
+      this.conScore = 12;
+      this.intScore = 2;
+      this.wisScore = 12;
+      this.chaScore = 5;
+      this.senses.set("darkvision", 30);
+      this.pb = 2;
+      this.naturalWeapons.add(new Bite(g));
+    }
+  };
+
+  // src/items/armor.ts
+  var AbstractArmor = class {
+    constructor(name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
+      this.name = name;
+      this.category = category;
+      this.ac = ac;
+      this.stealthDisadvantage = stealthDisadvantage;
+      this.minimumStrength = minimumStrength;
+      this.itemType = "armor";
+      this.hands = 0;
+    }
+  };
+  var LeatherArmor = class extends AbstractArmor {
+    constructor(g) {
+      super("leather armor", "light", 11);
+      this.g = g;
+    }
+  };
+
+  // src/monsters/Thug.ts
+  var Thug = class extends Monster {
+    constructor(g) {
+      super(
+        g,
+        "thug",
+        0.5,
+        "humanoid",
+        "medium",
+        "https://5e.tools/img/MM/Thug.png"
+      );
+      this.don(new LeatherArmor(g), true);
+      this.hp = this.hpMax = 32;
+      this.movement.set("speed", 30);
+      this.strScore = 15;
+      this.dexScore = 11;
+      this.conScore = 14;
+      this.intScore = 10;
+      this.wisScore = 10;
+      this.chaScore = 11;
+      this.skills.set("intimidation", 1);
+      this.languages.add("common");
+      this.pb = 2;
+      this.don(new Mace(g), true);
+      this.don(new HeavyCrossbow(g), true);
     }
   };
 
@@ -742,16 +1008,10 @@
   window.addEventListener("load", () => {
     const g = new Engine(document.body);
     window.g = g;
-    const pc = new PC(g, "Tester", "Human", "https://5e.tools/img/MM/Thug.png");
-    const mon = new Monster(
-      g,
-      "Badger",
-      "beast",
-      "tiny",
-      "https://5e.tools/img/MM/Badger.png"
-    );
-    g.place(pc, 0, 0);
-    g.place(mon, 10, 0);
+    const thug = new Thug(g);
+    const badger = new Badger(g);
+    g.place(thug, 0, 0);
+    g.place(badger, 10, 0);
   });
 })();
 //# sourceMappingURL=bundle.js.map
