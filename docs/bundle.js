@@ -1,5 +1,47 @@
 "use strict";
 (() => {
+  var __create = Object.create;
+  var __defProp = Object.defineProperty;
+  var __defProps = Object.defineProperties;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __propIsEnum = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues = (a, b) => {
+    for (var prop in b ||= {})
+      if (__hasOwnProp.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    if (__getOwnPropSymbols)
+      for (var prop of __getOwnPropSymbols(b)) {
+        if (__propIsEnum.call(b, prop))
+          __defNormalProp(a, prop, b[prop]);
+      }
+    return a;
+  };
+  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
   var __async = (__this, __arguments, generator) => {
     return new Promise((resolve, reject) => {
       var fulfilled = (value) => {
@@ -19,6 +61,48 @@
       var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
       step((generator = generator.apply(__this, __arguments)).next());
     });
+  };
+
+  // globalExternal:preact
+  var require_preact = __commonJS({
+    "globalExternal:preact"(exports, module) {
+      module.exports = globalThis.preact;
+    }
+  });
+
+  // globalExternal:preact/hooks
+  var require_hooks = __commonJS({
+    "globalExternal:preact/hooks"(exports, module) {
+      module.exports = globalThis.preactHooks;
+    }
+  });
+
+  // src/index.tsx
+  var import_preact3 = __toESM(require_preact());
+
+  // src/collectors/DamageResponseCollector.ts
+  var DamageResponseCollector = class {
+    constructor() {
+      this.absorb = /* @__PURE__ */ new Set();
+      this.immune = /* @__PURE__ */ new Set();
+      this.resist = /* @__PURE__ */ new Set();
+      this.normal = /* @__PURE__ */ new Set();
+      this.vulnerable = /* @__PURE__ */ new Set();
+    }
+    add(response, source) {
+      this[response].add(source);
+    }
+    get result() {
+      if (this.absorb.size)
+        return "absorb";
+      if (this.immune.size)
+        return "immune";
+      if (this.resist.size)
+        return "resist";
+      if (this.vulnerable.size)
+        return "vulnerable";
+      return "normal";
+    }
   };
 
   // src/DiceBag.ts
@@ -44,16 +128,54 @@
     force(value, matcher) {
       this.forcedRolls.add({ value, matcher });
     }
-    roll(rt) {
-      const size = sizeOfDice(rt);
+    getForcedRoll(rt) {
       for (const fr of this.forcedRolls) {
         if (matches(rt, fr.matcher)) {
           this.forcedRolls.delete(fr);
-          return { size, value: fr.value };
+          return fr.value;
         }
       }
-      const value = Math.ceil(Math.random() * size);
+    }
+    roll(rt, dt) {
+      var _a;
+      const size = sizeOfDice(rt);
+      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
       return { size, value };
+    }
+  };
+
+  // src/collectors/BonusCollector.ts
+  var BonusCollector = class {
+    constructor() {
+      this.effects = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.effects.add({ value, source });
+    }
+    get result() {
+      let total = 0;
+      for (const { value } of this.effects)
+        total += value;
+      return total;
+    }
+  };
+
+  // src/collectors/DiceTypeCollector.ts
+  var DiceTypeCollector = class {
+    constructor() {
+      this.advantage = /* @__PURE__ */ new Set();
+      this.disadvantage = /* @__PURE__ */ new Set();
+      this.normal = /* @__PURE__ */ new Set();
+    }
+    add(response, source) {
+      this[response].add(source);
+    }
+    get result() {
+      const hasAdvantage = this.advantage.size > 0;
+      const hasDisadvantage = this.disadvantage.size > 0;
+      if (hasAdvantage === hasDisadvantage)
+        return "normal";
+      return hasAdvantage ? "advantage" : "disadvantage";
     }
   };
 
@@ -74,6 +196,27 @@
     }
     [Symbol.iterator]() {
       return this.map[Symbol.iterator]();
+    }
+  };
+
+  // src/events/EventBase.ts
+  var EventBase = class extends CustomEvent {
+    constructor(name, detail) {
+      super(name, { detail });
+    }
+  };
+
+  // src/events/BeforeAttackEvent.ts
+  var BeforeAttackEvent = class extends EventBase {
+    constructor(detail) {
+      super("beforeAttack", detail);
+    }
+  };
+
+  // src/events/GatherDamageEvent.ts
+  var GatherDamageEvent = class extends EventBase {
+    constructor(detail) {
+      super("gatherDamage", detail);
     }
   };
 
@@ -118,7 +261,7 @@
     gargantuan: 4
   };
   function convertSizeToUnit(size) {
-    return categoryUnits[size];
+    return categoryUnits[size] * 5;
   }
 
   // src/AbstractCombatant.ts
@@ -139,7 +282,7 @@
     undead: 2
   };
   var AbstractCombatant = class {
-    constructor(g, name, {
+    constructor(g2, name, {
       img,
       side,
       size,
@@ -148,6 +291,7 @@
       hands = defaultHandsAmount[type],
       hpMax = 1,
       hp = hpMax,
+      level = 0,
       pb = 2,
       reach = 5,
       chaScore = 10,
@@ -157,13 +301,15 @@
       strScore = 10,
       wisScore = 10
     }) {
-      this.g = g;
+      this.g = g2;
       this.name = name;
+      this.id = g2.nextId();
       this.diesAtZero = diesAtZero;
       this.hands = hands;
       this.hp = hp;
       this.hpMax = hpMax;
       this.img = img;
+      this.level = level;
       this.pb = pb;
       this.reach = reach;
       this.side = side;
@@ -185,6 +331,8 @@
       this.weaponCategoryProficiencies = /* @__PURE__ */ new Set();
       this.weaponProficiencies = /* @__PURE__ */ new Set();
       this.naturalWeapons = /* @__PURE__ */ new Set();
+      this.resources = /* @__PURE__ */ new Map();
+      this.configs = /* @__PURE__ */ new Map();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -234,9 +382,9 @@
     don(item) {
       if (item.itemType === "armor") {
         const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
-        for (const o of this.equipment) {
-          if (predicate(o))
-            this.doff(o);
+        for (const o2 of this.equipment) {
+          if (predicate(o2))
+            this.doff(o2);
         }
       }
       this.equipment.add(item);
@@ -261,6 +409,19 @@
         return 1;
       return 0;
     }
+    addResource(resource, amount) {
+      this.resources.set(resource, amount != null ? amount : resource.maximum);
+    }
+    spendResource(resource, amount = 1) {
+      var _a;
+      const old = (_a = this.resources.get(resource)) != null ? _a : 0;
+      if (old < amount)
+        throw new Error(`Cannot spend ${amount} of ${resource.name} resource`);
+      this.resources.set(resource, old - amount);
+    }
+    getConfig(key) {
+      return this.configs.get(key);
+    }
   };
 
   // src/resolvers/TargetResolver.ts
@@ -276,54 +437,88 @@
 
   // src/actions/WeaponAttack.ts
   var WeaponAttack = class {
-    constructor(who, weapon) {
-      this.who = who;
+    constructor(attacker, weapon) {
+      this.attacker = attacker;
       this.weapon = weapon;
-      const range = getWeaponRange(who, weapon);
-      this.ability = getWeaponAbility(who, weapon);
+      const range = getWeaponRange(attacker, weapon);
+      this.ability = getWeaponAbility(attacker, weapon);
       this.config = { target: new TargetResolver(range) };
       this.name = weapon.name;
     }
     apply(_0, _1) {
-      return __async(this, arguments, function* (g, { target }) {
-        const { ability, weapon, who } = this;
-        const attack = yield g.roll({
-          type: "attack",
-          who,
-          target,
-          weapon,
-          ability
-        });
-        const proficiencyBonus = weapon ? who.getProficiencyMultiplier(weapon) * who.pb : 0;
-        const abilityBonus = who[ability];
-        const total = attack.value + proficiencyBonus + abilityBonus;
+      return __async(this, arguments, function* (g2, { target }) {
+        const { ability, weapon, attacker } = this;
+        const ba = yield g2.resolve(
+          new BeforeAttackEvent({
+            target,
+            attacker,
+            ability,
+            weapon,
+            diceType: new DiceTypeCollector(),
+            bonus: new BonusCollector()
+          })
+        );
+        const attack = yield g2.roll(
+          {
+            type: "attack",
+            who: attacker,
+            target,
+            weapon,
+            ability
+          },
+          ba.diceType.result
+        );
+        const total = attack.value + ba.bonus.result;
         if (total >= target.ac) {
           const map = new DamageMap();
           const { damage } = weapon;
           if (damage.type === "dice") {
             const { count, size } = damage.amount;
-            const amount = yield g.rollDamage(count, {
+            const amount = yield g2.rollDamage(count, {
               size,
               damageType: damage.damageType,
-              attacker: who,
+              attacker,
               target,
               ability,
               weapon
             });
-            map.add(damage.damageType, amount + abilityBonus);
+            map.add(damage.damageType, amount);
           } else
-            map.add(damage.damageType, damage.amount + abilityBonus);
-          yield g.damage(map, { source: this, attacker: who, target });
+            map.add(damage.damageType, damage.amount);
+          const gd = yield g2.resolve(
+            new GatherDamageEvent({
+              attacker,
+              target,
+              ability,
+              weapon,
+              map,
+              bonus: new BonusCollector()
+            })
+          );
+          map.add(damage.damageType, gd.bonus.result);
+          yield g2.damage(map, { source: this, attacker, target });
         }
       });
     }
   };
 
   // src/DndRules.ts
+  var AbilityRule = class {
+    constructor(g2) {
+      this.g = g2;
+      this.name = "Ability";
+      g2.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
+        bonus.add(attacker[ability], this);
+      });
+      g2.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
+        bonus.add(attacker[ability], this);
+      });
+    }
+  };
   var CombatantArmourCalculation = class {
-    constructor(g) {
-      this.g = g;
-      g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+    constructor(g2) {
+      this.g = g2;
+      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
         var _a, _b;
         const { armor, dex, shield } = who;
         const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
@@ -340,9 +535,9 @@
     }
   };
   var CombatantWeaponAttacks = class {
-    constructor(g) {
-      this.g = g;
-      g.events.on("getActions", ({ detail: { who, target, actions } }) => {
+    constructor(g2) {
+      this.g = g2;
+      g2.events.on("getActions", ({ detail: { who, target, actions } }) => {
         if (who !== target) {
           for (const weapon of who.weapons)
             actions.push(new WeaponAttack(who, weapon));
@@ -350,18 +545,23 @@
       });
     }
   };
-  var DndRules = class {
-    constructor(g) {
-      this.g = g;
-      new CombatantArmourCalculation(g);
-      new CombatantWeaponAttacks(g);
+  var ProficiencyRule = class {
+    constructor(g2) {
+      this.g = g2;
+      this.name = "Proficiency";
+      g2.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
+        if (weapon && attacker.getProficiencyMultiplier(weapon))
+          bonus.add(attacker.pb, this);
+      });
     }
   };
-
-  // src/events/EventBase.ts
-  var EventBase = class extends CustomEvent {
-    constructor(name, detail) {
-      super(name, { detail });
+  var DndRules = class {
+    constructor(g2) {
+      this.g = g2;
+      new AbilityRule(g2);
+      new CombatantArmourCalculation(g2);
+      new CombatantWeaponAttacks(g2);
+      new ProficiencyRule(g2);
     }
   };
 
@@ -441,336 +641,17 @@
     }
   };
 
+  // src/events/GetDamageResponseEvent.ts
+  var GetDamageResponseEvent = class extends EventBase {
+    constructor(detail) {
+      super("getDamageResponse", detail);
+    }
+  };
+
   // src/events/TurnStartedEvent.ts
   var TurnStartedEvent = class extends EventBase {
     constructor(detail) {
       super("turnStarted", detail);
-    }
-  };
-
-  // src/Observable.ts
-  var Observable = class {
-    constructor(_value) {
-      this._value = _value;
-      this.listeners = /* @__PURE__ */ new Set();
-    }
-    on(cb) {
-      this.listeners.add(cb);
-    }
-    off(cb) {
-      this.listeners.delete(cb);
-    }
-    get value() {
-      return this._value;
-    }
-    set(value) {
-      this._value = value;
-      for (const l of this.listeners)
-        l(value);
-    }
-    setter(value) {
-      return () => this.set(value);
-    }
-  };
-
-  // src/utils/dom.ts
-  function make(tag, patch = {}, events = {}) {
-    const element = document.createElement(tag);
-    Object.assign(element, patch);
-    for (const name of Object.keys(events))
-      element.addEventListener(
-        name,
-        events[name]
-      );
-    return element;
-  }
-  function getStyleProperty(property, defaultValue) {
-    return window.getComputedStyle(document.documentElement).getPropertyValue(property) || defaultValue;
-  }
-  function getStylePropertyNumber(property, defaultValue) {
-    const raw = getStyleProperty(property, px(defaultValue)).trim();
-    return Number(raw.endsWith("px") ? raw.slice(0, -2) : raw);
-  }
-  function px(size) {
-    return `${size}px`;
-  }
-
-  // src/CssSizeVariable.ts
-  var CssSizeVariable = class extends Observable {
-    constructor(key, defaultValue) {
-      super(getStylePropertyNumber(key, defaultValue));
-      this.key = key;
-    }
-    set(value) {
-      document.documentElement.style.setProperty(this.key, px(value));
-      super.set(value);
-    }
-  };
-
-  // src/globals.ts
-  var busy = new Observable(false);
-  var moveButtonSize = new CssSizeVariable("--movebtn-size", 30);
-  var scale = new CssSizeVariable("--scale", 100);
-
-  // src/utils/config.ts
-  function checkConfig(action, config) {
-    for (const [key, resolver] of Object.entries(action.config)) {
-      const value = config[key];
-      if (!resolver.check(value))
-        return false;
-    }
-    return true;
-  }
-
-  // src/ui/Battlefield.module.scss
-  var Battlefield_module_default = {
-    "main": "_main_1fv7t_1"
-  };
-
-  // src/ui/Unit.module.scss
-  var Unit_module_default = {
-    "main": "_main_epbg7_5",
-    "token": "_token_epbg7_9",
-    "moveButton": "_moveButton_epbg7_15",
-    "moveN": "_moveN_epbg7_30",
-    "moveE": "_moveE_epbg7_34",
-    "moveS": "_moveS_epbg7_38",
-    "moveW": "_moveW_epbg7_42"
-  };
-
-  // src/ui/Unit.ts
-  var buttonTypes = {
-    north: {
-      className: Unit_module_default.moveN,
-      emoji: "\u2B06\uFE0F",
-      label: "North",
-      dx: 0,
-      dy: -1
-    },
-    east: { className: Unit_module_default.moveE, emoji: "\u27A1\uFE0F", label: "East", dx: 1, dy: 0 },
-    south: { className: Unit_module_default.moveS, emoji: "\u2B07\uFE0F", label: "South", dx: 0, dy: 1 },
-    west: { className: Unit_module_default.moveW, emoji: "\u2B05\uFE0F", label: "West", dx: -1, dy: 0 }
-  };
-  var UnitMoveButton = class {
-    constructor(parent, type, onMove) {
-      this.parent = parent;
-      this.type = type;
-      this.onMove = onMove;
-      this.onClick = (e) => {
-        e.stopPropagation();
-        this.onMove(this.type);
-      };
-      const { className, label } = buttonTypes[type];
-      this.element = parent.appendChild(
-        make(
-          "button",
-          {
-            className: `${Unit_module_default.moveButton} ${className}`,
-            textContent: label
-          },
-          { click: this.onClick }
-        )
-      );
-    }
-    show(value) {
-      this.element.style.display = value ? "" : "none";
-    }
-    resize(size) {
-      const offset = (size - moveButtonSize.value) / 2;
-      if (this.type === "north" || this.type === "south")
-        this.element.style.left = px(offset);
-      else
-        this.element.style.top = px(offset);
-    }
-  };
-  var Unit = class {
-    constructor(g, who, x, y, onRemove) {
-      this.g = g;
-      this.who = who;
-      this.x = x;
-      this.y = y;
-      this.onRemove = onRemove;
-      this.onBusyChange = (value) => {
-        for (const btn of this.moveButtons)
-          btn.element.disabled = value;
-      };
-      this.onCombatantDied = ({ detail: { who } }) => {
-        if (who === this.who) {
-          this.element.remove();
-          this.onRemove(this);
-        }
-      };
-      this.onCombatantMoved = ({ detail: { who, x, y } }) => {
-        if (who === this.who) {
-          this.x = x;
-          this.y = y;
-          this.update();
-        }
-      };
-      this.onMove = (type) => __async(this, null, function* () {
-        const { dx, dy } = buttonTypes[type];
-        busy.set(true);
-        yield this.g.move(this.who, dx * 5, dy * 5);
-        busy.set(false);
-      });
-      this.onTurnStarted = ({ detail: { who } }) => {
-        this.isMyTurn(who === this.who);
-      };
-      this.element = g.ui.battlefield.element.appendChild(
-        make("div", { className: Unit_module_default.main })
-      );
-      this.token = this.element.appendChild(
-        make("img", {
-          className: Unit_module_default.token,
-          alt: who.name,
-          src: who.img
-        })
-      );
-      this.moveButtons = [
-        new UnitMoveButton(this.element, "north", this.onMove),
-        new UnitMoveButton(this.element, "east", this.onMove),
-        new UnitMoveButton(this.element, "south", this.onMove),
-        new UnitMoveButton(this.element, "west", this.onMove)
-      ];
-      busy.on(this.onBusyChange);
-      scale.on(this.update);
-      this.update();
-      this.isMyTurn(false);
-      g.events.on("combatantDied", this.onCombatantDied);
-      g.events.on("combatantMoved", this.onCombatantMoved);
-      g.events.on("turnStarted", this.onTurnStarted);
-    }
-    update() {
-      const offset = scale.value / 5;
-      this.element.style.left = px(this.x * offset);
-      this.element.style.top = px(this.y * offset);
-      this.size = this.who.sizeInUnits * scale.value;
-      this.element.style.width = px(this.size);
-      this.element.style.height = px(this.size);
-      this.token.style.width = px(this.size);
-      this.token.style.height = px(this.size);
-      for (const btn of this.moveButtons)
-        btn.resize(this.size);
-    }
-    isMyTurn(value) {
-      for (const btn of this.moveButtons)
-        btn.show(value);
-    }
-  };
-
-  // src/ui/Battlefield.ts
-  var Battlefield = class {
-    constructor(g, onClickBattlefield, onClickCombatant) {
-      this.g = g;
-      this.onClickCombatant = onClickCombatant;
-      this.removeUnit = (unit) => {
-        this.units.delete(unit);
-      };
-      this.onCombatantPlaced = ({ detail: { who, x, y } }) => {
-        const unit = new Unit(this.g, who, x, y, this.removeUnit);
-        this.units.add(unit);
-        unit.element.addEventListener(
-          "click",
-          (e) => this.onClickCombatant(who, e)
-        );
-      };
-      this.units = /* @__PURE__ */ new Set();
-      this.element = g.container.appendChild(
-        make("div", { className: Battlefield_module_default.main }, { click: onClickBattlefield })
-      );
-      g.events.on("combatantPlaced", this.onCombatantPlaced);
-    }
-  };
-
-  // src/ui/Menu.module.scss
-  var Menu_module_default = {
-    "main": "_main_2qfwl_1"
-  };
-
-  // src/ui/Menu.ts
-  var Menu = class {
-    constructor(g, onClick) {
-      this.g = g;
-      this.onClick = onClick;
-      this.element = g.container.appendChild(
-        make("menu", { className: Menu_module_default.main })
-      );
-      this.empty = this.element.appendChild(
-        make("div", { textContent: "(empty)" })
-      );
-      this.list = [];
-      this.hide();
-    }
-    show(x, y) {
-      this.element.style.display = "";
-      this.element.style.left = px(x);
-      this.element.style.top = px(y);
-    }
-    hide() {
-      this.element.style.display = "none";
-    }
-    clear() {
-      for (const el of this.list)
-        this.element.removeChild(el);
-      this.list = [];
-      this.empty.style.display = "block";
-    }
-    add(label, value) {
-      const li = this.element.appendChild(make("li"));
-      li.appendChild(
-        make(
-          "button",
-          { textContent: label },
-          { click: () => this.onClick(value) }
-        )
-      );
-      this.list.push(li);
-      this.empty.style.display = "none";
-    }
-  };
-
-  // src/ui/UI.ts
-  var UI = class {
-    constructor(g) {
-      this.g = g;
-      this.onClickAction = (action) => __async(this, null, function* () {
-        this.actionMenu.hide();
-        const config = { target: this.target };
-        if (checkConfig(action, config)) {
-          busy.set(true);
-          yield action.apply(this.g, config);
-          busy.set(false);
-        } else
-          console.warn(config, "does not match", action.config);
-      });
-      this.onClickBattlefield = () => __async(this, null, function* () {
-        this.target = void 0;
-        this.actionMenu.hide();
-      });
-      this.onClickCombatant = (who, e) => __async(this, null, function* () {
-        e.stopPropagation();
-        if (this.current) {
-          this.target = who;
-          busy.set(true);
-          const actions = yield this.g.getActions(this.current, who);
-          busy.set(false);
-          this.actionMenu.clear();
-          for (const action of actions)
-            this.actionMenu.add(action.name, action);
-          this.actionMenu.show(e.clientX, e.clientY);
-        }
-      });
-      this.onTurnStarted = ({ detail: { who } }) => {
-        this.current = who;
-        this.target = void 0;
-      };
-      this.actionMenu = new Menu(g, this.onClickAction);
-      this.battlefield = new Battlefield(
-        g,
-        this.onClickBattlefield,
-        this.onClickCombatant
-      );
-      g.events.on("turnStarted", this.onTurnStarted);
     }
   };
 
@@ -790,19 +671,22 @@
 
   // src/Engine.ts
   var Engine = class {
-    constructor(container, dice = new DiceBag(), events = new Dispatcher()) {
-      this.container = container;
+    constructor(dice = new DiceBag(), events = new Dispatcher()) {
       this.dice = dice;
       this.events = events;
       this.combatants = /* @__PURE__ */ new Map();
+      this.id = 0;
       this.initiativeOrder = [];
       this.initiativePosition = NaN;
-      this.ui = new UI(this);
       this.rules = new DndRules(this);
     }
+    nextId() {
+      return ++this.id;
+    }
     place(who, x, y) {
-      this.combatants.set(who, { x, y, initiative: NaN });
-      this.events.fire(new CombatantPlacedEvent({ who, x, y }));
+      const position = { x, y };
+      this.combatants.set(who, { position, initiative: NaN });
+      this.events.fire(new CombatantPlacedEvent({ who, position }));
     }
     start() {
       return __async(this, null, function* () {
@@ -819,9 +703,7 @@
       return __async(this, null, function* () {
         let total = 0;
         for (let i = 0; i < count; i++) {
-          const roll = yield this.roll(
-            Object.assign({ type: "damage" }, e)
-          );
+          const roll = yield this.roll(__spreadProps(__spreadValues({}, e), { type: "damage" }));
           total += roll.value;
         }
         return total;
@@ -833,12 +715,17 @@
         return roll.value;
       });
     }
-    roll(type) {
+    roll(type, diceType = "normal") {
       return __async(this, null, function* () {
-        const roll = this.dice.roll(type);
-        const e = new DiceRolledEvent({ type, size: roll.size, value: roll.value });
-        this.events.fire(e);
-        return e.detail;
+        const roll = this.dice.roll(type, diceType);
+        return this.resolve(
+          new DiceRolledEvent({
+            type,
+            diceType,
+            size: roll.size,
+            value: roll.value
+          })
+        );
       });
     }
     nextTurn() {
@@ -851,13 +738,11 @@
         const state = this.combatants.get(who);
         if (!state)
           return;
-        const ox = state.x;
-        const oy = state.y;
-        const x = ox + dx;
-        const y = oy + dy;
-        state.x = x;
-        state.y = y;
-        const e = new CombatantMovedEvent({ who, ox, oy, x, y });
+        const old = state.position;
+        const x = old.x + dx;
+        const y = old.y + dy;
+        state.position = { x, y };
+        const e = new CombatantMovedEvent({ who, old, position: state.position });
         this.events.fire(e);
       });
     }
@@ -868,11 +753,29 @@
         target
       }) {
         let total = 0;
-        for (const [, amount] of damage) {
+        const breakdown = /* @__PURE__ */ new Map();
+        for (const [damageType, raw] of damage) {
+          const collector = new DamageResponseCollector();
+          const e = new GetDamageResponseEvent({
+            who: target,
+            damageType,
+            response: collector
+          });
+          this.events.fire(e);
+          const response = collector.result;
+          if (response === "immune")
+            continue;
+          let multiplier = 1;
+          if (response === "resist")
+            multiplier = 0.5;
+          else if (response === "vulnerable")
+            multiplier = 2;
+          const amount = Math.ceil(raw * multiplier);
+          breakdown.set(damageType, { response, raw, amount });
           total += amount;
         }
         this.events.fire(
-          new CombatantDamagedEvent({ who: target, attacker, total })
+          new CombatantDamagedEvent({ who: target, attacker, total, breakdown })
         );
         target.hp -= total;
         if (target.hp <= 0) {
@@ -903,6 +806,12 @@
         0
       );
     }
+    resolve(e) {
+      return __async(this, null, function* () {
+        this.events.fire(e);
+        return e.detail;
+      });
+    }
   };
 
   // src/utils/dice.ts
@@ -928,13 +837,13 @@
     }
   };
   var Mace = class extends AbstractWeapon {
-    constructor(g) {
+    constructor(g2) {
       super("mace", "simple", "melee", dd(1, 6, "bludgeoning"));
-      this.g = g;
+      this.g = g2;
     }
   };
   var HeavyCrossbow = class extends AbstractWeapon {
-    constructor(g) {
+    constructor(g2) {
       super(
         "heavy crossbow",
         "martial",
@@ -944,15 +853,15 @@
         100,
         400
       );
-      this.g = g;
+      this.g = g2;
       this.ammunitionTag = "crossbow";
     }
   };
 
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
-    constructor(g, name, cr, type, size, img) {
-      super(g, name, { type, size, img, side: 1 });
+    constructor(g2, name, cr, type, size, img) {
+      super(g2, name, { type, size, img, side: 1 });
       this.cr = cr;
     }
     don(item, giveProficiency = false) {
@@ -968,21 +877,21 @@
 
   // src/monsters/Badger.ts
   var Bite = class extends AbstractWeapon {
-    constructor(g) {
+    constructor(g2) {
       super("bite", "natural", "melee", {
         type: "flat",
         amount: 1,
         damageType: "piercing"
       });
-      this.g = g;
+      this.g = g2;
       this.hands = 0;
       this.forceAbilityScore = "dex";
     }
   };
   var Badger = class extends Monster {
-    constructor(g) {
+    constructor(g2) {
       super(
-        g,
+        g2,
         "badger",
         0,
         "beast",
@@ -1000,7 +909,7 @@
       this.chaScore = 5;
       this.senses.set("darkvision", 30);
       this.pb = 2;
-      this.naturalWeapons.add(new Bite(g));
+      this.naturalWeapons.add(new Bite(g2));
     }
   };
 
@@ -1017,24 +926,24 @@
     }
   };
   var LeatherArmor = class extends AbstractArmor {
-    constructor(g) {
+    constructor(g2) {
       super("leather armor", "light", 11);
-      this.g = g;
+      this.g = g2;
     }
   };
 
   // src/monsters/Thug.ts
   var Thug = class extends Monster {
-    constructor(g) {
+    constructor(g2) {
       super(
-        g,
+        g2,
         "thug",
         0.5,
         "humanoid",
         "medium",
         "https://5e.tools/img/MM/Thug.png"
       );
-      this.don(new LeatherArmor(g), true);
+      this.don(new LeatherArmor(g2), true);
       this.hp = this.hpMax = 32;
       this.movement.set("speed", 30);
       this.strScore = 15;
@@ -1044,21 +953,322 @@
       this.wisScore = 10;
       this.chaScore = 11;
       this.skills.set("Intimidation", 1);
-      this.languages.add("common");
+      this.languages.add("Common");
       this.pb = 2;
-      this.don(new Mace(g), true);
-      this.don(new HeavyCrossbow(g), true);
+      this.don(new Mace(g2), true);
+      this.don(new HeavyCrossbow(g2), true);
     }
   };
 
-  // src/index.ts
-  window.addEventListener("load", () => {
-    const g = new Engine(document.body);
-    window.g = g;
-    const thug = new Thug(g);
-    const badger = new Badger(g);
-    g.place(thug, 0, 0);
-    g.place(badger, 10, 0);
-  });
+  // src/ui/App.tsx
+  var import_hooks4 = __toESM(require_hooks());
+
+  // src/utils/config.ts
+  function checkConfig(action, config) {
+    for (const [key, resolver] of Object.entries(action.config)) {
+      const value = config[key];
+      if (!resolver.check(value))
+        return false;
+    }
+    return true;
+  }
+
+  // src/ui/App.module.scss
+  var App_module_default = {};
+
+  // src/ui/Battlefield.tsx
+  var import_hooks3 = __toESM(require_hooks());
+
+  // src/ui/Battlefield.module.scss
+  var Battlefield_module_default = {
+    "main": "_main_1fv7t_1"
+  };
+
+  // src/ui/Unit.tsx
+  var import_hooks2 = __toESM(require_hooks());
+
+  // src/ui/Unit.module.scss
+  var Unit_module_default = {
+    "main": "_main_1qwrm_1",
+    "token": "_token_1qwrm_5"
+  };
+
+  // src/ui/UnitMoveButton.tsx
+  var import_hooks = __toESM(require_hooks());
+
+  // src/ui/UnitMoveButton.module.scss
+  var UnitMoveButton_module_default = {
+    "main": "_main_ul2jc_5",
+    "moveN": "_moveN_ul2jc_20",
+    "moveE": "_moveE_ul2jc_26",
+    "moveS": "_moveS_ul2jc_32",
+    "moveW": "_moveW_ul2jc_38"
+  };
+
+  // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
+  var import_preact = __toESM(require_preact());
+  var import_preact2 = __toESM(require_preact());
+  var _ = 0;
+  function o(o2, e, n, t, f, l) {
+    var s, u, a = {};
+    for (u in e)
+      "ref" == u ? s = e[u] : a[u] = e[u];
+    var i = { type: o2, props: a, key: n, ref: s, __k: null, __: null, __b: 0, __e: null, __d: void 0, __c: null, __h: null, constructor: void 0, __v: --_, __source: f, __self: l };
+    if ("function" == typeof o2 && (s = o2.defaultProps))
+      for (u in s)
+        void 0 === a[u] && (a[u] = s[u]);
+    return import_preact.options.vnode && import_preact.options.vnode(i), i;
+  }
+
+  // src/ui/UnitMoveButton.tsx
+  var buttonTypes = {
+    north: {
+      className: UnitMoveButton_module_default.moveN,
+      emoji: "\u2B06\uFE0F",
+      label: "North",
+      dx: 0,
+      dy: -5
+    },
+    east: { className: UnitMoveButton_module_default.moveE, emoji: "\u27A1\uFE0F", label: "East", dx: 5, dy: 0 },
+    south: { className: UnitMoveButton_module_default.moveS, emoji: "\u2B07\uFE0F", label: "South", dx: 0, dy: 5 },
+    west: { className: UnitMoveButton_module_default.moveW, emoji: "\u2B05\uFE0F", label: "West", dx: -5, dy: 0 }
+  };
+  function UnitMoveButton({ onClick, type }) {
+    const { className, emoji, label, dx, dy } = (0, import_hooks.useMemo)(
+      () => buttonTypes[type],
+      [type]
+    );
+    const clicked = (0, import_hooks.useCallback)(
+      (e) => {
+        e.stopPropagation();
+        onClick(dx, dy);
+      },
+      [dx, dy, onClick]
+    );
+    return /* @__PURE__ */ o(
+      "button",
+      {
+        className: `${UnitMoveButton_module_default.main} ${className}`,
+        onClick: clicked,
+        "aria-label": label,
+        children: emoji
+      }
+    );
+  }
+
+  // src/ui/Unit.tsx
+  function Unit({
+    isActive,
+    onClick,
+    onMove,
+    scale,
+    state,
+    who
+  }) {
+    const containerStyle = (0, import_hooks2.useMemo)(
+      () => ({
+        left: state.position.x * scale,
+        top: state.position.y * scale,
+        width: who.sizeInUnits * scale,
+        height: who.sizeInUnits * scale
+      }),
+      [scale, state.position.x, state.position.y, who.sizeInUnits]
+    );
+    const tokenStyle = (0, import_hooks2.useMemo)(
+      () => ({
+        width: who.sizeInUnits * scale,
+        height: who.sizeInUnits * scale
+      }),
+      [scale, who.sizeInUnits]
+    );
+    const clicked = (0, import_hooks2.useCallback)(
+      (e) => onClick(who, e),
+      [onClick, who]
+    );
+    const moved = (0, import_hooks2.useCallback)(
+      (dx, dy) => onMove(who, dx, dy),
+      [onMove, who]
+    );
+    return (
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+      /* @__PURE__ */ o("div", { className: Unit_module_default.main, style: containerStyle, onClick: clicked, children: [
+        /* @__PURE__ */ o(
+          "img",
+          {
+            className: Unit_module_default.token,
+            style: tokenStyle,
+            alt: who.name,
+            src: who.img
+          }
+        ),
+        isActive && /* @__PURE__ */ o(import_preact2.Fragment, { children: [
+          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "north" }),
+          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "east" }),
+          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "south" }),
+          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "west" })
+        ] })
+      ] })
+    );
+  }
+
+  // src/ui/Battlefield.tsx
+  function Battlefield({
+    active,
+    onClickBattlefield,
+    onClickCombatant,
+    onMoveCombatant,
+    units
+  }) {
+    const unitElements = (0, import_hooks3.useMemo)(() => {
+      const elements = [];
+      for (const [who, state] of units)
+        elements.push(
+          /* @__PURE__ */ o(
+            Unit,
+            {
+              isActive: active === who,
+              who,
+              scale: 20,
+              state,
+              onClick: onClickCombatant,
+              onMove: onMoveCombatant
+            },
+            who.id
+          )
+        );
+      return elements;
+    }, [active, onClickCombatant, onMoveCombatant, units]);
+    return (
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+      /* @__PURE__ */ o("div", { className: Battlefield_module_default.main, onClick: onClickBattlefield, children: unitElements })
+    );
+  }
+
+  // src/ui/Menu.module.scss
+  var Menu_module_default = {
+    "main": "_main_2qfwl_1"
+  };
+
+  // src/ui/Menu.tsx
+  function Menu({ items, onClick, x, y }) {
+    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value }) => /* @__PURE__ */ o("li", { children: /* @__PURE__ */ o("button", { onClick: () => onClick(value), children: label }) }, label)) });
+  }
+
+  // src/ui/App.tsx
+  function App({ g: g2, onMount }) {
+    const [active, setActive] = (0, import_hooks4.useState)();
+    const [target, setTarget] = (0, import_hooks4.useState)();
+    const [units, setUnits] = (0, import_hooks4.useState)(
+      () => /* @__PURE__ */ new Map()
+    );
+    const [actionMenu, setActionMenu] = (0, import_hooks4.useState)({
+      show: false,
+      x: NaN,
+      y: NaN,
+      items: []
+    });
+    const hideActionMenu = (0, import_hooks4.useCallback)(
+      () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
+      []
+    );
+    const updateUnits = (0, import_hooks4.useCallback)(
+      (updateFn) => setUnits((old) => {
+        const map = new Map(old);
+        updateFn(map);
+        return map;
+      }),
+      [setUnits]
+    );
+    (0, import_hooks4.useEffect)(() => {
+      g2.events.on(
+        "combatantPlaced",
+        ({ detail: { who, position } }) => updateUnits((map) => map.set(who, { position, initiative: NaN }))
+      );
+      g2.events.on(
+        "combatantMoved",
+        ({ detail: { who, position } }) => updateUnits((map) => map.set(who, { position, initiative: NaN }))
+      );
+      g2.events.on("combatantDied", ({ detail: { who } }) => {
+        updateUnits((map) => map.delete(who));
+      });
+      g2.events.on("turnStarted", ({ detail: { who } }) => {
+        setActive(who);
+        hideActionMenu();
+      });
+      onMount == null ? void 0 : onMount(g2);
+    }, [g2, hideActionMenu, onMount, updateUnits]);
+    const onClickAction = (0, import_hooks4.useCallback)(
+      (action) => {
+        hideActionMenu();
+        const config = { target };
+        if (checkConfig(action, config)) {
+          void action.apply(g2, config);
+        } else
+          console.warn(config, "does not match", action.config);
+      },
+      [g2, hideActionMenu, target]
+    );
+    const onClickBattlefield = (0, import_hooks4.useCallback)(
+      (e) => {
+        hideActionMenu();
+      },
+      [hideActionMenu]
+    );
+    const onClickCombatant = (0, import_hooks4.useCallback)(
+      (who, e) => {
+        e.stopPropagation();
+        if (active) {
+          setTarget(who);
+          void g2.getActions(active, who).then((actions) => {
+            setActionMenu({
+              show: true,
+              x: e.clientX,
+              y: e.clientY,
+              items: actions.map((a) => ({ label: a.name, value: a }))
+            });
+            return actions;
+          });
+        }
+      },
+      [active, g2]
+    );
+    const onMoveCombatant = (0, import_hooks4.useCallback)(
+      (who, dx, dy) => g2.move(who, dx, dy),
+      [g2]
+    );
+    return /* @__PURE__ */ o("div", { className: App_module_default.main, children: [
+      /* @__PURE__ */ o(
+        Battlefield,
+        {
+          active,
+          units,
+          onClickBattlefield,
+          onClickCombatant,
+          onMoveCombatant
+        }
+      ),
+      actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({}, actionMenu), { onClick: onClickAction }))
+    ] });
+  }
+
+  // src/index.tsx
+  var g = new Engine();
+  window.g = g;
+  (0, import_preact3.render)(
+    /* @__PURE__ */ o(
+      App,
+      {
+        g,
+        onMount: () => {
+          const thug = new Thug(g);
+          const badger = new Badger(g);
+          g.place(thug, 0, 0);
+          g.place(badger, 10, 0);
+          g.start();
+        }
+      }
+    ),
+    document.body
+  );
 })();
 //# sourceMappingURL=bundle.js.map

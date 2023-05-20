@@ -2,6 +2,21 @@ import WeaponAttack from "./actions/WeaponAttack";
 import Engine from "./Engine";
 import Item from "./types/Item";
 
+export class AbilityRule {
+  name: string;
+  constructor(public g: Engine) {
+    this.name = "Ability";
+
+    g.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
+      bonus.add(attacker[ability], this);
+    });
+
+    g.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
+      bonus.add(attacker[ability], this);
+    });
+  }
+}
+
 export class CombatantArmourCalculation {
   constructor(public g: Engine) {
     g.events.on("getACMethods", ({ detail: { who, methods } }) => {
@@ -36,9 +51,22 @@ export class CombatantWeaponAttacks {
   }
 }
 
+export class ProficiencyRule {
+  name: string;
+  constructor(public g: Engine) {
+    this.name = "Proficiency";
+    g.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
+      if (weapon && attacker.getProficiencyMultiplier(weapon))
+        bonus.add(attacker.pb, this);
+    });
+  }
+}
+
 export default class DndRules {
   constructor(public g: Engine) {
+    new AbilityRule(g);
     new CombatantArmourCalculation(g);
     new CombatantWeaponAttacks(g);
+    new ProficiencyRule(g);
   }
 }

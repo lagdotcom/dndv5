@@ -2,11 +2,13 @@ import CreatureType from "./CreatureType";
 import Item, { ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
+import Resource from "./Resource";
 import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
 import SkillName from "./SkillName";
 
 interface Combatant {
+  id: number;
   img: string;
   name: string;
   type: CreatureType;
@@ -17,6 +19,7 @@ interface Combatant {
   reach: number;
 
   diesAtZero: boolean;
+  level: number;
   hp: number;
   hpMax: number;
   ac: number;
@@ -47,6 +50,9 @@ interface Combatant {
   armor?: ArmorItem;
   shield?: ArmorItem;
 
+  getConfig<T>(key: string): T | undefined;
   getProficiencyMultiplier(thing: Item | SkillName): number;
+  addResource(resource: Resource, amount?: number): void;
+  spendResource(resource: Resource, amount?: number): void;
 }
 export default Combatant;

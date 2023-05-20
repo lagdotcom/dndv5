@@ -1,5 +1,6 @@
 import { MarkRequired } from "ts-essentials";
 
+import { DiceType } from "./types/DiceType";
 import RollType from "./types/RollType";
 
 type MatchRollType = MarkRequired<Partial<RollType>, "type">;
@@ -33,17 +34,20 @@ export default class DiceBag {
     this.forcedRolls.add({ value, matcher });
   }
 
-  roll(rt: RollType) {
-    const size = sizeOfDice(rt);
-
+  getForcedRoll(rt: RollType) {
     for (const fr of this.forcedRolls) {
       if (matches(rt, fr.matcher)) {
         this.forcedRolls.delete(fr);
-        return { size, value: fr.value };
+        return fr.value;
       }
     }
+  }
 
-    const value = Math.ceil(Math.random() * size);
+  roll(rt: RollType, dt: DiceType) {
+    // TODO advantage etc.
+
+    const size = sizeOfDice(rt);
+    const value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
     return { size, value };
   }
 }

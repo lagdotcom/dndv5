@@ -1,5 +1,6 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
+  preset: "jest-preset-preact",
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
   testEnvironment: "jsdom",
   transform: {

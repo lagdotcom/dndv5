@@ -1,8 +1,6 @@
 const externals = {
-  "poly-decomp": "decomp",
-  rbush: "RBush",
-  sat: "SAT",
-  wglt: "wglt",
+  preact: "preact",
+  "preact/hooks": "preactHooks",
 };
 
 const filter = new RegExp(

@@ -23,7 +23,7 @@ export default class Thug extends Monster {
     this.wisScore = 10;
     this.chaScore = 11;
     this.skills.set("Intimidation", 1);
-    this.languages.add("common");
+    this.languages.add("Common");
     this.pb = 2;
 
     // TODO Pack Tactics. The thug has advantage on an attack roll against a creature if at least one of the thug's allies is within 5 feet of the creature and the ally isn't incapacitated.

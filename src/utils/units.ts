@@ -10,5 +10,5 @@ const categoryUnits: Record<SizeCategory, number> = {
 };
 
 export function convertSizeToUnit(size: SizeCategory) {
-  return categoryUnits[size];
+  return categoryUnits[size] * 5;
 }

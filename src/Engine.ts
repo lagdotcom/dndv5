@@ -1,3 +1,4 @@
+import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DamageMap from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
@@ -9,38 +10,42 @@ import DiceRolledEvent from "./events/DiceRolledEvent";
 import Dispatcher from "./events/Dispatcher";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
+import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
+import DamageBreakdown from "./types/DamageBreakdown";
+import DamageType from "./types/DamageType";
+import { DiceType } from "./types/DiceType";
 import RollType, { DamageRoll } from "./types/RollType";
 import Source from "./types/Source";
-import UI from "./ui/UI";
 import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
 
 export default class Engine {
   combatants: Map<Combatant, CombatantState>;
+  private id: number;
   initiativeOrder: Combatant[];
   initiativePosition: number;
-  ui: UI;
   rules: DndRules;
 
-  constructor(
-    public container: HTMLElement,
-    public dice = new DiceBag(),
-    public events = new Dispatcher()
-  ) {
+  constructor(public dice = new DiceBag(), public events = new Dispatcher()) {
     this.combatants = new Map();
+    this.id = 0;
     this.initiativeOrder = [];
     this.initiativePosition = NaN;
-    this.ui = new UI(this);
     this.rules = new DndRules(this);
   }
 
+  nextId() {
+    return ++this.id;
+  }
+
   place(who: Combatant, x: number, y: number) {
-    this.combatants.set(who, { x, y, initiative: NaN });
-    this.events.fire(new CombatantPlacedEvent({ who, x, y }));
+    const position = { x, y };
+    this.combatants.set(who, { position, initiative: NaN });
+    this.events.fire(new CombatantPlacedEvent({ who, position }));
   }
 
   async start() {
@@ -58,9 +63,7 @@ export default class Engine {
     let total = 0;
 
     for (let i = 0; i < count; i++) {
-      const roll = await this.roll(
-        Object.assign({ type: "damage" as const }, e)
-      );
+      const roll = await this.roll({ ...e, type: "damage" });
       total += roll.value;
     }
 
@@ -72,11 +75,16 @@ export default class Engine {
     return roll.value;
   }
 
-  async roll(type: RollType) {
-    const roll = this.dice.roll(type);
-    const e = new DiceRolledEvent({ type, size: roll.size, value: roll.value });
-    this.events.fire(e);
-    return e.detail;
+  async roll(type: RollType, diceType: DiceType = "normal") {
+    const roll = this.dice.roll(type, diceType);
+    return this.resolve(
+      new DiceRolledEvent({
+        type,
+        diceType,
+        size: roll.size,
+        value: roll.value,
+      })
+    );
   }
 
   nextTurn() {
@@ -91,16 +99,14 @@ export default class Engine {
     const state = this.combatants.get(who);
     if (!state) return;
 
-    const ox = state.x;
-    const oy = state.y;
-    const x = ox + dx;
-    const y = oy + dy;
+    const old = state.position;
+    const x = old.x + dx;
+    const y = old.y + dy;
 
     // TODO prevent movement, attacks of opportunity etc.
 
-    state.x = x;
-    state.y = y;
-    const e = new CombatantMovedEvent({ who, ox, oy, x, y });
+    state.position = { x, y };
+    const e = new CombatantMovedEvent({ who, old, position: state.position });
     this.events.fire(e);
   }
 
@@ -114,13 +120,32 @@ export default class Engine {
   ) {
     let total = 0;
 
-    for (const [, amount] of damage) {
-      // TODO resist etc.
+    const breakdown = new Map<DamageType, DamageBreakdown>();
+
+    for (const [damageType, raw] of damage) {
+      const collector = new DamageResponseCollector();
+      const e = new GetDamageResponseEvent({
+        who: target,
+        damageType,
+        response: collector,
+      });
+      this.events.fire(e);
+
+      const response = collector.result;
+      if (response === "immune") continue;
+      // TODO absorb
+
+      let multiplier = 1;
+      if (response === "resist") multiplier = 0.5;
+      else if (response === "vulnerable") multiplier = 2;
+
+      const amount = Math.ceil(raw * multiplier);
+      breakdown.set(damageType, { response, raw, amount });
       total += amount;
     }
 
     this.events.fire(
-      new CombatantDamagedEvent({ who: target, attacker, total })
+      new CombatantDamagedEvent({ who: target, attacker, total, breakdown })
     );
 
     target.hp -= total;
@@ -151,5 +176,13 @@ export default class Engine {
       (best, method) => (method.ac > best ? method.ac : best),
       0
     );
+  }
+
+  async resolve<T>(e: CustomEvent<T>): Promise<T> {
+    this.events.fire(e);
+
+    // TODO async stuff lol
+
+    return e.detail;
   }
 }

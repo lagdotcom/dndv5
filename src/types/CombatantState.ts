@@ -1,2 +1,4 @@
-type CombatantState = { initiative: number; x: number; y: number };
+import Point from "./Point";
+
+type CombatantState = { initiative: number; position: Point };
 export default CombatantState;

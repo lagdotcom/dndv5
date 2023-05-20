@@ -4,6 +4,7 @@ import CreatureType from "./types/CreatureType";
 import Item, { ArmorCategory, WeaponCategory, WeaponItem } from "./types/Item";
 import LanguageName from "./types/LanguageName";
 import MovementType from "./types/MovementType";
+import Resource from "./types/Resource";
 import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
 import SkillName from "./types/SkillName";
@@ -29,12 +30,14 @@ const defaultHandsAmount: Record<CreatureType, number> = {
 };
 
 export default abstract class AbstractCombatant implements Combatant {
+  id: number;
   img: string;
   type: CreatureType;
   size: SizeCategory;
   side: number;
   hands: number;
   reach: number;
+  level: number;
 
   diesAtZero: boolean;
   hp: number;
@@ -58,6 +61,8 @@ export default abstract class AbstractCombatant implements Combatant {
   weaponCategoryProficiencies: Set<WeaponCategory>;
   armorProficiencies: Set<ArmorCategory>;
   naturalWeapons: Set<WeaponItem>;
+  resources: Map<Resource, number>;
+  configs: Map<string, unknown>;
 
   constructor(
     public g: Engine,
@@ -71,6 +76,7 @@ export default abstract class AbstractCombatant implements Combatant {
       hands = defaultHandsAmount[type],
       hpMax = 1,
       hp = hpMax,
+      level = 0,
       pb = 2,
       reach = 5,
       chaScore = 10,
@@ -85,6 +91,7 @@ export default abstract class AbstractCombatant implements Combatant {
       hp?: number;
       hpMax?: number;
       img: string;
+      level?: number;
       pb?: number;
       reach?: number;
       side: number;
@@ -98,11 +105,13 @@ export default abstract class AbstractCombatant implements Combatant {
       wisScore?: number;
     }
   ) {
+    this.id = g.nextId();
     this.diesAtZero = diesAtZero;
     this.hands = hands;
     this.hp = hp;
     this.hpMax = hpMax;
     this.img = img;
+    this.level = level;
     this.pb = pb;
     this.reach = reach;
     this.side = side;
@@ -125,6 +134,8 @@ export default abstract class AbstractCombatant implements Combatant {
     this.weaponCategoryProficiencies = new Set();
     this.weaponProficiencies = new Set();
     this.naturalWeapons = new Set();
+    this.resources = new Map();
+    this.configs = new Map();
   }
 
   get str() {
@@ -205,5 +216,21 @@ export default abstract class AbstractCombatant implements Combatant {
     if (this.armorProficiencies.has(thing.category)) return 1;
 
     return 0;
+  }
+
+  addResource(resource: Resource, amount?: number): void {
+    this.resources.set(resource, amount ?? resource.maximum);
+  }
+
+  spendResource(resource: Resource, amount = 1): void {
+    const old = this.resources.get(resource) ?? 0;
+    if (old < amount)
+      throw new Error(`Cannot spend ${amount} of ${resource.name} resource`);
+
+    this.resources.set(resource, old - amount);
+  }
+
+  getConfig<T>(key: string): T | undefined {
+    return this.configs.get(key) as T | undefined;
   }
 }

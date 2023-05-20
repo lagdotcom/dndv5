@@ -1,4 +1,4 @@
-/* src/ui/ui.css */
+/* esbuild-sass-plugin:css-chunk:src/ui/App.module.scss */
 :root {
   --scale: 100px;
 }
@@ -13,18 +13,20 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
-:root {
-  --movebtn-size: 30px;
-}
-._main_epbg7_5 {
+._main_1qwrm_1 {
   position: absolute;
 }
-._token_epbg7_9 {
+._token_1qwrm_5 {
   position: absolute;
   left: 0;
   top: 0;
 }
-._moveButton_epbg7_15 {
+
+/* esbuild-sass-plugin:css-chunk:src/ui/UnitMoveButton.module.scss */
+:root {
+  --movebtn-size: 30px;
+}
+._main_ul2jc_5 {
   position: absolute;
   width: var(--movebtn-size);
   height: var(--movebtn-size);
@@ -35,20 +37,28 @@
   background: #ccc;
   z-index: 100;
 }
-._moveButton_epbg7_15:hover {
+._main_ul2jc_5:hover {
   background: #eee;
 }
-._moveN_epbg7_30 {
+._moveN_ul2jc_20 {
   top: 0;
+  left: 50%;
+  margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveE_epbg7_34 {
+._moveE_ul2jc_26 {
   right: 0;
+  top: 50%;
+  margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveS_epbg7_38 {
+._moveS_ul2jc_32 {
   bottom: 0;
+  left: 50%;
+  margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveW_epbg7_42 {
+._moveW_ul2jc_38 {
   left: 0;
+  top: 50%;
+  margin-top: calc(var(--movebtn-size) / -2);
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Menu.module.scss */

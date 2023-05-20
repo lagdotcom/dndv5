@@ -23,7 +23,7 @@ if (envConfig.parsed) {
 
 /** @type {import('esbuild').BuildOptions} */
 const config = {
-  entryPoints: ["src/index.ts"],
+  entryPoints: ["src/index.tsx"],
   bundle: true,
   sourcemap: true,
   outfile: "docs/bundle.js",
