@@ -59,10 +59,14 @@ export default class Engine {
     this.nextTurn();
   }
 
-  async rollDamage(count: number, e: Omit<DamageRoll, "type">) {
+  async rollDamage(
+    count: number,
+    e: Omit<DamageRoll, "type">,
+    critical = false
+  ) {
     let total = 0;
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count * (critical ? 2 : 1); i++) {
       const roll = await this.roll({ ...e, type: "damage" });
       total += roll.value;
     }
@@ -71,8 +75,9 @@ export default class Engine {
   }
 
   async rollInitiative(who: Combatant) {
+    // TODO get initiative roll type
     const roll = await this.roll({ type: "initiative", who });
-    return roll.value;
+    return roll.value + who.dex;
   }
 
   async roll(type: RollType, diceType: DiceType = "normal") {

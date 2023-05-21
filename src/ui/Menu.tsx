@@ -16,11 +16,14 @@ export default function Menu<T>({ items, onClick, x, y }: Props<T>) {
         <div>(empty)</div>
       ) : (
         items.map(({ label, value, disabled }) => (
-          <li key={label}>
-            <button disabled={disabled} onClick={() => onClick(value)}>
-              {label}
-            </button>
-          </li>
+          <button
+            role="menuitem"
+            key={label}
+            disabled={disabled}
+            onClick={() => onClick(value)}
+          >
+            {label}
+          </button>
         ))
       )}
     </menu>

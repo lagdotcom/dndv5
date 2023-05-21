@@ -9,16 +9,23 @@ import Combatant from "../types/Combatant";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import DiceType from "../types/DiceType";
-import { WeaponItem } from "../types/Item";
+import { AmmoItem, WeaponItem } from "../types/Item";
 import Point from "../types/Point";
 import RollType from "../types/RollType";
 
 type EventData = {
+  attack: {
+    pre: EventData["beforeAttack"];
+    roll: EventData["diceRolled"];
+    total: number;
+    outcome: "critical" | "hit" | "miss";
+  };
   beforeAttack: {
     attacker: Combatant;
     target: Combatant;
     ability: Ability;
     weapon?: WeaponItem;
+    ammo?: AmmoItem;
     diceType: DiceTypeCollector;
     bonus: BonusCollector;
   };
@@ -45,6 +52,7 @@ type EventData = {
     weapon?: WeaponItem;
     map: DamageMap;
     bonus: BonusCollector;
+    critical: boolean;
   };
   getACMethods: { who: Combatant; methods: ACMethod[] };
   getActions: { who: Combatant; target?: Combatant; actions: Action[] };

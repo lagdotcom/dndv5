@@ -2,7 +2,6 @@ import AbstractCombatant from "./AbstractCombatant";
 import Engine from "./Engine";
 import { AbstractWeapon } from "./items/weapons";
 import PCClass from "./types/PCClass";
-import PCClassName from "./types/PCClassName";
 import PCRace from "./types/PCRace";
 
 export class UnarmedStrike extends AbstractWeapon {

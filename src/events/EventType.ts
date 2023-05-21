@@ -1,3 +1,4 @@
+import AttackEvent from "./AttackEvent";
 import BeforeAttackEvent from "./BeforeAttackEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
@@ -11,6 +12,7 @@ import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
 
 export type EventTypes = {
+  attack: AttackEvent;
   beforeAttack: BeforeAttackEvent;
   combatantDamaged: CombatantDamagedEvent;
   combatantDied: CombatantDiedEvent;

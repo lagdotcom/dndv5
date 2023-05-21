@@ -3,13 +3,18 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import Engine from "../Engine";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
-import CombatantState from "../types/CombatantState";
 import { checkConfig } from "../utils/config";
 import ActiveUnitPanelContainer from "./ActiveUnitPanelContainer";
 import styles from "./App.module.scss";
 import Battlefield from "./Battlefield";
+import EventLog from "./EventLog";
 import Menu, { MenuItem } from "./Menu";
-import { activeCombatant, allActions } from "./state";
+import {
+  activeCombatant,
+  allActions,
+  allCombatants,
+  CombatantAndState,
+} from "./state";
 
 interface Props {
   g: Engine;
@@ -25,9 +30,6 @@ interface ActionMenuState {
 
 export default function App({ g, onMount }: Props) {
   const [target, setTarget] = useState<Combatant>();
-  const [units, setUnits] = useState(
-    () => new Map<Combatant, CombatantState>()
-  );
   const [actionMenu, setActionMenu] = useState<ActionMenuState>({
     show: false,
     x: NaN,
@@ -39,28 +41,16 @@ export default function App({ g, onMount }: Props) {
     []
   );
 
-  const updateUnits = useCallback(
-    (updateFn: (units: Map<Combatant, CombatantState>) => void) =>
-      setUnits((old) => {
-        const map = new Map(old);
-        updateFn(map);
-        return map;
-      }),
-    [setUnits]
-  );
+  const refreshUnits = useCallback(() => {
+    const list: CombatantAndState[] = [];
+    for (const [who, state] of g.combatants) list.push({ who, state });
+    allCombatants.value = list;
+  }, [g]);
 
   useEffect(() => {
-    g.events.on("combatantPlaced", ({ detail: { who, position } }) =>
-      updateUnits((map) => map.set(who, { position, initiative: NaN }))
-    );
-
-    g.events.on("combatantMoved", ({ detail: { who, position } }) =>
-      updateUnits((map) => map.set(who, { position, initiative: NaN }))
-    );
-
-    g.events.on("combatantDied", ({ detail: { who } }) => {
-      updateUnits((map) => map.delete(who));
-    });
+    g.events.on("combatantPlaced", refreshUnits);
+    g.events.on("combatantMoved", refreshUnits);
+    g.events.on("combatantDied", refreshUnits);
 
     g.events.on("turnStarted", ({ detail: { who } }) => {
       activeCombatant.value = who;
@@ -70,7 +60,7 @@ export default function App({ g, onMount }: Props) {
     });
 
     onMount?.(g);
-  }, [g, hideActionMenu, onMount, updateUnits]);
+  }, [g, hideActionMenu, onMount, refreshUnits]);
 
   const onClickAction = useCallback(
     (action: Action) => {
@@ -113,8 +103,11 @@ export default function App({ g, onMount }: Props) {
   );
 
   const onMoveCombatant = useCallback(
-    (who: Combatant, dx: number, dy: number) => g.move(who, dx, dy),
-    [g]
+    (who: Combatant, dx: number, dy: number) => {
+      hideActionMenu();
+      g.move(who, dx, dy);
+    },
+    [g, hideActionMenu]
   );
 
   const onPass = useCallback(() => {
@@ -124,13 +117,13 @@ export default function App({ g, onMount }: Props) {
   return (
     <div className={styles.main}>
       <Battlefield
-        units={units}
         onClickBattlefield={onClickBattlefield}
         onClickCombatant={onClickCombatant}
         onMoveCombatant={onMoveCombatant}
       />
       {actionMenu.show && <Menu {...actionMenu} onClick={onClickAction} />}
       <ActiveUnitPanelContainer onPass={onPass} />
+      <EventLog g={g} />
     </div>
   );
 }

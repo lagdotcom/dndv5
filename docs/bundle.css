@@ -1,5 +1,5 @@
 /* esbuild-sass-plugin:css-chunk:src/ui/ActiveUnitPanel.module.scss */
-._main_1er1e_1 {
+._main_12cww_1 {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -8,6 +8,7 @@
   border: 2px solid black;
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
+  z-index: 10;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/App.module.scss */
@@ -80,16 +81,49 @@
   margin-top: calc(var(--movebtn-size) / -2);
 }
 
+/* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */
+._main_1nene_1 {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  border: 2px solid black;
+  background-color: white;
+  box-shadow: silver 0px 0px 4px 4px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 9;
+  margin: 0;
+  padding: 0;
+  overflow-y: scroll;
+}
+._message_1nene_19 {
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+._icon_1nene_25 {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+}
+._iconLabel_1nene_31 {
+  margin-right: 4px;
+}
+
 /* esbuild-sass-plugin:css-chunk:src/ui/Menu.module.scss */
-._main_2qfwl_1 {
+._main_1ct3i_1 {
   position: absolute;
   display: flex;
   z-index: 200;
   margin: 0;
-  padding: 5px;
+  padding: 4px;
+  border: 2px solid black;
   background-color: white;
-}
-._main_2qfwl_1 li {
-  list-style: none;
+  box-shadow: silver 0px 0px 4px 4px;
+  display: flex;
+  flex-direction: column;
 }
 /*# sourceMappingURL=bundle.css.map */

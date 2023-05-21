@@ -221,6 +221,13 @@
     }
   };
 
+  // src/events/AttackEvent.ts
+  var AttackEvent = class extends EventBase {
+    constructor(detail) {
+      super("attack", detail);
+    }
+  };
+
   // src/events/BeforeAttackEvent.ts
   var BeforeAttackEvent = class extends EventBase {
     constructor(detail) {
@@ -532,38 +539,48 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
-        const ba = yield g2.resolve(
+        const pre = yield g2.resolve(
           new BeforeAttackEvent({
             target,
             attacker,
             ability,
             weapon,
+            ammo,
             diceType: new DiceTypeCollector(),
             bonus: new BonusCollector()
           })
         );
-        if (ba.defaultPrevented)
+        if (pre.defaultPrevented)
           return;
-        const attack = yield g2.roll(
+        const roll = yield g2.roll(
           { type: "attack", who: attacker, target, weapon, ability },
-          ba.detail.diceType.result
+          pre.detail.diceType.result
         );
         if (ammo)
           ammo.quantity--;
-        const total = attack.value + ba.detail.bonus.result;
-        if (total >= target.ac) {
+        const total = roll.value + pre.detail.bonus.result;
+        const outcome = roll.value === 1 ? "miss" : roll.value === 20 ? "hit" : total >= target.ac ? "hit" : "miss";
+        const attack = yield g2.resolve(
+          new AttackEvent({ pre: pre.detail, roll, total, outcome })
+        );
+        const critical = attack.detail.outcome === "critical";
+        if (attack.detail.outcome !== "miss") {
           const map = new DamageMap();
           const { damage } = weapon;
           if (damage.type === "dice") {
             const { count, size } = damage.amount;
-            const amount = yield g2.rollDamage(count, {
-              size,
-              damageType: damage.damageType,
-              attacker,
-              target,
-              ability,
-              weapon
-            });
+            const amount = yield g2.rollDamage(
+              count,
+              {
+                size,
+                damageType: damage.damageType,
+                attacker,
+                target,
+                ability,
+                weapon
+              },
+              critical
+            );
             map.add(damage.damageType, amount);
           } else
             map.add(damage.damageType, damage.amount);
@@ -574,7 +591,8 @@
               ability,
               weapon,
               map,
-              bonus: new BonusCollector()
+              bonus: new BonusCollector(),
+              critical
             })
           );
           map.add(damage.damageType, gd.detail.bonus.result);
@@ -800,10 +818,10 @@
         this.nextTurn();
       });
     }
-    rollDamage(count, e) {
+    rollDamage(count, e, critical = false) {
       return __async(this, null, function* () {
         let total = 0;
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < count * (critical ? 2 : 1); i++) {
           const roll = yield this.roll(__spreadProps(__spreadValues({}, e), { type: "damage" }));
           total += roll.value;
         }
@@ -813,7 +831,7 @@
     rollInitiative(who) {
       return __async(this, null, function* () {
         const roll = yield this.roll({ type: "initiative", who });
-        return roll.value;
+        return roll.value + who.dex;
       });
     }
     roll(type, diceType = "normal") {
@@ -1526,14 +1544,18 @@
 
   // src/ui/ActiveUnitPanel.module.scss
   var ActiveUnitPanel_module_default = {
-    "main": "_main_1er1e_1"
+    "main": "_main_12cww_1"
   };
 
   // src/ui/state.ts
   var import_signals = __toESM(require_signals());
   var activeCombatant = (0, import_signals.signal)(void 0);
   var allActions = (0, import_signals.signal)([]);
-  window.state = { activeCombatant, allActions };
+  var allCombatants = (0, import_signals.signal)([]);
+  var aliveCombatants = (0, import_signals.computed)(
+    () => allCombatants.value.filter((c) => c.who.hp > 0)
+  );
+  window.state = { activeCombatant, allActions, allCombatants };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact = __toESM(require_preact());
@@ -1569,9 +1591,6 @@
 
   // src/ui/App.module.scss
   var App_module_default = {};
-
-  // src/ui/Battlefield.tsx
-  var import_hooks3 = __toESM(require_hooks());
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
@@ -1703,50 +1722,118 @@
   function Battlefield({
     onClickBattlefield,
     onClickCombatant,
-    onMoveCombatant,
-    units
+    onMoveCombatant
   }) {
-    const unitElements = (0, import_hooks3.useMemo)(() => {
-      const elements = [];
-      for (const [who, state] of units)
-        elements.push(
-          /* @__PURE__ */ o(
-            Unit,
-            {
-              isActive: activeCombatant.value === who,
-              who,
-              scale: 20,
-              state,
-              onClick: onClickCombatant,
-              onMove: onMoveCombatant
-            },
-            who.id
-          )
-        );
-      return elements;
-    }, [activeCombatant.value, onClickCombatant, onMoveCombatant, units]);
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-      /* @__PURE__ */ o("div", { className: Battlefield_module_default.main, onClick: onClickBattlefield, children: unitElements })
+      /* @__PURE__ */ o("div", { className: Battlefield_module_default.main, onClick: onClickBattlefield, children: aliveCombatants.value.map(({ who, state }) => /* @__PURE__ */ o(
+        Unit,
+        {
+          isActive: activeCombatant.value === who,
+          who,
+          scale: 20,
+          state,
+          onClick: onClickCombatant,
+          onMove: onMoveCombatant
+        },
+        who.id
+      )) })
     );
+  }
+
+  // src/ui/EventLog.tsx
+  var import_hooks3 = __toESM(require_hooks());
+
+  // src/ui/EventLog.module.scss
+  var EventLog_module_default = {
+    "main": "_main_1nene_1",
+    "message": "_message_1nene_19",
+    "icon": "_icon_1nene_25",
+    "iconLabel": "_iconLabel_1nene_31"
+  };
+
+  // src/ui/EventLog.tsx
+  function CombatantRef({ who }) {
+    return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
+      /* @__PURE__ */ o("img", { className: EventLog_module_default.icon, src: who.img, alt: who.name }),
+      /* @__PURE__ */ o("span", { className: EventLog_module_default.iconLabel, "aria-hidden": "true", children: who.name })
+    ] });
+  }
+  function AttackMessage({
+    pre: { attacker, target, weapon, ammo },
+    total
+  }) {
+    return /* @__PURE__ */ o("li", { className: EventLog_module_default.message, children: [
+      /* @__PURE__ */ o(CombatantRef, { who: attacker }),
+      "attacks\xA0",
+      /* @__PURE__ */ o(CombatantRef, { who: target }),
+      weapon && `with ${weapon.name}`,
+      ammo && `, firing ${ammo.name}`,
+      "\xA0(",
+      total,
+      ")."
+    ] });
+  }
+  function DamageMessage({
+    who,
+    total,
+    breakdown
+  }) {
+    return /* @__PURE__ */ o("li", { className: EventLog_module_default.message, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      "takes ",
+      total,
+      " damage. (",
+      [...breakdown].map(([type, entry]) => /* @__PURE__ */ o("span", { children: [
+        entry.amount,
+        " ",
+        type,
+        entry.response !== "normal" ? ` ${entry.response}` : ""
+      ] }, type)),
+      ")"
+    ] });
+  }
+  function EventLog({ g: g2 }) {
+    const [messages, setMessages] = (0, import_hooks3.useState)([]);
+    const addMessage = (0, import_hooks3.useCallback)(
+      (el) => setMessages((old) => old.concat(el).slice(0, 50)),
+      []
+    );
+    (0, import_hooks3.useEffect)(() => {
+      g2.events.on(
+        "attack",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
+      );
+      g2.events.on(
+        "combatantDamaged",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(DamageMessage, __spreadValues({}, detail)))
+      );
+    }, [addMessage, g2]);
+    return /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, children: messages });
   }
 
   // src/ui/Menu.module.scss
   var Menu_module_default = {
-    "main": "_main_2qfwl_1"
+    "main": "_main_1ct3i_1"
   };
 
   // src/ui/Menu.tsx
   function Menu({ items, onClick, x, y }) {
-    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o("li", { children: /* @__PURE__ */ o("button", { disabled, onClick: () => onClick(value), children: label }) }, label)) });
+    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+      "button",
+      {
+        role: "menuitem",
+        disabled,
+        onClick: () => onClick(value),
+        children: label
+      },
+      label
+    )) });
   }
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
     const [target, setTarget] = (0, import_hooks4.useState)();
-    const [units, setUnits] = (0, import_hooks4.useState)(
-      () => /* @__PURE__ */ new Map()
-    );
     const [actionMenu, setActionMenu] = (0, import_hooks4.useState)({
       show: false,
       x: NaN,
@@ -1757,33 +1844,23 @@
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const updateUnits = (0, import_hooks4.useCallback)(
-      (updateFn) => setUnits((old) => {
-        const map = new Map(old);
-        updateFn(map);
-        return map;
-      }),
-      [setUnits]
-    );
+    const refreshUnits = (0, import_hooks4.useCallback)(() => {
+      const list = [];
+      for (const [who, state] of g2.combatants)
+        list.push({ who, state });
+      allCombatants.value = list;
+    }, [g2]);
     (0, import_hooks4.useEffect)(() => {
-      g2.events.on(
-        "combatantPlaced",
-        ({ detail: { who, position } }) => updateUnits((map) => map.set(who, { position, initiative: NaN }))
-      );
-      g2.events.on(
-        "combatantMoved",
-        ({ detail: { who, position } }) => updateUnits((map) => map.set(who, { position, initiative: NaN }))
-      );
-      g2.events.on("combatantDied", ({ detail: { who } }) => {
-        updateUnits((map) => map.delete(who));
-      });
+      g2.events.on("combatantPlaced", refreshUnits);
+      g2.events.on("combatantMoved", refreshUnits);
+      g2.events.on("combatantDied", refreshUnits);
       g2.events.on("turnStarted", ({ detail: { who } }) => {
         activeCombatant.value = who;
         hideActionMenu();
         void g2.getActions(who).then((actions) => allActions.value = actions);
       });
       onMount == null ? void 0 : onMount(g2);
-    }, [g2, hideActionMenu, onMount, updateUnits]);
+    }, [g2, hideActionMenu, onMount, refreshUnits]);
     const onClickAction = (0, import_hooks4.useCallback)(
       (action) => {
         hideActionMenu();
@@ -1818,8 +1895,11 @@
       [activeCombatant.value, allActions.value, g2]
     );
     const onMoveCombatant = (0, import_hooks4.useCallback)(
-      (who, dx, dy) => g2.move(who, dx, dy),
-      [g2]
+      (who, dx, dy) => {
+        hideActionMenu();
+        g2.move(who, dx, dy);
+      },
+      [g2, hideActionMenu]
     );
     const onPass = (0, import_hooks4.useCallback)(() => {
       void g2.nextTurn();
@@ -1828,14 +1908,14 @@
       /* @__PURE__ */ o(
         Battlefield,
         {
-          units,
           onClickBattlefield,
           onClickCombatant,
           onMoveCombatant
         }
       ),
       actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({}, actionMenu), { onClick: onClickAction })),
-      /* @__PURE__ */ o(ActiveUnitPanelContainer, { onPass })
+      /* @__PURE__ */ o(ActiveUnitPanelContainer, { onPass }),
+      /* @__PURE__ */ o(EventLog, { g: g2 })
     ] });
   }
 

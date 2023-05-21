@@ -3,6 +3,7 @@ import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import { HasTarget } from "../configs";
 import DamageMap from "../DamageMap";
 import Engine from "../Engine";
+import AttackEvent from "../events/AttackEvent";
 import BeforeAttackEvent from "../events/BeforeAttackEvent";
 import GatherDamageEvent from "../events/GatherDamageEvent";
 import TargetResolver from "../resolvers/TargetResolver";
@@ -33,45 +34,63 @@ export default class WeaponAttack implements Action<HasTarget> {
   async apply({ target }: HasTarget) {
     const { ability, ammo, weapon, actor: attacker, g } = this;
 
-    const ba = await g.resolve(
+    const pre = await g.resolve(
       new BeforeAttackEvent({
         target,
         attacker,
         ability,
         weapon,
+        ammo,
         diceType: new DiceTypeCollector(),
         bonus: new BonusCollector(),
       })
     );
 
     // TODO show this somehow
-    if (ba.defaultPrevented) return;
+    if (pre.defaultPrevented) return;
 
-    const attack = await g.roll(
+    const roll = await g.roll(
       { type: "attack", who: attacker, target, weapon, ability },
-      ba.detail.diceType.result
+      pre.detail.diceType.result
     );
 
     // TODO throwing
 
     if (ammo) ammo.quantity--;
 
-    const total = attack.value + ba.detail.bonus.result;
-    if (total >= target.ac) {
+    const total = roll.value + pre.detail.bonus.result;
+    const outcome =
+      roll.value === 1
+        ? "miss"
+        : roll.value === 20
+        ? "hit"
+        : total >= target.ac
+        ? "hit"
+        : "miss";
+
+    const attack = await g.resolve(
+      new AttackEvent({ pre: pre.detail, roll, total, outcome })
+    );
+    const critical = attack.detail.outcome === "critical";
+
+    if (attack.detail.outcome !== "miss") {
       const map = new DamageMap();
       const { damage } = weapon;
 
       if (damage.type === "dice") {
         const { count, size } = damage.amount;
-
-        const amount = await g.rollDamage(count, {
-          size,
-          damageType: damage.damageType,
-          attacker,
-          target,
-          ability,
-          weapon,
-        });
+        const amount = await g.rollDamage(
+          count,
+          {
+            size,
+            damageType: damage.damageType,
+            attacker,
+            target,
+            ability,
+            weapon,
+          },
+          critical
+        );
         map.add(damage.damageType, amount);
       } else map.add(damage.damageType, damage.amount);
 
@@ -83,6 +102,7 @@ export default class WeaponAttack implements Action<HasTarget> {
           weapon,
           map,
           bonus: new BonusCollector(),
+          critical,
         })
       );
       map.add(damage.damageType, gd.detail.bonus.result);
