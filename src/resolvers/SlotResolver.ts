@@ -1,9 +1,10 @@
+import Engine from "../Engine";
 import { Resolver } from "../types/Action";
 
 export default class SlotResolver implements Resolver<number> {
   type: "SpellSlot";
 
-  constructor(public minimum: number) {
+  constructor(public g: Engine, public minimum: number) {
     this.type = "SpellSlot";
   }
 

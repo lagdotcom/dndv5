@@ -1,6 +1,8 @@
 const externals = {
   preact: "preact",
   "preact/hooks": "preactHooks",
+  "@preact/signals-core": "preactSignalsCore",
+  "@preact/signals": "preactSignals",
 };
 
 const filter = new RegExp(

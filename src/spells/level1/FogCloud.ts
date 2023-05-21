@@ -7,16 +7,15 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import AbstractSpell from "../AbstractSpell";
 
 export default class FogCloud extends AbstractSpell<HasPoint & Scales> {
-  constructor() {
+  constructor(public g: Engine) {
     super("Fog Cloud", 1, "Conjuration", "action", true, {
-      point: new PointResolver(120),
-      slot: new SlotResolver(1),
+      point: new PointResolver(g, 120),
+      slot: new SlotResolver(g, 1),
     });
     this.setVSM(true, true);
   }
 
   async apply(
-    g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     { point, slot }: HasPoint & Scales

@@ -46,7 +46,7 @@ type EventData = {
     bonus: BonusCollector;
   };
   getACMethods: { who: Combatant; methods: ACMethod[] };
-  getActions: { who: Combatant; target: Combatant; actions: Action[] };
+  getActions: { who: Combatant; target?: Combatant; actions: Action[] };
   getDamageResponse: {
     who: Combatant;
     damageType: DamageType;

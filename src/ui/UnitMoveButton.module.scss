@@ -12,6 +12,8 @@
   cursor: pointer;
   background: #ccc;
   z-index: 100;
+  display: flex;
+  justify-content: center;
 
   &:hover {
     background: #eee;

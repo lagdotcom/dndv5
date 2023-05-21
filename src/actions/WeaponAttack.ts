@@ -17,16 +17,20 @@ export default class WeaponAttack implements Action<HasTarget> {
   config: ActionConfig<HasTarget>;
   name: string;
 
-  constructor(public attacker: Combatant, public weapon: WeaponItem) {
-    const range = getWeaponRange(attacker, weapon);
-    this.ability = getWeaponAbility(attacker, weapon);
+  constructor(
+    public g: Engine,
+    public actor: Combatant,
+    public weapon: WeaponItem
+  ) {
+    const range = getWeaponRange(actor, weapon);
+    this.ability = getWeaponAbility(actor, weapon);
 
-    this.config = { target: new TargetResolver(range) };
+    this.config = { target: new TargetResolver(g, range) };
     this.name = weapon.name;
   }
 
-  async apply(g: Engine, { target }: HasTarget) {
-    const { ability, weapon, attacker } = this;
+  async apply({ target }: HasTarget) {
+    const { ability, weapon, actor: attacker, g } = this;
 
     const ba = await g.resolve(
       new BeforeAttackEvent({
@@ -40,13 +44,7 @@ export default class WeaponAttack implements Action<HasTarget> {
     );
 
     const attack = await g.roll(
-      {
-        type: "attack",
-        who: attacker,
-        target,
-        weapon,
-        ability,
-      },
+      { type: "attack", who: attacker, target, weapon, ability },
       ba.diceType.result
     );
 

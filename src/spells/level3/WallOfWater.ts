@@ -9,15 +9,14 @@ import AbstractSpell from "../AbstractSpell";
 type Config = HasPoint & { shape: "line" | "ring" };
 
 export default class WallOfWater extends AbstractSpell<Config> {
-  constructor() {
+  constructor(public g: Engine) {
     super("Wall of Water", 3, "Evocation", "action", true, {
-      point: new PointResolver(60),
-      shape: new TextChoiceResolver(["line", "ring"]),
+      point: new PointResolver(g, 60),
+      shape: new TextChoiceResolver(g, ["line", "ring"]),
     });
   }
 
   async apply(
-    g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     { point, shape }: Config

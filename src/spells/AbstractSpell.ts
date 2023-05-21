@@ -1,4 +1,3 @@
-import Engine from "../Engine";
 import { ActionConfig } from "../types/Action";
 import { ActionTime } from "../types/ActionTime";
 import Combatant from "../types/Combatant";
@@ -32,7 +31,6 @@ export default abstract class AbstractSpell<T extends object>
   }
 
   abstract apply(
-    g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     config: T

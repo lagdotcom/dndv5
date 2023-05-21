@@ -5,9 +5,11 @@ import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import CombatantState from "../types/CombatantState";
 import { checkConfig } from "../utils/config";
+import ActiveUnitPanelContainer from "./ActiveUnitPanelContainer";
 import styles from "./App.module.scss";
 import Battlefield from "./Battlefield";
-import Menu from "./Menu";
+import Menu, { MenuItem } from "./Menu";
+import { activeCombatant, allActions } from "./state";
 
 interface Props {
   g: Engine;
@@ -18,11 +20,10 @@ interface ActionMenuState {
   show: boolean;
   x: number;
   y: number;
-  items: { label: string; value: Action }[];
+  items: MenuItem<Action>[];
 }
 
 export default function App({ g, onMount }: Props) {
-  const [active, setActive] = useState<Combatant>();
   const [target, setTarget] = useState<Combatant>();
   const [units, setUnits] = useState(
     () => new Map<Combatant, CombatantState>()
@@ -62,8 +63,10 @@ export default function App({ g, onMount }: Props) {
     });
 
     g.events.on("turnStarted", ({ detail: { who } }) => {
-      setActive(who);
+      activeCombatant.value = who;
       hideActionMenu();
+
+      void g.getActions(who).then((actions) => (allActions.value = actions));
     });
 
     onMount?.(g);
@@ -73,39 +76,40 @@ export default function App({ g, onMount }: Props) {
     (action: Action) => {
       hideActionMenu();
 
-      const config = { target };
+      const point = target ? g.getState(target).position : undefined;
+      const config = { target, point };
       if (checkConfig(action, config)) {
-        void action.apply(g, config);
+        void action.apply(config);
       } else console.warn(config, "does not match", action.config);
     },
     [g, hideActionMenu, target]
   );
 
-  const onClickBattlefield = useCallback(
-    (e: MouseEvent) => {
-      hideActionMenu();
-    },
-    [hideActionMenu]
-  );
+  const onClickBattlefield = useCallback(() => {
+    // TODO show actions for this square?
+    hideActionMenu();
+  }, [hideActionMenu]);
 
   const onClickCombatant = useCallback(
     (who: Combatant, e: MouseEvent) => {
       e.stopPropagation();
 
-      if (active) {
+      if (activeCombatant.value) {
         setTarget(who);
-        void g.getActions(active, who).then((actions) => {
-          setActionMenu({
-            show: true,
-            x: e.clientX,
-            y: e.clientY,
-            items: actions.map((a) => ({ label: a.name, value: a })),
-          });
-          return actions;
-        });
+
+        const items = allActions.value.map((action) => ({
+          label: action.name,
+          value: action,
+          disabled: !checkConfig(action, {
+            target: who,
+            point: g.getState(who).position,
+          }),
+        }));
+
+        setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
       }
     },
-    [active, g]
+    [activeCombatant.value, allActions.value, g]
   );
 
   const onMoveCombatant = useCallback(
@@ -113,16 +117,20 @@ export default function App({ g, onMount }: Props) {
     [g]
   );
 
+  const onPass = useCallback(() => {
+    void g.nextTurn();
+  }, [g]);
+
   return (
     <div className={styles.main}>
       <Battlefield
-        active={active}
         units={units}
         onClickBattlefield={onClickBattlefield}
         onClickCombatant={onClickCombatant}
         onMoveCombatant={onMoveCombatant}
       />
       {actionMenu.show && <Menu {...actionMenu} onClick={onClickAction} />}
+      <ActiveUnitPanelContainer onPass={onPass} />
     </div>
   );
 }

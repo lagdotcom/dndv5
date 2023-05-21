@@ -45,7 +45,7 @@ export class CombatantWeaponAttacks {
     g.events.on("getActions", ({ detail: { who, target, actions } }) => {
       if (who !== target) {
         for (const weapon of who.weapons)
-          actions.push(new WeaponAttack(who, weapon));
+          actions.push(new WeaponAttack(g, who, weapon));
       }
     });
   }

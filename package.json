@@ -13,6 +13,7 @@
   "author": "Lag.Com <lagdotcom@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "@preact/signals": "^1.1.3",
     "dotenv": "^16.0.3",
     "preact": "^10.14.1"
   },

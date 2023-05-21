@@ -8,7 +8,7 @@ export function checkConfig<T extends object>(
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     const value = config[key] as unknown;
-    if (!(resolver as Resolver<unknown>).check(value)) return false;
+    if (!(resolver as Resolver<unknown>).check(value, action)) return false;
   }
 
   return true;

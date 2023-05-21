@@ -1,4 +1,3 @@
-import Engine from "../Engine";
 import { ActionConfig } from "./Action";
 import { ActionTime } from "./ActionTime";
 import Combatant from "./Combatant";
@@ -19,7 +18,6 @@ interface Spell<T extends object = object> {
   m?: string; // TODO real costs
 
   apply(
-    g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     config: T

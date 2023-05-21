@@ -9,7 +9,8 @@ export default class CastSpell<T extends object> implements Action<T> {
   name: string;
 
   constructor(
-    public who: Combatant,
+    public g: Engine,
+    public actor: Combatant,
     public method: SpellcastingMethod,
     public spell: Spell<T>
   ) {
@@ -17,9 +18,9 @@ export default class CastSpell<T extends object> implements Action<T> {
     this.config = spell.config;
   }
 
-  apply(g: Engine, config: T): Promise<void> {
+  apply(config: T): Promise<void> {
     // TODO spend resources?
 
-    return this.spell.apply(g, this.who, this.method, config);
+    return this.spell.apply(this.actor, this.method, config);
   }
 }

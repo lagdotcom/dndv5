@@ -3,10 +3,10 @@ import { useMemo } from "preact/hooks";
 import Combatant from "../types/Combatant";
 import CombatantState from "../types/CombatantState";
 import styles from "./Battlefield.module.scss";
+import { activeCombatant } from "./state";
 import Unit from "./Unit";
 
 interface Props {
-  active?: Combatant;
   onClickBattlefield(e: MouseEvent): void;
   onClickCombatant(who: Combatant, e: MouseEvent): void;
   onMoveCombatant(who: Combatant, dx: number, dy: number): void;
@@ -14,7 +14,6 @@ interface Props {
 }
 
 export default function Battlefield({
-  active,
   onClickBattlefield,
   onClickCombatant,
   onMoveCombatant,
@@ -26,7 +25,7 @@ export default function Battlefield({
       elements.push(
         <Unit
           key={who.id}
-          isActive={active === who}
+          isActive={activeCombatant.value === who}
           who={who}
           scale={20}
           state={state}
@@ -35,7 +34,7 @@ export default function Battlefield({
         />
       );
     return elements;
-  }, [active, onClickCombatant, onMoveCombatant, units]);
+  }, [activeCombatant.value, onClickCombatant, onMoveCombatant, units]);
 
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions

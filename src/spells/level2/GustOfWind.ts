@@ -6,15 +6,14 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import AbstractSpell from "../AbstractSpell";
 
 export default class GustOfWind extends AbstractSpell<HasPoint> {
-  constructor() {
+  constructor(public g: Engine) {
     super("Gust of Wind", 2, "Evocation", "action", true, {
-      point: new PointResolver(60),
+      point: new PointResolver(g, 60),
     });
     this.setVSM(true, true, "a legume seed");
   }
 
   async apply(
-    g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     { point }: HasPoint

@@ -18,7 +18,7 @@ const Amphibious = notImplementedFeature("Amphibious");
 
 const ControlAirAndWaterSpells = [
   {
-    level: 1,
+    level: 0, // FIXME once I get class levels in
     spell: FogCloud,
     resource: new LongRestResource("Control Air and Water: Fog Cloud", 1),
   },
@@ -36,20 +36,21 @@ const ControlAirAndWaterSpells = [
 
 class ControlAirAndWaterSpellAction<T extends object> extends CastSpell<T> {
   constructor(
+    g: Engine,
     who: Combatant,
     method: SpellcastingMethod,
     spell: Spell<T>,
     public resource: Resource
   ) {
-    super(who, method, spell);
+    super(g, who, method, spell);
   }
 
   // TODO check has resource before allowing cast
 
-  async apply(g: Engine, config: T): Promise<void> {
-    this.who.spendResource(this.resource);
+  async apply(config: T): Promise<void> {
+    this.actor.spendResource(this.resource);
 
-    return super.apply(g, config);
+    return super.apply(config);
   }
 }
 
@@ -66,7 +67,13 @@ const ControlAirAndWater = new SimpleFeature(
       if (who === me)
         for (const { spell, resource } of spells)
           actions.push(
-            new ControlAirAndWaterSpellAction(me, method, new spell(), resource)
+            new ControlAirAndWaterSpellAction(
+              g,
+              me,
+              method,
+              new spell(g),
+              resource
+            )
           );
     });
   }

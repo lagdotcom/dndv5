@@ -113,7 +113,6 @@ export default class Engine {
   async damage(
     damage: DamageMap,
     {
-      source,
       attacker,
       target,
     }: { source: Source; attacker: Combatant; target: Combatant }
@@ -160,10 +159,10 @@ export default class Engine {
   }
 
   async act<T extends object>(action: Action<T>, config: T) {
-    await action.apply(this, config);
+    await action.apply(config);
   }
 
-  async getActions(who: Combatant, target: Combatant) {
+  async getActions(who: Combatant, target?: Combatant) {
     const e = new GetActionsEvent({ who, target, actions: [] });
     this.events.fire(e);
     return e.detail.actions;
@@ -184,5 +183,14 @@ export default class Engine {
     // TODO async stuff lol
 
     return e.detail;
+  }
+
+  getState(who: Combatant) {
+    return (
+      this.combatants.get(who) ?? {
+        initiative: NaN,
+        position: { x: NaN, y: NaN },
+      }
+    );
   }
 }

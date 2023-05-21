@@ -1,3 +1,15 @@
+/* esbuild-sass-plugin:css-chunk:src/ui/ActiveUnitPanel.module.scss */
+._main_1er1e_1 {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40vw;
+  max-width: 400px;
+  border: 2px solid black;
+  background-color: white;
+  box-shadow: silver 0px 0px 4px 4px;
+}
+
 /* esbuild-sass-plugin:css-chunk:src/ui/App.module.scss */
 :root {
   --scale: 100px;
@@ -26,7 +38,7 @@
 :root {
   --movebtn-size: 30px;
 }
-._main_ul2jc_5 {
+._main_1p3ee_5 {
   position: absolute;
   width: var(--movebtn-size);
   height: var(--movebtn-size);
@@ -36,26 +48,28 @@
   cursor: pointer;
   background: #ccc;
   z-index: 100;
+  display: flex;
+  justify-content: center;
 }
-._main_ul2jc_5:hover {
+._main_1p3ee_5:hover {
   background: #eee;
 }
-._moveN_ul2jc_20 {
+._moveN_1p3ee_22 {
   top: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveE_ul2jc_26 {
+._moveE_1p3ee_28 {
   right: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveS_ul2jc_32 {
+._moveS_1p3ee_34 {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveW_ul2jc_38 {
+._moveW_1p3ee_40 {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);

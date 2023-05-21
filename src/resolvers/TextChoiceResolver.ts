@@ -1,3 +1,4 @@
+import Engine from "../Engine";
 import { Resolver } from "../types/Action";
 
 export default class TextChoiceResolver<T extends string>
@@ -5,7 +6,7 @@ export default class TextChoiceResolver<T extends string>
 {
   values: Set<T>;
 
-  constructor(choices: T[]) {
+  constructor(public g: Engine, choices: T[]) {
     this.values = new Set(choices);
   }
 
