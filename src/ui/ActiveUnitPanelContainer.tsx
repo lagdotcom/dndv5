@@ -1,6 +1,6 @@
 import Combatant from "../types/Combatant";
 import styles from "./ActiveUnitPanel.module.scss";
-import { activeCombatant } from "./state";
+import { activeCombatant, allActions } from "./state";
 
 interface Props {
   onPass(): void;
@@ -15,6 +15,12 @@ function ActiveUnitPanel({ onPass, who }: Props) {
         <div>{who.name}</div>
       </div>
       <button onClick={onPass}>Pass</button>
+      <hr />
+      <div>
+        {allActions.value.map((action) => (
+          <button key={action.name}>{action.name}</button>
+        ))}
+      </div>
     </aside>
   );
 }

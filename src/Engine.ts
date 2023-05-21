@@ -152,7 +152,7 @@ export default class Engine {
     target.hp -= total;
     if (target.hp <= 0) {
       if (target.diesAtZero) {
-        // TODO
+        this.combatants.delete(target);
         this.events.fire(new CombatantDiedEvent({ who: target, attacker }));
       } else {
         // TODO

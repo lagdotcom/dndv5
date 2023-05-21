@@ -891,6 +891,7 @@
         target.hp -= total;
         if (target.hp <= 0) {
           if (target.diesAtZero) {
+            this.combatants.delete(target);
             this.events.fire(new CombatantDiedEvent({ who: target, attacker }));
           } else {
           }
@@ -1552,9 +1553,6 @@
   var activeCombatant = (0, import_signals.signal)(void 0);
   var allActions = (0, import_signals.signal)([]);
   var allCombatants = (0, import_signals.signal)([]);
-  var aliveCombatants = (0, import_signals.computed)(
-    () => allCombatants.value.filter((c) => c.who.hp > 0)
-  );
   window.state = { activeCombatant, allActions, allCombatants };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
@@ -1579,7 +1577,9 @@
         /* @__PURE__ */ o("div", { children: "Current Turn:" }),
         /* @__PURE__ */ o("div", { children: who.name })
       ] }),
-      /* @__PURE__ */ o("button", { onClick: onPass, children: "Pass" })
+      /* @__PURE__ */ o("button", { onClick: onPass, children: "Pass" }),
+      /* @__PURE__ */ o("hr", {}),
+      /* @__PURE__ */ o("div", { children: allActions.value.map((action) => /* @__PURE__ */ o("button", { children: action.name }, action.name)) })
     ] });
   }
   function ActiveUnitPanelContainer(props) {
@@ -1619,17 +1619,12 @@
   };
 
   // src/ui/UnitMoveButton.tsx
+  var makeButtonType = (className, emoji, label, dx, dy) => ({ className: UnitMoveButton_module_default[className], emoji, label, dx, dy });
   var buttonTypes = {
-    north: {
-      className: UnitMoveButton_module_default.moveN,
-      emoji: "\u2B06\uFE0F",
-      label: "North",
-      dx: 0,
-      dy: -5
-    },
-    east: { className: UnitMoveButton_module_default.moveE, emoji: "\u27A1\uFE0F", label: "East", dx: 5, dy: 0 },
-    south: { className: UnitMoveButton_module_default.moveS, emoji: "\u2B07\uFE0F", label: "South", dx: 0, dy: 5 },
-    west: { className: UnitMoveButton_module_default.moveW, emoji: "\u2B05\uFE0F", label: "West", dx: -5, dy: 0 }
+    north: makeButtonType("moveN", "\u2B06\uFE0F", "Move North", 0, -5),
+    east: makeButtonType("moveE", "\u27A1\uFE0F", "Move East", 5, 0),
+    south: makeButtonType("moveS", "\u2B07\uFE0F", "Move South", 0, 5),
+    west: makeButtonType("moveW", "\u2B05\uFE0F", "Move West", -5, 0)
   };
   function UnitMoveButton({ onClick, type }) {
     const { className, emoji, label, dx, dy } = (0, import_hooks.useMemo)(
@@ -1725,8 +1720,8 @@
     onMoveCombatant
   }) {
     return (
-      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-      /* @__PURE__ */ o("div", { className: Battlefield_module_default.main, onClick: onClickBattlefield, children: aliveCombatants.value.map(({ who, state }) => /* @__PURE__ */ o(
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
+      /* @__PURE__ */ o("main", { className: Battlefield_module_default.main, onClick: onClickBattlefield, children: allCombatants.value.map(({ who, state }) => /* @__PURE__ */ o(
         Unit,
         {
           isActive: activeCombatant.value === who,
@@ -1793,6 +1788,12 @@
       ")"
     ] });
   }
+  function DeathMessage({ who }) {
+    return /* @__PURE__ */ o("li", { className: EventLog_module_default.message, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      "dies!"
+    ] });
+  }
   function EventLog({ g: g2 }) {
     const [messages, setMessages] = (0, import_hooks3.useState)([]);
     const addMessage = (0, import_hooks3.useCallback)(
@@ -1808,8 +1809,12 @@
         "combatantDamaged",
         ({ detail }) => addMessage(/* @__PURE__ */ o(DamageMessage, __spreadValues({}, detail)))
       );
+      g2.events.on(
+        "combatantDied",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(DeathMessage, __spreadValues({}, detail)))
+      );
     }, [addMessage, g2]);
-    return /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, children: messages });
+    return /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages });
   }
 
   // src/ui/Menu.module.scss
@@ -1857,6 +1862,7 @@
       g2.events.on("turnStarted", ({ detail: { who } }) => {
         activeCombatant.value = who;
         hideActionMenu();
+        allActions.value = [];
         void g2.getActions(who).then((actions) => allActions.value = actions);
       });
       onMount == null ? void 0 : onMount(g2);

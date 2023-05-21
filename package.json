@@ -38,6 +38,7 @@
     "jest": "^27.0.0",
     "jest-css-modules-transform": "^4.4.2",
     "jest-preset-preact": "^4.0.5",
+    "jest-transform-stub": "^2.0.0",
     "postcss": "^8.4.23",
     "postcss-modules": "^6.0.0",
     "preact-render-to-string": "^5.0.0",

@@ -2,17 +2,19 @@ import { useCallback, useMemo } from "preact/hooks";
 
 import styles from "./UnitMoveButton.module.scss";
 
+const makeButtonType = (
+  className: keyof typeof styles,
+  emoji: string,
+  label: string,
+  dx: number,
+  dy: number
+) => ({ className: styles[className], emoji, label, dx, dy });
+
 const buttonTypes = {
-  north: {
-    className: styles.moveN,
-    emoji: "⬆️",
-    label: "North",
-    dx: 0,
-    dy: -5,
-  },
-  east: { className: styles.moveE, emoji: "➡️", label: "East", dx: 5, dy: 0 },
-  south: { className: styles.moveS, emoji: "⬇️", label: "South", dx: 0, dy: 5 },
-  west: { className: styles.moveW, emoji: "⬅️", label: "West", dx: -5, dy: 0 },
+  north: makeButtonType("moveN", "⬆️", "Move North", 0, -5),
+  east: makeButtonType("moveE", "➡️", "Move East", 5, 0),
+  south: makeButtonType("moveS", "⬇️", "Move South", 0, 5),
+  west: makeButtonType("moveW", "⬅️", "Move West", -5, 0),
 };
 type ButtonType = keyof typeof buttonTypes;
 

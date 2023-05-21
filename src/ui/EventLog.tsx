@@ -53,6 +53,15 @@ function DamageMessage({
   );
 }
 
+function DeathMessage({ who }: EventData["combatantDied"]) {
+  return (
+    <li className={styles.message}>
+      <CombatantRef who={who} />
+      dies!
+    </li>
+  );
+}
+
 export default function EventLog({ g }: { g: Engine }) {
   const [messages, setMessages] = useState<VNode[]>([]);
 
@@ -68,7 +77,14 @@ export default function EventLog({ g }: { g: Engine }) {
     g.events.on("combatantDamaged", ({ detail }) =>
       addMessage(<DamageMessage {...detail} />)
     );
+    g.events.on("combatantDied", ({ detail }) =>
+      addMessage(<DeathMessage {...detail} />)
+    );
   }, [addMessage, g]);
 
-  return <ul className={styles.main}>{messages}</ul>;
+  return (
+    <ul className={styles.main} aria-label="Event Log">
+      {messages}
+    </ul>
+  );
 }

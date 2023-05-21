@@ -56,6 +56,7 @@ export default function App({ g, onMount }: Props) {
       activeCombatant.value = who;
       hideActionMenu();
 
+      allActions.value = [];
       void g.getActions(who).then((actions) => (allActions.value = actions));
     });
 

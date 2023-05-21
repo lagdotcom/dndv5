@@ -1,6 +1,6 @@
 import Combatant from "../types/Combatant";
 import styles from "./Battlefield.module.scss";
-import { activeCombatant, aliveCombatants } from "./state";
+import { activeCombatant, allCombatants } from "./state";
 import Unit from "./Unit";
 
 interface Props {
@@ -15,9 +15,9 @@ export default function Battlefield({
   onMoveCombatant,
 }: Props) {
   return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-    <div className={styles.main} onClick={onClickBattlefield}>
-      {aliveCombatants.value.map(({ who, state }) => (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
+    <main className={styles.main} onClick={onClickBattlefield}>
+      {allCombatants.value.map(({ who, state }) => (
         <Unit
           key={who.id}
           isActive={activeCombatant.value === who}
@@ -28,6 +28,6 @@ export default function Battlefield({
           onMove={onMoveCombatant}
         />
       ))}
-    </div>
+    </main>
   );
 }

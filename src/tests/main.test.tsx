@@ -1,4 +1,11 @@
-import { render, screen } from "@testing-library/preact";
+import {
+  getByAltText,
+  getByText,
+  queryByRole,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/preact";
 import userEvent from "@testing-library/user-event";
 
 import Engine from "../Engine";
@@ -8,12 +15,24 @@ import Thug from "../monsters/Thug";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import App from "../ui/App";
 
-const btn = (name: string) => screen.getByRole("button", { name });
-const token = (name: string) => screen.getByAltText(name);
+const main = () => screen.getByRole("main");
+const log = () => screen.getByRole("list", { name: "Event Log" });
 
-afterEach(() => {
-  document.body.innerHTML = "";
-});
+const btn = (name: string) => screen.getByRole("button", { name });
+const menuitem = (name: string) => screen.getByRole("menuitem", { name });
+const token = (name: string) => getByAltText(main(), name);
+const logMsg = (want: string) =>
+  getByText(log(), (_, el) => {
+    if (!(el instanceof HTMLLIElement)) return false;
+
+    const text: string[] = [];
+    for (const e of el.childNodes) {
+      if (e.textContent) text.push(e.textContent);
+    }
+    return text.join(" ") === want;
+  });
+
+const queryToken = (name: string) => queryByRole(main(), name);
 
 it("can run a simple battle", async () => {
   const user = userEvent.setup();
@@ -28,13 +47,14 @@ it("can run a simple battle", async () => {
   g.dice.force(4, { type: "initiative", who: them });
 
   await g.start();
-  await user.click(btn("East"));
+  await user.click(btn("Move East"));
   await user.click(token("badger"));
 
   g.dice.force(19, { type: "attack", who: me });
-  await user.click(btn("mace"));
+  await user.click(menuitem("mace"));
 
-  expect(screen.queryByAltText("badger")).not.toBeInTheDocument();
+  expect(queryToken("badger")).not.toBeInTheDocument();
+  expect(logMsg("badger dies!")).toBeInTheDocument();
 });
 
 it("supports Fog Cloud", async () => {
@@ -49,8 +69,11 @@ it("supports Fog Cloud", async () => {
   g.dice.force(20, { type: "initiative", who: pc });
   g.dice.force(10, { type: "initiative", who: enemy });
 
+  const getFogCloud = () => btn("Fog Cloud (Control Air and Water)");
+
   await g.start();
-  await user.click(btn("Fog Cloud"));
+  await waitFor(getFogCloud);
+  await user.click(getFogCloud());
   await user.click(btn("Choose Point"));
   await user.click(screen.getByText("5,0"));
   await user.click(btn("End Turn"));
