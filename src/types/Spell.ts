@@ -1,5 +1,5 @@
 import { ActionConfig } from "./Action";
-import { ActionTime } from "./ActionTime";
+import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
 import SpellcastingMethod from "./SpellcastingMethod";
 

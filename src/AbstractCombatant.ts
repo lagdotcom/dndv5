@@ -1,15 +1,24 @@
 import Engine from "./Engine";
+import Ability, { Abilities } from "./types/Ability";
 import Combatant from "./types/Combatant";
 import CreatureType from "./types/CreatureType";
-import Item, { ArmorCategory, WeaponCategory, WeaponItem } from "./types/Item";
+import Feature from "./types/Feature";
+import Item, {
+  AmmoItem,
+  ArmorCategory,
+  WeaponCategory,
+  WeaponItem,
+} from "./types/Item";
 import LanguageName from "./types/LanguageName";
 import MovementType from "./types/MovementType";
+import PCClassName from "./types/PCClassName";
 import Resource from "./types/Resource";
 import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
 import SkillName from "./types/SkillName";
 import { getAbilityBonus } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
+import { isA } from "./utils/types";
 import { convertSizeToUnit } from "./utils/units";
 
 const defaultHandsAmount: Record<CreatureType, number> = {
@@ -63,6 +72,9 @@ export default abstract class AbstractCombatant implements Combatant {
   naturalWeapons: Set<WeaponItem>;
   resources: Map<Resource, number>;
   configs: Map<string, unknown>;
+  saveProficiencies: Set<Ability>;
+  features: Map<string, Feature>;
+  classLevels: Map<PCClassName, number>;
 
   constructor(
     public g: Engine,
@@ -74,9 +86,9 @@ export default abstract class AbstractCombatant implements Combatant {
       type,
       diesAtZero = true,
       hands = defaultHandsAmount[type],
-      hpMax = 1,
+      hpMax = 0,
       hp = hpMax,
-      level = 0,
+      level = NaN,
       pb = 2,
       reach = 5,
       chaScore = 10,
@@ -136,6 +148,9 @@ export default abstract class AbstractCombatant implements Combatant {
     this.naturalWeapons = new Set();
     this.resources = new Map();
     this.configs = new Map();
+    this.saveProficiencies = new Set();
+    this.features = new Map();
+    this.classLevels = new Map();
   }
 
   get str() {
@@ -185,6 +200,45 @@ export default abstract class AbstractCombatant implements Combatant {
     }
   }
 
+  get ammunition() {
+    const ammo: AmmoItem[] = [];
+    for (const item of this.equipment) {
+      if (item.itemType === "ammo") ammo.push(item);
+    }
+    for (const item of this.inventory) {
+      if (item.itemType === "ammo") ammo.push(item);
+    }
+    return ammo;
+  }
+
+  addFeature(feature: Feature) {
+    if (this.features.get(feature.name)) {
+      console.warn(
+        `${this.name} already has a feature named ${feature.name}, skipping.`
+      );
+      return;
+    }
+
+    this.features.set(feature.name, feature);
+    feature.setup(this.g, this, this.getConfig(feature.name));
+  }
+
+  setAbilityScores(
+    str: number,
+    dex: number,
+    con: number,
+    int: number,
+    wis: number,
+    cha: number
+  ) {
+    this.strScore = str;
+    this.dexScore = dex;
+    this.conScore = con;
+    this.intScore = int;
+    this.wisScore = wis;
+    this.chaScore = cha;
+  }
+
   don(item: Item) {
     if (item.itemType === "armor") {
       const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
@@ -204,8 +258,12 @@ export default abstract class AbstractCombatant implements Combatant {
     }
   }
 
-  getProficiencyMultiplier(thing: Item | SkillName): number {
-    if (typeof thing === "string") return this.skills.get(thing) ?? 0;
+  getProficiencyMultiplier(thing: Item | Ability | SkillName): number {
+    if (typeof thing === "string") {
+      if (isA(thing, Abilities))
+        return this.saveProficiencies.has(thing) ? 1 : 0;
+      return this.skills.get(thing) ?? 0;
+    }
 
     if (thing.itemType === "weapon") {
       if (this.weaponProficiencies.has(thing.weaponType)) return 1;
@@ -213,7 +271,8 @@ export default abstract class AbstractCombatant implements Combatant {
       return 0;
     }
 
-    if (this.armorProficiencies.has(thing.category)) return 1;
+    if (thing.itemType === "armor")
+      if (this.armorProficiencies.has(thing.category)) return 1;
 
     return 0;
   }

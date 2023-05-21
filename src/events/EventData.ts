@@ -8,7 +8,7 @@ import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
-import { DiceType } from "../types/DiceType";
+import DiceType from "../types/DiceType";
 import { WeaponItem } from "../types/Item";
 import Point from "../types/Point";
 import RollType from "../types/RollType";
@@ -36,6 +36,7 @@ type EventData = {
     diceType: DiceType;
     size: number;
     value: number;
+    otherValue?: number;
   };
   gatherDamage: {
     attacker: Combatant;

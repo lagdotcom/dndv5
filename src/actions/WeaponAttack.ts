@@ -9,7 +9,7 @@ import TargetResolver from "../resolvers/TargetResolver";
 import Ability from "../types/Ability";
 import Action, { ActionConfig } from "../types/Action";
 import Combatant from "../types/Combatant";
-import { WeaponItem } from "../types/Item";
+import { AmmoItem, WeaponItem } from "../types/Item";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 
 export default class WeaponAttack implements Action<HasTarget> {
@@ -20,17 +20,18 @@ export default class WeaponAttack implements Action<HasTarget> {
   constructor(
     public g: Engine,
     public actor: Combatant,
-    public weapon: WeaponItem
+    public weapon: WeaponItem,
+    public ammo?: AmmoItem
   ) {
     const range = getWeaponRange(actor, weapon);
     this.ability = getWeaponAbility(actor, weapon);
 
     this.config = { target: new TargetResolver(g, range) };
-    this.name = weapon.name;
+    this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
   }
 
   async apply({ target }: HasTarget) {
-    const { ability, weapon, actor: attacker, g } = this;
+    const { ability, ammo, weapon, actor: attacker, g } = this;
 
     const ba = await g.resolve(
       new BeforeAttackEvent({
@@ -43,14 +44,19 @@ export default class WeaponAttack implements Action<HasTarget> {
       })
     );
 
+    // TODO show this somehow
+    if (ba.defaultPrevented) return;
+
     const attack = await g.roll(
       { type: "attack", who: attacker, target, weapon, ability },
-      ba.diceType.result
+      ba.detail.diceType.result
     );
 
-    // TODO ammunition, throwing
+    // TODO throwing
 
-    const total = attack.value + ba.bonus.result;
+    if (ammo) ammo.quantity--;
+
+    const total = attack.value + ba.detail.bonus.result;
     if (total >= target.ac) {
       const map = new DamageMap();
       const { damage } = weapon;
@@ -79,7 +85,7 @@ export default class WeaponAttack implements Action<HasTarget> {
           bonus: new BonusCollector(),
         })
       );
-      map.add(damage.damageType, gd.bonus.result);
+      map.add(damage.damageType, gd.detail.bonus.result);
 
       await g.damage(map, { source: this, attacker, target });
     }

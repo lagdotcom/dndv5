@@ -51,7 +51,12 @@ export default function Unit({
 
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-    <div className={styles.main} style={containerStyle} onClick={clicked}>
+    <div
+      className={styles.main}
+      style={containerStyle}
+      title={who.name}
+      onClick={clicked}
+    >
       <img
         className={styles.token}
         style={tokenStyle}

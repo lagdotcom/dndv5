@@ -1,4 +1,4 @@
-import { DiceType } from "../types/DiceType";
+import DiceType from "../types/DiceType";
 import Source from "../types/Source";
 
 export default class DiceTypeCollector {

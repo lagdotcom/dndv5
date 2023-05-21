@@ -1,9 +1,11 @@
 import AbstractCombatant from "./AbstractCombatant";
 import Engine from "./Engine";
 import { AbstractWeapon } from "./items/weapons";
+import PCClass from "./types/PCClass";
+import PCClassName from "./types/PCClassName";
 import PCRace from "./types/PCRace";
 
-class UnarmedStrike extends AbstractWeapon {
+export class UnarmedStrike extends AbstractWeapon {
   constructor(public g: Engine, public owner: PC) {
     super("unarmed strike", "natural", "melee", {
       type: "flat",
@@ -21,6 +23,7 @@ export default class PC extends AbstractCombatant {
       img,
       side: 0,
       diesAtZero: false,
+      level: 0,
     });
 
     // TODO this should be on races I guess?
@@ -37,7 +40,29 @@ export default class PC extends AbstractCombatant {
 
     for (const language of race.languages) this.languages.add(language);
 
-    for (const feature of race.features)
-      feature.setup(this.g, this, this.getConfig(feature.name));
+    for (const feature of race.features) this.addFeature(feature);
+  }
+
+  addClassLevel(cls: PCClass, hpRoll = cls.hitDieSize) {
+    const level = (this.classLevels.get(cls.name) ?? 0) + 1;
+    this.classLevels.set(cls.name, level);
+    this.level++;
+
+    this.hpMax += hpRoll + this.con;
+    this.hp = this.hpMax;
+
+    if (level === 1) {
+      for (const prof of cls.armorProficiencies)
+        this.armorProficiencies.add(prof);
+      for (const prof of cls.saveProficiencies)
+        this.saveProficiencies.add(prof);
+      for (const prof of cls.weaponCategoryProficiencies)
+        this.weaponCategoryProficiencies.add(prof);
+      for (const prof of cls.weaponProficiencies)
+        this.weaponProficiencies.add(prof);
+    }
+
+    for (const feature of cls.features.get(level) ?? [])
+      this.addFeature(feature);
   }
 }

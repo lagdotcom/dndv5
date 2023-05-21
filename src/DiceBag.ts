@@ -1,6 +1,6 @@
 import { MarkRequired } from "ts-essentials";
 
-import { DiceType } from "./types/DiceType";
+import DiceType from "./types/DiceType";
 import RollType from "./types/RollType";
 
 type MatchRollType = MarkRequired<Partial<RollType>, "type">;
@@ -44,10 +44,20 @@ export default class DiceBag {
   }
 
   roll(rt: RollType, dt: DiceType) {
-    // TODO advantage etc.
-
     const size = sizeOfDice(rt);
-    const value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
-    return { size, value };
+    let value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
+    let valueIgnored: number | undefined = undefined;
+
+    if (dt !== "normal") {
+      valueIgnored = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
+
+      if (
+        (dt === "advantage" && valueIgnored > value) ||
+        (dt === "disadvantage" && value > valueIgnored)
+      )
+        [value, valueIgnored] = [valueIgnored, value];
+    }
+
+    return { size, value, valueIgnored };
   }
 }

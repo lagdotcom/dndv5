@@ -1,3 +1,4 @@
+import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
 
 export type Resolver<T> = {
@@ -10,6 +11,7 @@ interface Action<T extends object = object> {
   actor: Combatant;
   config: ActionConfig<T>;
   name: string;
+  time?: ActionTime;
 
   apply(config: T): Promise<void>;
 }

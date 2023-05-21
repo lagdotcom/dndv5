@@ -1,5 +1,5 @@
 import { ActionConfig } from "../types/Action";
-import { ActionTime } from "../types/ActionTime";
+import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
 import Spell, { SpellSchool } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";

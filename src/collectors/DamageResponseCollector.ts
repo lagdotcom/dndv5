@@ -1,4 +1,4 @@
-import { DamageResponse } from "../types/DamageResponse";
+import DamageResponse from "../types/DamageResponse";
 import Source from "../types/Source";
 
 export default class DamageResponseCollector {

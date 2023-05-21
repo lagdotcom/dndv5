@@ -40,6 +40,14 @@ export interface WeaponItem extends BaseItem {
   longRange?: number;
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: Ability;
+  quantity: number;
+}
+
+export interface AmmoItem extends BaseItem {
+  itemType: "ammo";
+  name: string;
+  ammunitionTag: AmmunitionTag;
+  quantity: number;
 }
 
 export const ArmorCategories = ["light", "medium", "heavy", "shield"] as const;
@@ -54,5 +62,5 @@ export interface ArmorItem extends BaseItem {
   minimumStrength: number;
 }
 
-type Item = WeaponItem | ArmorItem;
+type Item = WeaponItem | AmmoItem | ArmorItem;
 export default Item;

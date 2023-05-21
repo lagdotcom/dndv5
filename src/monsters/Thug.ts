@@ -1,27 +1,17 @@
 import Engine from "../Engine";
+import { CrossbowBolt } from "../items/ammunition";
 import { LeatherArmor } from "../items/armor";
 import { HeavyCrossbow, Mace } from "../items/weapons";
 import Monster from "../Monster";
+import tokenUrl from "./Thug_token.png";
 
 export default class Thug extends Monster {
   constructor(g: Engine) {
-    super(
-      g,
-      "thug",
-      0.5,
-      "humanoid",
-      "medium",
-      "https://5e.tools/img/MM/Thug.png"
-    );
+    super(g, "thug", 0.5, "humanoid", "medium", tokenUrl);
     this.don(new LeatherArmor(g), true);
     this.hp = this.hpMax = 32;
     this.movement.set("speed", 30);
-    this.strScore = 15;
-    this.dexScore = 11;
-    this.conScore = 14;
-    this.intScore = 10;
-    this.wisScore = 10;
-    this.chaScore = 11;
+    this.setAbilityScores(15, 11, 14, 10, 10, 11);
     this.skills.set("Intimidation", 1);
     this.languages.add("Common");
     this.pb = 2;
@@ -32,5 +22,6 @@ export default class Thug extends Monster {
 
     this.don(new Mace(g), true);
     this.don(new HeavyCrossbow(g), true);
+    this.inventory.add(new CrossbowBolt(g, Infinity));
   }
 }

@@ -5,4 +5,5 @@ export const DamageResponses = [
   "normal",
   "vulnerable",
 ] as const;
-export type DamageResponse = (typeof DamageResponses)[number];
+type DamageResponse = (typeof DamageResponses)[number];
+export default DamageResponse;

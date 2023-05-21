@@ -146,10 +146,16 @@
       }
     }
     roll(rt, dt) {
-      var _a;
+      var _a, _b;
       const size = sizeOfDice(rt);
-      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
-      return { size, value };
+      let value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
+      let valueIgnored = void 0;
+      if (dt !== "normal") {
+        valueIgnored = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
+        if (dt === "advantage" && valueIgnored > value || dt === "disadvantage" && value > valueIgnored)
+          [value, valueIgnored] = [valueIgnored, value];
+      }
+      return { size, value, valueIgnored };
     }
   };
 
@@ -229,14 +235,23 @@
     }
   };
 
+  // src/types/Ability.ts
+  var Abilities = ["str", "dex", "con", "int", "wis", "cha"];
+
   // src/utils/dnd.ts
   function getAbilityBonus(ability) {
     return Math.floor((ability - 10) / 2);
   }
+  function getDiceAverage(count, size) {
+    return (size + 1) / 2 * count;
+  }
 
-  // src/utils/isDefined.ts
+  // src/utils/types.ts
   function isDefined(value) {
     return typeof value !== "undefined";
+  }
+  function isA(value, enumeration) {
+    return enumeration.includes(value);
   }
 
   // src/utils/items.ts
@@ -258,6 +273,11 @@
     if (isDefined(weapon.longRange))
       return weapon.longRange;
     return who.reach;
+  }
+  function getValidAmmunition(who, weapon) {
+    return who.ammunition.filter(
+      (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
+    );
   }
 
   // src/utils/units.ts
@@ -311,9 +331,9 @@
       type,
       diesAtZero = true,
       hands = defaultHandsAmount[type],
-      hpMax = 1,
+      hpMax = 0,
       hp = hpMax,
-      level = 0,
+      level = NaN,
       pb = 2,
       reach = 5,
       chaScore = 10,
@@ -355,6 +375,9 @@
       this.naturalWeapons = /* @__PURE__ */ new Set();
       this.resources = /* @__PURE__ */ new Map();
       this.configs = /* @__PURE__ */ new Map();
+      this.saveProficiencies = /* @__PURE__ */ new Set();
+      this.features = /* @__PURE__ */ new Map();
+      this.classLevels = /* @__PURE__ */ new Map();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -401,6 +424,36 @@
           return item;
       }
     }
+    get ammunition() {
+      const ammo = [];
+      for (const item of this.equipment) {
+        if (item.itemType === "ammo")
+          ammo.push(item);
+      }
+      for (const item of this.inventory) {
+        if (item.itemType === "ammo")
+          ammo.push(item);
+      }
+      return ammo;
+    }
+    addFeature(feature) {
+      if (this.features.get(feature.name)) {
+        console.warn(
+          `${this.name} already has a feature named ${feature.name}, skipping.`
+        );
+        return;
+      }
+      this.features.set(feature.name, feature);
+      feature.setup(this.g, this, this.getConfig(feature.name));
+    }
+    setAbilityScores(str, dex, con, int, wis, cha) {
+      this.strScore = str;
+      this.dexScore = dex;
+      this.conScore = con;
+      this.intScore = int;
+      this.wisScore = wis;
+      this.chaScore = cha;
+    }
     don(item) {
       if (item.itemType === "armor") {
         const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
@@ -418,8 +471,11 @@
     }
     getProficiencyMultiplier(thing) {
       var _a;
-      if (typeof thing === "string")
+      if (typeof thing === "string") {
+        if (isA(thing, Abilities))
+          return this.saveProficiencies.has(thing) ? 1 : 0;
         return (_a = this.skills.get(thing)) != null ? _a : 0;
+      }
       if (thing.itemType === "weapon") {
         if (this.weaponProficiencies.has(thing.weaponType))
           return 1;
@@ -427,8 +483,10 @@
           return 1;
         return 0;
       }
-      if (this.armorProficiencies.has(thing.category))
-        return 1;
+      if (thing.itemType === "armor") {
+        if (this.armorProficiencies.has(thing.category))
+          return 1;
+      }
       return 0;
     }
     addResource(resource, amount) {
@@ -461,18 +519,19 @@
 
   // src/actions/WeaponAttack.ts
   var WeaponAttack = class {
-    constructor(g2, actor, weapon) {
+    constructor(g2, actor, weapon, ammo) {
       this.g = g2;
       this.actor = actor;
       this.weapon = weapon;
+      this.ammo = ammo;
       const range = getWeaponRange(actor, weapon);
       this.ability = getWeaponAbility(actor, weapon);
       this.config = { target: new TargetResolver(g2, range) };
-      this.name = weapon.name;
+      this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
-        const { ability, weapon, actor: attacker, g: g2 } = this;
+        const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
         const ba = yield g2.resolve(
           new BeforeAttackEvent({
             target,
@@ -483,11 +542,15 @@
             bonus: new BonusCollector()
           })
         );
+        if (ba.defaultPrevented)
+          return;
         const attack = yield g2.roll(
           { type: "attack", who: attacker, target, weapon, ability },
-          ba.diceType.result
+          ba.detail.diceType.result
         );
-        const total = attack.value + ba.bonus.result;
+        if (ammo)
+          ammo.quantity--;
+        const total = attack.value + ba.detail.bonus.result;
         if (total >= target.ac) {
           const map = new DamageMap();
           const { damage } = weapon;
@@ -514,7 +577,7 @@
               bonus: new BonusCollector()
             })
           );
-          map.add(damage.damageType, gd.bonus.result);
+          map.add(damage.damageType, gd.detail.bonus.result);
           yield g2.damage(map, { source: this, attacker, target });
         }
       });
@@ -558,10 +621,28 @@
       this.g = g2;
       g2.events.on("getActions", ({ detail: { who, target, actions } }) => {
         if (who !== target) {
-          for (const weapon of who.weapons)
-            actions.push(new WeaponAttack(g2, who, weapon));
+          for (const weapon of who.weapons) {
+            if (weapon.ammunitionTag) {
+              for (const ammo of getValidAmmunition(who, weapon)) {
+                actions.push(new WeaponAttack(g2, who, weapon, ammo));
+              }
+            } else
+              actions.push(new WeaponAttack(g2, who, weapon));
+          }
         }
       });
+    }
+  };
+  var LongRangeAttacksRule = class {
+    constructor(g2) {
+      this.g = g2;
+      g2.events.on(
+        "beforeAttack",
+        ({ detail: { attacker, target, weapon, diceType } }) => {
+          if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, attacker, target) > weapon.shortRange)
+            diceType.add("disadvantage", CombatantWeaponAttacks);
+        }
+      );
     }
   };
   var ProficiencyRule = class {
@@ -580,6 +661,7 @@
       new AbilityRule(g2);
       new CombatantArmourCalculation(g2);
       new CombatantWeaponAttacks(g2);
+      new LongRangeAttacksRule(g2);
       new ProficiencyRule(g2);
     }
   };
@@ -737,14 +819,7 @@
     roll(type, diceType = "normal") {
       return __async(this, null, function* () {
         const roll = this.dice.roll(type, diceType);
-        return this.resolve(
-          new DiceRolledEvent({
-            type,
-            diceType,
-            size: roll.size,
-            value: roll.value
-          })
-        );
+        return (yield this.resolve(new DiceRolledEvent(__spreadValues({ type, diceType }, roll)))).detail;
       });
     }
     nextTurn() {
@@ -827,7 +902,7 @@
     resolve(e) {
       return __async(this, null, function* () {
         this.events.fire(e);
-        return e.detail;
+        return e;
       });
     }
     getState(who) {
@@ -859,12 +934,49 @@
       this.itemType = "weapon";
       this.weaponType = name;
       this.properties = new Set(properties);
+      this.quantity = 1;
     }
   };
   var Mace = class extends AbstractWeapon {
     constructor(g2) {
       super("mace", "simple", "melee", dd(1, 6, "bludgeoning"));
       this.g = g2;
+    }
+  };
+  var Sickle = class extends AbstractWeapon {
+    constructor(g2) {
+      super("sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
+      this.g = g2;
+    }
+  };
+  var Dart = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        "dart",
+        "simple",
+        "ranged",
+        dd(1, 4, "piercing"),
+        ["finesse", "thrown"],
+        20,
+        60
+      );
+      this.g = g2;
+      this.quantity = quantity;
+    }
+  };
+  var Sling = class extends AbstractWeapon {
+    constructor(g2) {
+      super(
+        "sling",
+        "simple",
+        "ranged",
+        dd(1, 4, "bludgeoning"),
+        ["ammunition"],
+        30,
+        120
+      );
+      this.g = g2;
+      this.ammunitionTag = "sling";
     }
   };
   var HeavyCrossbow = class extends AbstractWeapon {
@@ -900,6 +1012,9 @@
     }
   };
 
+  // src/monsters/Badger_token.png
+  var Badger_token_default = "./Badger_token-53MEBA7R.png";
+
   // src/monsters/Badger.ts
   var Bite = class extends AbstractWeapon {
     constructor(g2) {
@@ -915,26 +1030,37 @@
   };
   var Badger = class extends Monster {
     constructor(g2) {
-      super(
-        g2,
-        "badger",
-        0,
-        "beast",
-        "tiny",
-        "https://5e.tools/img/MM/Badger.png"
-      );
+      super(g2, "badger", 0, "beast", "tiny", Badger_token_default);
       this.hp = this.hpMax = 3;
       this.movement.set("speed", 20);
       this.movement.set("burrow", 5);
-      this.strScore = 4;
-      this.dexScore = 11;
-      this.conScore = 12;
-      this.intScore = 2;
-      this.wisScore = 12;
-      this.chaScore = 5;
+      this.setAbilityScores(4, 11, 12, 2, 12, 5);
       this.senses.set("darkvision", 30);
       this.pb = 2;
       this.naturalWeapons.add(new Bite(g2));
+    }
+  };
+
+  // src/items/ammunition.ts
+  var AbstractAmmo = class {
+    constructor(name, ammunitionTag, quantity) {
+      this.name = name;
+      this.ammunitionTag = ammunitionTag;
+      this.quantity = quantity;
+      this.itemType = "ammo";
+      this.hands = 0;
+    }
+  };
+  var CrossbowBolt = class extends AbstractAmmo {
+    constructor(g2, quantity) {
+      super("crossbow bolt", "crossbow", quantity);
+      this.g = g2;
+    }
+  };
+  var SlingBullet = class extends AbstractAmmo {
+    constructor(g2, quantity) {
+      super("sling bullet", "sling", quantity);
+      this.g = g2;
     }
   };
 
@@ -957,33 +1083,118 @@
     }
   };
 
+  // src/monsters/Thug_token.png
+  var Thug_token_default = "./Thug_token-IXRM6PKF.png";
+
   // src/monsters/Thug.ts
   var Thug = class extends Monster {
     constructor(g2) {
-      super(
-        g2,
-        "thug",
-        0.5,
-        "humanoid",
-        "medium",
-        "https://5e.tools/img/MM/Thug.png"
-      );
+      super(g2, "thug", 0.5, "humanoid", "medium", Thug_token_default);
       this.don(new LeatherArmor(g2), true);
       this.hp = this.hpMax = 32;
       this.movement.set("speed", 30);
-      this.strScore = 15;
-      this.dexScore = 11;
-      this.conScore = 14;
-      this.intScore = 10;
-      this.wisScore = 10;
-      this.chaScore = 11;
+      this.setAbilityScores(15, 11, 14, 10, 10, 11);
       this.skills.set("Intimidation", 1);
       this.languages.add("Common");
       this.pb = 2;
       this.don(new Mace(g2), true);
       this.don(new HeavyCrossbow(g2), true);
+      this.inventory.add(new CrossbowBolt(g2, Infinity));
     }
   };
+
+  // src/features/SimpleFeature.ts
+  var SimpleFeature = class {
+    constructor(name, setup) {
+      this.name = name;
+      this.setup = setup;
+    }
+  };
+
+  // src/classes/monk/index.ts
+  var UnarmoredDefense = new SimpleFeature("Unarmored Defense", (g2, me) => {
+    g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      if (who === me && !me.armor && !me.shield)
+        methods.push({
+          name: "Unarmored Defense",
+          ac: 10 + me.dex + me.wis,
+          uses: /* @__PURE__ */ new Set()
+        });
+    });
+  });
+  function getMartialArtsDie(level) {
+    if (level < 5)
+      return 4;
+    if (level < 11)
+      return 6;
+    if (level < 17)
+      return 8;
+    return 10;
+  }
+  function isMonkWeapon(weapon) {
+    if (weapon.weaponType === "unarmed strike")
+      return true;
+    if (weapon.weaponType === "shortsword")
+      return true;
+    return weapon.category === "simple" && weapon.rangeCategory === "melee" && !weapon.properties.has("two-handed") && !weapon.properties.has("heavy");
+  }
+  function isMonkWeaponAttack(action) {
+    return action instanceof WeaponAttack && isMonkWeapon(action.weapon);
+  }
+  function canUpgradeDamage(damage, size) {
+    const avg = getDiceAverage(1, size);
+    if (damage.type === "flat")
+      return avg > damage.amount;
+    return size > getDiceAverage(damage.amount.count, damage.amount.size);
+  }
+  var MonkWeaponWrapper = class extends AbstractWeapon {
+    constructor(weapon, size) {
+      super(
+        weapon.name,
+        weapon.category,
+        weapon.rangeCategory,
+        dd(1, size, weapon.damage.damageType),
+        [...weapon.properties],
+        weapon.shortRange,
+        weapon.longRange
+      );
+      this.weapon = weapon;
+    }
+  };
+  var MartialArts = new SimpleFeature("Martial Arts", (g2, me) => {
+    var _a;
+    console.warn("[Feature Not Complete] Martial Arts");
+    const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
+    g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who !== me)
+        return;
+      for (const wa of actions.filter(isMonkWeaponAttack)) {
+        if (me.dex > me.str)
+          wa.ability = "dex";
+        if (canUpgradeDamage(wa.weapon.damage, diceSize))
+          wa.weapon = new MonkWeaponWrapper(wa.weapon, diceSize);
+      }
+    });
+  });
+  var Monk = {
+    name: "Monk",
+    hitDieSize: 8,
+    armorProficiencies: /* @__PURE__ */ new Set(),
+    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple"]),
+    weaponProficiencies: /* @__PURE__ */ new Set(["shortsword"]),
+    saveProficiencies: /* @__PURE__ */ new Set(["str", "dex"]),
+    skillChoices: 2,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Acrobatics",
+      "Athletics",
+      "History",
+      "Insight",
+      "Religion",
+      "Stealth"
+    ]),
+    features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense, MartialArts]]])
+  };
+  var monk_default = Monk;
 
   // src/PC.ts
   var UnarmedStrike = class extends AbstractWeapon {
@@ -1004,7 +1215,8 @@
         size: "medium",
         img,
         side: 0,
-        diesAtZero: false
+        diesAtZero: false,
+        level: 0
       });
       this.naturalWeapons.add(new UnarmedStrike(g2, this));
     }
@@ -1017,7 +1229,27 @@
       for (const language of race.languages)
         this.languages.add(language);
       for (const feature of race.features)
-        feature.setup(this.g, this, this.getConfig(feature.name));
+        this.addFeature(feature);
+    }
+    addClassLevel(cls, hpRoll = cls.hitDieSize) {
+      var _a, _b;
+      const level = ((_a = this.classLevels.get(cls.name)) != null ? _a : 0) + 1;
+      this.classLevels.set(cls.name, level);
+      this.level++;
+      this.hpMax += hpRoll + this.con;
+      this.hp = this.hpMax;
+      if (level === 1) {
+        for (const prof of cls.armorProficiencies)
+          this.armorProficiencies.add(prof);
+        for (const prof of cls.saveProficiencies)
+          this.saveProficiencies.add(prof);
+        for (const prof of cls.weaponCategoryProficiencies)
+          this.weaponCategoryProficiencies.add(prof);
+        for (const prof of cls.weaponProficiencies)
+          this.weaponProficiencies.add(prof);
+      }
+      for (const feature of (_b = cls.features.get(level)) != null ? _b : [])
+        this.addFeature(feature);
     }
   };
 
@@ -1030,17 +1262,10 @@
       this.spell = spell;
       this.name = `${spell.name} (${method.name})`;
       this.config = spell.config;
+      this.time = spell.time;
     }
     apply(config) {
       return this.spell.apply(this.actor, this.method, config);
-    }
-  };
-
-  // src/features/SimpleFeature.ts
-  var SimpleFeature = class {
-    constructor(name, setup) {
-      this.name = name;
-      this.setup = setup;
     }
   };
 
@@ -1267,15 +1492,22 @@
   };
   var Triton_default = Triton;
 
+  // src/pcs/wizards/Tethilssethanar_token.png
+  var Tethilssethanar_token_default = "./Tethilssethanar_token-7GNDRUAR.png";
+
   // src/pcs/wizards/Tethilssethanar.ts
   var Tethilssethanar = class extends PC {
     constructor(g2) {
-      super(
-        g2,
-        "Tethilssethanar",
-        "https://www.dndbeyond.com/avatars/22548/562/1581111423-64025171.jpeg"
-      );
+      super(g2, "Tethilssethanar", Tethilssethanar_token_default);
+      this.setAbilityScores(9, 14, 13, 8, 15, 13);
       this.setRace(Triton_default);
+      this.addClassLevel(monk_default);
+      this.skills.set("Athletics", 1);
+      this.skills.set("Insight", 1);
+      this.don(new Dart(g2, 10));
+      this.don(new Sickle(g2));
+      this.inventory.add(new Sling(g2));
+      this.inventory.add(new SlingBullet(g2, 40));
     }
   };
 
@@ -1301,6 +1533,7 @@
   var import_signals = __toESM(require_signals());
   var activeCombatant = (0, import_signals.signal)(void 0);
   var allActions = (0, import_signals.signal)([]);
+  window.state = { activeCombatant, allActions };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact = __toESM(require_preact());
@@ -1350,8 +1583,8 @@
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_1qwrm_1",
-    "token": "_token_1qwrm_5"
+    "main": "_main_wjbod_1",
+    "token": "_token_wjbod_10"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -1437,23 +1670,32 @@
     );
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-      /* @__PURE__ */ o("div", { className: Unit_module_default.main, style: containerStyle, onClick: clicked, children: [
-        /* @__PURE__ */ o(
-          "img",
-          {
-            className: Unit_module_default.token,
-            style: tokenStyle,
-            alt: who.name,
-            src: who.img
-          }
-        ),
-        isActive && /* @__PURE__ */ o(import_preact2.Fragment, { children: [
-          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "north" }),
-          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "east" }),
-          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "south" }),
-          /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "west" })
-        ] })
-      ] })
+      /* @__PURE__ */ o(
+        "div",
+        {
+          className: Unit_module_default.main,
+          style: containerStyle,
+          title: who.name,
+          onClick: clicked,
+          children: [
+            /* @__PURE__ */ o(
+              "img",
+              {
+                className: Unit_module_default.token,
+                style: tokenStyle,
+                alt: who.name,
+                src: who.img
+              }
+            ),
+            isActive && /* @__PURE__ */ o(import_preact2.Fragment, { children: [
+              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "north" }),
+              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "east" }),
+              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "south" }),
+              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "west" })
+            ] })
+          ]
+        }
+      )
     );
   }
 

@@ -1,7 +1,7 @@
 import Ability from "../types/Ability";
 import Combatant from "../types/Combatant";
 import Item, { ArmorItem, WeaponItem } from "../types/Item";
-import isDefined from "./isDefined";
+import { isDefined } from "./types";
 
 export const isSuitOfArmor = (item: Item): item is ArmorItem =>
   item.itemType === "armor" && item.category !== "shield";
@@ -14,6 +14,7 @@ export function getWeaponAbility(who: Combatant, weapon: WeaponItem): Ability {
 
   const { str, dex } = who;
 
+  // TODO should really be a choice
   if (weapon.properties.has("finesse")) {
     if (dex >= str) return "dex";
   }
@@ -28,4 +29,10 @@ export function getWeaponAbility(who: Combatant, weapon: WeaponItem): Ability {
 export function getWeaponRange(who: Combatant, weapon: WeaponItem) {
   if (isDefined(weapon.longRange)) return weapon.longRange;
   return who.reach;
+}
+
+export function getValidAmmunition(who: Combatant, weapon: WeaponItem) {
+  return who.ammunition.filter(
+    (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
+  );
 }

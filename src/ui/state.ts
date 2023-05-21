@@ -6,3 +6,5 @@ import Combatant from "../types/Combatant";
 export const activeCombatant = signal<Combatant | undefined>(undefined);
 
 export const allActions = signal<Action[]>([]);
+
+(window as any).state = { activeCombatant, allActions };

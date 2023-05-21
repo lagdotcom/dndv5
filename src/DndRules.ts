@@ -1,6 +1,8 @@
 import WeaponAttack from "./actions/WeaponAttack";
 import Engine from "./Engine";
 import Item from "./types/Item";
+import { getValidAmmunition } from "./utils/items";
+import { distance } from "./utils/units";
 
 export class AbilityRule {
   name: string;
@@ -44,10 +46,30 @@ export class CombatantWeaponAttacks {
   constructor(public g: Engine) {
     g.events.on("getActions", ({ detail: { who, target, actions } }) => {
       if (who !== target) {
-        for (const weapon of who.weapons)
-          actions.push(new WeaponAttack(g, who, weapon));
+        for (const weapon of who.weapons) {
+          if (weapon.ammunitionTag) {
+            for (const ammo of getValidAmmunition(who, weapon)) {
+              actions.push(new WeaponAttack(g, who, weapon, ammo));
+            }
+          } else actions.push(new WeaponAttack(g, who, weapon));
+        }
       }
     });
+  }
+}
+
+export class LongRangeAttacksRule {
+  constructor(public g: Engine) {
+    g.events.on(
+      "beforeAttack",
+      ({ detail: { attacker, target, weapon, diceType } }) => {
+        if (
+          typeof weapon?.shortRange === "number" &&
+          distance(g, attacker, target) > weapon.shortRange
+        )
+          diceType.add("disadvantage", CombatantWeaponAttacks);
+      }
+    );
   }
 }
 
@@ -67,6 +89,7 @@ export default class DndRules {
     new AbilityRule(g);
     new CombatantArmourCalculation(g);
     new CombatantWeaponAttacks(g);
+    new LongRangeAttacksRule(g);
     new ProficiencyRule(g);
   }
 }

@@ -1,4 +1,4 @@
-import { DamageResponse } from "./DamageResponse";
+import DamageResponse from "./DamageResponse";
 
 interface DamageBreakdown {
   response: DamageResponse;

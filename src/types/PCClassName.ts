@@ -13,4 +13,5 @@ export const PCClassNames = [
   "Warlock",
   "Wizard",
 ] as const;
-export type PCClassName = (typeof PCClassNames)[number];
+type PCClassName = (typeof PCClassNames)[number];
+export default PCClassName;

@@ -17,7 +17,7 @@ import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
 import DamageBreakdown from "./types/DamageBreakdown";
 import DamageType from "./types/DamageType";
-import { DiceType } from "./types/DiceType";
+import DiceType from "./types/DiceType";
 import RollType, { DamageRoll } from "./types/RollType";
 import Source from "./types/Source";
 import { orderedKeys } from "./utils/map";
@@ -77,14 +77,11 @@ export default class Engine {
 
   async roll(type: RollType, diceType: DiceType = "normal") {
     const roll = this.dice.roll(type, diceType);
-    return this.resolve(
-      new DiceRolledEvent({
-        type,
-        diceType,
-        size: roll.size,
-        value: roll.value,
-      })
-    );
+
+    // TODO can a roll be cancelled?
+    return (
+      await this.resolve(new DiceRolledEvent({ type, diceType, ...roll }))
+    ).detail;
   }
 
   nextTurn() {
@@ -177,12 +174,12 @@ export default class Engine {
     );
   }
 
-  async resolve<T>(e: CustomEvent<T>): Promise<T> {
+  async resolve<T>(e: CustomEvent<T>): Promise<CustomEvent<T>> {
     this.events.fire(e);
 
     // TODO async stuff lol
 
-    return e.detail;
+    return e;
   }
 
   getState(who: Combatant) {

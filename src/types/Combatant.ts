@@ -1,7 +1,9 @@
+import Ability from "./Ability";
 import CreatureType from "./CreatureType";
-import Item, { ArmorItem, WeaponItem } from "./Item";
+import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
+import PCClassName from "./PCClassName";
 import Resource from "./Resource";
 import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
@@ -45,13 +47,15 @@ interface Combatant {
   inventory: Set<Item>;
   senses: Map<SenseName, number>;
   naturalWeapons: Set<WeaponItem>;
+  classLevels: Map<PCClassName, number>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;
   shield?: ArmorItem;
+  ammunition: AmmoItem[];
 
   getConfig<T>(key: string): T | undefined;
-  getProficiencyMultiplier(thing: Item | SkillName): number;
+  getProficiencyMultiplier(thing: Item | Ability | SkillName): number;
   addResource(resource: Resource, amount?: number): void;
   spendResource(resource: Resource, amount?: number): void;
 }
