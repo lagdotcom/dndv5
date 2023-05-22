@@ -1,40 +1,68 @@
 /* esbuild-sass-plugin:css-chunk:src/ui/ActiveUnitPanel.module.scss */
-._main_12cww_1 {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 40vw;
-  max-width: 400px;
+._main_spvfs_1 {
   border: 2px solid black;
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
-  z-index: 10;
+  padding: 2px;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/App.module.scss */
 :root {
   --scale: 100px;
 }
+._sidePanel_187go_5 {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40vw;
+  max-width: 400px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Battlefield.module.scss */
-._main_1fv7t_1 {
+._main_ww5d6_1 {
   position: absolute;
   left: 0;
   top: 0;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/BattlefieldEffect.module.scss */
+._main_13t22_1 {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.4;
+}
+._label_13t22_10 {
+  pointer-events: none;
+}
+._square_13t22_14 {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  box-sizing: border-box;
+  border: 1px solid silver;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
-._main_wjbod_1 {
+._main_1m7p6_1 {
   position: absolute;
   cursor: pointer;
   border-radius: 1000px;
+  z-index: 20;
 }
-._main_wjbod_1:hover {
+._main_1m7p6_1:hover {
   box-shadow: silver 0px 0px 4px 4px;
 }
-._token_wjbod_10 {
+._token_1m7p6_11 {
   position: absolute;
   left: 0;
   top: 0;
@@ -44,7 +72,7 @@
 :root {
   --movebtn-size: 30px;
 }
-._main_1p3ee_5 {
+._main_1goup_5 {
   position: absolute;
   width: var(--movebtn-size);
   height: var(--movebtn-size);
@@ -53,32 +81,43 @@
   font-size: 20px;
   cursor: pointer;
   background: #ccc;
-  z-index: 100;
+  z-index: 21;
   display: flex;
   justify-content: center;
 }
-._main_1p3ee_5:hover {
+._main_1goup_5:hover {
   background: #eee;
 }
-._moveN_1p3ee_22 {
+._moveN_1goup_22 {
   top: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveE_1p3ee_28 {
+._moveE_1goup_28 {
   right: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveS_1p3ee_34 {
+._moveS_1goup_34 {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveW_1p3ee_40 {
+._moveW_1goup_40 {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/ChooseActionConfigPanel.module.scss */
+._main_z1296_1 {
+  border: 2px solid black;
+  background-color: white;
+  box-shadow: silver 0px 0px 4px 4px;
+  padding: 2px;
+}
+._active_z1296_8 {
+  background-color: yellow;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */

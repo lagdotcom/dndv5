@@ -1,4 +1,5 @@
 import Ability from "./Ability";
+import Concentration from "./Concentration";
 import CreatureType from "./CreatureType";
 import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
@@ -48,6 +49,7 @@ interface Combatant {
   senses: Map<SenseName, number>;
   naturalWeapons: Set<WeaponItem>;
   classLevels: Map<PCClassName, number>;
+  concentratingOn: Set<Concentration>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;
@@ -58,5 +60,6 @@ interface Combatant {
   getProficiencyMultiplier(thing: Item | Ability | SkillName): number;
   addResource(resource: Resource, amount?: number): void;
   spendResource(resource: Resource, amount?: number): void;
+  concentrateOn(entry: Concentration): void;
 }
 export default Combatant;

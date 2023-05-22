@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "preact/hooks";
 
 import Combatant from "../types/Combatant";
 import CombatantState from "../types/CombatantState";
+import { scale } from "./state";
 import styles from "./Unit.module.scss";
 import UnitMoveButton from "./UnitMoveButton";
 
@@ -9,34 +10,26 @@ interface Props {
   isActive: boolean;
   onClick(who: Combatant, e: MouseEvent): void;
   onMove(who: Combatant, dx: number, dy: number): void;
-  scale: number;
   state: CombatantState;
   who: Combatant;
 }
 
-export default function Unit({
-  isActive,
-  onClick,
-  onMove,
-  scale,
-  state,
-  who,
-}: Props) {
+export default function Unit({ isActive, onClick, onMove, state, who }: Props) {
   const containerStyle = useMemo(
     () => ({
-      left: state.position.x * scale,
-      top: state.position.y * scale,
-      width: who.sizeInUnits * scale,
-      height: who.sizeInUnits * scale,
+      left: state.position.x * scale.value,
+      top: state.position.y * scale.value,
+      width: who.sizeInUnits * scale.value,
+      height: who.sizeInUnits * scale.value,
     }),
-    [scale, state.position.x, state.position.y, who.sizeInUnits]
+    [scale.value, state.position.x, state.position.y, who.sizeInUnits]
   );
   const tokenStyle = useMemo(
     () => ({
-      width: who.sizeInUnits * scale,
-      height: who.sizeInUnits * scale,
+      width: who.sizeInUnits * scale.value,
+      height: who.sizeInUnits * scale.value,
     }),
-    [scale, who.sizeInUnits]
+    [scale.value, who.sizeInUnits]
   );
 
   const clicked = useCallback(

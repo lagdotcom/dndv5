@@ -1,6 +1,7 @@
 import Engine from "./Engine";
 import Ability, { Abilities } from "./types/Ability";
 import Combatant from "./types/Combatant";
+import Concentration from "./types/Concentration";
 import CreatureType from "./types/CreatureType";
 import Feature from "./types/Feature";
 import Item, {
@@ -75,6 +76,7 @@ export default abstract class AbstractCombatant implements Combatant {
   saveProficiencies: Set<Ability>;
   features: Map<string, Feature>;
   classLevels: Map<PCClassName, number>;
+  concentratingOn: Set<Concentration>;
 
   constructor(
     public g: Engine,
@@ -151,6 +153,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.saveProficiencies = new Set();
     this.features = new Map();
     this.classLevels = new Map();
+    this.concentratingOn = new Set();
   }
 
   get str() {
@@ -291,5 +294,10 @@ export default abstract class AbstractCombatant implements Combatant {
 
   getConfig<T>(key: string): T | undefined {
     return this.configs.get(key) as T | undefined;
+  }
+
+  concentrateOn(entry: Concentration): void {
+    // TODO destroy existing concentratingOn entries?
+    this.concentratingOn.add(entry);
   }
 }

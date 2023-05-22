@@ -63,7 +63,7 @@ export default class WeaponAttack implements Action<HasTarget> {
       roll.value === 1
         ? "miss"
         : roll.value === 20
-        ? "hit"
+        ? "critical"
         : total >= target.ac
         ? "hit"
         : "miss";

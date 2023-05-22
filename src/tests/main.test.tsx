@@ -75,14 +75,14 @@ it("supports Fog Cloud", async () => {
   await waitFor(getFogCloud);
   await user.click(getFogCloud());
   await user.click(btn("Choose Point"));
-  await user.click(screen.getByText("5,0"));
-  await user.click(btn("End Turn"));
-
   await user.click(token("Tethilssethanar"));
+  await user.click(btn("Execute"));
+  await user.click(btn("End Turn"));
 
   const onBeforeAttack = jest.fn<void, [BeforeAttackEvent]>();
   g.events.on("beforeAttack", onBeforeAttack);
-  await user.click(btn("heavy crossbow"));
+  await user.click(token("Tethilssethanar"));
+  await user.click(menuitem("heavy crossbow (crossbow bolt)"));
 
   // TODO find a way to check this in the frontend
   expect(onBeforeAttack).toHaveBeenCalled();

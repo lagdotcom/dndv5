@@ -2,6 +2,8 @@ import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DamageMap from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
+import AreaPlacedEvent from "./events/AreaPlacedEvent";
+import AreaRemovedEvent from "./events/AreaRemovedEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
@@ -18,6 +20,7 @@ import CombatantState from "./types/CombatantState";
 import DamageBreakdown from "./types/DamageBreakdown";
 import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
+import EffectArea from "./types/EffectArea";
 import RollType, { DamageRoll } from "./types/RollType";
 import Source from "./types/Source";
 import { orderedKeys } from "./utils/map";
@@ -25,6 +28,7 @@ import { modulo } from "./utils/numbers";
 
 export default class Engine {
   combatants: Map<Combatant, CombatantState>;
+  effects: Set<EffectArea>;
   private id: number;
   initiativeOrder: Combatant[];
   initiativePosition: number;
@@ -32,6 +36,7 @@ export default class Engine {
 
   constructor(public dice = new DiceBag(), public events = new Dispatcher()) {
     this.combatants = new Map();
+    this.effects = new Set();
     this.id = 0;
     this.initiativeOrder = [];
     this.initiativePosition = NaN;
@@ -194,5 +199,16 @@ export default class Engine {
         position: { x: NaN, y: NaN },
       }
     );
+  }
+
+  async addEffectArea(area: EffectArea) {
+    area.id = this.nextId();
+    this.effects.add(area);
+    await this.resolve(new AreaPlacedEvent({ area }));
+  }
+
+  async removeEffectArea(area: EffectArea) {
+    this.effects.delete(area);
+    await this.resolve(new AreaRemovedEvent({ area }));
   }
 }

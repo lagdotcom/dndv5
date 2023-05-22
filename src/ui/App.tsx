@@ -3,17 +3,22 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import Engine from "../Engine";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import Point from "../types/Point";
 import { checkConfig } from "../utils/config";
-import ActiveUnitPanelContainer from "./ActiveUnitPanelContainer";
+import ActiveUnitPanel from "./ActiveUnitPanel";
 import styles from "./App.module.scss";
 import Battlefield from "./Battlefield";
+import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import EventLog from "./EventLog";
 import Menu, { MenuItem } from "./Menu";
 import {
   activeCombatant,
   allActions,
   allCombatants,
+  allEffects,
   CombatantAndState,
+  wantsCombatant,
+  wantsPoint,
 } from "./state";
 
 interface Props {
@@ -30,6 +35,7 @@ interface ActionMenuState {
 
 export default function App({ g, onMount }: Props) {
   const [target, setTarget] = useState<Combatant>();
+  const [action, setAction] = useState<Action>();
   const [actionMenu, setActionMenu] = useState<ActionMenuState>({
     show: false,
     x: NaN,
@@ -47,10 +53,17 @@ export default function App({ g, onMount }: Props) {
     allCombatants.value = list;
   }, [g]);
 
+  const refreshAreas = useCallback(() => {
+    allEffects.value = [...g.effects];
+  }, [g]);
+
   useEffect(() => {
     g.events.on("combatantPlaced", refreshUnits);
     g.events.on("combatantMoved", refreshUnits);
     g.events.on("combatantDied", refreshUnits);
+
+    g.events.on("areaPlaced", refreshAreas);
+    g.events.on("areaRemoved", refreshAreas);
 
     g.events.on("turnStarted", ({ detail: { who } }) => {
       activeCombatant.value = who;
@@ -61,29 +74,60 @@ export default function App({ g, onMount }: Props) {
     });
 
     onMount?.(g);
-  }, [g, hideActionMenu, onMount, refreshUnits]);
+  }, [g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
+
+  const onExecuteAction = useCallback(
+    <T extends object>(action: Action<T>, config: T) => {
+      setAction(undefined);
+      g.act(action, config);
+    },
+    [g]
+  );
 
   const onClickAction = useCallback(
     (action: Action) => {
       hideActionMenu();
+      setAction(undefined);
 
       const point = target ? g.getState(target).position : undefined;
       const config = { target, point };
       if (checkConfig(action, config)) {
-        void action.apply(config);
+        onExecuteAction(action, config);
       } else console.warn(config, "does not match", action.config);
     },
-    [g, hideActionMenu, target]
+    [g, hideActionMenu, onExecuteAction, target]
   );
 
-  const onClickBattlefield = useCallback(() => {
-    // TODO show actions for this square?
-    hideActionMenu();
-  }, [hideActionMenu]);
+  const onClickBattlefield = useCallback(
+    (p: Point) => {
+      const givePoint = wantsPoint.peek();
+      if (givePoint) {
+        givePoint(p);
+        return;
+      }
+
+      hideActionMenu();
+    },
+    [hideActionMenu]
+  );
 
   const onClickCombatant = useCallback(
     (who: Combatant, e: MouseEvent) => {
       e.stopPropagation();
+
+      const giveCombatant = wantsCombatant.peek();
+      if (giveCombatant) {
+        giveCombatant(who);
+        return;
+      }
+
+      const givePoint = wantsPoint.peek();
+      if (givePoint) {
+        givePoint(g.getState(who).position);
+        return;
+      }
+
+      setAction(undefined);
 
       if (activeCombatant.value) {
         setTarget(who);
@@ -100,7 +144,7 @@ export default function App({ g, onMount }: Props) {
         setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
       }
     },
-    [activeCombatant.value, allActions.value, g]
+    [g]
   );
 
   const onMoveCombatant = useCallback(
@@ -112,8 +156,19 @@ export default function App({ g, onMount }: Props) {
   );
 
   const onPass = useCallback(() => {
+    setAction(undefined);
     void g.nextTurn();
   }, [g]);
+
+  const onCancelAction = useCallback(() => setAction(undefined), []);
+
+  const onChooseAction = useCallback(
+    (action: Action) => {
+      hideActionMenu();
+      setAction(action);
+    },
+    [hideActionMenu]
+  );
 
   return (
     <div className={styles.main}>
@@ -123,7 +178,22 @@ export default function App({ g, onMount }: Props) {
         onMoveCombatant={onMoveCombatant}
       />
       {actionMenu.show && <Menu {...actionMenu} onClick={onClickAction} />}
-      <ActiveUnitPanelContainer onPass={onPass} />
+      <div className={styles.sidePanel}>
+        {activeCombatant.value && (
+          <ActiveUnitPanel
+            who={activeCombatant.value}
+            onPass={onPass}
+            onChooseAction={onChooseAction}
+          />
+        )}
+        {action && (
+          <ChooseActionConfigPanel
+            action={action}
+            onCancel={onCancelAction}
+            onExecute={onExecuteAction}
+          />
+        )}
+      </div>
       <EventLog g={g} />
     </div>
   );

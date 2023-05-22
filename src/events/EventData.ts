@@ -9,11 +9,14 @@ import Combatant from "../types/Combatant";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import DiceType from "../types/DiceType";
+import EffectArea from "../types/EffectArea";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Point from "../types/Point";
 import RollType from "../types/RollType";
 
 type EventData = {
+  areaPlaced: { area: EffectArea };
+  areaRemoved: { area: EffectArea };
   attack: {
     pre: EventData["beforeAttack"];
     roll: EventData["diceRolled"];

@@ -1,3 +1,5 @@
+import AreaPlacedEvent from "./AreaPlacedEvent";
+import AreaRemovedEvent from "./AreaRemovedEvent";
 import AttackEvent from "./AttackEvent";
 import BeforeAttackEvent from "./BeforeAttackEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
@@ -12,6 +14,8 @@ import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
 
 export type EventTypes = {
+  areaPlaced: AreaPlacedEvent;
+  areaRemoved: AreaRemovedEvent;
   attack: AttackEvent;
   beforeAttack: BeforeAttackEvent;
   combatantDamaged: CombatantDamagedEvent;

@@ -385,6 +385,7 @@
       this.saveProficiencies = /* @__PURE__ */ new Set();
       this.features = /* @__PURE__ */ new Map();
       this.classLevels = /* @__PURE__ */ new Map();
+      this.concentratingOn = /* @__PURE__ */ new Set();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -509,6 +510,27 @@
     getConfig(key) {
       return this.configs.get(key);
     }
+    concentrateOn(entry) {
+      this.concentratingOn.add(entry);
+    }
+  };
+
+  // src/collectors/ErrorCollector.ts
+  var ErrorCollector = class {
+    constructor() {
+      this.errors = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.errors.add({ value, source });
+    }
+    get messages() {
+      return [...this.errors].map(
+        (entry) => `${entry.value} (${entry.source.name})`
+      );
+    }
+    get valid() {
+      return this.errors.size === 0;
+    }
   };
 
   // src/resolvers/TargetResolver.ts
@@ -519,8 +541,25 @@
       this.allowSelf = allowSelf;
       this.type = "Combatant";
     }
+    get name() {
+      const clauses = [];
+      if (this.maxRange < Infinity)
+        clauses.push(`target within ${this.maxRange}'`);
+      if (!this.allowSelf)
+        clauses.push("not self");
+      return clauses.length ? clauses.join(", ") : "any target";
+    }
     check(value, action) {
-      return value instanceof AbstractCombatant && (this.allowSelf || value !== action.actor) && distance(this.g, action.actor, value) <= this.maxRange;
+      const ec = new ErrorCollector();
+      if (!(value instanceof AbstractCombatant))
+        ec.add("Invalid", this);
+      else {
+        if (!this.allowSelf && value === action.actor)
+          ec.add("Cannot target self", this);
+        if (distance(this.g, action.actor, value) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
     }
   };
 
@@ -559,7 +598,7 @@
         if (ammo)
           ammo.quantity--;
         const total = roll.value + pre.detail.bonus.result;
-        const outcome = roll.value === 1 ? "miss" : roll.value === 20 ? "hit" : total >= target.ac ? "hit" : "miss";
+        const outcome = roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= target.ac ? "hit" : "miss";
         const attack = yield g2.resolve(
           new AttackEvent({ pre: pre.detail, roll, total, outcome })
         );
@@ -684,6 +723,20 @@
     }
   };
 
+  // src/events/AreaPlacedEvent.ts
+  var AreaPlacedEvent = class extends EventBase {
+    constructor(detail) {
+      super("areaPlaced", detail);
+    }
+  };
+
+  // src/events/AreaRemovedEvent.ts
+  var AreaRemovedEvent = class extends EventBase {
+    constructor(detail) {
+      super("areaRemoved", detail);
+    }
+  };
+
   // src/events/CombatantDamagedEvent.ts
   var CombatantDamagedEvent = class extends EventBase {
     constructor(detail) {
@@ -787,6 +840,15 @@
   function modulo(value, max) {
     return value % max;
   }
+  function round(n, size) {
+    return Math.floor(n / size) * size;
+  }
+  function enumerate(min, max) {
+    const values = [];
+    for (let i = min; i <= max; i++)
+      values.push(i);
+    return values;
+  }
 
   // src/Engine.ts
   var Engine = class {
@@ -794,6 +856,7 @@
       this.dice = dice;
       this.events = events;
       this.combatants = /* @__PURE__ */ new Map();
+      this.effects = /* @__PURE__ */ new Set();
       this.id = 0;
       this.initiativeOrder = [];
       this.initiativePosition = NaN;
@@ -930,6 +993,19 @@
         initiative: NaN,
         position: { x: NaN, y: NaN }
       };
+    }
+    addEffectArea(area) {
+      return __async(this, null, function* () {
+        area.id = this.nextId();
+        this.effects.add(area);
+        yield this.resolve(new AreaPlacedEvent({ area }));
+      });
+    }
+    removeEffectArea(area) {
+      return __async(this, null, function* () {
+        this.effects.delete(area);
+        yield this.resolve(new AreaRemovedEvent({ area }));
+      });
     }
   };
 
@@ -1314,29 +1390,131 @@
       this.name = name;
       this.ability = ability;
     }
+    getMaxSlot(spell) {
+      return spell.level;
+    }
+  };
+
+  // src/areas/SphereEffectArea.ts
+  var SphereEffectArea = class {
+    constructor(name, centre, radius, tags = []) {
+      this.name = name;
+      this.centre = centre;
+      this.radius = radius;
+      this.id = NaN;
+      this.tags = new Set(tags);
+      this.type = "sphere";
+    }
   };
 
   // src/resolvers/PointResolver.ts
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
   var PointResolver = class {
     constructor(g2, maxRange) {
       this.g = g2;
       this.maxRange = maxRange;
       this.type = "Point";
     }
+    get name() {
+      if (this.maxRange === Infinity)
+        return "any point";
+      return `point within ${this.maxRange}'`;
+    }
     check(value, action) {
-      return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number" && distanceTo(this.g, action.actor, value) <= this.maxRange;
+      const ec = new ErrorCollector();
+      if (!isPoint(value))
+        ec.add("Invalid", this);
+      else {
+        if (distanceTo(this.g, action.actor, value) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
     }
   };
 
+  // src/utils/time.ts
+  var TURNS_PER_MINUTE = 10;
+  var minutes = (n) => n * TURNS_PER_MINUTE;
+  var hours = (n) => minutes(n * 60);
+
   // src/resolvers/SlotResolver.ts
   var SlotResolver = class {
-    constructor(g2, minimum) {
-      this.g = g2;
-      this.minimum = minimum;
+    constructor(spell) {
+      this.spell = spell;
       this.type = "SpellSlot";
     }
-    check(value) {
-      return typeof value === "number" && value >= this.minimum && value <= 9;
+    get minimum() {
+      return this.spell.level;
+    }
+    get maximum() {
+      var _a, _b;
+      return (_b = (_a = this.method) == null ? void 0 : _a.getMaxSlot(this.spell)) != null ? _b : 9;
+    }
+    get name() {
+      if (this.minimum === this.maximum)
+        return `spell slot (${this.minimum})`;
+      return `spell slot (${this.minimum}-${this.maximum})`;
+    }
+    check(value, action) {
+      const ec = new ErrorCollector();
+      if (action instanceof CastSpell)
+        this.method = action.method;
+      if (typeof value !== "number")
+        ec.add("Invalid", this);
+      else {
+        if (value < this.minimum)
+          ec.add("Too low", this);
+        if (value > this.maximum)
+          ec.add("Too high", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/ScalingSpell.ts
+  var ScalingSpell = class {
+    constructor(name, level, school, time, concentration, config) {
+      this.name = name;
+      this.level = level;
+      this.school = school;
+      this.time = time;
+      this.concentration = concentration;
+      this.v = false;
+      this.s = false;
+      this.config = __spreadProps(__spreadValues({}, config), { slot: new SlotResolver(this) });
+    }
+    setVSM(v = false, s = false, m) {
+      this.v = v;
+      this.s = s;
+      this.m = m;
+      return this;
+    }
+  };
+
+  // src/spells/level1/FogCloud.ts
+  var FogCloud = class extends ScalingSpell {
+    constructor(g2) {
+      super("Fog Cloud", 1, "Conjuration", "action", true, {
+        point: new PointResolver(g2, 120)
+      });
+      this.g = g2;
+      this.setVSM(true, true);
+    }
+    apply(_0, _1, _2) {
+      return __async(this, arguments, function* (caster, method, { point, slot }) {
+        const radius = 20 * slot;
+        const area = new SphereEffectArea("Fog Cloud", point, radius, [
+          "heavily obscured"
+        ]);
+        yield this.g.addEffectArea(area);
+        caster.concentrateOn({
+          spell: this,
+          duration: hours(1),
+          onSpellEnd: () => this.g.removeEffectArea(area)
+        });
+      });
     }
   };
 
@@ -1360,22 +1538,6 @@
     }
   };
 
-  // src/spells/level1/FogCloud.ts
-  var FogCloud = class extends AbstractSpell {
-    constructor(g2) {
-      super("Fog Cloud", 1, "Conjuration", "action", true, {
-        point: new PointResolver(g2, 120),
-        slot: new SlotResolver(g2, 1)
-      });
-      this.g = g2;
-      this.setVSM(true, true);
-    }
-    apply(_0, _1, _2) {
-      return __async(this, arguments, function* (caster, method, { point, slot }) {
-      });
-    }
-  };
-
   // src/spells/level2/GustOfWind.ts
   var GustOfWind = class extends AbstractSpell {
     constructor(g2) {
@@ -1395,10 +1557,17 @@
   var TextChoiceResolver = class {
     constructor(g2, choices) {
       this.g = g2;
+      this.type = "Text";
       this.values = new Set(choices);
     }
+    get name() {
+      return `One of: ${[...this.values].join(", ")}`;
+    }
     check(value) {
-      return typeof value === "string" && this.values.has(value);
+      const ec = new ErrorCollector();
+      if (!this.values.has(value))
+        ec.add("Invalid", this);
+      return ec;
     }
   };
 
@@ -1531,13 +1700,13 @@
   };
 
   // src/ui/App.tsx
-  var import_hooks4 = __toESM(require_hooks());
+  var import_hooks7 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function checkConfig(action, config) {
     for (const [key, resolver] of Object.entries(action.config)) {
       const value = config[key];
-      if (!resolver.check(value, action))
+      if (!resolver.check(value, action).valid)
         return false;
     }
     return true;
@@ -1545,7 +1714,7 @@
 
   // src/ui/ActiveUnitPanel.module.scss
   var ActiveUnitPanel_module_default = {
-    "main": "_main_12cww_1"
+    "main": "_main_spvfs_1"
   };
 
   // src/ui/state.ts
@@ -1553,7 +1722,20 @@
   var activeCombatant = (0, import_signals.signal)(void 0);
   var allActions = (0, import_signals.signal)([]);
   var allCombatants = (0, import_signals.signal)([]);
-  window.state = { activeCombatant, allActions, allCombatants };
+  var allEffects = (0, import_signals.signal)([]);
+  var scale = (0, import_signals.signal)(20);
+  var wantsCombatant = (0, import_signals.signal)(
+    void 0
+  );
+  var wantsPoint = (0, import_signals.signal)(void 0);
+  window.state = {
+    activeCombatant,
+    allActions,
+    allEffects,
+    allCombatants,
+    scale,
+    wantsPoint
+  };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact = __toESM(require_preact());
@@ -1570,52 +1752,127 @@
     return import_preact.options.vnode && import_preact.options.vnode(i), i;
   }
 
-  // src/ui/ActiveUnitPanelContainer.tsx
-  function ActiveUnitPanel({ onPass, who }) {
-    return /* @__PURE__ */ o("aside", { className: ActiveUnitPanel_module_default.main, children: [
+  // src/ui/ActiveUnitPanel.tsx
+  function ActiveUnitPanel({
+    onChooseAction,
+    onPass,
+    who
+  }) {
+    return /* @__PURE__ */ o("aside", { className: ActiveUnitPanel_module_default.main, "aria-label": "Active Unit", children: [
       /* @__PURE__ */ o("div", { children: [
         /* @__PURE__ */ o("div", { children: "Current Turn:" }),
         /* @__PURE__ */ o("div", { children: who.name })
       ] }),
-      /* @__PURE__ */ o("button", { onClick: onPass, children: "Pass" }),
+      /* @__PURE__ */ o("button", { onClick: onPass, children: "End Turn" }),
       /* @__PURE__ */ o("hr", {}),
-      /* @__PURE__ */ o("div", { children: allActions.value.map((action) => /* @__PURE__ */ o("button", { children: action.name }, action.name)) })
+      /* @__PURE__ */ o("div", { children: allActions.value.map((action) => /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)) })
     ] });
-  }
-  function ActiveUnitPanelContainer(props) {
-    const who = activeCombatant.value;
-    if (!who)
-      return null;
-    return /* @__PURE__ */ o(ActiveUnitPanel, __spreadProps(__spreadValues({}, props), { who }));
   }
 
   // src/ui/App.module.scss
-  var App_module_default = {};
+  var App_module_default = {
+    "sidePanel": "_sidePanel_187go_5"
+  };
+
+  // src/ui/Battlefield.tsx
+  var import_hooks4 = __toESM(require_hooks());
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
-    "main": "_main_1fv7t_1"
+    "main": "_main_ww5d6_1"
   };
 
+  // src/ui/BattlefieldEffect.tsx
+  var import_hooks = __toESM(require_hooks());
+
+  // src/utils/areas.ts
+  function resolveArea(area) {
+    const points = [];
+    switch (area.type) {
+      case "sphere": {
+        const left = area.centre.x - area.radius;
+        const top = area.centre.y - area.radius;
+        for (let y = 0; y <= area.radius * 2; y += 5) {
+          const dy = y - area.radius + 2.5;
+          for (let x = 0; x <= area.radius * 2; x += 5) {
+            const dx = x - area.radius + 2.5;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d <= area.radius)
+              points.push({ x: left + x, y: top + y });
+          }
+        }
+      }
+    }
+    return points;
+  }
+
+  // src/ui/BattlefieldEffect.module.scss
+  var BattlefieldEffect_module_default = {
+    "main": "_main_13t22_1",
+    "label": "_label_13t22_10",
+    "square": "_square_13t22_14"
+  };
+
+  // src/ui/BattlefieldEffect.tsx
+  function Sphere({ centre, name, radius, tags }) {
+    const style = (0, import_hooks.useMemo)(() => {
+      const size = radius * scale.value;
+      return {
+        left: centre.x * scale.value - size,
+        top: centre.y * scale.value - size,
+        width: size * 2,
+        height: size * 2,
+        borderRadius: size * 2,
+        backgroundColor: tags.has("heavily obscured") ? "silver" : void 0
+      };
+    }, [centre.x, centre.y, radius, tags]);
+    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: `${name} Effect` }) });
+  }
+  function AffectedSquare({ point }) {
+    const style = (0, import_hooks.useMemo)(
+      () => ({
+        left: point.x * scale.value,
+        top: point.y * scale.value,
+        width: scale.value * 5,
+        height: scale.value * 5
+      }),
+      [point]
+    );
+    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.square, style });
+  }
+  function BattlefieldEffect({ effect }) {
+    const main = (0, import_hooks.useMemo)(() => {
+      switch (effect.type) {
+        case "sphere":
+          return /* @__PURE__ */ o(Sphere, __spreadValues({}, effect));
+      }
+    }, [effect]);
+    const points = (0, import_hooks.useMemo)(() => resolveArea(effect), [effect]);
+    return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
+      main,
+      points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { effect, point: p }, i))
+    ] });
+  }
+
   // src/ui/Unit.tsx
-  var import_hooks2 = __toESM(require_hooks());
+  var import_hooks3 = __toESM(require_hooks());
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_wjbod_1",
-    "token": "_token_wjbod_10"
+    "main": "_main_1m7p6_1",
+    "token": "_token_1m7p6_11"
   };
 
   // src/ui/UnitMoveButton.tsx
-  var import_hooks = __toESM(require_hooks());
+  var import_hooks2 = __toESM(require_hooks());
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_1p3ee_5",
-    "moveN": "_moveN_1p3ee_22",
-    "moveE": "_moveE_1p3ee_28",
-    "moveS": "_moveS_1p3ee_34",
-    "moveW": "_moveW_1p3ee_40"
+    "main": "_main_1goup_5",
+    "moveN": "_moveN_1goup_22",
+    "moveE": "_moveE_1goup_28",
+    "moveS": "_moveS_1goup_34",
+    "moveW": "_moveW_1goup_40"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -1627,11 +1884,11 @@
     west: makeButtonType("moveW", "\u2B05\uFE0F", "Move West", -5, 0)
   };
   function UnitMoveButton({ onClick, type }) {
-    const { className, emoji, label, dx, dy } = (0, import_hooks.useMemo)(
+    const { className, emoji, label, dx, dy } = (0, import_hooks2.useMemo)(
       () => buttonTypes[type],
       [type]
     );
-    const clicked = (0, import_hooks.useCallback)(
+    const clicked = (0, import_hooks2.useCallback)(
       (e) => {
         e.stopPropagation();
         onClick(dx, dy);
@@ -1650,35 +1907,28 @@
   }
 
   // src/ui/Unit.tsx
-  function Unit({
-    isActive,
-    onClick,
-    onMove,
-    scale,
-    state,
-    who
-  }) {
-    const containerStyle = (0, import_hooks2.useMemo)(
+  function Unit({ isActive, onClick, onMove, state, who }) {
+    const containerStyle = (0, import_hooks3.useMemo)(
       () => ({
-        left: state.position.x * scale,
-        top: state.position.y * scale,
-        width: who.sizeInUnits * scale,
-        height: who.sizeInUnits * scale
+        left: state.position.x * scale.value,
+        top: state.position.y * scale.value,
+        width: who.sizeInUnits * scale.value,
+        height: who.sizeInUnits * scale.value
       }),
-      [scale, state.position.x, state.position.y, who.sizeInUnits]
+      [scale.value, state.position.x, state.position.y, who.sizeInUnits]
     );
-    const tokenStyle = (0, import_hooks2.useMemo)(
+    const tokenStyle = (0, import_hooks3.useMemo)(
       () => ({
-        width: who.sizeInUnits * scale,
-        height: who.sizeInUnits * scale
+        width: who.sizeInUnits * scale.value,
+        height: who.sizeInUnits * scale.value
       }),
-      [scale, who.sizeInUnits]
+      [scale.value, who.sizeInUnits]
     );
-    const clicked = (0, import_hooks2.useCallback)(
+    const clicked = (0, import_hooks3.useCallback)(
       (e) => onClick(who, e),
       [onClick, who]
     );
-    const moved = (0, import_hooks2.useCallback)(
+    const moved = (0, import_hooks3.useCallback)(
       (dx, dy) => onMove(who, dx, dy),
       [onMove, who]
     );
@@ -1719,25 +1969,188 @@
     onClickCombatant,
     onMoveCombatant
   }) {
+    const convertCoordinate = (0, import_hooks4.useCallback)((e) => {
+      const x = round(Math.floor(e.offsetX / scale.value), 5);
+      const y = round(Math.floor(e.offsetY / scale.value), 5);
+      return { x, y };
+    }, []);
+    const onClick = (0, import_hooks4.useCallback)(
+      (e) => onClickBattlefield(convertCoordinate(e), e),
+      [convertCoordinate, onClickBattlefield]
+    );
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-      /* @__PURE__ */ o("main", { className: Battlefield_module_default.main, onClick: onClickBattlefield, children: allCombatants.value.map(({ who, state }) => /* @__PURE__ */ o(
-        Unit,
-        {
-          isActive: activeCombatant.value === who,
-          who,
-          scale: 20,
-          state,
-          onClick: onClickCombatant,
-          onMove: onMoveCombatant
-        },
-        who.id
-      )) })
+      /* @__PURE__ */ o("main", { className: Battlefield_module_default.main, "aria-label": "Battlefield", onClick, children: [
+        allCombatants.value.map(({ who, state }) => /* @__PURE__ */ o(
+          Unit,
+          {
+            isActive: activeCombatant.value === who,
+            who,
+            state,
+            onClick: onClickCombatant,
+            onMove: onMoveCombatant
+          },
+          who.id
+        )),
+        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { effect }, effect.id))
+      ] })
     );
   }
 
+  // src/ui/ChooseActionConfigPanel.tsx
+  var import_hooks5 = __toESM(require_hooks());
+
+  // src/ui/ChooseActionConfigPanel.module.scss
+  var ChooseActionConfigPanel_module_default = {
+    "main": "_main_z1296_1",
+    "active": "_active_z1296_8"
+  };
+
+  // src/ui/ChooseActionConfigPanel.tsx
+  function ChooseTarget({
+    action,
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    var _a;
+    const errors = (0, import_hooks5.useMemo)(
+      () => resolver.check(value, action).messages,
+      [action, resolver, value]
+    );
+    const onClick = (0, import_hooks5.useCallback)(() => {
+      wantsCombatant.value = (who) => {
+        wantsCombatant.value = void 0;
+        onChange(field, who);
+      };
+    }, [field, onChange]);
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Target: ",
+        (_a = value == null ? void 0 : value.name) != null ? _a : "NONE"
+      ] }),
+      /* @__PURE__ */ o("button", { onClick, children: "Choose Target" }),
+      value && errors.length > 0 && /* @__PURE__ */ o("div", { children: errors })
+    ] });
+  }
+  function ChoosePoint({
+    action,
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    const errors = (0, import_hooks5.useMemo)(
+      () => resolver.check(value, action).messages,
+      [action, resolver, value]
+    );
+    const onClick = (0, import_hooks5.useCallback)(() => {
+      wantsPoint.value = (point) => {
+        wantsPoint.value = void 0;
+        onChange(field, point);
+      };
+    }, [field, onChange]);
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Point: ",
+        value ? `${value.x},${value.y}` : "NONE"
+      ] }),
+      /* @__PURE__ */ o("button", { onClick, children: "Choose Point" }),
+      value && errors.length > 0 && /* @__PURE__ */ o("div", { children: errors })
+    ] });
+  }
+  function ChooseSlot({
+    action,
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    const errors = (0, import_hooks5.useMemo)(
+      () => resolver.check(value, action).messages,
+      [action, resolver, value]
+    );
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Spell Slot: ",
+        value != null ? value : "NONE"
+      ] }),
+      /* @__PURE__ */ o("div", { children: enumerate(resolver.minimum, resolver.maximum).map((slot) => /* @__PURE__ */ o(
+        "button",
+        {
+          className: value === slot ? ChooseActionConfigPanel_module_default.active : void 0,
+          onClick: () => onChange(field, slot),
+          children: slot
+        },
+        slot
+      )) }),
+      value && errors.length > 0 && /* @__PURE__ */ o("div", { children: errors })
+    ] });
+  }
+  function getInitialConfig(action, initial) {
+    const config = __spreadValues({}, initial);
+    for (const [key, resolver] of Object.entries(action.config)) {
+      if (resolver instanceof SlotResolver && !config[key])
+        config[key] = resolver.minimum;
+    }
+    return config;
+  }
+  function ChooseActionConfigPanel({
+    action,
+    initialConfig = {},
+    onCancel,
+    onExecute
+  }) {
+    const [config, setConfig] = (0, import_hooks5.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks5.useCallback)((key, value) => {
+      setConfig((old) => __spreadProps(__spreadValues({}, old), { [key]: value }));
+    }, []);
+    const disabled = (0, import_hooks5.useMemo)(
+      () => !checkConfig(action, config),
+      [action, config]
+    );
+    const execute = (0, import_hooks5.useCallback)(() => {
+      if (checkConfig(action, config))
+        onExecute(action, config);
+    }, [action, config, onExecute]);
+    const elements = (0, import_hooks5.useMemo)(
+      () => Object.entries(action.config).map(([key, resolver]) => {
+        const props = {
+          key,
+          action,
+          field: key,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          resolver,
+          onChange: patchConfig,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          value: config[key]
+        };
+        if (resolver instanceof TargetResolver)
+          return /* @__PURE__ */ o(ChooseTarget, __spreadValues({}, props));
+        else if (resolver instanceof PointResolver)
+          return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, props));
+        else if (resolver instanceof SlotResolver)
+          return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, props));
+        else
+          return /* @__PURE__ */ o("div", { children: [
+            "(no frontend for resolver type [",
+            props.resolver.type,
+            "] yet)"
+          ] });
+      }),
+      [action, config, patchConfig]
+    );
+    return /* @__PURE__ */ o("aside", { className: ChooseActionConfigPanel_module_default.main, "aria-label": "Action Options", children: [
+      /* @__PURE__ */ o("div", { children: action.name }),
+      /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
+      /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
+      /* @__PURE__ */ o("div", { children: elements })
+    ] });
+  }
+
   // src/ui/EventLog.tsx
-  var import_hooks3 = __toESM(require_hooks());
+  var import_hooks6 = __toESM(require_hooks());
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
@@ -1795,12 +2208,12 @@
     ] });
   }
   function EventLog({ g: g2 }) {
-    const [messages, setMessages] = (0, import_hooks3.useState)([]);
-    const addMessage = (0, import_hooks3.useCallback)(
+    const [messages, setMessages] = (0, import_hooks6.useState)([]);
+    const addMessage = (0, import_hooks6.useCallback)(
       (el) => setMessages((old) => old.concat(el).slice(0, 50)),
       []
     );
-    (0, import_hooks3.useEffect)(() => {
+    (0, import_hooks6.useEffect)(() => {
       g2.events.on(
         "attack",
         ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
@@ -1838,27 +2251,33 @@
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks4.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks4.useState)({
+    const [target, setTarget] = (0, import_hooks7.useState)();
+    const [action, setAction] = (0, import_hooks7.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks7.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks4.useCallback)(
+    const hideActionMenu = (0, import_hooks7.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks4.useCallback)(() => {
+    const refreshUnits = (0, import_hooks7.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push({ who, state });
       allCombatants.value = list;
     }, [g2]);
-    (0, import_hooks4.useEffect)(() => {
+    const refreshAreas = (0, import_hooks7.useCallback)(() => {
+      allEffects.value = [...g2.effects];
+    }, [g2]);
+    (0, import_hooks7.useEffect)(() => {
       g2.events.on("combatantPlaced", refreshUnits);
       g2.events.on("combatantMoved", refreshUnits);
       g2.events.on("combatantDied", refreshUnits);
+      g2.events.on("areaPlaced", refreshAreas);
+      g2.events.on("areaRemoved", refreshAreas);
       g2.events.on("turnStarted", ({ detail: { who } }) => {
         activeCombatant.value = who;
         hideActionMenu();
@@ -1866,31 +2285,58 @@
         void g2.getActions(who).then((actions) => allActions.value = actions);
       });
       onMount == null ? void 0 : onMount(g2);
-    }, [g2, hideActionMenu, onMount, refreshUnits]);
-    const onClickAction = (0, import_hooks4.useCallback)(
-      (action) => {
+    }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
+    const onExecuteAction = (0, import_hooks7.useCallback)(
+      (action2, config) => {
+        setAction(void 0);
+        g2.act(action2, config);
+      },
+      [g2]
+    );
+    const onClickAction = (0, import_hooks7.useCallback)(
+      (action2) => {
         hideActionMenu();
+        setAction(void 0);
         const point = target ? g2.getState(target).position : void 0;
         const config = { target, point };
-        if (checkConfig(action, config)) {
-          void action.apply(config);
+        if (checkConfig(action2, config)) {
+          onExecuteAction(action2, config);
         } else
-          console.warn(config, "does not match", action.config);
+          console.warn(config, "does not match", action2.config);
       },
-      [g2, hideActionMenu, target]
+      [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks4.useCallback)(() => {
-      hideActionMenu();
-    }, [hideActionMenu]);
-    const onClickCombatant = (0, import_hooks4.useCallback)(
+    const onClickBattlefield = (0, import_hooks7.useCallback)(
+      (p) => {
+        const givePoint = wantsPoint.peek();
+        if (givePoint) {
+          givePoint(p);
+          return;
+        }
+        hideActionMenu();
+      },
+      [hideActionMenu]
+    );
+    const onClickCombatant = (0, import_hooks7.useCallback)(
       (who, e) => {
         e.stopPropagation();
+        const giveCombatant = wantsCombatant.peek();
+        if (giveCombatant) {
+          giveCombatant(who);
+          return;
+        }
+        const givePoint = wantsPoint.peek();
+        if (givePoint) {
+          givePoint(g2.getState(who).position);
+          return;
+        }
+        setAction(void 0);
         if (activeCombatant.value) {
           setTarget(who);
-          const items = allActions.value.map((action) => ({
-            label: action.name,
-            value: action,
-            disabled: !checkConfig(action, {
+          const items = allActions.value.map((action2) => ({
+            label: action2.name,
+            value: action2,
+            disabled: !checkConfig(action2, {
               target: who,
               point: g2.getState(who).position
             })
@@ -1898,18 +2344,27 @@
           setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
         }
       },
-      [activeCombatant.value, allActions.value, g2]
+      [g2]
     );
-    const onMoveCombatant = (0, import_hooks4.useCallback)(
+    const onMoveCombatant = (0, import_hooks7.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks4.useCallback)(() => {
+    const onPass = (0, import_hooks7.useCallback)(() => {
+      setAction(void 0);
       void g2.nextTurn();
     }, [g2]);
+    const onCancelAction = (0, import_hooks7.useCallback)(() => setAction(void 0), []);
+    const onChooseAction = (0, import_hooks7.useCallback)(
+      (action2) => {
+        hideActionMenu();
+        setAction(action2);
+      },
+      [hideActionMenu]
+    );
     return /* @__PURE__ */ o("div", { className: App_module_default.main, children: [
       /* @__PURE__ */ o(
         Battlefield,
@@ -1920,7 +2375,24 @@
         }
       ),
       actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({}, actionMenu), { onClick: onClickAction })),
-      /* @__PURE__ */ o(ActiveUnitPanelContainer, { onPass }),
+      /* @__PURE__ */ o("div", { className: App_module_default.sidePanel, children: [
+        activeCombatant.value && /* @__PURE__ */ o(
+          ActiveUnitPanel,
+          {
+            who: activeCombatant.value,
+            onPass,
+            onChooseAction
+          }
+        ),
+        action && /* @__PURE__ */ o(
+          ChooseActionConfigPanel,
+          {
+            action,
+            onCancel: onCancelAction,
+            onExecute: onExecuteAction
+          }
+        )
+      ] }),
       /* @__PURE__ */ o(EventLog, { g: g2 })
     ] });
   }
