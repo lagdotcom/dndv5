@@ -15,6 +15,11 @@ export default class FogCloud extends ScalingSpell<HasPoint> {
     this.setVSM(true, true);
   }
 
+  getAffectedArea({ point, slot }: Partial<HasPoint & Scales>) {
+    if (!point) return;
+    return { type: "sphere" as const, radius: 20 * (slot ?? 1), centre: point };
+  }
+
   async apply(
     caster: Combatant,
     method: SpellcastingMethod,

@@ -3,7 +3,7 @@ import { signal } from "@preact/signals";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import CombatantState from "../types/CombatantState";
-import EffectArea from "../types/EffectArea";
+import EffectArea, { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 
 export interface CombatantAndState {
@@ -12,6 +12,8 @@ export interface CombatantAndState {
 }
 
 export type Listener<T> = (point?: T) => void;
+
+export const actionArea = signal<SpecifiedEffectShape | undefined>(undefined);
 
 export const activeCombatant = signal<Combatant | undefined>(undefined);
 
@@ -29,7 +31,9 @@ export const wantsCombatant = signal<Listener<Combatant> | undefined>(
 
 export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).state = {
+  actionArea,
   activeCombatant,
   allActions,
   allEffects,

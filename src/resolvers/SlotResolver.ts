@@ -25,12 +25,10 @@ export default class SlotResolver implements Resolver<number> {
     return `spell slot (${this.minimum}-${this.maximum})`;
   }
 
-  check(value: unknown, action: Action) {
-    const ec = new ErrorCollector();
-
+  check(value: unknown, action: Action, ec = new ErrorCollector()) {
     if (action instanceof CastSpell) this.method = action.method;
 
-    if (typeof value !== "number") ec.add("Invalid", this);
+    if (typeof value !== "number") ec.add("No spell level chosen", this);
     else {
       if (value < this.minimum) ec.add("Too low", this);
       if (value > this.maximum) ec.add("Too high", this);

@@ -9,6 +9,7 @@ import Tethilssethanar from "./pcs/wizards/Tethilssethanar";
 import App from "./ui/App";
 
 const g = new Engine();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).g = g;
 render(
   <App
@@ -16,10 +17,10 @@ render(
     onMount={() => {
       const thug = new Thug(g);
       const badger = new Badger(g);
-      const teth = new Tethilssethanar(g);
+      const hunk = new Tethilssethanar(g);
       g.place(thug, 0, 0);
       g.place(badger, 10, 0);
-      g.place(teth, 10, 20);
+      g.place(hunk, 10, 20);
       g.start();
     }}
   />,

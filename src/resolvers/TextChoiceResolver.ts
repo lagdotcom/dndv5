@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import { Resolver } from "../types/Action";
+import Action, { Resolver } from "../types/Action";
 
 export default class TextChoiceResolver<T extends string>
   implements Resolver<T>
@@ -17,10 +17,9 @@ export default class TextChoiceResolver<T extends string>
     return `One of: ${[...this.values].join(", ")}`;
   }
 
-  check(value: unknown) {
-    const ec = new ErrorCollector();
-
-    if (!this.values.has(value as T)) ec.add("Invalid", this);
+  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+    if (!value) ec.add("No choice made", this);
+    else if (!this.values.has(value as T)) ec.add("Invalid choice", this);
 
     return ec;
   }

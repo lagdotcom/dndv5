@@ -1,6 +1,6 @@
 import {
   getByAltText,
-  getByText,
+  getByRole,
   queryByRole,
   render,
   screen,
@@ -21,16 +21,7 @@ const log = () => screen.getByRole("list", { name: "Event Log" });
 const btn = (name: string) => screen.getByRole("button", { name });
 const menuitem = (name: string) => screen.getByRole("menuitem", { name });
 const token = (name: string) => getByAltText(main(), name);
-const logMsg = (want: string) =>
-  getByText(log(), (_, el) => {
-    if (!(el instanceof HTMLLIElement)) return false;
-
-    const text: string[] = [];
-    for (const e of el.childNodes) {
-      if (e.textContent) text.push(e.textContent);
-    }
-    return text.join(" ") === want;
-  });
+const logMsg = (want: string) => getByRole(log(), "listitem", { name: want });
 
 const queryToken = (name: string) => queryByRole(main(), name);
 
@@ -54,7 +45,7 @@ it("can run a simple battle", async () => {
   await user.click(menuitem("mace"));
 
   expect(queryToken("badger")).not.toBeInTheDocument();
-  expect(logMsg("badger dies!")).toBeInTheDocument();
+  expect(logMsg("badger dies!")).toBeVisible();
 });
 
 it("supports Fog Cloud", async () => {
@@ -77,6 +68,8 @@ it("supports Fog Cloud", async () => {
   await user.click(btn("Choose Point"));
   await user.click(token("Tethilssethanar"));
   await user.click(btn("Execute"));
+  expect(logMsg("Tethilssethanar casts Fog Cloud at level 1.")).toBeVisible();
+
   await user.click(btn("End Turn"));
 
   const onBeforeAttack = jest.fn<void, [BeforeAttackEvent]>();

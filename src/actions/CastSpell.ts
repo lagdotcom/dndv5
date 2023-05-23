@@ -1,4 +1,6 @@
+import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import SpellCastEvent from "../events/SpellCastEvent";
 import Action, { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
@@ -21,8 +23,33 @@ export default class CastSpell<T extends object> implements Action<T> {
     this.time = spell.time;
   }
 
-  apply(config: T): Promise<void> {
-    // TODO spend resources?
+  getAffectedArea(config: Partial<T>) {
+    return this.spell.getAffectedArea(config);
+  }
+
+  check(config: Partial<T>, ec = new ErrorCollector()): ErrorCollector {
+    if (!this.actor.time.has(this.spell.time))
+      ec.add(`No ${this.spell.time} left`, this);
+
+    // TODO check resources (slot/whatever the method says)
+
+    return this.spell.check(config, ec);
+  }
+
+  async apply(config: T): Promise<void> {
+    this.actor.time.delete(this.spell.time);
+    // TODO spend resources
+
+    const sc = await this.g.resolve(
+      new SpellCastEvent({
+        who: this.actor,
+        spell: this.spell,
+        method: this.method,
+        level: this.spell.getLevel(config),
+      })
+    );
+    // TODO report this somehow
+    if (sc.defaultPrevented) return;
 
     return this.spell.apply(this.actor, this.method, config);
   }

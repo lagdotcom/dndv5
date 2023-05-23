@@ -24,10 +24,8 @@ export default class PointResolver implements Resolver<Point> {
     return `point within ${this.maxRange}'`;
   }
 
-  check(value: unknown, action: Action) {
-    const ec = new ErrorCollector();
-
-    if (!isPoint(value)) ec.add("Invalid", this);
+  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+    if (!isPoint(value)) ec.add("No target", this);
     else {
       if (distanceTo(this.g, action.actor, value) > this.maxRange)
         ec.add("Out of range", this);

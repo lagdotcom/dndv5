@@ -1,7 +1,7 @@
-import EffectArea from "../types/EffectArea";
+import { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 
-export function resolveArea(area: EffectArea) {
+export function resolveArea(area: SpecifiedEffectShape) {
   const points: Point[] = [];
 
   switch (area.type) {

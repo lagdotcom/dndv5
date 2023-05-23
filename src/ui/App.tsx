@@ -12,6 +12,7 @@ import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import EventLog from "./EventLog";
 import Menu, { MenuItem } from "./Menu";
 import {
+  actionArea,
   activeCombatant,
   allActions,
   allCombatants,
@@ -79,6 +80,7 @@ export default function App({ g, onMount }: Props) {
   const onExecuteAction = useCallback(
     <T extends object>(action: Action<T>, config: T) => {
       setAction(undefined);
+      actionArea.value = undefined;
       g.act(action, config);
     },
     [g]
@@ -107,6 +109,7 @@ export default function App({ g, onMount }: Props) {
       }
 
       hideActionMenu();
+      actionArea.value = undefined;
     },
     [hideActionMenu]
   );
@@ -128,18 +131,22 @@ export default function App({ g, onMount }: Props) {
       }
 
       setAction(undefined);
+      actionArea.value = undefined;
 
       if (activeCombatant.value) {
         setTarget(who);
 
-        const items = allActions.value.map((action) => ({
-          label: action.name,
-          value: action,
-          disabled: !checkConfig(action, {
-            target: who,
-            point: g.getState(who).position,
-          }),
-        }));
+        const items = allActions.value
+          .map((action) => ({
+            label: action.name,
+            value: action,
+            disabled: !checkConfig(action, {
+              target: who,
+              point: g.getState(who).position,
+            }),
+          }))
+          // TODO would this be useful at some point?
+          .filter((item) => !item.disabled);
 
         setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
       }
@@ -157,10 +164,14 @@ export default function App({ g, onMount }: Props) {
 
   const onPass = useCallback(() => {
     setAction(undefined);
+    actionArea.value = undefined;
     void g.nextTurn();
   }, [g]);
 
-  const onCancelAction = useCallback(() => setAction(undefined), []);
+  const onCancelAction = useCallback(() => {
+    setAction(undefined);
+    actionArea.value = undefined;
+  }, []);
 
   const onChooseAction = useCallback(
     (action: Action) => {
@@ -177,7 +188,9 @@ export default function App({ g, onMount }: Props) {
         onClickCombatant={onClickCombatant}
         onMoveCombatant={onMoveCombatant}
       />
-      {actionMenu.show && <Menu {...actionMenu} onClick={onClickAction} />}
+      {actionMenu.show && (
+        <Menu caption="Quick Actions" {...actionMenu} onClick={onClickAction} />
+      )}
       <div className={styles.sidePanel}>
         {activeCombatant.value && (
           <ActiveUnitPanel

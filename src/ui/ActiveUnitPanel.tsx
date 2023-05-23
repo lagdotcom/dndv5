@@ -1,6 +1,7 @@
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import styles from "./ActiveUnitPanel.module.scss";
+import Labelled from "./Labelled";
 import { allActions } from "./state";
 
 interface Props {
@@ -16,19 +17,16 @@ export default function ActiveUnitPanel({
 }: Props) {
   return (
     <aside className={styles.main} aria-label="Active Unit">
-      <div>
-        <div>Current Turn:</div>
-        <div>{who.name}</div>
-      </div>
+      <Labelled label="Current Turn">{who.name}</Labelled>
       <button onClick={onPass}>End Turn</button>
       <hr />
-      <div>
+      <Labelled label="Actions">
         {allActions.value.map((action) => (
           <button key={action.name} onClick={() => onChooseAction(action)}>
             {action.name}
           </button>
         ))}
-      </div>
+      </Labelled>
     </aside>
   );
 }

@@ -5,7 +5,13 @@ import Point from "../types/Point";
 import { round } from "../utils/numbers";
 import styles from "./Battlefield.module.scss";
 import BattlefieldEffect from "./BattlefieldEffect";
-import { activeCombatant, allCombatants, allEffects, scale } from "./state";
+import {
+  actionArea,
+  activeCombatant,
+  allCombatants,
+  allEffects,
+  scale,
+} from "./state";
 import Unit from "./Unit";
 
 interface Props {
@@ -20,8 +26,8 @@ export default function Battlefield({
   onMoveCombatant,
 }: Props) {
   const convertCoordinate = useCallback((e: MouseEvent) => {
-    const x = round(Math.floor(e.offsetX / scale.value), 5);
-    const y = round(Math.floor(e.offsetY / scale.value), 5);
+    const x = round(Math.floor(e.pageX / scale.value), 5);
+    const y = round(Math.floor(e.pageY / scale.value), 5);
     return { x, y };
   }, []);
 
@@ -38,14 +44,15 @@ export default function Battlefield({
           key={who.id}
           isActive={activeCombatant.value === who}
           who={who}
-          state={state}
+          position={state.position}
           onClick={onClickCombatant}
           onMove={onMoveCombatant}
         />
       ))}
       {allEffects.value.map((effect) => (
-        <BattlefieldEffect key={effect.id} effect={effect} />
+        <BattlefieldEffect key={effect.id} shape={effect} />
       ))}
+      {actionArea.value && <BattlefieldEffect shape={actionArea.value} />}
     </main>
   );
 }

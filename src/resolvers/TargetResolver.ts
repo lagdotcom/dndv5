@@ -25,10 +25,8 @@ export default class TargetResolver implements Resolver<Combatant> {
     return clauses.length ? clauses.join(", ") : "any target";
   }
 
-  check(value: unknown, action: Action) {
-    const ec = new ErrorCollector();
-
-    if (!(value instanceof AbstractCombatant)) ec.add("Invalid", this);
+  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+    if (!(value instanceof AbstractCombatant)) ec.add("No target", this);
     else {
       if (!this.allowSelf && value === action.actor)
         ec.add("Cannot target self", this);

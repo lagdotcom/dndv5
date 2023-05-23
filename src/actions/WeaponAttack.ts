@@ -1,5 +1,6 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
+import ErrorCollector from "../collectors/ErrorCollector";
 import { HasTarget } from "../configs";
 import DamageMap from "../DamageMap";
 import Engine from "../Engine";
@@ -31,8 +32,22 @@ export default class WeaponAttack implements Action<HasTarget> {
     this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getAffectedArea(_config: Partial<HasTarget>) {
+    // TODO exploding ammo???
+    return undefined;
+  }
+
+  check(config: Partial<HasTarget>, ec = new ErrorCollector()): ErrorCollector {
+    // TODO check action economy
+
+    return ec;
+  }
+
   async apply({ target }: HasTarget) {
     const { ability, ammo, weapon, actor: attacker, g } = this;
+
+    // TODO spend action/attack
 
     const pre = await g.resolve(
       new BeforeAttackEvent({

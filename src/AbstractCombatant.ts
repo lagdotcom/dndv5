@@ -77,6 +77,7 @@ export default abstract class AbstractCombatant implements Combatant {
   features: Map<string, Feature>;
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
+  time: Set<"action" | "bonus action" | "reaction">;
 
   constructor(
     public g: Engine,
@@ -154,6 +155,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.features = new Map();
     this.classLevels = new Map();
     this.concentratingOn = new Set();
+    this.time = new Set();
   }
 
   get str() {

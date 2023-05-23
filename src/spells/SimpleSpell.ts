@@ -1,10 +1,12 @@
+import ErrorCollector from "../collectors/ErrorCollector";
 import { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
+import { SpecifiedEffectShape } from "../types/EffectArea";
 import Spell, { SpellSchool } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
-export default abstract class AbstractSpell<T extends object>
+export default abstract class SimpleSpell<T extends object>
   implements Spell<T>
 {
   v: boolean;
@@ -35,4 +37,17 @@ export default abstract class AbstractSpell<T extends object>
     method: SpellcastingMethod,
     config: T
   ): Promise<void>;
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getAffectedArea(_config: Partial<T>): SpecifiedEffectShape | undefined {
+    return undefined;
+  }
+
+  check(config: Partial<T>, ec = new ErrorCollector()) {
+    return ec;
+  }
+
+  getLevel() {
+    return this.level;
+  }
 }

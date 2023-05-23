@@ -1,13 +1,18 @@
 import { useMemo } from "preact/hooks";
 
 import SphereEffectArea from "../areas/SphereEffectArea";
-import EffectArea from "../types/EffectArea";
+import { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 import { resolveArea } from "../utils/areas";
 import styles from "./BattlefieldEffect.module.scss";
 import { scale } from "./state";
 
-function Sphere({ centre, name, radius, tags }: SphereEffectArea) {
+function Sphere({
+  centre,
+  name,
+  radius,
+  tags,
+}: SpecifiedEffectShape & { name: string; tags: SphereEffectArea["tags"] }) {
   const style = useMemo(() => {
     const size = radius * scale.value;
     return {
@@ -28,7 +33,7 @@ function Sphere({ centre, name, radius, tags }: SphereEffectArea) {
 }
 
 interface AffectedSquareProps {
-  effect: EffectArea;
+  shape: SpecifiedEffectShape;
   point: Point;
 }
 
@@ -47,23 +52,23 @@ function AffectedSquare({ point }: AffectedSquareProps) {
 }
 
 interface Props {
-  effect: EffectArea;
+  shape: SpecifiedEffectShape;
 }
 
-export default function BattlefieldEffect({ effect }: Props) {
+export default function BattlefieldEffect({ shape }: Props) {
   const main = useMemo(() => {
-    switch (effect.type) {
+    switch (shape.type) {
       case "sphere":
-        return <Sphere {...(effect as SphereEffectArea)} />;
+        return <Sphere name="Pending" tags={new Set()} {...shape} />;
     }
-  }, [effect]);
-  const points = useMemo(() => resolveArea(effect), [effect]);
+  }, [shape]);
+  const points = useMemo(() => resolveArea(shape), [shape]);
 
   return (
     <>
       {main}
       {points.map((p, i) => (
-        <AffectedSquare key={i} effect={effect} point={p} />
+        <AffectedSquare key={i} shape={shape} point={p} />
       ))}
     </>
   );

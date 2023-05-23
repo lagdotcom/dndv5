@@ -1,6 +1,8 @@
+import ErrorCollector from "../collectors/ErrorCollector";
 import { ActionConfig } from "./Action";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
+import { SpecifiedEffectShape } from "./EffectArea";
 import SpellcastingMethod from "./SpellcastingMethod";
 
 export const SpellSchools = ["Conjuration", "Evocation"] as const;
@@ -22,5 +24,8 @@ interface Spell<T extends object = object> {
     method: SpellcastingMethod,
     config: T
   ): Promise<void>;
+  check(config: Partial<T>, collector?: ErrorCollector): ErrorCollector;
+  getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
+  getLevel(config: T): number;
 }
 export default Spell;

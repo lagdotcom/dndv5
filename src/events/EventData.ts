@@ -13,6 +13,8 @@ import EffectArea from "../types/EffectArea";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Point from "../types/Point";
 import RollType from "../types/RollType";
+import Spell from "../types/Spell";
+import SpellcastingMethod from "../types/SpellcastingMethod";
 
 type EventData = {
   areaPlaced: { area: EffectArea };
@@ -63,6 +65,12 @@ type EventData = {
     who: Combatant;
     damageType: DamageType;
     response: DamageResponseCollector;
+  };
+  spellCast: {
+    who: Combatant;
+    spell: Spell;
+    method: SpellcastingMethod;
+    level: number;
   };
   turnStarted: { who: Combatant };
 };

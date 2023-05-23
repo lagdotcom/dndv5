@@ -3,9 +3,9 @@ import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
-import AbstractSpell from "../AbstractSpell";
+import SimpleSpell from "../SimpleSpell";
 
-export default class GustOfWind extends AbstractSpell<HasPoint> {
+export default class GustOfWind extends SimpleSpell<HasPoint> {
   constructor(public g: Engine) {
     super("Gust of Wind", 2, "Evocation", "action", true, {
       point: new PointResolver(g, 60),

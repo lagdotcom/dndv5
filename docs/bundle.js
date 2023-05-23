@@ -194,6 +194,24 @@
     }
   };
 
+  // src/collectors/ErrorCollector.ts
+  var ErrorCollector = class {
+    constructor() {
+      this.errors = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.errors.add({ value, source });
+    }
+    get messages() {
+      return [...this.errors].map(
+        (entry) => `${entry.value} (${entry.source.name})`
+      );
+    }
+    get valid() {
+      return this.errors.size === 0;
+    }
+  };
+
   // src/DamageMap.ts
   var DamageMap = class {
     constructor(...items) {
@@ -386,6 +404,7 @@
       this.features = /* @__PURE__ */ new Map();
       this.classLevels = /* @__PURE__ */ new Map();
       this.concentratingOn = /* @__PURE__ */ new Set();
+      this.time = /* @__PURE__ */ new Set();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -515,24 +534,6 @@
     }
   };
 
-  // src/collectors/ErrorCollector.ts
-  var ErrorCollector = class {
-    constructor() {
-      this.errors = /* @__PURE__ */ new Set();
-    }
-    add(value, source) {
-      this.errors.add({ value, source });
-    }
-    get messages() {
-      return [...this.errors].map(
-        (entry) => `${entry.value} (${entry.source.name})`
-      );
-    }
-    get valid() {
-      return this.errors.size === 0;
-    }
-  };
-
   // src/resolvers/TargetResolver.ts
   var TargetResolver = class {
     constructor(g2, maxRange, allowSelf = false) {
@@ -549,10 +550,9 @@
         clauses.push("not self");
       return clauses.length ? clauses.join(", ") : "any target";
     }
-    check(value, action) {
-      const ec = new ErrorCollector();
+    check(value, action, ec = new ErrorCollector()) {
       if (!(value instanceof AbstractCombatant))
-        ec.add("Invalid", this);
+        ec.add("No target", this);
       else {
         if (!this.allowSelf && value === action.actor)
           ec.add("Cannot target self", this);
@@ -574,6 +574,13 @@
       this.ability = getWeaponAbility(actor, weapon);
       this.config = { target: new TargetResolver(g2, range) };
       this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffectedArea(_config) {
+      return void 0;
+    }
+    check(config, ec = new ErrorCollector()) {
+      return ec;
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
@@ -642,84 +649,88 @@
   };
 
   // src/DndRules.ts
-  var AbilityRule = class {
-    constructor(g2) {
-      this.g = g2;
-      this.name = "Ability";
-      g2.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
-        bonus.add(attacker[ability], this);
-      });
-      g2.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-        bonus.add(attacker[ability], this);
-      });
+  var DndRule = class {
+    constructor(name, setup) {
+      this.name = name;
+      this.setup = setup;
     }
   };
-  var CombatantArmourCalculation = class {
-    constructor(g2) {
-      this.g = g2;
-      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
-        var _a, _b;
-        const { armor, dex, shield } = who;
-        const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
-        const shieldAC = (_b = shield == null ? void 0 : shield.ac) != null ? _b : 0;
-        const uses = /* @__PURE__ */ new Set();
-        if (armor)
-          uses.add(armor);
-        if (shield)
-          uses.add(shield);
-        const name = armor ? `${armor.category} armor` : "unarmored";
-        const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex;
-        methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
-      });
-    }
-  };
-  var CombatantWeaponAttacks = class {
-    constructor(g2) {
-      this.g = g2;
-      g2.events.on("getActions", ({ detail: { who, target, actions } }) => {
-        if (who !== target) {
-          for (const weapon of who.weapons) {
-            if (weapon.ammunitionTag) {
-              for (const ammo of getValidAmmunition(who, weapon)) {
-                actions.push(new WeaponAttack(g2, who, weapon, ammo));
-              }
-            } else
-              actions.push(new WeaponAttack(g2, who, weapon));
-          }
-        }
-      });
-    }
-  };
-  var LongRangeAttacksRule = class {
-    constructor(g2) {
-      this.g = g2;
+  var AbilityScoreRule = new DndRule("Ability Score", (g2, me) => {
+    g2.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
+      bonus.add(attacker[ability], me);
+    });
+    g2.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
+      bonus.add(attacker[ability], me);
+    });
+  });
+  var ArmorCalculationRule = new DndRule("Armor Calculation", (g2) => {
+    g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      var _a, _b;
+      const { armor, dex, shield } = who;
+      const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
+      const shieldAC = (_b = shield == null ? void 0 : shield.ac) != null ? _b : 0;
+      const uses = /* @__PURE__ */ new Set();
+      if (armor)
+        uses.add(armor);
+      if (shield)
+        uses.add(shield);
+      const name = armor ? `${armor.category} armor` : "unarmored";
+      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex;
+      methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
+    });
+  });
+  var LongRangeAttacksRule = new DndRule(
+    "Long Range Attacks",
+    (g2, me) => {
       g2.events.on(
         "beforeAttack",
         ({ detail: { attacker, target, weapon, diceType } }) => {
           if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, attacker, target) > weapon.shortRange)
-            diceType.add("disadvantage", CombatantWeaponAttacks);
+            diceType.add("disadvantage", me);
         }
       );
     }
-  };
-  var ProficiencyRule = class {
-    constructor(g2) {
-      this.g = g2;
-      this.name = "Proficiency";
-      g2.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
-        if (weapon && attacker.getProficiencyMultiplier(weapon))
-          bonus.add(attacker.pb, this);
-      });
-    }
-  };
+  );
+  var ProficiencyRule = new DndRule("Proficiency", (g2, me) => {
+    g2.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
+      if (weapon && attacker.getProficiencyMultiplier(weapon))
+        bonus.add(attacker.pb, me);
+    });
+  });
+  var TurnTimeRule = new DndRule("Turn Time", (g2) => {
+    g2.events.on("turnStarted", ({ detail: { who } }) => {
+      who.time.add("action");
+      who.time.add("bonus action");
+      who.time.add("reaction");
+    });
+  });
+  var WeaponAttackRule = new DndRule("Weapon Attacks", (g2) => {
+    g2.events.on("getActions", ({ detail: { who, target, actions } }) => {
+      if (who !== target) {
+        for (const weapon of who.weapons) {
+          if (weapon.ammunitionTag) {
+            for (const ammo of getValidAmmunition(who, weapon)) {
+              actions.push(new WeaponAttack(g2, who, weapon, ammo));
+            }
+          } else
+            actions.push(new WeaponAttack(g2, who, weapon));
+        }
+      }
+    });
+  });
+  var allDndRules = [
+    AbilityScoreRule,
+    ArmorCalculationRule,
+    LongRangeAttacksRule,
+    ProficiencyRule,
+    TurnTimeRule,
+    WeaponAttackRule
+  ];
   var DndRules = class {
     constructor(g2) {
       this.g = g2;
-      new AbilityRule(g2);
-      new CombatantArmourCalculation(g2);
-      new CombatantWeaponAttacks(g2);
-      new LongRangeAttacksRule(g2);
-      new ProficiencyRule(g2);
+      for (const rule of allDndRules)
+        rule.setup(g2, rule);
     }
   };
 
@@ -1348,6 +1359,13 @@
     }
   };
 
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends EventBase {
+    constructor(detail) {
+      super("spellCast", detail);
+    }
+  };
+
   // src/actions/CastSpell.ts
   var CastSpell = class {
     constructor(g2, actor, method, spell) {
@@ -1359,8 +1377,29 @@
       this.config = spell.config;
       this.time = spell.time;
     }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(config);
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.time.has(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      return this.spell.check(config, ec);
+    }
     apply(config) {
-      return this.spell.apply(this.actor, this.method, config);
+      return __async(this, null, function* () {
+        this.actor.time.delete(this.spell.time);
+        const sc = yield this.g.resolve(
+          new SpellCastEvent({
+            who: this.actor,
+            spell: this.spell,
+            method: this.method,
+            level: this.spell.getLevel(config)
+          })
+        );
+        if (sc.defaultPrevented)
+          return;
+        return this.spell.apply(this.actor, this.method, config);
+      });
     }
   };
 
@@ -1422,10 +1461,9 @@
         return "any point";
       return `point within ${this.maxRange}'`;
     }
-    check(value, action) {
-      const ec = new ErrorCollector();
+    check(value, action, ec = new ErrorCollector()) {
       if (!isPoint(value))
-        ec.add("Invalid", this);
+        ec.add("No target", this);
       else {
         if (distanceTo(this.g, action.actor, value) > this.maxRange)
           ec.add("Out of range", this);
@@ -1457,12 +1495,11 @@
         return `spell slot (${this.minimum})`;
       return `spell slot (${this.minimum}-${this.maximum})`;
     }
-    check(value, action) {
-      const ec = new ErrorCollector();
+    check(value, action, ec = new ErrorCollector()) {
       if (action instanceof CastSpell)
         this.method = action.method;
       if (typeof value !== "number")
-        ec.add("Invalid", this);
+        ec.add("No spell level chosen", this);
       else {
         if (value < this.minimum)
           ec.add("Too low", this);
@@ -1491,6 +1528,15 @@
       this.m = m;
       return this;
     }
+    getAffectedArea(_config) {
+      return void 0;
+    }
+    check(config, ec = new ErrorCollector()) {
+      return ec;
+    }
+    getLevel({ slot }) {
+      return slot;
+    }
   };
 
   // src/spells/level1/FogCloud.ts
@@ -1501,6 +1547,11 @@
       });
       this.g = g2;
       this.setVSM(true, true);
+    }
+    getAffectedArea({ point, slot }) {
+      if (!point)
+        return;
+      return { type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point };
     }
     apply(_0, _1, _2) {
       return __async(this, arguments, function* (caster, method, { point, slot }) {
@@ -1518,8 +1569,8 @@
     }
   };
 
-  // src/spells/AbstractSpell.ts
-  var AbstractSpell = class {
+  // src/spells/SimpleSpell.ts
+  var SimpleSpell = class {
     constructor(name, level, school, time, concentration, config) {
       this.name = name;
       this.level = level;
@@ -1536,10 +1587,20 @@
       this.m = m;
       return this;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffectedArea(_config) {
+      return void 0;
+    }
+    check(config, ec = new ErrorCollector()) {
+      return ec;
+    }
+    getLevel() {
+      return this.level;
+    }
   };
 
   // src/spells/level2/GustOfWind.ts
-  var GustOfWind = class extends AbstractSpell {
+  var GustOfWind = class extends SimpleSpell {
     constructor(g2) {
       super("Gust of Wind", 2, "Evocation", "action", true, {
         point: new PointResolver(g2, 60)
@@ -1563,16 +1624,17 @@
     get name() {
       return `One of: ${[...this.values].join(", ")}`;
     }
-    check(value) {
-      const ec = new ErrorCollector();
-      if (!this.values.has(value))
-        ec.add("Invalid", this);
+    check(value, action, ec = new ErrorCollector()) {
+      if (!value)
+        ec.add("No choice made", this);
+      else if (!this.values.has(value))
+        ec.add("Invalid choice", this);
       return ec;
     }
   };
 
   // src/spells/level3/WallOfWater.ts
-  var WallOfWater = class extends AbstractSpell {
+  var WallOfWater = class extends SimpleSpell {
     constructor(g2) {
       super("Wall of Water", 3, "Evocation", "action", true, {
         point: new PointResolver(g2, 60),
@@ -1700,41 +1762,33 @@
   };
 
   // src/ui/App.tsx
-  var import_hooks7 = __toESM(require_hooks());
+  var import_hooks8 = __toESM(require_hooks());
 
   // src/utils/config.ts
-  function checkConfig(action, config) {
+  function check(action, config) {
+    const ec = new ErrorCollector();
+    action.check(config, ec);
     for (const [key, resolver] of Object.entries(action.config)) {
       const value = config[key];
-      if (!resolver.check(value, action).valid)
-        return false;
+      resolver.check(value, action, ec);
     }
-    return true;
+    return ec;
+  }
+  function checkConfig(action, config) {
+    return check(action, config).valid;
   }
 
   // src/ui/ActiveUnitPanel.module.scss
   var ActiveUnitPanel_module_default = {
-    "main": "_main_spvfs_1"
+    "main": "_main_1g77q_1"
   };
 
-  // src/ui/state.ts
-  var import_signals = __toESM(require_signals());
-  var activeCombatant = (0, import_signals.signal)(void 0);
-  var allActions = (0, import_signals.signal)([]);
-  var allCombatants = (0, import_signals.signal)([]);
-  var allEffects = (0, import_signals.signal)([]);
-  var scale = (0, import_signals.signal)(20);
-  var wantsCombatant = (0, import_signals.signal)(
-    void 0
-  );
-  var wantsPoint = (0, import_signals.signal)(void 0);
-  window.state = {
-    activeCombatant,
-    allActions,
-    allEffects,
-    allCombatants,
-    scale,
-    wantsPoint
+  // src/ui/Labelled.tsx
+  var import_hooks = __toESM(require_hooks());
+
+  // src/ui/Labelled.module.scss
+  var Labelled_module_default = {
+    "label": "_label_29yx4_1"
   };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
@@ -1752,6 +1806,37 @@
     return import_preact.options.vnode && import_preact.options.vnode(i), i;
   }
 
+  // src/ui/Labelled.tsx
+  function Labelled({ children, label, role = "group" }) {
+    const labelId = (0, import_hooks.useId)();
+    return /* @__PURE__ */ o("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
+      /* @__PURE__ */ o("div", { id: labelId, className: Labelled_module_default.label, "aria-hidden": "true", children: label }),
+      children
+    ] });
+  }
+
+  // src/ui/state.ts
+  var import_signals = __toESM(require_signals());
+  var actionArea = (0, import_signals.signal)(void 0);
+  var activeCombatant = (0, import_signals.signal)(void 0);
+  var allActions = (0, import_signals.signal)([]);
+  var allCombatants = (0, import_signals.signal)([]);
+  var allEffects = (0, import_signals.signal)([]);
+  var scale = (0, import_signals.signal)(20);
+  var wantsCombatant = (0, import_signals.signal)(
+    void 0
+  );
+  var wantsPoint = (0, import_signals.signal)(void 0);
+  window.state = {
+    actionArea,
+    activeCombatant,
+    allActions,
+    allEffects,
+    allCombatants,
+    scale,
+    wantsPoint
+  };
+
   // src/ui/ActiveUnitPanel.tsx
   function ActiveUnitPanel({
     onChooseAction,
@@ -1759,31 +1844,28 @@
     who
   }) {
     return /* @__PURE__ */ o("aside", { className: ActiveUnitPanel_module_default.main, "aria-label": "Active Unit", children: [
-      /* @__PURE__ */ o("div", { children: [
-        /* @__PURE__ */ o("div", { children: "Current Turn:" }),
-        /* @__PURE__ */ o("div", { children: who.name })
-      ] }),
+      /* @__PURE__ */ o(Labelled, { label: "Current Turn", children: who.name }),
       /* @__PURE__ */ o("button", { onClick: onPass, children: "End Turn" }),
       /* @__PURE__ */ o("hr", {}),
-      /* @__PURE__ */ o("div", { children: allActions.value.map((action) => /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)) })
+      /* @__PURE__ */ o(Labelled, { label: "Actions", children: allActions.value.map((action) => /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)) })
     ] });
   }
 
   // src/ui/App.module.scss
   var App_module_default = {
-    "sidePanel": "_sidePanel_187go_5"
+    "sidePanel": "_sidePanel_1hm63_5"
   };
 
   // src/ui/Battlefield.tsx
-  var import_hooks4 = __toESM(require_hooks());
+  var import_hooks5 = __toESM(require_hooks());
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
-    "main": "_main_ww5d6_1"
+    "main": "_main_hrxn9_1"
   };
 
   // src/ui/BattlefieldEffect.tsx
-  var import_hooks = __toESM(require_hooks());
+  var import_hooks2 = __toESM(require_hooks());
 
   // src/utils/areas.ts
   function resolveArea(area) {
@@ -1808,14 +1890,19 @@
 
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
-    "main": "_main_13t22_1",
-    "label": "_label_13t22_10",
-    "square": "_square_13t22_14"
+    "main": "_main_lrafe_1",
+    "label": "_label_lrafe_10",
+    "square": "_square_lrafe_14"
   };
 
   // src/ui/BattlefieldEffect.tsx
-  function Sphere({ centre, name, radius, tags }) {
-    const style = (0, import_hooks.useMemo)(() => {
+  function Sphere({
+    centre,
+    name,
+    radius,
+    tags
+  }) {
+    const style = (0, import_hooks2.useMemo)(() => {
       const size = radius * scale.value;
       return {
         left: centre.x * scale.value - size,
@@ -1829,7 +1916,7 @@
     return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: `${name} Effect` }) });
   }
   function AffectedSquare({ point }) {
-    const style = (0, import_hooks.useMemo)(
+    const style = (0, import_hooks2.useMemo)(
       () => ({
         left: point.x * scale.value,
         top: point.y * scale.value,
@@ -1840,39 +1927,39 @@
     );
     return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.square, style });
   }
-  function BattlefieldEffect({ effect }) {
-    const main = (0, import_hooks.useMemo)(() => {
-      switch (effect.type) {
+  function BattlefieldEffect({ shape }) {
+    const main = (0, import_hooks2.useMemo)(() => {
+      switch (shape.type) {
         case "sphere":
-          return /* @__PURE__ */ o(Sphere, __spreadValues({}, effect));
+          return /* @__PURE__ */ o(Sphere, __spreadValues({ name: "Pending", tags: /* @__PURE__ */ new Set() }, shape));
       }
-    }, [effect]);
-    const points = (0, import_hooks.useMemo)(() => resolveArea(effect), [effect]);
+    }, [shape]);
+    const points = (0, import_hooks2.useMemo)(() => resolveArea(shape), [shape]);
     return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
       main,
-      points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { effect, point: p }, i))
+      points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { shape, point: p }, i))
     ] });
   }
 
   // src/ui/Unit.tsx
-  var import_hooks3 = __toESM(require_hooks());
+  var import_hooks4 = __toESM(require_hooks());
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_1m7p6_1",
-    "token": "_token_1m7p6_11"
+    "main": "_main_12cn9_1",
+    "token": "_token_12cn9_11"
   };
 
   // src/ui/UnitMoveButton.tsx
-  var import_hooks2 = __toESM(require_hooks());
+  var import_hooks3 = __toESM(require_hooks());
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_1goup_5",
-    "moveN": "_moveN_1goup_22",
-    "moveE": "_moveE_1goup_28",
-    "moveS": "_moveS_1goup_34",
-    "moveW": "_moveW_1goup_40"
+    "main": "_main_h46jm_5",
+    "moveN": "_moveN_h46jm_22",
+    "moveE": "_moveE_h46jm_28",
+    "moveS": "_moveS_h46jm_34",
+    "moveW": "_moveW_h46jm_40"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -1884,11 +1971,11 @@
     west: makeButtonType("moveW", "\u2B05\uFE0F", "Move West", -5, 0)
   };
   function UnitMoveButton({ onClick, type }) {
-    const { className, emoji, label, dx, dy } = (0, import_hooks2.useMemo)(
+    const { className, emoji, label, dx, dy } = (0, import_hooks3.useMemo)(
       () => buttonTypes[type],
       [type]
     );
-    const clicked = (0, import_hooks2.useCallback)(
+    const clicked = (0, import_hooks3.useCallback)(
       (e) => {
         e.stopPropagation();
         onClick(dx, dy);
@@ -1907,28 +1994,28 @@
   }
 
   // src/ui/Unit.tsx
-  function Unit({ isActive, onClick, onMove, state, who }) {
-    const containerStyle = (0, import_hooks3.useMemo)(
-      () => ({
-        left: state.position.x * scale.value,
-        top: state.position.y * scale.value,
-        width: who.sizeInUnits * scale.value,
-        height: who.sizeInUnits * scale.value
-      }),
-      [scale.value, state.position.x, state.position.y, who.sizeInUnits]
-    );
-    const tokenStyle = (0, import_hooks3.useMemo)(
-      () => ({
-        width: who.sizeInUnits * scale.value,
-        height: who.sizeInUnits * scale.value
-      }),
-      [scale.value, who.sizeInUnits]
-    );
-    const clicked = (0, import_hooks3.useCallback)(
+  function Unit({
+    isActive,
+    onClick,
+    onMove,
+    position,
+    who
+  }) {
+    const containerStyle = {
+      left: position.x * scale.value,
+      top: position.y * scale.value,
+      width: who.sizeInUnits * scale.value,
+      height: who.sizeInUnits * scale.value
+    };
+    const tokenStyle = {
+      width: who.sizeInUnits * scale.value,
+      height: who.sizeInUnits * scale.value
+    };
+    const clicked = (0, import_hooks4.useCallback)(
       (e) => onClick(who, e),
       [onClick, who]
     );
-    const moved = (0, import_hooks3.useCallback)(
+    const moved = (0, import_hooks4.useCallback)(
       (dx, dy) => onMove(who, dx, dy),
       [onMove, who]
     );
@@ -1969,12 +2056,12 @@
     onClickCombatant,
     onMoveCombatant
   }) {
-    const convertCoordinate = (0, import_hooks4.useCallback)((e) => {
-      const x = round(Math.floor(e.offsetX / scale.value), 5);
-      const y = round(Math.floor(e.offsetY / scale.value), 5);
+    const convertCoordinate = (0, import_hooks5.useCallback)((e) => {
+      const x = round(Math.floor(e.pageX / scale.value), 5);
+      const y = round(Math.floor(e.pageY / scale.value), 5);
       return { x, y };
     }, []);
-    const onClick = (0, import_hooks4.useCallback)(
+    const onClick = (0, import_hooks5.useCallback)(
       (e) => onClickBattlefield(convertCoordinate(e), e),
       [convertCoordinate, onClickBattlefield]
     );
@@ -1986,40 +2073,45 @@
           {
             isActive: activeCombatant.value === who,
             who,
-            state,
+            position: state.position,
             onClick: onClickCombatant,
             onMove: onMoveCombatant
           },
           who.id
         )),
-        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { effect }, effect.id))
+        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { shape: effect }, effect.id)),
+        actionArea.value && /* @__PURE__ */ o(BattlefieldEffect, { shape: actionArea.value })
       ] })
     );
   }
 
   // src/ui/ChooseActionConfigPanel.tsx
-  var import_hooks5 = __toESM(require_hooks());
+  var import_hooks6 = __toESM(require_hooks());
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_z1296_1",
-    "active": "_active_z1296_8"
+    "main": "_main_12wgw_1",
+    "active": "_active_12wgw_8"
   };
 
+  // src/ui/CombatantRef.module.scss
+  var CombatantRef_module_default = {
+    "main": "_main_u5vis_1",
+    "icon": "_icon_u5vis_6",
+    "iconLabel": "_iconLabel_u5vis_12"
+  };
+
+  // src/ui/CombatantRef.tsx
+  function CombatantRef({ who }) {
+    return /* @__PURE__ */ o("div", { className: CombatantRef_module_default.main, children: [
+      /* @__PURE__ */ o("img", { className: CombatantRef_module_default.icon, src: who.img, alt: who.name }),
+      /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
+    ] });
+  }
+
   // src/ui/ChooseActionConfigPanel.tsx
-  function ChooseTarget({
-    action,
-    field,
-    resolver,
-    value,
-    onChange
-  }) {
-    var _a;
-    const errors = (0, import_hooks5.useMemo)(
-      () => resolver.check(value, action).messages,
-      [action, resolver, value]
-    );
-    const onClick = (0, import_hooks5.useCallback)(() => {
+  function ChooseTarget({ field, value, onChange }) {
+    const onClick = (0, import_hooks6.useCallback)(() => {
       wantsCombatant.value = (who) => {
         wantsCombatant.value = void 0;
         onChange(field, who);
@@ -2028,24 +2120,13 @@
     return /* @__PURE__ */ o("div", { children: [
       /* @__PURE__ */ o("div", { children: [
         "Target: ",
-        (_a = value == null ? void 0 : value.name) != null ? _a : "NONE"
+        value ? /* @__PURE__ */ o(CombatantRef, { who: value }) : "NONE"
       ] }),
-      /* @__PURE__ */ o("button", { onClick, children: "Choose Target" }),
-      value && errors.length > 0 && /* @__PURE__ */ o("div", { children: errors })
+      /* @__PURE__ */ o("button", { onClick, children: "Choose Target" })
     ] });
   }
-  function ChoosePoint({
-    action,
-    field,
-    resolver,
-    value,
-    onChange
-  }) {
-    const errors = (0, import_hooks5.useMemo)(
-      () => resolver.check(value, action).messages,
-      [action, resolver, value]
-    );
-    const onClick = (0, import_hooks5.useCallback)(() => {
+  function ChoosePoint({ field, value, onChange }) {
+    const onClick = (0, import_hooks6.useCallback)(() => {
       wantsPoint.value = (point) => {
         wantsPoint.value = void 0;
         onChange(field, point);
@@ -2056,21 +2137,15 @@
         "Point: ",
         value ? `${value.x},${value.y}` : "NONE"
       ] }),
-      /* @__PURE__ */ o("button", { onClick, children: "Choose Point" }),
-      value && errors.length > 0 && /* @__PURE__ */ o("div", { children: errors })
+      /* @__PURE__ */ o("button", { onClick, children: "Choose Point" })
     ] });
   }
   function ChooseSlot({
-    action,
     field,
     resolver,
     value,
     onChange
   }) {
-    const errors = (0, import_hooks5.useMemo)(
-      () => resolver.check(value, action).messages,
-      [action, resolver, value]
-    );
     return /* @__PURE__ */ o("div", { children: [
       /* @__PURE__ */ o("div", { children: [
         "Spell Slot: ",
@@ -2084,8 +2159,7 @@
           children: slot
         },
         slot
-      )) }),
-      value && errors.length > 0 && /* @__PURE__ */ o("div", { children: errors })
+      )) })
     ] });
   }
   function getInitialConfig(action, initial) {
@@ -2102,19 +2176,27 @@
     onCancel,
     onExecute
   }) {
-    const [config, setConfig] = (0, import_hooks5.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks5.useCallback)((key, value) => {
-      setConfig((old) => __spreadProps(__spreadValues({}, old), { [key]: value }));
-    }, []);
-    const disabled = (0, import_hooks5.useMemo)(
-      () => !checkConfig(action, config),
+    const [config, setConfig] = (0, import_hooks6.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks6.useCallback)(
+      (key, value) => {
+        setConfig((old) => {
+          const newConfig = __spreadProps(__spreadValues({}, old), { [key]: value });
+          actionArea.value = action.getAffectedArea(newConfig);
+          return newConfig;
+        });
+      },
+      [action]
+    );
+    const errors = (0, import_hooks6.useMemo)(
+      () => check(action, config).messages,
       [action, config]
     );
-    const execute = (0, import_hooks5.useCallback)(() => {
+    const disabled = (0, import_hooks6.useMemo)(() => errors.length > 0, [errors]);
+    const execute = (0, import_hooks6.useCallback)(() => {
       if (checkConfig(action, config))
         onExecute(action, config);
     }, [action, config, onExecute]);
-    const elements = (0, import_hooks5.useMemo)(
+    const elements = (0, import_hooks6.useMemo)(
       () => Object.entries(action.config).map(([key, resolver]) => {
         const props = {
           key,
@@ -2145,75 +2227,97 @@
       /* @__PURE__ */ o("div", { children: action.name }),
       /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
       /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
-      /* @__PURE__ */ o("div", { children: elements })
+      /* @__PURE__ */ o("div", { children: elements }),
+      errors.length > 0 && /* @__PURE__ */ o(Labelled, { label: "Errors", children: errors.map((msg, i) => /* @__PURE__ */ o("div", { children: msg }, i)) })
     ] });
   }
 
   // src/ui/EventLog.tsx
-  var import_hooks6 = __toESM(require_hooks());
+  var import_hooks7 = __toESM(require_hooks());
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
-    "main": "_main_1nene_1",
-    "message": "_message_1nene_19",
-    "icon": "_icon_1nene_25",
-    "iconLabel": "_iconLabel_1nene_31"
+    "main": "_main_xdmbb_1",
+    "wrapper": "_wrapper_xdmbb_19",
+    "message": "_message_xdmbb_23"
   };
 
   // src/ui/EventLog.tsx
-  function CombatantRef({ who }) {
-    return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
-      /* @__PURE__ */ o("img", { className: EventLog_module_default.icon, src: who.img, alt: who.name }),
-      /* @__PURE__ */ o("span", { className: EventLog_module_default.iconLabel, "aria-hidden": "true", children: who.name })
-    ] });
+  function LogMessage({
+    children,
+    message
+  }) {
+    return /* @__PURE__ */ o("li", { "aria-label": message, className: EventLog_module_default.wrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function AttackMessage({
     pre: { attacker, target, weapon, ammo },
     total
   }) {
-    return /* @__PURE__ */ o("li", { className: EventLog_module_default.message, children: [
-      /* @__PURE__ */ o(CombatantRef, { who: attacker }),
-      "attacks\xA0",
-      /* @__PURE__ */ o(CombatantRef, { who: target }),
-      weapon && `with ${weapon.name}`,
-      ammo && `, firing ${ammo.name}`,
-      "\xA0(",
-      total,
-      ")."
+    return /* @__PURE__ */ o(
+      LogMessage,
+      {
+        message: `${attacker.name} attacks ${target.name}${weapon ? ` with ${weapon.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
+        children: [
+          /* @__PURE__ */ o(CombatantRef, { who: attacker }),
+          "attacks\xA0",
+          /* @__PURE__ */ o(CombatantRef, { who: target }),
+          weapon && `with ${weapon.name}`,
+          ammo && `, firing ${ammo.name}`,
+          "\xA0(",
+          total,
+          ")."
+        ]
+      }
+    );
+  }
+  function CastMessage({ level, spell, who }) {
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} casts ${spell.name} at level ${level}.`, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      "casts ",
+      spell.name,
+      " at level ",
+      level,
+      "."
     ] });
+  }
+  function getDamageEntryText([type, entry]) {
+    return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
   }
   function DamageMessage({
     who,
     total,
     breakdown
   }) {
-    return /* @__PURE__ */ o("li", { className: EventLog_module_default.message, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      "takes ",
-      total,
-      " damage. (",
-      [...breakdown].map(([type, entry]) => /* @__PURE__ */ o("span", { children: [
-        entry.amount,
-        " ",
-        type,
-        entry.response !== "normal" ? ` ${entry.response}` : ""
-      ] }, type)),
-      ")"
-    ] });
+    return /* @__PURE__ */ o(
+      LogMessage,
+      {
+        message: `${who.name} takes ${total} damage. (${[...breakdown].map(
+          getDamageEntryText
+        )})`,
+        children: [
+          /* @__PURE__ */ o(CombatantRef, { who }),
+          "takes ",
+          total,
+          " damage. (",
+          [...breakdown].map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)),
+          ")"
+        ]
+      }
+    );
   }
   function DeathMessage({ who }) {
-    return /* @__PURE__ */ o("li", { className: EventLog_module_default.message, children: [
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} dies!`, children: [
       /* @__PURE__ */ o(CombatantRef, { who }),
       "dies!"
     ] });
   }
   function EventLog({ g: g2 }) {
-    const [messages, setMessages] = (0, import_hooks6.useState)([]);
-    const addMessage = (0, import_hooks6.useCallback)(
+    const [messages, setMessages] = (0, import_hooks7.useState)([]);
+    const addMessage = (0, import_hooks7.useCallback)(
       (el) => setMessages((old) => old.concat(el).slice(0, 50)),
       []
     );
-    (0, import_hooks6.useEffect)(() => {
+    (0, import_hooks7.useEffect)(() => {
       g2.events.on(
         "attack",
         ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
@@ -2226,18 +2330,22 @@
         "combatantDied",
         ({ detail }) => addMessage(/* @__PURE__ */ o(DeathMessage, __spreadValues({}, detail)))
       );
+      g2.events.on(
+        "spellCast",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
+      );
     }, [addMessage, g2]);
     return /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages });
   }
 
   // src/ui/Menu.module.scss
   var Menu_module_default = {
-    "main": "_main_1ct3i_1"
+    "main": "_main_1xuy6_1"
   };
 
   // src/ui/Menu.tsx
-  function Menu({ items, onClick, x, y }) {
-    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+  function Menu({ caption, items, onClick, x, y }) {
+    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ o(Labelled, { label: caption, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
       "button",
       {
         role: "menuitem",
@@ -2246,33 +2354,33 @@
         children: label
       },
       label
-    )) });
+    )) }) });
   }
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks7.useState)();
-    const [action, setAction] = (0, import_hooks7.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks7.useState)({
+    const [target, setTarget] = (0, import_hooks8.useState)();
+    const [action, setAction] = (0, import_hooks8.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks8.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks7.useCallback)(
+    const hideActionMenu = (0, import_hooks8.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks7.useCallback)(() => {
+    const refreshUnits = (0, import_hooks8.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push({ who, state });
       allCombatants.value = list;
     }, [g2]);
-    const refreshAreas = (0, import_hooks7.useCallback)(() => {
+    const refreshAreas = (0, import_hooks8.useCallback)(() => {
       allEffects.value = [...g2.effects];
     }, [g2]);
-    (0, import_hooks7.useEffect)(() => {
+    (0, import_hooks8.useEffect)(() => {
       g2.events.on("combatantPlaced", refreshUnits);
       g2.events.on("combatantMoved", refreshUnits);
       g2.events.on("combatantDied", refreshUnits);
@@ -2286,14 +2394,15 @@
       });
       onMount == null ? void 0 : onMount(g2);
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
-    const onExecuteAction = (0, import_hooks7.useCallback)(
+    const onExecuteAction = (0, import_hooks8.useCallback)(
       (action2, config) => {
         setAction(void 0);
+        actionArea.value = void 0;
         g2.act(action2, config);
       },
       [g2]
     );
-    const onClickAction = (0, import_hooks7.useCallback)(
+    const onClickAction = (0, import_hooks8.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -2306,7 +2415,7 @@
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks7.useCallback)(
+    const onClickBattlefield = (0, import_hooks8.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -2314,10 +2423,11 @@
           return;
         }
         hideActionMenu();
+        actionArea.value = void 0;
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks7.useCallback)(
+    const onClickCombatant = (0, import_hooks8.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -2331,6 +2441,7 @@
           return;
         }
         setAction(void 0);
+        actionArea.value = void 0;
         if (activeCombatant.value) {
           setTarget(who);
           const items = allActions.value.map((action2) => ({
@@ -2340,25 +2451,29 @@
               target: who,
               point: g2.getState(who).position
             })
-          }));
+          })).filter((item) => !item.disabled);
           setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
         }
       },
       [g2]
     );
-    const onMoveCombatant = (0, import_hooks7.useCallback)(
+    const onMoveCombatant = (0, import_hooks8.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks7.useCallback)(() => {
+    const onPass = (0, import_hooks8.useCallback)(() => {
       setAction(void 0);
+      actionArea.value = void 0;
       void g2.nextTurn();
     }, [g2]);
-    const onCancelAction = (0, import_hooks7.useCallback)(() => setAction(void 0), []);
-    const onChooseAction = (0, import_hooks7.useCallback)(
+    const onCancelAction = (0, import_hooks8.useCallback)(() => {
+      setAction(void 0);
+      actionArea.value = void 0;
+    }, []);
+    const onChooseAction = (0, import_hooks8.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);
@@ -2374,7 +2489,7 @@
           onMoveCombatant
         }
       ),
-      actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({}, actionMenu), { onClick: onClickAction })),
+      actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({ caption: "Quick Actions" }, actionMenu), { onClick: onClickAction })),
       /* @__PURE__ */ o("div", { className: App_module_default.sidePanel, children: [
         activeCombatant.value && /* @__PURE__ */ o(
           ActiveUnitPanel,
@@ -2408,10 +2523,10 @@
         onMount: () => {
           const thug = new Thug(g);
           const badger = new Badger(g);
-          const teth = new Tethilssethanar(g);
+          const hunk = new Tethilssethanar(g);
           g.place(thug, 0, 0);
           g.place(badger, 10, 0);
-          g.place(teth, 10, 20);
+          g.place(hunk, 10, 20);
           g.start();
         }
       }

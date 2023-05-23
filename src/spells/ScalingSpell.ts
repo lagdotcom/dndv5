@@ -1,8 +1,10 @@
+import ErrorCollector from "../collectors/ErrorCollector";
 import { Scales } from "../configs";
 import SlotResolver from "../resolvers/SlotResolver";
 import { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
+import { SpecifiedEffectShape } from "../types/EffectArea";
 import Spell, { SpellSchool } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
@@ -39,4 +41,19 @@ export default abstract class ScalingSpell<T extends object>
     method: SpellcastingMethod,
     config: T & Scales
   ): Promise<void>;
+
+  getAffectedArea(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _config: Partial<T & Scales>
+  ): SpecifiedEffectShape | undefined {
+    return undefined;
+  }
+
+  check(config: Partial<T>, ec = new ErrorCollector()) {
+    return ec;
+  }
+
+  getLevel({ slot }: T & Scales): number {
+    return slot;
+  }
 }

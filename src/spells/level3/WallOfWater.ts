@@ -4,11 +4,11 @@ import PointResolver from "../../resolvers/PointResolver";
 import TextChoiceResolver from "../../resolvers/TextChoiceResolver";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
-import AbstractSpell from "../AbstractSpell";
+import SimpleSpell from "../SimpleSpell";
 
 type Config = HasPoint & { shape: "line" | "ring" };
 
-export default class WallOfWater extends AbstractSpell<Config> {
+export default class WallOfWater extends SimpleSpell<Config> {
   constructor(public g: Engine) {
     super("Wall of Water", 3, "Evocation", "action", true, {
       point: new PointResolver(g, 60),

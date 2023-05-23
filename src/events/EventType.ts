@@ -11,6 +11,7 @@ import GatherDamageEvent from "./GatherDamageEvent";
 import GetACMethodsEvent from "./GetACMethodsEvent";
 import GetActionsEvent from "./GetActionsEvent";
 import GetDamageResponseEvent from "./GetDamageResponseEvent";
+import SpellCastEvent from "./SpellCastEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
 
 export type EventTypes = {
@@ -27,6 +28,7 @@ export type EventTypes = {
   getACMethods: GetACMethodsEvent;
   getActions: GetActionsEvent;
   getDamageResponse: GetDamageResponseEvent;
+  spellCast: SpellCastEvent;
   turnStarted: TurnStartedEvent;
 };
 

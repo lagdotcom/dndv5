@@ -6,31 +6,21 @@ import TargetResolver from "../resolvers/TargetResolver";
 import Action, { Resolver } from "../types/Action";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
-import { checkConfig } from "../utils/config";
+import { check, checkConfig } from "../utils/config";
 import { enumerate } from "../utils/numbers";
 import styles from "./ChooseActionConfigPanel.module.scss";
-import { wantsCombatant, wantsPoint } from "./state";
+import CombatantRef from "./CombatantRef";
+import Labelled from "./Labelled";
+import { actionArea, wantsCombatant, wantsPoint } from "./state";
 
 type ChooserProps<T, R = Resolver<T>> = {
-  action: Action;
   field: string;
   onChange(key: string, value?: T): void;
   resolver: R;
   value?: T;
 };
 
-function ChooseTarget({
-  action,
-  field,
-  resolver,
-  value,
-  onChange,
-}: ChooserProps<Combatant>) {
-  const errors = useMemo(
-    () => resolver.check(value, action).messages,
-    [action, resolver, value]
-  );
-
+function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
   const onClick = useCallback(() => {
     wantsCombatant.value = (who) => {
       wantsCombatant.value = undefined;
@@ -40,25 +30,13 @@ function ChooseTarget({
 
   return (
     <div>
-      <div>Target: {value?.name ?? "NONE"}</div>
+      <div>Target: {value ? <CombatantRef who={value} /> : "NONE"}</div>
       <button onClick={onClick}>Choose Target</button>
-      {value && errors.length > 0 && <div>{errors}</div>}
     </div>
   );
 }
 
-function ChoosePoint({
-  action,
-  field,
-  resolver,
-  value,
-  onChange,
-}: ChooserProps<Point>) {
-  const errors = useMemo(
-    () => resolver.check(value, action).messages,
-    [action, resolver, value]
-  );
-
+function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
   const onClick = useCallback(() => {
     wantsPoint.value = (point) => {
       wantsPoint.value = undefined;
@@ -70,23 +48,16 @@ function ChoosePoint({
     <div>
       <div>Point: {value ? `${value.x},${value.y}` : "NONE"}</div>
       <button onClick={onClick}>Choose Point</button>
-      {value && errors.length > 0 && <div>{errors}</div>}
     </div>
   );
 }
 
 function ChooseSlot({
-  action,
   field,
   resolver,
   value,
   onChange,
 }: ChooserProps<number, SlotResolver>) {
-  const errors = useMemo(
-    () => resolver.check(value, action).messages,
-    [action, resolver, value]
-  );
-
   return (
     <div>
       <div>Spell Slot: {value ?? "NONE"}</div>
@@ -101,7 +72,6 @@ function ChooseSlot({
           </button>
         ))}
       </div>
-      {value && errors.length > 0 && <div>{errors}</div>}
     </div>
   );
 }
@@ -133,14 +103,22 @@ export default function ChooseActionConfigPanel<T extends object>({
   onExecute,
 }: Props<T>) {
   const [config, setConfig] = useState(getInitialConfig(action, initialConfig));
-  const patchConfig = useCallback((key: string, value: unknown) => {
-    setConfig((old) => ({ ...old, [key]: value }));
-  }, []);
+  const patchConfig = useCallback(
+    (key: string, value: unknown) => {
+      setConfig((old) => {
+        const newConfig = { ...old, [key]: value };
+        actionArea.value = action.getAffectedArea(newConfig);
+        return newConfig;
+      });
+    },
+    [action]
+  );
 
-  const disabled = useMemo(
-    () => !checkConfig(action, config),
+  const errors = useMemo(
+    () => check(action, config).messages,
     [action, config]
   );
+  const disabled = useMemo(() => errors.length > 0, [errors]);
 
   const execute = useCallback(() => {
     if (checkConfig(action, config)) onExecute(action, config);
@@ -184,6 +162,13 @@ export default function ChooseActionConfigPanel<T extends object>({
       </button>
       <button onClick={onCancel}>Cancel</button>
       <div>{elements}</div>
+      {errors.length > 0 && (
+        <Labelled label="Errors">
+          {errors.map((msg, i) => (
+            <div key={i}>{msg}</div>
+          ))}
+        </Labelled>
+      )}
     </aside>
   );
 }

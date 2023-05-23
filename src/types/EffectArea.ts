@@ -5,10 +5,11 @@ export const AreaTags = ["heavily obscured"] as const;
 export type AreaTag = (typeof AreaTags)[number];
 
 type EffectSphere = SphereShape & { centre: Point };
+export type SpecifiedEffectShape = EffectSphere;
 
 type EffectArea = {
   id: number;
   name: string;
   tags: Set<AreaTag>;
-} & EffectSphere;
+} & SpecifiedEffectShape;
 export default EffectArea;
