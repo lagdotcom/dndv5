@@ -492,7 +492,6 @@
         return;
       }
       this.features.set(feature.name, feature);
-      feature.setup(this.g, this, this.getConfig(feature.name));
     }
     setAbilityScores(str, dex, con, int, wis, cha) {
       this.strScore = str;
@@ -552,6 +551,10 @@
     }
     concentrateOn(entry) {
       this.concentratingOn.add(entry);
+    }
+    finalise() {
+      for (const feature of this.features.values())
+        feature.setup(this.g, this, this.getConfig(feature.name));
     }
   };
 
@@ -986,8 +989,10 @@
     }
     start() {
       return __async(this, null, function* () {
-        for (const [c, cs] of this.combatants)
+        for (const [c, cs] of this.combatants) {
+          c.finalise();
           cs.initiative = yield this.rollInitiative(c);
+        }
         this.initiativeOrder = orderedKeys(
           this.combatants,
           ([, a], [, b]) => b.initiative - a.initiative
@@ -1430,6 +1435,7 @@
       this.naturalWeapons.add(new UnarmedStrike(g2, this));
     }
     setRace(race) {
+      this.race = race;
       this.size = race.size;
       for (const [key, val] of race.abilities)
         this[`${key}Score`] += val;
@@ -1755,8 +1761,7 @@
   var Amphibious = notImplementedFeature("Amphibious");
   var ControlAirAndWaterSpells = [
     {
-      level: 0,
-      // FIXME once I get class levels in
+      level: 1,
       spell: FogCloud,
       resource: new LongRestResource("Control Air and Water: Fog Cloud", 1)
     },

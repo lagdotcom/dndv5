@@ -15,6 +15,8 @@ export class UnarmedStrike extends AbstractWeapon {
 }
 
 export default class PC extends AbstractCombatant {
+  race?: PCRace;
+
   constructor(g: Engine, name: string, img: string) {
     super(g, name, {
       type: "humanoid",
@@ -30,6 +32,7 @@ export default class PC extends AbstractCombatant {
   }
 
   setRace(race: PCRace) {
+    this.race = race;
     this.size = race.size;
 
     for (const [key, val] of race.abilities)

@@ -65,5 +65,6 @@ interface Combatant {
   addResource(resource: Resource, amount?: number): void;
   spendResource(resource: Resource, amount?: number): void;
   concentrateOn(entry: Concentration): void;
+  finalise(): void;
 }
 export default Combatant;

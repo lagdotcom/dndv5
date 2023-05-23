@@ -54,8 +54,10 @@ export default class Engine {
   }
 
   async start() {
-    for (const [c, cs] of this.combatants)
+    for (const [c, cs] of this.combatants) {
+      c.finalise();
       cs.initiative = await this.rollInitiative(c);
+    }
 
     this.initiativeOrder = orderedKeys(
       this.combatants,

@@ -18,7 +18,7 @@ const Amphibious = notImplementedFeature("Amphibious");
 
 const ControlAirAndWaterSpells = [
   {
-    level: 0, // FIXME once I get class levels in
+    level: 1,
     spell: FogCloud,
     resource: new LongRestResource("Control Air and Water: Fog Cloud", 1),
   },

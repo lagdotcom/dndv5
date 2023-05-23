@@ -27,7 +27,6 @@ export default class Badger extends Monster {
 
     // TODO Keen Smell. The badger has advantage on Wisdom (Perception) checks that rely on smell.
 
-    // TODO Bite. Melee Weapon Attack: +2 to hit, reach 5 ft., one target. Hit: 1 piercing damage.
     this.naturalWeapons.add(new Bite(g));
   }
 }

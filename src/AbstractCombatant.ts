@@ -236,7 +236,6 @@ export default abstract class AbstractCombatant implements Combatant {
     }
 
     this.features.set(feature.name, feature);
-    feature.setup(this.g, this, this.getConfig(feature.name));
   }
 
   setAbilityScores(
@@ -312,5 +311,10 @@ export default abstract class AbstractCombatant implements Combatant {
   concentrateOn(entry: Concentration): void {
     // TODO destroy existing concentratingOn entries?
     this.concentratingOn.add(entry);
+  }
+
+  finalise() {
+    for (const feature of this.features.values())
+      feature.setup(this.g, this, this.getConfig(feature.name));
   }
 }
