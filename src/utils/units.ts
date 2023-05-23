@@ -34,3 +34,14 @@ export function distanceTo(g: Engine, who: Combatant, to: Point) {
   const dy = Math.abs(s.position.y - to.y);
   return Math.max(dx, dy);
 }
+
+export function getSquares(who: Combatant, position: Point) {
+  const size = who.sizeInUnits;
+
+  const points: Point[] = [];
+  for (let y = 0; y < size; y += 5)
+    for (let x = 0; x < size; x += 5)
+      points.push({ x: x + position.x, y: y + position.y });
+
+  return points;
+}

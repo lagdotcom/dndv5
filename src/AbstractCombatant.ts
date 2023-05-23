@@ -1,7 +1,9 @@
 import Engine from "./Engine";
+import GetConditionsEvent from "./events/GetConditionsEvent";
 import Ability, { Abilities } from "./types/Ability";
 import Combatant from "./types/Combatant";
 import Concentration from "./types/Concentration";
+import { ConditionName } from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
 import Feature from "./types/Feature";
 import Item, {
@@ -214,6 +216,15 @@ export default abstract class AbstractCombatant implements Combatant {
       if (item.itemType === "ammo") ammo.push(item);
     }
     return ammo;
+  }
+
+  get conditions() {
+    const conditions = new Set<ConditionName>();
+
+    const e = new GetConditionsEvent({ who: this, conditions });
+    this.g.events.fire(e);
+
+    return conditions;
   }
 
   addFeature(feature: Feature) {

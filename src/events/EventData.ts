@@ -6,6 +6,7 @@ import Ability from "../types/Ability";
 import ACMethod from "../types/ACMethod";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import { ConditionName } from "../types/ConditionName";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import DiceType from "../types/DiceType";
@@ -61,6 +62,8 @@ type EventData = {
   };
   getACMethods: { who: Combatant; methods: ACMethod[] };
   getActions: { who: Combatant; target?: Combatant; actions: Action[] };
+  // TODO ConditionCollector?
+  getConditions: { who: Combatant; conditions: Set<ConditionName> };
   getDamageResponse: {
     who: Combatant;
     damageType: DamageType;

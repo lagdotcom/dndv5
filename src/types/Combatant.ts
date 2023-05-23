@@ -1,6 +1,7 @@
 import Ability from "./Ability";
 import ActionTime from "./ActionTime";
 import Concentration from "./Concentration";
+import { ConditionName } from "./ConditionName";
 import CreatureType from "./CreatureType";
 import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
@@ -52,6 +53,7 @@ interface Combatant {
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
   time: Set<ActionTime>;
+  conditions: Set<ConditionName>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

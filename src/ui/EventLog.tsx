@@ -26,18 +26,22 @@ function LogMessage({
 
 function AttackMessage({
   pre: { attacker, target, weapon, ammo },
+  roll,
   total,
 }: EventData["attack"]) {
   return (
     <LogMessage
       message={`${attacker.name} attacks ${target.name}${
-        weapon ? ` with ${weapon.name}` : ""
-      }${ammo ? `, firing ${ammo.name}` : ""} (${total}).`}
+        roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""
+      }${weapon ? ` with ${weapon.name}` : ""}${
+        ammo ? `, firing ${ammo.name}` : ""
+      } (${total}).`}
     >
       <CombatantRef who={attacker} />
       attacks&nbsp;
       <CombatantRef who={target} />
-      {weapon && `with ${weapon.name}`}
+      {roll.diceType !== "normal" && ` at ${roll.diceType}`}
+      {weapon && ` with ${weapon.name}`}
       {ammo && `, firing ${ammo.name}`}
       &nbsp;({total}).
     </LogMessage>

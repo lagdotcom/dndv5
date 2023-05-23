@@ -9,7 +9,6 @@ import {
 import userEvent from "@testing-library/user-event";
 
 import Engine from "../Engine";
-import BeforeAttackEvent from "../events/BeforeAttackEvent";
 import Badger from "../monsters/Badger";
 import Thug from "../monsters/Thug";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
@@ -56,7 +55,7 @@ it("supports Fog Cloud", async () => {
   const pc = new Tethilssethanar(g);
   const enemy = new Thug(g);
   g.place(pc, 0, 0);
-  g.place(enemy, 80, 0);
+  g.place(enemy, 30, 0);
   g.dice.force(20, { type: "initiative", who: pc });
   g.dice.force(10, { type: "initiative", who: enemy });
 
@@ -66,19 +65,26 @@ it("supports Fog Cloud", async () => {
   await waitFor(getFogCloud);
   await user.click(getFogCloud());
   await user.click(btn("Choose Point"));
-  await user.click(token("Tethilssethanar"));
+  await user.click(token("thug"));
   await user.click(btn("Execute"));
   expect(logMsg("Tethilssethanar casts Fog Cloud at level 1.")).toBeVisible();
-
   await user.click(btn("End Turn"));
 
-  const onBeforeAttack = jest.fn<void, [BeforeAttackEvent]>();
-  g.events.on("beforeAttack", onBeforeAttack);
+  // area counts as heavily obscured, so attack has disadvantage from being blinded
   await user.click(token("Tethilssethanar"));
+  g.dice.force(19, { type: "attack", who: enemy });
+  g.dice.force(5, { type: "attack", who: enemy });
   await user.click(menuitem("heavy crossbow (crossbow bolt)"));
+  expect(
+    logMsg(
+      "thug attacks Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7)."
+    )
+  );
+  await user.click(btn("End Turn"));
 
-  // TODO find a way to check this in the frontend
-  expect(onBeforeAttack).toHaveBeenCalled();
-  const [e] = onBeforeAttack.mock.calls[0];
-  expect(e.detail.diceType.result).toBe("disadvantage");
+  // attacking into a heavily obscured area also counts as being blinded, so they cancel out
+  await user.click(token("thug"));
+  g.dice.force(5, { type: "attack", who: pc });
+  await user.click(menuitem("dart"));
+  expect(logMsg("Tethilssethanar attacks thug with dart (9)."));
 });

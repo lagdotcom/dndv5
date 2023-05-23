@@ -1,8 +1,10 @@
 import WeaponAttack from "./actions/WeaponAttack";
 import Engine from "./Engine";
+import PointSet from "./PointSet";
 import Item from "./types/Item";
+import { resolveArea } from "./utils/areas";
 import { getValidAmmunition } from "./utils/items";
-import { distance } from "./utils/units";
+import { distance, getSquares } from "./utils/units";
 
 class DndRule {
   constructor(
@@ -42,6 +44,13 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
   });
 });
 
+export const BlindedRule = new DndRule("Blinded", (g, me) => {
+  g.events.on("beforeAttack", ({ detail: { attacker, diceType, target } }) => {
+    if (attacker.conditions.has("Blinded")) diceType.add("disadvantage", me);
+    if (target.conditions.has("Blinded")) diceType.add("advantage", me);
+  });
+});
+
 export const LongRangeAttacksRule = new DndRule(
   "Long Range Attacks",
   (g, me) => {
@@ -57,6 +66,34 @@ export const LongRangeAttacksRule = new DndRule(
     );
   }
 );
+
+export const ObscuredRule = new DndRule("Obscured", (g, me) => {
+  const isHeavilyObscuredAnywhere = (squares: PointSet) => {
+    for (const effect of g.effects) {
+      if (!effect.tags.has("heavily obscured")) continue;
+
+      const area = new PointSet(resolveArea(effect));
+      for (const square of squares) {
+        if (area.has(square)) return true;
+      }
+    }
+
+    return false;
+  };
+
+  // TODO should really check anywhere along the path...
+  g.events.on("beforeAttack", ({ detail: { diceType, target } }) => {
+    const squares = new PointSet(
+      getSquares(target, g.getState(target).position)
+    );
+    if (isHeavilyObscuredAnywhere(squares)) diceType.add("disadvantage", me);
+  });
+
+  g.events.on("getConditions", ({ detail: { conditions, who } }) => {
+    const squares = new PointSet(getSquares(who, g.getState(who).position));
+    if (isHeavilyObscuredAnywhere(squares)) conditions.add("Blinded");
+  });
+});
 
 export const ProficiencyRule = new DndRule("Proficiency", (g, me) => {
   g.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
@@ -90,7 +127,9 @@ export const WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
 export const allDndRules = [
   AbilityScoreRule,
   ArmorCalculationRule,
+  BlindedRule,
   LongRangeAttacksRule,
+  ObscuredRule,
   ProficiencyRule,
   TurnTimeRule,
   WeaponAttackRule,

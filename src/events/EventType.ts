@@ -10,6 +10,7 @@ import DiceRolledEvent from "./DiceRolledEvent";
 import GatherDamageEvent from "./GatherDamageEvent";
 import GetACMethodsEvent from "./GetACMethodsEvent";
 import GetActionsEvent from "./GetActionsEvent";
+import GetConditionsEvent from "./GetConditionsEvent";
 import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import SpellCastEvent from "./SpellCastEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
@@ -27,6 +28,7 @@ export type EventTypes = {
   gatherDamage: GatherDamageEvent;
   getACMethods: GetACMethodsEvent;
   getActions: GetActionsEvent;
+  getConditions: GetConditionsEvent;
   getDamageResponse: GetDamageResponseEvent;
   spellCast: SpellCastEvent;
   turnStarted: TurnStartedEvent;

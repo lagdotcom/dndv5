@@ -260,6 +260,13 @@
     }
   };
 
+  // src/events/GetConditionsEvent.ts
+  var GetConditionsEvent = class extends EventBase {
+    constructor(detail) {
+      super("getConditions", detail);
+    }
+  };
+
   // src/types/Ability.ts
   var Abilities = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -329,6 +336,14 @@
     const dx = Math.abs(s.position.x - to.x);
     const dy = Math.abs(s.position.y - to.y);
     return Math.max(dx, dy);
+  }
+  function getSquares(who, position) {
+    const size = who.sizeInUnits;
+    const points = [];
+    for (let y = 0; y < size; y += 5)
+      for (let x = 0; x < size; x += 5)
+        points.push({ x: x + position.x, y: y + position.y });
+    return points;
   }
 
   // src/AbstractCombatant.ts
@@ -462,6 +477,12 @@
           ammo.push(item);
       }
       return ammo;
+    }
+    get conditions() {
+      const conditions = /* @__PURE__ */ new Set();
+      const e = new GetConditionsEvent({ who: this, conditions });
+      this.g.events.fire(e);
+      return conditions;
     }
     addFeature(feature) {
       if (this.features.get(feature.name)) {
@@ -648,6 +669,52 @@
     }
   };
 
+  // src/PointSet.ts
+  function asPoint(tag) {
+    const [x, y] = tag.split(",").map(Number);
+    return { x, y };
+  }
+  var asTag = ({ x, y }) => `${x},${y}`;
+  var PointSet = class {
+    constructor(points) {
+      this.set = new Set(points == null ? void 0 : points.map(asTag));
+    }
+    add(p) {
+      return this.set.add(asTag(p));
+    }
+    delete(p) {
+      return this.set.delete(asTag(p));
+    }
+    has(p) {
+      return this.set.has(asTag(p));
+    }
+    *[Symbol.iterator]() {
+      for (const tag of this.set)
+        yield asPoint(tag);
+    }
+  };
+
+  // src/utils/areas.ts
+  function resolveArea(area) {
+    const points = [];
+    switch (area.type) {
+      case "sphere": {
+        const left = area.centre.x - area.radius;
+        const top = area.centre.y - area.radius;
+        for (let y = 0; y <= area.radius * 2; y += 5) {
+          const dy = y - area.radius + 2.5;
+          for (let x = 0; x <= area.radius * 2; x += 5) {
+            const dx = x - area.radius + 2.5;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d <= area.radius)
+              points.push({ x: left + x, y: top + y });
+          }
+        }
+      }
+    }
+    return points;
+  }
+
   // src/DndRules.ts
   var DndRule = class {
     constructor(name, setup) {
@@ -679,6 +746,14 @@
       methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
     });
   });
+  var BlindedRule = new DndRule("Blinded", (g2, me) => {
+    g2.events.on("beforeAttack", ({ detail: { attacker, diceType, target } }) => {
+      if (attacker.conditions.has("Blinded"))
+        diceType.add("disadvantage", me);
+      if (target.conditions.has("Blinded"))
+        diceType.add("advantage", me);
+    });
+  });
   var LongRangeAttacksRule = new DndRule(
     "Long Range Attacks",
     (g2, me) => {
@@ -691,6 +766,32 @@
       );
     }
   );
+  var ObscuredRule = new DndRule("Obscured", (g2, me) => {
+    const isHeavilyObscuredAnywhere = (squares) => {
+      for (const effect of g2.effects) {
+        if (!effect.tags.has("heavily obscured"))
+          continue;
+        const area = new PointSet(resolveArea(effect));
+        for (const square of squares) {
+          if (area.has(square))
+            return true;
+        }
+      }
+      return false;
+    };
+    g2.events.on("beforeAttack", ({ detail: { diceType, target } }) => {
+      const squares = new PointSet(
+        getSquares(target, g2.getState(target).position)
+      );
+      if (isHeavilyObscuredAnywhere(squares))
+        diceType.add("disadvantage", me);
+    });
+    g2.events.on("getConditions", ({ detail: { conditions, who } }) => {
+      const squares = new PointSet(getSquares(who, g2.getState(who).position));
+      if (isHeavilyObscuredAnywhere(squares))
+        conditions.add("Blinded");
+    });
+  });
   var ProficiencyRule = new DndRule("Proficiency", (g2, me) => {
     g2.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
       if (weapon && attacker.getProficiencyMultiplier(weapon))
@@ -721,7 +822,9 @@
   var allDndRules = [
     AbilityScoreRule,
     ArmorCalculationRule,
+    BlindedRule,
     LongRangeAttacksRule,
+    ObscuredRule,
     ProficiencyRule,
     TurnTimeRule,
     WeaponAttackRule
@@ -1867,27 +1970,6 @@
   // src/ui/BattlefieldEffect.tsx
   var import_hooks2 = __toESM(require_hooks());
 
-  // src/utils/areas.ts
-  function resolveArea(area) {
-    const points = [];
-    switch (area.type) {
-      case "sphere": {
-        const left = area.centre.x - area.radius;
-        const top = area.centre.y - area.radius;
-        for (let y = 0; y <= area.radius * 2; y += 5) {
-          const dy = y - area.radius + 2.5;
-          for (let x = 0; x <= area.radius * 2; x += 5) {
-            const dx = x - area.radius + 2.5;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d <= area.radius)
-              points.push({ x: left + x, y: top + y });
-          }
-        }
-      }
-    }
-    return points;
-  }
-
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
     "main": "_main_lrafe_1",
@@ -2251,17 +2333,19 @@
   }
   function AttackMessage({
     pre: { attacker, target, weapon, ammo },
+    roll,
     total
   }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${attacker.name} attacks ${target.name}${weapon ? ` with ${weapon.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
+        message: `${attacker.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: attacker }),
           "attacks\xA0",
           /* @__PURE__ */ o(CombatantRef, { who: target }),
-          weapon && `with ${weapon.name}`,
+          roll.diceType !== "normal" && ` at ${roll.diceType}`,
+          weapon && ` with ${weapon.name}`,
           ammo && `, firing ${ammo.name}`,
           "\xA0(",
           total,
