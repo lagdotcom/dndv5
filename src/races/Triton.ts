@@ -1,5 +1,4 @@
 import CastSpell from "../actions/CastSpell";
-import Engine from "../Engine";
 import { darkvisionFeature, notImplementedFeature } from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
@@ -7,57 +6,43 @@ import InnateSpellcasting from "../spells/InnateSpellcasting";
 import FogCloud from "../spells/level1/FogCloud";
 import GustOfWind from "../spells/level2/GustOfWind";
 import WallOfWater from "../spells/level3/WallOfWater";
-import Combatant from "../types/Combatant";
 import PCRace from "../types/PCRace";
-import Resource from "../types/Resource";
-import Spell from "../types/Spell";
-import SpellcastingMethod from "../types/SpellcastingMethod";
 
 // TODO You can breathe air and water.
 const Amphibious = notImplementedFeature("Amphibious");
 
+const FogCloudResource = new LongRestResource(
+  "Control Air and Water: Fog Cloud",
+  1
+);
+const GustOfWindResource = new LongRestResource(
+  "Control Air and Water: Gust of Wind",
+  1
+);
+const WallOfWaterResource = new LongRestResource(
+  "Control Air and Water: Wall of Water",
+  1
+);
+
 const ControlAirAndWaterSpells = [
-  {
-    level: 1,
-    spell: FogCloud,
-    resource: new LongRestResource("Control Air and Water: Fog Cloud", 1),
-  },
-  {
-    level: 3,
-    spell: GustOfWind,
-    resource: new LongRestResource("Control Air and Water: Gust of Wind", 1),
-  },
-  {
-    level: 5,
-    spell: WallOfWater,
-    resource: new LongRestResource("Control Air and Water: Wall of Water", 1),
-  },
+  { level: 1, spell: FogCloud, resource: FogCloudResource },
+  { level: 3, spell: GustOfWind, resource: GustOfWindResource },
+  { level: 5, spell: WallOfWater, resource: WallOfWaterResource },
 ];
 
-class ControlAirAndWaterSpellAction<T extends object> extends CastSpell<T> {
-  constructor(
-    g: Engine,
-    who: Combatant,
-    method: SpellcastingMethod,
-    spell: Spell<T>,
-    public resource: Resource
-  ) {
-    super(g, who, method, spell);
+const ControlAirAndWaterMethod = new InnateSpellcasting(
+  "Control Air and Water",
+  "cha",
+  (spell) => {
+    if (spell instanceof FogCloud) return FogCloudResource;
+    if (spell instanceof GustOfWind) return GustOfWindResource;
+    if (spell instanceof WallOfWater) return WallOfWaterResource;
   }
-
-  // TODO check has resource before allowing cast
-
-  async apply(config: T): Promise<void> {
-    this.actor.spendResource(this.resource);
-
-    return super.apply(config);
-  }
-}
+);
 
 const ControlAirAndWater = new SimpleFeature(
   "Control Air and Water",
   (g, me) => {
-    const method = new InnateSpellcasting("Control Air and Water", "cha");
     const spells = ControlAirAndWaterSpells.filter(
       (entry) => entry.level <= me.level
     );
@@ -65,15 +50,9 @@ const ControlAirAndWater = new SimpleFeature(
 
     g.events.on("getActions", ({ detail: { who, actions } }) => {
       if (who === me)
-        for (const { spell, resource } of spells)
+        for (const { spell } of spells)
           actions.push(
-            new ControlAirAndWaterSpellAction(
-              g,
-              me,
-              method,
-              new spell(g),
-              resource
-            )
+            new CastSpell(g, me, ControlAirAndWaterMethod, new spell(g))
           );
     });
   }

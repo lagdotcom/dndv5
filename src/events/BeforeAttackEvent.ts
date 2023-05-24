@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class BeforeAttackEvent extends EventBase<"beforeAttack"> {
-  constructor(detail: EventData["beforeAttack"]) {
-    super("beforeAttack", detail);
+type Detail = EventData["beforeAttack"];
+export default class BeforeAttackEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("beforeAttack", { detail });
   }
 }

@@ -5,10 +5,18 @@ import Combatant from "./Combatant";
 import { SpecifiedEffectShape } from "./EffectArea";
 import SpellcastingMethod from "./SpellcastingMethod";
 
-export const SpellSchools = ["Conjuration", "Evocation"] as const;
+export const SpellSchools = [
+  "Abjuration",
+  "Conjuration",
+  "Divination",
+  "Enchantment",
+  "Evocation",
+  "Necromancy",
+  "Transmutation",
+] as const;
 export type SpellSchool = (typeof SpellSchools)[number];
 
-interface Spell<T extends object = object> {
+export default interface Spell<T extends object = object> {
   config: ActionConfig<T>;
   level: number;
   name: string;
@@ -28,4 +36,3 @@ interface Spell<T extends object = object> {
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
   getLevel(config: T): number;
 }
-export default Spell;

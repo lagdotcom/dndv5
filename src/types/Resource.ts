@@ -1,5 +1,4 @@
-interface Resource {
+export default interface Resource {
   name: string;
   maximum: number;
 }
-export default Resource;

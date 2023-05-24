@@ -10,7 +10,6 @@
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
   var __propIsEnum = Object.prototype.propertyIsEnumerable;
-  var __reflectGet = Reflect.get;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __spreadValues = (a, b) => {
     for (var prop in b ||= {})
@@ -43,7 +42,6 @@
     isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
     mod
   ));
-  var __superGet = (cls, obj, key) => __reflectGet(__getProtoOf(cls), key, obj);
   var __async = (__this, __arguments, generator) => {
     return new Promise((resolve, reject) => {
       var fulfilled = (value) => {
@@ -114,6 +112,10 @@
     }
   };
 
+  // src/collectors/InterruptionCollector.ts
+  var InterruptionCollector = class extends Set {
+  };
+
   // src/DiceBag.ts
   function matches(rt, m) {
     for (const [field, value] of Object.entries(m)) {
@@ -149,13 +151,16 @@
       var _a, _b;
       const size = sizeOfDice(rt);
       let value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
-      let valueIgnored = void 0;
+      const otherValues = /* @__PURE__ */ new Set();
       if (dt !== "normal") {
-        valueIgnored = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
-        if (dt === "advantage" && valueIgnored > value || dt === "disadvantage" && value > valueIgnored)
-          [value, valueIgnored] = [valueIgnored, value];
+        const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
+        if (dt === "advantage" && second > value || dt === "disadvantage" && value > second) {
+          otherValues.add(value);
+          value = second;
+        } else
+          otherValues.add(second);
       }
-      return { size, value, valueIgnored };
+      return { size, value, otherValues };
     }
   };
 
@@ -232,38 +237,31 @@
     }
   };
 
-  // src/events/EventBase.ts
-  var EventBase = class extends CustomEvent {
-    constructor(name, detail) {
-      super(name, { detail });
-    }
-  };
-
   // src/events/AttackEvent.ts
-  var AttackEvent = class extends EventBase {
+  var AttackEvent = class extends CustomEvent {
     constructor(detail) {
-      super("attack", detail);
+      super("attack", { detail });
     }
   };
 
   // src/events/BeforeAttackEvent.ts
-  var BeforeAttackEvent = class extends EventBase {
+  var BeforeAttackEvent = class extends CustomEvent {
     constructor(detail) {
-      super("beforeAttack", detail);
+      super("beforeAttack", { detail });
     }
   };
 
   // src/events/GatherDamageEvent.ts
-  var GatherDamageEvent = class extends EventBase {
+  var GatherDamageEvent = class extends CustomEvent {
     constructor(detail) {
-      super("gatherDamage", detail);
+      super("gatherDamage", { detail });
     }
   };
 
   // src/events/GetConditionsEvent.ts
-  var GetConditionsEvent = class extends EventBase {
+  var GetConditionsEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getConditions", detail);
+      super("getConditions", { detail });
     }
   };
 
@@ -276,6 +274,9 @@
   }
   function getDiceAverage(count, size) {
     return (size + 1) / 2 * count;
+  }
+  function getProficiencyBonusByLevel(level) {
+    return Math.ceil(level / 4) + 1;
   }
 
   // src/utils/types.ts
@@ -489,9 +490,10 @@
         console.warn(
           `${this.name} already has a feature named ${feature.name}, skipping.`
         );
-        return;
+        return false;
       }
       this.features.set(feature.name, feature);
+      return true;
     }
     setAbilityScores(str, dex, con, int, wis, cha) {
       this.strScore = str;
@@ -539,6 +541,10 @@
     addResource(resource, amount) {
       this.resources.set(resource, amount != null ? amount : resource.maximum);
     }
+    hasResource(resource, amount = 1) {
+      var _a;
+      return ((_a = this.resources.get(resource)) != null ? _a : 0) >= amount;
+    }
     spendResource(resource, amount = 1) {
       var _a;
       const old = (_a = this.resources.get(resource)) != null ? _a : 0;
@@ -549,12 +555,16 @@
     getConfig(key) {
       return this.configs.get(key);
     }
+    setConfig(feature, config) {
+      this.configs.set(feature.name, config);
+    }
     concentrateOn(entry) {
       this.concentratingOn.add(entry);
     }
     finalise() {
       for (const feature of this.features.values())
         feature.setup(this.g, this, this.getConfig(feature.name));
+      this.hp = this.hpMax;
     }
   };
 
@@ -609,7 +619,7 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
-        const pre = yield g2.resolve(
+        const pre = g2.fire(
           new BeforeAttackEvent({
             target,
             attacker,
@@ -630,7 +640,7 @@
           ammo.quantity--;
         const total = roll.value + pre.detail.bonus.result;
         const outcome = roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= target.ac ? "hit" : "miss";
-        const attack = yield g2.resolve(
+        const attack = g2.fire(
           new AttackEvent({ pre: pre.detail, roll, total, outcome })
         );
         const critical = attack.detail.outcome === "critical";
@@ -654,7 +664,7 @@
             map.add(damage.damageType, amount);
           } else
             map.add(damage.damageType, damage.amount);
-          const gd = yield g2.resolve(
+          const gd = g2.fire(
             new GatherDamageEvent({
               attacker,
               target,
@@ -841,51 +851,51 @@
   };
 
   // src/events/AreaPlacedEvent.ts
-  var AreaPlacedEvent = class extends EventBase {
+  var AreaPlacedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("areaPlaced", detail);
+      super("areaPlaced", { detail });
     }
   };
 
   // src/events/AreaRemovedEvent.ts
-  var AreaRemovedEvent = class extends EventBase {
+  var AreaRemovedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("areaRemoved", detail);
+      super("areaRemoved", { detail });
     }
   };
 
   // src/events/CombatantDamagedEvent.ts
-  var CombatantDamagedEvent = class extends EventBase {
+  var CombatantDamagedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantDamaged", detail);
+      super("combatantDamaged", { detail });
     }
   };
 
   // src/events/CombatantDiedEvent.ts
-  var CombatantDiedEvent = class extends EventBase {
+  var CombatantDiedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantDied", detail);
+      super("combatantDied", { detail });
     }
   };
 
   // src/events/CombatantMovedEvent.ts
-  var CombatantMovedEvent = class extends EventBase {
+  var CombatantMovedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantMoved", detail);
+      super("combatantMoved", { detail });
     }
   };
 
   // src/events/CombatantPlacedEvent.ts
-  var CombatantPlacedEvent = class extends EventBase {
+  var CombatantPlacedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantPlaced", detail);
+      super("combatantPlaced", { detail });
     }
   };
 
   // src/events/DiceRolledEvent.ts
-  var DiceRolledEvent = class extends EventBase {
+  var DiceRolledEvent = class extends CustomEvent {
     constructor(detail) {
-      super("diceRolled", detail);
+      super("diceRolled", { detail });
     }
   };
 
@@ -917,30 +927,49 @@
   };
 
   // src/events/GetACMethodsEvent.ts
-  var GetACMethodsEvent = class extends EventBase {
+  var GetACMethodsEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getACMethods", detail);
+      super("getACMethods", { detail });
     }
   };
 
   // src/events/GetActionsEvent.ts
-  var GetActionsEvent = class extends EventBase {
+  var GetActionsEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getActions", detail);
+      super("getActions", { detail });
     }
   };
 
   // src/events/GetDamageResponseEvent.ts
-  var GetDamageResponseEvent = class extends EventBase {
+  var GetDamageResponseEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getDamageResponse", detail);
+      super("getDamageResponse", { detail });
     }
   };
 
   // src/events/TurnStartedEvent.ts
-  var TurnStartedEvent = class extends EventBase {
+  var TurnStartedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("turnStarted", detail);
+      super("turnStarted", { detail });
+    }
+  };
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("yesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
     }
   };
 
@@ -1019,7 +1048,14 @@
     roll(type, diceType = "normal") {
       return __async(this, null, function* () {
         const roll = this.dice.roll(type, diceType);
-        return (yield this.resolve(new DiceRolledEvent(__spreadValues({ type, diceType }, roll)))).detail;
+        return (yield this.resolve(
+          new DiceRolledEvent(__spreadProps(__spreadValues({
+            type,
+            diceType
+          }, roll), {
+            interrupt: new InterruptionCollector()
+          }))
+        )).detail;
       });
     }
     nextTurn() {
@@ -1100,9 +1136,28 @@
         0
       );
     }
+    fire(e) {
+      this.events.fire(e);
+      return e;
+    }
     resolve(e) {
       return __async(this, null, function* () {
+        var _a, _b;
         this.events.fire(e);
+        for (const interruption of e.detail.interrupt) {
+          if (interruption instanceof YesNoChoice) {
+            const choice = yield new Promise(
+              (resolve) => this.events.fire(new YesNoChoiceEvent({ interruption, resolve }))
+            );
+            if (choice)
+              yield (_a = interruption.yes) == null ? void 0 : _a.call(interruption);
+            else
+              yield (_b = interruption.no) == null ? void 0 : _b.call(interruption);
+          } else {
+            console.error(interruption);
+            throw new Error("Unknown interruption type");
+          }
+        }
         return e;
       });
     }
@@ -1114,17 +1169,13 @@
       };
     }
     addEffectArea(area) {
-      return __async(this, null, function* () {
-        area.id = this.nextId();
-        this.effects.add(area);
-        yield this.resolve(new AreaPlacedEvent({ area }));
-      });
+      area.id = this.nextId();
+      this.effects.add(area);
+      this.events.fire(new AreaPlacedEvent({ area }));
     }
     removeEffectArea(area) {
-      return __async(this, null, function* () {
-        this.effects.delete(area);
-        yield this.resolve(new AreaRemovedEvent({ area }));
-      });
+      this.effects.delete(area);
+      this.events.fire(new AreaRemovedEvent({ area }));
     }
   };
 
@@ -1134,6 +1185,11 @@
     amount: { count, size },
     damageType: damage
   });
+  function getDefaultHPRoll(level, hitDieSize) {
+    if (level === 1)
+      return hitDieSize;
+    return Math.ceil(getDiceAverage(1, hitDieSize));
+  }
 
   // src/items/weapons.ts
   var AbstractWeapon = class {
@@ -1161,6 +1217,21 @@
     constructor(g2) {
       super("sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
       this.g = g2;
+    }
+  };
+  var LightCrossbow = class extends AbstractWeapon {
+    constructor(g2) {
+      super(
+        "light crossbow",
+        "simple",
+        "ranged",
+        dd(1, 8, "piercing"),
+        ["ammunition", "loading", "two-handed"],
+        80,
+        320
+      );
+      this.g = g2;
+      this.ammunitionTag = "crossbow";
     }
   };
   var Dart = class extends AbstractWeapon {
@@ -1191,6 +1262,12 @@
       );
       this.g = g2;
       this.ammunitionTag = "sling";
+    }
+  };
+  var Rapier = class extends AbstractWeapon {
+    constructor(g2) {
+      super("rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
+      this.g = g2;
     }
   };
   var HeavyCrossbow = class extends AbstractWeapon {
@@ -1325,6 +1402,423 @@
     }
   };
 
+  // src/features/common.ts
+  function darkvisionFeature(range = 60) {
+    return new SimpleFeature("Darkvision", (_2, me) => {
+      me.senses.set("darkvision", range);
+    });
+  }
+  function notImplementedFeature(name) {
+    return new SimpleFeature(name, () => {
+      console.warn(`[Feature Missing] ${name}`);
+    });
+  }
+
+  // src/features/ConfiguredFeature.ts
+  var ConfiguredFeature = class {
+    constructor(name, apply) {
+      this.name = name;
+      this.apply = apply;
+    }
+    setup(g2, who) {
+      const config = who.getConfig(this.name);
+      if (typeof config === "undefined") {
+        console.warn(`${who.name} has no config for ${this.name}`);
+        return;
+      }
+      this.apply(g2, who, config);
+    }
+  };
+
+  // src/classes/common.ts
+  function asiSetup(g2, me, config) {
+    if (config.type === "ability")
+      for (const ability of config.abilities)
+        me[`${ability}Score`]++;
+    else
+      me.addFeature(config.feat);
+  }
+  function makeASI(className, level) {
+    return new ConfiguredFeature(
+      `Ability Score Improvement (${className} ${level})`,
+      asiSetup
+    );
+  }
+
+  // src/classes/rogue/index.ts
+  var Expertise = new ConfiguredFeature(
+    "Expertise",
+    (g2, me, config) => {
+      for (const entry of config) {
+        if (entry === "thieves' tools") {
+        } else {
+          if (me.skills.has(entry))
+            me.skills.set(entry, 2);
+          else
+            console.warn(`Expertise in ${entry} without existing proficiency`);
+        }
+      }
+    }
+  );
+  var SneakAttack = notImplementedFeature("Sneak Attack");
+  var ThievesCant = notImplementedFeature("Thieves' Cant");
+  var CunningAction = notImplementedFeature("Cunning Action");
+  var SteadyAim = notImplementedFeature("Steady Aim");
+  var ASI4 = makeASI("Rogue", 4);
+  var UncannyDodge = notImplementedFeature("Uncanny Dodge");
+  var Evasion = notImplementedFeature("Evasion");
+  var ASI8 = makeASI("Rogue", 8);
+  var Rogue = {
+    name: "Rogue",
+    hitDieSize: 8,
+    armorProficiencies: /* @__PURE__ */ new Set(["light"]),
+    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple"]),
+    weaponProficiencies: /* @__PURE__ */ new Set([
+      "hand crossbow",
+      "longsword",
+      "rapier",
+      "shortsword"
+    ]),
+    toolProficiencies: /* @__PURE__ */ new Set(["thieves' tools"]),
+    saveProficiencies: /* @__PURE__ */ new Set(["dex", "int"]),
+    skillChoices: 4,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Acrobatics",
+      "Athletics",
+      "Deception",
+      "Insight",
+      "Intimidation",
+      "Investigation",
+      "Perception",
+      "Performance",
+      "Persuasion",
+      "Sleight of Hand",
+      "Stealth"
+    ]),
+    features: /* @__PURE__ */ new Map([
+      [1, [Expertise, SneakAttack, ThievesCant]],
+      [2, [CunningAction]],
+      [3, [SteadyAim]],
+      [4, [ASI4]],
+      [5, [UncannyDodge]],
+      [7, [Evasion]],
+      [8, [ASI8]]
+    ])
+  };
+  var rogue_default = Rogue;
+
+  // src/classes/rogue/Scout.ts
+  var Skirmisher = notImplementedFeature("Skirmisher");
+  var Survivalist = new SimpleFeature("Survivalist", (g2, me) => {
+    me.skills.set("Nature", 2);
+    me.skills.set("Survival", 2);
+  });
+  var SuperiorMobility = notImplementedFeature("Superior Mobility");
+  var AmbushMaster = notImplementedFeature("Ambush Master");
+  var SuddenStrike = notImplementedFeature("Sudden Strike");
+  var Scout = {
+    name: "Scout",
+    className: "Rogue",
+    features: /* @__PURE__ */ new Map([
+      [3, [Skirmisher, Survivalist]],
+      [9, [SuperiorMobility]],
+      [13, [AmbushMaster]],
+      [17, [SuddenStrike]]
+    ])
+  };
+  var Scout_default = Scout;
+
+  // src/resources.ts
+  var LongRestResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+    }
+  };
+
+  // src/feats/Lucky.ts
+  var LuckPoint = new LongRestResource("Luck Point", 3);
+  function useLuckyChoice(who, text, yes) {
+    return new YesNoChoice(who, Lucky, "Lucky", text, yes);
+  }
+  var Lucky = new SimpleFeature("Lucky", (g2, me) => {
+    me.addResource(LuckPoint);
+    g2.events.on("diceRolled", ({ detail }) => {
+      const { type, interrupt, value } = detail;
+      if ((type.type === "attack" || type.type === "check" || type.type === "save") && type.who === me && me.hasResource(LuckPoint))
+        interrupt.add(
+          useLuckyChoice(
+            me,
+            `${me.name} got ${value} on a ${type.type} roll. Use a Luck point to re-roll?`,
+            () => __async(void 0, null, function* () {
+              me.spendResource(LuckPoint);
+              const nr = yield g2.roll({ type: "luck", who: me });
+              if (nr.value > value) {
+                detail.otherValues.add(value);
+                detail.value = nr.value;
+              } else
+                detail.otherValues.add(nr.value);
+            })
+          )
+        );
+    });
+  });
+  var Lucky_default = Lucky;
+
+  // src/PC.ts
+  var UnarmedStrike = class extends AbstractWeapon {
+    constructor(g2, owner) {
+      super("unarmed strike", "natural", "melee", {
+        type: "flat",
+        amount: 1,
+        damageType: "bludgeoning"
+      });
+      this.g = g2;
+      this.owner = owner;
+    }
+  };
+  var PC = class extends AbstractCombatant {
+    constructor(g2, name, img) {
+      super(g2, name, {
+        type: "humanoid",
+        size: "medium",
+        img,
+        side: 0,
+        diesAtZero: false,
+        level: 0
+      });
+      this.subclasses = /* @__PURE__ */ new Map();
+      this.naturalWeapons.add(new UnarmedStrike(g2, this));
+    }
+    setRace(race) {
+      if (race.parent)
+        this.setRace(race.parent);
+      this.race = race;
+      this.size = race.size;
+      for (const [key, val] of race.abilities)
+        this[`${key}Score`] += val;
+      for (const [type, value] of race.movement)
+        this.movement.set(type, value);
+      for (const language of race.languages)
+        this.languages.add(language);
+      for (const feature of race.features)
+        this.addFeature(feature);
+    }
+    addClassLevel(cls, hpRoll) {
+      var _a, _b, _c, _d, _e, _f, _g;
+      const level = ((_a = this.classLevels.get(cls.name)) != null ? _a : 0) + 1;
+      this.classLevels.set(cls.name, level);
+      this.level++;
+      this.pb = getProficiencyBonusByLevel(this.level);
+      this.hpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con;
+      if (level === 1) {
+        for (const prof of (_b = cls == null ? void 0 : cls.armorProficiencies) != null ? _b : [])
+          this.armorProficiencies.add(prof);
+        for (const prof of (_c = cls == null ? void 0 : cls.saveProficiencies) != null ? _c : [])
+          this.saveProficiencies.add(prof);
+        for (const prof of (_d = cls == null ? void 0 : cls.weaponCategoryProficiencies) != null ? _d : [])
+          this.weaponCategoryProficiencies.add(prof);
+        for (const prof of (_e = cls == null ? void 0 : cls.weaponProficiencies) != null ? _e : [])
+          this.weaponProficiencies.add(prof);
+      }
+      for (const feature of (_f = cls.features.get(level)) != null ? _f : [])
+        this.addFeature(feature);
+      const sub = this.subclasses.get(cls.name);
+      for (const feature of (_g = sub == null ? void 0 : sub.features.get(level)) != null ? _g : [])
+        this.addFeature(feature);
+    }
+    addSubclass(sub) {
+      this.subclasses.set(sub.className, sub);
+    }
+  };
+
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("spellCast", { detail });
+    }
+  };
+
+  // src/actions/CastSpell.ts
+  var CastSpell = class {
+    constructor(g2, actor, method, spell) {
+      this.g = g2;
+      this.actor = actor;
+      this.method = method;
+      this.spell = spell;
+      this.name = `${spell.name} (${method.name})`;
+      this.config = spell.config;
+      this.time = spell.time;
+    }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(config);
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.time.has(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      const resource = this.method.getResourceForSpell(this.spell);
+      if (resource && !this.actor.hasResource(resource))
+        ec.add(`No ${resource.name} left`, this.method);
+      return this.spell.check(config, ec);
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        this.actor.time.delete(this.spell.time);
+        const resource = this.method.getResourceForSpell(this.spell);
+        if (resource)
+          this.actor.spendResource(resource, 1);
+        const sc = this.g.fire(
+          new SpellCastEvent({
+            who: this.actor,
+            spell: this.spell,
+            method: this.method,
+            level: this.spell.getLevel(config)
+          })
+        );
+        if (sc.defaultPrevented)
+          return;
+        return this.spell.apply(this.actor, this.method, config);
+      });
+    }
+  };
+
+  // src/spells/InnateSpellcasting.ts
+  var InnateSpellcasting = class {
+    constructor(name, ability, getResourceForSpell) {
+      this.name = name;
+      this.ability = ability;
+      this.getResourceForSpell = getResourceForSpell;
+    }
+    getMaxSlot(spell) {
+      return spell.level;
+    }
+  };
+
+  // src/spells/SimpleSpell.ts
+  var SimpleSpell = class {
+    constructor(name, level, school, time, concentration, config) {
+      this.name = name;
+      this.level = level;
+      this.school = school;
+      this.time = time;
+      this.concentration = concentration;
+      this.config = config;
+      this.v = false;
+      this.s = false;
+    }
+    setVSM(v = false, s = false, m) {
+      this.v = v;
+      this.s = s;
+      this.m = m;
+      return this;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffectedArea(_config) {
+      return void 0;
+    }
+    check(config, ec = new ErrorCollector()) {
+      return ec;
+    }
+    getLevel() {
+      return this.level;
+    }
+  };
+
+  // src/spells/level2/Levitate.ts
+  var Levitate = class extends SimpleSpell {
+    constructor(g2) {
+      super("Levitate", 2, "Transmutation", "action", true, {
+        target: new TargetResolver(g2, 60, true)
+      });
+      this.g = g2;
+      this.setVSM(
+        true,
+        true,
+        "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end"
+      );
+    }
+    apply(_0, _1, _2) {
+      return __async(this, arguments, function* (caster, method, { target }) {
+      });
+    }
+  };
+
+  // src/races/Genasi.ts
+  var Genasi = {
+    name: "Genasi",
+    size: "medium",
+    abilities: /* @__PURE__ */ new Map([["con", 2]]),
+    movement: /* @__PURE__ */ new Map([["speed", 30]]),
+    languages: /* @__PURE__ */ new Set(["Common", "Primordial"]),
+    features: /* @__PURE__ */ new Set()
+  };
+  var UnendingBreath = notImplementedFeature("Unending Breath");
+  var MingleWithTheWindResource = new LongRestResource(
+    "Mingle with the Wind",
+    1
+  );
+  var MingleWithTheWindMethod = new InnateSpellcasting(
+    "Mingle with the Wind",
+    "con",
+    () => MingleWithTheWindResource
+  );
+  var MingleWithTheWind = new SimpleFeature("Mingle with the Wind", (g2, me) => {
+    me.addResource(MingleWithTheWindResource);
+    g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who === me)
+        actions.push(
+          new CastSpell(g2, me, MingleWithTheWindMethod, new Levitate(g2))
+        );
+    });
+  });
+  var AirGenasi = {
+    parent: Genasi,
+    name: "Air Genasi",
+    size: "medium",
+    abilities: /* @__PURE__ */ new Map([["dex", 1]]),
+    movement: /* @__PURE__ */ new Map(),
+    languages: /* @__PURE__ */ new Set(),
+    features: /* @__PURE__ */ new Set([UnendingBreath, MingleWithTheWind])
+  };
+
+  // src/pcs/davies/Aura_token.png
+  var Aura_token_default = "./Aura_token-PXXTYCUY.png";
+
+  // src/pcs/davies/Aura.ts
+  var Aura = class extends PC {
+    constructor(g2) {
+      super(g2, "Aura", Aura_token_default);
+      this.setAbilityScores(8, 15, 11, 14, 9, 14);
+      this.setRace(AirGenasi);
+      this.addSubclass(Scout_default);
+      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default);
+      this.setConfig(Expertise, [
+        "Acrobatics",
+        "thieves' tools",
+        "Stealth",
+        "Investigation"
+      ]);
+      this.setConfig(ASI4, { type: "feat", feat: Lucky_default });
+      this.skills.set("Acrobatics", 1);
+      this.skills.set("Athletics", 1);
+      this.skills.set("Deception", 1);
+      this.skills.set("Investigation", 1);
+      this.skills.set("Medicine", 1);
+      this.skills.set("Stealth", 1);
+      const crossbow = new LightCrossbow(g2);
+      this.don(new LeatherArmor(g2));
+      this.don(crossbow);
+      this.don(new Rapier(g2));
+      this.inventory.add(new CrossbowBolt(g2, 20));
+    }
+  };
+
   // src/classes/monk/index.ts
   var UnarmoredDefense = new SimpleFeature("Unarmored Defense", (g2, me) => {
     g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
@@ -1393,7 +1887,6 @@
   var Monk = {
     name: "Monk",
     hitDieSize: 8,
-    armorProficiencies: /* @__PURE__ */ new Set(),
     weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple"]),
     weaponProficiencies: /* @__PURE__ */ new Set(["shortsword"]),
     saveProficiencies: /* @__PURE__ */ new Set(["str", "dex"]),
@@ -1409,139 +1902,6 @@
     features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense, MartialArts]]])
   };
   var monk_default = Monk;
-
-  // src/PC.ts
-  var UnarmedStrike = class extends AbstractWeapon {
-    constructor(g2, owner) {
-      super("unarmed strike", "natural", "melee", {
-        type: "flat",
-        amount: 1,
-        damageType: "bludgeoning"
-      });
-      this.g = g2;
-      this.owner = owner;
-    }
-  };
-  var PC = class extends AbstractCombatant {
-    constructor(g2, name, img) {
-      super(g2, name, {
-        type: "humanoid",
-        size: "medium",
-        img,
-        side: 0,
-        diesAtZero: false,
-        level: 0
-      });
-      this.naturalWeapons.add(new UnarmedStrike(g2, this));
-    }
-    setRace(race) {
-      this.race = race;
-      this.size = race.size;
-      for (const [key, val] of race.abilities)
-        this[`${key}Score`] += val;
-      for (const [type, value] of race.movement)
-        this.movement.set(type, value);
-      for (const language of race.languages)
-        this.languages.add(language);
-      for (const feature of race.features)
-        this.addFeature(feature);
-    }
-    addClassLevel(cls, hpRoll = cls.hitDieSize) {
-      var _a, _b;
-      const level = ((_a = this.classLevels.get(cls.name)) != null ? _a : 0) + 1;
-      this.classLevels.set(cls.name, level);
-      this.level++;
-      this.hpMax += hpRoll + this.con;
-      this.hp = this.hpMax;
-      if (level === 1) {
-        for (const prof of cls.armorProficiencies)
-          this.armorProficiencies.add(prof);
-        for (const prof of cls.saveProficiencies)
-          this.saveProficiencies.add(prof);
-        for (const prof of cls.weaponCategoryProficiencies)
-          this.weaponCategoryProficiencies.add(prof);
-        for (const prof of cls.weaponProficiencies)
-          this.weaponProficiencies.add(prof);
-      }
-      for (const feature of (_b = cls.features.get(level)) != null ? _b : [])
-        this.addFeature(feature);
-    }
-  };
-
-  // src/events/SpellCastEvent.ts
-  var SpellCastEvent = class extends EventBase {
-    constructor(detail) {
-      super("spellCast", detail);
-    }
-  };
-
-  // src/actions/CastSpell.ts
-  var CastSpell = class {
-    constructor(g2, actor, method, spell) {
-      this.g = g2;
-      this.actor = actor;
-      this.method = method;
-      this.spell = spell;
-      this.name = `${spell.name} (${method.name})`;
-      this.config = spell.config;
-      this.time = spell.time;
-    }
-    getAffectedArea(config) {
-      return this.spell.getAffectedArea(config);
-    }
-    check(config, ec = new ErrorCollector()) {
-      if (!this.actor.time.has(this.spell.time))
-        ec.add(`No ${this.spell.time} left`, this);
-      return this.spell.check(config, ec);
-    }
-    apply(config) {
-      return __async(this, null, function* () {
-        this.actor.time.delete(this.spell.time);
-        const sc = yield this.g.resolve(
-          new SpellCastEvent({
-            who: this.actor,
-            spell: this.spell,
-            method: this.method,
-            level: this.spell.getLevel(config)
-          })
-        );
-        if (sc.defaultPrevented)
-          return;
-        return this.spell.apply(this.actor, this.method, config);
-      });
-    }
-  };
-
-  // src/features/common.ts
-  function darkvisionFeature(range = 60) {
-    return new SimpleFeature("Darkvision", (_2, me) => {
-      me.senses.set("darkvision", range);
-    });
-  }
-  function notImplementedFeature(name) {
-    return new SimpleFeature(name, () => {
-      console.warn(`[Feature Missing] ${name}`);
-    });
-  }
-
-  // src/resources.ts
-  var LongRestResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-    }
-  };
-
-  // src/spells/InnateSpellcasting.ts
-  var InnateSpellcasting = class {
-    constructor(name, ability) {
-      this.name = name;
-      this.ability = ability;
-    }
-    getMaxSlot(spell) {
-      return spell.level;
-    }
-  };
 
   // src/areas/SphereEffectArea.ts
   var SphereEffectArea = class {
@@ -1672,39 +2032,11 @@
         caster.concentrateOn({
           spell: this,
           duration: hours(1),
-          onSpellEnd: () => this.g.removeEffectArea(area)
+          onSpellEnd: () => __async(this, null, function* () {
+            return this.g.removeEffectArea(area);
+          })
         });
       });
-    }
-  };
-
-  // src/spells/SimpleSpell.ts
-  var SimpleSpell = class {
-    constructor(name, level, school, time, concentration, config) {
-      this.name = name;
-      this.level = level;
-      this.school = school;
-      this.time = time;
-      this.concentration = concentration;
-      this.config = config;
-      this.v = false;
-      this.s = false;
-    }
-    setVSM(v = false, s = false, m) {
-      this.v = v;
-      this.s = s;
-      this.m = m;
-      return this;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffectedArea(_config) {
-      return void 0;
-    }
-    check(config, ec = new ErrorCollector()) {
-      return ec;
-    }
-    getLevel() {
-      return this.level;
     }
   };
 
@@ -1759,40 +2091,38 @@
 
   // src/races/Triton.ts
   var Amphibious = notImplementedFeature("Amphibious");
+  var FogCloudResource = new LongRestResource(
+    "Control Air and Water: Fog Cloud",
+    1
+  );
+  var GustOfWindResource = new LongRestResource(
+    "Control Air and Water: Gust of Wind",
+    1
+  );
+  var WallOfWaterResource = new LongRestResource(
+    "Control Air and Water: Wall of Water",
+    1
+  );
   var ControlAirAndWaterSpells = [
-    {
-      level: 1,
-      spell: FogCloud,
-      resource: new LongRestResource("Control Air and Water: Fog Cloud", 1)
-    },
-    {
-      level: 3,
-      spell: GustOfWind,
-      resource: new LongRestResource("Control Air and Water: Gust of Wind", 1)
-    },
-    {
-      level: 5,
-      spell: WallOfWater,
-      resource: new LongRestResource("Control Air and Water: Wall of Water", 1)
-    }
+    { level: 1, spell: FogCloud, resource: FogCloudResource },
+    { level: 3, spell: GustOfWind, resource: GustOfWindResource },
+    { level: 5, spell: WallOfWater, resource: WallOfWaterResource }
   ];
-  var ControlAirAndWaterSpellAction = class extends CastSpell {
-    constructor(g2, who, method, spell, resource) {
-      super(g2, who, method, spell);
-      this.resource = resource;
+  var ControlAirAndWaterMethod = new InnateSpellcasting(
+    "Control Air and Water",
+    "cha",
+    (spell) => {
+      if (spell instanceof FogCloud)
+        return FogCloudResource;
+      if (spell instanceof GustOfWind)
+        return GustOfWindResource;
+      if (spell instanceof WallOfWater)
+        return WallOfWaterResource;
     }
-    // TODO check has resource before allowing cast
-    apply(config) {
-      return __async(this, null, function* () {
-        this.actor.spendResource(this.resource);
-        return __superGet(ControlAirAndWaterSpellAction.prototype, this, "apply").call(this, config);
-      });
-    }
-  };
+  );
   var ControlAirAndWater = new SimpleFeature(
     "Control Air and Water",
     (g2, me) => {
-      const method = new InnateSpellcasting("Control Air and Water", "cha");
       const spells = ControlAirAndWaterSpells.filter(
         (entry) => entry.level <= me.level
       );
@@ -1800,15 +2130,9 @@
         me.addResource(resource);
       g2.events.on("getActions", ({ detail: { who, actions } }) => {
         if (who === me)
-          for (const { spell, resource } of spells)
+          for (const { spell } of spells)
             actions.push(
-              new ControlAirAndWaterSpellAction(
-                g2,
-                me,
-                method,
-                new spell(g2),
-                resource
-              )
+              new CastSpell(g2, me, ControlAirAndWaterMethod, new spell(g2))
             );
       });
     }
@@ -1870,7 +2194,7 @@
   };
 
   // src/ui/App.tsx
-  var import_hooks8 = __toESM(require_hooks());
+  var import_hooks10 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function check(action, config) {
@@ -1935,6 +2259,7 @@
     void 0
   );
   var wantsPoint = (0, import_signals.signal)(void 0);
+  var yesNo = (0, import_signals.signal)(void 0);
   window.state = {
     actionArea,
     activeCombatant,
@@ -1942,7 +2267,8 @@
     allEffects,
     allCombatants,
     scale,
-    wantsPoint
+    wantsPoint,
+    yesNo
   };
 
   // src/ui/ActiveUnitPanel.tsx
@@ -2242,6 +2568,7 @@
         "button",
         {
           className: value === slot ? ChooseActionConfigPanel_module_default.active : void 0,
+          "aria-pressed": value === slot,
           onClick: () => onChange(field, slot),
           children: slot
         },
@@ -2446,30 +2773,86 @@
     )) }) });
   }
 
+  // src/ui/YesNoDialog.tsx
+  var import_hooks9 = __toESM(require_hooks());
+
+  // src/ui/Dialog.tsx
+  var import_hooks8 = __toESM(require_hooks());
+
+  // src/ui/Dialog.module.scss
+  var Dialog_module_default = {
+    "main": "_main_910pw_1",
+    "shade": "_shade_910pw_5",
+    "react": "_react_910pw_18",
+    "title": "_title_910pw_24"
+  };
+
+  // src/ui/Dialog.tsx
+  function ReactDialog({ title, text, children }) {
+    const titleId = (0, import_hooks8.useId)();
+    return /* @__PURE__ */ o("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ o(
+      "div",
+      {
+        role: "dialog",
+        "aria-labelledby": titleId,
+        "aria-modal": "true",
+        className: `${Dialog_module_default.main} ${Dialog_module_default.react}`,
+        children: [
+          /* @__PURE__ */ o("div", { id: titleId, className: Dialog_module_default.title, children: title }),
+          /* @__PURE__ */ o("p", { className: Dialog_module_default.text, children: text }),
+          children
+        ]
+      }
+    ) });
+  }
+  function Dialog(props) {
+    return /* @__PURE__ */ o(ReactDialog, __spreadValues({}, props));
+  }
+
+  // src/ui/YesNoDialog.tsx
+  function YesNoDialog({
+    interruption,
+    resolve
+  }) {
+    const decide = (0, import_hooks9.useCallback)(
+      (value) => {
+        yesNo.value = void 0;
+        resolve(value);
+      },
+      [resolve]
+    );
+    const onYes = (0, import_hooks9.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks9.useCallback)(() => decide(false), [decide]);
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
+      /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
+      /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
+    ] });
+  }
+
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks8.useState)();
-    const [action, setAction] = (0, import_hooks8.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks8.useState)({
+    const [target, setTarget] = (0, import_hooks10.useState)();
+    const [action, setAction] = (0, import_hooks10.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks10.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks8.useCallback)(
+    const hideActionMenu = (0, import_hooks10.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks8.useCallback)(() => {
+    const refreshUnits = (0, import_hooks10.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push({ who, state });
       allCombatants.value = list;
     }, [g2]);
-    const refreshAreas = (0, import_hooks8.useCallback)(() => {
+    const refreshAreas = (0, import_hooks10.useCallback)(() => {
       allEffects.value = [...g2.effects];
     }, [g2]);
-    (0, import_hooks8.useEffect)(() => {
+    (0, import_hooks10.useEffect)(() => {
       g2.events.on("combatantPlaced", refreshUnits);
       g2.events.on("combatantMoved", refreshUnits);
       g2.events.on("combatantDied", refreshUnits);
@@ -2481,9 +2864,10 @@
         allActions.value = [];
         void g2.getActions(who).then((actions) => allActions.value = actions);
       });
+      g2.events.on("yesNoChoice", (e) => yesNo.value = e);
       onMount == null ? void 0 : onMount(g2);
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
-    const onExecuteAction = (0, import_hooks8.useCallback)(
+    const onExecuteAction = (0, import_hooks10.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionArea.value = void 0;
@@ -2491,7 +2875,7 @@
       },
       [g2]
     );
-    const onClickAction = (0, import_hooks8.useCallback)(
+    const onClickAction = (0, import_hooks10.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -2504,7 +2888,7 @@
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks8.useCallback)(
+    const onClickBattlefield = (0, import_hooks10.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -2516,7 +2900,7 @@
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks8.useCallback)(
+    const onClickCombatant = (0, import_hooks10.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -2546,23 +2930,23 @@
       },
       [g2]
     );
-    const onMoveCombatant = (0, import_hooks8.useCallback)(
+    const onMoveCombatant = (0, import_hooks10.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks8.useCallback)(() => {
+    const onPass = (0, import_hooks10.useCallback)(() => {
       setAction(void 0);
       actionArea.value = void 0;
       void g2.nextTurn();
     }, [g2]);
-    const onCancelAction = (0, import_hooks8.useCallback)(() => {
+    const onCancelAction = (0, import_hooks10.useCallback)(() => {
       setAction(void 0);
       actionArea.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks8.useCallback)(
+    const onChooseAction = (0, import_hooks10.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);
@@ -2597,7 +2981,8 @@
           }
         )
       ] }),
-      /* @__PURE__ */ o(EventLog, { g: g2 })
+      /* @__PURE__ */ o(EventLog, { g: g2 }),
+      yesNo.value && /* @__PURE__ */ o(YesNoDialog, __spreadValues({}, yesNo.value.detail))
     ] });
   }
 
@@ -2613,9 +2998,11 @@
           const thug = new Thug(g);
           const badger = new Badger(g);
           const hunk = new Tethilssethanar(g);
+          const aura = new Aura(g);
           g.place(thug, 0, 0);
           g.place(badger, 10, 0);
           g.place(hunk, 10, 20);
+          g.place(aura, 20, 20);
           g.start();
         }
       }

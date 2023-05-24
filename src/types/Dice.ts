@@ -1,2 +1,4 @@
-type Dice = { count: number; size: number };
-export default Dice;
+export default interface Dice {
+  count: number;
+  size: number;
+}

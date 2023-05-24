@@ -31,16 +31,20 @@ export default class CastSpell<T extends object> implements Action<T> {
     if (!this.actor.time.has(this.spell.time))
       ec.add(`No ${this.spell.time} left`, this);
 
-    // TODO check resources (slot/whatever the method says)
+    const resource = this.method.getResourceForSpell(this.spell);
+    if (resource && !this.actor.hasResource(resource))
+      ec.add(`No ${resource.name} left`, this.method);
 
     return this.spell.check(config, ec);
   }
 
   async apply(config: T): Promise<void> {
     this.actor.time.delete(this.spell.time);
-    // TODO spend resources
 
-    const sc = await this.g.resolve(
+    const resource = this.method.getResourceForSpell(this.spell);
+    if (resource) this.actor.spendResource(resource, 1);
+
+    const sc = this.g.fire(
       new SpellCastEvent({
         who: this.actor,
         spell: this.spell,

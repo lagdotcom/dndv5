@@ -7,9 +7,8 @@ export type AreaTag = (typeof AreaTags)[number];
 type EffectSphere = SphereShape & { centre: Point };
 export type SpecifiedEffectShape = EffectSphere;
 
-type EffectArea = {
+export default interface EffectArea extends SpecifiedEffectShape {
   id: number;
   name: string;
   tags: Set<AreaTag>;
-} & SpecifiedEffectShape;
-export default EffectArea;
+}

@@ -1,0 +1,32 @@
+.main {
+  z-index: 100;
+}
+
+.shade {
+  z-index: 99;
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(black, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.react {
+  background-color: white;
+  padding: 1em;
+  border: 2px solid black;
+}
+
+.title {
+  font-size: 1.2em;
+}
+
+.text {
+}
+
+.choices {
+}

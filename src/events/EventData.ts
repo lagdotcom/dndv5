@@ -1,7 +1,9 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DamageResponseCollector from "../collectors/DamageResponseCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import DamageMap from "../DamageMap";
+import YesNoChoice from "../interruptions/YesNoChoice";
 import Ability from "../types/Ability";
 import ACMethod from "../types/ACMethod";
 import Action from "../types/Action";
@@ -49,7 +51,8 @@ type EventData = {
     diceType: DiceType;
     size: number;
     value: number;
-    otherValue?: number;
+    otherValues: Set<number>;
+    interrupt: InterruptionCollector;
   };
   gatherDamage: {
     attacker: Combatant;
@@ -76,5 +79,6 @@ type EventData = {
     level: number;
   };
   turnStarted: { who: Combatant };
+  yesNoChoice: { interruption: YesNoChoice; resolve(choice: boolean): void };
 };
 export default EventData;

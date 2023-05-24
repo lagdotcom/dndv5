@@ -1,2 +1,3 @@
-type Source = { name: string };
-export default Source;
+export default interface Source {
+  name: string;
+}

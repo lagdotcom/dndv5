@@ -1,5 +1,6 @@
 import { signal } from "@preact/signals";
 
+import YesNoChoiceEvent from "../events/YesNoChoiceEvent";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import CombatantState from "../types/CombatantState";
@@ -31,6 +32,8 @@ export const wantsCombatant = signal<Listener<Combatant> | undefined>(
 
 export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
 
+export const yesNo = signal<YesNoChoiceEvent | undefined>(undefined);
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).state = {
   actionArea,
@@ -40,4 +43,5 @@ export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
   allCombatants,
   scale,
   wantsPoint,
+  yesNo,
 };

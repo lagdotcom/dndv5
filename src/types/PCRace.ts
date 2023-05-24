@@ -4,7 +4,8 @@ import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
 import SizeCategory from "./SizeCategory";
 
-interface PCRace {
+export default interface PCRace {
+  parent?: PCRace;
   name: string;
   abilities: Map<Ability, number>;
   size: SizeCategory;
@@ -12,4 +13,3 @@ interface PCRace {
   features: Set<Feature>;
   languages: Set<LanguageName>;
 }
-export default PCRace;

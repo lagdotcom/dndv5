@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class GetDamageResponseEvent extends EventBase<"getDamageResponse"> {
-  constructor(detail: EventData["getDamageResponse"]) {
-    super("getDamageResponse", detail);
+type Detail = EventData["getDamageResponse"];
+export default class GetDamageResponseEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("getDamageResponse", { detail });
   }
 }

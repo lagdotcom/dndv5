@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class DiceRolledEvent extends EventBase<"diceRolled"> {
-  constructor(detail: EventData["diceRolled"]) {
-    super("diceRolled", detail);
+type Detail = EventData["diceRolled"];
+export default class DiceRolledEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("diceRolled", { detail });
   }
 }

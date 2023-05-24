@@ -14,6 +14,7 @@ import GetConditionsEvent from "./GetConditionsEvent";
 import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import SpellCastEvent from "./SpellCastEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
+import YesNoChoiceEvent from "./YesNoChoiceEvent";
 
 export type EventTypes = {
   areaPlaced: AreaPlacedEvent;
@@ -32,6 +33,7 @@ export type EventTypes = {
   getDamageResponse: GetDamageResponseEvent;
   spellCast: SpellCastEvent;
   turnStarted: TurnStartedEvent;
+  yesNoChoice: YesNoChoiceEvent;
 };
 
 type EventType = keyof EventTypes;

@@ -14,7 +14,7 @@ export type Resolver<T> = {
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
 
-interface Action<T extends object = object> {
+export default interface Action<T extends object = object> {
   actor: Combatant;
   config: ActionConfig<T>;
   name: string;
@@ -24,4 +24,3 @@ interface Action<T extends object = object> {
   check(config: Partial<T>, collector?: ErrorCollector): ErrorCollector;
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
 }
-export default Action;

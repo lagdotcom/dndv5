@@ -20,7 +20,9 @@ import {
   CombatantAndState,
   wantsCombatant,
   wantsPoint,
+  yesNo,
 } from "./state";
+import YesNoDialog from "./YesNoDialog";
 
 interface Props {
   g: Engine;
@@ -73,6 +75,8 @@ export default function App({ g, onMount }: Props) {
       allActions.value = [];
       void g.getActions(who).then((actions) => (allActions.value = actions));
     });
+
+    g.events.on("yesNoChoice", (e) => (yesNo.value = e));
 
     onMount?.(g);
   }, [g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
@@ -208,6 +212,7 @@ export default function App({ g, onMount }: Props) {
         )}
       </div>
       <EventLog g={g} />
+      {yesNo.value && <YesNoDialog {...yesNo.value.detail} />}
     </div>
   );
 }

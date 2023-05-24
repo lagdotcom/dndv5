@@ -148,7 +148,7 @@ export class Spear extends AbstractWeapon {
 export class LightCrossbow extends AbstractWeapon {
   constructor(public g: Engine) {
     super(
-      "LightCrossbow",
+      "light crossbow",
       "simple",
       "ranged",
       dd(1, 8, "piercing"),
@@ -257,7 +257,7 @@ export class Halberd extends AbstractWeapon {
 
 export class Lance extends AbstractWeapon {
   constructor(public g: Engine) {
-    super("Lance", "martial", "melee", dd(1, 12, "piercing"), ["reach"]);
+    super("lance", "martial", "melee", dd(1, 12, "piercing"), ["reach"]);
     // TODO You have disadvantage when you use a lance to attack a target within 5 feet of you. Also, a lance requires two hands to wield when you aren't mounted.
   }
 }
@@ -301,7 +301,7 @@ export class Rapier extends AbstractWeapon {
 
 export class Scimitar extends AbstractWeapon {
   constructor(public g: Engine) {
-    super("Scimitar", "martial", "melee", dd(1, 6, "slashing"), [
+    super("scimitar", "martial", "melee", dd(1, 6, "slashing"), [
       "finesse",
       "light",
     ]);
@@ -403,7 +403,7 @@ export class HeavyCrossbow extends AbstractWeapon {
 export class Longbow extends AbstractWeapon {
   constructor(public g: Engine) {
     super(
-      "Longbow",
+      "longbow",
       "martial",
       "ranged",
       dd(1, 8, "piercing"),
@@ -418,7 +418,7 @@ export class Longbow extends AbstractWeapon {
 export class Net extends AbstractWeapon {
   constructor(public g: Engine, quantity: number) {
     super(
-      "Net",
+      "net",
       "martial",
       "ranged",
       { type: "flat", amount: 0, damageType: "bludgeoning" },

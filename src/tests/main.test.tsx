@@ -11,13 +11,16 @@ import userEvent from "@testing-library/user-event";
 import Engine from "../Engine";
 import Badger from "../monsters/Badger";
 import Thug from "../monsters/Thug";
+import Aura from "../pcs/davies/Aura";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import App from "../ui/App";
 
+const dialog = (name?: string) => screen.getByRole("dialog", { name });
 const main = () => screen.getByRole("main");
 const log = () => screen.getByRole("list", { name: "Event Log" });
 
 const btn = (name: string) => screen.getByRole("button", { name });
+const choice = (name: string) => getByRole(dialog(), "button", { name });
 const menuitem = (name: string) => screen.getByRole("menuitem", { name });
 const token = (name: string) => getByAltText(main(), name);
 const logMsg = (want: string) => getByRole(log(), "listitem", { name: want });
@@ -87,4 +90,32 @@ it("supports Fog Cloud", async () => {
   g.dice.force(5, { type: "attack", who: pc });
   await user.click(menuitem("dart"));
   expect(logMsg("Tethilssethanar attacks thug with dart (9)."));
+});
+
+it("supports a typical Aura attack", async () => {
+  const user = userEvent.setup();
+  const g = new Engine();
+  render(<App g={g} />);
+
+  const aura = new Aura(g);
+  const ally = new Tethilssethanar(g);
+  const enemy = new Thug(g);
+  g.place(enemy, 0, 0);
+  g.place(ally, 5, 0);
+  g.place(aura, 10, 10);
+  g.dice.force(20, { type: "initiative", who: aura });
+  g.dice.force(2, { type: "initiative", who: ally });
+  g.dice.force(1, { type: "initiative", who: enemy });
+
+  await g.start();
+  await user.click(token("thug"));
+  g.dice.force(1, { type: "attack", who: aura });
+  await user.click(menuitem("light crossbow (crossbow bolt)"));
+
+  expect(dialog("Lucky")).toBeVisible();
+  g.dice.force(20, { type: "luck", who: aura });
+  await user.click(choice("Yes"));
+
+  expect(dialog("Sneak Attack")).toBeVisible();
+  await user.click(choice("Yes"));
 });

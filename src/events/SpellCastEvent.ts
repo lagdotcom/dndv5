@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class SpellCastEvent extends EventBase<"spellCast"> {
-  constructor(detail: EventData["spellCast"]) {
-    super("spellCast", detail);
+type Detail = EventData["spellCast"];
+export default class SpellCastEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("spellCast", { detail });
   }
 }

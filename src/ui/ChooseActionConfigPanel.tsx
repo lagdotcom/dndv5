@@ -66,6 +66,7 @@ function ChooseSlot({
           <button
             key={slot}
             className={value === slot ? styles.active : undefined}
+            aria-pressed={value === slot}
             onClick={() => onChange(field, slot)}
           >
             {slot}

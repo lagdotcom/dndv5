@@ -49,7 +49,7 @@ export default class WeaponAttack implements Action<HasTarget> {
 
     // TODO spend action/attack
 
-    const pre = await g.resolve(
+    const pre = g.fire(
       new BeforeAttackEvent({
         target,
         attacker,
@@ -83,7 +83,7 @@ export default class WeaponAttack implements Action<HasTarget> {
         ? "hit"
         : "miss";
 
-    const attack = await g.resolve(
+    const attack = g.fire(
       new AttackEvent({ pre: pre.detail, roll, total, outcome })
     );
     const critical = attack.detail.outcome === "critical";
@@ -109,7 +109,7 @@ export default class WeaponAttack implements Action<HasTarget> {
         map.add(damage.damageType, amount);
       } else map.add(damage.damageType, damage.amount);
 
-      const gd = await g.resolve(
+      const gd = g.fire(
         new GatherDamageEvent({
           attacker,
           target,

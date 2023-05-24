@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class AreaPlacedEvent extends EventBase<"areaPlaced"> {
-  constructor(detail: EventData["areaPlaced"]) {
-    super("areaPlaced", detail);
+type Detail = EventData["areaPlaced"];
+export default class AreaPlacedEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("areaPlaced", { detail });
   }
 }

@@ -1,8 +1,7 @@
 import DamageResponse from "./DamageResponse";
 
-interface DamageBreakdown {
+export default interface DamageBreakdown {
   response: DamageResponse;
   raw: number;
   amount: number;
 }
-export default DamageBreakdown;

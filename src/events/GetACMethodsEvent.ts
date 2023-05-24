@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class GetACMethodsEvent extends EventBase<"getACMethods"> {
-  constructor(detail: EventData["getACMethods"]) {
-    super("getACMethods", detail);
+type Detail = EventData["getACMethods"];
+export default class GetACMethodsEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("getACMethods", { detail });
   }
 }

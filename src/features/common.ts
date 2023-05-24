@@ -6,6 +6,12 @@ export function darkvisionFeature(range = 60) {
   });
 }
 
+export function notImplementedFeat(name: string) {
+  return new SimpleFeature(name, () => {
+    console.warn(`[Feat Missing] ${name}`);
+  });
+}
+
 export function notImplementedFeature(name: string) {
   return new SimpleFeature(name, () => {
     console.warn(`[Feature Missing] ${name}`);

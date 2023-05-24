@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class TurnStartedEvent extends EventBase<"turnStarted"> {
-  constructor(detail: EventData["turnStarted"]) {
-    super("turnStarted", detail);
+type Detail = EventData["turnStarted"];
+export default class TurnStartedEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("turnStarted", { detail });
   }
 }

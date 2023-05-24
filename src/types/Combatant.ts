@@ -3,6 +3,7 @@ import ActionTime from "./ActionTime";
 import Concentration from "./Concentration";
 import { ConditionName } from "./ConditionName";
 import CreatureType from "./CreatureType";
+import Feature from "./Feature";
 import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
@@ -12,7 +13,7 @@ import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
 import SkillName from "./SkillName";
 
-interface Combatant {
+export default interface Combatant {
   id: number;
   img: string;
   name: string;
@@ -60,11 +61,12 @@ interface Combatant {
   shield?: ArmorItem;
   ammunition: AmmoItem[];
 
+  addFeature(feature: Feature): boolean;
   getConfig<T>(key: string): T | undefined;
   getProficiencyMultiplier(thing: Item | Ability | SkillName): number;
   addResource(resource: Resource, amount?: number): void;
+  hasResource(resource: Resource, amount?: number): boolean;
   spendResource(resource: Resource, amount?: number): void;
   concentrateOn(entry: Concentration): void;
   finalise(): void;
 }
-export default Combatant;

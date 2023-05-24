@@ -1,4 +1,5 @@
 import DamageResponseCollector from "./collectors/DamageResponseCollector";
+import InterruptionCollector from "./collectors/InterruptionCollector";
 import DamageMap from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
@@ -14,6 +15,8 @@ import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
+import YesNoChoiceEvent from "./events/YesNoChoiceEvent";
+import YesNoChoice from "./interruptions/YesNoChoice";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
@@ -92,7 +95,14 @@ export default class Engine {
 
     // TODO can a roll be cancelled?
     return (
-      await this.resolve(new DiceRolledEvent({ type, diceType, ...roll }))
+      await this.resolve(
+        new DiceRolledEvent({
+          type,
+          diceType,
+          ...roll,
+          interrupt: new InterruptionCollector(),
+        })
+      )
     ).detail;
   }
 
@@ -186,10 +196,28 @@ export default class Engine {
     );
   }
 
-  async resolve<T>(e: CustomEvent<T>): Promise<CustomEvent<T>> {
+  fire<T>(e: CustomEvent<T>) {
+    this.events.fire(e);
+    return e;
+  }
+
+  async resolve<T extends { interrupt: InterruptionCollector }>(
+    e: CustomEvent<T>
+  ): Promise<CustomEvent<T>> {
     this.events.fire(e);
 
-    // TODO async stuff lol
+    for (const interruption of e.detail.interrupt) {
+      if (interruption instanceof YesNoChoice) {
+        const choice = await new Promise<boolean>((resolve) =>
+          this.events.fire(new YesNoChoiceEvent({ interruption, resolve }))
+        );
+        if (choice) await interruption.yes?.();
+        else await interruption.no?.();
+      } else {
+        console.error(interruption);
+        throw new Error("Unknown interruption type");
+      }
+    }
 
     return e;
   }
@@ -203,14 +231,14 @@ export default class Engine {
     );
   }
 
-  async addEffectArea(area: EffectArea) {
+  addEffectArea(area: EffectArea) {
     area.id = this.nextId();
     this.effects.add(area);
-    await this.resolve(new AreaPlacedEvent({ area }));
+    this.events.fire(new AreaPlacedEvent({ area }));
   }
 
-  async removeEffectArea(area: EffectArea) {
+  removeEffectArea(area: EffectArea) {
     this.effects.delete(area);
-    await this.resolve(new AreaRemovedEvent({ area }));
+    this.events.fire(new AreaRemovedEvent({ area }));
   }
 }

@@ -92,7 +92,6 @@ const MartialArts = new SimpleFeature("Martial Arts", (g, me) => {
 const Monk: PCClass = {
   name: "Monk",
   hitDieSize: 8,
-  armorProficiencies: new Set(),
   weaponCategoryProficiencies: new Set(["simple"]),
   weaponProficiencies: new Set(["shortsword"]),
   saveProficiencies: new Set(["str", "dex"]),

@@ -38,7 +38,7 @@ export default class FogCloud extends ScalingSpell<HasPoint> {
     caster.concentrateOn({
       spell: this,
       duration: hours(1),
-      onSpellEnd: () => this.g.removeEffectArea(area),
+      onSpellEnd: async () => this.g.removeEffectArea(area),
     });
   }
 }

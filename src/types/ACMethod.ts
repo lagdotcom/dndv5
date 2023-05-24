@@ -1,8 +1,7 @@
 import Item from "./Item";
 
-interface ACMethod {
+export default interface ACMethod {
   name: string;
   ac: number;
   uses: Set<Item>;
 }
-export default ACMethod;

@@ -1,5 +1,6 @@
 import DamageAmount from "../types/DamageAmount";
 import DamageType from "../types/DamageType";
+import { getDiceAverage } from "./dnd";
 
 export const dd = (
   count: number,
@@ -10,3 +11,8 @@ export const dd = (
   amount: { count, size },
   damageType: damage,
 });
+
+export function getDefaultHPRoll(level: number, hitDieSize: number) {
+  if (level === 1) return hitDieSize;
+  return Math.ceil(getDiceAverage(1, hitDieSize));
+}

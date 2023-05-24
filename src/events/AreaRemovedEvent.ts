@@ -1,8 +1,8 @@
-import EventBase from "./EventBase";
 import EventData from "./EventData";
 
-export default class AreaRemovedEvent extends EventBase<"areaRemoved"> {
-  constructor(detail: EventData["areaRemoved"]) {
-    super("areaRemoved", detail);
+type Detail = EventData["areaRemoved"];
+export default class AreaRemovedEvent extends CustomEvent<Detail> {
+  constructor(detail: Detail) {
+    super("areaRemoved", { detail });
   }
 }

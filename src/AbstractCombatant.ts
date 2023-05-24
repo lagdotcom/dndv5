@@ -1,5 +1,6 @@
 import Engine from "./Engine";
 import GetConditionsEvent from "./events/GetConditionsEvent";
+import ConfiguredFeature from "./features/ConfiguredFeature";
 import Ability, { Abilities } from "./types/Ability";
 import Combatant from "./types/Combatant";
 import Concentration from "./types/Concentration";
@@ -232,10 +233,11 @@ export default abstract class AbstractCombatant implements Combatant {
       console.warn(
         `${this.name} already has a feature named ${feature.name}, skipping.`
       );
-      return;
+      return false;
     }
 
     this.features.set(feature.name, feature);
+    return true;
   }
 
   setAbilityScores(
@@ -296,6 +298,10 @@ export default abstract class AbstractCombatant implements Combatant {
     this.resources.set(resource, amount ?? resource.maximum);
   }
 
+  hasResource(resource: Resource, amount = 1): boolean {
+    return (this.resources.get(resource) ?? 0) >= amount;
+  }
+
   spendResource(resource: Resource, amount = 1): void {
     const old = this.resources.get(resource) ?? 0;
     if (old < amount)
@@ -308,6 +314,10 @@ export default abstract class AbstractCombatant implements Combatant {
     return this.configs.get(key) as T | undefined;
   }
 
+  setConfig<T>(feature: ConfiguredFeature<T>, config: T) {
+    this.configs.set(feature.name, config);
+  }
+
   concentrateOn(entry: Concentration): void {
     // TODO destroy existing concentratingOn entries?
     this.concentratingOn.add(entry);
@@ -316,5 +326,7 @@ export default abstract class AbstractCombatant implements Combatant {
   finalise() {
     for (const feature of this.features.values())
       feature.setup(this.g, this, this.getConfig(feature.name));
+
+    this.hp = this.hpMax;
   }
 }

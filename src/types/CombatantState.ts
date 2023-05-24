@@ -1,4 +1,6 @@
 import Point from "./Point";
 
-type CombatantState = { initiative: number; position: Point };
-export default CombatantState;
+export default interface CombatantState {
+  initiative: number;
+  position: Point;
+}
