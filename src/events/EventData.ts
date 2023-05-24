@@ -63,6 +63,7 @@ type EventData = {
     map: DamageMap;
     bonus: BonusCollector;
     critical: boolean;
+    attack?: EventData["attack"];
   };
   getACMethods: { who: Combatant; methods: ACMethod[] };
   getActions: { who: Combatant; target?: Combatant; actions: Action[] };

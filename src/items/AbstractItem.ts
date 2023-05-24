@@ -1,8 +1,8 @@
 import Engine from "../Engine";
 import Enchantment from "../types/Enchantment";
-import Item, { ItemByTypeKey } from "../types/Item";
+import { ItemByTypeKey, ItemType } from "../types/Item";
 
-export default abstract class AbstractItem<T extends Item["itemType"]> {
+export default abstract class AbstractItem<T extends ItemType> {
   enchantments: Set<Enchantment<T>>;
 
   constructor(

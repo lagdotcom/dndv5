@@ -1,6 +1,7 @@
 import Rogue, { ASI4, Expertise } from "../../classes/rogue";
 import Scout from "../../classes/rogue/Scout";
 import { plus1 } from "../../enchantments/plus";
+import { vicious } from "../../enchantments/weapon";
 import Engine from "../../Engine";
 import Lucky from "../../feats/Lucky";
 import { CrossbowBolt } from "../../items/ammunition";
@@ -9,6 +10,7 @@ import { LightCrossbow, Rapier } from "../../items/weapons";
 import { BracersOfTheArbalest } from "../../items/wondrous";
 import PC from "../../PC";
 import { AirGenasi } from "../../races/Genasi";
+import { enchant } from "../../utils/items";
 import tokenUrl from "./Aura_token.png";
 
 export default class Aura extends PC {
@@ -42,17 +44,11 @@ export default class Aura extends PC {
     this.skills.set("Medicine", 1);
     this.skills.set("Stealth", 1);
 
-    const crossbow = new LightCrossbow(g);
-    // TODO crossbow.addEnchantment(vicious);
-    this.don(crossbow);
-
+    this.don(enchant(new LightCrossbow(g), vicious));
     this.don(new LeatherArmor(g));
     this.don(new BracersOfTheArbalest(g), true);
     this.don(new Rapier(g));
     this.inventory.add(new CrossbowBolt(g, 20));
-
-    const magicBolts = new CrossbowBolt(g, 15);
-    magicBolts.addEnchantment(plus1);
-    this.inventory.add(magicBolts);
+    this.inventory.add(enchant(new CrossbowBolt(g, 15), plus1));
   }
 }

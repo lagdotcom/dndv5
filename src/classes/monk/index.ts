@@ -1,3 +1,4 @@
+import Engine from "../../Engine";
 import WeaponAttack from "../../actions/WeaponAttack";
 import SimpleFeature from "../../features/SimpleFeature";
 import { AbstractWeapon } from "../../items/weapons";
@@ -49,8 +50,9 @@ function canUpgradeDamage(damage: DamageAmount, size: number) {
 }
 
 class MonkWeaponWrapper extends AbstractWeapon {
-  constructor(public weapon: WeaponItem, size: number) {
+  constructor(g: Engine, public weapon: WeaponItem, size: number) {
     super(
+      g,
       weapon.name,
       weapon.category,
       weapon.rangeCategory,
@@ -84,7 +86,7 @@ const MartialArts = new SimpleFeature("Martial Arts", (g, me) => {
       if (me.dex > me.str) wa.ability = "dex";
 
       if (canUpgradeDamage(wa.weapon.damage, diceSize))
-        wa.weapon = new MonkWeaponWrapper(wa.weapon, diceSize);
+        wa.weapon = new MonkWeaponWrapper(g, wa.weapon, diceSize);
     }
   });
 });

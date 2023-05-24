@@ -312,6 +312,11 @@
       (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
     );
   }
+  function enchant(item, ...enchantments) {
+    for (const enchantment of enchantments)
+      item.addEnchantment(enchantment);
+    return item;
+  }
 
   // src/utils/units.ts
   var categoryUnits = {
@@ -676,7 +681,8 @@
               ammo,
               map,
               bonus: new BonusCollector(),
-              critical
+              critical,
+              attack: attack.detail
             })
           );
           map.add(damage.damageType, gd.detail.bonus.result);
@@ -1324,12 +1330,11 @@
   // src/monsters/Badger.ts
   var Bite = class extends AbstractWeapon {
     constructor(g2) {
-      super("bite", "natural", "melee", {
+      super(g2, "bite", "natural", "melee", {
         type: "flat",
         amount: 1,
         damageType: "piercing"
       });
-      this.g = g2;
       this.hands = 0;
       this.forceAbilityScore = "dex";
     }
@@ -1552,6 +1557,18 @@
     }
   };
 
+  // src/enchantments/weapon.ts
+  var vicious = {
+    name: "vicious",
+    setup(g2, item) {
+      item.name = "vicious " + item.name;
+      g2.events.on("gatherDamage", ({ detail: { weapon, bonus, attack } }) => {
+        if (weapon === item && (attack == null ? void 0 : attack.roll.value) === 20)
+          bonus.add(7, vicious);
+      });
+    }
+  };
+
   // src/resources.ts
   var LongRestResource = class {
     constructor(name, maximum) {
@@ -1609,12 +1626,11 @@
   // src/PC.ts
   var UnarmedStrike = class extends AbstractWeapon {
     constructor(g2, owner) {
-      super("unarmed strike", "natural", "melee", {
+      super(g2, "unarmed strike", "natural", "melee", {
         type: "flat",
         amount: 1,
         damageType: "bludgeoning"
       });
-      this.g = g2;
       this.owner = owner;
     }
   };
@@ -1852,15 +1868,12 @@
       this.skills.set("Investigation", 1);
       this.skills.set("Medicine", 1);
       this.skills.set("Stealth", 1);
-      const crossbow = new LightCrossbow(g2);
-      this.don(crossbow);
+      this.don(enchant(new LightCrossbow(g2), vicious));
       this.don(new LeatherArmor(g2));
       this.don(new BracersOfTheArbalest(g2), true);
       this.don(new Rapier(g2));
       this.inventory.add(new CrossbowBolt(g2, 20));
-      const magicBolts = new CrossbowBolt(g2, 15);
-      magicBolts.addEnchantment(plus1);
-      this.inventory.add(magicBolts);
+      this.inventory.add(enchant(new CrossbowBolt(g2, 15), plus1));
     }
   };
 
@@ -1901,8 +1914,9 @@
     return size > getDiceAverage(damage.amount.count, damage.amount.size);
   }
   var MonkWeaponWrapper = class extends AbstractWeapon {
-    constructor(weapon, size) {
+    constructor(g2, weapon, size) {
       super(
+        g2,
         weapon.name,
         weapon.category,
         weapon.rangeCategory,
@@ -1925,7 +1939,7 @@
         if (me.dex > me.str)
           wa.ability = "dex";
         if (canUpgradeDamage(wa.weapon.damage, diceSize))
-          wa.weapon = new MonkWeaponWrapper(wa.weapon, diceSize);
+          wa.weapon = new MonkWeaponWrapper(g2, wa.weapon, diceSize);
       }
     });
   });

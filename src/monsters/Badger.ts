@@ -4,8 +4,8 @@ import Monster from "../Monster";
 import tokenUrl from "./Badger_token.png";
 
 class Bite extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("bite", "natural", "melee", {
+  constructor(g: Engine) {
+    super(g, "bite", "natural", "melee", {
       type: "flat",
       amount: 1,
       damageType: "piercing",

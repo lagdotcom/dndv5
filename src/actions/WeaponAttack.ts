@@ -119,6 +119,7 @@ export default class WeaponAttack implements Action<HasTarget> {
           map,
           bonus: new BonusCollector(),
           critical,
+          attack: attack.detail,
         })
       );
       map.add(damage.damageType, gd.detail.bonus.result);

@@ -75,6 +75,8 @@ export interface WondrousItem extends BaseItem {
 type Item = WeaponItem | AmmoItem | ArmorItem | WondrousItem;
 export default Item;
 
+export type ItemType = Item["itemType"];
+
 export type ItemByTypeKey = {
   armor: ArmorItem;
   ammo: AmmoItem;

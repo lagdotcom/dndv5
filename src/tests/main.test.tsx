@@ -110,7 +110,7 @@ it("supports a typical Aura attack", async () => {
   await g.start();
   await user.click(token("thug"));
   g.dice.force(1, { type: "attack", who: aura });
-  await user.click(menuitem("light crossbow (crossbow bolt)"));
+  await user.click(menuitem("vicious light crossbow (crossbow bolt)"));
 
   expect(dialog("Lucky")).toBeVisible();
   g.dice.force(20, { type: "luck", who: aura });

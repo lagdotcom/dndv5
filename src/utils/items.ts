@@ -1,6 +1,12 @@
 import Ability from "../types/Ability";
 import Combatant from "../types/Combatant";
-import Item, { ArmorItem, WeaponItem } from "../types/Item";
+import Enchantment from "../types/Enchantment";
+import Item, {
+  ArmorItem,
+  ItemByTypeKey,
+  ItemType,
+  WeaponItem,
+} from "../types/Item";
 import { isDefined } from "./types";
 
 export const isSuitOfArmor = (item: Item): item is ArmorItem =>
@@ -35,4 +41,13 @@ export function getValidAmmunition(who: Combatant, weapon: WeaponItem) {
   return who.ammunition.filter(
     (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
   );
+}
+
+export function enchant<T extends ItemType>(
+  item: ItemByTypeKey[T],
+  ...enchantments: Enchantment<T>[]
+) {
+  for (const enchantment of enchantments)
+    item.addEnchantment(enchantment as Enchantment<never>);
+  return item;
 }

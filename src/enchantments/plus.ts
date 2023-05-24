@@ -1,10 +1,10 @@
 import Engine from "../Engine";
 import Enchantment from "../types/Enchantment";
-import { WeaponItem, AmmoItem } from "../types/Item";
+import { AmmoItem, WeaponItem } from "../types/Item";
 
 export const plus1: Enchantment<"weapon" | "ammo"> = {
   name: "+1 bonus",
-  setup(g: Engine, item: WeaponItem | AmmoItem): void {
+  setup(g: Engine, item: WeaponItem | AmmoItem) {
     item.name += " +1";
 
     g.events.on("beforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
