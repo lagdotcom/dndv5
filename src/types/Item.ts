@@ -1,8 +1,9 @@
 import Ability from "./Ability";
 import DamageAmount from "./DamageAmount";
+import Enchantment from "./Enchantment";
+import Source from "./Source";
 
-export interface BaseItem {
-  name: string;
+export interface BaseItem extends Source {
   hands: number;
 }
 
@@ -30,7 +31,6 @@ export type AmmunitionTag = (typeof AmmunitionTags)[number];
 
 export interface WeaponItem extends BaseItem {
   itemType: "weapon";
-  name: string;
   weaponType: string;
   category: WeaponCategory;
   rangeCategory: WeaponRangeCategory;
@@ -41,13 +41,16 @@ export interface WeaponItem extends BaseItem {
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: Ability;
   quantity: number;
+
+  addEnchantment(e: Enchantment<"weapon">): void;
 }
 
 export interface AmmoItem extends BaseItem {
   itemType: "ammo";
-  name: string;
   ammunitionTag: AmmunitionTag;
   quantity: number;
+
+  addEnchantment(e: Enchantment<"ammo">): void;
 }
 
 export const ArmorCategories = ["light", "medium", "heavy", "shield"] as const;
@@ -55,12 +58,26 @@ export type ArmorCategory = (typeof ArmorCategories)[number];
 
 export interface ArmorItem extends BaseItem {
   itemType: "armor";
-  name: string;
   ac: number;
   category: ArmorCategory;
   stealthDisadvantage: boolean;
   minimumStrength: number;
+
+  addEnchantment(e: Enchantment<"armor">): void;
 }
 
-type Item = WeaponItem | AmmoItem | ArmorItem;
+export interface WondrousItem extends BaseItem {
+  itemType: "wondrous";
+
+  addEnchantment(e: Enchantment<"wondrous">): void;
+}
+
+type Item = WeaponItem | AmmoItem | ArmorItem | WondrousItem;
 export default Item;
+
+export type ItemByTypeKey = {
+  armor: ArmorItem;
+  ammo: AmmoItem;
+  weapon: WeaponItem;
+  wondrous: WondrousItem;
+};

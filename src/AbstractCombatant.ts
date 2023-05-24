@@ -81,6 +81,7 @@ export default abstract class AbstractCombatant implements Combatant {
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
   time: Set<"action" | "bonus action" | "reaction">;
+  attunements: Set<Item>;
 
   constructor(
     public g: Engine,
@@ -159,6 +160,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.classLevels = new Map();
     this.concentratingOn = new Set();
     this.time = new Set();
+    this.attunements = new Set();
   }
 
   get str() {
@@ -256,7 +258,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.chaScore = cha;
   }
 
-  don(item: Item) {
+  don(item: Item, attune = false) {
     if (item.itemType === "armor") {
       const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
 
@@ -267,6 +269,9 @@ export default abstract class AbstractCombatant implements Combatant {
 
     // TODO error conditions, hands, time to equip, etc.
     this.equipment.add(item);
+
+    // TODO max attunements
+    if (attune) this.attunements.add(item);
   }
 
   doff(item: Item) {

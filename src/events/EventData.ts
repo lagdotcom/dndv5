@@ -59,6 +59,7 @@ type EventData = {
     target: Combatant;
     ability: Ability;
     weapon?: WeaponItem;
+    ammo?: AmmoItem;
     map: DamageMap;
     bonus: BonusCollector;
     critical: boolean;

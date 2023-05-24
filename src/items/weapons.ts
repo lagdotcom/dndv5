@@ -9,18 +9,21 @@ import {
   WeaponRangeCategory,
 } from "../types/Item";
 import { dd } from "../utils/dice";
+import AbstractItem from "./AbstractItem";
 
-export abstract class AbstractWeapon implements WeaponItem {
+export abstract class AbstractWeapon
+  extends AbstractItem<"weapon">
+  implements WeaponItem
+{
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: Ability;
-  hands: number;
-  itemType: "weapon";
   properties: Set<WeaponProperty>;
   quantity: number;
   weaponType: string;
 
   constructor(
-    public name: string,
+    public g: Engine,
+    name: string,
     public category: WeaponCategory,
     public rangeCategory: WeaponRangeCategory,
     public damage: DamageAmount,
@@ -28,8 +31,8 @@ export abstract class AbstractWeapon implements WeaponItem {
     public shortRange?: number,
     public longRange?: number
   ) {
-    this.hands = 1; // this is a MINIMUM to wield, not to fire
-    this.itemType = "weapon";
+    super(g, "weapon", name, 1);
+
     this.weaponType = name;
     this.properties = new Set(properties);
     this.quantity = 1;
@@ -37,14 +40,15 @@ export abstract class AbstractWeapon implements WeaponItem {
 }
 
 export class Club extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("club", "simple", "melee", dd(1, 4, "bludgeoning"), ["light"]);
+  constructor(g: Engine) {
+    super(g, "club", "simple", "melee", dd(1, 4, "bludgeoning"), ["light"]);
   }
 }
 
 export class Dagger extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "dagger",
       "simple",
       "melee",
@@ -58,16 +62,17 @@ export class Dagger extends AbstractWeapon {
 }
 
 export class Greatclub extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("greatclub", "simple", "melee", dd(1, 8, "bludgeoning"), [
+  constructor(g: Engine) {
+    super(g, "greatclub", "simple", "melee", dd(1, 8, "bludgeoning"), [
       "two-handed",
     ]);
   }
 }
 
 export class Handaxe extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "handaxe",
       "simple",
       "melee",
@@ -81,8 +86,9 @@ export class Handaxe extends AbstractWeapon {
 }
 
 export class Javelin extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "javelin",
       "simple",
       "melee",
@@ -96,8 +102,9 @@ export class Javelin extends AbstractWeapon {
 }
 
 export class LightHammer extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "light hammer",
       "simple",
       "melee",
@@ -111,28 +118,29 @@ export class LightHammer extends AbstractWeapon {
 }
 
 export class Mace extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("mace", "simple", "melee", dd(1, 6, "bludgeoning"));
+  constructor(g: Engine) {
+    super(g, "mace", "simple", "melee", dd(1, 6, "bludgeoning"));
   }
 }
 
 export class Quarterstaff extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("quarterstaff", "simple", "melee", dd(1, 6, "bludgeoning"), [
+  constructor(g: Engine) {
+    super(g, "quarterstaff", "simple", "melee", dd(1, 6, "bludgeoning"), [
       "versatile",
     ]);
   }
 }
 
 export class Sickle extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
+  constructor(g: Engine) {
+    super(g, "sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
   }
 }
 
 export class Spear extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "spear",
       "simple",
       "melee",
@@ -146,8 +154,9 @@ export class Spear extends AbstractWeapon {
 }
 
 export class LightCrossbow extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "light crossbow",
       "simple",
       "ranged",
@@ -161,8 +170,9 @@ export class LightCrossbow extends AbstractWeapon {
 }
 
 export class Dart extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "dart",
       "simple",
       "ranged",
@@ -176,8 +186,9 @@ export class Dart extends AbstractWeapon {
 }
 
 export class Shortbow extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "shortbow",
       "simple",
       "ranged",
@@ -191,8 +202,9 @@ export class Shortbow extends AbstractWeapon {
 }
 
 export class Sling extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "sling",
       "simple",
       "ranged",
@@ -206,20 +218,22 @@ export class Sling extends AbstractWeapon {
 }
 
 export class Battleaxe extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("battleaxe", "martial", "melee", dd(1, 8, "slashing"), ["versatile"]);
+  constructor(g: Engine) {
+    super(g, "battleaxe", "martial", "melee", dd(1, 8, "slashing"), [
+      "versatile",
+    ]);
   }
 }
 
 export class Flail extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("flail", "martial", "melee", dd(1, 8, "bludgeoning"));
+  constructor(g: Engine) {
+    super(g, "flail", "martial", "melee", dd(1, 8, "bludgeoning"));
   }
 }
 
 export class Glaive extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("glaive", "martial", "melee", dd(1, 10, "slashing"), [
+  constructor(g: Engine) {
+    super(g, "glaive", "martial", "melee", dd(1, 10, "slashing"), [
       "heavy",
       "reach",
       "two-handed",
@@ -228,8 +242,8 @@ export class Glaive extends AbstractWeapon {
 }
 
 export class Greataxe extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("greataxe", "martial", "melee", dd(1, 12, "slashing"), [
+  constructor(g: Engine) {
+    super(g, "greataxe", "martial", "melee", dd(1, 12, "slashing"), [
       "heavy",
       "two-handed",
     ]);
@@ -237,8 +251,8 @@ export class Greataxe extends AbstractWeapon {
 }
 
 export class Greatsword extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("greatsword", "martial", "melee", dd(2, 6, "slashing"), [
+  constructor(g: Engine) {
+    super(g, "greatsword", "martial", "melee", dd(2, 6, "slashing"), [
       "heavy",
       "two-handed",
     ]);
@@ -246,8 +260,8 @@ export class Greatsword extends AbstractWeapon {
 }
 
 export class Halberd extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("halberd", "martial", "melee", dd(1, 10, "slashing"), [
+  constructor(g: Engine) {
+    super(g, "halberd", "martial", "melee", dd(1, 10, "slashing"), [
       "heavy",
       "reach",
       "two-handed",
@@ -256,21 +270,23 @@ export class Halberd extends AbstractWeapon {
 }
 
 export class Lance extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("lance", "martial", "melee", dd(1, 12, "piercing"), ["reach"]);
+  constructor(g: Engine) {
+    super(g, "lance", "martial", "melee", dd(1, 12, "piercing"), ["reach"]);
     // TODO You have disadvantage when you use a lance to attack a target within 5 feet of you. Also, a lance requires two hands to wield when you aren't mounted.
   }
 }
 
 export class Longsword extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("longsword", "martial", "melee", dd(1, 8, "slashing"), ["versatile"]);
+  constructor(g: Engine) {
+    super(g, "longsword", "martial", "melee", dd(1, 8, "slashing"), [
+      "versatile",
+    ]);
   }
 }
 
 export class Maul extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("maul", "martial", "melee", dd(2, 6, "bludgeoning"), [
+  constructor(g: Engine) {
+    super(g, "maul", "martial", "melee", dd(2, 6, "bludgeoning"), [
       "heavy",
       "two-handed",
     ]);
@@ -278,14 +294,14 @@ export class Maul extends AbstractWeapon {
 }
 
 export class Morningstar extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("morningstar", "martial", "melee", dd(1, 8, "piercing"));
+  constructor(g: Engine) {
+    super(g, "morningstar", "martial", "melee", dd(1, 8, "piercing"));
   }
 }
 
 export class Pike extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("pike", "martial", "melee", dd(1, 10, "piercing"), [
+  constructor(g: Engine) {
+    super(g, "pike", "martial", "melee", dd(1, 10, "piercing"), [
       "heavy",
       "reach",
       "two-handed",
@@ -294,14 +310,14 @@ export class Pike extends AbstractWeapon {
 }
 
 export class Rapier extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
+  constructor(g: Engine) {
+    super(g, "rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
   }
 }
 
 export class Scimitar extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("scimitar", "martial", "melee", dd(1, 6, "slashing"), [
+  constructor(g: Engine) {
+    super(g, "scimitar", "martial", "melee", dd(1, 6, "slashing"), [
       "finesse",
       "light",
     ]);
@@ -309,8 +325,8 @@ export class Scimitar extends AbstractWeapon {
 }
 
 export class Shortsword extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("shortsword", "martial", "melee", dd(1, 6, "piercing"), [
+  constructor(g: Engine) {
+    super(g, "shortsword", "martial", "melee", dd(1, 6, "piercing"), [
       "finesse",
       "light",
     ]);
@@ -318,8 +334,9 @@ export class Shortsword extends AbstractWeapon {
 }
 
 export class Trident extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "trident",
       "martial",
       "melee",
@@ -333,22 +350,22 @@ export class Trident extends AbstractWeapon {
 }
 
 export class WarPick extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("war pick", "martial", "melee", dd(1, 8, "piercing"));
+  constructor(g: Engine) {
+    super(g, "war pick", "martial", "melee", dd(1, 8, "piercing"));
   }
 }
 
 export class Warhammer extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("warhammer", "martial", "melee", dd(1, 8, "bludgeoning"), [
+  constructor(g: Engine) {
+    super(g, "warhammer", "martial", "melee", dd(1, 8, "bludgeoning"), [
       "versatile",
     ]);
   }
 }
 
 export class Whip extends AbstractWeapon {
-  constructor(public g: Engine) {
-    super("whip", "martial", "melee", dd(1, 4, "slashing"), [
+  constructor(g: Engine) {
+    super(g, "whip", "martial", "melee", dd(1, 4, "slashing"), [
       "finesse",
       "reach",
     ]);
@@ -356,8 +373,9 @@ export class Whip extends AbstractWeapon {
 }
 
 export class Blowgun extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "blowgun",
       "martial",
       "ranged",
@@ -371,8 +389,9 @@ export class Blowgun extends AbstractWeapon {
 }
 
 export class HandCrossbow extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "hand crossbow",
       "martial",
       "ranged",
@@ -386,8 +405,9 @@ export class HandCrossbow extends AbstractWeapon {
 }
 
 export class HeavyCrossbow extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "heavy crossbow",
       "martial",
       "ranged",
@@ -401,8 +421,9 @@ export class HeavyCrossbow extends AbstractWeapon {
 }
 
 export class Longbow extends AbstractWeapon {
-  constructor(public g: Engine) {
+  constructor(g: Engine) {
     super(
+      g,
       "longbow",
       "martial",
       "ranged",
@@ -416,8 +437,9 @@ export class Longbow extends AbstractWeapon {
 }
 
 export class Net extends AbstractWeapon {
-  constructor(public g: Engine, quantity: number) {
+  constructor(g: Engine, quantity: number) {
     super(
+      g,
       "net",
       "martial",
       "ranged",

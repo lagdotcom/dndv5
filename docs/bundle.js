@@ -421,6 +421,7 @@
       this.classLevels = /* @__PURE__ */ new Map();
       this.concentratingOn = /* @__PURE__ */ new Set();
       this.time = /* @__PURE__ */ new Set();
+      this.attunements = /* @__PURE__ */ new Set();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -503,7 +504,7 @@
       this.wisScore = wis;
       this.chaScore = cha;
     }
-    don(item) {
+    don(item, attune = false) {
       if (item.itemType === "armor") {
         const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
         for (const o2 of this.equipment) {
@@ -512,6 +513,8 @@
         }
       }
       this.equipment.add(item);
+      if (attune)
+        this.attunements.add(item);
     }
     doff(item) {
       if (this.equipment.delete(item)) {
@@ -670,6 +673,7 @@
               target,
               ability,
               weapon,
+              ammo,
               map,
               bonus: new BonusCollector(),
               critical
@@ -1191,17 +1195,31 @@
     return Math.ceil(getDiceAverage(1, hitDieSize));
   }
 
-  // src/items/weapons.ts
-  var AbstractWeapon = class {
-    constructor(name, category, rangeCategory, damage, properties = [], shortRange, longRange) {
+  // src/items/AbstractItem.ts
+  var AbstractItem = class {
+    constructor(g2, itemType, name, hands = 0) {
+      this.g = g2;
+      this.itemType = itemType;
       this.name = name;
+      this.hands = hands;
+      this.enchantments = /* @__PURE__ */ new Set();
+    }
+    addEnchantment(e) {
+      this.enchantments.add(e);
+      e.setup(this.g, this);
+    }
+  };
+
+  // src/items/weapons.ts
+  var AbstractWeapon = class extends AbstractItem {
+    constructor(g2, name, category, rangeCategory, damage, properties = [], shortRange, longRange) {
+      super(g2, "weapon", name, 1);
+      this.g = g2;
       this.category = category;
       this.rangeCategory = rangeCategory;
       this.damage = damage;
       this.shortRange = shortRange;
       this.longRange = longRange;
-      this.hands = 1;
-      this.itemType = "weapon";
       this.weaponType = name;
       this.properties = new Set(properties);
       this.quantity = 1;
@@ -1209,19 +1227,18 @@
   };
   var Mace = class extends AbstractWeapon {
     constructor(g2) {
-      super("mace", "simple", "melee", dd(1, 6, "bludgeoning"));
-      this.g = g2;
+      super(g2, "mace", "simple", "melee", dd(1, 6, "bludgeoning"));
     }
   };
   var Sickle = class extends AbstractWeapon {
     constructor(g2) {
-      super("sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
-      this.g = g2;
+      super(g2, "sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
     }
   };
   var LightCrossbow = class extends AbstractWeapon {
     constructor(g2) {
       super(
+        g2,
         "light crossbow",
         "simple",
         "ranged",
@@ -1230,13 +1247,13 @@
         80,
         320
       );
-      this.g = g2;
       this.ammunitionTag = "crossbow";
     }
   };
   var Dart = class extends AbstractWeapon {
     constructor(g2, quantity) {
       super(
+        g2,
         "dart",
         "simple",
         "ranged",
@@ -1245,13 +1262,13 @@
         20,
         60
       );
-      this.g = g2;
       this.quantity = quantity;
     }
   };
   var Sling = class extends AbstractWeapon {
     constructor(g2) {
       super(
+        g2,
         "sling",
         "simple",
         "ranged",
@@ -1260,19 +1277,18 @@
         30,
         120
       );
-      this.g = g2;
       this.ammunitionTag = "sling";
     }
   };
   var Rapier = class extends AbstractWeapon {
     constructor(g2) {
-      super("rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
-      this.g = g2;
+      super(g2, "rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
     }
   };
   var HeavyCrossbow = class extends AbstractWeapon {
     constructor(g2) {
       super(
+        g2,
         "heavy crossbow",
         "martial",
         "ranged",
@@ -1281,7 +1297,6 @@
         100,
         400
       );
-      this.g = g2;
       this.ammunitionTag = "crossbow";
     }
   };
@@ -1333,44 +1348,37 @@
   };
 
   // src/items/ammunition.ts
-  var AbstractAmmo = class {
-    constructor(name, ammunitionTag, quantity) {
-      this.name = name;
+  var AbstractAmmo = class extends AbstractItem {
+    constructor(g2, name, ammunitionTag, quantity) {
+      super(g2, "ammo", name);
       this.ammunitionTag = ammunitionTag;
       this.quantity = quantity;
-      this.itemType = "ammo";
-      this.hands = 0;
     }
   };
   var CrossbowBolt = class extends AbstractAmmo {
     constructor(g2, quantity) {
-      super("crossbow bolt", "crossbow", quantity);
-      this.g = g2;
+      super(g2, "crossbow bolt", "crossbow", quantity);
     }
   };
   var SlingBullet = class extends AbstractAmmo {
     constructor(g2, quantity) {
-      super("sling bullet", "sling", quantity);
-      this.g = g2;
+      super(g2, "sling bullet", "sling", quantity);
     }
   };
 
   // src/items/armor.ts
-  var AbstractArmor = class {
-    constructor(name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
-      this.name = name;
+  var AbstractArmor = class extends AbstractItem {
+    constructor(g2, name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
+      super(g2, "armor", name);
       this.category = category;
       this.ac = ac;
       this.stealthDisadvantage = stealthDisadvantage;
       this.minimumStrength = minimumStrength;
-      this.itemType = "armor";
-      this.hands = 0;
     }
   };
   var LeatherArmor = class extends AbstractArmor {
     constructor(g2) {
-      super("leather armor", "light", 11);
-      this.g = g2;
+      super(g2, "leather armor", "light", 11);
     }
   };
 
@@ -1528,6 +1536,22 @@
   };
   var Scout_default = Scout;
 
+  // src/enchantments/plus.ts
+  var plus1 = {
+    name: "+1 bonus",
+    setup(g2, item) {
+      item.name += " +1";
+      g2.events.on("beforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
+        if (weapon === item || ammo === item)
+          bonus.add(1, this);
+      });
+      g2.events.on("gatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
+        if (weapon === item || ammo === item)
+          bonus.add(1, this);
+      });
+    }
+  };
+
   // src/resources.ts
   var LongRestResource = class {
     constructor(name, maximum) {
@@ -1564,6 +1588,23 @@
     });
   });
   var Lucky_default = Lucky;
+
+  // src/items/wondrous.ts
+  var AbstractWondrous = class extends AbstractItem {
+    constructor(g2, name, hands = 0) {
+      super(g2, "wondrous", name);
+      this.hands = hands;
+    }
+  };
+  var BracersOfTheArbalest = class extends AbstractWondrous {
+    constructor(g2) {
+      super(g2, "Bracers of the Arbalest");
+      g2.events.on("gatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
+        if (attacker.equipment.has(this) && attacker.attunements.has(this) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
+          bonus.add(2, this);
+      });
+    }
+  };
 
   // src/PC.ts
   var UnarmedStrike = class extends AbstractWeapon {
@@ -1812,10 +1853,14 @@
       this.skills.set("Medicine", 1);
       this.skills.set("Stealth", 1);
       const crossbow = new LightCrossbow(g2);
-      this.don(new LeatherArmor(g2));
       this.don(crossbow);
+      this.don(new LeatherArmor(g2));
+      this.don(new BracersOfTheArbalest(g2), true);
       this.don(new Rapier(g2));
       this.inventory.add(new CrossbowBolt(g2, 20));
+      const magicBolts = new CrossbowBolt(g2, 15);
+      magicBolts.addEnchantment(plus1);
+      this.inventory.add(magicBolts);
     }
   };
 

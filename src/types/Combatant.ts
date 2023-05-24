@@ -55,6 +55,7 @@ export default interface Combatant {
   concentratingOn: Set<Concentration>;
   time: Set<ActionTime>;
   conditions: Set<ConditionName>;
+  attunements: Set<Item>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

@@ -115,6 +115,7 @@ export default class WeaponAttack implements Action<HasTarget> {
           target,
           ability,
           weapon,
+          ammo,
           map,
           bonus: new BonusCollector(),
           critical,
