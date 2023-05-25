@@ -1,5 +1,6 @@
-export default interface Resource {
+import Source from "./Source";
+
+export default interface Resource extends Source {
   refresh: "longRest" | "shortRest" | "turnStart";
-  name: string;
   maximum: number;
 }

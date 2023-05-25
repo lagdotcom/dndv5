@@ -1,5 +1,6 @@
 import { SphereShape } from "./EffectShape";
 import Point from "./Point";
+import Source from "./Source";
 
 export const AreaTags = ["heavily obscured"] as const;
 export type AreaTag = (typeof AreaTags)[number];
@@ -7,8 +8,7 @@ export type AreaTag = (typeof AreaTags)[number];
 type EffectSphere = SphereShape & { centre: Point };
 export type SpecifiedEffectShape = EffectSphere;
 
-export default interface EffectArea extends SpecifiedEffectShape {
+export default interface EffectArea extends SpecifiedEffectShape, Source {
   id: number;
-  name: string;
   tags: Set<AreaTag>;
 }

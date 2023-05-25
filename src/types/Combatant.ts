@@ -13,11 +13,11 @@ import Resource from "./Resource";
 import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
 import SkillName from "./SkillName";
+import Source from "./Source";
 
-export default interface Combatant {
+export default interface Combatant extends Source {
   id: number;
   img: string;
-  name: string;
   type: CreatureType;
   size: SizeCategory;
   sizeInUnits: number;

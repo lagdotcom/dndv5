@@ -3,6 +3,7 @@ import { ActionConfig } from "./Action";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
 import { SpecifiedEffectShape } from "./EffectArea";
+import Source from "./Source";
 import SpellcastingMethod from "./SpellcastingMethod";
 
 export const SpellSchools = [
@@ -16,10 +17,9 @@ export const SpellSchools = [
 ] as const;
 export type SpellSchool = (typeof SpellSchools)[number];
 
-export default interface Spell<T extends object = object> {
+export default interface Spell<T extends object = object> extends Source {
   config: ActionConfig<T>;
   level: number;
-  name: string;
   school: SpellSchool;
   concentration: boolean;
   time: ActionTime;

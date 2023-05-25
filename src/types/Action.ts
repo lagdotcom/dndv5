@@ -2,7 +2,9 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
 import { SpecifiedEffectShape } from "./EffectArea";
+import Source from "./Source";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type Resolver<T> = {
   type: string;
   check(
@@ -14,10 +16,9 @@ export type Resolver<T> = {
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
 
-export default interface Action<T extends object = object> {
+export default interface Action<T extends object = object> extends Source {
   actor: Combatant;
   config: ActionConfig<T>;
-  name: string;
   time?: ActionTime;
 
   apply(config: T): Promise<void>;

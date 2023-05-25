@@ -1,8 +1,8 @@
 import Feature from "./Feature";
 import PCClassName from "./PCClassName";
+import Source from "./Source";
 
-export default interface PCSubclass {
+export default interface PCSubclass extends Source {
   className: PCClassName;
-  name: string;
   features: Map<number, Feature[]>;
 }
