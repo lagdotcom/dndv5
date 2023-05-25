@@ -1,4 +1,6 @@
 import Engine from "./Engine";
+import EffectAddedEvent from "./events/EffectAddedEvent";
+import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import Ability, { Abilities } from "./types/Ability";
@@ -6,6 +8,7 @@ import Combatant from "./types/Combatant";
 import Concentration from "./types/Concentration";
 import { ConditionName } from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
+import Effect from "./types/Effect";
 import Feature from "./types/Feature";
 import Item, {
   AmmoItem,
@@ -82,6 +85,8 @@ export default abstract class AbstractCombatant implements Combatant {
   concentratingOn: Set<Concentration>;
   time: Set<"action" | "bonus action" | "reaction">;
   attunements: Set<Item>;
+  movedSoFar: number;
+  effects: Map<Effect, number>;
 
   constructor(
     public g: Engine,
@@ -161,6 +166,8 @@ export default abstract class AbstractCombatant implements Combatant {
     this.concentratingOn = new Set();
     this.time = new Set();
     this.attunements = new Set();
+    this.movedSoFar = 0;
+    this.effects = new Map();
   }
 
   get str() {
@@ -330,5 +337,32 @@ export default abstract class AbstractCombatant implements Combatant {
       feature.setup(this.g, this, this.getConfig(feature.name));
 
     this.hp = this.hpMax;
+  }
+
+  addEffect(effect: Effect, duration: number) {
+    this.effects.set(effect, duration);
+    this.g.fire(new EffectAddedEvent({ who: this, effect, duration }));
+  }
+
+  hasEffect(effect: Effect) {
+    return this.effects.has(effect);
+  }
+
+  removeEffect(effect: Effect) {
+    const durationRemaining = this.effects.get(effect) ?? NaN;
+
+    this.effects.delete(effect);
+    this.g.fire(
+      new EffectRemovedEvent({ who: this, effect, durationRemaining })
+    );
+  }
+
+  tickEffects(durationTimer: Effect["durationTimer"]) {
+    for (const [effect, duration] of this.effects) {
+      if (effect.durationTimer === durationTimer) {
+        this.effects.set(effect, duration - 1);
+        if (duration <= 1) this.removeEffect(effect);
+      }
+    }
   }
 }

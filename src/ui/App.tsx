@@ -160,7 +160,7 @@ export default function App({ g, onMount }: Props) {
   const onMoveCombatant = useCallback(
     (who: Combatant, dx: number, dy: number) => {
       hideActionMenu();
-      g.move(who, dx, dy);
+      void g.move(who, dx, dy);
     },
     [g, hideActionMenu]
   );

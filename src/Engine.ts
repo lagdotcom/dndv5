@@ -14,6 +14,7 @@ import Dispatcher from "./events/Dispatcher";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
+import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoiceEvent from "./events/YesNoChoiceEvent";
 import YesNoChoice from "./interruptions/YesNoChoice";
@@ -33,6 +34,7 @@ export default class Engine {
   combatants: Map<Combatant, CombatantState>;
   effects: Set<EffectArea>;
   private id: number;
+  activeCombatant?: Combatant;
   initiativeOrder: Combatant[];
   initiativePosition: number;
   rules: DndRules;
@@ -107,6 +109,9 @@ export default class Engine {
   }
 
   nextTurn() {
+    if (this.activeCombatant)
+      this.fire(new TurnEndedEvent({ who: this.activeCombatant }));
+
     this.initiativePosition = isNaN(this.initiativePosition)
       ? 0
       : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
@@ -114,21 +119,20 @@ export default class Engine {
 
     // TODO check if dead lol
 
-    for (const resource of who.resources.keys()) {
-      if (resource.refresh === "turnStart")
-        who.resources.set(resource, resource.maximum);
-    }
-
+    this.activeCombatant = who;
+    who.movedSoFar = 0;
     this.fire(new TurnStartedEvent({ who }));
   }
 
-  async move(who: Combatant, dx: number, dy: number) {
+  async move(who: Combatant, dx: number, dy: number, track = true) {
     const state = this.combatants.get(who);
     if (!state) return;
 
     const old = state.position;
     const x = old.x + dx;
     const y = old.y + dy;
+
+    if (track) who.movedSoFar += Math.max(dx, dy);
 
     // TODO prevent movement, attacks of opportunity etc.
 

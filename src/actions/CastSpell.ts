@@ -38,7 +38,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.check(config, ec);
   }
 
-  async apply(config: T): Promise<void> {
+  async apply(config: T) {
     this.actor.time.delete(this.spell.time);
 
     const resource = this.method.getResourceForSpell(this.spell);

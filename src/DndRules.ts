@@ -51,6 +51,14 @@ export const BlindedRule = new DndRule("Blinded", (g, me) => {
   });
 });
 
+export const EffectsRule = new DndRule("Effects", (g) => {
+  g.events.on("turnStarted", ({ detail: { who } }) =>
+    who.tickEffects("turnStart")
+  );
+
+  g.events.on("turnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
+});
+
 export const LongRangeAttacksRule = new DndRule(
   "Long Range Attacks",
   (g, me) => {
@@ -102,6 +110,15 @@ export const ProficiencyRule = new DndRule("Proficiency", (g, me) => {
   });
 });
 
+export const ResourcesRule = new DndRule("Resources", (g) => {
+  g.events.on("turnStarted", ({ detail: { who } }) => {
+    for (const resource of who.resources.keys()) {
+      if (resource.refresh === "turnStart")
+        who.resources.set(resource, resource.maximum);
+    }
+  });
+});
+
 export const TurnTimeRule = new DndRule("Turn Time", (g) => {
   g.events.on("turnStarted", ({ detail: { who } }) => {
     who.time.add("action");
@@ -128,9 +145,11 @@ export const allDndRules = [
   AbilityScoreRule,
   ArmorCalculationRule,
   BlindedRule,
+  EffectsRule,
   LongRangeAttacksRule,
   ObscuredRule,
   ProficiencyRule,
+  ResourcesRule,
   TurnTimeRule,
   WeaponAttackRule,
 ];

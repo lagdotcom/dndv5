@@ -186,9 +186,14 @@
       this.advantage = /* @__PURE__ */ new Set();
       this.disadvantage = /* @__PURE__ */ new Set();
       this.normal = /* @__PURE__ */ new Set();
+      this.sources = /* @__PURE__ */ new Set();
     }
     add(response, source) {
       this[response].add(source);
+      this.sources.add(source);
+    }
+    involved(source) {
+      return this.sources.has(source);
     }
     get result() {
       const hasAdvantage = this.advantage.size > 0;
@@ -271,6 +276,20 @@
   var GatherDamageEvent = class extends CustomEvent {
     constructor(detail) {
       super("gatherDamage", { detail });
+    }
+  };
+
+  // src/events/EffectAddedEvent.ts
+  var EffectAddedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("effectAdded", { detail });
+    }
+  };
+
+  // src/events/EffectRemovedEvent.ts
+  var EffectRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("effectRemoved", { detail });
     }
   };
 
@@ -443,6 +462,8 @@
       this.concentratingOn = /* @__PURE__ */ new Set();
       this.time = /* @__PURE__ */ new Set();
       this.attunements = /* @__PURE__ */ new Set();
+      this.movedSoFar = 0;
+      this.effects = /* @__PURE__ */ new Map();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -588,6 +609,30 @@
       for (const feature of this.features.values())
         feature.setup(this.g, this, this.getConfig(feature.name));
       this.hp = this.hpMax;
+    }
+    addEffect(effect, duration) {
+      this.effects.set(effect, duration);
+      this.g.fire(new EffectAddedEvent({ who: this, effect, duration }));
+    }
+    hasEffect(effect) {
+      return this.effects.has(effect);
+    }
+    removeEffect(effect) {
+      var _a;
+      const durationRemaining = (_a = this.effects.get(effect)) != null ? _a : NaN;
+      this.effects.delete(effect);
+      this.g.fire(
+        new EffectRemovedEvent({ who: this, effect, durationRemaining })
+      );
+    }
+    tickEffects(durationTimer) {
+      for (const [effect, duration] of this.effects) {
+        if (effect.durationTimer === durationTimer) {
+          this.effects.set(effect, duration - 1);
+          if (duration <= 1)
+            this.removeEffect(effect);
+        }
+      }
     }
   };
 
@@ -799,6 +844,13 @@
         diceType.add("advantage", me);
     });
   });
+  var EffectsRule = new DndRule("Effects", (g2) => {
+    g2.events.on(
+      "turnStarted",
+      ({ detail: { who } }) => who.tickEffects("turnStart")
+    );
+    g2.events.on("turnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
+  });
   var LongRangeAttacksRule = new DndRule(
     "Long Range Attacks",
     (g2, me) => {
@@ -843,6 +895,14 @@
         bonus.add(attacker.pb, me);
     });
   });
+  var ResourcesRule = new DndRule("Resources", (g2) => {
+    g2.events.on("turnStarted", ({ detail: { who } }) => {
+      for (const resource of who.resources.keys()) {
+        if (resource.refresh === "turnStart")
+          who.resources.set(resource, resource.maximum);
+      }
+    });
+  });
   var TurnTimeRule = new DndRule("Turn Time", (g2) => {
     g2.events.on("turnStarted", ({ detail: { who } }) => {
       who.time.add("action");
@@ -868,9 +928,11 @@
     AbilityScoreRule,
     ArmorCalculationRule,
     BlindedRule,
+    EffectsRule,
     LongRangeAttacksRule,
     ObscuredRule,
     ProficiencyRule,
+    ResourcesRule,
     TurnTimeRule,
     WeaponAttackRule
   ];
@@ -976,6 +1038,13 @@
   var GetDamageResponseEvent = class extends CustomEvent {
     constructor(detail) {
       super("getDamageResponse", { detail });
+    }
+  };
+
+  // src/events/TurnEndedEvent.ts
+  var TurnEndedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("turnEnded", { detail });
     }
   };
 
@@ -1091,15 +1160,15 @@
       });
     }
     nextTurn() {
+      if (this.activeCombatant)
+        this.fire(new TurnEndedEvent({ who: this.activeCombatant }));
       this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
       const who = this.initiativeOrder[this.initiativePosition];
-      for (const resource of who.resources.keys()) {
-        if (resource.refresh === "turnStart")
-          who.resources.set(resource, resource.maximum);
-      }
+      this.activeCombatant = who;
+      who.movedSoFar = 0;
       this.fire(new TurnStartedEvent({ who }));
     }
-    move(who, dx, dy) {
+    move(who, dx, dy, track = true) {
       return __async(this, null, function* () {
         const state = this.combatants.get(who);
         if (!state)
@@ -1107,6 +1176,8 @@
         const old = state.position;
         const x = old.x + dx;
         const y = old.y + dy;
+        if (track)
+          who.movedSoFar += Math.max(dx, dy);
         state.position = { x, y };
         this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
       });
@@ -1565,6 +1636,66 @@
   });
   var SneakAttack_default = SneakAttack;
 
+  // src/BaseEffect.ts
+  var BaseEffect = class {
+    constructor(name, durationTimer) {
+      this.name = name;
+      this.durationTimer = durationTimer;
+    }
+  };
+
+  // src/classes/rogue/SteadyAim.ts
+  var SteadyAimNoMoveEffect = new BaseEffect("Steady Aim (No Move)", "turnEnd");
+  var SteadyAimAdvantageEffect = new BaseEffect(
+    "Steady Aim (Advantage)",
+    "turnEnd"
+  );
+  var SteadyAimAction = class {
+    constructor(g2, actor) {
+      this.g = g2;
+      this.actor = actor;
+      this.config = {};
+      this.name = "Steady Aim";
+      this.time = "bonus action";
+    }
+    getAffectedArea() {
+      return void 0;
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.time.has("bonus action"))
+        ec.add("No bonus action left", this);
+      if (this.actor.movedSoFar)
+        ec.add("Already moved this turn", this);
+      return ec;
+    }
+    apply() {
+      return __async(this, null, function* () {
+        this.actor.time.delete("bonus action");
+        this.actor.addEffect(SteadyAimNoMoveEffect, 1);
+        this.actor.addEffect(SteadyAimAdvantageEffect, 1);
+      });
+    }
+  };
+  var SteadyAim = new SimpleFeature("Steady Aim", (g2, me) => {
+    g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who === me)
+        actions.push(new SteadyAimAction(g2, me));
+    });
+    g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.hasEffect(SteadyAimNoMoveEffect))
+        multiplier.add(0, SteadyAimNoMoveEffect);
+    });
+    g2.events.on("beforeAttack", ({ detail: { attacker, diceType } }) => {
+      if (attacker.hasEffect(SteadyAimAdvantageEffect))
+        diceType.add("advantage", SteadyAimAdvantageEffect);
+    });
+    g2.events.on("attack", ({ detail: { pre } }) => {
+      if (pre.diceType.involved(SteadyAimAdvantageEffect))
+        pre.attacker.removeEffect(SteadyAimAdvantageEffect);
+    });
+  });
+  var SteadyAim_default = SteadyAim;
+
   // src/classes/rogue/index.ts
   var Expertise = new ConfiguredFeature(
     "Expertise",
@@ -1582,8 +1713,6 @@
   );
   var ThievesCant = notImplementedFeature("Thieves' Cant");
   var CunningAction = notImplementedFeature("Cunning Action");
-  var SteadyAim = notImplementedFeature("Steady Aim");
-  var ASI4 = makeASI("Rogue", 4);
   var UncannyDodge = new SimpleFeature("Uncanny Dodge", (g2, me) => {
     g2.events.on(
       "gatherDamage",
@@ -1605,7 +1734,17 @@
     );
   });
   var Evasion = notImplementedFeature("Evasion");
+  var ReliableTalent = notImplementedFeature("Reliable Talent");
+  var Blindsense = notImplementedFeature("Blindsense");
+  var SlipperyMind = notImplementedFeature("Slippery Mind");
+  var Elusive = notImplementedFeature("Elusive");
+  var StrokeOfLuck = notImplementedFeature("Stroke of Luck");
+  var ASI4 = makeASI("Rogue", 4);
   var ASI8 = makeASI("Rogue", 8);
+  var ASI10 = makeASI("Rogue", 10);
+  var ASI12 = makeASI("Rogue", 12);
+  var ASI16 = makeASI("Rogue", 16);
+  var ASI19 = makeASI("Rogue", 19);
   var Rogue = {
     name: "Rogue",
     hitDieSize: 8,
@@ -1636,11 +1775,20 @@
     features: /* @__PURE__ */ new Map([
       [1, [Expertise, SneakAttack_default, ThievesCant]],
       [2, [CunningAction]],
-      [3, [SteadyAim]],
+      [3, [SteadyAim_default]],
       [4, [ASI4]],
       [5, [UncannyDodge]],
       [7, [Evasion]],
-      [8, [ASI8]]
+      [8, [ASI8]],
+      [10, [ASI10]],
+      [11, [ReliableTalent]],
+      [12, [ASI12]],
+      [14, [Blindsense]],
+      [15, [SlipperyMind]],
+      [16, [ASI16]],
+      [18, [Elusive]],
+      [19, [ASI19]],
+      [20, [StrokeOfLuck]]
     ])
   };
   var rogue_default = Rogue;
@@ -3108,7 +3256,7 @@
     const onMoveCombatant = (0, import_hooks10.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
-        g2.move(who, dx, dy);
+        void g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );

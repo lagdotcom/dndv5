@@ -3,6 +3,7 @@ import ActionTime from "./ActionTime";
 import Concentration from "./Concentration";
 import { ConditionName } from "./ConditionName";
 import CreatureType from "./CreatureType";
+import Effect from "./Effect";
 import Feature from "./Feature";
 import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
@@ -57,6 +58,7 @@ export default interface Combatant {
   time: Set<ActionTime>;
   conditions: Set<ConditionName>;
   attunements: Set<Item>;
+  movedSoFar: number;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;
@@ -71,4 +73,8 @@ export default interface Combatant {
   spendResource(resource: Resource, amount?: number): void;
   concentrateOn(entry: Concentration): void;
   finalise(): void;
+  addEffect(effect: Effect, duration: number): void;
+  hasEffect(effect: Effect): boolean;
+  removeEffect(effect: Effect): void;
+  tickEffects(durationTimer: Effect["durationTimer"]): void;
 }

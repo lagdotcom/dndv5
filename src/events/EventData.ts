@@ -13,6 +13,7 @@ import { ConditionName } from "../types/ConditionName";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import DiceType from "../types/DiceType";
+import Effect from "../types/Effect";
 import EffectArea from "../types/EffectArea";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Point from "../types/Point";
@@ -55,6 +56,8 @@ type EventData = {
     otherValues: Set<number>;
     interrupt: InterruptionCollector;
   };
+  effectAdded: { who: Combatant; effect: Effect; duration: number };
+  effectRemoved: { who: Combatant; effect: Effect; durationRemaining: number };
   gatherDamage: {
     attacker: Combatant;
     target: Combatant;
@@ -77,12 +80,14 @@ type EventData = {
     damageType: DamageType;
     response: DamageResponseCollector;
   };
+  getSpeed: { who: Combatant; multiplier: MultiplierCollector };
   spellCast: {
     who: Combatant;
     spell: Spell;
     method: SpellcastingMethod;
     level: number;
   };
+  turnEnded: { who: Combatant };
   turnStarted: { who: Combatant };
   yesNoChoice: { interruption: YesNoChoice; resolve(choice: boolean): void };
 };
