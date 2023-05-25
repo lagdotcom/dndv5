@@ -217,6 +217,22 @@
     }
   };
 
+  // src/collectors/MultiplierCollector.ts
+  var MultiplierCollector = class {
+    constructor() {
+      this.multipliers = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.multipliers.add({ value, source });
+    }
+    get value() {
+      let total = 1;
+      for (const { value } of this.multipliers)
+        total *= value;
+      return total;
+    }
+  };
+
   // src/DamageMap.ts
   var DamageMap = class {
     constructor(...items) {
@@ -682,11 +698,17 @@
               bonus: new BonusCollector(),
               critical,
               attack: attack.detail,
-              interrupt: new InterruptionCollector()
+              interrupt: new InterruptionCollector(),
+              multiplier: new MultiplierCollector()
             })
           );
           map.add(damage.damageType, gd.detail.bonus.result);
-          yield g2.damage(map, { source: this, attacker, target });
+          yield g2.damage(map, {
+            source: this,
+            attacker,
+            target,
+            multiplier: gd.detail.multiplier.value
+          });
         }
       });
     }
@@ -1092,6 +1114,7 @@
     damage(_0, _1) {
       return __async(this, arguments, function* (damage, {
         attacker,
+        multiplier: baseMultiplier = 1,
         target
       }) {
         let total = 0;
@@ -1108,11 +1131,11 @@
           const response = collector.result;
           if (response === "immune")
             continue;
-          let multiplier = 1;
+          let multiplier = baseMultiplier;
           if (response === "resist")
-            multiplier = 0.5;
+            multiplier *= 0.5;
           else if (response === "vulnerable")
-            multiplier = 2;
+            multiplier *= 2;
           const amount = Math.ceil(raw * multiplier);
           breakdown.set(damageType, { response, raw, amount });
           total += amount;
@@ -1561,7 +1584,26 @@
   var CunningAction = notImplementedFeature("Cunning Action");
   var SteadyAim = notImplementedFeature("Steady Aim");
   var ASI4 = makeASI("Rogue", 4);
-  var UncannyDodge = notImplementedFeature("Uncanny Dodge");
+  var UncannyDodge = new SimpleFeature("Uncanny Dodge", (g2, me) => {
+    g2.events.on(
+      "gatherDamage",
+      ({ detail: { target, attack, interrupt, multiplier } }) => {
+        if (attack && target === me && me.time.has("reaction"))
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              UncannyDodge,
+              "Uncanny Dodge",
+              `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
+              () => __async(void 0, null, function* () {
+                me.time.delete("reaction");
+                multiplier.add(0.5, UncannyDodge);
+              })
+            )
+          );
+      }
+    );
+  });
   var Evasion = notImplementedFeature("Evasion");
   var ASI8 = makeASI("Rogue", 8);
   var Rogue = {

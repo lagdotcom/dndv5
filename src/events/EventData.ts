@@ -2,6 +2,7 @@ import BonusCollector from "../collectors/BonusCollector";
 import DamageResponseCollector from "../collectors/DamageResponseCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import MultiplierCollector from "../collectors/MultiplierCollector";
 import DamageMap from "../DamageMap";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import Ability from "../types/Ability";
@@ -65,6 +66,7 @@ type EventData = {
     critical: boolean;
     attack?: EventData["attack"];
     interrupt: InterruptionCollector;
+    multiplier: MultiplierCollector;
   };
   getACMethods: { who: Combatant; methods: ACMethod[] };
   getActions: { who: Combatant; target?: Combatant; actions: Action[] };

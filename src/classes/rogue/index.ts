@@ -1,5 +1,7 @@
 import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
+import SimpleFeature from "../../features/SimpleFeature";
+import YesNoChoice from "../../interruptions/YesNoChoice";
 import PCClass from "../../types/PCClass";
 import SkillName from "../../types/SkillName";
 import { makeASI } from "../common";
@@ -34,8 +36,27 @@ const SteadyAim = notImplementedFeature("Steady Aim");
 
 export const ASI4 = makeASI("Rogue", 4);
 
-// TODO Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.
-const UncannyDodge = notImplementedFeature("Uncanny Dodge");
+const UncannyDodge = new SimpleFeature("Uncanny Dodge", (g, me) => {
+  g.events.on(
+    "gatherDamage",
+    ({ detail: { target, attack, interrupt, multiplier } }) => {
+      // TODO [...] when an attacker that you can see [...]
+      if (attack && target === me && me.time.has("reaction"))
+        interrupt.add(
+          new YesNoChoice(
+            me,
+            UncannyDodge,
+            "Uncanny Dodge",
+            `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
+            async () => {
+              me.time.delete("reaction");
+              multiplier.add(0.5, UncannyDodge);
+            }
+          )
+        );
+    }
+  );
+});
 
 // TODO Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.
 const Evasion = notImplementedFeature("Evasion");

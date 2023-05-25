@@ -140,8 +140,14 @@ export default class Engine {
     damage: DamageMap,
     {
       attacker,
+      multiplier: baseMultiplier = 1,
       target,
-    }: { source: Source; attacker: Combatant; target: Combatant }
+    }: {
+      source: Source;
+      attacker: Combatant;
+      target: Combatant;
+      multiplier?: number;
+    }
   ) {
     let total = 0;
 
@@ -161,9 +167,9 @@ export default class Engine {
       if (response === "immune") continue;
       // TODO absorb
 
-      let multiplier = 1;
-      if (response === "resist") multiplier = 0.5;
-      else if (response === "vulnerable") multiplier = 2;
+      let multiplier = baseMultiplier;
+      if (response === "resist") multiplier *= 0.5;
+      else if (response === "vulnerable") multiplier *= 2;
 
       const amount = Math.ceil(raw * multiplier);
       breakdown.set(damageType, { response, raw, amount });

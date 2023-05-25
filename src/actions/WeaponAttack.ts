@@ -2,6 +2,7 @@ import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import ErrorCollector from "../collectors/ErrorCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import MultiplierCollector from "../collectors/MultiplierCollector";
 import { HasTarget } from "../configs";
 import DamageMap from "../DamageMap";
 import Engine from "../Engine";
@@ -122,11 +123,17 @@ export default class WeaponAttack implements Action<HasTarget> {
           critical,
           attack: attack.detail,
           interrupt: new InterruptionCollector(),
+          multiplier: new MultiplierCollector(),
         })
       );
       map.add(damage.damageType, gd.detail.bonus.result);
 
-      await g.damage(map, { source: this, attacker, target });
+      await g.damage(map, {
+        source: this,
+        attacker,
+        target,
+        multiplier: gd.detail.multiplier.value,
+      });
     }
   }
 }
