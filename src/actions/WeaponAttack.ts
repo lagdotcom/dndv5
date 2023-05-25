@@ -1,6 +1,7 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import ErrorCollector from "../collectors/ErrorCollector";
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import { HasTarget } from "../configs";
 import DamageMap from "../DamageMap";
 import Engine from "../Engine";
@@ -109,7 +110,7 @@ export default class WeaponAttack implements Action<HasTarget> {
         map.add(damage.damageType, amount);
       } else map.add(damage.damageType, damage.amount);
 
-      const gd = g.fire(
+      const gd = await g.resolve(
         new GatherDamageEvent({
           attacker,
           target,
@@ -120,6 +121,7 @@ export default class WeaponAttack implements Action<HasTarget> {
           bonus: new BonusCollector(),
           critical,
           attack: attack.detail,
+          interrupt: new InterruptionCollector(),
         })
       );
       map.add(damage.damageType, gd.detail.bonus.result);

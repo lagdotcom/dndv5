@@ -51,6 +51,7 @@ export default interface Combatant {
   inventory: Set<Item>;
   senses: Map<SenseName, number>;
   naturalWeapons: Set<WeaponItem>;
+  resources: Map<Resource, number>;
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
   time: Set<ActionTime>;

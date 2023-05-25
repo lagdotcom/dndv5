@@ -53,7 +53,7 @@ export default class Engine {
   place(who: Combatant, x: number, y: number) {
     const position = { x, y };
     this.combatants.set(who, { position, initiative: NaN });
-    this.events.fire(new CombatantPlacedEvent({ who, position }));
+    this.fire(new CombatantPlacedEvent({ who, position }));
   }
 
   async start() {
@@ -111,7 +111,15 @@ export default class Engine {
       ? 0
       : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
     const who = this.initiativeOrder[this.initiativePosition];
-    this.events.fire(new TurnStartedEvent({ who }));
+
+    // TODO check if dead lol
+
+    for (const resource of who.resources.keys()) {
+      if (resource.refresh === "turnStart")
+        who.resources.set(resource, resource.maximum);
+    }
+
+    this.fire(new TurnStartedEvent({ who }));
   }
 
   async move(who: Combatant, dx: number, dy: number) {
@@ -125,8 +133,7 @@ export default class Engine {
     // TODO prevent movement, attacks of opportunity etc.
 
     state.position = { x, y };
-    const e = new CombatantMovedEvent({ who, old, position: state.position });
-    this.events.fire(e);
+    this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
   }
 
   async damage(
@@ -142,12 +149,13 @@ export default class Engine {
 
     for (const [damageType, raw] of damage) {
       const collector = new DamageResponseCollector();
-      const e = new GetDamageResponseEvent({
-        who: target,
-        damageType,
-        response: collector,
-      });
-      this.events.fire(e);
+      this.fire(
+        new GetDamageResponseEvent({
+          who: target,
+          damageType,
+          response: collector,
+        })
+      );
 
       const response = collector.result;
       if (response === "immune") continue;
@@ -162,7 +170,7 @@ export default class Engine {
       total += amount;
     }
 
-    this.events.fire(
+    this.fire(
       new CombatantDamagedEvent({ who: target, attacker, total, breakdown })
     );
 
@@ -170,7 +178,7 @@ export default class Engine {
     if (target.hp <= 0) {
       if (target.diesAtZero) {
         this.combatants.delete(target);
-        this.events.fire(new CombatantDiedEvent({ who: target, attacker }));
+        this.fire(new CombatantDiedEvent({ who: target, attacker }));
       } else {
         // TODO
       }
@@ -181,22 +189,27 @@ export default class Engine {
     await action.apply(config);
   }
 
-  async getActions(who: Combatant, target?: Combatant) {
-    const e = new GetActionsEvent({ who, target, actions: [] });
-    this.events.fire(e);
-    return e.detail.actions;
+  getActions(who: Combatant, target?: Combatant) {
+    return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail
+      .actions;
   }
 
   getAC(who: Combatant) {
-    const e = new GetACMethodsEvent({ who, methods: [] });
-    this.events.fire(e);
-    return e.detail.methods.reduce(
+    return this.fire(
+      new GetACMethodsEvent({ who, methods: [] })
+    ).detail.methods.reduce(
       (best, method) => (method.ac > best ? method.ac : best),
       0
     );
   }
 
   fire<T>(e: CustomEvent<T>) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((e as any).interrupt)
+      throw new Error(
+        `Use Engine.resolve() on an interruptible event type: ${e.type}`
+      );
+
     this.events.fire(e);
     return e;
   }
@@ -209,7 +222,7 @@ export default class Engine {
     for (const interruption of e.detail.interrupt) {
       if (interruption instanceof YesNoChoice) {
         const choice = await new Promise<boolean>((resolve) =>
-          this.events.fire(new YesNoChoiceEvent({ interruption, resolve }))
+          this.fire(new YesNoChoiceEvent({ interruption, resolve }))
         );
         if (choice) await interruption.yes?.();
         else await interruption.no?.();
@@ -234,11 +247,11 @@ export default class Engine {
   addEffectArea(area: EffectArea) {
     area.id = this.nextId();
     this.effects.add(area);
-    this.events.fire(new AreaPlacedEvent({ area }));
+    this.fire(new AreaPlacedEvent({ area }));
   }
 
   removeEffectArea(area: EffectArea) {
     this.effects.delete(area);
-    this.events.fire(new AreaRemovedEvent({ area }));
+    this.fire(new AreaRemovedEvent({ area }));
   }
 }

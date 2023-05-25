@@ -64,6 +64,7 @@ type EventData = {
     bonus: BonusCollector;
     critical: boolean;
     attack?: EventData["attack"];
+    interrupt: InterruptionCollector;
   };
   getACMethods: { who: Combatant; methods: ACMethod[] };
   getActions: { who: Combatant; target?: Combatant; actions: Action[] };

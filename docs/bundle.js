@@ -486,10 +486,9 @@
       return ammo;
     }
     get conditions() {
-      const conditions = /* @__PURE__ */ new Set();
-      const e = new GetConditionsEvent({ who: this, conditions });
-      this.g.events.fire(e);
-      return conditions;
+      return this.g.fire(
+        new GetConditionsEvent({ who: this, conditions: /* @__PURE__ */ new Set() })
+      ).detail.conditions;
     }
     addFeature(feature) {
       if (this.features.get(feature.name)) {
@@ -672,7 +671,7 @@
             map.add(damage.damageType, amount);
           } else
             map.add(damage.damageType, damage.amount);
-          const gd = g2.fire(
+          const gd = yield g2.resolve(
             new GatherDamageEvent({
               attacker,
               target,
@@ -682,7 +681,8 @@
               map,
               bonus: new BonusCollector(),
               critical,
-              attack: attack.detail
+              attack: attack.detail,
+              interrupt: new InterruptionCollector()
             })
           );
           map.add(damage.damageType, gd.detail.bonus.result);
@@ -1024,7 +1024,7 @@
     place(who, x, y) {
       const position = { x, y };
       this.combatants.set(who, { position, initiative: NaN });
-      this.events.fire(new CombatantPlacedEvent({ who, position }));
+      this.fire(new CombatantPlacedEvent({ who, position }));
     }
     start() {
       return __async(this, null, function* () {
@@ -1071,7 +1071,11 @@
     nextTurn() {
       this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
       const who = this.initiativeOrder[this.initiativePosition];
-      this.events.fire(new TurnStartedEvent({ who }));
+      for (const resource of who.resources.keys()) {
+        if (resource.refresh === "turnStart")
+          who.resources.set(resource, resource.maximum);
+      }
+      this.fire(new TurnStartedEvent({ who }));
     }
     move(who, dx, dy) {
       return __async(this, null, function* () {
@@ -1082,8 +1086,7 @@
         const x = old.x + dx;
         const y = old.y + dy;
         state.position = { x, y };
-        const e = new CombatantMovedEvent({ who, old, position: state.position });
-        this.events.fire(e);
+        this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
       });
     }
     damage(_0, _1) {
@@ -1095,12 +1098,13 @@
         const breakdown = /* @__PURE__ */ new Map();
         for (const [damageType, raw] of damage) {
           const collector = new DamageResponseCollector();
-          const e = new GetDamageResponseEvent({
-            who: target,
-            damageType,
-            response: collector
-          });
-          this.events.fire(e);
+          this.fire(
+            new GetDamageResponseEvent({
+              who: target,
+              damageType,
+              response: collector
+            })
+          );
           const response = collector.result;
           if (response === "immune")
             continue;
@@ -1113,14 +1117,14 @@
           breakdown.set(damageType, { response, raw, amount });
           total += amount;
         }
-        this.events.fire(
+        this.fire(
           new CombatantDamagedEvent({ who: target, attacker, total, breakdown })
         );
         target.hp -= total;
         if (target.hp <= 0) {
           if (target.diesAtZero) {
             this.combatants.delete(target);
-            this.events.fire(new CombatantDiedEvent({ who: target, attacker }));
+            this.fire(new CombatantDiedEvent({ who: target, attacker }));
           } else {
           }
         }
@@ -1132,21 +1136,21 @@
       });
     }
     getActions(who, target) {
-      return __async(this, null, function* () {
-        const e = new GetActionsEvent({ who, target, actions: [] });
-        this.events.fire(e);
-        return e.detail.actions;
-      });
+      return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
     }
     getAC(who) {
-      const e = new GetACMethodsEvent({ who, methods: [] });
-      this.events.fire(e);
-      return e.detail.methods.reduce(
+      return this.fire(
+        new GetACMethodsEvent({ who, methods: [] })
+      ).detail.methods.reduce(
         (best, method) => method.ac > best ? method.ac : best,
         0
       );
     }
     fire(e) {
+      if (e.interrupt)
+        throw new Error(
+          `Use Engine.resolve() on an interruptible event type: ${e.type}`
+        );
       this.events.fire(e);
       return e;
     }
@@ -1157,7 +1161,7 @@
         for (const interruption of e.detail.interrupt) {
           if (interruption instanceof YesNoChoice) {
             const choice = yield new Promise(
-              (resolve) => this.events.fire(new YesNoChoiceEvent({ interruption, resolve }))
+              (resolve) => this.fire(new YesNoChoiceEvent({ interruption, resolve }))
             );
             if (choice)
               yield (_a = interruption.yes) == null ? void 0 : _a.call(interruption);
@@ -1181,11 +1185,11 @@
     addEffectArea(area) {
       area.id = this.nextId();
       this.effects.add(area);
-      this.events.fire(new AreaPlacedEvent({ area }));
+      this.fire(new AreaPlacedEvent({ area }));
     }
     removeEffectArea(area) {
       this.effects.delete(area);
-      this.events.fire(new AreaRemovedEvent({ area }));
+      this.fire(new AreaRemovedEvent({ area }));
     }
   };
 
@@ -1458,6 +1462,86 @@
     );
   }
 
+  // src/resources.ts
+  var LongRestResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      this.refresh = "longRest";
+    }
+  };
+  var TurnResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      this.refresh = "turnStart";
+    }
+  };
+
+  // src/classes/rogue/SneakAttack.ts
+  function getSneakAttackDice(level) {
+    return Math.ceil(level / 2);
+  }
+  function getFlanker(g2, target) {
+    for (const flanker of g2.combatants.keys()) {
+      if (flanker.side === target.side)
+        continue;
+      if (flanker.conditions.has("Incapacitated"))
+        continue;
+      if (distance(g2, flanker, target) > 5)
+        continue;
+      return flanker;
+    }
+  }
+  var SneakAttackResource = new TurnResource("Sneak Attack", 1);
+  var SneakAttack = new SimpleFeature("Sneak Attack", (g2, me) => {
+    var _a;
+    const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
+    me.addResource(SneakAttackResource);
+    g2.events.on(
+      "gatherDamage",
+      ({
+        detail: {
+          ability,
+          attack,
+          attacker,
+          critical,
+          interrupt,
+          map,
+          target,
+          weapon
+        }
+      }) => {
+        if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
+          const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
+          const hasAdvantage = attack.roll.diceType === "advantage";
+          const didNotHaveDisadvantage = attack.pre.diceType.disadvantage.size === 0;
+          if (isFinesseOrRangedWeapon && (hasAdvantage || getFlanker(g2, target) && didNotHaveDisadvantage)) {
+            interrupt.add(
+              new YesNoChoice(
+                attacker,
+                SneakAttack,
+                "Sneak Attack",
+                `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
+                () => __async(void 0, null, function* () {
+                  me.spendResource(SneakAttackResource);
+                  const damageType = weapon.damage.damageType;
+                  const damage = yield g2.rollDamage(
+                    count,
+                    { attacker, target, size: 6, damageType, weapon, ability },
+                    critical
+                  );
+                  map.add(damageType, damage);
+                })
+              )
+            );
+          }
+        }
+      }
+    );
+  });
+  var SneakAttack_default = SneakAttack;
+
   // src/classes/rogue/index.ts
   var Expertise = new ConfiguredFeature(
     "Expertise",
@@ -1473,7 +1557,6 @@
       }
     }
   );
-  var SneakAttack = notImplementedFeature("Sneak Attack");
   var ThievesCant = notImplementedFeature("Thieves' Cant");
   var CunningAction = notImplementedFeature("Cunning Action");
   var SteadyAim = notImplementedFeature("Steady Aim");
@@ -1509,7 +1592,7 @@
       "Stealth"
     ]),
     features: /* @__PURE__ */ new Map([
-      [1, [Expertise, SneakAttack, ThievesCant]],
+      [1, [Expertise, SneakAttack_default, ThievesCant]],
       [2, [CunningAction]],
       [3, [SteadyAim]],
       [4, [ASI4]],
@@ -1520,7 +1603,7 @@
   };
   var rogue_default = Rogue;
 
-  // src/classes/rogue/Scout.ts
+  // src/classes/rogue/Scout/index.ts
   var Skirmisher = notImplementedFeature("Skirmisher");
   var Survivalist = new SimpleFeature("Survivalist", (g2, me) => {
     me.skills.set("Nature", 2);
@@ -1566,14 +1649,6 @@
         if (weapon === item && (attack == null ? void 0 : attack.roll.value) === 20)
           bonus.add(7, vicious);
       });
-    }
-  };
-
-  // src/resources.ts
-  var LongRestResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
     }
   };
 
@@ -2920,8 +2995,7 @@
       g2.events.on("turnStarted", ({ detail: { who } }) => {
         activeCombatant.value = who;
         hideActionMenu();
-        allActions.value = [];
-        void g2.getActions(who).then((actions) => allActions.value = actions);
+        allActions.value = g2.getActions(who);
       });
       g2.events.on("yesNoChoice", (e) => yesNo.value = e);
       onMount == null ? void 0 : onMount(g2);

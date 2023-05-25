@@ -114,8 +114,15 @@ it("supports a typical Aura attack", async () => {
 
   expect(dialog("Lucky")).toBeVisible();
   g.dice.force(20, { type: "luck", who: aura });
+  // 2d8 for crossbow base damage
+  for (let i = 0; i < 2; i++)
+    g.dice.force(1, { type: "damage", attacker: aura });
+  // 8d6 for sneak attack damage
+  for (let i = 0; i < 8; i++)
+    g.dice.force(1, { type: "damage", attacker: aura });
   await user.click(choice("Yes"));
 
   expect(dialog("Sneak Attack")).toBeVisible();
   await user.click(choice("Yes"));
+  expect(logMsg("thug takes 22 damage. (22 piercing)")).toBeVisible();
 });

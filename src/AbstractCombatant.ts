@@ -221,13 +221,10 @@ export default abstract class AbstractCombatant implements Combatant {
     return ammo;
   }
 
-  get conditions() {
-    const conditions = new Set<ConditionName>();
-
-    const e = new GetConditionsEvent({ who: this, conditions });
-    this.g.events.fire(e);
-
-    return conditions;
+  get conditions(): Set<ConditionName> {
+    return this.g.fire(
+      new GetConditionsEvent({ who: this, conditions: new Set() })
+    ).detail.conditions;
   }
 
   addFeature(feature: Feature) {
