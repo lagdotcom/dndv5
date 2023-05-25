@@ -1,3 +1,5 @@
+/*eslint-env node*/
+
 const externals = {
   preact: "preact",
   "preact/hooks": "preactHooks",
