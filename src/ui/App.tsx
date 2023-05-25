@@ -14,14 +14,15 @@ import Menu, { MenuItem } from "./Menu";
 import {
   actionArea,
   activeCombatant,
+  activeCombatantId,
   allActions,
   allCombatants,
   allEffects,
-  CombatantAndState,
   wantsCombatant,
   wantsPoint,
   yesNo,
-} from "./state";
+} from "./utils/state";
+import { getUnitData, UnitData } from "./utils/types";
 import YesNoDialog from "./YesNoDialog";
 
 interface Props {
@@ -51,8 +52,8 @@ export default function App({ g, onMount }: Props) {
   );
 
   const refreshUnits = useCallback(() => {
-    const list: CombatantAndState[] = [];
-    for (const [who, state] of g.combatants) list.push({ who, state });
+    const list: UnitData[] = [];
+    for (const [who, state] of g.combatants) list.push(getUnitData(who, state));
     allCombatants.value = list;
   }, [g]);
 
@@ -69,7 +70,7 @@ export default function App({ g, onMount }: Props) {
     g.events.on("areaRemoved", refreshAreas);
 
     g.events.on("turnStarted", ({ detail: { who } }) => {
-      activeCombatant.value = who;
+      activeCombatantId.value = who.id;
       hideActionMenu();
 
       allActions.value = g.getActions(who);
@@ -84,9 +85,9 @@ export default function App({ g, onMount }: Props) {
     <T extends object>(action: Action<T>, config: T) => {
       setAction(undefined);
       actionArea.value = undefined;
-      g.act(action, config);
+      void g.act(action, config).then(refreshUnits);
     },
-    [g]
+    [g, refreshUnits]
   );
 
   const onClickAction = useCallback(

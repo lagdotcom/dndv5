@@ -5,7 +5,7 @@ import { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 import { resolveArea } from "../utils/areas";
 import styles from "./BattlefieldEffect.module.scss";
-import { scale } from "./state";
+import { scale } from "./utils/state";
 
 function Sphere({
   centre,

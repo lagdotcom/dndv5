@@ -80,7 +80,11 @@ type EventData = {
     damageType: DamageType;
     response: DamageResponseCollector;
   };
-  getSpeed: { who: Combatant; multiplier: MultiplierCollector };
+  getSpeed: {
+    who: Combatant;
+    bonus: BonusCollector;
+    multiplier: MultiplierCollector;
+  };
   spellCast: {
     who: Combatant;
     spell: Spell;

@@ -1,13 +1,13 @@
 import Action from "../types/Action";
-import Combatant from "../types/Combatant";
 import styles from "./ActiveUnitPanel.module.scss";
 import Labelled from "./Labelled";
-import { allActions } from "./state";
+import { allActions } from "./utils/state";
+import { UnitData } from "./utils/types";
 
 interface Props {
   onChooseAction(action: Action): void;
   onPass(): void;
-  who: Combatant;
+  who: UnitData;
 }
 
 export default function ActiveUnitPanel({

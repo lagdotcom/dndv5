@@ -5,14 +5,14 @@ import Point from "../types/Point";
 import { round } from "../utils/numbers";
 import styles from "./Battlefield.module.scss";
 import BattlefieldEffect from "./BattlefieldEffect";
+import Unit from "./Unit";
 import {
   actionArea,
-  activeCombatant,
+  activeCombatantId,
   allCombatants,
   allEffects,
   scale,
-} from "./state";
-import Unit from "./Unit";
+} from "./utils/state";
 
 interface Props {
   onClickBattlefield(pos: Point, e: MouseEvent): void;
@@ -39,12 +39,11 @@ export default function Battlefield({
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <main className={styles.main} aria-label="Battlefield" onClick={onClick}>
-      {allCombatants.value.map(({ who, state }) => (
+      {allCombatants.value.map((unit) => (
         <Unit
-          key={who.id}
-          isActive={activeCombatant.value === who}
-          who={who}
-          position={state.position}
+          key={unit.id}
+          isActive={activeCombatantId.value === unit.id}
+          u={unit}
           onClick={onClickCombatant}
           onMove={onMoveCombatant}
         />

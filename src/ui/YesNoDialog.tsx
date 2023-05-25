@@ -2,7 +2,7 @@ import { useCallback } from "preact/hooks";
 
 import EventData from "../events/EventData";
 import Dialog from "./Dialog";
-import { yesNo } from "./state";
+import { yesNo } from "./utils/state";
 
 export default function YesNoDialog({
   interruption,

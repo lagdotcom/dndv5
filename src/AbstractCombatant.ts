@@ -1,7 +1,10 @@
+import BonusCollector from "./collectors/BonusCollector";
+import MultiplierCollector from "./collectors/MultiplierCollector";
 import Engine from "./Engine";
 import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
+import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import Ability, { Abilities } from "./types/Ability";
 import Combatant from "./types/Combatant";
@@ -232,6 +235,21 @@ export default abstract class AbstractCombatant implements Combatant {
     return this.g.fire(
       new GetConditionsEvent({ who: this, conditions: new Set() })
     ).detail.conditions;
+  }
+
+  get speed(): number {
+    const bonus = new BonusCollector();
+    bonus.add(this.movement.get("speed") ?? 0, this);
+
+    const e = this.g.fire(
+      new GetSpeedEvent({
+        who: this,
+        bonus,
+        multiplier: new MultiplierCollector(),
+      })
+    );
+
+    return bonus.result * e.detail.multiplier.value;
   }
 
   addFeature(feature: Feature) {

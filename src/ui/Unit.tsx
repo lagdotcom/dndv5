@@ -1,45 +1,39 @@
 import { useCallback } from "preact/hooks";
 
 import Combatant from "../types/Combatant";
-import Point from "../types/Point";
-import { scale } from "./state";
 import styles from "./Unit.module.scss";
 import UnitMoveButton from "./UnitMoveButton";
+import { scale } from "./utils/state";
+import { UnitData } from "./utils/types";
 
 interface Props {
   isActive: boolean;
   onClick(who: Combatant, e: MouseEvent): void;
   onMove(who: Combatant, dx: number, dy: number): void;
-  position: Point;
-  who: Combatant;
+  u: UnitData;
 }
 
-export default function Unit({
-  isActive,
-  onClick,
-  onMove,
-  position,
-  who,
-}: Props) {
+export default function Unit({ isActive, onClick, onMove, u }: Props) {
   const containerStyle = {
-    left: position.x * scale.value,
-    top: position.y * scale.value,
-    width: who.sizeInUnits * scale.value,
-    height: who.sizeInUnits * scale.value,
+    left: u.position.x * scale.value,
+    top: u.position.y * scale.value,
+    width: u.sizeInUnits * scale.value,
+    height: u.sizeInUnits * scale.value,
   };
   const tokenStyle = {
-    width: who.sizeInUnits * scale.value,
-    height: who.sizeInUnits * scale.value,
+    width: u.sizeInUnits * scale.value,
+    height: u.sizeInUnits * scale.value,
   };
+  const disabled = u.movedSoFar >= u.speed;
 
   const clicked = useCallback(
-    (e: MouseEvent) => onClick(who, e),
-    [onClick, who]
+    (e: MouseEvent) => onClick(u.who, e),
+    [onClick, u]
   );
 
   const moved = useCallback(
-    (dx: number, dy: number) => onMove(who, dx, dy),
-    [onMove, who]
+    (dx: number, dy: number) => onMove(u.who, dx, dy),
+    [onMove, u]
   );
 
   return (
@@ -47,21 +41,21 @@ export default function Unit({
     <div
       className={styles.main}
       style={containerStyle}
-      title={who.name}
+      title={u.name}
       onClick={clicked}
     >
       <img
         className={styles.token}
         style={tokenStyle}
-        alt={who.name}
-        src={who.img}
+        alt={u.name}
+        src={u.img}
       />
       {isActive && (
         <>
-          <UnitMoveButton onClick={moved} type="north" />
-          <UnitMoveButton onClick={moved} type="east" />
-          <UnitMoveButton onClick={moved} type="south" />
-          <UnitMoveButton onClick={moved} type="west" />
+          <UnitMoveButton disabled={disabled} onClick={moved} type="north" />
+          <UnitMoveButton disabled={disabled} onClick={moved} type="east" />
+          <UnitMoveButton disabled={disabled} onClick={moved} type="south" />
+          <UnitMoveButton disabled={disabled} onClick={moved} type="west" />
         </>
       )}
     </div>

@@ -59,6 +59,7 @@ export default interface Combatant extends Source {
   conditions: Set<ConditionName>;
   attunements: Set<Item>;
   movedSoFar: number;
+  speed: number;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

@@ -19,11 +19,12 @@ const buttonTypes = {
 type ButtonType = keyof typeof buttonTypes;
 
 interface Props {
+  disabled: boolean;
   onClick(dx: number, dy: number): void;
   type: ButtonType;
 }
 
-export default function UnitMoveButton({ onClick, type }: Props) {
+export default function UnitMoveButton({ disabled, onClick, type }: Props) {
   const { className, emoji, label, dx, dy } = useMemo(
     () => buttonTypes[type],
     [type]
@@ -39,6 +40,7 @@ export default function UnitMoveButton({ onClick, type }: Props) {
 
   return (
     <button
+      disabled={disabled}
       className={`${styles.main} ${className}`}
       onClick={clicked}
       aria-label={label}

@@ -11,7 +11,7 @@ import { enumerate } from "../utils/numbers";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
 import Labelled from "./Labelled";
-import { actionArea, wantsCombatant, wantsPoint } from "./state";
+import { actionArea, wantsCombatant, wantsPoint } from "./utils/state";
 
 type ChooserProps<T, R = Resolver<T>> = {
   field: string;

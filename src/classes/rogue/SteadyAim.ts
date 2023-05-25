@@ -50,7 +50,6 @@ const SteadyAim = new SimpleFeature("Steady Aim", (g, me) => {
     if (who === me) actions.push(new SteadyAimAction(g, me));
   });
 
-  // TODO this doesn't work yet
   g.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
     if (who.hasEffect(SteadyAimNoMoveEffect))
       multiplier.add(0, SteadyAimNoMoveEffect);

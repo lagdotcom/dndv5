@@ -132,7 +132,7 @@ export default class Engine {
     const x = old.x + dx;
     const y = old.y + dy;
 
-    if (track) who.movedSoFar += Math.max(dx, dy);
+    if (track) who.movedSoFar += Math.max(Math.abs(dx), Math.abs(dy));
 
     // TODO prevent movement, attacks of opportunity etc.
 

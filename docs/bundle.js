@@ -300,6 +300,13 @@
     }
   };
 
+  // src/events/GetSpeedEvent.ts
+  var GetSpeedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("getSpeed", { detail });
+    }
+  };
+
   // src/types/Ability.ts
   var Abilities = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -526,6 +533,19 @@
       return this.g.fire(
         new GetConditionsEvent({ who: this, conditions: /* @__PURE__ */ new Set() })
       ).detail.conditions;
+    }
+    get speed() {
+      var _a;
+      const bonus = new BonusCollector();
+      bonus.add((_a = this.movement.get("speed")) != null ? _a : 0, this);
+      const e = this.g.fire(
+        new GetSpeedEvent({
+          who: this,
+          bonus,
+          multiplier: new MultiplierCollector()
+        })
+      );
+      return bonus.result * e.detail.multiplier.value;
     }
     addFeature(feature) {
       if (this.features.get(feature.name)) {
@@ -1177,7 +1197,7 @@
         const x = old.x + dx;
         const y = old.y + dy;
         if (track)
-          who.movedSoFar += Math.max(dx, dy);
+          who.movedSoFar += Math.max(Math.abs(dx), Math.abs(dy));
         state.position = { x, y };
         this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
       });
@@ -2571,10 +2591,13 @@
     ] });
   }
 
-  // src/ui/state.ts
+  // src/ui/utils/state.ts
   var import_signals = __toESM(require_signals());
   var actionArea = (0, import_signals.signal)(void 0);
-  var activeCombatant = (0, import_signals.signal)(void 0);
+  var activeCombatantId = (0, import_signals.signal)(NaN);
+  var activeCombatant = (0, import_signals.computed)(
+    () => allCombatants.value.find((u) => u.id === activeCombatantId.value)
+  );
   var allActions = (0, import_signals.signal)([]);
   var allCombatants = (0, import_signals.signal)([]);
   var allEffects = (0, import_signals.signal)([]);
@@ -2586,6 +2609,7 @@
   var yesNo = (0, import_signals.signal)(void 0);
   window.state = {
     actionArea,
+    activeCombatantId,
     activeCombatant,
     allActions,
     allEffects,
@@ -2707,7 +2731,7 @@
     south: makeButtonType("moveS", "\u2B07\uFE0F", "Move South", 0, 5),
     west: makeButtonType("moveW", "\u2B05\uFE0F", "Move West", -5, 0)
   };
-  function UnitMoveButton({ onClick, type }) {
+  function UnitMoveButton({ disabled, onClick, type }) {
     const { className, emoji, label, dx, dy } = (0, import_hooks3.useMemo)(
       () => buttonTypes[type],
       [type]
@@ -2722,6 +2746,7 @@
     return /* @__PURE__ */ o(
       "button",
       {
+        disabled,
         className: `${UnitMoveButton_module_default.main} ${className}`,
         onClick: clicked,
         "aria-label": label,
@@ -2731,30 +2756,25 @@
   }
 
   // src/ui/Unit.tsx
-  function Unit({
-    isActive,
-    onClick,
-    onMove,
-    position,
-    who
-  }) {
+  function Unit({ isActive, onClick, onMove, u }) {
     const containerStyle = {
-      left: position.x * scale.value,
-      top: position.y * scale.value,
-      width: who.sizeInUnits * scale.value,
-      height: who.sizeInUnits * scale.value
+      left: u.position.x * scale.value,
+      top: u.position.y * scale.value,
+      width: u.sizeInUnits * scale.value,
+      height: u.sizeInUnits * scale.value
     };
     const tokenStyle = {
-      width: who.sizeInUnits * scale.value,
-      height: who.sizeInUnits * scale.value
+      width: u.sizeInUnits * scale.value,
+      height: u.sizeInUnits * scale.value
     };
+    const disabled = u.movedSoFar >= u.speed;
     const clicked = (0, import_hooks4.useCallback)(
-      (e) => onClick(who, e),
-      [onClick, who]
+      (e) => onClick(u.who, e),
+      [onClick, u]
     );
     const moved = (0, import_hooks4.useCallback)(
-      (dx, dy) => onMove(who, dx, dy),
-      [onMove, who]
+      (dx, dy) => onMove(u.who, dx, dy),
+      [onMove, u]
     );
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
@@ -2763,7 +2783,7 @@
         {
           className: Unit_module_default.main,
           style: containerStyle,
-          title: who.name,
+          title: u.name,
           onClick: clicked,
           children: [
             /* @__PURE__ */ o(
@@ -2771,15 +2791,15 @@
               {
                 className: Unit_module_default.token,
                 style: tokenStyle,
-                alt: who.name,
-                src: who.img
+                alt: u.name,
+                src: u.img
               }
             ),
             isActive && /* @__PURE__ */ o(import_preact2.Fragment, { children: [
-              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "north" }),
-              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "east" }),
-              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "south" }),
-              /* @__PURE__ */ o(UnitMoveButton, { onClick: moved, type: "west" })
+              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "north" }),
+              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "east" }),
+              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "south" }),
+              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "west" })
             ] })
           ]
         }
@@ -2805,16 +2825,15 @@
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
       /* @__PURE__ */ o("main", { className: Battlefield_module_default.main, "aria-label": "Battlefield", onClick, children: [
-        allCombatants.value.map(({ who, state }) => /* @__PURE__ */ o(
+        allCombatants.value.map((unit) => /* @__PURE__ */ o(
           Unit,
           {
-            isActive: activeCombatant.value === who,
-            who,
-            position: state.position,
+            isActive: activeCombatantId.value === unit.id,
+            u: unit,
             onClick: onClickCombatant,
             onMove: onMoveCombatant
           },
-          who.id
+          unit.id
         )),
         allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { shape: effect }, effect.id)),
         actionArea.value && /* @__PURE__ */ o(BattlefieldEffect, { shape: actionArea.value })
@@ -3097,6 +3116,13 @@
     )) }) });
   }
 
+  // src/ui/utils/types.ts
+  function getUnitData(who, state) {
+    const { position } = state;
+    const { id, name, img, sizeInUnits, movedSoFar, speed } = who;
+    return { who, position, id, name, img, sizeInUnits, movedSoFar, speed };
+  }
+
   // src/ui/YesNoDialog.tsx
   var import_hooks9 = __toESM(require_hooks());
 
@@ -3170,7 +3196,7 @@
     const refreshUnits = (0, import_hooks10.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
-        list.push({ who, state });
+        list.push(getUnitData(who, state));
       allCombatants.value = list;
     }, [g2]);
     const refreshAreas = (0, import_hooks10.useCallback)(() => {
@@ -3183,7 +3209,7 @@
       g2.events.on("areaPlaced", refreshAreas);
       g2.events.on("areaRemoved", refreshAreas);
       g2.events.on("turnStarted", ({ detail: { who } }) => {
-        activeCombatant.value = who;
+        activeCombatantId.value = who.id;
         hideActionMenu();
         allActions.value = g2.getActions(who);
       });
@@ -3194,9 +3220,9 @@
       (action2, config) => {
         setAction(void 0);
         actionArea.value = void 0;
-        g2.act(action2, config);
+        void g2.act(action2, config).then(refreshUnits);
       },
-      [g2]
+      [g2, refreshUnits]
     );
     const onClickAction = (0, import_hooks10.useCallback)(
       (action2) => {
