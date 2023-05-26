@@ -1,5 +1,9 @@
 import CastSpell from "../actions/CastSpell";
-import { darkvisionFeature, notImplementedFeature } from "../features/common";
+import {
+  darkvisionFeature,
+  nonCombatFeature,
+  notImplementedFeature,
+} from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
@@ -8,8 +12,11 @@ import GustOfWind from "../spells/level2/GustOfWind";
 import WallOfWater from "../spells/level3/WallOfWater";
 import PCRace from "../types/PCRace";
 
-// TODO You can breathe air and water.
-const Amphibious = notImplementedFeature("Amphibious");
+// TODO
+const Amphibious = notImplementedFeature(
+  "Amphibious",
+  `You can breathe air and water.`
+);
 
 const FogCloudResource = new LongRestResource(
   "Control Air and Water: Fog Cloud",
@@ -42,6 +49,7 @@ const ControlAirAndWaterMethod = new InnateSpellcasting(
 
 const ControlAirAndWater = new SimpleFeature(
   "Control Air and Water",
+  `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can’t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
   (g, me) => {
     const spells = ControlAirAndWaterSpells.filter(
       (entry) => entry.level <= me.level
@@ -60,11 +68,14 @@ const ControlAirAndWater = new SimpleFeature(
 
 const Darkvision = darkvisionFeature();
 
-// TODO Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.
-const EmissaryOfTheSea = notImplementedFeature("Emissary of the Sea");
+const EmissaryOfTheSea = nonCombatFeature(
+  "Emissary of the Sea",
+  `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
+);
 
 const GuardiansOfTheDepths = new SimpleFeature(
   "Guardians of the Depths",
+  `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
   (g, me) => {
     g.events.on(
       "getDamageResponse",

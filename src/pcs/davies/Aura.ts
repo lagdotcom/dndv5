@@ -9,7 +9,7 @@ import { LeatherArmor } from "../../items/armor";
 import { LightCrossbow, Rapier } from "../../items/weapons";
 import { BracersOfTheArbalest } from "../../items/wondrous";
 import PC from "../../PC";
-import { AirGenasi } from "../../races/Genasi";
+import { AirGenasi } from "../../races/Genasi_EEPC";
 import { enchant } from "../../utils/items";
 import tokenUrl from "./Aura_token.png";
 

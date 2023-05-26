@@ -9,7 +9,7 @@ export default interface PCRace extends Source {
   parent?: PCRace;
   abilities: Map<Ability, number>;
   size: SizeCategory;
-  movement: Map<MovementType, number>;
-  features: Set<Feature>;
-  languages: Set<LanguageName>;
+  movement?: Map<MovementType, number>;
+  features?: Set<Feature>;
+  languages?: Set<LanguageName>;
 }

@@ -9,16 +9,20 @@ import PCClass from "../../types/PCClass";
 import { dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
 
-const UnarmoredDefense = new SimpleFeature("Unarmored Defense", (g, me) => {
-  g.events.on("getACMethods", ({ detail: { who, methods } }) => {
-    if (who === me && !me.armor && !me.shield)
-      methods.push({
-        name: "Unarmored Defense",
-        ac: 10 + me.dex + me.wis,
-        uses: new Set(),
-      });
-  });
-});
+const UnarmoredDefense = new SimpleFeature(
+  "Unarmored Defense",
+  `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
+  (g, me) => {
+    g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      if (who === me && !me.armor && !me.shield)
+        methods.push({
+          name: "Unarmored Defense",
+          ac: 10 + me.dex + me.wis,
+          uses: new Set(),
+        });
+    });
+  }
+);
 
 function getMartialArtsDie(level: number) {
   if (level < 5) return 4;
@@ -64,32 +68,35 @@ class MonkWeaponWrapper extends AbstractWeapon {
   }
 }
 
-const MartialArts = new SimpleFeature("Martial Arts", (g, me) => {
-  console.warn("[Feature Not Complete] Martial Arts");
-  /* TODO Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
+// TODO no bonus attack yet
+const MartialArts = new SimpleFeature(
+  "Martial Arts",
+  `Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
 
-  You gain the following benefits while you are unarmed or wielding only monk weapons and you aren't wearing armor or wielding a shield.
+You gain the following benefits while you are unarmed or wielding only monk weapons and you aren't wearing armor or wielding a shield.
 
-  - You can use Dexterity instead of Strength for the attack and damage rolls of your unarmed strikes and monk weapons.
-  - You can roll a d4 in place of the normal damage of your unarmed strike or monk weapon. This die changes as you gain monk levels, as shown in the Martial Arts column of the Monk table.
-  - When you use the Attack action with an unarmed strike or a monk weapon on your turn, you can make one unarmed strike as a bonus action. For example, if you take the Attack action and attack with a quarterstaff, you can also make an unarmed strike as a bonus action, assuming you haven't already taken a bonus action this turn.
+- You can use Dexterity instead of Strength for the attack and damage rolls of your unarmed strikes and monk weapons.
+- You can roll a d4 in place of the normal damage of your unarmed strike or monk weapon. This die changes as you gain monk levels, as shown in the Martial Arts column of the Monk table.
+- When you use the Attack action with an unarmed strike or a monk weapon on your turn, you can make one unarmed strike as a bonus action. For example, if you take the Attack action and attack with a quarterstaff, you can also make an unarmed strike as a bonus action, assuming you haven't already taken a bonus action this turn.
 
-  Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama). */
+Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
+  (g, me) => {
+    console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
+    const diceSize = getMartialArtsDie(me.classLevels.get("Monk") ?? 0);
 
-  const diceSize = getMartialArtsDie(me.classLevels.get("Monk") ?? 0);
+    g.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who !== me) return;
 
-  g.events.on("getActions", ({ detail: { who, actions } }) => {
-    if (who !== me) return;
+      for (const wa of actions.filter(isMonkWeaponAttack)) {
+        // TODO should really be a choice
+        if (me.dex > me.str) wa.ability = "dex";
 
-    for (const wa of actions.filter(isMonkWeaponAttack)) {
-      // TODO should really be a choice
-      if (me.dex > me.str) wa.ability = "dex";
-
-      if (canUpgradeDamage(wa.weapon.damage, diceSize))
-        wa.weapon = new MonkWeaponWrapper(g, wa.weapon, diceSize);
-    }
-  });
-});
+        if (canUpgradeDamage(wa.weapon.damage, diceSize))
+          wa.weapon = new MonkWeaponWrapper(g, wa.weapon, diceSize);
+      }
+    });
+  }
+);
 
 const Monk: PCClass = {
   name: "Monk",

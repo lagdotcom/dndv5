@@ -5,6 +5,7 @@ import Feature from "../types/Feature";
 export default class ConfiguredFeature<T = undefined> implements Feature<T> {
   constructor(
     public name: string,
+    public text: string,
     private apply: (g: Engine, me: Combatant, config: T) => void
   ) {}
 

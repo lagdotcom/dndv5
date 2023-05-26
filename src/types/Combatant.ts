@@ -60,6 +60,7 @@ export default interface Combatant extends Source {
   attunements: Set<Item>;
   movedSoFar: number;
   speed: number;
+  saveProficiencies: Set<Ability>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

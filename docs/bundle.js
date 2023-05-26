@@ -1116,6 +1116,21 @@
       values.push(i);
     return values;
   }
+  function ordinal(n) {
+    if (n >= 11 && n <= 13)
+      return `${n}th`;
+    const last = n % 10;
+    switch (last) {
+      case 1:
+        return `${n}st`;
+      case 2:
+        return `${n}nd`;
+      case 3:
+        return `${n}rd`;
+      default:
+        return `${n}th`;
+    }
+  }
 
   // src/Engine.ts
   var Engine = class {
@@ -1527,28 +1542,38 @@
 
   // src/features/SimpleFeature.ts
   var SimpleFeature = class {
-    constructor(name, setup) {
+    constructor(name, text, setup) {
       this.name = name;
+      this.text = text;
       this.setup = setup;
     }
   };
 
   // src/features/common.ts
   function darkvisionFeature(range = 60) {
-    return new SimpleFeature("Darkvision", (_2, me) => {
-      me.senses.set("darkvision", range);
+    return new SimpleFeature(
+      "Darkvision",
+      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
+      (_2, me) => {
+        me.senses.set("darkvision", range);
+      }
+    );
+  }
+  function nonCombatFeature(name, text) {
+    return new SimpleFeature(name, text, () => {
     });
   }
-  function notImplementedFeature(name) {
-    return new SimpleFeature(name, () => {
-      console.warn(`[Feature Missing] ${name}`);
+  function notImplementedFeature(name, text) {
+    return new SimpleFeature(name, text, (_2, me) => {
+      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
     });
   }
 
   // src/features/ConfiguredFeature.ts
   var ConfiguredFeature = class {
-    constructor(name, apply) {
+    constructor(name, text, apply) {
       this.name = name;
+      this.text = text;
       this.apply = apply;
     }
     setup(g2, who) {
@@ -1572,6 +1597,11 @@
   function makeASI(className, level) {
     return new ConfiguredFeature(
       `Ability Score Improvement (${className} ${level})`,
+      `When you reach ${ordinal(
+        level
+      )} level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
+
+If your DM allows the use of feats, you may instead take a feat.`,
       asiSetup
     );
   }
@@ -1608,52 +1638,60 @@
     }
   }
   var SneakAttackResource = new TurnResource("Sneak Attack", 1);
-  var SneakAttack = new SimpleFeature("Sneak Attack", (g2, me) => {
-    var _a;
-    const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
-    me.addResource(SneakAttackResource);
-    g2.events.on(
-      "gatherDamage",
-      ({
-        detail: {
-          ability,
-          attack,
-          attacker,
-          critical,
-          interrupt,
-          map,
-          target,
-          weapon
-        }
-      }) => {
-        if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
-          const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
-          const hasAdvantage = attack.roll.diceType === "advantage";
-          const didNotHaveDisadvantage = attack.pre.diceType.disadvantage.size === 0;
-          if (isFinesseOrRangedWeapon && (hasAdvantage || getFlanker(g2, target) && didNotHaveDisadvantage)) {
-            interrupt.add(
-              new YesNoChoice(
-                attacker,
-                SneakAttack,
-                "Sneak Attack",
-                `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
-                () => __async(void 0, null, function* () {
-                  me.spendResource(SneakAttackResource);
-                  const damageType = weapon.damage.damageType;
-                  const damage = yield g2.rollDamage(
-                    count,
-                    { attacker, target, size: 6, damageType, weapon, ability },
-                    critical
-                  );
-                  map.add(damageType, damage);
-                })
-              )
-            );
+  var SneakAttack = new SimpleFeature(
+    "Sneak Attack",
+    `Beginning at 1st level, you know how to strike subtly and exploit a foe's distraction. Once per turn, you can deal an extra 1d6 damage to one creature you hit with an attack if you have advantage on the attack roll. The attack must use a finesse or a ranged weapon.
+
+You don't need advantage on the attack roll if another enemy of the target is within 5 feet of it, that enemy isn't incapacitated, and you don't have disadvantage on the attack roll.
+
+The amount of the extra damage increases as you gain levels in this class, as shown in the Sneak Attack column of the Rogue table.`,
+    (g2, me) => {
+      var _a;
+      const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
+      me.addResource(SneakAttackResource);
+      g2.events.on(
+        "gatherDamage",
+        ({
+          detail: {
+            ability,
+            attack,
+            attacker,
+            critical,
+            interrupt,
+            map,
+            target,
+            weapon
+          }
+        }) => {
+          if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
+            const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
+            const hasAdvantage = attack.roll.diceType === "advantage";
+            const didNotHaveDisadvantage = attack.pre.diceType.disadvantage.size === 0;
+            if (isFinesseOrRangedWeapon && (hasAdvantage || getFlanker(g2, target) && didNotHaveDisadvantage)) {
+              interrupt.add(
+                new YesNoChoice(
+                  attacker,
+                  SneakAttack,
+                  "Sneak Attack",
+                  `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
+                  () => __async(void 0, null, function* () {
+                    me.spendResource(SneakAttackResource);
+                    const damageType = weapon.damage.damageType;
+                    const damage = yield g2.rollDamage(
+                      count,
+                      { attacker, target, size: 6, damageType, weapon, ability },
+                      critical
+                    );
+                    map.add(damageType, damage);
+                  })
+                )
+              );
+            }
           }
         }
-      }
-    );
-  });
+      );
+    }
+  );
   var SneakAttack_default = SneakAttack;
 
   // src/BaseEffect.ts
@@ -1696,29 +1734,36 @@
       });
     }
   };
-  var SteadyAim = new SimpleFeature("Steady Aim", (g2, me) => {
-    g2.events.on("getActions", ({ detail: { who, actions } }) => {
-      if (who === me)
-        actions.push(new SteadyAimAction(g2, me));
-    });
-    g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
-      if (who.hasEffect(SteadyAimNoMoveEffect))
-        multiplier.add(0, SteadyAimNoMoveEffect);
-    });
-    g2.events.on("beforeAttack", ({ detail: { attacker, diceType } }) => {
-      if (attacker.hasEffect(SteadyAimAdvantageEffect))
-        diceType.add("advantage", SteadyAimAdvantageEffect);
-    });
-    g2.events.on("attack", ({ detail: { pre } }) => {
-      if (pre.diceType.involved(SteadyAimAdvantageEffect))
-        pre.attacker.removeEffect(SteadyAimAdvantageEffect);
-    });
-  });
+  var SteadyAim = new SimpleFeature(
+    "Steady Aim",
+    `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
+    (g2, me) => {
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new SteadyAimAction(g2, me));
+      });
+      g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+        if (who.hasEffect(SteadyAimNoMoveEffect))
+          multiplier.add(0, SteadyAimNoMoveEffect);
+      });
+      g2.events.on("beforeAttack", ({ detail: { attacker, diceType } }) => {
+        if (attacker.hasEffect(SteadyAimAdvantageEffect))
+          diceType.add("advantage", SteadyAimAdvantageEffect);
+      });
+      g2.events.on("attack", ({ detail: { pre } }) => {
+        if (pre.diceType.involved(SteadyAimAdvantageEffect))
+          pre.attacker.removeEffect(SteadyAimAdvantageEffect);
+      });
+    }
+  );
   var SteadyAim_default = SteadyAim;
 
   // src/classes/rogue/index.ts
   var Expertise = new ConfiguredFeature(
     "Expertise",
+    `At 1st level, choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves\u2019 tools. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies.
+
+  At 6th level, you can choose two more of your proficiencies (in skills or with thieves\u2019 tools) to gain this benefit.`,
     (g2, me, config) => {
       for (const entry of config) {
         if (entry === "thieves' tools") {
@@ -1731,34 +1776,67 @@
       }
     }
   );
-  var ThievesCant = notImplementedFeature("Thieves' Cant");
-  var CunningAction = notImplementedFeature("Cunning Action");
-  var UncannyDodge = new SimpleFeature("Uncanny Dodge", (g2, me) => {
-    g2.events.on(
-      "gatherDamage",
-      ({ detail: { target, attack, interrupt, multiplier } }) => {
-        if (attack && target === me && me.time.has("reaction"))
-          interrupt.add(
-            new YesNoChoice(
-              me,
-              UncannyDodge,
-              "Uncanny Dodge",
-              `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-              () => __async(void 0, null, function* () {
-                me.time.delete("reaction");
-                multiplier.add(0.5, UncannyDodge);
-              })
-            )
-          );
-      }
-    );
-  });
-  var Evasion = notImplementedFeature("Evasion");
-  var ReliableTalent = notImplementedFeature("Reliable Talent");
-  var Blindsense = notImplementedFeature("Blindsense");
-  var SlipperyMind = notImplementedFeature("Slippery Mind");
-  var Elusive = notImplementedFeature("Elusive");
-  var StrokeOfLuck = notImplementedFeature("Stroke of Luck");
+  var ThievesCant = nonCombatFeature(
+    "Thieves' Cant",
+    `During your rogue training you learned thieves' cant, a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. Only another creature that knows thieves' cant understands such messages. It takes four times longer to convey such a message than it does to speak the same idea plainly.
+
+In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`
+  );
+  var CunningAction = notImplementedFeature(
+    "Cunning Action",
+    `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`
+  );
+  var UncannyDodge = new SimpleFeature(
+    "Uncanny Dodge",
+    `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+    (g2, me) => {
+      g2.events.on(
+        "gatherDamage",
+        ({ detail: { target, attack, interrupt, multiplier } }) => {
+          if (attack && target === me && me.time.has("reaction"))
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                UncannyDodge,
+                "Uncanny Dodge",
+                `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
+                () => __async(void 0, null, function* () {
+                  me.time.delete("reaction");
+                  multiplier.add(0.5, UncannyDodge);
+                })
+              )
+            );
+        }
+      );
+    }
+  );
+  var Evasion = notImplementedFeature(
+    "Evasion",
+    `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`
+  );
+  var ReliableTalent = notImplementedFeature(
+    "Reliable Talent",
+    `By 11th level, you have refined your chosen skills until they approach perfection. Whenever you make an ability check that lets you add your proficiency bonus, you can treat a d20 roll of 9 or lower as a 10.`
+  );
+  var Blindsense = notImplementedFeature(
+    "Blindsense",
+    `Starting at 14th level, if you are able to hear, you are aware of the location of any hidden or invisible creature within 10 feet of you.`
+  );
+  var SlipperyMind = new SimpleFeature(
+    "Slippery Mind",
+    `By 15th level, you have acquired greater mental strength. You gain proficiency in Wisdom saving throws.`,
+    (g2, me) => me.saveProficiencies.add("wis")
+  );
+  var Elusive = notImplementedFeature(
+    "Elusive",
+    `Beginning at 18th level, you are so evasive that attackers rarely gain the upper hand against you. No attack roll has advantage against you while you aren't incapacitated.`
+  );
+  var StrokeOfLuck = notImplementedFeature(
+    "Stroke of Luck",
+    `At 20th level, you have an uncanny knack for succeeding when you need to. If your attack misses a target within range, you can turn the miss into a hit. Alternatively, if you fail an ability check, you can treat the d20 roll as a 20.
+
+Once you use this feature, you can't use it again until you finish a short or long rest.`
+  );
   var ASI4 = makeASI("Rogue", 4);
   var ASI8 = makeASI("Rogue", 8);
   var ASI10 = makeASI("Rogue", 10);
@@ -1814,14 +1892,32 @@
   var rogue_default = Rogue;
 
   // src/classes/rogue/Scout/index.ts
-  var Skirmisher = notImplementedFeature("Skirmisher");
-  var Survivalist = new SimpleFeature("Survivalist", (g2, me) => {
-    me.skills.set("Nature", 2);
-    me.skills.set("Survival", 2);
-  });
-  var SuperiorMobility = notImplementedFeature("Superior Mobility");
-  var AmbushMaster = notImplementedFeature("Ambush Master");
-  var SuddenStrike = notImplementedFeature("Sudden Strike");
+  var Skirmisher = notImplementedFeature(
+    "Skirmisher",
+    `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
+  );
+  var Survivalist = new SimpleFeature(
+    "Survivalist",
+    `When you choose this archetype at 3rd level, you gain proficiency in the Nature and Survival skills if you don't already have it. Your proficiency bonus is doubled for any ability check you make that uses either of those proficiencies.`,
+    (g2, me) => {
+      me.skills.set("Nature", 2);
+      me.skills.set("Survival", 2);
+    }
+  );
+  var SuperiorMobility = notImplementedFeature(
+    "Superior Mobility",
+    `At 9th level, your walking speed increases by 10 feet. If you have a climbing or swimming speed, this increase applies to that speed as well.`
+  );
+  var AmbushMaster = notImplementedFeature(
+    "Ambush Master",
+    `Starting at 13th level, you excel at leading ambushes and acting first in a fight.
+
+You have advantage on initiative rolls. In addition, the first creature you hit during the first round of a combat becomes easier for you and others to strike; attack rolls against that target have advantage until the start of your next turn.`
+  );
+  var SuddenStrike = notImplementedFeature(
+    "Sudden Strike",
+    `Starting at 17th level, you can strike with deadly speed. If you take the Attack action on your turn, you can make one additional attack as a bonus action. This attack can benefit from your Sneak Attack even if you have already used it this turn, but you can't use your Sneak Attack against the same target more than once in a turn.`
+  );
   var Scout = {
     name: "Scout",
     className: "Rogue",
@@ -1864,31 +1960,57 @@
 
   // src/feats/Lucky.ts
   var LuckPoint = new LongRestResource("Luck Point", 3);
-  function useLuckyChoice(who, text, yes) {
-    return new YesNoChoice(who, Lucky, "Lucky", text, yes);
+  function addLuckyOpportunity(g2, who, message, interrupt, callback) {
+    interrupt.add(
+      new YesNoChoice(who, Lucky, "Lucky", message, () => __async(this, null, function* () {
+        who.spendResource(LuckPoint);
+        const nr = yield g2.roll({ type: "luck", who });
+        callback(nr.value);
+      }))
+    );
   }
-  var Lucky = new SimpleFeature("Lucky", (g2, me) => {
-    me.addResource(LuckPoint);
-    g2.events.on("diceRolled", ({ detail }) => {
-      const { type, interrupt, value } = detail;
-      if ((type.type === "attack" || type.type === "check" || type.type === "save") && type.who === me && me.hasResource(LuckPoint))
-        interrupt.add(
-          useLuckyChoice(
+  var Lucky = new SimpleFeature(
+    "Lucky",
+    `You have inexplicable luck that seems to kick in at just the right moment.
+
+- You have 3 luck points. Whenever you make an attack roll, an ability check, or a saving throw, you can spend one luck point to roll an additional d20. You can choose to spend one of your luck points after you roll the die, but before the outcome is determined. You choose which of the d20s is used for the attack roll, ability check, or saving throw.
+- You can also spend one luck point when an attack roll is made against you. Roll a d20, and then choose whether the attack uses the attacker's roll or yours. If more than one creature spends a luck point to influence the outcome of a roll, the points cancel each other out; no additional dice are rolled.
+- You regain your expended luck points when you finish a long rest.`,
+    (g2, me) => {
+      me.addResource(LuckPoint);
+      g2.events.on("diceRolled", ({ detail }) => {
+        const { type, interrupt, value } = detail;
+        if ((type.type === "attack" || type.type === "check" || type.type === "save") && type.who === me && me.hasResource(LuckPoint))
+          addLuckyOpportunity(
+            g2,
             me,
             `${me.name} got ${value} on a ${type.type} roll. Use a Luck point to re-roll?`,
-            () => __async(void 0, null, function* () {
-              me.spendResource(LuckPoint);
-              const nr = yield g2.roll({ type: "luck", who: me });
-              if (nr.value > value) {
+            interrupt,
+            (roll) => {
+              if (roll > value) {
                 detail.otherValues.add(value);
-                detail.value = nr.value;
+                detail.value = roll;
               } else
-                detail.otherValues.add(nr.value);
-            })
-          )
-        );
-    });
-  });
+                detail.otherValues.add(roll);
+            }
+          );
+        if (type.type === "attack" && type.target === me && me.hasResource(LuckPoint))
+          addLuckyOpportunity(
+            g2,
+            me,
+            `${type.who.name} got ${value} on an attack roll against ${me.name}. Use a Luck point to re-roll?`,
+            interrupt,
+            (roll) => {
+              if (roll < value) {
+                detail.otherValues.add(value);
+                detail.value = roll;
+              } else
+                detail.otherValues.add(roll);
+            }
+          );
+      });
+    }
+  );
   var Lucky_default = Lucky;
 
   // src/items/wondrous.ts
@@ -1933,17 +2055,18 @@
       this.naturalWeapons.add(new UnarmedStrike(g2, this));
     }
     setRace(race) {
+      var _a, _b, _c;
       if (race.parent)
         this.setRace(race.parent);
       this.race = race;
       this.size = race.size;
       for (const [key, val] of race.abilities)
         this[`${key}Score`] += val;
-      for (const [type, value] of race.movement)
+      for (const [type, value] of (_a = race == null ? void 0 : race.movement) != null ? _a : [])
         this.movement.set(type, value);
-      for (const language of race.languages)
+      for (const language of (_b = race == null ? void 0 : race.languages) != null ? _b : [])
         this.languages.add(language);
-      for (const feature of race.features)
+      for (const feature of (_c = race == null ? void 0 : race.features) != null ? _c : [])
         this.addFeature(feature);
     }
     addClassLevel(cls, hpRoll) {
@@ -2085,16 +2208,18 @@
     }
   };
 
-  // src/races/Genasi.ts
+  // src/races/Genasi_EEPC.ts
   var Genasi = {
     name: "Genasi",
     size: "medium",
     abilities: /* @__PURE__ */ new Map([["con", 2]]),
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
-    languages: /* @__PURE__ */ new Set(["Common", "Primordial"]),
-    features: /* @__PURE__ */ new Set()
+    languages: /* @__PURE__ */ new Set(["Common", "Primordial"])
   };
-  var UnendingBreath = notImplementedFeature("Unending Breath");
+  var UnendingBreath = notImplementedFeature(
+    "Unending Breath",
+    `You can hold your breath indefinitely while you\u2019re not incapacitated.`
+  );
   var MingleWithTheWindResource = new LongRestResource(
     "Mingle with the Wind",
     1
@@ -2104,22 +2229,24 @@
     "con",
     () => MingleWithTheWindResource
   );
-  var MingleWithTheWind = new SimpleFeature("Mingle with the Wind", (g2, me) => {
-    me.addResource(MingleWithTheWindResource);
-    g2.events.on("getActions", ({ detail: { who, actions } }) => {
-      if (who === me)
-        actions.push(
-          new CastSpell(g2, me, MingleWithTheWindMethod, new Levitate(g2))
-        );
-    });
-  });
+  var MingleWithTheWind = new SimpleFeature(
+    "Mingle with the Wind",
+    `You can cast the levitate spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell.`,
+    (g2, me) => {
+      me.addResource(MingleWithTheWindResource);
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new CastSpell(g2, me, MingleWithTheWindMethod, new Levitate(g2))
+          );
+      });
+    }
+  );
   var AirGenasi = {
     parent: Genasi,
     name: "Air Genasi",
     size: "medium",
     abilities: /* @__PURE__ */ new Map([["dex", 1]]),
-    movement: /* @__PURE__ */ new Map(),
-    languages: /* @__PURE__ */ new Set(),
     features: /* @__PURE__ */ new Set([UnendingBreath, MingleWithTheWind])
   };
 
@@ -2163,16 +2290,20 @@
   };
 
   // src/classes/monk/index.ts
-  var UnarmoredDefense = new SimpleFeature("Unarmored Defense", (g2, me) => {
-    g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
-      if (who === me && !me.armor && !me.shield)
-        methods.push({
-          name: "Unarmored Defense",
-          ac: 10 + me.dex + me.wis,
-          uses: /* @__PURE__ */ new Set()
-        });
-    });
-  });
+  var UnarmoredDefense = new SimpleFeature(
+    "Unarmored Defense",
+    `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
+    (g2, me) => {
+      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+        if (who === me && !me.armor && !me.shield)
+          methods.push({
+            name: "Unarmored Defense",
+            ac: 10 + me.dex + me.wis,
+            uses: /* @__PURE__ */ new Set()
+          });
+      });
+    }
+  );
   function getMartialArtsDie(level) {
     if (level < 5)
       return 4;
@@ -2213,21 +2344,33 @@
       this.weapon = weapon;
     }
   };
-  var MartialArts = new SimpleFeature("Martial Arts", (g2, me) => {
-    var _a;
-    console.warn("[Feature Not Complete] Martial Arts");
-    const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
-    g2.events.on("getActions", ({ detail: { who, actions } }) => {
-      if (who !== me)
-        return;
-      for (const wa of actions.filter(isMonkWeaponAttack)) {
-        if (me.dex > me.str)
-          wa.ability = "dex";
-        if (canUpgradeDamage(wa.weapon.damage, diceSize))
-          wa.weapon = new MonkWeaponWrapper(g2, wa.weapon, diceSize);
-      }
-    });
-  });
+  var MartialArts = new SimpleFeature(
+    "Martial Arts",
+    `Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
+
+You gain the following benefits while you are unarmed or wielding only monk weapons and you aren't wearing armor or wielding a shield.
+
+- You can use Dexterity instead of Strength for the attack and damage rolls of your unarmed strikes and monk weapons.
+- You can roll a d4 in place of the normal damage of your unarmed strike or monk weapon. This die changes as you gain monk levels, as shown in the Martial Arts column of the Monk table.
+- When you use the Attack action with an unarmed strike or a monk weapon on your turn, you can make one unarmed strike as a bonus action. For example, if you take the Attack action and attack with a quarterstaff, you can also make an unarmed strike as a bonus action, assuming you haven't already taken a bonus action this turn.
+
+Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
+    (g2, me) => {
+      var _a;
+      console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
+      const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who !== me)
+          return;
+        for (const wa of actions.filter(isMonkWeaponAttack)) {
+          if (me.dex > me.str)
+            wa.ability = "dex";
+          if (canUpgradeDamage(wa.weapon.damage, diceSize))
+            wa.weapon = new MonkWeaponWrapper(g2, wa.weapon, diceSize);
+        }
+      });
+    }
+  );
   var Monk = {
     name: "Monk",
     hitDieSize: 8,
@@ -2434,7 +2577,10 @@
   };
 
   // src/races/Triton.ts
-  var Amphibious = notImplementedFeature("Amphibious");
+  var Amphibious = notImplementedFeature(
+    "Amphibious",
+    `You can breathe air and water.`
+  );
   var FogCloudResource = new LongRestResource(
     "Control Air and Water: Fog Cloud",
     1
@@ -2466,6 +2612,7 @@
   );
   var ControlAirAndWater = new SimpleFeature(
     "Control Air and Water",
+    `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can\u2019t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
     (g2, me) => {
       const spells = ControlAirAndWaterSpells.filter(
         (entry) => entry.level <= me.level
@@ -2482,9 +2629,13 @@
     }
   );
   var Darkvision = darkvisionFeature();
-  var EmissaryOfTheSea = notImplementedFeature("Emissary of the Sea");
+  var EmissaryOfTheSea = nonCombatFeature(
+    "Emissary of the Sea",
+    `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
+  );
   var GuardiansOfTheDepths = new SimpleFeature(
     "Guardians of the Depths",
+    `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
     (g2, me) => {
       g2.events.on(
         "getDamageResponse",

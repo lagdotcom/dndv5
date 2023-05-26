@@ -47,11 +47,12 @@ export default class PC extends AbstractCombatant {
     for (const [key, val] of race.abilities)
       this[`${key}Score` as const] += val;
 
-    for (const [type, value] of race.movement) this.movement.set(type, value);
+    for (const [type, value] of race?.movement ?? [])
+      this.movement.set(type, value);
 
-    for (const language of race.languages) this.languages.add(language);
+    for (const language of race?.languages ?? []) this.languages.add(language);
 
-    for (const feature of race.features) this.addFeature(feature);
+    for (const feature of race?.features ?? []) this.addFeature(feature);
   }
 
   addClassLevel(cls: PCClass, hpRoll?: number) {
