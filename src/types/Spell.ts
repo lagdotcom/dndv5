@@ -1,3 +1,4 @@
+import Engine from "../Engine";
 import ErrorCollector from "../collectors/ErrorCollector";
 import { ActionConfig } from "./Action";
 import ActionTime from "./ActionTime";
@@ -18,7 +19,6 @@ export const SpellSchools = [
 export type SpellSchool = (typeof SpellSchools)[number];
 
 export default interface Spell<T extends object = object> extends Source {
-  config: ActionConfig<T>;
   level: number;
   school: SpellSchool;
   concentration: boolean;
@@ -28,11 +28,13 @@ export default interface Spell<T extends object = object> extends Source {
   m?: string; // TODO real costs
 
   apply(
+    g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     config: T
   ): Promise<void>;
   check(config: Partial<T>, collector?: ErrorCollector): ErrorCollector;
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
+  getConfig(g: Engine, method: SpellcastingMethod): ActionConfig<T>;
   getLevel(config: T): number;
 }

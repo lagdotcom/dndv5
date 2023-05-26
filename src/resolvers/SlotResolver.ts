@@ -5,19 +5,18 @@ import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
 export default class SlotResolver implements Resolver<number> {
-  method?: SpellcastingMethod;
   type: "SpellSlot";
 
-  constructor(public spell: Spell) {
+  constructor(public spell: Spell, public method: SpellcastingMethod) {
     this.type = "SpellSlot";
   }
 
   get minimum() {
-    return this.spell.level;
+    return this.method.getMinSlot(this.spell);
   }
 
   get maximum() {
-    return this.method?.getMaxSlot(this.spell) ?? 9;
+    return this.method.getMaxSlot(this.spell);
   }
 
   get name() {

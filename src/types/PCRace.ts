@@ -7,7 +7,7 @@ import Source from "./Source";
 
 export default interface PCRace extends Source {
   parent?: PCRace;
-  abilities: Map<Ability, number>;
+  abilities?: Map<Ability, number>;
   size: SizeCategory;
   movement?: Map<MovementType, number>;
   features?: Set<Feature>;

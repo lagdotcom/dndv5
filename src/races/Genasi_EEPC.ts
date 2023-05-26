@@ -38,9 +38,7 @@ const MingleWithTheWind = new SimpleFeature(
 
     g.events.on("getActions", ({ detail: { who, actions } }) => {
       if (who === me)
-        actions.push(
-          new CastSpell(g, me, MingleWithTheWindMethod, new Levitate(g))
-        );
+        actions.push(new CastSpell(g, me, MingleWithTheWindMethod, Levitate));
     });
   }
 );

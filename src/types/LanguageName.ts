@@ -1,3 +1,3 @@
-export const LanguageNames = ["Common", "Primordial"] as const;
+export const LanguageNames = ["Common", "Draconic", "Primordial"] as const;
 type LanguageName = (typeof LanguageNames)[number];
 export default LanguageName;

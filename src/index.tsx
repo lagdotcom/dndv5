@@ -8,6 +8,7 @@ import Thug from "./monsters/Thug";
 import Aura from "./pcs/davies/Aura";
 import Tethilssethanar from "./pcs/wizards/Tethilssethanar";
 import App from "./ui/App";
+import Beldalynn from "./pcs/davies/Beldalynn";
 
 const g = new Engine();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,10 +21,12 @@ render(
       const badger = new Badger(g);
       const hunk = new Tethilssethanar(g);
       const aura = new Aura(g);
+      const beldalynn = new Beldalynn(g);
       g.place(thug, 0, 0);
       g.place(badger, 10, 0);
       g.place(hunk, 10, 20);
       g.place(aura, 20, 20);
+      g.place(beldalynn, 40, 20);
       g.start();
     }}
   />,

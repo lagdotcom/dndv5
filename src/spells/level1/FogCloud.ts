@@ -1,30 +1,28 @@
 import SphereEffectArea from "../../areas/SphereEffectArea";
-import { HasPoint, Scales } from "../../configs";
-import Engine from "../../Engine";
+import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import Combatant from "../../types/Combatant";
-import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours } from "../../utils/time";
-import ScalingSpell from "../ScalingSpell";
+import { scalingSpell } from "../constructors";
 
-export default class FogCloud extends ScalingSpell<HasPoint> {
-  constructor(public g: Engine) {
-    super("Fog Cloud", 1, "Conjuration", "action", true, {
-      point: new PointResolver(g, 120),
-    });
-    this.setVSM(true, true);
-  }
+const FogCloud = scalingSpell<HasPoint>({
+  name: "Fog Cloud",
+  level: 1,
+  school: "Conjuration",
+  time: "action",
+  concentration: true,
+  v: true,
+  s: true,
 
-  getAffectedArea({ point, slot }: Partial<HasPoint & Scales>) {
+  getAffectedArea({ point, slot }) {
     if (!point) return;
-    return { type: "sphere" as const, radius: 20 * (slot ?? 1), centre: point };
-  }
+    return { type: "sphere", radius: 20 * (slot ?? 1), centre: point };
+  },
 
-  async apply(
-    caster: Combatant,
-    method: SpellcastingMethod,
-    { point, slot }: HasPoint & Scales
-  ): Promise<void> {
+  getConfig(g) {
+    return { point: new PointResolver(g, 120) };
+  },
+
+  async apply(g, caster, _method, { point, slot }) {
     /* TODO You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners, and its area is heavily obscured. It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it.
 
     At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st. */
@@ -33,12 +31,13 @@ export default class FogCloud extends ScalingSpell<HasPoint> {
     const area = new SphereEffectArea("Fog Cloud", point, radius, [
       "heavily obscured",
     ]);
-    await this.g.addEffectArea(area);
+    await g.addEffectArea(area);
 
     caster.concentrateOn({
-      spell: this,
+      spell: FogCloud,
       duration: hours(1),
-      onSpellEnd: async () => this.g.removeEffectArea(area),
+      onSpellEnd: async () => g.removeEffectArea(area),
     });
-  }
-}
+  },
+});
+export default FogCloud;

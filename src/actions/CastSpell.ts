@@ -1,14 +1,13 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
-import Action, { ActionConfig } from "../types/Action";
+import Action from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
 export default class CastSpell<T extends object> implements Action<T> {
-  config: ActionConfig<T>;
   name: string;
   time: ActionTime;
 
@@ -19,8 +18,11 @@ export default class CastSpell<T extends object> implements Action<T> {
     public spell: Spell<T>
   ) {
     this.name = `${spell.name} (${method.name})`;
-    this.config = spell.config;
     this.time = spell.time;
+  }
+
+  get config() {
+    return this.spell.getConfig(this.g, this.method);
   }
 
   getAffectedArea(config: Partial<T>) {
@@ -55,6 +57,6 @@ export default class CastSpell<T extends object> implements Action<T> {
     // TODO report this somehow
     if (sc.defaultPrevented) return;
 
-    return this.spell.apply(this.actor, this.method, config);
+    return this.spell.apply(this.g, this.actor, this.method, config);
   }
 }

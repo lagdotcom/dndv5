@@ -28,3 +28,37 @@ export class BracersOfTheArbalest extends AbstractWondrous {
     });
   }
 }
+
+export class CloakOfProtection extends AbstractWondrous {
+  constructor(g: Engine) {
+    super(g, "Cloak of Protection");
+
+    g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      if (who.equipment.has(this) && who.attunements.has(this))
+        for (const method of methods) {
+          method.ac++;
+          method.uses.add(this);
+        }
+    });
+
+    g.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+      if (who.equipment.has(this) && who.attunements.has(this))
+        bonus.add(1, this);
+    });
+  }
+}
+
+export const DragonTouchedLevels = ["Slumbering"] as const;
+export type DragonTouchedLevel = (typeof DragonTouchedLevels)[number];
+
+export class DragonTouchedFocus extends AbstractWondrous {
+  constructor(g: Engine, level: DragonTouchedLevel) {
+    super(g, `Dragon-Touched Focus (${level})`);
+
+    // TODO While you are holding the focus, it can function as a spellcasting focus for all your spells.
+    g.events.on("getInitiative", ({ detail: { who, diceType } }) => {
+      if (who.equipment.has(this) && who.attunements.has(this))
+        diceType.add("advantage", this);
+    });
+  }
+}

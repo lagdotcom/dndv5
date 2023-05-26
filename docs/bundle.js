@@ -1364,9 +1364,31 @@
       this.quantity = 1;
     }
   };
+  var Dagger = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "dagger",
+        "simple",
+        "melee",
+        dd(1, 4, "piercing"),
+        ["finesse", "light", "thrown"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
   var Mace = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "mace", "simple", "melee", dd(1, 6, "bludgeoning"));
+    }
+  };
+  var Quarterstaff = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "quarterstaff", "simple", "melee", dd(1, 6, "bludgeoning"), [
+        "versatile"
+      ]);
     }
   };
   var Sickle = class extends AbstractWeapon {
@@ -1934,7 +1956,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var plus1 = {
     name: "+1 bonus",
     setup(g2, item) {
-      item.name += " +1";
+      item.name = `${item.name} +1`;
       g2.events.on("beforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
         if (weapon === item || ammo === item)
           bonus.add(1, this);
@@ -1947,10 +1969,19 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   };
 
   // src/enchantments/weapon.ts
+  var ChaoticBurstResource = new TurnResource("Chaotic Burst", 1);
+  var chaoticBurst = {
+    name: "chaotic burst",
+    setup(g2, item) {
+      plus1.setup(g2, item);
+      item.name = `chaotic burst ${item.weaponType}`;
+      console.warn("[Enchantment Missing] Chaotic Burst");
+    }
+  };
   var vicious = {
     name: "vicious",
     setup(g2, item) {
-      item.name = "vicious " + item.name;
+      item.name = `vicious ${item.name}`;
       g2.events.on("gatherDamage", ({ detail: { weapon, bonus, attack } }) => {
         if (weapon === item && (attack == null ? void 0 : attack.roll.value) === 20)
           bonus.add(7, vicious);
@@ -2029,6 +2060,31 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       });
     }
   };
+  var CloakOfProtection = class extends AbstractWondrous {
+    constructor(g2) {
+      super(g2, "Cloak of Protection");
+      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+        if (who.equipment.has(this) && who.attunements.has(this))
+          for (const method of methods) {
+            method.ac++;
+            method.uses.add(this);
+          }
+      });
+      g2.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+        if (who.equipment.has(this) && who.attunements.has(this))
+          bonus.add(1, this);
+      });
+    }
+  };
+  var DragonTouchedFocus = class extends AbstractWondrous {
+    constructor(g2, level) {
+      super(g2, `Dragon-Touched Focus (${level})`);
+      g2.events.on("getInitiative", ({ detail: { who, diceType } }) => {
+        if (who.equipment.has(this) && who.attunements.has(this))
+          diceType.add("advantage", this);
+      });
+    }
+  };
 
   // src/PC.ts
   var UnarmedStrike = class extends AbstractWeapon {
@@ -2055,18 +2111,18 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.naturalWeapons.add(new UnarmedStrike(g2, this));
     }
     setRace(race) {
-      var _a, _b, _c;
+      var _a, _b, _c, _d;
       if (race.parent)
         this.setRace(race.parent);
       this.race = race;
       this.size = race.size;
-      for (const [key, val] of race.abilities)
+      for (const [key, val] of (_a = race == null ? void 0 : race.abilities) != null ? _a : [])
         this[`${key}Score`] += val;
-      for (const [type, value] of (_a = race == null ? void 0 : race.movement) != null ? _a : [])
+      for (const [type, value] of (_b = race == null ? void 0 : race.movement) != null ? _b : [])
         this.movement.set(type, value);
-      for (const language of (_b = race == null ? void 0 : race.languages) != null ? _b : [])
+      for (const language of (_c = race == null ? void 0 : race.languages) != null ? _c : [])
         this.languages.add(language);
-      for (const feature of (_c = race == null ? void 0 : race.features) != null ? _c : [])
+      for (const feature of (_d = race == null ? void 0 : race.features) != null ? _d : [])
         this.addFeature(feature);
     }
     addClassLevel(cls, hpRoll) {
@@ -2112,8 +2168,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.method = method;
       this.spell = spell;
       this.name = `${spell.name} (${method.name})`;
-      this.config = spell.config;
       this.time = spell.time;
+    }
+    get config() {
+      return this.spell.getConfig(this.g, this.method);
     }
     getAffectedArea(config) {
       return this.spell.getAffectedArea(config);
@@ -2142,7 +2200,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         );
         if (sc.defaultPrevented)
           return;
-        return this.spell.apply(this.actor, this.method, config);
+        return this.spell.apply(this.g, this.actor, this.method, config);
       });
     }
   };
@@ -2154,59 +2212,128 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.ability = ability;
       this.getResourceForSpell = getResourceForSpell;
     }
+    getMinSlot(spell) {
+      return spell.level;
+    }
     getMaxSlot(spell) {
       return spell.level;
     }
   };
 
-  // src/spells/SimpleSpell.ts
-  var SimpleSpell = class {
-    constructor(name, level, school, time, concentration, config) {
-      this.name = name;
-      this.level = level;
-      this.school = school;
-      this.time = time;
-      this.concentration = concentration;
-      this.config = config;
-      this.v = false;
-      this.s = false;
+  // src/resolvers/SlotResolver.ts
+  var SlotResolver = class {
+    constructor(spell, method) {
+      this.spell = spell;
+      this.method = method;
+      this.type = "SpellSlot";
     }
-    setVSM(v = false, s = false, m) {
-      this.v = v;
-      this.s = s;
-      this.m = m;
-      return this;
+    get minimum() {
+      return this.method.getMinSlot(this.spell);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffectedArea(_config) {
-      return void 0;
+    get maximum() {
+      return this.method.getMaxSlot(this.spell);
     }
-    check(config, ec = new ErrorCollector()) {
+    get name() {
+      if (this.minimum === this.maximum)
+        return `spell slot (${this.minimum})`;
+      return `spell slot (${this.minimum}-${this.maximum})`;
+    }
+    check(value, action, ec = new ErrorCollector()) {
+      if (action instanceof CastSpell)
+        this.method = action.method;
+      if (typeof value !== "number")
+        ec.add("No spell level chosen", this);
+      else {
+        if (value < this.minimum)
+          ec.add("Too low", this);
+        if (value > this.maximum)
+          ec.add("Too high", this);
+      }
       return ec;
-    }
-    getLevel() {
-      return this.level;
     }
   };
 
+  // src/spells/constructors.ts
+  var simpleSpell = ({
+    name,
+    level,
+    school,
+    concentration = false,
+    time,
+    v = false,
+    s = false,
+    m,
+    apply,
+    check: check2 = (_2, ec = new ErrorCollector()) => ec,
+    getAffectedArea = () => void 0,
+    getConfig
+  }) => ({
+    name,
+    level,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    apply,
+    check: check2,
+    getAffectedArea,
+    getConfig,
+    getLevel() {
+      return level;
+    }
+  });
+  var scalingSpell = ({
+    name,
+    level,
+    school,
+    concentration = false,
+    time,
+    v = false,
+    s = false,
+    m,
+    apply,
+    check: check2 = (_2, ec = new ErrorCollector()) => ec,
+    getAffectedArea = () => void 0,
+    getConfig
+  }) => ({
+    name,
+    level,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    apply,
+    check: check2,
+    getAffectedArea,
+    getConfig(g2, method) {
+      return __spreadProps(__spreadValues({}, getConfig(g2, method)), { slot: new SlotResolver(this, method) });
+    },
+    getLevel({ slot }) {
+      return slot;
+    }
+  });
+
   // src/spells/level2/Levitate.ts
-  var Levitate = class extends SimpleSpell {
-    constructor(g2) {
-      super("Levitate", 2, "Transmutation", "action", true, {
-        target: new TargetResolver(g2, 60, true)
-      });
-      this.g = g2;
-      this.setVSM(
-        true,
-        true,
-        "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end"
-      );
-    }
-    apply(_0, _1, _2) {
-      return __async(this, arguments, function* (caster, method, { target }) {
+  var Levitate = simpleSpell({
+    name: "Levitate",
+    level: 2,
+    school: "Transmutation",
+    time: "action",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end",
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
       });
     }
-  };
+  });
+  var Levitate_default = Levitate;
 
   // src/races/Genasi_EEPC.ts
   var Genasi = {
@@ -2236,9 +2363,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       me.addResource(MingleWithTheWindResource);
       g2.events.on("getActions", ({ detail: { who, actions } }) => {
         if (who === me)
-          actions.push(
-            new CastSpell(g2, me, MingleWithTheWindMethod, new Levitate(g2))
-          );
+          actions.push(new CastSpell(g2, me, MingleWithTheWindMethod, Levitate_default));
       });
     }
   );
@@ -2433,114 +2558,59 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   var minutes = (n) => n * TURNS_PER_MINUTE;
   var hours = (n) => minutes(n * 60);
 
-  // src/resolvers/SlotResolver.ts
-  var SlotResolver = class {
-    constructor(spell) {
-      this.spell = spell;
-      this.type = "SpellSlot";
-    }
-    get minimum() {
-      return this.spell.level;
-    }
-    get maximum() {
-      var _a, _b;
-      return (_b = (_a = this.method) == null ? void 0 : _a.getMaxSlot(this.spell)) != null ? _b : 9;
-    }
-    get name() {
-      if (this.minimum === this.maximum)
-        return `spell slot (${this.minimum})`;
-      return `spell slot (${this.minimum}-${this.maximum})`;
-    }
-    check(value, action, ec = new ErrorCollector()) {
-      if (action instanceof CastSpell)
-        this.method = action.method;
-      if (typeof value !== "number")
-        ec.add("No spell level chosen", this);
-      else {
-        if (value < this.minimum)
-          ec.add("Too low", this);
-        if (value > this.maximum)
-          ec.add("Too high", this);
-      }
-      return ec;
-    }
-  };
-
-  // src/spells/ScalingSpell.ts
-  var ScalingSpell = class {
-    constructor(name, level, school, time, concentration, config) {
-      this.name = name;
-      this.level = level;
-      this.school = school;
-      this.time = time;
-      this.concentration = concentration;
-      this.v = false;
-      this.s = false;
-      this.config = __spreadProps(__spreadValues({}, config), { slot: new SlotResolver(this) });
-    }
-    setVSM(v = false, s = false, m) {
-      this.v = v;
-      this.s = s;
-      this.m = m;
-      return this;
-    }
-    getAffectedArea(_config) {
-      return void 0;
-    }
-    check(config, ec = new ErrorCollector()) {
-      return ec;
-    }
-    getLevel({ slot }) {
-      return slot;
-    }
-  };
-
   // src/spells/level1/FogCloud.ts
-  var FogCloud = class extends ScalingSpell {
-    constructor(g2) {
-      super("Fog Cloud", 1, "Conjuration", "action", true, {
-        point: new PointResolver(g2, 120)
-      });
-      this.g = g2;
-      this.setVSM(true, true);
-    }
+  var FogCloud = scalingSpell({
+    name: "Fog Cloud",
+    level: 1,
+    school: "Conjuration",
+    time: "action",
+    concentration: true,
+    v: true,
+    s: true,
     getAffectedArea({ point, slot }) {
       if (!point)
         return;
       return { type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point };
-    }
-    apply(_0, _1, _2) {
-      return __async(this, arguments, function* (caster, method, { point, slot }) {
+    },
+    getConfig(g2) {
+      return { point: new PointResolver(g2, 120) };
+    },
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, _method, { point, slot }) {
         const radius = 20 * slot;
         const area = new SphereEffectArea("Fog Cloud", point, radius, [
           "heavily obscured"
         ]);
-        yield this.g.addEffectArea(area);
+        yield g2.addEffectArea(area);
         caster.concentrateOn({
-          spell: this,
+          spell: FogCloud,
           duration: hours(1),
           onSpellEnd: () => __async(this, null, function* () {
-            return this.g.removeEffectArea(area);
+            return g2.removeEffectArea(area);
           })
         });
       });
     }
-  };
+  });
+  var FogCloud_default = FogCloud;
 
   // src/spells/level2/GustOfWind.ts
-  var GustOfWind = class extends SimpleSpell {
-    constructor(g2) {
-      super("Gust of Wind", 2, "Evocation", "action", true, {
-        point: new PointResolver(g2, 60)
+  var GustOfWind = simpleSpell({
+    name: "Gust of Wind",
+    level: 2,
+    school: "Evocation",
+    time: "action",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a legume seed",
+    getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point }) {
       });
-      this.g = g2;
-      this.setVSM(true, true, "a legume seed");
     }
-    apply(_0, _1, _2) {
-      return __async(this, arguments, function* (caster, method, { point }) {
-      });
-    }
-  };
+  });
+  var GustOfWind_default = GustOfWind;
 
   // src/resolvers/TextChoiceResolver.ts
   var TextChoiceResolver = class {
@@ -2562,19 +2632,25 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/spells/level3/WallOfWater.ts
-  var WallOfWater = class extends SimpleSpell {
-    constructor(g2) {
-      super("Wall of Water", 3, "Evocation", "action", true, {
-        point: new PointResolver(g2, 60),
-        shape: new TextChoiceResolver(g2, ["line", "ring"])
+  var WallOfWater = simpleSpell({
+    name: "Wall of Water",
+    level: 3,
+    school: "Evocation",
+    time: "action",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a drop of water",
+    getConfig: (g2) => ({
+      point: new PointResolver(g2, 60),
+      shape: new TextChoiceResolver(g2, ["line", "ring"])
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
       });
-      this.g = g2;
     }
-    apply(_0, _1, _2) {
-      return __async(this, arguments, function* (caster, method, { point, shape }) {
-      });
-    }
-  };
+  });
+  var WallOfWater_default = WallOfWater;
 
   // src/races/Triton.ts
   var Amphibious = notImplementedFeature(
@@ -2594,19 +2670,19 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     1
   );
   var ControlAirAndWaterSpells = [
-    { level: 1, spell: FogCloud, resource: FogCloudResource },
-    { level: 3, spell: GustOfWind, resource: GustOfWindResource },
-    { level: 5, spell: WallOfWater, resource: WallOfWaterResource }
+    { level: 1, spell: FogCloud_default, resource: FogCloudResource },
+    { level: 3, spell: GustOfWind_default, resource: GustOfWindResource },
+    { level: 5, spell: WallOfWater_default, resource: WallOfWaterResource }
   ];
   var ControlAirAndWaterMethod = new InnateSpellcasting(
     "Control Air and Water",
     "cha",
     (spell) => {
-      if (spell instanceof FogCloud)
+      if (spell === FogCloud_default)
         return FogCloudResource;
-      if (spell instanceof GustOfWind)
+      if (spell === GustOfWind_default)
         return GustOfWindResource;
-      if (spell instanceof WallOfWater)
+      if (spell === WallOfWater_default)
         return WallOfWaterResource;
     }
   );
@@ -2622,9 +2698,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       g2.events.on("getActions", ({ detail: { who, actions } }) => {
         if (who === me)
           for (const { spell } of spells)
-            actions.push(
-              new CastSpell(g2, me, ControlAirAndWaterMethod, new spell(g2))
-            );
+            actions.push(new CastSpell(g2, me, ControlAirAndWaterMethod, spell));
       });
     }
   );
@@ -3486,6 +3560,187 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     ] });
   }
 
+  // src/pcs/davies/Beldalynn_token.png
+  var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
+
+  // src/classes/wizard/index.ts
+  var ArcaneRecovery = notImplementedFeature(
+    "Arcane Recovery",
+    `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
+
+For example, if you're a 4th-level wizard, you can recover up to two levels worth of spell slots.
+
+You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
+  );
+  var Spellcasting = notImplementedFeature(
+    "Spellcasting",
+    `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power. `
+  );
+  var CantripFormulas = nonCombatFeature(
+    "Cantrip Formulas",
+    `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`
+  );
+  var SpellMastery = notImplementedFeature(
+    "Spell Mastery",
+    `At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.
+
+By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`
+  );
+  var SignatureSpells = notImplementedFeature(
+    "Signature Spells",
+    `When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.
+
+If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
+  );
+  var ASI42 = makeASI("Wizard", 4);
+  var ASI82 = makeASI("Wizard", 8);
+  var ASI122 = makeASI("Wizard", 12);
+  var ASI162 = makeASI("Wizard", 16);
+  var ASI192 = makeASI("Wizard", 19);
+  var Wizard = {
+    name: "Wizard",
+    hitDieSize: 6,
+    weaponProficiencies: /* @__PURE__ */ new Set([
+      "dagger",
+      "dart",
+      "sling",
+      "quarterstaff",
+      "light crossbow"
+    ]),
+    saveProficiencies: /* @__PURE__ */ new Set(["int", "wis"]),
+    skillChoices: 2,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Arcana",
+      "History",
+      "Insight",
+      "Investigation",
+      "Medicine",
+      "Religion"
+    ]),
+    features: /* @__PURE__ */ new Map([
+      [1, [ArcaneRecovery, Spellcasting]],
+      [3, [CantripFormulas]],
+      [4, [ASI42]],
+      [8, [ASI82]],
+      [12, [ASI122]],
+      [16, [ASI162]],
+      [18, [SpellMastery]],
+      [19, [ASI192]],
+      [20, [SignatureSpells]]
+    ])
+  };
+  var wizard_default = Wizard;
+
+  // src/races/Dragonborn_FTD.ts
+  var MetallicDragonborn = {
+    name: "Dragonborn (Metallic)",
+    size: "medium",
+    movement: /* @__PURE__ */ new Map([["speed", 30]])
+  };
+  function makeAncestry(a, dt) {
+    const breathWeapon = notImplementedFeature(
+      "Breath Weapon",
+      `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
+
+  You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
+    );
+    const draconicResistance = new SimpleFeature(
+      "Draconic Resistance",
+      `You have resistance to the damage type associated with your Metallic Ancestry.`,
+      (g2, me) => {
+        g2.events.on(
+          "getDamageResponse",
+          ({ detail: { who, damageType, response } }) => {
+            if (who === me && damageType === dt)
+              response.add("resist", draconicResistance);
+          }
+        );
+      }
+    );
+    const metallicBreathWeapon = notImplementedFeature(
+      "Metallic Breath Weapon",
+      `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus. Whenever you use this trait, choose one:
+
+  - Enervating Breath. Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.
+
+  - Repulsion Breath. Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.
+
+  Once you use your Metallic Breath Weapon, you can\u2019t do so again until you finish a long rest.`
+    );
+    return {
+      parent: MetallicDragonborn,
+      name: `${a} Dragonborn`,
+      size: "medium",
+      features: /* @__PURE__ */ new Set([breathWeapon, draconicResistance, metallicBreathWeapon])
+    };
+  }
+  var BronzeDragonborn = makeAncestry("Bronze", "lightning");
+
+  // src/classes/wizard/Evocation/index.ts
+  var EvocationSavant = nonCombatFeature(
+    "Evocation Savant",
+    `Beginning when you select this school at 2nd level, the gold and time you must spend to copy an evocation spell into your spellbook is halved.`
+  );
+  var SculptSpells = notImplementedFeature(
+    "Sculpt Spells",
+    `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`
+  );
+  var PotentCantrip = notImplementedFeature(
+    "Potent Cantrip",
+    `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`
+  );
+  var EmpoweredEvocation = notImplementedFeature(
+    "Empowered Evocation",
+    `Beginning at 10th level, you can add your Intelligence modifier to one damage roll of any wizard evocation spell you cast.`
+  );
+  var Overchannel = notImplementedFeature(
+    "Overchannel",
+    `Starting at 14th level, you can increase the power of your simpler spells. When you cast a wizard spell of 1st through 5th-level that deals damage, you can deal maximum damage with that spell.
+
+The first time you do so, you suffer no adverse effect. If you use this feature again before you finish a long rest, you take 2d12 necrotic damage for each level of the spell, immediately after you cast it. Each time you use this feature again before finishing a long rest, the necrotic damage per spell level increases by 1d12. This damage ignores resistance and immunity.`
+  );
+  var Evocation = {
+    name: "Evocation",
+    className: "Wizard",
+    features: /* @__PURE__ */ new Map([
+      [2, [EvocationSavant, SculptSpells]],
+      [6, [PotentCantrip]],
+      [10, [EmpoweredEvocation]],
+      [14, [Overchannel]]
+    ])
+  };
+  var Evocation_default = Evocation;
+
+  // src/pcs/davies/Beldalynn.ts
+  var Beldalynn = class extends PC {
+    constructor(g2) {
+      super(g2, "Beldalynn", Beldalynn_token_default);
+      this.setAbilityScores(11, 13, 13, 15, 13, 8);
+      this.setRace(BronzeDragonborn);
+      this.dexScore++;
+      this.conScore++;
+      this.strScore++;
+      this.languages.add("Draconic");
+      this.addSubclass(Evocation_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.setConfig(ASI42, { type: "ability", abilities: ["int", "wis"] });
+      this.skills.set("History", 1);
+      this.skills.set("Perception", 1);
+      this.skills.set("Arcana", 1);
+      this.skills.set("Investigation", 1);
+      this.don(new CloakOfProtection(g2), true);
+      this.don(enchant(new Quarterstaff(g2), chaoticBurst), true);
+      this.don(new DragonTouchedFocus(g2, "Slumbering"), true);
+      this.inventory.add(new Dagger(g2, 1));
+    }
+  };
+
   // src/index.tsx
   var g = new Engine();
   window.g = g;
@@ -3499,10 +3754,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           const badger = new Badger(g);
           const hunk = new Tethilssethanar(g);
           const aura = new Aura(g);
+          const beldalynn = new Beldalynn(g);
           g.place(thug, 0, 0);
           g.place(badger, 10, 0);
           g.place(hunk, 10, 20);
           g.place(aura, 20, 20);
+          g.place(beldalynn, 40, 20);
           g.start();
         }
       }

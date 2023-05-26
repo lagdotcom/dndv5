@@ -41,9 +41,9 @@ const ControlAirAndWaterMethod = new InnateSpellcasting(
   "Control Air and Water",
   "cha",
   (spell) => {
-    if (spell instanceof FogCloud) return FogCloudResource;
-    if (spell instanceof GustOfWind) return GustOfWindResource;
-    if (spell instanceof WallOfWater) return WallOfWaterResource;
+    if (spell === FogCloud) return FogCloudResource;
+    if (spell === GustOfWind) return GustOfWindResource;
+    if (spell === WallOfWater) return WallOfWaterResource;
   }
 );
 
@@ -59,9 +59,7 @@ const ControlAirAndWater = new SimpleFeature(
     g.events.on("getActions", ({ detail: { who, actions } }) => {
       if (who === me)
         for (const { spell } of spells)
-          actions.push(
-            new CastSpell(g, me, ControlAirAndWaterMethod, new spell(g))
-          );
+          actions.push(new CastSpell(g, me, ControlAirAndWaterMethod, spell));
     });
   }
 );

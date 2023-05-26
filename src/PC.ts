@@ -44,7 +44,7 @@ export default class PC extends AbstractCombatant {
     this.race = race;
     this.size = race.size;
 
-    for (const [key, val] of race.abilities)
+    for (const [key, val] of race?.abilities ?? [])
       this[`${key}Score` as const] += val;
 
     for (const [type, value] of race?.movement ?? [])

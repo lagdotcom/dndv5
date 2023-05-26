@@ -10,6 +10,10 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     public getResourceForSpell: (spell: Spell) => Resource | undefined
   ) {}
 
+  getMinSlot(spell: Spell): number {
+    return spell.level;
+  }
+
   getMaxSlot(spell: Spell): number {
     return spell.level;
   }

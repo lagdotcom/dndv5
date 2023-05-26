@@ -39,6 +39,7 @@ type EventData = {
     diceType: DiceTypeCollector;
     bonus: BonusCollector;
   };
+  beforeSave: { who: Combatant; ability: Ability; bonus: BonusCollector };
   combatantDamaged: {
     who: Combatant;
     attacker: Combatant;
@@ -79,6 +80,11 @@ type EventData = {
     who: Combatant;
     damageType: DamageType;
     response: DamageResponseCollector;
+  };
+  getInitiative: {
+    who: Combatant;
+    bonus: BonusCollector;
+    diceType: DiceTypeCollector;
   };
   getSpeed: {
     who: Combatant;
