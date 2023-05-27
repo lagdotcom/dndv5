@@ -1,5 +1,6 @@
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
 const FireBolt = simpleSpell<HasTarget>({
@@ -11,9 +12,10 @@ const FireBolt = simpleSpell<HasTarget>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getDamage: (_, caster) => [dd(getCantripDice(caster), 10, "fire")],
 
   async apply(g, attacker, method, { target }) {
-    const { critical, hit } = await g.attack({
+    const { attack, critical, hit } = await g.attack({
       attacker,
       target,
       ability: method.ability,
@@ -38,7 +40,7 @@ const FireBolt = simpleSpell<HasTarget>({
       await g.damage(
         FireBolt,
         "fire",
-        { attacker, target, critical, spell: FireBolt, method },
+        { attack, attacker, target, critical, spell: FireBolt, method },
         [["fire", amount]]
       );
     }

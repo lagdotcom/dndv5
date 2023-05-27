@@ -8,6 +8,7 @@ import Action, { Resolver } from "../types/Action";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
 import { check, checkConfig } from "../utils/config";
+import { getDiceAverage } from "../utils/dnd";
 import { enumerate } from "../utils/numbers";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
@@ -174,6 +175,7 @@ export default function ChooseActionConfigPanel<T extends object>({
     [action, config]
   );
   const disabled = useMemo(() => errors.length > 0, [errors]);
+  const damage = useMemo(() => action.getDamage(config), [action, config]);
 
   const execute = useCallback(() => {
     if (checkConfig(action, config)) onExecute(action, config);
@@ -214,6 +216,31 @@ export default function ChooseActionConfigPanel<T extends object>({
   return (
     <aside className={styles.main} aria-label="Action Options">
       <div>{action.name}</div>
+      {damage && (
+        <div>
+          Damage:{" "}
+          {damage.map((dmg, i) => (
+            <span key={i}>
+              {dmg.type === "flat"
+                ? dmg.amount
+                : `${dmg.amount.count}d${dmg.amount.size}`}{" "}
+              {dmg.damageType}
+            </span>
+          ))}{" "}
+          (
+          {Math.ceil(
+            damage.reduce(
+              (total, dmg) =>
+                total +
+                (dmg.type === "flat"
+                  ? dmg.amount
+                  : getDiceAverage(dmg.amount.count, dmg.amount.size)),
+              0
+            )
+          )}
+          )
+        </div>
+      )}
       <button disabled={disabled} onClick={execute}>
         Execute
       </button>

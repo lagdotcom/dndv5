@@ -28,6 +28,10 @@ class SteadyAimAction implements Action<object> {
     return undefined;
   }
 
+  getDamage() {
+    return undefined;
+  }
+
   check(config: never, ec = new ErrorCollector()) {
     if (!this.actor.time.has("bonus action"))
       ec.add("No bonus action left", this);

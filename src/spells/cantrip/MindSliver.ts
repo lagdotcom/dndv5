@@ -1,6 +1,7 @@
 import BaseEffect from "../../BaseEffect";
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { getCantripDice, simpleSpell } from "../common";
 
@@ -14,6 +15,7 @@ const MindSliver = simpleSpell<HasTarget>({
   lists: ["Sorcerer", "Warlock", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getDamage: (_, caster) => [dd(getCantripDice(caster), 6, "psychic")],
 
   async apply(g, attacker, method, { target }) {
     const save = await g.savingThrow(getSaveDC(attacker, method.ability), {

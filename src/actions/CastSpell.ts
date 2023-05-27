@@ -30,6 +30,10 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.getAffectedArea(config);
   }
 
+  getDamage(config: Partial<T>) {
+    return this.spell.getDamage(this.g, this.actor, config);
+  }
+
   getResource(config: Partial<T>) {
     const level = this.spell.scaling
       ? (config as unknown as Scales).slot ?? this.spell.level

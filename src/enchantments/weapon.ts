@@ -20,8 +20,30 @@ export const chaoticBurst: Enchantment<"weapon"> = {
     plus1.setup(g, item);
     item.name = `chaotic burst ${item.weaponType}`;
 
-    // TODO The first time you critically hit each turn while attuned to this weapon a chaos bolt fires from it, dealing an additional 2d8 damage. Choose one of the d8s. The number rolled on that die determines the attack’s damage type.
-    console.warn("[Enchantment Missing] Chaotic Burst");
+    // TODO Choose one of the d8s. The number rolled on that die determines the attack’s damage type.
+    console.warn("[Enchantment Not Finished] Chaotic Burst");
+
+    g.events.on("turnStarted", ({ detail: { who } }) => {
+      if (who.equipment.has(item) && who.attunements.has(item))
+        who.addResource(ChaoticBurstResource);
+    });
+
+    g.events.on("gatherDamage", ({ detail: { attacker, bonus, critical } }) => {
+      if (
+        critical &&
+        attacker.equipment.has(item) &&
+        attacker.attunements.has(item) &&
+        attacker.hasResource(ChaoticBurstResource)
+      ) {
+        attacker.spendResource(ChaoticBurstResource);
+
+        const a = g.dice.roll({ type: "damage", attacker, size: 8 }, "normal");
+        const b = g.dice.roll({ type: "damage", attacker, size: 8 }, "normal");
+
+        const total = a.value + b.value;
+        bonus.add(total, chaoticBurst);
+      }
+    });
   },
 };
 

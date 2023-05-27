@@ -27,10 +27,17 @@ export const simpleSpell = <T extends object>({
   check = (_g, _config, ec = new ErrorCollector()) => ec,
   getAffectedArea = () => undefined,
   getConfig,
+  getDamage = () => undefined,
 }: Omit<
   MarkOptional<
     Spell<T>,
-    "concentration" | "time" | "v" | "s" | "check" | "getAffectedArea"
+    | "concentration"
+    | "time"
+    | "v"
+    | "s"
+    | "check"
+    | "getAffectedArea"
+    | "getDamage"
   >,
   "getLevel" | "scaling"
 >): Spell<T> => ({
@@ -48,6 +55,7 @@ export const simpleSpell = <T extends object>({
   check,
   getAffectedArea,
   getConfig,
+  getDamage,
   getLevel() {
     return level;
   },
@@ -67,10 +75,17 @@ export const scalingSpell = <T extends object>({
   check = (_g, _config, ec = new ErrorCollector()) => ec,
   getAffectedArea = () => undefined,
   getConfig,
+  getDamage = () => undefined,
 }: Omit<
   MarkOptional<
     Spell<T & Scales>,
-    "concentration" | "time" | "v" | "s" | "check" | "getAffectedArea"
+    | "concentration"
+    | "time"
+    | "v"
+    | "s"
+    | "check"
+    | "getAffectedArea"
+    | "getDamage"
   >,
   "getConfig" | "getLevel" | "scaling"
 > & { getConfig: Spell<T>["getConfig"] }): Spell<T & Scales> => ({
@@ -90,6 +105,7 @@ export const scalingSpell = <T extends object>({
   getConfig(g, method) {
     return { ...getConfig(g, method), slot: new SlotResolver(this, method) };
   },
+  getDamage,
   getLevel({ slot }) {
     return slot;
   },

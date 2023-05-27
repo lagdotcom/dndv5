@@ -2,6 +2,7 @@ import BaseEffect from "../../BaseEffect";
 import { HasTarget } from "../../configs";
 import { DndRule } from "../../DndRules";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
@@ -22,9 +23,10 @@ const RayOfFrost = simpleSpell<HasTarget>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getDamage: (_, caster) => [dd(getCantripDice(caster), 8, "cold")],
 
   async apply(g, attacker, method, { target }) {
-    const { critical, hit } = await g.attack({
+    const { attack, critical, hit } = await g.attack({
       attacker,
       target,
       ability: method.ability,
@@ -49,7 +51,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
       await g.damage(
         RayOfFrost,
         "cold",
-        { attacker, target, critical, spell: RayOfFrost, method },
+        { attack, attacker, target, critical, spell: RayOfFrost, method },
         [["cold", amount]]
       );
 

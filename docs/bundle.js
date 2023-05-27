@@ -704,9 +704,11 @@
       this.config = { target: new TargetResolver(g2, range) };
       this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffectedArea(_config) {
+    getAffectedArea() {
       return void 0;
+    }
+    getDamage() {
+      return [this.weapon.damage];
     }
     check(config, ec = new ErrorCollector()) {
       return ec;
@@ -1807,6 +1809,9 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     getAffectedArea() {
       return void 0;
     }
+    getDamage() {
+      return void 0;
+    }
     check(config, ec = new ErrorCollector()) {
       if (!this.actor.time.has("bonus action"))
         ec.add("No bonus action left", this);
@@ -2041,7 +2046,20 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     setup(g2, item) {
       plus1.setup(g2, item);
       item.name = `chaotic burst ${item.weaponType}`;
-      console.warn("[Enchantment Missing] Chaotic Burst");
+      console.warn("[Enchantment Not Finished] Chaotic Burst");
+      g2.events.on("turnStarted", ({ detail: { who } }) => {
+        if (who.equipment.has(item) && who.attunements.has(item))
+          who.addResource(ChaoticBurstResource);
+      });
+      g2.events.on("gatherDamage", ({ detail: { attacker, bonus, critical } }) => {
+        if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
+          attacker.spendResource(ChaoticBurstResource);
+          const a = g2.dice.roll({ type: "damage", attacker, size: 8 }, "normal");
+          const b = g2.dice.roll({ type: "damage", attacker, size: 8 }, "normal");
+          const total = a.value + b.value;
+          bonus.add(total, chaoticBurst);
+        }
+      });
     }
   };
   var vicious = {
@@ -2242,6 +2260,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     getAffectedArea(config) {
       return this.spell.getAffectedArea(config);
     }
+    getDamage(config) {
+      return this.spell.getDamage(this.g, this.actor, config);
+    }
     getResource(config) {
       var _a;
       const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
@@ -2343,7 +2364,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     apply,
     check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
     getAffectedArea = () => void 0,
-    getConfig
+    getConfig,
+    getDamage = () => void 0
   }) => ({
     name,
     level,
@@ -2359,6 +2381,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     check: check2,
     getAffectedArea,
     getConfig,
+    getDamage,
     getLevel() {
       return level;
     }
@@ -2376,7 +2399,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     apply,
     check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
     getAffectedArea = () => void 0,
-    getConfig
+    getConfig,
+    getDamage = () => void 0
   }) => ({
     name,
     level,
@@ -2394,6 +2418,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     getConfig(g2, method) {
       return __spreadProps(__spreadValues({}, getConfig(g2, method)), { slot: new SlotResolver(this, method) });
     },
+    getDamage,
     getLevel({ slot }) {
       return slot;
     }
@@ -2794,6 +2819,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 2, 60) }),
+    getDamage: (_2, caster) => [dd(getCantripDice(caster), 6, "acid")],
     check(g2, { targets }, ec = new ErrorCollector()) {
       if (isCombatantArray(targets) && targets.length === 2) {
         const [a, b] = targets;
@@ -2842,9 +2868,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    getDamage: (_2, caster) => [dd(getCantripDice(caster), 10, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const { critical, hit } = yield g2.attack({
+        const { attack, critical, hit } = yield g2.attack({
           attacker,
           target,
           ability: method.ability,
@@ -2867,7 +2894,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           yield g2.damage(
             FireBolt,
             "fire",
-            { attacker, target, critical, spell: FireBolt, method },
+            { attack, attacker, target, critical, spell: FireBolt, method },
             [["fire", amount]]
           );
         }
@@ -2885,6 +2912,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    getDamage: (_2, caster) => [dd(getCantripDice(caster), 6, "psychic")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const save = yield g2.savingThrow(getSaveDC(attacker, method.ability), {
@@ -2948,9 +2976,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    getDamage: (_2, caster) => [dd(getCantripDice(caster), 8, "cold")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const { critical, hit } = yield g2.attack({
+        const { attack, critical, hit } = yield g2.attack({
           attacker,
           target,
           ability: method.ability,
@@ -2973,7 +3002,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           yield g2.damage(
             RayOfFrost,
             "cold",
-            { attacker, target, critical, spell: RayOfFrost, method },
+            { attack, attacker, target, critical, spell: RayOfFrost, method },
             [["cold", amount]]
           );
           target.addEffect(RayOfFrostEffect, 1);
@@ -3834,6 +3863,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       [action, config]
     );
     const disabled = (0, import_hooks6.useMemo)(() => errors.length > 0, [errors]);
+    const damage = (0, import_hooks6.useMemo)(() => action.getDamage(config), [action, config]);
     const execute = (0, import_hooks6.useCallback)(() => {
       if (checkConfig(action, config))
         onExecute(action, config);
@@ -3869,6 +3899,24 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
     return /* @__PURE__ */ o("aside", { className: ChooseActionConfigPanel_module_default.main, "aria-label": "Action Options", children: [
       /* @__PURE__ */ o("div", { children: action.name }),
+      damage && /* @__PURE__ */ o("div", { children: [
+        "Damage:",
+        " ",
+        damage.map((dmg, i) => /* @__PURE__ */ o("span", { children: [
+          dmg.type === "flat" ? dmg.amount : `${dmg.amount.count}d${dmg.amount.size}`,
+          " ",
+          dmg.damageType
+        ] }, i)),
+        " ",
+        "(",
+        Math.ceil(
+          damage.reduce(
+            (total, dmg) => total + (dmg.type === "flat" ? dmg.amount : getDiceAverage(dmg.amount.count, dmg.amount.size)),
+            0
+          )
+        ),
+        ")"
+      ] }),
       /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
       /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
       /* @__PURE__ */ o("div", { children: elements }),

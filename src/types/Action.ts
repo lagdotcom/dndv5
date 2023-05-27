@@ -1,6 +1,7 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
+import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
 import Source from "./Source";
 
@@ -24,4 +25,5 @@ export default interface Action<T extends object = object> extends Source {
   apply(config: T): Promise<void>;
   check(config: Partial<T>, collector?: ErrorCollector): ErrorCollector;
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
+  getDamage(config: Partial<T>): DamageAmount[] | undefined;
 }

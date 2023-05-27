@@ -1,6 +1,7 @@
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { isCombatantArray } from "../../utils/types";
 import { distance } from "../../utils/units";
@@ -15,6 +16,7 @@ const AcidSplash = simpleSpell<HasTargets>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 2, 60) }),
+  getDamage: (_, caster) => [dd(getCantripDice(caster), 6, "acid")],
 
   check(g, { targets }, ec = new ErrorCollector()) {
     if (isCombatantArray(targets) && targets.length === 2) {

@@ -3,6 +3,7 @@ import Engine from "../Engine";
 import { ActionConfig } from "./Action";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
+import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
 import Source from "./Source";
 import SpellcastingMethod from "./SpellcastingMethod";
@@ -55,5 +56,10 @@ export default interface Spell<T extends object = object> extends Source {
   ): ErrorCollector;
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
   getConfig(g: Engine, method: SpellcastingMethod): ActionConfig<T>;
+  getDamage(
+    g: Engine,
+    caster: Combatant,
+    config: Partial<T>
+  ): DamageAmount[] | undefined;
   getLevel(config: T): number;
 }

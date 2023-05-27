@@ -27,7 +27,7 @@ export type DamageRoll = {
   attacker: Combatant;
   target?: Combatant;
   size: number;
-  damageType: DamageType;
+  damageType?: DamageType;
   weapon?: WeaponItem;
   ability?: Ability;
   spell?: Spell;

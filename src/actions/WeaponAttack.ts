@@ -27,10 +27,13 @@ export default class WeaponAttack implements Action<HasTarget> {
     this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getAffectedArea(_config: Partial<HasTarget>) {
+  getAffectedArea() {
     // TODO exploding ammo???
     return undefined;
+  }
+
+  getDamage() {
+    return [this.weapon.damage];
   }
 
   check(config: Partial<HasTarget>, ec = new ErrorCollector()): ErrorCollector {
