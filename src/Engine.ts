@@ -1,16 +1,24 @@
+import BonusCollector from "./collectors/BonusCollector";
 import DamageResponseCollector from "./collectors/DamageResponseCollector";
+import DiceTypeCollector from "./collectors/DiceTypeCollector";
 import InterruptionCollector from "./collectors/InterruptionCollector";
-import DamageMap from "./DamageMap";
+import MultiplierCollector from "./collectors/MultiplierCollector";
+import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
+import AttackEvent from "./events/AttackEvent";
+import BeforeAttackEvent from "./events/BeforeAttackEvent";
+import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import CombatantPlacedEvent from "./events/CombatantPlacedEvent";
 import DiceRolledEvent from "./events/DiceRolledEvent";
 import Dispatcher from "./events/Dispatcher";
+import EventData from "./events/EventData";
+import GatherDamageEvent from "./events/GatherDamageEvent";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
@@ -25,7 +33,7 @@ import DamageBreakdown from "./types/DamageBreakdown";
 import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea from "./types/EffectArea";
-import RollType, { DamageRoll } from "./types/RollType";
+import RollType, { DamageRoll, SavingThrow } from "./types/RollType";
 import Source from "./types/Source";
 import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
@@ -92,6 +100,23 @@ export default class Engine {
     return roll.value + who.dex;
   }
 
+  async savingThrow(dc: number, e: Omit<SavingThrow, "type">) {
+    const pre = this.fire(
+      new BeforeSaveEvent({
+        ...e,
+        bonus: new BonusCollector(),
+        diceType: new DiceTypeCollector(),
+      })
+    );
+
+    const roll = await this.roll(
+      { type: "save", ...e },
+      pre.detail.diceType.result
+    );
+
+    return roll.value >= dc;
+  }
+
   async roll(type: RollType, diceType: DiceType = "normal") {
     const roll = this.dice.roll(type, diceType);
 
@@ -140,7 +165,7 @@ export default class Engine {
     this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
   }
 
-  async damage(
+  private async applyDamage(
     damage: DamageMap,
     {
       attacker,
@@ -193,6 +218,78 @@ export default class Engine {
         // TODO
       }
     }
+  }
+
+  async attack(e: Omit<EventData["beforeAttack"], "bonus" | "diceType">) {
+    const pre = this.fire(
+      new BeforeAttackEvent({
+        ...e,
+        diceType: new DiceTypeCollector(),
+        bonus: new BonusCollector(),
+      })
+    );
+    if (pre.defaultPrevented)
+      return { outcome: "cancelled", hit: false } as const;
+
+    const roll = await this.roll(
+      { type: "attack", who: e.attacker, target: e.target, ability: e.ability },
+      pre.detail.diceType.result
+    );
+
+    const total = roll.value + pre.detail.bonus.result;
+
+    const attack = this.fire(
+      new AttackEvent({
+        pre: pre.detail,
+        roll,
+        total,
+        outcome:
+          roll.value === 1
+            ? "miss"
+            : roll.value === 20
+            ? "critical"
+            : total >= e.target.ac
+            ? "hit"
+            : "miss",
+      })
+    );
+    const { outcome } = attack.detail;
+    return {
+      outcome,
+      attack: attack.detail,
+      hit: outcome === "hit" || outcome === "critical",
+      critical: outcome === "critical",
+    } as const;
+  }
+
+  async damage(
+    source: Source,
+    damageType: DamageType,
+    e: Omit<
+      EventData["gatherDamage"],
+      "map" | "bonus" | "interrupt" | "multiplier"
+    >,
+    damageInitialiser: DamageInitialiser = []
+  ) {
+    const map = new DamageMap(damageInitialiser);
+
+    const gather = await this.resolve(
+      new GatherDamageEvent({
+        ...e,
+        map,
+        bonus: new BonusCollector(),
+        interrupt: new InterruptionCollector(),
+        multiplier: new MultiplierCollector(),
+      })
+    );
+
+    map.add(damageType, gather.detail.bonus.result);
+    await this.applyDamage(map, {
+      source,
+      attacker: e.attacker,
+      target: e.target,
+      multiplier: gather.detail.multiplier.value,
+    });
   }
 
   async act<T extends object>(action: Action<T>, config: T) {

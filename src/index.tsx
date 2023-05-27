@@ -6,9 +6,9 @@ import Engine from "./Engine";
 import Badger from "./monsters/Badger";
 import Thug from "./monsters/Thug";
 import Aura from "./pcs/davies/Aura";
+import Beldalynn from "./pcs/davies/Beldalynn";
 import Tethilssethanar from "./pcs/wizards/Tethilssethanar";
 import App from "./ui/App";
-import Beldalynn from "./pcs/davies/Beldalynn";
 
 const g = new Engine();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -26,6 +26,7 @@ import Resource from "./types/Resource";
 import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
 import SkillName from "./types/SkillName";
+import Spell from "./types/Spell";
 import { getAbilityBonus } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
 import { isA } from "./utils/types";
@@ -80,7 +81,7 @@ export default abstract class AbstractCombatant implements Combatant {
   weaponCategoryProficiencies: Set<WeaponCategory>;
   armorProficiencies: Set<ArmorCategory>;
   naturalWeapons: Set<WeaponItem>;
-  resources: Map<Resource, number>;
+  resources: Map<string, number>;
   configs: Map<string, unknown>;
   saveProficiencies: Set<Ability>;
   features: Map<string, Feature>;
@@ -90,6 +91,8 @@ export default abstract class AbstractCombatant implements Combatant {
   attunements: Set<Item>;
   movedSoFar: number;
   effects: Map<Effect, number>;
+  knownSpells: Set<Spell>;
+  preparedSpells: Set<Spell>;
 
   constructor(
     public g: Engine,
@@ -171,6 +174,8 @@ export default abstract class AbstractCombatant implements Combatant {
     this.attunements = new Set();
     this.movedSoFar = 0;
     this.effects = new Map();
+    this.knownSpells = new Set();
+    this.preparedSpells = new Set();
   }
 
   get str() {
@@ -322,19 +327,19 @@ export default abstract class AbstractCombatant implements Combatant {
   }
 
   addResource(resource: Resource, amount?: number): void {
-    this.resources.set(resource, amount ?? resource.maximum);
+    this.resources.set(resource.name, amount ?? resource.maximum);
   }
 
   hasResource(resource: Resource, amount = 1): boolean {
-    return (this.resources.get(resource) ?? 0) >= amount;
+    return (this.resources.get(resource.name) ?? 0) >= amount;
   }
 
   spendResource(resource: Resource, amount = 1): void {
-    const old = this.resources.get(resource) ?? 0;
+    const old = this.resources.get(resource.name) ?? 0;
     if (old < amount)
       throw new Error(`Cannot spend ${amount} of ${resource.name} resource`);
 
-    this.resources.set(resource, old - amount);
+    this.resources.set(resource.name, old - amount);
   }
 
   getConfig<T>(key: string): T | undefined {
@@ -381,6 +386,17 @@ export default abstract class AbstractCombatant implements Combatant {
         this.effects.set(effect, duration - 1);
         if (duration <= 1) this.removeEffect(effect);
       }
+    }
+  }
+
+  addKnownSpells(...spells: Spell[]) {
+    for (const spell of spells) this.knownSpells.add(spell);
+  }
+
+  addPreparedSpells(...spells: Spell[]) {
+    for (const spell of spells) {
+      this.knownSpells.add(spell);
+      this.preparedSpells.add(spell);
     }
   }
 }

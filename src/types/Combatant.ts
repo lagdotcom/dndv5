@@ -14,6 +14,7 @@ import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
 import SkillName from "./SkillName";
 import Source from "./Source";
+import Spell from "./Spell";
 
 export default interface Combatant extends Source {
   id: number;
@@ -52,7 +53,7 @@ export default interface Combatant extends Source {
   inventory: Set<Item>;
   senses: Map<SenseName, number>;
   naturalWeapons: Set<WeaponItem>;
-  resources: Map<Resource, number>;
+  resources: Map<string, number>;
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
   time: Set<ActionTime>;
@@ -61,6 +62,8 @@ export default interface Combatant extends Source {
   movedSoFar: number;
   speed: number;
   saveProficiencies: Set<Ability>;
+  knownSpells: Set<Spell>;
+  preparedSpells: Set<Spell>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

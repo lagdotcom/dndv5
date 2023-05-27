@@ -1,5 +1,5 @@
-import Engine from "../Engine";
 import ErrorCollector from "../collectors/ErrorCollector";
+import Engine from "../Engine";
 import { ActionConfig } from "./Action";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
@@ -18,14 +18,29 @@ export const SpellSchools = [
 ] as const;
 export type SpellSchool = (typeof SpellSchools)[number];
 
+export const SpellLists = [
+  "Artificer",
+  "Bard",
+  "Cleric",
+  "Druid",
+  "Paladin",
+  "Ranger",
+  "Sorcerer",
+  "Warlock",
+  "Wizard",
+] as const;
+export type SpellList = (typeof SpellLists)[number];
+
 export default interface Spell<T extends object = object> extends Source {
   level: number;
+  scaling: boolean;
   school: SpellSchool;
   concentration: boolean;
   time: ActionTime;
   v: boolean;
   s: boolean;
   m?: string; // TODO real costs
+  lists: SpellList[];
 
   apply(
     g: Engine,
@@ -33,7 +48,11 @@ export default interface Spell<T extends object = object> extends Source {
     method: SpellcastingMethod,
     config: T
   ): Promise<void>;
-  check(config: Partial<T>, collector?: ErrorCollector): ErrorCollector;
+  check(
+    g: Engine,
+    config: Partial<T>,
+    collector?: ErrorCollector
+  ): ErrorCollector;
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
   getConfig(g: Engine, method: SpellcastingMethod): ActionConfig<T>;
   getLevel(config: T): number;

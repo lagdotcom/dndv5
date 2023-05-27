@@ -53,7 +53,7 @@ export type DragonTouchedLevel = (typeof DragonTouchedLevels)[number];
 
 export class DragonTouchedFocus extends AbstractWondrous {
   constructor(g: Engine, level: DragonTouchedLevel) {
-    super(g, `Dragon-Touched Focus (${level})`);
+    super(g, `Dragon-Touched Focus (${level})`, 1);
 
     // TODO While you are holding the focus, it can function as a spellcasting focus for all your spells.
     g.events.on("getInitiative", ({ detail: { who, diceType } }) => {

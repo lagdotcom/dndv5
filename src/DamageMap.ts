@@ -1,10 +1,12 @@
 import DamageType from "./types/DamageType";
 
+export type DamageInitialiser = [type: DamageType, amount: number][];
+
 export default class DamageMap {
   private map: Map<DamageType, number>;
   private _total: number;
 
-  constructor(...items: [DamageType, number][]) {
+  constructor(items: DamageInitialiser = []) {
     this.map = new Map(items);
     this._total = items.reduce((total, [, value]) => total + value, 0);
   }

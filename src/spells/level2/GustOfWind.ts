@@ -1,16 +1,16 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import { simpleSpell } from "../constructors";
+import { simpleSpell } from "../common";
 
 const GustOfWind = simpleSpell<HasPoint>({
   name: "Gust of Wind",
   level: 2,
   school: "Evocation",
-  time: "action",
   concentration: true,
   v: true,
   s: true,
   m: "a legume seed",
+  lists: ["Druid", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 60) }),
 

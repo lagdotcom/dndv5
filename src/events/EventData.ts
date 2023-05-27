@@ -36,10 +36,20 @@ type EventData = {
     ability: Ability;
     weapon?: WeaponItem;
     ammo?: AmmoItem;
+    spell?: Spell;
+    method?: SpellcastingMethod;
     diceType: DiceTypeCollector;
     bonus: BonusCollector;
   };
-  beforeSave: { who: Combatant; ability: Ability; bonus: BonusCollector };
+  beforeSave: {
+    attacker: Combatant;
+    who: Combatant;
+    ability: Ability;
+    diceType: DiceTypeCollector;
+    bonus: BonusCollector;
+    spell?: Spell;
+    method?: SpellcastingMethod;
+  };
   combatantDamaged: {
     who: Combatant;
     attacker: Combatant;
@@ -62,9 +72,11 @@ type EventData = {
   gatherDamage: {
     attacker: Combatant;
     target: Combatant;
-    ability: Ability;
+    ability?: Ability;
     weapon?: WeaponItem;
     ammo?: AmmoItem;
+    spell?: Spell;
+    method?: SpellcastingMethod;
     map: DamageMap;
     bonus: BonusCollector;
     critical: boolean;

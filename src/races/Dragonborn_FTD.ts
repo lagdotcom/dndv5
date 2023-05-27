@@ -1,5 +1,5 @@
-import SimpleFeature from "../features/SimpleFeature";
 import { notImplementedFeature } from "../features/common";
+import SimpleFeature from "../features/SimpleFeature";
 import DamageType from "../types/DamageType";
 import PCRace from "../types/PCRace";
 

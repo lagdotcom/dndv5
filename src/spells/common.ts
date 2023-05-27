@@ -1,37 +1,49 @@
 import { MarkOptional } from "ts-essentials";
-import { Scales } from "../configs";
-import Spell from "../types/Spell";
-import SlotResolver from "../resolvers/SlotResolver";
+
 import ErrorCollector from "../collectors/ErrorCollector";
+import { Scales } from "../configs";
+import SlotResolver from "../resolvers/SlotResolver";
+import Combatant from "../types/Combatant";
+import Spell from "../types/Spell";
+
+export function getCantripDice(who: Combatant) {
+  if (who.level < 5) return 1;
+  if (who.level < 11) return 2;
+  if (who.level < 17) return 3;
+  return 4;
+}
 
 export const simpleSpell = <T extends object>({
   name,
   level,
   school,
   concentration = false,
-  time,
+  time = "action",
   v = false,
   s = false,
   m,
+  lists,
   apply,
-  check = (_, ec = new ErrorCollector()) => ec,
+  check = (_g, _config, ec = new ErrorCollector()) => ec,
   getAffectedArea = () => undefined,
   getConfig,
 }: Omit<
   MarkOptional<
     Spell<T>,
-    "concentration" | "v" | "s" | "check" | "getAffectedArea"
+    "concentration" | "time" | "v" | "s" | "check" | "getAffectedArea"
   >,
-  "getLevel"
->) => ({
+  "getLevel" | "scaling"
+>): Spell<T> => ({
   name,
   level,
+  scaling: false,
   school,
   concentration,
   time,
   v,
   s,
   m,
+  lists,
   apply,
   check,
   getAffectedArea,
@@ -46,29 +58,32 @@ export const scalingSpell = <T extends object>({
   level,
   school,
   concentration = false,
-  time,
+  time = "action",
   v = false,
   s = false,
   m,
+  lists,
   apply,
-  check = (_, ec = new ErrorCollector()) => ec,
+  check = (_g, _config, ec = new ErrorCollector()) => ec,
   getAffectedArea = () => undefined,
   getConfig,
 }: Omit<
   MarkOptional<
     Spell<T & Scales>,
-    "concentration" | "v" | "s" | "check" | "getAffectedArea"
+    "concentration" | "time" | "v" | "s" | "check" | "getAffectedArea"
   >,
-  "getConfig" | "getLevel"
+  "getConfig" | "getLevel" | "scaling"
 > & { getConfig: Spell<T>["getConfig"] }): Spell<T & Scales> => ({
   name,
   level,
+  scaling: true,
   school,
   concentration,
   time,
   v,
   s,
   m,
+  lists,
   apply,
   check,
   getAffectedArea,

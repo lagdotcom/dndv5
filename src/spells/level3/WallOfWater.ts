@@ -1,17 +1,17 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import TextChoiceResolver from "../../resolvers/TextChoiceResolver";
-import { simpleSpell } from "../constructors";
+import { simpleSpell } from "../common";
 
 const WallOfWater = simpleSpell<HasPoint & { shape: "line" | "ring" }>({
   name: "Wall of Water",
   level: 3,
   school: "Evocation",
-  time: "action",
   concentration: true,
   v: true,
   s: true,
   m: "a drop of water",
+  lists: ["Druid", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({
     point: new PointResolver(g, 60),

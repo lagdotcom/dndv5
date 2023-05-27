@@ -1,5 +1,7 @@
 import {
+  findByRole,
   getByAltText,
+  getByLabelText,
   getByRole,
   queryByRole,
   render,
@@ -12,6 +14,7 @@ import Engine from "../Engine";
 import Badger from "../monsters/Badger";
 import Thug from "../monsters/Thug";
 import Aura from "../pcs/davies/Aura";
+import Beldalynn from "../pcs/davies/Beldalynn";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import App from "../ui/App";
 
@@ -23,7 +26,7 @@ const btn = (name: string) => screen.getByRole("button", { name });
 const choice = (name: string) => getByRole(dialog(), "button", { name });
 const menuitem = (name: string) => screen.getByRole("menuitem", { name });
 const token = (name: string) => getByAltText(main(), name);
-const logMsg = (want: string) => getByRole(log(), "listitem", { name: want });
+const logMsg = (name: string) => getByRole(log(), "listitem", { name });
 
 const queryToken = (name: string) => queryByRole(main(), name);
 
@@ -70,7 +73,7 @@ it("supports Fog Cloud", async () => {
   await user.click(btn("Choose Point"));
   await user.click(token("thug"));
   await user.click(btn("Execute"));
-  expect(logMsg("Tethilssethanar casts Fog Cloud at level 1.")).toBeVisible();
+  expect(logMsg("Tethilssethanar casts Fog Cloud.")).toBeVisible();
   await user.click(btn("End Turn"));
 
   // area counts as heavily obscured, so attack has disadvantage from being blinded
@@ -125,4 +128,39 @@ it("supports a typical Aura attack", async () => {
   expect(dialog("Sneak Attack")).toBeVisible();
   await user.click(choice("Yes"));
   expect(logMsg("thug takes 22 damage. (22 piercing)")).toBeVisible();
+});
+
+it("supports a typical Beldalynn attack", async () => {
+  const user = userEvent.setup();
+  const g = new Engine();
+  render(<App g={g} />);
+
+  const beldalynn = new Beldalynn(g);
+  const ally = new Aura(g);
+  const enemy = new Thug(g);
+
+  g.place(beldalynn, 0, 0);
+  g.place(ally, 25, 0);
+  g.place(enemy, 20, 0);
+  g.dice.force(20, { type: "initiative", who: beldalynn });
+  g.dice.force(2, { type: "initiative", who: ally });
+  g.dice.force(1, { type: "initiative", who: enemy });
+
+  await g.start();
+  await user.click(btn("Melf's Minute Meteors"));
+  await user.click(btn("Choose Target"));
+  await user.click(token("thug"));
+  await user.click(btn("Execute"));
+  await user.selectOptions(getByLabelText(dialog("Sculpt Spells"), "Choices"), [
+    "Aura",
+  ]);
+
+  g.dice.force(6, { type: "damage", attacker: beldalynn });
+  g.dice.force(6, { type: "damage", attacker: beldalynn });
+  await user.click(btn("OK"));
+
+  expect(logMsg("thug takes 12 damage. (12 fire)")).toBeVisible();
+  expect(
+    findByRole(log(), "listitem", { name: "Aura takes 12 damage. (12 fire)" })
+  ).not.toBeInTheDocument();
 });

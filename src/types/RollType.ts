@@ -3,6 +3,8 @@ import Combatant from "./Combatant";
 import DamageType from "./DamageType";
 import { WeaponItem } from "./Item";
 import SkillName from "./SkillName";
+import Spell from "./Spell";
+import SpellcastingMethod from "./SpellcastingMethod";
 
 export type AbilityCheck = {
   type: "check";
@@ -16,15 +18,20 @@ export type AttackRoll = {
   target: Combatant;
   weapon?: WeaponItem;
   ability: Ability;
+  spell?: Spell;
+  method?: SpellcastingMethod;
 };
+export type BlessRoll = { type: "bane" | "bless"; who: Combatant };
 export type DamageRoll = {
   type: "damage";
   attacker: Combatant;
-  target: Combatant;
+  target?: Combatant;
   size: number;
   damageType: DamageType;
   weapon?: WeaponItem;
-  ability: Ability;
+  ability?: Ability;
+  spell?: Spell;
+  method?: SpellcastingMethod;
 };
 export type InitiativeRoll = { type: "initiative"; who: Combatant };
 export type LuckRoll = { type: "luck"; who: Combatant };
@@ -33,11 +40,14 @@ export type SavingThrow = {
   who: Combatant;
   attacker: Combatant;
   ability: Ability;
+  spell?: Spell;
+  method?: SpellcastingMethod;
 };
 
 type RollType =
   | AbilityCheck
   | AttackRoll
+  | BlessRoll
   | DamageRoll
   | InitiativeRoll
   | LuckRoll

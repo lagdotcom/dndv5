@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
 
+import MultiTargetResolver from "../resolvers/MultiTargetResolver";
 import PointResolver from "../resolvers/PointResolver";
 import SlotResolver from "../resolvers/SlotResolver";
 import TargetResolver from "../resolvers/TargetResolver";
@@ -14,6 +15,7 @@ import Labelled from "./Labelled";
 import { actionArea, wantsCombatant, wantsPoint } from "./utils/state";
 
 type ChooserProps<T, R = Resolver<T>> = {
+  action: Action;
   field: string;
   onChange(key: string, value?: T): void;
   resolver: R;
@@ -36,6 +38,54 @@ function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
   );
 }
 
+function ChooseTargets({
+  field,
+  resolver,
+  value,
+  onChange,
+}: ChooserProps<Combatant[], MultiTargetResolver>) {
+  const onClick = useCallback(() => {
+    wantsCombatant.value = (who) => {
+      wantsCombatant.value = undefined;
+      if (who) onChange(field, (value ?? []).concat(who));
+    };
+  }, [field, onChange, value]);
+
+  const remove = useCallback(
+    (who: Combatant) =>
+      onChange(
+        field,
+        (value ?? []).filter((x) => x !== who)
+      ),
+    [field, onChange, value]
+  );
+
+  return (
+    <div>
+      <div>
+        Targets (
+        {resolver.minimum === resolver.maximum
+          ? `exactly ${resolver.minimum}`
+          : `${resolver.minimum} - ${resolver.maximum}`}
+        ):
+        {(value ?? []).length ? (
+          <ul>
+            {(value ?? []).map((who, i) => (
+              <li key={i}>
+                <CombatantRef who={who} />{" "}
+                <button onClick={() => remove(who)}>remove {who.name}</button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          ` NONE`
+        )}
+      </div>
+      <button onClick={onClick}>Add Target</button>
+    </div>
+  );
+}
+
 function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
   const onClick = useCallback(() => {
     wantsPoint.value = (point) => {
@@ -53,6 +103,7 @@ function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
 }
 
 function ChooseSlot({
+  action,
   field,
   resolver,
   value,
@@ -62,7 +113,10 @@ function ChooseSlot({
     <div>
       <div>Spell Slot: {value ?? "NONE"}</div>
       <div>
-        {enumerate(resolver.minimum, resolver.maximum).map((slot) => (
+        {enumerate(
+          resolver.getMinimum(action.actor),
+          resolver.getMaximum(action.actor)
+        ).map((slot) => (
           <button
             key={slot}
             className={value === slot ? styles.active : undefined}
@@ -85,7 +139,7 @@ function getInitialConfig<T extends object>(
 
   for (const [key, resolver] of Object.entries(action.config)) {
     if (resolver instanceof SlotResolver && !config[key as keyof T])
-      (config[key as keyof T] as number) = resolver.minimum;
+      (config[key as keyof T] as number) = resolver.getMinimum(action.actor);
   }
 
   return config;
@@ -141,6 +195,8 @@ export default function ChooseActionConfigPanel<T extends object>({
 
         if (resolver instanceof TargetResolver)
           return <ChooseTarget {...props} />;
+        else if (resolver instanceof MultiTargetResolver)
+          return <ChooseTargets {...props} />;
         else if (resolver instanceof PointResolver)
           return <ChoosePoint {...props} />;
         else if (resolver instanceof SlotResolver)

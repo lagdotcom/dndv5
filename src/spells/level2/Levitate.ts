@@ -1,16 +1,16 @@
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { simpleSpell } from "../constructors";
+import { simpleSpell } from "../common";
 
 const Levitate = simpleSpell<HasTarget>({
   name: "Levitate",
   level: 2,
   school: "Transmutation",
-  time: "action",
   concentration: true,
   v: true,
   s: true,
   m: "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end",
+  lists: ["Druid", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, true) }),
 

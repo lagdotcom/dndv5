@@ -1,13 +1,17 @@
-import Engine from "../../Engine";
-import PC from "../../PC";
-import { Dagger, Quarterstaff } from "../../items/weapons";
-import { enchant } from "../../utils/items";
-import tokenUrl from "./Beldalynn_token.png";
 import Wizard, { ASI4 } from "../../classes/wizard";
-import { BronzeDragonborn } from "../../races/Dragonborn_FTD";
 import Evocation from "../../classes/wizard/Evocation";
 import { chaoticBurst } from "../../enchantments/weapon";
+import Engine from "../../Engine";
+import { Dagger, Quarterstaff } from "../../items/weapons";
 import { CloakOfProtection, DragonTouchedFocus } from "../../items/wondrous";
+import PC from "../../PC";
+import { BronzeDragonborn } from "../../races/Dragonborn_FTD";
+import AcidSplash from "../../spells/cantrip/AcidSplash";
+import FireBolt from "../../spells/cantrip/FireBolt";
+import MindSliver from "../../spells/cantrip/MindSliver";
+import RayOfFrost from "../../spells/cantrip/RayOfFrost";
+import { enchant } from "../../utils/items";
+import tokenUrl from "./Beldalynn_token.png";
 
 export default class Beldalynn extends PC {
   constructor(g: Engine) {
@@ -40,5 +44,34 @@ export default class Beldalynn extends PC {
     this.don(enchant(new Quarterstaff(g), chaoticBurst), true);
     this.don(new DragonTouchedFocus(g, "Slumbering"), true);
     this.inventory.add(new Dagger(g, 1));
+
+    // TODO
+    // this.addKnownSpells(
+    //   ComprehendLanguages,
+    //   FindFamiliar,
+    //   FloatingDisk,
+    //   Identify
+    // );
+
+    this.addPreparedSpells(
+      AcidSplash,
+      FireBolt,
+      MindSliver,
+      RayOfFrost
+
+      // IceKnife,
+      // MagicMissile,
+      // Shield,
+
+      // EnlargeReduce,
+      // HoldPerson,
+
+      // Fireball,
+      // IntellectFortress,
+      // LeomundsTinyHut,
+      // MelfsMinuteMeteors,
+
+      // WalOfFire
+    );
   }
 }

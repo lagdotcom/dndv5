@@ -1,25 +1,27 @@
 import WeaponAttack from "./actions/WeaponAttack";
 import Engine from "./Engine";
 import PointSet from "./PointSet";
+import { ResourceRegistry } from "./resources";
 import Item from "./types/Item";
 import { resolveArea } from "./utils/areas";
 import { getValidAmmunition } from "./utils/items";
 import { distance, getSquares } from "./utils/units";
 
-class DndRule {
-  constructor(
-    public name: string,
-    public setup: (g: Engine, me: DndRule) => void
-  ) {}
+export const RuleRepository = new Set<DndRule>();
+
+export class DndRule {
+  constructor(public name: string, public setup: (g: Engine) => void) {
+    RuleRepository.add(this);
+  }
 }
 
-export const AbilityScoreRule = new DndRule("Ability Score", (g, me) => {
+export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
-    bonus.add(attacker[ability], me);
+    bonus.add(attacker[ability], AbilityScoreRule);
   });
 
   g.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-    bonus.add(attacker[ability], me);
+    if (ability) bonus.add(attacker[ability], AbilityScoreRule);
   });
 });
 
@@ -44,10 +46,12 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
   });
 });
 
-export const BlindedRule = new DndRule("Blinded", (g, me) => {
+export const BlindedRule = new DndRule("Blinded", (g) => {
   g.events.on("beforeAttack", ({ detail: { attacker, diceType, target } }) => {
-    if (attacker.conditions.has("Blinded")) diceType.add("disadvantage", me);
-    if (target.conditions.has("Blinded")) diceType.add("advantage", me);
+    if (attacker.conditions.has("Blinded"))
+      diceType.add("disadvantage", BlindedRule);
+    if (target.conditions.has("Blinded"))
+      diceType.add("advantage", BlindedRule);
   });
 });
 
@@ -59,23 +63,20 @@ export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("turnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
 });
 
-export const LongRangeAttacksRule = new DndRule(
-  "Long Range Attacks",
-  (g, me) => {
-    g.events.on(
-      "beforeAttack",
-      ({ detail: { attacker, target, weapon, diceType } }) => {
-        if (
-          typeof weapon?.shortRange === "number" &&
-          distance(g, attacker, target) > weapon.shortRange
-        )
-          diceType.add("disadvantage", me);
-      }
-    );
-  }
-);
+export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
+  g.events.on(
+    "beforeAttack",
+    ({ detail: { attacker, target, weapon, diceType } }) => {
+      if (
+        typeof weapon?.shortRange === "number" &&
+        distance(g, attacker, target) > weapon.shortRange
+      )
+        diceType.add("disadvantage", LongRangeAttacksRule);
+    }
+  );
+});
 
-export const ObscuredRule = new DndRule("Obscured", (g, me) => {
+export const ObscuredRule = new DndRule("Obscured", (g) => {
   const isHeavilyObscuredAnywhere = (squares: PointSet) => {
     for (const effect of g.effects) {
       if (!effect.tags.has("heavily obscured")) continue;
@@ -94,7 +95,8 @@ export const ObscuredRule = new DndRule("Obscured", (g, me) => {
     const squares = new PointSet(
       getSquares(target, g.getState(target).position)
     );
-    if (isHeavilyObscuredAnywhere(squares)) diceType.add("disadvantage", me);
+    if (isHeavilyObscuredAnywhere(squares))
+      diceType.add("disadvantage", ObscuredRule);
   });
 
   g.events.on("getConditions", ({ detail: { conditions, who } }) => {
@@ -103,18 +105,27 @@ export const ObscuredRule = new DndRule("Obscured", (g, me) => {
   });
 });
 
-export const ProficiencyRule = new DndRule("Proficiency", (g, me) => {
-  g.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
-    if (weapon && attacker.getProficiencyMultiplier(weapon))
-      bonus.add(attacker.pb, me);
-  });
+export const ProficiencyRule = new DndRule("Proficiency", (g) => {
+  g.events.on(
+    "beforeAttack",
+    ({ detail: { attacker, bonus, spell, weapon } }) => {
+      const mul = weapon
+        ? attacker.getProficiencyMultiplier(weapon)
+        : spell
+        ? 1
+        : 0;
+
+      bonus.add(attacker.pb * mul, ProficiencyRule);
+    }
+  );
 });
 
 export const ResourcesRule = new DndRule("Resources", (g) => {
   g.events.on("turnStarted", ({ detail: { who } }) => {
-    for (const resource of who.resources.keys()) {
-      if (resource.refresh === "turnStart")
-        who.resources.set(resource, resource.maximum);
+    for (const name of who.resources.keys()) {
+      const resource = ResourceRegistry.get(name);
+      if (resource?.refresh === "turnStart")
+        who.resources.set(name, resource.maximum);
     }
   });
 });
@@ -141,21 +152,8 @@ export const WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
   });
 });
 
-export const allDndRules = [
-  AbilityScoreRule,
-  ArmorCalculationRule,
-  BlindedRule,
-  EffectsRule,
-  LongRangeAttacksRule,
-  ObscuredRule,
-  ProficiencyRule,
-  ResourcesRule,
-  TurnTimeRule,
-  WeaponAttackRule,
-];
-
 export default class DndRules {
   constructor(public g: Engine) {
-    for (const rule of allDndRules) rule.setup(g, rule);
+    for (const rule of RuleRepository) rule.setup(g);
   }
 }

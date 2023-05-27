@@ -87,6 +87,22 @@
   // src/index.tsx
   var import_preact3 = __toESM(require_preact());
 
+  // src/collectors/BonusCollector.ts
+  var BonusCollector = class {
+    constructor() {
+      this.effects = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.effects.add({ value, source });
+    }
+    get result() {
+      let total = 0;
+      for (const { value } of this.effects)
+        total += value;
+      return total;
+    }
+  };
+
   // src/collectors/DamageResponseCollector.ts
   var DamageResponseCollector = class {
     constructor() {
@@ -112,8 +128,68 @@
     }
   };
 
+  // src/collectors/DiceTypeCollector.ts
+  var DiceTypeCollector = class {
+    constructor() {
+      this.advantage = /* @__PURE__ */ new Set();
+      this.disadvantage = /* @__PURE__ */ new Set();
+      this.normal = /* @__PURE__ */ new Set();
+      this.sources = /* @__PURE__ */ new Set();
+    }
+    add(response, source) {
+      this[response].add(source);
+      this.sources.add(source);
+    }
+    involved(source) {
+      return this.sources.has(source);
+    }
+    get result() {
+      const hasAdvantage = this.advantage.size > 0;
+      const hasDisadvantage = this.disadvantage.size > 0;
+      if (hasAdvantage === hasDisadvantage)
+        return "normal";
+      return hasAdvantage ? "advantage" : "disadvantage";
+    }
+  };
+
   // src/collectors/InterruptionCollector.ts
   var InterruptionCollector = class extends Set {
+  };
+
+  // src/collectors/MultiplierCollector.ts
+  var MultiplierCollector = class {
+    constructor() {
+      this.multipliers = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.multipliers.add({ value, source });
+    }
+    get value() {
+      let total = 1;
+      for (const { value } of this.multipliers)
+        total *= value;
+      return total;
+    }
+  };
+
+  // src/DamageMap.ts
+  var DamageMap = class {
+    constructor(items = []) {
+      this.map = new Map(items);
+      this._total = items.reduce((total, [, value]) => total + value, 0);
+    }
+    get total() {
+      return this._total;
+    }
+    add(type, value) {
+      var _a;
+      const old = (_a = this.map.get(type)) != null ? _a : 0;
+      this.map.set(type, old + value);
+      this._total += value;
+    }
+    [Symbol.iterator]() {
+      return this.map[Symbol.iterator]();
+    }
   };
 
   // src/DiceBag.ts
@@ -128,6 +204,9 @@
     switch (rt.type) {
       case "damage":
         return rt.size;
+      case "bane":
+      case "bless":
+        return 4;
       default:
         return 20;
     }
@@ -164,46 +243,6 @@
     }
   };
 
-  // src/collectors/BonusCollector.ts
-  var BonusCollector = class {
-    constructor() {
-      this.effects = /* @__PURE__ */ new Set();
-    }
-    add(value, source) {
-      this.effects.add({ value, source });
-    }
-    get result() {
-      let total = 0;
-      for (const { value } of this.effects)
-        total += value;
-      return total;
-    }
-  };
-
-  // src/collectors/DiceTypeCollector.ts
-  var DiceTypeCollector = class {
-    constructor() {
-      this.advantage = /* @__PURE__ */ new Set();
-      this.disadvantage = /* @__PURE__ */ new Set();
-      this.normal = /* @__PURE__ */ new Set();
-      this.sources = /* @__PURE__ */ new Set();
-    }
-    add(response, source) {
-      this[response].add(source);
-      this.sources.add(source);
-    }
-    involved(source) {
-      return this.sources.has(source);
-    }
-    get result() {
-      const hasAdvantage = this.advantage.size > 0;
-      const hasDisadvantage = this.disadvantage.size > 0;
-      if (hasAdvantage === hasDisadvantage)
-        return "normal";
-      return hasAdvantage ? "advantage" : "disadvantage";
-    }
-  };
-
   // src/collectors/ErrorCollector.ts
   var ErrorCollector = class {
     constructor() {
@@ -219,63 +258,6 @@
     }
     get valid() {
       return this.errors.size === 0;
-    }
-  };
-
-  // src/collectors/MultiplierCollector.ts
-  var MultiplierCollector = class {
-    constructor() {
-      this.multipliers = /* @__PURE__ */ new Set();
-    }
-    add(value, source) {
-      this.multipliers.add({ value, source });
-    }
-    get value() {
-      let total = 1;
-      for (const { value } of this.multipliers)
-        total *= value;
-      return total;
-    }
-  };
-
-  // src/DamageMap.ts
-  var DamageMap = class {
-    constructor(...items) {
-      this.map = new Map(items);
-      this._total = items.reduce((total, [, value]) => total + value, 0);
-    }
-    get total() {
-      return this._total;
-    }
-    add(type, value) {
-      var _a;
-      const old = (_a = this.map.get(type)) != null ? _a : 0;
-      this.map.set(type, old + value);
-      this._total += value;
-    }
-    [Symbol.iterator]() {
-      return this.map[Symbol.iterator]();
-    }
-  };
-
-  // src/events/AttackEvent.ts
-  var AttackEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("attack", { detail });
-    }
-  };
-
-  // src/events/BeforeAttackEvent.ts
-  var BeforeAttackEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("beforeAttack", { detail });
-    }
-  };
-
-  // src/events/GatherDamageEvent.ts
-  var GatherDamageEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("gatherDamage", { detail });
     }
   };
 
@@ -320,6 +302,9 @@
   function getProficiencyBonusByLevel(level) {
     return Math.ceil(level / 4) + 1;
   }
+  function getSaveDC(who, ability) {
+    return 8 + who.pb + who[ability];
+  }
 
   // src/utils/types.ts
   function isDefined(value) {
@@ -327,6 +312,14 @@
   }
   function isA(value, enumeration) {
     return enumeration.includes(value);
+  }
+  function isCombatantArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const who of value)
+      if (!(who instanceof AbstractCombatant))
+        return false;
+    return true;
   }
 
   // src/utils/items.ts
@@ -471,6 +464,8 @@
       this.attunements = /* @__PURE__ */ new Set();
       this.movedSoFar = 0;
       this.effects = /* @__PURE__ */ new Map();
+      this.knownSpells = /* @__PURE__ */ new Set();
+      this.preparedSpells = /* @__PURE__ */ new Set();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -603,18 +598,18 @@
       return 0;
     }
     addResource(resource, amount) {
-      this.resources.set(resource, amount != null ? amount : resource.maximum);
+      this.resources.set(resource.name, amount != null ? amount : resource.maximum);
     }
     hasResource(resource, amount = 1) {
       var _a;
-      return ((_a = this.resources.get(resource)) != null ? _a : 0) >= amount;
+      return ((_a = this.resources.get(resource.name)) != null ? _a : 0) >= amount;
     }
     spendResource(resource, amount = 1) {
       var _a;
-      const old = (_a = this.resources.get(resource)) != null ? _a : 0;
+      const old = (_a = this.resources.get(resource.name)) != null ? _a : 0;
       if (old < amount)
         throw new Error(`Cannot spend ${amount} of ${resource.name} resource`);
-      this.resources.set(resource, old - amount);
+      this.resources.set(resource.name, old - amount);
     }
     getConfig(key) {
       return this.configs.get(key);
@@ -652,6 +647,16 @@
           if (duration <= 1)
             this.removeEffect(effect);
         }
+      }
+    }
+    addKnownSpells(...spells) {
+      for (const spell of spells)
+        this.knownSpells.add(spell);
+    }
+    addPreparedSpells(...spells) {
+      for (const spell of spells) {
+        this.knownSpells.add(spell);
+        this.preparedSpells.add(spell);
       }
     }
   };
@@ -707,34 +712,18 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
-        const pre = g2.fire(
-          new BeforeAttackEvent({
-            target,
-            attacker,
-            ability,
-            weapon,
-            ammo,
-            diceType: new DiceTypeCollector(),
-            bonus: new BonusCollector()
-          })
-        );
-        if (pre.defaultPrevented)
-          return;
-        const roll = yield g2.roll(
-          { type: "attack", who: attacker, target, weapon, ability },
-          pre.detail.diceType.result
-        );
-        if (ammo)
-          ammo.quantity--;
-        const total = roll.value + pre.detail.bonus.result;
-        const outcome = roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= target.ac ? "hit" : "miss";
-        const attack = g2.fire(
-          new AttackEvent({ pre: pre.detail, roll, total, outcome })
-        );
-        const critical = attack.detail.outcome === "critical";
-        if (attack.detail.outcome !== "miss") {
-          const map = new DamageMap();
+        const { attack, critical, hit } = yield g2.attack({
+          attacker,
+          target,
+          ability,
+          weapon,
+          ammo
+        });
+        if (hit) {
+          if (ammo)
+            ammo.quantity--;
           const { damage } = weapon;
+          const baseDamage = [];
           if (damage.type === "dice") {
             const { count, size } = damage.amount;
             const amount = yield g2.rollDamage(
@@ -749,31 +738,15 @@
               },
               critical
             );
-            map.add(damage.damageType, amount);
+            baseDamage.push([damage.damageType, amount]);
           } else
-            map.add(damage.damageType, damage.amount);
-          const gd = yield g2.resolve(
-            new GatherDamageEvent({
-              attacker,
-              target,
-              ability,
-              weapon,
-              ammo,
-              map,
-              bonus: new BonusCollector(),
-              critical,
-              attack: attack.detail,
-              interrupt: new InterruptionCollector(),
-              multiplier: new MultiplierCollector()
-            })
+            baseDamage.push([damage.damageType, damage.amount]);
+          yield g2.damage(
+            weapon,
+            weapon.damage.damageType,
+            { attack, attacker, target, ability, weapon, ammo, critical },
+            baseDamage
           );
-          map.add(damage.damageType, gd.detail.bonus.result);
-          yield g2.damage(map, {
-            source: this,
-            attacker,
-            target,
-            multiplier: gd.detail.multiplier.value
-          });
         }
       });
     }
@@ -804,6 +777,25 @@
     }
   };
 
+  // src/resources.ts
+  var ResourceRegistry = /* @__PURE__ */ new Map();
+  var LongRestResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "longRest";
+    }
+  };
+  var TurnResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "turnStart";
+    }
+  };
+
   // src/utils/areas.ts
   function resolveArea(area) {
     const points = [];
@@ -826,18 +818,21 @@
   }
 
   // src/DndRules.ts
+  var RuleRepository = /* @__PURE__ */ new Set();
   var DndRule = class {
     constructor(name, setup) {
       this.name = name;
       this.setup = setup;
+      RuleRepository.add(this);
     }
   };
-  var AbilityScoreRule = new DndRule("Ability Score", (g2, me) => {
+  var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
     g2.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
-      bonus.add(attacker[ability], me);
+      bonus.add(attacker[ability], AbilityScoreRule);
     });
     g2.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-      bonus.add(attacker[ability], me);
+      if (ability)
+        bonus.add(attacker[ability], AbilityScoreRule);
     });
   });
   var ArmorCalculationRule = new DndRule("Armor Calculation", (g2) => {
@@ -856,12 +851,12 @@
       methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
     });
   });
-  var BlindedRule = new DndRule("Blinded", (g2, me) => {
+  var BlindedRule = new DndRule("Blinded", (g2) => {
     g2.events.on("beforeAttack", ({ detail: { attacker, diceType, target } }) => {
       if (attacker.conditions.has("Blinded"))
-        diceType.add("disadvantage", me);
+        diceType.add("disadvantage", BlindedRule);
       if (target.conditions.has("Blinded"))
-        diceType.add("advantage", me);
+        diceType.add("advantage", BlindedRule);
     });
   });
   var EffectsRule = new DndRule("Effects", (g2) => {
@@ -871,19 +866,16 @@
     );
     g2.events.on("turnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
   });
-  var LongRangeAttacksRule = new DndRule(
-    "Long Range Attacks",
-    (g2, me) => {
-      g2.events.on(
-        "beforeAttack",
-        ({ detail: { attacker, target, weapon, diceType } }) => {
-          if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, attacker, target) > weapon.shortRange)
-            diceType.add("disadvantage", me);
-        }
-      );
-    }
-  );
-  var ObscuredRule = new DndRule("Obscured", (g2, me) => {
+  var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g2) => {
+    g2.events.on(
+      "beforeAttack",
+      ({ detail: { attacker, target, weapon, diceType } }) => {
+        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, attacker, target) > weapon.shortRange)
+          diceType.add("disadvantage", LongRangeAttacksRule);
+      }
+    );
+  });
+  var ObscuredRule = new DndRule("Obscured", (g2) => {
     const isHeavilyObscuredAnywhere = (squares) => {
       for (const effect of g2.effects) {
         if (!effect.tags.has("heavily obscured"))
@@ -901,7 +893,7 @@
         getSquares(target, g2.getState(target).position)
       );
       if (isHeavilyObscuredAnywhere(squares))
-        diceType.add("disadvantage", me);
+        diceType.add("disadvantage", ObscuredRule);
     });
     g2.events.on("getConditions", ({ detail: { conditions, who } }) => {
       const squares = new PointSet(getSquares(who, g2.getState(who).position));
@@ -909,17 +901,21 @@
         conditions.add("Blinded");
     });
   });
-  var ProficiencyRule = new DndRule("Proficiency", (g2, me) => {
-    g2.events.on("beforeAttack", ({ detail: { attacker, weapon, bonus } }) => {
-      if (weapon && attacker.getProficiencyMultiplier(weapon))
-        bonus.add(attacker.pb, me);
-    });
+  var ProficiencyRule = new DndRule("Proficiency", (g2) => {
+    g2.events.on(
+      "beforeAttack",
+      ({ detail: { attacker, bonus, spell, weapon } }) => {
+        const mul = weapon ? attacker.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
+        bonus.add(attacker.pb * mul, ProficiencyRule);
+      }
+    );
   });
   var ResourcesRule = new DndRule("Resources", (g2) => {
     g2.events.on("turnStarted", ({ detail: { who } }) => {
-      for (const resource of who.resources.keys()) {
-        if (resource.refresh === "turnStart")
-          who.resources.set(resource, resource.maximum);
+      for (const name of who.resources.keys()) {
+        const resource = ResourceRegistry.get(name);
+        if ((resource == null ? void 0 : resource.refresh) === "turnStart")
+          who.resources.set(name, resource.maximum);
       }
     });
   });
@@ -944,23 +940,11 @@
       }
     });
   });
-  var allDndRules = [
-    AbilityScoreRule,
-    ArmorCalculationRule,
-    BlindedRule,
-    EffectsRule,
-    LongRangeAttacksRule,
-    ObscuredRule,
-    ProficiencyRule,
-    ResourcesRule,
-    TurnTimeRule,
-    WeaponAttackRule
-  ];
   var DndRules = class {
     constructor(g2) {
       this.g = g2;
-      for (const rule of allDndRules)
-        rule.setup(g2, rule);
+      for (const rule of RuleRepository)
+        rule.setup(g2);
     }
   };
 
@@ -975,6 +959,27 @@
   var AreaRemovedEvent = class extends CustomEvent {
     constructor(detail) {
       super("areaRemoved", { detail });
+    }
+  };
+
+  // src/events/AttackEvent.ts
+  var AttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("attack", { detail });
+    }
+  };
+
+  // src/events/BeforeAttackEvent.ts
+  var BeforeAttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("beforeAttack", { detail });
+    }
+  };
+
+  // src/events/BeforeSaveEvent.ts
+  var BeforeSaveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("beforeSave", { detail });
     }
   };
 
@@ -1025,11 +1030,12 @@
       return this.target.dispatchEvent(event);
     }
     on(type, callback, options) {
-      return this.target.addEventListener(
+      this.target.addEventListener(
         type,
         callback,
         options
       );
+      return () => this.off(type, callback);
     }
     off(type, callback, options) {
       return this.target.removeEventListener(
@@ -1037,6 +1043,13 @@
         callback,
         options
       );
+    }
+  };
+
+  // src/events/GatherDamageEvent.ts
+  var GatherDamageEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("gatherDamage", { detail });
     }
   };
 
@@ -1181,6 +1194,21 @@
         return roll.value + who.dex;
       });
     }
+    savingThrow(dc, e) {
+      return __async(this, null, function* () {
+        const pre = this.fire(
+          new BeforeSaveEvent(__spreadProps(__spreadValues({}, e), {
+            bonus: new BonusCollector(),
+            diceType: new DiceTypeCollector()
+          }))
+        );
+        const roll = yield this.roll(
+          __spreadValues({ type: "save" }, e),
+          pre.detail.diceType.result
+        );
+        return roll.value >= dc;
+      });
+    }
     roll(type, diceType = "normal") {
       return __async(this, null, function* () {
         const roll = this.dice.roll(type, diceType);
@@ -1217,7 +1245,7 @@
         this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
       });
     }
-    damage(_0, _1) {
+    applyDamage(_0, _1) {
       return __async(this, arguments, function* (damage, {
         attacker,
         multiplier: baseMultiplier = 1,
@@ -1257,6 +1285,58 @@
           } else {
           }
         }
+      });
+    }
+    attack(e) {
+      return __async(this, null, function* () {
+        const pre = this.fire(
+          new BeforeAttackEvent(__spreadProps(__spreadValues({}, e), {
+            diceType: new DiceTypeCollector(),
+            bonus: new BonusCollector()
+          }))
+        );
+        if (pre.defaultPrevented)
+          return { outcome: "cancelled", hit: false };
+        const roll = yield this.roll(
+          { type: "attack", who: e.attacker, target: e.target, ability: e.ability },
+          pre.detail.diceType.result
+        );
+        const total = roll.value + pre.detail.bonus.result;
+        const attack = this.fire(
+          new AttackEvent({
+            pre: pre.detail,
+            roll,
+            total,
+            outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= e.target.ac ? "hit" : "miss"
+          })
+        );
+        const { outcome } = attack.detail;
+        return {
+          outcome,
+          attack: attack.detail,
+          hit: outcome === "hit" || outcome === "critical",
+          critical: outcome === "critical"
+        };
+      });
+    }
+    damage(_0, _1, _2) {
+      return __async(this, arguments, function* (source, damageType, e, damageInitialiser = []) {
+        const map = new DamageMap(damageInitialiser);
+        const gather = yield this.resolve(
+          new GatherDamageEvent(__spreadProps(__spreadValues({}, e), {
+            map,
+            bonus: new BonusCollector(),
+            interrupt: new InterruptionCollector(),
+            multiplier: new MultiplierCollector()
+          }))
+        );
+        map.add(damageType, gather.detail.bonus.result);
+        yield this.applyDamage(map, {
+          source,
+          attacker: e.attacker,
+          target: e.target,
+          multiplier: gather.detail.multiplier.value
+        });
       });
     }
     act(action, config) {
@@ -1627,22 +1707,6 @@ If your DM allows the use of feats, you may instead take a feat.`,
       asiSetup
     );
   }
-
-  // src/resources.ts
-  var LongRestResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      this.refresh = "longRest";
-    }
-  };
-  var TurnResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      this.refresh = "turnStart";
-    }
-  };
 
   // src/classes/rogue/SneakAttack.ts
   function getSneakAttackDice(level) {
@@ -2078,7 +2142,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   };
   var DragonTouchedFocus = class extends AbstractWondrous {
     constructor(g2, level) {
-      super(g2, `Dragon-Touched Focus (${level})`);
+      super(g2, `Dragon-Touched Focus (${level})`, 1);
       g2.events.on("getInitiative", ({ detail: { who, diceType } }) => {
         if (who.equipment.has(this) && who.attunements.has(this))
           diceType.add("advantage", this);
@@ -2176,18 +2240,23 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     getAffectedArea(config) {
       return this.spell.getAffectedArea(config);
     }
+    getResource(config) {
+      var _a;
+      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      return this.method.getResourceForSpell(this.spell, level, this.actor);
+    }
     check(config, ec = new ErrorCollector()) {
       if (!this.actor.time.has(this.spell.time))
         ec.add(`No ${this.spell.time} left`, this);
-      const resource = this.method.getResourceForSpell(this.spell);
+      const resource = this.getResource(config);
       if (resource && !this.actor.hasResource(resource))
         ec.add(`No ${resource.name} left`, this.method);
-      return this.spell.check(config, ec);
+      return this.spell.check(this.g, config, ec);
     }
     apply(config) {
       return __async(this, null, function* () {
         this.actor.time.delete(this.spell.time);
-        const resource = this.method.getResourceForSpell(this.spell);
+        const resource = this.getResource(config);
         if (resource)
           this.actor.spendResource(resource, 1);
         const sc = this.g.fire(
@@ -2225,18 +2294,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     constructor(spell, method) {
       this.spell = spell;
       this.method = method;
+      this.name = "spell slot";
       this.type = "SpellSlot";
     }
-    get minimum() {
-      return this.method.getMinSlot(this.spell);
+    getMinimum(who) {
+      return this.method.getMinSlot(this.spell, who);
     }
-    get maximum() {
-      return this.method.getMaxSlot(this.spell);
-    }
-    get name() {
-      if (this.minimum === this.maximum)
-        return `spell slot (${this.minimum})`;
-      return `spell slot (${this.minimum}-${this.maximum})`;
+    getMaximum(who) {
+      return this.method.getMaxSlot(this.spell, who);
     }
     check(value, action, ec = new ErrorCollector()) {
       if (action instanceof CastSpell)
@@ -2244,38 +2309,50 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       if (typeof value !== "number")
         ec.add("No spell level chosen", this);
       else {
-        if (value < this.minimum)
+        if (value < this.getMinimum(action.actor))
           ec.add("Too low", this);
-        if (value > this.maximum)
+        if (value > this.getMaximum(action.actor))
           ec.add("Too high", this);
       }
       return ec;
     }
   };
 
-  // src/spells/constructors.ts
+  // src/spells/common.ts
+  function getCantripDice(who) {
+    if (who.level < 5)
+      return 1;
+    if (who.level < 11)
+      return 2;
+    if (who.level < 17)
+      return 3;
+    return 4;
+  }
   var simpleSpell = ({
     name,
     level,
     school,
     concentration = false,
-    time,
+    time = "action",
     v = false,
     s = false,
     m,
+    lists,
     apply,
-    check: check2 = (_2, ec = new ErrorCollector()) => ec,
+    check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
     getAffectedArea = () => void 0,
     getConfig
   }) => ({
     name,
     level,
+    scaling: false,
     school,
     concentration,
     time,
     v,
     s,
     m,
+    lists,
     apply,
     check: check2,
     getAffectedArea,
@@ -2289,23 +2366,26 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     level,
     school,
     concentration = false,
-    time,
+    time = "action",
     v = false,
     s = false,
     m,
+    lists,
     apply,
-    check: check2 = (_2, ec = new ErrorCollector()) => ec,
+    check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
     getAffectedArea = () => void 0,
     getConfig
   }) => ({
     name,
     level,
+    scaling: true,
     school,
     concentration,
     time,
     v,
     s,
     m,
+    lists,
     apply,
     check: check2,
     getAffectedArea,
@@ -2322,11 +2402,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     name: "Levitate",
     level: 2,
     school: "Transmutation",
-    time: "action",
     concentration: true,
     v: true,
     s: true,
     m: "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end",
+    lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
@@ -2411,6 +2491,542 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.don(new Rapier(g2));
       this.inventory.add(new CrossbowBolt(g2, 20));
       this.inventory.add(enchant(new CrossbowBolt(g2, 15), plus1));
+    }
+  };
+
+  // src/spells/NormalSpellcasting.ts
+  var SpellSlots = {
+    full: [
+      [2],
+      [3],
+      [4, 2],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]
+    ],
+    half: [
+      [],
+      [2],
+      [3],
+      [4],
+      [4, 2],
+      [4, 2],
+      [4, 3],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2]
+    ]
+  };
+  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var NormalSpellcasting = class {
+    constructor(name, ability, strength) {
+      this.name = name;
+      this.ability = ability;
+      this.strength = strength;
+      this.entries = /* @__PURE__ */ new Map();
+    }
+    getEntry(who) {
+      const entry = this.entries.get(who);
+      if (!entry)
+        throw new Error(
+          `${who.name} has not initialised their ${this.name} spellcasting method.`
+        );
+      return entry;
+    }
+    initialise(who, casterLevel) {
+      const slots = SpellSlots[this.strength][casterLevel - 1];
+      const resources = [];
+      for (let i = 0; i < slots.length; i++) {
+        const resource = new LongRestResource(
+          getSpellSlotResourceName(i + 1),
+          slots[i]
+        );
+        who.addResource(resource);
+        resources.push(resource);
+      }
+      this.entries.set(who, { resources });
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell, who) {
+      if (!spell.scaling)
+        return spell.level;
+      const { resources } = this.getEntry(who);
+      return resources.length;
+    }
+    getResourceForSpell(spell, level, who) {
+      const { resources } = this.getEntry(who);
+      return resources[level - 1];
+    }
+  };
+
+  // src/classes/wizard/index.ts
+  var ArcaneRecovery = notImplementedFeature(
+    "Arcane Recovery",
+    `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
+
+For example, if you're a 4th-level wizard, you can recover up to two levels worth of spell slots.
+
+You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
+  );
+  var WizardSpellcasting = new NormalSpellcasting(
+    "Wizard",
+    "int",
+    "full"
+  );
+  var Spellcasting = new SimpleFeature(
+    "Spellcasting",
+    `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power.`,
+    (g2, me) => {
+      var _a;
+      WizardSpellcasting.initialise(me, (_a = me.classLevels.get("Wizard")) != null ? _a : 1);
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          for (const spell of me.preparedSpells) {
+            if (spell.lists.includes("Wizard"))
+              actions.push(new CastSpell(g2, me, WizardSpellcasting, spell));
+          }
+        }
+      });
+    }
+  );
+  var CantripFormulas = nonCombatFeature(
+    "Cantrip Formulas",
+    `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`
+  );
+  var SpellMastery = notImplementedFeature(
+    "Spell Mastery",
+    `At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.
+
+By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`
+  );
+  var SignatureSpells = notImplementedFeature(
+    "Signature Spells",
+    `When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.
+
+If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
+  );
+  var ASI42 = makeASI("Wizard", 4);
+  var ASI82 = makeASI("Wizard", 8);
+  var ASI122 = makeASI("Wizard", 12);
+  var ASI162 = makeASI("Wizard", 16);
+  var ASI192 = makeASI("Wizard", 19);
+  var Wizard = {
+    name: "Wizard",
+    hitDieSize: 6,
+    weaponProficiencies: /* @__PURE__ */ new Set([
+      "dagger",
+      "dart",
+      "sling",
+      "quarterstaff",
+      "light crossbow"
+    ]),
+    saveProficiencies: /* @__PURE__ */ new Set(["int", "wis"]),
+    skillChoices: 2,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Arcana",
+      "History",
+      "Insight",
+      "Investigation",
+      "Medicine",
+      "Religion"
+    ]),
+    features: /* @__PURE__ */ new Map([
+      [1, [ArcaneRecovery, Spellcasting]],
+      [3, [CantripFormulas]],
+      [4, [ASI42]],
+      [8, [ASI82]],
+      [12, [ASI122]],
+      [16, [ASI162]],
+      [18, [SpellMastery]],
+      [19, [ASI192]],
+      [20, [SignatureSpells]]
+    ])
+  };
+  var wizard_default = Wizard;
+
+  // src/classes/wizard/Evocation/index.ts
+  var EvocationSavant = nonCombatFeature(
+    "Evocation Savant",
+    `Beginning when you select this school at 2nd level, the gold and time you must spend to copy an evocation spell into your spellbook is halved.`
+  );
+  var SculptSpells = notImplementedFeature(
+    "Sculpt Spells",
+    `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`
+  );
+  var PotentCantrip = notImplementedFeature(
+    "Potent Cantrip",
+    `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`
+  );
+  var EmpoweredEvocation = notImplementedFeature(
+    "Empowered Evocation",
+    `Beginning at 10th level, you can add your Intelligence modifier to one damage roll of any wizard evocation spell you cast.`
+  );
+  var Overchannel = notImplementedFeature(
+    "Overchannel",
+    `Starting at 14th level, you can increase the power of your simpler spells. When you cast a wizard spell of 1st through 5th-level that deals damage, you can deal maximum damage with that spell.
+
+The first time you do so, you suffer no adverse effect. If you use this feature again before you finish a long rest, you take 2d12 necrotic damage for each level of the spell, immediately after you cast it. Each time you use this feature again before finishing a long rest, the necrotic damage per spell level increases by 1d12. This damage ignores resistance and immunity.`
+  );
+  var Evocation = {
+    name: "Evocation",
+    className: "Wizard",
+    features: /* @__PURE__ */ new Map([
+      [2, [EvocationSavant, SculptSpells]],
+      [6, [PotentCantrip]],
+      [10, [EmpoweredEvocation]],
+      [14, [Overchannel]]
+    ])
+  };
+  var Evocation_default = Evocation;
+
+  // src/races/Dragonborn_FTD.ts
+  var MetallicDragonborn = {
+    name: "Dragonborn (Metallic)",
+    size: "medium",
+    movement: /* @__PURE__ */ new Map([["speed", 30]])
+  };
+  function makeAncestry(a, dt) {
+    const breathWeapon = notImplementedFeature(
+      "Breath Weapon",
+      `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
+
+  You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
+    );
+    const draconicResistance = new SimpleFeature(
+      "Draconic Resistance",
+      `You have resistance to the damage type associated with your Metallic Ancestry.`,
+      (g2, me) => {
+        g2.events.on(
+          "getDamageResponse",
+          ({ detail: { who, damageType, response } }) => {
+            if (who === me && damageType === dt)
+              response.add("resist", draconicResistance);
+          }
+        );
+      }
+    );
+    const metallicBreathWeapon = notImplementedFeature(
+      "Metallic Breath Weapon",
+      `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus. Whenever you use this trait, choose one:
+
+  - Enervating Breath. Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.
+
+  - Repulsion Breath. Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.
+
+  Once you use your Metallic Breath Weapon, you can\u2019t do so again until you finish a long rest.`
+    );
+    return {
+      parent: MetallicDragonborn,
+      name: `${a} Dragonborn`,
+      size: "medium",
+      features: /* @__PURE__ */ new Set([breathWeapon, draconicResistance, metallicBreathWeapon])
+    };
+  }
+  var BronzeDragonborn = makeAncestry("Bronze", "lightning");
+
+  // src/resolvers/MultiTargetResolver.ts
+  var MultiTargetResolver = class {
+    constructor(g2, minimum, maximum, maxRange, allowSelf = false) {
+      this.g = g2;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.maxRange = maxRange;
+      this.allowSelf = allowSelf;
+      this.type = "Combatants";
+    }
+    get name() {
+      const clauses = [];
+      if (this.maxRange < Infinity)
+        clauses.push(`target within ${this.maxRange}'`);
+      if (!this.allowSelf)
+        clauses.push("not self");
+      return clauses.length ? clauses.join(", ") : "any target";
+    }
+    check(value, action, ec = new ErrorCollector()) {
+      if (!isCombatantArray(value))
+        ec.add("No target", this);
+      else {
+        for (const who of value) {
+          if (!this.allowSelf && who === action.actor)
+            ec.add("Cannot target self", this);
+          if (distance(this.g, action.actor, who) > this.maxRange)
+            ec.add("Out of range", this);
+        }
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/cantrip/AcidSplash.ts
+  var AcidSplash = simpleSpell({
+    name: "Acid Splash",
+    level: 0,
+    school: "Conjuration",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 2, 60) }),
+    check(g2, { targets }, ec = new ErrorCollector()) {
+      if (isCombatantArray(targets) && targets.length === 2) {
+        const [a, b] = targets;
+        if (distance(g2, a, b) > 5)
+          ec.add("Targets are not within 5 feet of each other", AcidSplash);
+      }
+      return ec;
+    },
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { targets }) {
+        const count = getCantripDice(attacker);
+        const damage = yield g2.rollDamage(count, {
+          size: 6,
+          attacker,
+          spell: AcidSplash,
+          method,
+          damageType: "acid"
+        });
+        for (const target of targets) {
+          const save = yield g2.savingThrow(getSaveDC(attacker, method.ability), {
+            who: target,
+            attacker,
+            ability: "dex",
+            spell: AcidSplash,
+            method
+          });
+          if (!save)
+            yield g2.damage(
+              AcidSplash,
+              "acid",
+              { attacker, target, spell: AcidSplash, method, critical: false },
+              [["acid", damage]]
+            );
+        }
+      });
+    }
+  });
+  var AcidSplash_default = AcidSplash;
+
+  // src/spells/cantrip/FireBolt.ts
+  var FireBolt = simpleSpell({
+    name: "Fire Bolt",
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { target }) {
+        const { critical, hit } = yield g2.attack({
+          attacker,
+          target,
+          ability: method.ability,
+          spell: FireBolt,
+          method
+        });
+        if (hit) {
+          const amount = yield g2.rollDamage(
+            getCantripDice(attacker),
+            {
+              size: 10,
+              damageType: "fire",
+              attacker,
+              target,
+              spell: FireBolt,
+              method
+            },
+            critical
+          );
+          yield g2.damage(
+            FireBolt,
+            "fire",
+            { attacker, target, critical, spell: FireBolt, method },
+            [["fire", amount]]
+          );
+        }
+      });
+    }
+  });
+  var FireBolt_default = FireBolt;
+
+  // src/spells/cantrip/MindSliver.ts
+  var MindSliverEffect = new BaseEffect("Mind Sliver", "turnStart");
+  var MindSliver = simpleSpell({
+    name: "Mind Sliver",
+    level: 0,
+    school: "Enchantment",
+    v: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { target }) {
+        const save = yield g2.savingThrow(getSaveDC(attacker, method.ability), {
+          who: target,
+          attacker,
+          ability: "int",
+          spell: MindSliver,
+          method
+        });
+        const damage = yield g2.rollDamage(getCantripDice(attacker), {
+          attacker,
+          target,
+          spell: MindSliver,
+          method,
+          size: 6,
+          damageType: "psychic"
+        });
+        if (!save) {
+          yield g2.damage(
+            MindSliver,
+            "psychic",
+            { attacker, target, spell: MindSliver, method, critical: false },
+            [["psychic", damage]]
+          );
+          let endCounter = 2;
+          const kill1 = g2.events.on("turnEnded", ({ detail: { who } }) => {
+            if (who === attacker && endCounter-- <= 0) {
+              kill1();
+              kill2();
+            }
+          });
+          const kill2 = g2.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+            if (who === target) {
+              kill1();
+              kill2();
+              target.removeEffect(MindSliverEffect);
+              const { value } = g2.dice.roll({ type: "bane", who }, "normal");
+              bonus.add(-value, MindSliver);
+            }
+          });
+          target.addEffect(MindSliverEffect, 2);
+        }
+      });
+    }
+  });
+  var MindSliver_default = MindSliver;
+
+  // src/spells/cantrip/RayOfFrost.ts
+  var RayOfFrostEffect = new BaseEffect("Ray of Frost", "turnEnd");
+  var RayOfFrostRule = new DndRule("Ray of Frost", (g2) => {
+    g2.events.on("getSpeed", ({ detail: { who, bonus } }) => {
+      if (who.hasEffect(RayOfFrostEffect))
+        bonus.add(-10, RayOfFrostRule);
+    });
+  });
+  var RayOfFrost = simpleSpell({
+    name: "Ray of Frost",
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { target }) {
+        const { critical, hit } = yield g2.attack({
+          attacker,
+          target,
+          ability: method.ability,
+          spell: RayOfFrost,
+          method
+        });
+        if (hit) {
+          const amount = yield g2.rollDamage(
+            getCantripDice(attacker),
+            {
+              size: 8,
+              damageType: "cold",
+              attacker,
+              target,
+              spell: RayOfFrost,
+              method
+            },
+            critical
+          );
+          yield g2.damage(
+            RayOfFrost,
+            "cold",
+            { attacker, target, critical, spell: RayOfFrost, method },
+            [["cold", amount]]
+          );
+          target.addEffect(RayOfFrostEffect, 1);
+        }
+      });
+    }
+  });
+  var RayOfFrost_default = RayOfFrost;
+
+  // src/pcs/davies/Beldalynn_token.png
+  var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
+
+  // src/pcs/davies/Beldalynn.ts
+  var Beldalynn = class extends PC {
+    constructor(g2) {
+      super(g2, "Beldalynn", Beldalynn_token_default);
+      this.setAbilityScores(11, 13, 13, 15, 13, 8);
+      this.setRace(BronzeDragonborn);
+      this.dexScore++;
+      this.conScore++;
+      this.strScore++;
+      this.languages.add("Draconic");
+      this.addSubclass(Evocation_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default);
+      this.setConfig(ASI42, { type: "ability", abilities: ["int", "wis"] });
+      this.skills.set("History", 1);
+      this.skills.set("Perception", 1);
+      this.skills.set("Arcana", 1);
+      this.skills.set("Investigation", 1);
+      this.don(new CloakOfProtection(g2), true);
+      this.don(enchant(new Quarterstaff(g2), chaoticBurst), true);
+      this.don(new DragonTouchedFocus(g2, "Slumbering"), true);
+      this.inventory.add(new Dagger(g2, 1));
+      this.addPreparedSpells(
+        AcidSplash_default,
+        FireBolt_default,
+        MindSliver_default,
+        RayOfFrost_default
+        // IceKnife,
+        // MagicMissile,
+        // Shield,
+        // EnlargeReduce,
+        // HoldPerson,
+        // Fireball,
+        // IntellectFortress,
+        // LeomundsTinyHut,
+        // MelfsMinuteMeteors,
+        // WalOfFire
+      );
     }
   };
 
@@ -2563,10 +3179,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     name: "Fog Cloud",
     level: 1,
     school: "Conjuration",
-    time: "action",
     concentration: true,
     v: true,
     s: true,
+    lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
     getAffectedArea({ point, slot }) {
       if (!point)
         return;
@@ -2599,11 +3215,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     name: "Gust of Wind",
     level: 2,
     school: "Evocation",
-    time: "action",
     concentration: true,
     v: true,
     s: true,
     m: "a legume seed",
+    lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
@@ -2636,11 +3252,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     name: "Wall of Water",
     level: 3,
     school: "Evocation",
-    time: "action",
     concentration: true,
     v: true,
     s: true,
     m: "a drop of water",
+    lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({
       point: new PointResolver(g2, 60),
       shape: new TextChoiceResolver(g2, ["line", "ring"])
@@ -2781,7 +3397,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ActiveUnitPanel.module.scss
   var ActiveUnitPanel_module_default = {
-    "main": "_main_1g77q_1"
+    "main": "_main_spvfs_1"
   };
 
   // src/ui/Labelled.tsx
@@ -2789,7 +3405,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Labelled.module.scss
   var Labelled_module_default = {
-    "label": "_label_29yx4_1"
+    "label": "_label_6lltv_1"
   };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
@@ -2837,9 +3453,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     activeCombatantId,
     activeCombatant,
     allActions,
-    allEffects,
     allCombatants,
+    allEffects,
     scale,
+    wantsCombatant,
     wantsPoint,
     yesNo
   };
@@ -2860,7 +3477,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.module.scss
   var App_module_default = {
-    "sidePanel": "_sidePanel_1hm63_5"
+    "sidePanel": "_sidePanel_187go_5"
   };
 
   // src/ui/Battlefield.tsx
@@ -2868,7 +3485,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
-    "main": "_main_hrxn9_1"
+    "main": "_main_ww5d6_1"
   };
 
   // src/ui/BattlefieldEffect.tsx
@@ -2876,9 +3493,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
-    "main": "_main_lrafe_1",
-    "label": "_label_lrafe_10",
-    "square": "_square_lrafe_14"
+    "main": "_main_13t22_1",
+    "label": "_label_13t22_10",
+    "square": "_square_13t22_14"
   };
 
   // src/ui/BattlefieldEffect.tsx
@@ -2932,8 +3549,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_12cn9_1",
-    "token": "_token_12cn9_11"
+    "main": "_main_1m7p6_1",
+    "token": "_token_1m7p6_11"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -2941,11 +3558,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_h46jm_5",
-    "moveN": "_moveN_h46jm_22",
-    "moveE": "_moveE_h46jm_28",
-    "moveS": "_moveS_h46jm_34",
-    "moveW": "_moveW_h46jm_40"
+    "main": "_main_1goup_5",
+    "moveN": "_moveN_1goup_22",
+    "moveE": "_moveE_1goup_28",
+    "moveS": "_moveS_1goup_34",
+    "moveW": "_moveW_1goup_40"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -3071,15 +3688,15 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_12wgw_1",
-    "active": "_active_12wgw_8"
+    "main": "_main_z1296_1",
+    "active": "_active_z1296_8"
   };
 
   // src/ui/CombatantRef.module.scss
   var CombatantRef_module_default = {
-    "main": "_main_u5vis_1",
-    "icon": "_icon_u5vis_6",
-    "iconLabel": "_iconLabel_u5vis_12"
+    "main": "_main_nef8w_1",
+    "icon": "_icon_nef8w_6",
+    "iconLabel": "_iconLabel_nef8w_12"
   };
 
   // src/ui/CombatantRef.tsx
@@ -3106,6 +3723,43 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       /* @__PURE__ */ o("button", { onClick, children: "Choose Target" })
     ] });
   }
+  function ChooseTargets({
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    const onClick = (0, import_hooks6.useCallback)(() => {
+      wantsCombatant.value = (who) => {
+        wantsCombatant.value = void 0;
+        if (who)
+          onChange(field, (value != null ? value : []).concat(who));
+      };
+    }, [field, onChange, value]);
+    const remove = (0, import_hooks6.useCallback)(
+      (who) => onChange(
+        field,
+        (value != null ? value : []).filter((x) => x !== who)
+      ),
+      [field, onChange, value]
+    );
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Targets (",
+        resolver.minimum === resolver.maximum ? `exactly ${resolver.minimum}` : `${resolver.minimum} - ${resolver.maximum}`,
+        "):",
+        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((who, i) => /* @__PURE__ */ o("li", { children: [
+          /* @__PURE__ */ o(CombatantRef, { who }),
+          " ",
+          /* @__PURE__ */ o("button", { onClick: () => remove(who), children: [
+            "remove ",
+            who.name
+          ] })
+        ] }, i)) }) : ` NONE`
+      ] }),
+      /* @__PURE__ */ o("button", { onClick, children: "Add Target" })
+    ] });
+  }
   function ChoosePoint({ field, value, onChange }) {
     const onClick = (0, import_hooks6.useCallback)(() => {
       wantsPoint.value = (point) => {
@@ -3122,6 +3776,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     ] });
   }
   function ChooseSlot({
+    action,
     field,
     resolver,
     value,
@@ -3132,7 +3787,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "Spell Slot: ",
         value != null ? value : "NONE"
       ] }),
-      /* @__PURE__ */ o("div", { children: enumerate(resolver.minimum, resolver.maximum).map((slot) => /* @__PURE__ */ o(
+      /* @__PURE__ */ o("div", { children: enumerate(
+        resolver.getMinimum(action.actor),
+        resolver.getMaximum(action.actor)
+      ).map((slot) => /* @__PURE__ */ o(
         "button",
         {
           className: value === slot ? ChooseActionConfigPanel_module_default.active : void 0,
@@ -3148,7 +3806,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     const config = __spreadValues({}, initial);
     for (const [key, resolver] of Object.entries(action.config)) {
       if (resolver instanceof SlotResolver && !config[key])
-        config[key] = resolver.minimum;
+        config[key] = resolver.getMinimum(action.actor);
     }
     return config;
   }
@@ -3192,6 +3850,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         };
         if (resolver instanceof TargetResolver)
           return /* @__PURE__ */ o(ChooseTarget, __spreadValues({}, props));
+        else if (resolver instanceof MultiTargetResolver)
+          return /* @__PURE__ */ o(ChooseTargets, __spreadValues({}, props));
         else if (resolver instanceof PointResolver)
           return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, props));
         else if (resolver instanceof SlotResolver)
@@ -3219,9 +3879,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
-    "main": "_main_xdmbb_1",
-    "wrapper": "_wrapper_xdmbb_19",
-    "message": "_message_xdmbb_23"
+    "main": "_main_15kf7_1",
+    "wrapper": "_wrapper_15kf7_19",
+    "message": "_message_15kf7_23"
   };
 
   // src/ui/EventLog.tsx
@@ -3232,20 +3892,21 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o("li", { "aria-label": message, className: EventLog_module_default.wrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function AttackMessage({
-    pre: { attacker, target, weapon, ammo },
+    pre: { attacker, target, weapon, ammo, spell },
     roll,
     total
   }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${attacker.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
+        message: `${attacker.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${spell ? ` with ${spell.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: attacker }),
           "attacks\xA0",
           /* @__PURE__ */ o(CombatantRef, { who: target }),
           roll.diceType !== "normal" && ` at ${roll.diceType}`,
           weapon && ` with ${weapon.name}`,
+          spell && ` with ${spell.name}`,
           ammo && `, firing ${ammo.name}`,
           "\xA0(",
           total,
@@ -3255,14 +3916,19 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
   }
   function CastMessage({ level, spell, who }) {
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} casts ${spell.name} at level ${level}.`, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      "casts ",
-      spell.name,
-      " at level ",
-      level,
-      "."
-    ] });
+    return /* @__PURE__ */ o(
+      LogMessage,
+      {
+        message: `${who.name} casts ${spell.name}${level !== spell.level ? ` at level ${level}` : ""}.`,
+        children: [
+          /* @__PURE__ */ o(CombatantRef, { who }),
+          "casts ",
+          spell.name,
+          level !== spell.level && ` at level ${level}`,
+          "."
+        ]
+      }
+    );
   }
   function getDamageEntryText([type, entry]) {
     return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
@@ -3295,6 +3961,22 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "dies!"
     ] });
   }
+  function EffectAddedMessage({ who, effect }) {
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} gains effect: ${effect.name}`, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      " gains effect: ",
+      effect.name,
+      "."
+    ] });
+  }
+  function EffectRemovedMessage({ who, effect }) {
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} loses effect: ${effect.name}`, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      " loses effect: ",
+      effect.name,
+      "."
+    ] });
+  }
   function EventLog({ g: g2 }) {
     const [messages, setMessages] = (0, import_hooks7.useState)([]);
     const addMessage = (0, import_hooks7.useCallback)(
@@ -3315,6 +3997,14 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         ({ detail }) => addMessage(/* @__PURE__ */ o(DeathMessage, __spreadValues({}, detail)))
       );
       g2.events.on(
+        "effectAdded",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(EffectAddedMessage, __spreadValues({}, detail)))
+      );
+      g2.events.on(
+        "effectRemoved",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(EffectRemovedMessage, __spreadValues({}, detail)))
+      );
+      g2.events.on(
         "spellCast",
         ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
       );
@@ -3324,7 +4014,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Menu.module.scss
   var Menu_module_default = {
-    "main": "_main_1xuy6_1"
+    "main": "_main_1ct3i_1"
   };
 
   // src/ui/Menu.tsx
@@ -3356,10 +4046,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Dialog.module.scss
   var Dialog_module_default = {
-    "main": "_main_910pw_1",
-    "shade": "_shade_910pw_5",
-    "react": "_react_910pw_18",
-    "title": "_title_910pw_24"
+    "main": "_main_1t1hm_1",
+    "shade": "_shade_1t1hm_5",
+    "react": "_react_1t1hm_18",
+    "title": "_title_1t1hm_24"
   };
 
   // src/ui/Dialog.tsx
@@ -3559,187 +4249,6 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       yesNo.value && /* @__PURE__ */ o(YesNoDialog, __spreadValues({}, yesNo.value.detail))
     ] });
   }
-
-  // src/pcs/davies/Beldalynn_token.png
-  var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
-
-  // src/classes/wizard/index.ts
-  var ArcaneRecovery = notImplementedFeature(
-    "Arcane Recovery",
-    `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
-
-For example, if you're a 4th-level wizard, you can recover up to two levels worth of spell slots.
-
-You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
-  );
-  var Spellcasting = notImplementedFeature(
-    "Spellcasting",
-    `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power. `
-  );
-  var CantripFormulas = nonCombatFeature(
-    "Cantrip Formulas",
-    `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`
-  );
-  var SpellMastery = notImplementedFeature(
-    "Spell Mastery",
-    `At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.
-
-By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`
-  );
-  var SignatureSpells = notImplementedFeature(
-    "Signature Spells",
-    `When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.
-
-If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
-  );
-  var ASI42 = makeASI("Wizard", 4);
-  var ASI82 = makeASI("Wizard", 8);
-  var ASI122 = makeASI("Wizard", 12);
-  var ASI162 = makeASI("Wizard", 16);
-  var ASI192 = makeASI("Wizard", 19);
-  var Wizard = {
-    name: "Wizard",
-    hitDieSize: 6,
-    weaponProficiencies: /* @__PURE__ */ new Set([
-      "dagger",
-      "dart",
-      "sling",
-      "quarterstaff",
-      "light crossbow"
-    ]),
-    saveProficiencies: /* @__PURE__ */ new Set(["int", "wis"]),
-    skillChoices: 2,
-    skillProficiencies: /* @__PURE__ */ new Set([
-      "Arcana",
-      "History",
-      "Insight",
-      "Investigation",
-      "Medicine",
-      "Religion"
-    ]),
-    features: /* @__PURE__ */ new Map([
-      [1, [ArcaneRecovery, Spellcasting]],
-      [3, [CantripFormulas]],
-      [4, [ASI42]],
-      [8, [ASI82]],
-      [12, [ASI122]],
-      [16, [ASI162]],
-      [18, [SpellMastery]],
-      [19, [ASI192]],
-      [20, [SignatureSpells]]
-    ])
-  };
-  var wizard_default = Wizard;
-
-  // src/races/Dragonborn_FTD.ts
-  var MetallicDragonborn = {
-    name: "Dragonborn (Metallic)",
-    size: "medium",
-    movement: /* @__PURE__ */ new Map([["speed", 30]])
-  };
-  function makeAncestry(a, dt) {
-    const breathWeapon = notImplementedFeature(
-      "Breath Weapon",
-      `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
-
-  You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
-    );
-    const draconicResistance = new SimpleFeature(
-      "Draconic Resistance",
-      `You have resistance to the damage type associated with your Metallic Ancestry.`,
-      (g2, me) => {
-        g2.events.on(
-          "getDamageResponse",
-          ({ detail: { who, damageType, response } }) => {
-            if (who === me && damageType === dt)
-              response.add("resist", draconicResistance);
-          }
-        );
-      }
-    );
-    const metallicBreathWeapon = notImplementedFeature(
-      "Metallic Breath Weapon",
-      `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus. Whenever you use this trait, choose one:
-
-  - Enervating Breath. Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.
-
-  - Repulsion Breath. Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.
-
-  Once you use your Metallic Breath Weapon, you can\u2019t do so again until you finish a long rest.`
-    );
-    return {
-      parent: MetallicDragonborn,
-      name: `${a} Dragonborn`,
-      size: "medium",
-      features: /* @__PURE__ */ new Set([breathWeapon, draconicResistance, metallicBreathWeapon])
-    };
-  }
-  var BronzeDragonborn = makeAncestry("Bronze", "lightning");
-
-  // src/classes/wizard/Evocation/index.ts
-  var EvocationSavant = nonCombatFeature(
-    "Evocation Savant",
-    `Beginning when you select this school at 2nd level, the gold and time you must spend to copy an evocation spell into your spellbook is halved.`
-  );
-  var SculptSpells = notImplementedFeature(
-    "Sculpt Spells",
-    `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`
-  );
-  var PotentCantrip = notImplementedFeature(
-    "Potent Cantrip",
-    `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`
-  );
-  var EmpoweredEvocation = notImplementedFeature(
-    "Empowered Evocation",
-    `Beginning at 10th level, you can add your Intelligence modifier to one damage roll of any wizard evocation spell you cast.`
-  );
-  var Overchannel = notImplementedFeature(
-    "Overchannel",
-    `Starting at 14th level, you can increase the power of your simpler spells. When you cast a wizard spell of 1st through 5th-level that deals damage, you can deal maximum damage with that spell.
-
-The first time you do so, you suffer no adverse effect. If you use this feature again before you finish a long rest, you take 2d12 necrotic damage for each level of the spell, immediately after you cast it. Each time you use this feature again before finishing a long rest, the necrotic damage per spell level increases by 1d12. This damage ignores resistance and immunity.`
-  );
-  var Evocation = {
-    name: "Evocation",
-    className: "Wizard",
-    features: /* @__PURE__ */ new Map([
-      [2, [EvocationSavant, SculptSpells]],
-      [6, [PotentCantrip]],
-      [10, [EmpoweredEvocation]],
-      [14, [Overchannel]]
-    ])
-  };
-  var Evocation_default = Evocation;
-
-  // src/pcs/davies/Beldalynn.ts
-  var Beldalynn = class extends PC {
-    constructor(g2) {
-      super(g2, "Beldalynn", Beldalynn_token_default);
-      this.setAbilityScores(11, 13, 13, 15, 13, 8);
-      this.setRace(BronzeDragonborn);
-      this.dexScore++;
-      this.conScore++;
-      this.strScore++;
-      this.languages.add("Draconic");
-      this.addSubclass(Evocation_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.setConfig(ASI42, { type: "ability", abilities: ["int", "wis"] });
-      this.skills.set("History", 1);
-      this.skills.set("Perception", 1);
-      this.skills.set("Arcana", 1);
-      this.skills.set("Investigation", 1);
-      this.don(new CloakOfProtection(g2), true);
-      this.don(enchant(new Quarterstaff(g2), chaoticBurst), true);
-      this.don(new DragonTouchedFocus(g2, "Slumbering"), true);
-      this.inventory.add(new Dagger(g2, 1));
-    }
-  };
 
   // src/index.tsx
   var g = new Engine();

@@ -25,7 +25,7 @@ function LogMessage({
 }
 
 function AttackMessage({
-  pre: { attacker, target, weapon, ammo },
+  pre: { attacker, target, weapon, ammo, spell },
   roll,
   total,
 }: EventData["attack"]) {
@@ -34,14 +34,15 @@ function AttackMessage({
       message={`${attacker.name} attacks ${target.name}${
         roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""
       }${weapon ? ` with ${weapon.name}` : ""}${
-        ammo ? `, firing ${ammo.name}` : ""
-      } (${total}).`}
+        spell ? ` with ${spell.name}` : ""
+      }${ammo ? `, firing ${ammo.name}` : ""} (${total}).`}
     >
       <CombatantRef who={attacker} />
       attacks&nbsp;
       <CombatantRef who={target} />
       {roll.diceType !== "normal" && ` at ${roll.diceType}`}
       {weapon && ` with ${weapon.name}`}
+      {spell && ` with ${spell.name}`}
       {ammo && `, firing ${ammo.name}`}
       &nbsp;({total}).
     </LogMessage>
@@ -51,9 +52,14 @@ function AttackMessage({
 function CastMessage({ level, spell, who }: EventData["spellCast"]) {
   // TODO should probably not show you all this info...
   return (
-    <LogMessage message={`${who.name} casts ${spell.name} at level ${level}.`}>
+    <LogMessage
+      message={`${who.name} casts ${spell.name}${
+        level !== spell.level ? ` at level ${level}` : ""
+      }.`}
+    >
       <CombatantRef who={who} />
-      casts {spell.name} at level {level}.
+      casts {spell.name}
+      {level !== spell.level && ` at level ${level}`}.
     </LogMessage>
   );
 }
@@ -97,6 +103,22 @@ function DeathMessage({ who }: EventData["combatantDied"]) {
   );
 }
 
+function EffectAddedMessage({ who, effect }: EventData["effectAdded"]) {
+  return (
+    <LogMessage message={`${who.name} gains effect: ${effect.name}`}>
+      <CombatantRef who={who} /> gains effect: {effect.name}.
+    </LogMessage>
+  );
+}
+
+function EffectRemovedMessage({ who, effect }: EventData["effectRemoved"]) {
+  return (
+    <LogMessage message={`${who.name} loses effect: ${effect.name}`}>
+      <CombatantRef who={who} /> loses effect: {effect.name}.
+    </LogMessage>
+  );
+}
+
 export default function EventLog({ g }: { g: Engine }) {
   const [messages, setMessages] = useState<VNode[]>([]);
 
@@ -114,6 +136,12 @@ export default function EventLog({ g }: { g: Engine }) {
     );
     g.events.on("combatantDied", ({ detail }) =>
       addMessage(<DeathMessage {...detail} />)
+    );
+    g.events.on("effectAdded", ({ detail }) =>
+      addMessage(<EffectAddedMessage {...detail} />)
+    );
+    g.events.on("effectRemoved", ({ detail }) =>
+      addMessage(<EffectRemovedMessage {...detail} />)
     );
     g.events.on("spellCast", ({ detail }) =>
       addMessage(<CastMessage {...detail} />)

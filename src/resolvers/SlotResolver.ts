@@ -1,27 +1,25 @@
 import CastSpell from "../actions/CastSpell";
 import ErrorCollector from "../collectors/ErrorCollector";
 import Action, { Resolver } from "../types/Action";
+import Combatant from "../types/Combatant";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
 export default class SlotResolver implements Resolver<number> {
+  name: string;
   type: "SpellSlot";
 
   constructor(public spell: Spell, public method: SpellcastingMethod) {
+    this.name = "spell slot";
     this.type = "SpellSlot";
   }
 
-  get minimum() {
-    return this.method.getMinSlot(this.spell);
+  getMinimum(who: Combatant) {
+    return this.method.getMinSlot(this.spell, who);
   }
 
-  get maximum() {
-    return this.method.getMaxSlot(this.spell);
-  }
-
-  get name() {
-    if (this.minimum === this.maximum) return `spell slot (${this.minimum})`;
-    return `spell slot (${this.minimum}-${this.maximum})`;
+  getMaximum(who: Combatant) {
+    return this.method.getMaxSlot(this.spell, who);
   }
 
   check(value: unknown, action: Action, ec = new ErrorCollector()) {
@@ -29,10 +27,8 @@ export default class SlotResolver implements Resolver<number> {
 
     if (typeof value !== "number") ec.add("No spell level chosen", this);
     else {
-      if (value < this.minimum) ec.add("Too low", this);
-      if (value > this.maximum) ec.add("Too high", this);
-
-      // TODO check against action.method.max or whatever
+      if (value < this.getMinimum(action.actor)) ec.add("Too low", this);
+      if (value > this.getMaximum(action.actor)) ec.add("Too high", this);
     }
 
     return ec;

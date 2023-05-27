@@ -39,9 +39,10 @@ export const yesNo = signal<YesNoChoiceEvent | undefined>(undefined);
   activeCombatantId,
   activeCombatant,
   allActions,
-  allEffects,
   allCombatants,
+  allEffects,
   scale,
+  wantsCombatant,
   wantsPoint,
   yesNo,
 };

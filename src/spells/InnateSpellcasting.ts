@@ -7,7 +7,10 @@ export default class InnateSpellcasting implements SpellcastingMethod {
   constructor(
     public name: string,
     public ability: Ability,
-    public getResourceForSpell: (spell: Spell) => Resource | undefined
+    public getResourceForSpell: (
+      spell: Spell,
+      level: number
+    ) => Resource | undefined
   ) {}
 
   getMinSlot(spell: Spell): number {

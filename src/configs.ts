@@ -3,6 +3,8 @@ import Point from "./types/Point";
 
 export type HasTarget = { target: Combatant };
 
+export type HasTargets = { targets: Combatant[] };
+
 export type HasPoint = { point: Point };
 
 export type Scales = { slot: number };

@@ -19,6 +19,10 @@ function sizeOfDice(rt: RollType) {
     case "damage":
       return rt.size;
 
+    case "bane":
+    case "bless":
+      return 4;
+
     default:
       return 20;
   }

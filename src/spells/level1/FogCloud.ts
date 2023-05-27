@@ -2,16 +2,16 @@ import SphereEffectArea from "../../areas/SphereEffectArea";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { hours } from "../../utils/time";
-import { scalingSpell } from "../constructors";
+import { scalingSpell } from "../common";
 
 const FogCloud = scalingSpell<HasPoint>({
   name: "Fog Cloud",
   level: 1,
   school: "Conjuration",
-  time: "action",
   concentration: true,
   v: true,
   s: true,
+  lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
 
   getAffectedArea({ point, slot }) {
     if (!point) return;

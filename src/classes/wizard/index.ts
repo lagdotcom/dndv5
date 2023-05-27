@@ -1,4 +1,7 @@
+import CastSpell from "../../actions/CastSpell";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
+import SimpleFeature from "../../features/SimpleFeature";
+import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import PCClass from "../../types/PCClass";
 import { makeASI } from "../common";
 
@@ -12,10 +15,28 @@ For example, if you're a 4th-level wizard, you can recover up to two levels wort
 You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
 );
 
-// TODO
-const Spellcasting = notImplementedFeature(
+export const WizardSpellcasting = new NormalSpellcasting(
+  "Wizard",
+  "int",
+  "full"
+);
+const Spellcasting = new SimpleFeature(
   "Spellcasting",
-  `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power. `
+  `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power.`,
+  (g, me) => {
+    WizardSpellcasting.initialise(me, me.classLevels.get("Wizard") ?? 1);
+
+    g.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who === me) {
+        // TODO rituals in knownSpells
+
+        for (const spell of me.preparedSpells) {
+          if (spell.lists.includes("Wizard"))
+            actions.push(new CastSpell(g, me, WizardSpellcasting, spell));
+        }
+      }
+    });
+  }
 );
 
 const CantripFormulas = nonCombatFeature(
