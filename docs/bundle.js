@@ -585,6 +585,8 @@
         return (_a = this.skills.get(thing)) != null ? _a : 0;
       }
       if (thing.itemType === "weapon") {
+        if (thing.category === "natural")
+          return 1;
         if (this.weaponProficiencies.has(thing.weaponType))
           return 1;
         if (this.weaponCategoryProficiencies.has(thing.category))

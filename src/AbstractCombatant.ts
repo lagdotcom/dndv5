@@ -315,6 +315,7 @@ export default abstract class AbstractCombatant implements Combatant {
     }
 
     if (thing.itemType === "weapon") {
+      if (thing.category === "natural") return 1;
       if (this.weaponProficiencies.has(thing.weaponType)) return 1;
       if (this.weaponCategoryProficiencies.has(thing.category)) return 1;
       return 0;
