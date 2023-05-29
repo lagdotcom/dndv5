@@ -49,7 +49,7 @@ export default function Battlefield({
         />
       ))}
       {allEffects.value.map((effect) => (
-        <BattlefieldEffect key={effect.id} shape={effect} />
+        <BattlefieldEffect key={effect.id} {...effect} />
       ))}
       {actionArea.value && <BattlefieldEffect shape={actionArea.value} />}
     </main>

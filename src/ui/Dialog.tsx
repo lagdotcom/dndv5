@@ -2,6 +2,7 @@ import { ComponentChildren } from "preact";
 import { useEffect, useId, useRef } from "preact/hooks";
 
 import styles from "./Dialog.module.scss";
+import classnames from "./utils/classnames";
 
 interface Props {
   title: string;
@@ -36,7 +37,7 @@ function ReactDialog({ title, text, children }: Props) {
         role="dialog"
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`${styles.main} ${styles.react}`}
+        className={classnames(styles.main, styles.react)}
       >
         <div id={titleId} className={styles.title}>
           {title}

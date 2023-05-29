@@ -26,6 +26,14 @@ export default class PointSet {
     return this.set.has(asTag(p));
   }
 
+  overlaps(ps: Iterable<Point>) {
+    for (const point of ps) {
+      if (this.has(point)) return true;
+    }
+
+    return false;
+  }
+
   *[Symbol.iterator]() {
     for (const tag of this.set) yield asPoint(tag);
   }

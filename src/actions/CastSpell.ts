@@ -27,7 +27,7 @@ export default class CastSpell<T extends object> implements Action<T> {
   }
 
   getAffectedArea(config: Partial<T>) {
-    return this.spell.getAffectedArea(config);
+    return this.spell.getAffectedArea(this.g, config);
   }
 
   getDamage(config: Partial<T>) {

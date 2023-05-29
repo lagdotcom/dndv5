@@ -39,7 +39,7 @@ const MindSliver = simpleSpell<HasTarget>({
       await g.damage(
         MindSliver,
         "psychic",
-        { attacker, target, spell: MindSliver, method, critical: false },
+        { attacker, target, spell: MindSliver, method },
         [["psychic", damage]]
       );
 

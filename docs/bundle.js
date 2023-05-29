@@ -775,6 +775,13 @@
     has(p) {
       return this.set.has(asTag(p));
     }
+    overlaps(ps) {
+      for (const point of ps) {
+        if (this.has(point))
+          return true;
+      }
+      return false;
+    }
     *[Symbol.iterator]() {
       for (const tag of this.set)
         yield asPoint(tag);
@@ -807,18 +814,30 @@
       case "sphere": {
         const left = area.centre.x - area.radius;
         const top = area.centre.y - area.radius;
-        for (let y = 0; y <= area.radius * 2; y += 5) {
+        const size = area.radius * 2;
+        for (let y = 0; y <= size; y += 5) {
           const dy = y - area.radius + 2.5;
-          for (let x = 0; x <= area.radius * 2; x += 5) {
+          for (let x = 0; x <= size; x += 5) {
             const dx = x - area.radius + 2.5;
             const d = Math.sqrt(dx * dx + dy * dy);
             if (d <= area.radius)
               points.push({ x: left + x, y: top + y });
           }
         }
+        return points;
+      }
+      case "within": {
+        const left = area.position.x - area.radius;
+        const top = area.position.y - area.radius;
+        const size = area.target.sizeInUnits + area.radius;
+        for (let y = 0; y <= size; y += 5) {
+          for (let x = 0; x <= size; x += 5) {
+            points.push({ x: left + x, y: top + y });
+          }
+        }
+        return points;
       }
     }
-    return points;
   }
 
   // src/DndRules.ts
@@ -884,7 +903,7 @@
       for (const effect of g2.effects) {
         if (!effect.tags.has("heavily obscured"))
           continue;
-        const area = new PointSet(resolveArea(effect));
+        const area = new PointSet(resolveArea(effect.shape));
         for (const square of squares) {
           if (area.has(square))
             return true;
@@ -1327,7 +1346,9 @@
       return __async(this, arguments, function* (source, damageType, e, damageInitialiser = []) {
         const map = new DamageMap(damageInitialiser);
         const gather = yield this.resolve(
-          new GatherDamageEvent(__spreadProps(__spreadValues({}, e), {
+          new GatherDamageEvent(__spreadProps(__spreadValues({
+            critical: false
+          }, e), {
             map,
             bonus: new BonusCollector(),
             interrupt: new InterruptionCollector(),
@@ -1403,6 +1424,16 @@
     removeEffectArea(area) {
       this.effects.delete(area);
       this.fire(new AreaRemovedEvent({ area }));
+    }
+    getInside(area) {
+      const points = new PointSet(resolveArea(area));
+      const inside = [];
+      for (const [combatant, state] of this.combatants) {
+        const squares = new PointSet(getSquares(combatant, state.position));
+        if (points.overlaps(squares))
+          inside.push(combatant);
+      }
+      return inside;
     }
   };
 
@@ -2258,7 +2289,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       return this.spell.getConfig(this.g, this.method);
     }
     getAffectedArea(config) {
-      return this.spell.getAffectedArea(config);
+      return this.spell.getAffectedArea(this.g, config);
     }
     getDamage(config) {
       return this.spell.getDamage(this.g, this.actor, config);
@@ -2850,7 +2881,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             yield g2.damage(
               AcidSplash,
               "acid",
-              { attacker, target, spell: AcidSplash, method, critical: false },
+              { attacker, target, spell: AcidSplash, method },
               [["acid", damage]]
             );
         }
@@ -2934,7 +2965,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           yield g2.damage(
             MindSliver,
             "psychic",
-            { attacker, target, spell: MindSliver, method, critical: false },
+            { attacker, target, spell: MindSliver, method },
             [["psychic", damage]]
           );
           let endCounter = 2;
@@ -3012,6 +3043,88 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var RayOfFrost_default = RayOfFrost;
 
+  // src/spells/level1/IceKnife.ts
+  var IceKnife = scalingSpell({
+    name: "Ice Knife",
+    level: 1,
+    school: "Conjuration",
+    s: true,
+    m: "a drop of water or piece of ice",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
+    getAffectedArea: (g2, { target }) => target && {
+      type: "within",
+      target,
+      position: g2.getState(target).position,
+      radius: 5
+    },
+    getDamage: (g2, caster, { slot }) => [
+      dd(1, 10, "piercing"),
+      dd(1 + (slot != null ? slot : 1), 6, "cold")
+    ],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
+        const { attack, hit, critical } = yield g2.attack({
+          attacker,
+          target,
+          ability: method.ability,
+          spell: IceKnife,
+          method
+        });
+        if (hit) {
+          const damage2 = yield g2.rollDamage(
+            1,
+            {
+              size: 10,
+              attacker,
+              target,
+              spell: IceKnife,
+              method,
+              damageType: "piercing"
+            },
+            critical
+          );
+          yield g2.damage(
+            IceKnife,
+            "piercing",
+            { attack, attacker, target, spell: IceKnife, method, critical },
+            [["piercing", damage2]]
+          );
+        }
+        const damage = yield g2.rollDamage(1 + slot, {
+          size: 6,
+          attacker,
+          spell: IceKnife,
+          method,
+          damageType: "cold"
+        });
+        const dc = getSaveDC(attacker, method.ability);
+        for (const victim of g2.getInside({
+          type: "within",
+          target,
+          position: g2.getState(target).position,
+          radius: 5
+        })) {
+          const save = yield g2.savingThrow(dc, {
+            attacker,
+            ability: "dex",
+            spell: IceKnife,
+            method,
+            who: victim
+          });
+          if (!save)
+            yield g2.damage(
+              IceKnife,
+              "cold",
+              { attacker, target: victim, spell: IceKnife, method },
+              [["cold", damage]]
+            );
+        }
+      });
+    }
+  });
+  var IceKnife_default = IceKnife;
+
   // src/pcs/davies/Beldalynn_token.png
   var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
 
@@ -3046,8 +3159,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         AcidSplash_default,
         FireBolt_default,
         MindSliver_default,
-        RayOfFrost_default
-        // IceKnife,
+        RayOfFrost_default,
+        IceKnife_default
         // MagicMissile,
         // Shield,
         // EnlargeReduce,
@@ -3170,7 +3283,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       this.radius = radius;
       this.id = NaN;
       this.tags = new Set(tags);
-      this.type = "sphere";
+      this.shape = { type: "sphere", centre, radius };
     }
   };
 
@@ -3214,7 +3327,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     v: true,
     s: true,
     lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
-    getAffectedArea({ point, slot }) {
+    getAffectedArea(g2, { point, slot }) {
       if (!point)
         return;
       return { type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point };
@@ -3531,22 +3644,21 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/BattlefieldEffect.tsx
   function Sphere({
-    centre,
+    shape,
     name,
-    radius,
     tags
   }) {
     const style = (0, import_hooks2.useMemo)(() => {
-      const size = radius * scale.value;
+      const size = shape.radius * scale.value;
       return {
-        left: centre.x * scale.value - size,
-        top: centre.y * scale.value - size,
+        left: shape.centre.x * scale.value - size,
+        top: shape.centre.y * scale.value - size,
         width: size * 2,
         height: size * 2,
         borderRadius: size * 2,
         backgroundColor: tags.has("heavily obscured") ? "silver" : void 0
       };
-    }, [centre.x, centre.y, radius, tags]);
+    }, [shape.centre.x, shape.centre.y, shape.radius, tags]);
     return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: `${name} Effect` }) });
   }
   function AffectedSquare({ point }) {
@@ -3561,13 +3673,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
     return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.square, style });
   }
-  function BattlefieldEffect({ shape }) {
+  function BattlefieldEffect({ shape, tags = /* @__PURE__ */ new Set() }) {
     const main = (0, import_hooks2.useMemo)(() => {
       switch (shape.type) {
         case "sphere":
-          return /* @__PURE__ */ o(Sphere, __spreadValues({ name: "Pending", tags: /* @__PURE__ */ new Set() }, shape));
+          return /* @__PURE__ */ o(Sphere, { name: "Pending", tags, shape });
       }
-    }, [shape]);
+    }, [shape, tags]);
     const points = (0, import_hooks2.useMemo)(() => resolveArea(shape), [shape]);
     return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
       main,
@@ -3596,6 +3708,22 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     "moveW": "_moveW_1goup_40"
   };
 
+  // src/ui/utils/classnames.ts
+  function classnames(...items) {
+    const names = [];
+    for (const item of items) {
+      if (typeof item === "string")
+        names.push(item);
+      else {
+        for (const [key, value] of Object.entries(item)) {
+          if (value)
+            names.push(key);
+        }
+      }
+    }
+    return names.join(" ");
+  }
+
   // src/ui/UnitMoveButton.tsx
   var makeButtonType = (className, emoji, label, dx, dy) => ({ className: UnitMoveButton_module_default[className], emoji, label, dx, dy });
   var buttonTypes = {
@@ -3620,7 +3748,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "button",
       {
         disabled,
-        className: `${UnitMoveButton_module_default.main} ${className}`,
+        className: classnames(UnitMoveButton_module_default.main, className),
         onClick: clicked,
         "aria-label": label,
         children: emoji
@@ -3708,7 +3836,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           },
           unit.id
         )),
-        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { shape: effect }, effect.id)),
+        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, __spreadValues({}, effect), effect.id)),
         actionArea.value && /* @__PURE__ */ o(BattlefieldEffect, { shape: actionArea.value })
       ] })
     );
@@ -3719,8 +3847,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_z1296_1",
-    "active": "_active_z1296_8"
+    "main": "_main_1kf6d_1",
+    "active": "_active_1kf6d_8",
+    "damageList": "_damageList_1kf6d_12"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -3740,18 +3869,31 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
-    const onClick = (0, import_hooks6.useCallback)(() => {
-      wantsCombatant.value = (who) => {
-        wantsCombatant.value = void 0;
+    const setTarget = (0, import_hooks6.useCallback)(
+      (who) => {
         onChange(field, who);
-      };
-    }, [field, onChange]);
+        wantsCombatant.value = void 0;
+      },
+      [field, onChange]
+    );
+    const onClick = (0, import_hooks6.useCallback)(() => {
+      wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
+    }, [setTarget]);
     return /* @__PURE__ */ o("div", { children: [
       /* @__PURE__ */ o("div", { children: [
         "Target: ",
         value ? /* @__PURE__ */ o(CombatantRef, { who: value }) : "NONE"
       ] }),
-      /* @__PURE__ */ o("button", { onClick, children: "Choose Target" })
+      /* @__PURE__ */ o(
+        "button",
+        {
+          className: classnames({
+            [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === setTarget
+          }),
+          onClick,
+          children: "Choose Target"
+        }
+      )
     ] });
   }
   function ChooseTargets({
@@ -3824,7 +3966,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       ).map((slot) => /* @__PURE__ */ o(
         "button",
         {
-          className: value === slot ? ChooseActionConfigPanel_module_default.active : void 0,
+          className: classnames({ [ChooseActionConfigPanel_module_default.active]: value === slot }),
           "aria-pressed": value === slot,
           onClick: () => onChange(field, slot),
           children: slot
@@ -3902,20 +4044,22 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       damage && /* @__PURE__ */ o("div", { children: [
         "Damage:",
         " ",
-        damage.map((dmg, i) => /* @__PURE__ */ o("span", { children: [
-          dmg.type === "flat" ? dmg.amount : `${dmg.amount.count}d${dmg.amount.size}`,
+        /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.damageList, children: [
+          damage.map((dmg, i) => /* @__PURE__ */ o("span", { children: [
+            dmg.type === "flat" ? dmg.amount : `${dmg.amount.count}d${dmg.amount.size}`,
+            " ",
+            dmg.damageType
+          ] }, i)),
           " ",
-          dmg.damageType
-        ] }, i)),
-        " ",
-        "(",
-        Math.ceil(
-          damage.reduce(
-            (total, dmg) => total + (dmg.type === "flat" ? dmg.amount : getDiceAverage(dmg.amount.count, dmg.amount.size)),
-            0
-          )
-        ),
-        ")"
+          "(",
+          Math.ceil(
+            damage.reduce(
+              (total, dmg) => total + (dmg.type === "flat" ? dmg.amount : getDiceAverage(dmg.amount.count, dmg.amount.size)),
+              0
+            )
+          ),
+          ")"
+        ] })
       ] }),
       /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
       /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
@@ -4111,7 +4255,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         role: "dialog",
         "aria-labelledby": titleId,
         "aria-modal": "true",
-        className: `${Dialog_module_default.main} ${Dialog_module_default.react}`,
+        className: classnames(Dialog_module_default.main, Dialog_module_default.react),
         children: [
           /* @__PURE__ */ o("div", { id: titleId, className: Dialog_module_default.title, children: title }),
           /* @__PURE__ */ o("p", { className: Dialog_module_default.text, children: text }),

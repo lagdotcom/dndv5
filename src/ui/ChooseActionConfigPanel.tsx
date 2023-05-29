@@ -13,6 +13,7 @@ import { enumerate } from "../utils/numbers";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
 import Labelled from "./Labelled";
+import classnames from "./utils/classnames";
 import { actionArea, wantsCombatant, wantsPoint } from "./utils/state";
 
 type ChooserProps<T, R = Resolver<T>> = {
@@ -24,17 +25,30 @@ type ChooserProps<T, R = Resolver<T>> = {
 };
 
 function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
-  const onClick = useCallback(() => {
-    wantsCombatant.value = (who) => {
-      wantsCombatant.value = undefined;
+  const setTarget = useCallback(
+    (who?: Combatant) => {
       onChange(field, who);
-    };
-  }, [field, onChange]);
+      wantsCombatant.value = undefined;
+    },
+    [field, onChange]
+  );
+
+  const onClick = useCallback(() => {
+    wantsCombatant.value =
+      wantsCombatant.value !== setTarget ? setTarget : undefined;
+  }, [setTarget]);
 
   return (
     <div>
       <div>Target: {value ? <CombatantRef who={value} /> : "NONE"}</div>
-      <button onClick={onClick}>Choose Target</button>
+      <button
+        className={classnames({
+          [styles.active]: wantsCombatant.value === setTarget,
+        })}
+        onClick={onClick}
+      >
+        Choose Target
+      </button>
     </div>
   );
 }
@@ -120,7 +134,7 @@ function ChooseSlot({
         ).map((slot) => (
           <button
             key={slot}
-            className={value === slot ? styles.active : undefined}
+            className={classnames({ [styles.active]: value === slot })}
             aria-pressed={value === slot}
             onClick={() => onChange(field, slot)}
           >
@@ -219,26 +233,28 @@ export default function ChooseActionConfigPanel<T extends object>({
       {damage && (
         <div>
           Damage:{" "}
-          {damage.map((dmg, i) => (
-            <span key={i}>
-              {dmg.type === "flat"
-                ? dmg.amount
-                : `${dmg.amount.count}d${dmg.amount.size}`}{" "}
-              {dmg.damageType}
-            </span>
-          ))}{" "}
-          (
-          {Math.ceil(
-            damage.reduce(
-              (total, dmg) =>
-                total +
-                (dmg.type === "flat"
+          <div className={styles.damageList}>
+            {damage.map((dmg, i) => (
+              <span key={i}>
+                {dmg.type === "flat"
                   ? dmg.amount
-                  : getDiceAverage(dmg.amount.count, dmg.amount.size)),
-              0
+                  : `${dmg.amount.count}d${dmg.amount.size}`}{" "}
+                {dmg.damageType}
+              </span>
+            ))}{" "}
+            (
+            {Math.ceil(
+              damage.reduce(
+                (total, dmg) =>
+                  total +
+                  (dmg.type === "flat"
+                    ? dmg.amount
+                    : getDiceAverage(dmg.amount.count, dmg.amount.size)),
+                0
+              )
+            )}
             )
-          )}
-          )
+          </div>
         </div>
       )}
       <button disabled={disabled} onClick={execute}>

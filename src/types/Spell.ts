@@ -54,7 +54,10 @@ export default interface Spell<T extends object = object> extends Source {
     config: Partial<T>,
     collector?: ErrorCollector
   ): ErrorCollector;
-  getAffectedArea(config: Partial<T>): SpecifiedEffectShape | undefined;
+  getAffectedArea(
+    g: Engine,
+    config: Partial<T>
+  ): SpecifiedEffectShape | undefined;
   getConfig(g: Engine, method: SpellcastingMethod): ActionConfig<T>;
   getDamage(
     g: Engine,

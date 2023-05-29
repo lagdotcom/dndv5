@@ -13,7 +13,7 @@ const FogCloud = scalingSpell<HasPoint>({
   s: true,
   lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
 
-  getAffectedArea({ point, slot }) {
+  getAffectedArea(g, { point, slot }) {
     if (!point) return;
     return { type: "sphere", radius: 20 * (slot ?? 1), centre: point };
   },

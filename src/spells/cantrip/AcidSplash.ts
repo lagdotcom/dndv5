@@ -52,7 +52,7 @@ const AcidSplash = simpleSpell<HasTargets>({
         await g.damage(
           AcidSplash,
           "acid",
-          { attacker, target, spell: AcidSplash, method, critical: false },
+          { attacker, target, spell: AcidSplash, method },
           [["acid", damage]]
         );
     }

@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "preact/hooks";
 
 import styles from "./UnitMoveButton.module.scss";
+import classnames from "./utils/classnames";
 
 const makeButtonType = (
   className: keyof typeof styles,
@@ -41,7 +42,7 @@ export default function UnitMoveButton({ disabled, onClick, type }: Props) {
   return (
     <button
       disabled={disabled}
-      className={`${styles.main} ${className}`}
+      className={classnames(styles.main, className)}
       onClick={clicked}
       aria-label={label}
     >

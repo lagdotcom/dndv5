@@ -147,7 +147,7 @@ it("supports a typical Beldalynn attack", async () => {
   g.dice.force(1, { type: "initiative", who: enemy });
 
   await g.start();
-  await user.click(btn("Melf's Minute Meteors"));
+  await user.click(btn("Melf's Minute Meteors (Wizard)"));
   await user.click(btn("Choose Target"));
   await user.click(token("thug"));
   await user.click(btn("Execute"));

@@ -1,3 +1,5 @@
+import { MarkOptional } from "ts-essentials";
+
 import BonusCollector from "./collectors/BonusCollector";
 import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DiceTypeCollector from "./collectors/DiceTypeCollector";
@@ -26,17 +28,20 @@ import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoiceEvent from "./events/YesNoChoiceEvent";
 import YesNoChoice from "./interruptions/YesNoChoice";
+import PointSet from "./PointSet";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
 import DamageBreakdown from "./types/DamageBreakdown";
 import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
-import EffectArea from "./types/EffectArea";
+import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
 import RollType, { DamageRoll, SavingThrow } from "./types/RollType";
 import Source from "./types/Source";
+import { resolveArea } from "./utils/areas";
 import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
+import { getSquares } from "./utils/units";
 
 export default class Engine {
   combatants: Map<Combatant, CombatantState>;
@@ -265,9 +270,12 @@ export default class Engine {
   async damage(
     source: Source,
     damageType: DamageType,
-    e: Omit<
-      EventData["gatherDamage"],
-      "map" | "bonus" | "interrupt" | "multiplier"
+    e: MarkOptional<
+      Omit<
+        EventData["gatherDamage"],
+        "map" | "bonus" | "interrupt" | "multiplier"
+      >,
+      "critical"
     >,
     damageInitialiser: DamageInitialiser = []
   ) {
@@ -275,6 +283,7 @@ export default class Engine {
 
     const gather = await this.resolve(
       new GatherDamageEvent({
+        critical: false,
         ...e,
         map,
         bonus: new BonusCollector(),
@@ -360,5 +369,18 @@ export default class Engine {
   removeEffectArea(area: EffectArea) {
     this.effects.delete(area);
     this.fire(new AreaRemovedEvent({ area }));
+  }
+
+  getInside(area: SpecifiedEffectShape) {
+    const points = new PointSet(resolveArea(area));
+    const inside: Combatant[] = [];
+
+    for (const [combatant, state] of this.combatants) {
+      const squares = new PointSet(getSquares(combatant, state.position));
+
+      if (points.overlaps(squares)) inside.push(combatant);
+    }
+
+    return inside;
   }
 }

@@ -10,6 +10,7 @@ import AcidSplash from "../../spells/cantrip/AcidSplash";
 import FireBolt from "../../spells/cantrip/FireBolt";
 import MindSliver from "../../spells/cantrip/MindSliver";
 import RayOfFrost from "../../spells/cantrip/RayOfFrost";
+import IceKnife from "../../spells/level1/IceKnife";
 import { enchant } from "../../utils/items";
 import tokenUrl from "./Beldalynn_token.png";
 
@@ -57,9 +58,9 @@ export default class Beldalynn extends PC {
       AcidSplash,
       FireBolt,
       MindSliver,
-      RayOfFrost
+      RayOfFrost,
 
-      // IceKnife,
+      IceKnife
       // MagicMissile,
       // Shield,
 

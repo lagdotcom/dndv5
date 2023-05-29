@@ -1,25 +1,39 @@
 import { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 
-export function resolveArea(area: SpecifiedEffectShape) {
+export function resolveArea(area: SpecifiedEffectShape): Point[] {
   const points: Point[] = [];
 
   switch (area.type) {
     case "sphere": {
       const left = area.centre.x - area.radius;
       const top = area.centre.y - area.radius;
-      for (let y = 0; y <= area.radius * 2; y += 5) {
+      const size = area.radius * 2;
+      for (let y = 0; y <= size; y += 5) {
         const dy = y - area.radius + 2.5;
 
-        for (let x = 0; x <= area.radius * 2; x += 5) {
+        for (let x = 0; x <= size; x += 5) {
           const dx = x - area.radius + 2.5;
 
           const d = Math.sqrt(dx * dx + dy * dy);
           if (d <= area.radius) points.push({ x: left + x, y: top + y });
         }
       }
+
+      return points;
+    }
+
+    case "within": {
+      const left = area.position.x - area.radius;
+      const top = area.position.y - area.radius;
+      const size = area.target.sizeInUnits + area.radius;
+      for (let y = 0; y <= size; y += 5) {
+        for (let x = 0; x <= size; x += 5) {
+          points.push({ x: left + x, y: top + y });
+        }
+      }
+
+      return points;
     }
   }
-
-  return points;
 }

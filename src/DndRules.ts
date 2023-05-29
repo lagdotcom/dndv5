@@ -81,7 +81,7 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
     for (const effect of g.effects) {
       if (!effect.tags.has("heavily obscured")) continue;
 
-      const area = new PointSet(resolveArea(effect));
+      const area = new PointSet(resolveArea(effect.shape));
       for (const square of squares) {
         if (area.has(square)) return true;
       }

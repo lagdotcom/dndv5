@@ -1,10 +1,11 @@
 import EffectArea, { AreaTag } from "../types/EffectArea";
+import { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 
 export default class SphereEffectArea implements EffectArea {
   id: number;
+  shape: SpecifiedEffectShape;
   tags: Set<AreaTag>;
-  type: "sphere";
 
   constructor(
     public name: string,
@@ -14,6 +15,6 @@ export default class SphereEffectArea implements EffectArea {
   ) {
     this.id = NaN;
     this.tags = new Set(tags);
-    this.type = "sphere";
+    this.shape = { type: "sphere", centre, radius };
   }
 }

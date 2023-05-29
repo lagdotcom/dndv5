@@ -1,29 +1,35 @@
 import { useMemo } from "preact/hooks";
 
-import SphereEffectArea from "../areas/SphereEffectArea";
-import { SpecifiedEffectShape } from "../types/EffectArea";
+import {
+  AreaTag,
+  SpecifiedEffectShape,
+  SpecifiedSphere,
+} from "../types/EffectArea";
 import Point from "../types/Point";
 import { resolveArea } from "../utils/areas";
 import styles from "./BattlefieldEffect.module.scss";
 import { scale } from "./utils/state";
 
 function Sphere({
-  centre,
+  shape,
   name,
-  radius,
   tags,
-}: SpecifiedEffectShape & { name: string; tags: SphereEffectArea["tags"] }) {
+}: {
+  shape: SpecifiedSphere;
+  name: string;
+  tags: Set<AreaTag>;
+}) {
   const style = useMemo(() => {
-    const size = radius * scale.value;
+    const size = shape.radius * scale.value;
     return {
-      left: centre.x * scale.value - size,
-      top: centre.y * scale.value - size,
+      left: shape.centre.x * scale.value - size,
+      top: shape.centre.y * scale.value - size,
       width: size * 2,
       height: size * 2,
       borderRadius: size * 2,
       backgroundColor: tags.has("heavily obscured") ? "silver" : undefined,
     };
-  }, [centre.x, centre.y, radius, tags]);
+  }, [shape.centre.x, shape.centre.y, shape.radius, tags]);
 
   return (
     <div className={styles.main} style={style}>
@@ -53,15 +59,16 @@ function AffectedSquare({ point }: AffectedSquareProps) {
 
 interface Props {
   shape: SpecifiedEffectShape;
+  tags?: Set<AreaTag>;
 }
 
-export default function BattlefieldEffect({ shape }: Props) {
+export default function BattlefieldEffect({ shape, tags = new Set() }: Props) {
   const main = useMemo(() => {
     switch (shape.type) {
       case "sphere":
-        return <Sphere name="Pending" tags={new Set()} {...shape} />;
+        return <Sphere name="Pending" tags={tags} shape={shape} />;
     }
-  }, [shape]);
+  }, [shape, tags]);
   const points = useMemo(() => resolveArea(shape), [shape]);
 
   return (
