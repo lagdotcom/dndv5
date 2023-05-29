@@ -1343,8 +1343,11 @@
       });
     }
     damage(_0, _1, _2) {
-      return __async(this, arguments, function* (source, damageType, e, damageInitialiser = []) {
+      return __async(this, arguments, function* (source, damageType, e, damageInitialiser = [], startingMultiplier) {
         const map = new DamageMap(damageInitialiser);
+        const multiplier = new MultiplierCollector();
+        if (typeof startingMultiplier === "number")
+          multiplier.add(startingMultiplier, source);
         const gather = yield this.resolve(
           new GatherDamageEvent(__spreadProps(__spreadValues({
             critical: false
@@ -1352,7 +1355,7 @@
             map,
             bonus: new BonusCollector(),
             interrupt: new InterruptionCollector(),
-            multiplier: new MultiplierCollector()
+            multiplier
           }))
         );
         map.add(damageType, gather.detail.bonus.result);
@@ -1360,7 +1363,7 @@
           source,
           attacker: e.attacker,
           target: e.target,
-          multiplier: gather.detail.multiplier.value
+          multiplier: multiplier.value
         });
       });
     }
@@ -3125,6 +3128,80 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IceKnife_default = IceKnife;
 
+  // src/resolvers/PointResolver.ts
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  var PointResolver = class {
+    constructor(g2, maxRange) {
+      this.g = g2;
+      this.maxRange = maxRange;
+      this.type = "Point";
+    }
+    get name() {
+      if (this.maxRange === Infinity)
+        return "any point";
+      return `point within ${this.maxRange}'`;
+    }
+    check(value, action, ec = new ErrorCollector()) {
+      if (!isPoint(value))
+        ec.add("No target", this);
+      else {
+        if (distanceTo(this.g, action.actor, value) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/level3/Fireball.ts
+  var Fireball = scalingSpell({
+    name: "Fireball",
+    level: 3,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a tiny ball of bat guano and sulfur",
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
+    getAffectedArea: (g2, { point }) => point && { type: "sphere", centre: point, radius: 20 },
+    getDamage: (g2, caster, { slot }) => [dd(5 + (slot != null ? slot : 3), 6, "fire")],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
+        const damage = yield g2.rollDamage(5 + slot, {
+          size: 6,
+          spell: Fireball,
+          method,
+          damageType: "fire",
+          attacker
+        });
+        const dc = getSaveDC(attacker, method.ability);
+        for (const target of g2.getInside({
+          type: "sphere",
+          centre: point,
+          radius: 20
+        })) {
+          const save = yield g2.savingThrow(dc, {
+            attacker,
+            ability: "dex",
+            spell: Fireball,
+            method,
+            who: target
+          });
+          const mul = save ? 0.5 : 1;
+          yield g2.damage(
+            Fireball,
+            "fire",
+            { attacker, spell: Fireball, method, target },
+            [["fire", damage]],
+            mul
+          );
+        }
+      });
+    }
+  });
+  var Fireball_default = Fireball;
+
   // src/pcs/davies/Beldalynn_token.png
   var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
 
@@ -3160,16 +3237,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         FireBolt_default,
         MindSliver_default,
         RayOfFrost_default,
-        IceKnife_default
+        IceKnife_default,
         // MagicMissile,
         // Shield,
         // EnlargeReduce,
         // HoldPerson,
-        // Fireball,
+        // MelfsMinuteMeteors,
+        Fireball_default
         // IntellectFortress,
         // LeomundsTinyHut,
-        // MelfsMinuteMeteors,
-        // WalOfFire
+        // WallOfFire
       );
     }
   };
@@ -3284,32 +3361,6 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       this.id = NaN;
       this.tags = new Set(tags);
       this.shape = { type: "sphere", centre, radius };
-    }
-  };
-
-  // src/resolvers/PointResolver.ts
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
-  }
-  var PointResolver = class {
-    constructor(g2, maxRange) {
-      this.g = g2;
-      this.maxRange = maxRange;
-      this.type = "Point";
-    }
-    get name() {
-      if (this.maxRange === Infinity)
-        return "any point";
-      return `point within ${this.maxRange}'`;
-    }
-    check(value, action, ec = new ErrorCollector()) {
-      if (!isPoint(value))
-        ec.add("No target", this);
-      else {
-        if (distanceTo(this.g, action.actor, value) > this.maxRange)
-          ec.add("Out of range", this);
-      }
-      return ec;
     }
   };
 
@@ -4171,6 +4222,31 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "."
     ] });
   }
+  var niceAbilityName = {
+    str: "Strength",
+    dex: "Dexterity",
+    con: "Constitution",
+    int: "Intelligence",
+    wis: "Wisdom",
+    cha: "Charisma"
+  };
+  function SaveMessage({ type, value }) {
+    return /* @__PURE__ */ o(
+      LogMessage,
+      {
+        message: `${type.who.name} rolls a ${value} on a ${niceAbilityName[type.ability]} saving throw.`,
+        children: [
+          /* @__PURE__ */ o(CombatantRef, { who: type.who }),
+          " rolls a ",
+          value,
+          " on a",
+          " ",
+          niceAbilityName[type.ability],
+          " saving throw."
+        ]
+      }
+    );
+  }
   function EventLog({ g: g2 }) {
     const [messages, setMessages] = (0, import_hooks7.useState)([]);
     const addMessage = (0, import_hooks7.useCallback)(
@@ -4202,6 +4278,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "spellCast",
         ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
       );
+      g2.events.on("diceRolled", ({ detail }) => {
+        if (detail.type.type === "save")
+          addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)));
+      });
     }, [addMessage, g2]);
     return /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages });
   }

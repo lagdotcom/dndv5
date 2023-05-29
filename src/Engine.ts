@@ -277,9 +277,13 @@ export default class Engine {
       >,
       "critical"
     >,
-    damageInitialiser: DamageInitialiser = []
+    damageInitialiser: DamageInitialiser = [],
+    startingMultiplier?: number
   ) {
     const map = new DamageMap(damageInitialiser);
+    const multiplier = new MultiplierCollector();
+    if (typeof startingMultiplier === "number")
+      multiplier.add(startingMultiplier, source);
 
     const gather = await this.resolve(
       new GatherDamageEvent({
@@ -288,7 +292,7 @@ export default class Engine {
         map,
         bonus: new BonusCollector(),
         interrupt: new InterruptionCollector(),
-        multiplier: new MultiplierCollector(),
+        multiplier,
       })
     );
 
@@ -297,7 +301,7 @@ export default class Engine {
       source,
       attacker: e.attacker,
       target: e.target,
-      multiplier: gather.detail.multiplier.value,
+      multiplier: multiplier.value,
     });
   }
 
