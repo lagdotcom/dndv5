@@ -18,7 +18,8 @@ export const Expertise = new ConfiguredFeature<ExpertiseEntry[]>(
   (g, me, config) => {
     for (const entry of config) {
       if (entry === "thieves' tools") {
-        // TODO
+        if (me.toolProficiencies.has(entry)) me.toolProficiencies.set(entry, 2);
+        else console.warn(`Expertise in ${entry} without existing proficiency`);
       } else {
         if (me.skills.has(entry)) me.skills.set(entry, 2);
         else console.warn(`Expertise in ${entry} without existing proficiency`);

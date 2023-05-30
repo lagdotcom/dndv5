@@ -71,7 +71,8 @@ export default class PC extends AbstractCombatant {
         this.armorProficiencies.add(prof);
       for (const prof of cls?.saveProficiencies ?? [])
         this.saveProficiencies.add(prof);
-      // TODO tools
+      for (const prof of cls?.toolProficiencies ?? [])
+        this.toolProficiencies.set(prof, 1);
       for (const prof of cls?.weaponCategoryProficiencies ?? [])
         this.weaponCategoryProficiencies.add(prof);
       for (const prof of cls?.weaponProficiencies ?? [])

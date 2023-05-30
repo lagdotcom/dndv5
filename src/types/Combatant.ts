@@ -15,6 +15,7 @@ import SizeCategory from "./SizeCategory";
 import SkillName from "./SkillName";
 import Source from "./Source";
 import Spell from "./Spell";
+import ToolName from "./ToolName";
 
 export default interface Combatant extends Source {
   id: number;
@@ -64,6 +65,7 @@ export default interface Combatant extends Source {
   saveProficiencies: Set<Ability>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
+  toolProficiencies: Map<ToolName, number>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

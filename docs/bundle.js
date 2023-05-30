@@ -477,6 +477,7 @@
       this.effects = /* @__PURE__ */ new Map();
       this.knownSpells = /* @__PURE__ */ new Set();
       this.preparedSpells = /* @__PURE__ */ new Set();
+      this.toolProficiencies = /* @__PURE__ */ new Map();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -1913,6 +1914,10 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     (g2, me, config) => {
       for (const entry of config) {
         if (entry === "thieves' tools") {
+          if (me.toolProficiencies.has(entry))
+            me.toolProficiencies.set(entry, 2);
+          else
+            console.warn(`Expertise in ${entry} without existing proficiency`);
         } else {
           if (me.skills.has(entry))
             me.skills.set(entry, 2);
@@ -2263,7 +2268,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         this.addFeature(feature);
     }
     addClassLevel(cls, hpRoll) {
-      var _a, _b, _c, _d, _e, _f, _g;
+      var _a, _b, _c, _d, _e, _f, _g, _h;
       const level = ((_a = this.classLevels.get(cls.name)) != null ? _a : 0) + 1;
       this.classLevels.set(cls.name, level);
       this.level++;
@@ -2274,15 +2279,17 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
           this.armorProficiencies.add(prof);
         for (const prof of (_c = cls == null ? void 0 : cls.saveProficiencies) != null ? _c : [])
           this.saveProficiencies.add(prof);
-        for (const prof of (_d = cls == null ? void 0 : cls.weaponCategoryProficiencies) != null ? _d : [])
+        for (const prof of (_d = cls == null ? void 0 : cls.toolProficiencies) != null ? _d : [])
+          this.toolProficiencies.set(prof, 1);
+        for (const prof of (_e = cls == null ? void 0 : cls.weaponCategoryProficiencies) != null ? _e : [])
           this.weaponCategoryProficiencies.add(prof);
-        for (const prof of (_e = cls == null ? void 0 : cls.weaponProficiencies) != null ? _e : [])
+        for (const prof of (_f = cls == null ? void 0 : cls.weaponProficiencies) != null ? _f : [])
           this.weaponProficiencies.add(prof);
       }
-      for (const feature of (_f = cls.features.get(level)) != null ? _f : [])
+      for (const feature of (_g = cls.features.get(level)) != null ? _g : [])
         this.addFeature(feature);
       const sub = this.subclasses.get(cls.name);
-      for (const feature of (_g = sub == null ? void 0 : sub.features.get(level)) != null ? _g : [])
+      for (const feature of (_h = sub == null ? void 0 : sub.features.get(level)) != null ? _h : [])
         this.addFeature(feature);
     }
     addSubclass(sub) {

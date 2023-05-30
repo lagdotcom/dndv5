@@ -27,6 +27,7 @@ import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
 import SkillName from "./types/SkillName";
 import Spell from "./types/Spell";
+import ToolName from "./types/ToolName";
 import { getAbilityBonus } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
 import { isA } from "./utils/types";
@@ -93,6 +94,7 @@ export default abstract class AbstractCombatant implements Combatant {
   effects: Map<Effect, number>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
+  toolProficiencies: Map<ToolName, number>;
 
   constructor(
     public g: Engine,
@@ -176,6 +178,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.effects = new Map();
     this.knownSpells = new Set();
     this.preparedSpells = new Set();
+    this.toolProficiencies = new Map();
   }
 
   get str() {
