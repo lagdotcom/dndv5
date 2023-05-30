@@ -4,6 +4,7 @@ import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import MultiplierCollector from "../collectors/MultiplierCollector";
 import DamageMap from "../DamageMap";
+import PickFromListChoice from "../interruptions/PickFromListChoice";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import Ability from "../types/Ability";
 import ACMethod from "../types/ACMethod";
@@ -102,6 +103,10 @@ type EventData = {
     who: Combatant;
     bonus: BonusCollector;
     multiplier: MultiplierCollector;
+  };
+  listChoice: {
+    interruption: PickFromListChoice;
+    resolve(choice: unknown): void;
   };
   spellCast: {
     who: Combatant;

@@ -17,6 +17,7 @@ import GetConditionsEvent from "./GetConditionsEvent";
 import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import GetInitiativeEvent from "./GetInitiativeEvent";
 import GetSpeedEvent from "./GetSpeedEvent";
+import ListChoiceEvent from "./ListChoiceEvent";
 import SpellCastEvent from "./SpellCastEvent";
 import TurnEndedEvent from "./TurnEndedEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
@@ -42,6 +43,7 @@ export type EventTypes = {
   getDamageResponse: GetDamageResponseEvent;
   getInitiative: GetInitiativeEvent;
   getSpeed: GetSpeedEvent;
+  listChoice: ListChoiceEvent;
   spellCast: SpellCastEvent;
   turnEnded: TurnEndedEvent;
   turnStarted: TurnStartedEvent;

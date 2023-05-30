@@ -14,6 +14,7 @@ import { enumerate } from "../utils/numbers";
 import { describePoint, describeRange } from "../utils/text";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
+import common from "./common.module.scss";
 import Labelled from "./Labelled";
 import classnames from "./utils/classnames";
 import { actionAreas, wantsCombatant, wantsPoint } from "./utils/state";
@@ -318,7 +319,7 @@ export default function ChooseActionConfigPanel<T extends object>({
       {damage && (
         <div>
           Damage:{" "}
-          <div className={styles.damageList}>
+          <div className={common.damageList}>
             {damage.map((dmg, i) => (
               <span key={i}>
                 {dmg.type === "flat"

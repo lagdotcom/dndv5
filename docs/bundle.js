@@ -1117,6 +1117,13 @@
     }
   };
 
+  // src/events/ListChoiceEvent.ts
+  var ListChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("listChoice", { detail });
+    }
+  };
+
   // src/events/TurnEndedEvent.ts
   var TurnEndedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1135,6 +1142,18 @@
   var YesNoChoiceEvent = class extends CustomEvent {
     constructor(detail) {
       super("yesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/PickFromListChoice.ts
+  var PickFromListChoice = class {
+    constructor(who, source, title, text, items, chosen) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.items = items;
+      this.chosen = chosen;
     }
   };
 
@@ -1424,6 +1443,11 @@
               yield (_a = interruption.yes) == null ? void 0 : _a.call(interruption);
             else
               yield (_b = interruption.no) == null ? void 0 : _b.call(interruption);
+          } else if (interruption instanceof PickFromListChoice) {
+            const choice = yield new Promise(
+              (resolve) => this.fire(new ListChoiceEvent({ interruption, resolve }))
+            );
+            yield interruption.chosen(choice);
           } else {
             console.error(interruption);
             throw new Error("Unknown interruption type");
@@ -2099,25 +2123,62 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/enchantments/weapon.ts
   var ChaoticBurstResource = new TurnResource("Chaotic Burst", 1);
+  var chaoticBurstTypes = [
+    "acid",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "poison",
+    "psychic",
+    "thunder"
+  ];
   var chaoticBurst = {
     name: "chaotic burst",
     setup(g2, item) {
       plus1.setup(g2, item);
       item.name = `chaotic burst ${item.weaponType}`;
-      console.warn("[Enchantment Not Finished] Chaotic Burst");
       g2.events.on("turnStarted", ({ detail: { who } }) => {
         if (who.equipment.has(item) && who.attunements.has(item))
           who.addResource(ChaoticBurstResource);
       });
-      g2.events.on("gatherDamage", ({ detail: { attacker, bonus, critical } }) => {
-        if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
-          attacker.spendResource(ChaoticBurstResource);
-          const a = g2.dice.roll({ type: "damage", attacker, size: 8 }, "normal");
-          const b = g2.dice.roll({ type: "damage", attacker, size: 8 }, "normal");
-          const total = a.value + b.value;
-          bonus.add(total, chaoticBurst);
+      g2.events.on(
+        "gatherDamage",
+        ({ detail: { attacker, critical, interrupt, map } }) => {
+          if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
+            attacker.spendResource(ChaoticBurstResource);
+            const a = g2.dice.roll(
+              { type: "damage", attacker, size: 8 },
+              "normal"
+            ).value;
+            const b = g2.dice.roll(
+              { type: "damage", attacker, size: 8 },
+              "normal"
+            ).value;
+            const addBurst = (type) => map.add(type, a + b);
+            if (a === b)
+              addBurst(chaoticBurstTypes[a - 1]);
+            else
+              interrupt.add(
+                new PickFromListChoice(
+                  attacker,
+                  chaoticBurst,
+                  "Chaotic Burst",
+                  "Choose the damage type:",
+                  new Map(
+                    [a, b].map((i) => [
+                      chaoticBurstTypes[i - 1],
+                      chaoticBurstTypes[i - 1]
+                    ])
+                  ),
+                  (type) => __async(this, null, function* () {
+                    return addBurst(type);
+                  })
+                )
+              );
+          }
         }
-      });
+      );
     }
   };
   var vicious = {
@@ -3772,7 +3833,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/App.tsx
-  var import_hooks11 = __toESM(require_hooks());
+  var import_hooks12 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function check(action, config) {
@@ -3837,12 +3898,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   var allActions = (0, import_signals.signal)([]);
   var allCombatants = (0, import_signals.signal)([]);
   var allEffects = (0, import_signals.signal)([]);
+  var chooseFromList = (0, import_signals.signal)(void 0);
+  var chooseYesNo = (0, import_signals.signal)(void 0);
   var scale = (0, import_signals.signal)(20);
   var wantsCombatant = (0, import_signals.signal)(
     void 0
   );
   var wantsPoint = (0, import_signals.signal)(void 0);
-  var yesNo = (0, import_signals.signal)(void 0);
   window.state = {
     actionAreas,
     activeCombatantId,
@@ -3850,10 +3912,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     allActions,
     allCombatants,
     allEffects,
+    chooseFromList,
+    chooseYesNo,
     scale,
     wantsCombatant,
-    wantsPoint,
-    yesNo
+    wantsPoint
   };
 
   // src/ui/ActiveUnitPanel.tsx
@@ -4099,9 +4162,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_1kf6d_1",
-    "active": "_active_1kf6d_8",
-    "damageList": "_damageList_1kf6d_12"
+    "main": "_main_z1296_1",
+    "active": "_active_z1296_8"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -4118,6 +4180,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
     ] });
   }
+
+  // src/ui/common.module.scss
+  var common_module_default = {
+    "damageList": "_damageList_yh7tq_1"
+  };
 
   // src/ui/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
@@ -4373,7 +4440,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       damage && /* @__PURE__ */ o("div", { children: [
         "Damage:",
         " ",
-        /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.damageList, children: [
+        /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: [
           damage.map((dmg, i) => /* @__PURE__ */ o("span", { children: [
             dmg.type === "flat" ? dmg.amount : `${dmg.amount.count}d${dmg.amount.size}`,
             " ",
@@ -4492,15 +4559,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${who.name} takes ${total} damage. (${[...breakdown].map(
-          getDamageEntryText
-        )})`,
+        message: `${who.name} takes ${total} damage. (${[...breakdown].map(getDamageEntryText).join(", ")})`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who }),
           "takes ",
           total,
           " damage. (",
-          [...breakdown].map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)),
+          /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: [...breakdown].map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
           ")"
         ]
       }
@@ -4602,33 +4667,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     ] });
   }
 
-  // src/ui/Menu.module.scss
-  var Menu_module_default = {
-    "main": "_main_1ct3i_1"
-  };
-
-  // src/ui/Menu.tsx
-  function Menu({ caption, items, onClick, x, y }) {
-    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ o(Labelled, { label: caption, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
-      "button",
-      {
-        role: "menuitem",
-        disabled,
-        onClick: () => onClick(value),
-        children: label
-      },
-      label
-    )) }) });
-  }
-
-  // src/ui/utils/types.ts
-  function getUnitData(who, state) {
-    const { position } = state;
-    const { id, name, img, sizeInUnits, movedSoFar, speed } = who;
-    return { who, position, id, name, img, sizeInUnits, movedSoFar, speed };
-  }
-
-  // src/ui/YesNoDialog.tsx
+  // src/ui/ListChoiceDialog.tsx
   var import_hooks10 = __toESM(require_hooks());
 
   // src/ui/Dialog.tsx
@@ -4664,20 +4703,62 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o(ReactDialog, __spreadValues({}, props));
   }
 
-  // src/ui/YesNoDialog.tsx
-  function YesNoDialog({
+  // src/ui/ListChoiceDialog.tsx
+  function ListChoiceDialog({
     interruption,
     resolve
   }) {
     const decide = (0, import_hooks10.useCallback)(
       (value) => {
-        yesNo.value = void 0;
+        chooseFromList.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks10.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks10.useCallback)(() => decide(false), [decide]);
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [...interruption.items].map(([label, value]) => /* @__PURE__ */ o("button", { onClick: () => decide(value), children: label })) });
+  }
+
+  // src/ui/Menu.module.scss
+  var Menu_module_default = {
+    "main": "_main_1ct3i_1"
+  };
+
+  // src/ui/Menu.tsx
+  function Menu({ caption, items, onClick, x, y }) {
+    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ o(Labelled, { label: caption, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+      "button",
+      {
+        role: "menuitem",
+        disabled,
+        onClick: () => onClick(value),
+        children: label
+      },
+      label
+    )) }) });
+  }
+
+  // src/ui/utils/types.ts
+  function getUnitData(who, state) {
+    const { position } = state;
+    const { id, name, img, sizeInUnits, movedSoFar, speed } = who;
+    return { who, position, id, name, img, sizeInUnits, movedSoFar, speed };
+  }
+
+  // src/ui/YesNoDialog.tsx
+  var import_hooks11 = __toESM(require_hooks());
+  function YesNoDialog({
+    interruption,
+    resolve
+  }) {
+    const decide = (0, import_hooks11.useCallback)(
+      (value) => {
+        chooseYesNo.value = void 0;
+        resolve(value);
+      },
+      [resolve]
+    );
+    const onYes = (0, import_hooks11.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks11.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
@@ -4686,28 +4767,28 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks11.useState)();
-    const [action, setAction] = (0, import_hooks11.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks11.useState)({
+    const [target, setTarget] = (0, import_hooks12.useState)();
+    const [action, setAction] = (0, import_hooks12.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks12.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks11.useCallback)(
+    const hideActionMenu = (0, import_hooks12.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks11.useCallback)(() => {
+    const refreshUnits = (0, import_hooks12.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push(getUnitData(who, state));
       allCombatants.value = list;
     }, [g2]);
-    const refreshAreas = (0, import_hooks11.useCallback)(() => {
+    const refreshAreas = (0, import_hooks12.useCallback)(() => {
       allEffects.value = [...g2.effects];
     }, [g2]);
-    (0, import_hooks11.useEffect)(() => {
+    (0, import_hooks12.useEffect)(() => {
       g2.events.on("combatantPlaced", refreshUnits);
       g2.events.on("combatantMoved", refreshUnits);
       g2.events.on("combatantDied", refreshUnits);
@@ -4718,10 +4799,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         hideActionMenu();
         allActions.value = g2.getActions(who);
       });
-      g2.events.on("yesNoChoice", (e) => yesNo.value = e);
+      g2.events.on("listChoice", (e) => chooseFromList.value = e);
+      g2.events.on("yesNoChoice", (e) => chooseYesNo.value = e);
       onMount == null ? void 0 : onMount(g2);
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
-    const onExecuteAction = (0, import_hooks11.useCallback)(
+    const onExecuteAction = (0, import_hooks12.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
@@ -4729,7 +4811,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, refreshUnits]
     );
-    const onClickAction = (0, import_hooks11.useCallback)(
+    const onClickAction = (0, import_hooks12.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -4742,7 +4824,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks11.useCallback)(
+    const onClickBattlefield = (0, import_hooks12.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -4754,7 +4836,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks11.useCallback)(
+    const onClickCombatant = (0, import_hooks12.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -4784,23 +4866,23 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2]
     );
-    const onMoveCombatant = (0, import_hooks11.useCallback)(
+    const onMoveCombatant = (0, import_hooks12.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         void g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks11.useCallback)(() => {
+    const onPass = (0, import_hooks12.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
       void g2.nextTurn();
     }, [g2]);
-    const onCancelAction = (0, import_hooks11.useCallback)(() => {
+    const onCancelAction = (0, import_hooks12.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks11.useCallback)(
+    const onChooseAction = (0, import_hooks12.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);
@@ -4836,7 +4918,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         )
       ] }),
       /* @__PURE__ */ o(EventLog, { g: g2 }),
-      yesNo.value && /* @__PURE__ */ o(YesNoDialog, __spreadValues({}, yesNo.value.detail))
+      chooseFromList.value && /* @__PURE__ */ o(ListChoiceDialog, __spreadValues({}, chooseFromList.value.detail)),
+      chooseYesNo.value && /* @__PURE__ */ o(YesNoDialog, __spreadValues({}, chooseYesNo.value.detail))
     ] });
   }
 

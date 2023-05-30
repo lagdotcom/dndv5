@@ -24,9 +24,11 @@ import GatherDamageEvent from "./events/GatherDamageEvent";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
+import ListChoiceEvent from "./events/ListChoiceEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoiceEvent from "./events/YesNoChoiceEvent";
+import PickFromListChoice from "./interruptions/PickFromListChoice";
 import YesNoChoice from "./interruptions/YesNoChoice";
 import PointSet from "./PointSet";
 import Action from "./types/Action";
@@ -346,6 +348,11 @@ export default class Engine {
         );
         if (choice) await interruption.yes?.();
         else await interruption.no?.();
+      } else if (interruption instanceof PickFromListChoice) {
+        const choice = await new Promise((resolve) =>
+          this.fire(new ListChoiceEvent({ interruption, resolve }))
+        );
+        await interruption.chosen(choice);
       } else {
         console.error(interruption);
         throw new Error("Unknown interruption type");

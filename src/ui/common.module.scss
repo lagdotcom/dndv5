@@ -1,0 +1,7 @@
+.damageList {
+  display: inline;
+
+  span + span::before {
+    content: ", ";
+  }
+}

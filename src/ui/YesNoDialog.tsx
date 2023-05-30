@@ -2,7 +2,7 @@ import { useCallback } from "preact/hooks";
 
 import EventData from "../events/EventData";
 import Dialog from "./Dialog";
-import { yesNo } from "./utils/state";
+import { chooseYesNo } from "./utils/state";
 
 export default function YesNoDialog({
   interruption,
@@ -10,7 +10,7 @@ export default function YesNoDialog({
 }: EventData["yesNoChoice"]) {
   const decide = useCallback(
     (value: boolean) => {
-      yesNo.value = undefined;
+      chooseYesNo.value = undefined;
       resolve(value);
     },
     [resolve]

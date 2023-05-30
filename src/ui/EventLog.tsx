@@ -8,6 +8,7 @@ import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import { SavingThrow } from "../types/RollType";
 import CombatantRef from "./CombatantRef";
+import common from "./common.module.scss";
 import styles from "./EventLog.module.scss";
 import useTimeout from "./hooks/useTimeout";
 
@@ -83,15 +84,17 @@ function DamageMessage({
 }: EventData["combatantDamaged"]) {
   return (
     <LogMessage
-      message={`${who.name} takes ${total} damage. (${[...breakdown].map(
-        getDamageEntryText
-      )})`}
+      message={`${who.name} takes ${total} damage. (${[...breakdown]
+        .map(getDamageEntryText)
+        .join(", ")})`}
     >
       <CombatantRef who={who} />
       takes {total} damage. (
-      {[...breakdown].map(([type, entry]) => (
-        <span key={type}>{getDamageEntryText([type, entry])}</span>
-      ))}
+      <div className={common.damageList}>
+        {[...breakdown].map(([type, entry]) => (
+          <span key={type}>{getDamageEntryText([type, entry])}</span>
+        ))}
+      </div>
       )
     </LogMessage>
   );

@@ -10,6 +10,7 @@ import styles from "./App.module.scss";
 import Battlefield from "./Battlefield";
 import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import EventLog from "./EventLog";
+import ListChoiceDialog from "./ListChoiceDialog";
 import Menu, { MenuItem } from "./Menu";
 import {
   actionAreas,
@@ -18,9 +19,10 @@ import {
   allActions,
   allCombatants,
   allEffects,
+  chooseFromList,
+  chooseYesNo,
   wantsCombatant,
   wantsPoint,
-  yesNo,
 } from "./utils/state";
 import { getUnitData, UnitData } from "./utils/types";
 import YesNoDialog from "./YesNoDialog";
@@ -76,7 +78,8 @@ export default function App({ g, onMount }: Props) {
       allActions.value = g.getActions(who);
     });
 
-    g.events.on("yesNoChoice", (e) => (yesNo.value = e));
+    g.events.on("listChoice", (e) => (chooseFromList.value = e));
+    g.events.on("yesNoChoice", (e) => (chooseYesNo.value = e));
 
     onMount?.(g);
   }, [g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
@@ -212,7 +215,10 @@ export default function App({ g, onMount }: Props) {
         )}
       </div>
       <EventLog g={g} />
-      {yesNo.value && <YesNoDialog {...yesNo.value.detail} />}
+      {chooseFromList.value && (
+        <ListChoiceDialog {...chooseFromList.value.detail} />
+      )}
+      {chooseYesNo.value && <YesNoDialog {...chooseYesNo.value.detail} />}
     </div>
   );
 }

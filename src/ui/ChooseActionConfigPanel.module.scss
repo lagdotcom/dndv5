@@ -8,11 +8,3 @@
 .active {
   background-color: yellow;
 }
-
-.damageList {
-  display: inline;
-
-  span + span::before {
-    content: ", ";
-  }
-}
