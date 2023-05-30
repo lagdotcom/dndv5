@@ -23,7 +23,7 @@ export default class CastSpell<T extends object> implements Action<T> {
   }
 
   get config() {
-    return this.spell.getConfig(this.g, this.method);
+    return this.spell.getConfig(this.g, this.actor, this.method);
   }
 
   getAffectedArea(config: Partial<T>) {

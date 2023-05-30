@@ -16,6 +16,7 @@ import Thug from "../monsters/Thug";
 import Aura from "../pcs/davies/Aura";
 import Beldalynn from "../pcs/davies/Beldalynn";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
+import Combatant from "../types/Combatant";
 import App from "../ui/App";
 
 const dialog = (name?: string) => screen.getByRole("dialog", { name });
@@ -30,19 +31,36 @@ const logMsg = (name: string) => getByRole(log(), "listitem", { name });
 
 const queryToken = (name: string) => queryByRole(main(), name);
 
-it("can run a simple battle", async () => {
+type BattleEntry = [
+  constructor: new (g: Engine) => Combatant,
+  x: number,
+  y: number,
+  initiative: number
+];
+
+async function setupBattleTest(...entries: BattleEntry[]) {
   const user = userEvent.setup();
   const g = new Engine();
   render(<App g={g} />);
 
-  const me = new Thug(g);
-  const them = new Badger(g);
-  g.place(me, 0, 0);
-  g.place(them, 10, 0);
-  g.dice.force(12, { type: "initiative", who: me });
-  g.dice.force(4, { type: "initiative", who: them });
+  const combatants = entries.map(([constructor, x, y, initiative]) => {
+    const z = new constructor(g);
+    g.place(z, x, y);
+    g.dice.force(initiative, { type: "initiative", who: z });
+    return z;
+  });
 
   await g.start();
+  return { g, user, combatants };
+}
+
+it("can run a simple battle", async () => {
+  const {
+    g,
+    user,
+    combatants: [me],
+  } = await setupBattleTest([Thug, 0, 0, 12], [Badger, 10, 0, 4]);
+
   await user.click(btn("Move East"));
   await user.click(token("badger"));
 
@@ -54,20 +72,14 @@ it("can run a simple battle", async () => {
 });
 
 it("supports Fog Cloud", async () => {
-  const user = userEvent.setup();
-  const g = new Engine();
-  render(<App g={g} />);
-
-  const pc = new Tethilssethanar(g);
-  const enemy = new Thug(g);
-  g.place(pc, 0, 0);
-  g.place(enemy, 30, 0);
-  g.dice.force(20, { type: "initiative", who: pc });
-  g.dice.force(10, { type: "initiative", who: enemy });
+  const {
+    g,
+    user,
+    combatants: [pc, enemy],
+  } = await setupBattleTest([Tethilssethanar, 0, 0, 20], [Thug, 30, 0, 10]);
 
   const getFogCloud = () => btn("Fog Cloud (Control Air and Water)");
 
-  await g.start();
   await waitFor(getFogCloud);
   await user.click(getFogCloud());
   await user.click(btn("Choose Point"));
@@ -96,21 +108,16 @@ it("supports Fog Cloud", async () => {
 });
 
 it("supports a typical Aura attack", async () => {
-  const user = userEvent.setup();
-  const g = new Engine();
-  render(<App g={g} />);
+  const {
+    g,
+    user,
+    combatants: [aura],
+  } = await setupBattleTest(
+    [Aura, 10, 10, 20],
+    [Tethilssethanar, 5, 0, 2],
+    [Thug, 0, 0, 1]
+  );
 
-  const aura = new Aura(g);
-  const ally = new Tethilssethanar(g);
-  const enemy = new Thug(g);
-  g.place(enemy, 0, 0);
-  g.place(ally, 5, 0);
-  g.place(aura, 10, 10);
-  g.dice.force(20, { type: "initiative", who: aura });
-  g.dice.force(2, { type: "initiative", who: ally });
-  g.dice.force(1, { type: "initiative", who: enemy });
-
-  await g.start();
   await user.click(token("thug"));
   g.dice.force(1, { type: "attack", who: aura });
   await user.click(menuitem("vicious light crossbow (crossbow bolt)"));
@@ -131,24 +138,18 @@ it("supports a typical Aura attack", async () => {
 });
 
 it("supports a typical Beldalynn attack", async () => {
-  const user = userEvent.setup();
-  const g = new Engine();
-  render(<App g={g} />);
+  const {
+    g,
+    user,
+    combatants: [beldalynn],
+  } = await setupBattleTest(
+    [Beldalynn, 0, 0, 20],
+    [Aura, 25, 0, 2],
+    [Thug, 20, 0, 1]
+  );
 
-  const beldalynn = new Beldalynn(g);
-  const ally = new Aura(g);
-  const enemy = new Thug(g);
-
-  g.place(beldalynn, 0, 0);
-  g.place(ally, 25, 0);
-  g.place(enemy, 20, 0);
-  g.dice.force(20, { type: "initiative", who: beldalynn });
-  g.dice.force(2, { type: "initiative", who: ally });
-  g.dice.force(1, { type: "initiative", who: enemy });
-
-  await g.start();
   await user.click(btn("Melf's Minute Meteors (Wizard)"));
-  await user.click(btn("Choose Target"));
+  await user.click(btn("Add Point"));
   await user.click(token("thug"));
   await user.click(btn("Execute"));
   await user.selectOptions(getByLabelText(dialog("Sculpt Spells"), "Choices"), [

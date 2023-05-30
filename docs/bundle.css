@@ -147,7 +147,7 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */
-._main_15kf7_1 {
+._container_10k6i_1 {
   position: absolute;
   bottom: 8px;
   left: 8px;
@@ -156,18 +156,20 @@
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
   height: 100px;
+  overflow-y: scroll;
+  z-index: 9;
+}
+._main_10k6i_14 {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  z-index: 9;
   margin: 0;
   padding: 0;
-  overflow-y: scroll;
 }
-._wrapper_15kf7_19 {
+._messageWrapper_10k6i_22 {
   list-style: none;
 }
-._message_15kf7_23 {
+._message_10k6i_22 {
   display: flex;
   align-items: center;
   padding: 2px;

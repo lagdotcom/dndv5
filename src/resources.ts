@@ -10,6 +10,14 @@ export class LongRestResource implements Resource {
   }
 }
 
+export class TemporaryResource implements Resource {
+  refresh: "never";
+  constructor(public name: string, public maximum: number) {
+    ResourceRegistry.set(name, this);
+    this.refresh = "never";
+  }
+}
+
 export class TurnResource implements Resource {
   refresh: "turnStart";
   constructor(public name: string, public maximum: number) {

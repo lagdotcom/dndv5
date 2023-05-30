@@ -102,8 +102,11 @@ export const scalingSpell = <T extends object>({
   apply,
   check,
   getAffectedArea,
-  getConfig(g, method) {
-    return { ...getConfig(g, method), slot: new SlotResolver(this, method) };
+  getConfig(g, actor, method) {
+    return {
+      ...getConfig(g, actor, method),
+      slot: new SlotResolver(this, method),
+    };
   },
   getDamage,
   getLevel({ slot }) {

@@ -15,7 +15,7 @@ const FogCloud = scalingSpell<HasPoint>({
 
   getAffectedArea(g, { point, slot }) {
     if (!point) return;
-    return { type: "sphere", radius: 20 * (slot ?? 1), centre: point };
+    return [{ type: "sphere", radius: 20 * (slot ?? 1), centre: point }];
   },
 
   getConfig(g) {

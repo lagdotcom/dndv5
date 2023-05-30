@@ -321,6 +321,17 @@
         return false;
     return true;
   }
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  function isPointArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const point of value)
+      if (!isPoint(point))
+        return false;
+    return true;
+  }
 
   // src/utils/items.ts
   var isSuitOfArmor = (item) => item.itemType === "armor" && item.category !== "shield";
@@ -796,6 +807,14 @@
       this.maximum = maximum;
       ResourceRegistry.set(name, this);
       this.refresh = "longRest";
+    }
+  };
+  var TemporaryResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "never";
     }
   };
   var TurnResource = class {
@@ -2289,7 +2308,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.time = spell.time;
     }
     get config() {
-      return this.spell.getConfig(this.g, this.method);
+      return this.spell.getConfig(this.g, this.actor, this.method);
     }
     getAffectedArea(config) {
       return this.spell.getAffectedArea(this.g, config);
@@ -2449,8 +2468,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     apply,
     check: check2,
     getAffectedArea,
-    getConfig(g2, method) {
-      return __spreadProps(__spreadValues({}, getConfig(g2, method)), { slot: new SlotResolver(this, method) });
+    getConfig(g2, actor, method) {
+      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method)), {
+        slot: new SlotResolver(this, method)
+      });
     },
     getDamage,
     getLevel({ slot }) {
@@ -2811,6 +2832,23 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
   var BronzeDragonborn = makeAncestry("Bronze", "lightning");
 
+  // src/utils/text.ts
+  function describeRange(min, max) {
+    if (min === 0) {
+      if (max === Infinity)
+        return "any number of";
+      return `up to ${max}`;
+    }
+    if (max === Infinity)
+      return `${min}+`;
+    if (min === max)
+      return min.toString();
+    return `${min}-${max}`;
+  }
+  function describePoint(p) {
+    return p ? `${p.x},${p.y}` : "NONE";
+  }
+
   // src/resolvers/MultiTargetResolver.ts
   var MultiTargetResolver = class {
     constructor(g2, minimum, maximum, maxRange, allowSelf = false) {
@@ -2822,17 +2860,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.type = "Combatants";
     }
     get name() {
-      const clauses = [];
-      if (this.maxRange < Infinity)
-        clauses.push(`target within ${this.maxRange}'`);
-      if (!this.allowSelf)
-        clauses.push("not self");
-      return clauses.length ? clauses.join(", ") : "any target";
+      return `${describeRange(this.minimum, this.maximum)} targets${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}${this.allowSelf ? "" : ", not self"}`;
     }
     check(value, action, ec = new ErrorCollector()) {
       if (!isCombatantArray(value))
         ec.add("No target", this);
       else {
+        if (value.length < this.minimum)
+          ec.add(`At least ${this.minimum} targets`, this);
+        if (value.length > this.maximum)
+          ec.add(`At most ${this.maximum} targets`, this);
         for (const who of value) {
           if (!this.allowSelf && who === action.actor)
             ec.add("Cannot target self", this);
@@ -3055,12 +3092,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a drop of water or piece of ice",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getAffectedArea: (g2, { target }) => target && {
-      type: "within",
-      target,
-      position: g2.getState(target).position,
-      radius: 5
-    },
+    getAffectedArea: (g2, { target }) => target && [
+      {
+        type: "within",
+        target,
+        position: g2.getState(target).position,
+        radius: 5
+      }
+    ],
     getDamage: (g2, caster, { slot }) => [
       dd(1, 10, "piercing"),
       dd(1 + (slot != null ? slot : 1), 6, "cold")
@@ -3128,10 +3167,167 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IceKnife_default = IceKnife;
 
-  // src/resolvers/PointResolver.ts
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  // src/resolvers/MultiPointResolver.ts
+  var MultiPointResolver = class {
+    constructor(g2, minimum, maximum, maxRange) {
+      this.g = g2;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.maxRange = maxRange;
+      this.type = "Points";
+    }
+    get name() {
+      return `${describeRange(this.minimum, this.maximum)} points${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+    }
+    check(value, action, ec = new ErrorCollector()) {
+      if (!isPointArray(value))
+        ec.add("No points", this);
+      else {
+        if (value.length < this.minimum)
+          ec.add(`At least ${this.minimum} points`, this);
+        if (value.length > this.maximum)
+          ec.add(`At most ${this.maximum} points`, this);
+        for (const point of value) {
+          if (distanceTo(this.g, action.actor, point) > this.maxRange)
+            ec.add("Out of range", this);
+        }
+      }
+      return ec;
+    }
+  };
+
+  // src/utils/time.ts
+  var TURNS_PER_MINUTE = 10;
+  var minutes = (n) => n * TURNS_PER_MINUTE;
+  var hours = (n) => minutes(n * 60);
+
+  // src/spells/level2/MelfsMinuteMeteors.ts
+  var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
+  function fireMeteors(_0, _1, _2, _3) {
+    return __async(this, arguments, function* (g2, attacker, method, { points }) {
+      attacker.spendResource(MeteorResource, points.length);
+      const damage = yield g2.rollDamage(2, {
+        attacker,
+        size: 6,
+        spell: MelfsMinuteMeteors,
+        method,
+        damageType: "fire"
+      });
+      const dc = getSaveDC(attacker, method.ability);
+      for (const point of points) {
+        for (const target of g2.getInside({
+          type: "sphere",
+          centre: point,
+          radius: 5
+        })) {
+          const save = yield g2.savingThrow(dc, {
+            ability: "dex",
+            attacker,
+            spell: MelfsMinuteMeteors,
+            method,
+            who: target
+          });
+          const mul = save ? 0.5 : 1;
+          yield g2.damage(
+            MelfsMinuteMeteors,
+            "fire",
+            { attacker, target, spell: MelfsMinuteMeteors, method },
+            [["fire", damage]],
+            mul
+          );
+        }
+      }
+    });
   }
+  var FireMeteorsAction = class {
+    constructor(g2, actor, method) {
+      this.g = g2;
+      this.actor = actor;
+      this.method = method;
+      var _a;
+      this.name = "Melf's Minute Meteors";
+      this.time = "bonus action";
+      const meteors = (_a = actor.resources.get(MeteorResource.name)) != null ? _a : 2;
+      this.config = {
+        points: new MultiPointResolver(g2, 1, Math.min(2, meteors), 120)
+      };
+    }
+    getAffectedArea({ points }) {
+      if (points)
+        return points.map(
+          (centre) => ({ type: "sphere", centre, radius: 5 })
+        );
+    }
+    getDamage() {
+      return [dd(2, 6, "fire")];
+    }
+    check({ points }, ec = new ErrorCollector()) {
+      var _a;
+      if (!this.actor.time.has(this.time))
+        ec.add(`No ${this.time} left`, this);
+      if (!this.actor.hasResource(MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1))
+        ec.add(`Not enough meteors left`, this);
+      return ec;
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        return fireMeteors(this.g, this.actor, this.method, config);
+      });
+    }
+  };
+  var MelfsMinuteMeteors = scalingSpell({
+    name: "Melf's Minute Meteors",
+    level: 3,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "niter, sulfur, and pine tar formed into a bead",
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: (g2) => ({
+      points: new MultiPointResolver(g2, 1, 2, 120)
+    }),
+    getAffectedArea: (g2, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
+    getDamage: () => [dd(2, 6, "fire")],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { points, slot }) {
+        const meteors = slot * 2;
+        attacker.addResource(MeteorResource, meteors);
+        yield fireMeteors(g2, attacker, method, { points });
+        let meteorActionEnabled = false;
+        const removeMeteorAction = g2.events.on(
+          "getActions",
+          ({ detail: { who, actions } }) => {
+            if (who === attacker && meteorActionEnabled)
+              actions.push(new FireMeteorsAction(g2, attacker, method));
+          }
+        );
+        const removeTurnListener = g2.events.on(
+          "turnEnded",
+          ({ detail: { who } }) => {
+            if (who === attacker) {
+              meteorActionEnabled = true;
+              removeTurnListener();
+            }
+          }
+        );
+        attacker.concentrateOn({
+          spell: MelfsMinuteMeteors,
+          duration: minutes(10),
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              removeMeteorAction();
+              removeTurnListener();
+              attacker.resources.set(MeteorResource.name, 0);
+            });
+          }
+        });
+      });
+    }
+  });
+  var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
+
+  // src/resolvers/PointResolver.ts
   var PointResolver = class {
     constructor(g2, maxRange) {
       this.g = g2;
@@ -3164,7 +3360,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a tiny ball of bat guano and sulfur",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
-    getAffectedArea: (g2, { point }) => point && { type: "sphere", centre: point, radius: 20 },
+    getAffectedArea: (g2, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
     getDamage: (g2, caster, { slot }) => [dd(5 + (slot != null ? slot : 3), 6, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
@@ -3242,7 +3438,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         // Shield,
         // EnlargeReduce,
         // HoldPerson,
-        // MelfsMinuteMeteors,
+        MelfsMinuteMeteors_default,
         Fireball_default
         // IntellectFortress,
         // LeomundsTinyHut,
@@ -3364,11 +3560,6 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     }
   };
 
-  // src/utils/time.ts
-  var TURNS_PER_MINUTE = 10;
-  var minutes = (n) => n * TURNS_PER_MINUTE;
-  var hours = (n) => minutes(n * 60);
-
   // src/spells/level1/FogCloud.ts
   var FogCloud = scalingSpell({
     name: "Fog Cloud",
@@ -3381,7 +3572,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     getAffectedArea(g2, { point, slot }) {
       if (!point)
         return;
-      return { type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point };
+      return [{ type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point }];
     },
     getConfig(g2) {
       return { point: new PointResolver(g2, 120) };
@@ -3574,7 +3765,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/App.tsx
-  var import_hooks10 = __toESM(require_hooks());
+  var import_hooks11 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function check(action, config) {
@@ -3629,7 +3820,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/utils/state.ts
   var import_signals = __toESM(require_signals());
-  var actionArea = (0, import_signals.signal)(void 0);
+  var actionAreas = (0, import_signals.signal)(
+    void 0
+  );
   var activeCombatantId = (0, import_signals.signal)(NaN);
   var activeCombatant = (0, import_signals.computed)(
     () => allCombatants.value.find((u) => u.id === activeCombatantId.value)
@@ -3644,7 +3837,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   var wantsPoint = (0, import_signals.signal)(void 0);
   var yesNo = (0, import_signals.signal)(void 0);
   window.state = {
-    actionArea,
+    actionAreas,
     activeCombatantId,
     activeCombatant,
     allActions,
@@ -3865,6 +4058,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     onClickCombatant,
     onMoveCombatant
   }) {
+    var _a;
     const convertCoordinate = (0, import_hooks5.useCallback)((e) => {
       const x = round(Math.floor(e.pageX / scale.value), 5);
       const y = round(Math.floor(e.pageY / scale.value), 5);
@@ -3888,7 +4082,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           unit.id
         )),
         allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, __spreadValues({}, effect), effect.id)),
-        actionArea.value && /* @__PURE__ */ o(BattlefieldEffect, { shape: actionArea.value })
+        ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape }, `temp${i}`))
       ] })
     );
   }
@@ -3953,13 +4147,17 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     value,
     onChange
   }) {
-    const onClick = (0, import_hooks6.useCallback)(() => {
-      wantsCombatant.value = (who) => {
-        wantsCombatant.value = void 0;
+    const addTarget = (0, import_hooks6.useCallback)(
+      (who) => {
         if (who)
           onChange(field, (value != null ? value : []).concat(who));
-      };
-    }, [field, onChange, value]);
+        wantsCombatant.value = void 0;
+      },
+      [field, onChange, value]
+    );
+    const onClick = (0, import_hooks6.useCallback)(() => {
+      wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
+    }, [addTarget]);
     const remove = (0, import_hooks6.useCallback)(
       (who) => onChange(
         field,
@@ -3970,33 +4168,104 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o("div", { children: [
       /* @__PURE__ */ o("div", { children: [
         "Targets (",
-        resolver.minimum === resolver.maximum ? `exactly ${resolver.minimum}` : `${resolver.minimum} - ${resolver.maximum}`,
+        describeRange(resolver.minimum, resolver.maximum),
         "):",
         (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((who, i) => /* @__PURE__ */ o("li", { children: [
           /* @__PURE__ */ o(CombatantRef, { who }),
           " ",
-          /* @__PURE__ */ o("button", { onClick: () => remove(who), children: [
-            "remove ",
-            who.name
-          ] })
+          /* @__PURE__ */ o(
+            "button",
+            {
+              className: classnames({
+                [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === addTarget
+              }),
+              onClick: () => remove(who),
+              children: [
+                "remove ",
+                who.name
+              ]
+            }
+          )
         ] }, i)) }) : ` NONE`
       ] }),
       /* @__PURE__ */ o("button", { onClick, children: "Add Target" })
     ] });
   }
   function ChoosePoint({ field, value, onChange }) {
+    const setTarget = (0, import_hooks6.useCallback)(
+      (p) => {
+        onChange(field, p);
+        wantsCombatant.value = void 0;
+      },
+      [field, onChange]
+    );
     const onClick = (0, import_hooks6.useCallback)(() => {
-      wantsPoint.value = (point) => {
-        wantsPoint.value = void 0;
-        onChange(field, point);
-      };
-    }, [field, onChange]);
+      wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
+    }, [setTarget]);
     return /* @__PURE__ */ o("div", { children: [
       /* @__PURE__ */ o("div", { children: [
         "Point: ",
-        value ? `${value.x},${value.y}` : "NONE"
+        describePoint(value)
       ] }),
-      /* @__PURE__ */ o("button", { onClick, children: "Choose Point" })
+      /* @__PURE__ */ o(
+        "button",
+        {
+          className: classnames({
+            [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === setTarget
+          }),
+          onClick,
+          children: "Choose Point"
+        }
+      )
+    ] });
+  }
+  function ChoosePoints({
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    const addPoint = (0, import_hooks6.useCallback)(
+      (p) => {
+        if (p)
+          onChange(field, (value != null ? value : []).concat(p));
+        wantsPoint.value = void 0;
+      },
+      [field, onChange, value]
+    );
+    const onClick = (0, import_hooks6.useCallback)(() => {
+      wantsPoint.value = wantsPoint.value !== addPoint ? addPoint : void 0;
+    }, [addPoint]);
+    const remove = (0, import_hooks6.useCallback)(
+      (p) => onChange(
+        field,
+        (value != null ? value : []).filter((x) => x !== p)
+      ),
+      [field, onChange, value]
+    );
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Points (",
+        describeRange(resolver.minimum, resolver.maximum),
+        "):",
+        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((p, i) => /* @__PURE__ */ o("li", { children: [
+          describePoint(p),
+          /* @__PURE__ */ o("button", { onClick: () => remove(p), children: [
+            "remove ",
+            describePoint(p)
+          ] })
+        ] }, i)) }) : ` NONE`
+      ] }),
+      /* @__PURE__ */ o(
+        "button",
+        {
+          className: classnames({
+            [ChooseActionConfigPanel_module_default.active]: wantsPoint.value === addPoint
+          }),
+          onClick,
+          children: "Add Point"
+        }
+      )
     ] });
   }
   function ChooseSlot({
@@ -4045,7 +4314,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       (key, value) => {
         setConfig((old) => {
           const newConfig = __spreadProps(__spreadValues({}, old), { [key]: value });
-          actionArea.value = action.getAffectedArea(newConfig);
+          actionAreas.value = action.getAffectedArea(newConfig);
           return newConfig;
         });
       },
@@ -4079,6 +4348,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           return /* @__PURE__ */ o(ChooseTargets, __spreadValues({}, props));
         else if (resolver instanceof PointResolver)
           return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, props));
+        else if (resolver instanceof MultiPointResolver)
+          return /* @__PURE__ */ o(ChoosePoints, __spreadValues({}, props));
         else if (resolver instanceof SlotResolver)
           return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, props));
         else
@@ -4120,21 +4391,49 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/EventLog.tsx
-  var import_hooks7 = __toESM(require_hooks());
+  var import_hooks8 = __toESM(require_hooks());
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
-    "main": "_main_15kf7_1",
-    "wrapper": "_wrapper_15kf7_19",
-    "message": "_message_15kf7_23"
+    "container": "_container_10k6i_1",
+    "main": "_main_10k6i_14",
+    "messageWrapper": "_messageWrapper_10k6i_22",
+    "message": "_message_10k6i_22"
   };
+
+  // src/ui/hooks/useTimeout.ts
+  var import_hooks7 = __toESM(require_hooks());
+  function useTimeout(handler, ms = void 0) {
+    const [handle, setHandle] = (0, import_hooks7.useState)();
+    const fire = (0, import_hooks7.useCallback)(
+      () => setHandle((old) => {
+        if (old)
+          return old;
+        return setTimeout(() => {
+          setHandle(void 0);
+          handler();
+        }, ms);
+      }),
+      [handler, ms]
+    );
+    const cancel = (0, import_hooks7.useCallback)(
+      () => setHandle((old) => {
+        if (old)
+          clearTimeout(old);
+        return void 0;
+      }),
+      []
+    );
+    (0, import_hooks7.useEffect)(() => cancel, [cancel]);
+    return { cancel, fire, handle };
+  }
 
   // src/ui/EventLog.tsx
   function LogMessage({
     children,
     message
   }) {
-    return /* @__PURE__ */ o("li", { "aria-label": message, className: EventLog_module_default.wrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
+    return /* @__PURE__ */ o("li", { "aria-label": message, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function AttackMessage({
     pre: { attacker, target, weapon, ammo, spell },
@@ -4248,12 +4547,19 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
   }
   function EventLog({ g: g2 }) {
-    const [messages, setMessages] = (0, import_hooks7.useState)([]);
-    const addMessage = (0, import_hooks7.useCallback)(
-      (el) => setMessages((old) => old.concat(el).slice(0, 50)),
-      []
+    const ref = (0, import_hooks8.useRef)(null);
+    const [messages, setMessages] = (0, import_hooks8.useState)([]);
+    const { fire } = useTimeout(
+      () => {
+        var _a, _b;
+        return (_b = (_a = ref.current) == null ? void 0 : _a.scrollIntoView) == null ? void 0 : _b.call(_a, { behavior: "smooth" });
+      }
     );
-    (0, import_hooks7.useEffect)(() => {
+    const addMessage = (0, import_hooks8.useCallback)((el) => {
+      setMessages((old) => old.concat(el).slice(0, 50));
+      fire();
+    }, []);
+    (0, import_hooks8.useEffect)(() => {
       g2.events.on(
         "attack",
         ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
@@ -4283,7 +4589,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)));
       });
     }, [addMessage, g2]);
-    return /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages });
+    return /* @__PURE__ */ o("div", { className: EventLog_module_default.container, children: [
+      /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages }),
+      /* @__PURE__ */ o("div", { ref })
+    ] });
   }
 
   // src/ui/Menu.module.scss
@@ -4313,10 +4622,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/YesNoDialog.tsx
-  var import_hooks9 = __toESM(require_hooks());
+  var import_hooks10 = __toESM(require_hooks());
 
   // src/ui/Dialog.tsx
-  var import_hooks8 = __toESM(require_hooks());
+  var import_hooks9 = __toESM(require_hooks());
 
   // src/ui/Dialog.module.scss
   var Dialog_module_default = {
@@ -4328,7 +4637,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Dialog.tsx
   function ReactDialog({ title, text, children }) {
-    const titleId = (0, import_hooks8.useId)();
+    const titleId = (0, import_hooks9.useId)();
     return /* @__PURE__ */ o("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ o(
       "div",
       {
@@ -4353,15 +4662,15 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks9.useCallback)(
+    const decide = (0, import_hooks10.useCallback)(
       (value) => {
         yesNo.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks9.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks9.useCallback)(() => decide(false), [decide]);
+    const onYes = (0, import_hooks10.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks10.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
@@ -4370,28 +4679,28 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks10.useState)();
-    const [action, setAction] = (0, import_hooks10.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks10.useState)({
+    const [target, setTarget] = (0, import_hooks11.useState)();
+    const [action, setAction] = (0, import_hooks11.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks11.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks10.useCallback)(
+    const hideActionMenu = (0, import_hooks11.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks10.useCallback)(() => {
+    const refreshUnits = (0, import_hooks11.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push(getUnitData(who, state));
       allCombatants.value = list;
     }, [g2]);
-    const refreshAreas = (0, import_hooks10.useCallback)(() => {
+    const refreshAreas = (0, import_hooks11.useCallback)(() => {
       allEffects.value = [...g2.effects];
     }, [g2]);
-    (0, import_hooks10.useEffect)(() => {
+    (0, import_hooks11.useEffect)(() => {
       g2.events.on("combatantPlaced", refreshUnits);
       g2.events.on("combatantMoved", refreshUnits);
       g2.events.on("combatantDied", refreshUnits);
@@ -4405,15 +4714,15 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       g2.events.on("yesNoChoice", (e) => yesNo.value = e);
       onMount == null ? void 0 : onMount(g2);
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
-    const onExecuteAction = (0, import_hooks10.useCallback)(
+    const onExecuteAction = (0, import_hooks11.useCallback)(
       (action2, config) => {
         setAction(void 0);
-        actionArea.value = void 0;
+        actionAreas.value = void 0;
         void g2.act(action2, config).then(refreshUnits);
       },
       [g2, refreshUnits]
     );
-    const onClickAction = (0, import_hooks10.useCallback)(
+    const onClickAction = (0, import_hooks11.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -4426,7 +4735,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks10.useCallback)(
+    const onClickBattlefield = (0, import_hooks11.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -4434,11 +4743,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           return;
         }
         hideActionMenu();
-        actionArea.value = void 0;
+        actionAreas.value = void 0;
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks10.useCallback)(
+    const onClickCombatant = (0, import_hooks11.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -4452,7 +4761,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           return;
         }
         setAction(void 0);
-        actionArea.value = void 0;
+        actionAreas.value = void 0;
         if (activeCombatant.value) {
           setTarget(who);
           const items = allActions.value.map((action2) => ({
@@ -4468,23 +4777,23 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2]
     );
-    const onMoveCombatant = (0, import_hooks10.useCallback)(
+    const onMoveCombatant = (0, import_hooks11.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         void g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks10.useCallback)(() => {
+    const onPass = (0, import_hooks11.useCallback)(() => {
       setAction(void 0);
-      actionArea.value = void 0;
+      actionAreas.value = void 0;
       void g2.nextTurn();
     }, [g2]);
-    const onCancelAction = (0, import_hooks10.useCallback)(() => {
+    const onCancelAction = (0, import_hooks11.useCallback)(() => {
       setAction(void 0);
-      actionArea.value = void 0;
+      actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks10.useCallback)(
+    const onChooseAction = (0, import_hooks11.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);

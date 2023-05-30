@@ -2,6 +2,7 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import Action, { Resolver } from "../types/Action";
 import Combatant from "../types/Combatant";
+import { describeRange } from "../utils/text";
 import { isCombatantArray } from "../utils/types";
 import { distance } from "../utils/units";
 
@@ -19,17 +20,19 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
   }
 
   get name() {
-    const clauses: string[] = [];
-    if (this.maxRange < Infinity)
-      clauses.push(`target within ${this.maxRange}'`);
-    if (!this.allowSelf) clauses.push("not self");
-
-    return clauses.length ? clauses.join(", ") : "any target";
+    return `${describeRange(this.minimum, this.maximum)} targets${
+      this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""
+    }${this.allowSelf ? "" : ", not self"}`;
   }
 
   check(value: unknown, action: Action, ec = new ErrorCollector()) {
     if (!isCombatantArray(value)) ec.add("No target", this);
     else {
+      if (value.length < this.minimum)
+        ec.add(`At least ${this.minimum} targets`, this);
+      if (value.length > this.maximum)
+        ec.add(`At most ${this.maximum} targets`, this);
+
       for (const who of value) {
         if (!this.allowSelf && who === action.actor)
           ec.add("Cannot target self", this);

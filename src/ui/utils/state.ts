@@ -9,7 +9,9 @@ import { UnitData } from "./types";
 
 export type Listener<T> = (point?: T) => void;
 
-export const actionArea = signal<SpecifiedEffectShape | undefined>(undefined);
+export const actionAreas = signal<SpecifiedEffectShape[] | undefined>(
+  undefined
+);
 
 export const activeCombatantId = signal<number>(NaN);
 
@@ -35,7 +37,7 @@ export const yesNo = signal<YesNoChoiceEvent | undefined>(undefined);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).state = {
-  actionArea,
+  actionAreas,
   activeCombatantId,
   activeCombatant,
   allActions,

@@ -1,4 +1,4 @@
-.main {
+.container {
   position: absolute;
   bottom: 8px;
   left: 8px;
@@ -7,16 +7,19 @@
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
   height: 100px;
+  overflow-y: scroll;
+  z-index: 9;
+}
+
+.main {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  z-index: 9;
   margin: 0;
   padding: 0;
-  overflow-y: scroll;
 }
 
-.wrapper {
+.messageWrapper {
   list-style: none;
 }
 

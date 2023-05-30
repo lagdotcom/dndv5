@@ -15,12 +15,14 @@ const IceKnife = scalingSpell<HasTarget>({
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
 
   getAffectedArea: (g, { target }) =>
-    target && {
-      type: "within",
-      target,
-      position: g.getState(target).position,
-      radius: 5,
-    },
+    target && [
+      {
+        type: "within",
+        target,
+        position: g.getState(target).position,
+        radius: 5,
+      },
+    ],
 
   getDamage: (g, caster, { slot }) => [
     dd(1, 10, "piercing"),

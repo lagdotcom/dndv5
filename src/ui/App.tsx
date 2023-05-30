@@ -12,7 +12,7 @@ import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import EventLog from "./EventLog";
 import Menu, { MenuItem } from "./Menu";
 import {
-  actionArea,
+  actionAreas,
   activeCombatant,
   activeCombatantId,
   allActions,
@@ -84,7 +84,7 @@ export default function App({ g, onMount }: Props) {
   const onExecuteAction = useCallback(
     <T extends object>(action: Action<T>, config: T) => {
       setAction(undefined);
-      actionArea.value = undefined;
+      actionAreas.value = undefined;
       void g.act(action, config).then(refreshUnits);
     },
     [g, refreshUnits]
@@ -113,7 +113,7 @@ export default function App({ g, onMount }: Props) {
       }
 
       hideActionMenu();
-      actionArea.value = undefined;
+      actionAreas.value = undefined;
     },
     [hideActionMenu]
   );
@@ -135,7 +135,7 @@ export default function App({ g, onMount }: Props) {
       }
 
       setAction(undefined);
-      actionArea.value = undefined;
+      actionAreas.value = undefined;
 
       if (activeCombatant.value) {
         setTarget(who);
@@ -168,13 +168,13 @@ export default function App({ g, onMount }: Props) {
 
   const onPass = useCallback(() => {
     setAction(undefined);
-    actionArea.value = undefined;
+    actionAreas.value = undefined;
     void g.nextTurn();
   }, [g]);
 
   const onCancelAction = useCallback(() => {
     setAction(undefined);
-    actionArea.value = undefined;
+    actionAreas.value = undefined;
   }, []);
 
   const onChooseAction = useCallback(

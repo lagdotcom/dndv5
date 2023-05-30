@@ -7,7 +7,7 @@ import styles from "./Battlefield.module.scss";
 import BattlefieldEffect from "./BattlefieldEffect";
 import Unit from "./Unit";
 import {
-  actionArea,
+  actionAreas,
   activeCombatantId,
   allCombatants,
   allEffects,
@@ -51,7 +51,9 @@ export default function Battlefield({
       {allEffects.value.map((effect) => (
         <BattlefieldEffect key={effect.id} {...effect} />
       ))}
-      {actionArea.value && <BattlefieldEffect shape={actionArea.value} />}
+      {(actionAreas.value ?? []).map((shape, i) => (
+        <BattlefieldEffect key={`temp${i}`} shape={shape} />
+      ))}
     </main>
   );
 }

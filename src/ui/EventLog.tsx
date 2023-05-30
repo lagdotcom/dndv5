@@ -1,5 +1,5 @@
 import { ComponentChildren, VNode } from "preact";
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
 import EventData from "../events/EventData";
@@ -9,6 +9,7 @@ import DamageType from "../types/DamageType";
 import { SavingThrow } from "../types/RollType";
 import CombatantRef from "./CombatantRef";
 import styles from "./EventLog.module.scss";
+import useTimeout from "./hooks/useTimeout";
 
 function LogMessage({
   children,
@@ -18,7 +19,7 @@ function LogMessage({
   message: string;
 }) {
   return (
-    <li aria-label={message} className={styles.wrapper}>
+    <li aria-label={message} className={styles.messageWrapper}>
       <div aria-hidden="true" className={styles.message}>
         {children}
       </div>
@@ -146,12 +147,18 @@ function SaveMessage({ type, value }: Roll<SavingThrow>) {
 }
 
 export default function EventLog({ g }: { g: Engine }) {
+  const ref = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<VNode[]>([]);
 
-  const addMessage = useCallback(
-    (el: VNode) => setMessages((old) => old.concat(el).slice(0, 50)),
-    []
+  const { fire } = useTimeout(() =>
+    ref.current?.scrollIntoView?.({ behavior: "smooth" })
   );
+
+  const addMessage = useCallback((el: VNode) => {
+    setMessages((old) => old.concat(el).slice(0, 50));
+    fire();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     g.events.on("attack", ({ detail }) =>
@@ -179,8 +186,11 @@ export default function EventLog({ g }: { g: Engine }) {
   }, [addMessage, g]);
 
   return (
-    <ul className={styles.main} aria-label="Event Log">
-      {messages}
-    </ul>
+    <div className={styles.container}>
+      <ul className={styles.main} aria-label="Event Log">
+        {messages}
+      </ul>
+      <div ref={ref} />
+    </div>
   );
 }

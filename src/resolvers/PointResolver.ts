@@ -2,15 +2,8 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import Action, { Resolver } from "../types/Action";
 import Point from "../types/Point";
+import { isPoint } from "../utils/types";
 import { distanceTo } from "../utils/units";
-
-function isPoint(value: unknown): value is Point {
-  return (
-    typeof value === "object" &&
-    typeof (value as Point).x === "number" &&
-    typeof (value as Point).y === "number"
-  );
-}
 
 export default class PointResolver implements Resolver<Point> {
   type: "Point";
