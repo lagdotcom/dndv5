@@ -8,6 +8,7 @@ import MultiplierCollector from "./collectors/MultiplierCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
+import { Dead } from "./effects";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
 import AttackEvent from "./events/AttackEvent";
@@ -144,12 +145,17 @@ export default class Engine {
     if (this.activeCombatant)
       this.fire(new TurnEndedEvent({ who: this.activeCombatant }));
 
-    this.initiativePosition = isNaN(this.initiativePosition)
-      ? 0
-      : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
-    const who = this.initiativeOrder[this.initiativePosition];
+    let who = this.initiativeOrder[this.initiativePosition];
+    let scan = true;
 
-    // TODO check if dead lol
+    while (scan) {
+      this.initiativePosition = isNaN(this.initiativePosition)
+        ? 0
+        : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
+      who = this.initiativeOrder[this.initiativePosition];
+
+      if (!who.hasEffect(Dead)) scan = false;
+    }
 
     this.activeCombatant = who;
     who.movedSoFar = 0;
@@ -220,6 +226,7 @@ export default class Engine {
     if (target.hp <= 0) {
       if (target.diesAtZero) {
         this.combatants.delete(target);
+        target.addEffect(Dead, Infinity);
         this.fire(new CombatantDiedEvent({ who: target, attacker }));
       } else {
         // TODO

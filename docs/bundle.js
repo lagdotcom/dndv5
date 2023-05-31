@@ -991,6 +991,17 @@
     }
   };
 
+  // src/BaseEffect.ts
+  var BaseEffect = class {
+    constructor(name, durationTimer) {
+      this.name = name;
+      this.durationTimer = durationTimer;
+    }
+  };
+
+  // src/effects.ts
+  var Dead = new BaseEffect("Dead", "turnStart");
+
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1287,8 +1298,14 @@
     nextTurn() {
       if (this.activeCombatant)
         this.fire(new TurnEndedEvent({ who: this.activeCombatant }));
-      this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
-      const who = this.initiativeOrder[this.initiativePosition];
+      let who = this.initiativeOrder[this.initiativePosition];
+      let scan = true;
+      while (scan) {
+        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
+        who = this.initiativeOrder[this.initiativePosition];
+        if (!who.hasEffect(Dead))
+          scan = false;
+      }
       this.activeCombatant = who;
       who.movedSoFar = 0;
       this.fire(new TurnStartedEvent({ who }));
@@ -1343,6 +1360,7 @@
         if (target.hp <= 0) {
           if (target.diesAtZero) {
             this.combatants.delete(target);
+            target.addEffect(Dead, Infinity);
             this.fire(new CombatantDiedEvent({ who: target, attacker }));
           } else {
           }
@@ -1861,14 +1879,6 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     }
   );
   var SneakAttack_default = SneakAttack;
-
-  // src/BaseEffect.ts
-  var BaseEffect = class {
-    constructor(name, durationTimer) {
-      this.name = name;
-      this.durationTimer = durationTimer;
-    }
-  };
 
   // src/classes/rogue/SteadyAim.ts
   var SteadyAimNoMoveEffect = new BaseEffect("Steady Aim (No Move)", "turnEnd");
