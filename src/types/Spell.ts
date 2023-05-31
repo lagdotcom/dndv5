@@ -61,7 +61,8 @@ export default interface Spell<T extends object = object> extends Source {
   getConfig(
     g: Engine,
     caster: Combatant,
-    method: SpellcastingMethod
+    method: SpellcastingMethod,
+    config: Partial<T>
   ): ActionConfig<T>;
   getDamage(
     g: Engine,

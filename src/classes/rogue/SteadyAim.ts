@@ -14,18 +14,20 @@ const SteadyAimAdvantageEffect = new BaseEffect(
 );
 
 class SteadyAimAction implements Action<object> {
-  config: object;
   name: string;
   time: ActionTime;
 
   constructor(public g: Engine, public actor: Combatant) {
-    this.config = {};
     this.name = "Steady Aim";
     this.time = "bonus action";
   }
 
   getAffectedArea() {
     return undefined;
+  }
+
+  getConfig() {
+    return {};
   }
 
   getDamage() {
@@ -62,14 +64,14 @@ const SteadyAim = new SimpleFeature(
         multiplier.add(0, SteadyAimNoMoveEffect);
     });
 
-    g.events.on("beforeAttack", ({ detail: { attacker, diceType } }) => {
-      if (attacker.hasEffect(SteadyAimAdvantageEffect))
+    g.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
+      if (who.hasEffect(SteadyAimAdvantageEffect))
         diceType.add("advantage", SteadyAimAdvantageEffect);
     });
 
     g.events.on("attack", ({ detail: { pre } }) => {
       if (pre.diceType.involved(SteadyAimAdvantageEffect))
-        pre.attacker.removeEffect(SteadyAimAdvantageEffect);
+        pre.who.removeEffect(SteadyAimAdvantageEffect);
     });
   }
 );

@@ -32,7 +32,7 @@ type EventData = {
     outcome: "critical" | "hit" | "miss";
   };
   beforeAttack: {
-    attacker: Combatant;
+    who: Combatant;
     target: Combatant;
     ability: Ability;
     weapon?: WeaponItem;

@@ -85,6 +85,10 @@ class FireMeteorsAction implements Action<HasPoints> {
       );
   }
 
+  getConfig() {
+    return this.config;
+  }
+
   getDamage() {
     return [dd(2, 6, "fire")];
   }

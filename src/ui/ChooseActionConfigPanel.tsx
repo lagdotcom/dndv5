@@ -236,7 +236,7 @@ function getInitialConfig<T extends object>(
 ): Partial<T> {
   const config: Partial<T> = { ...initial };
 
-  for (const [key, resolver] of Object.entries(action.config)) {
+  for (const [key, resolver] of Object.entries(action.getConfig(config))) {
     if (resolver instanceof SlotResolver && !config[key as keyof T])
       (config[key as keyof T] as number) = resolver.getMinimum(action.actor);
   }
@@ -281,7 +281,7 @@ export default function ChooseActionConfigPanel<T extends object>({
 
   const elements = useMemo(
     () =>
-      Object.entries(action.config).map(([key, resolver]) => {
+      Object.entries(action.getConfig(config)).map(([key, resolver]) => {
         const props = {
           key,
           action,

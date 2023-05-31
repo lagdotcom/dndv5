@@ -102,7 +102,7 @@ export default function App({ g, onMount }: Props) {
       const config = { target, point };
       if (checkConfig(action, config)) {
         onExecuteAction(action, config);
-      } else console.warn(config, "does not match", action.config);
+      } else console.warn(config, "does not match", action.getConfig(config));
     },
     [g, hideActionMenu, onExecuteAction, target]
   );

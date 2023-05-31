@@ -32,6 +32,10 @@ export default class WeaponAttack implements Action<HasTarget> {
     return undefined;
   }
 
+  getConfig() {
+    return this.config;
+  }
+
   getDamage() {
     return [this.weapon.damage];
   }
@@ -48,7 +52,7 @@ export default class WeaponAttack implements Action<HasTarget> {
     // TODO spend action/attack
 
     const { attack, critical, hit } = await g.attack({
-      attacker,
+      who: attacker,
       target,
       ability,
       weapon,

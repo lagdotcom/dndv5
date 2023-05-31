@@ -2,9 +2,12 @@ import { MarkOptional } from "ts-essentials";
 
 import ErrorCollector from "../collectors/ErrorCollector";
 import { Scales } from "../configs";
+import Engine from "../Engine";
 import SlotResolver from "../resolvers/SlotResolver";
+import { ActionConfig } from "../types/Action";
 import Combatant from "../types/Combatant";
 import Spell from "../types/Spell";
+import SpellcastingMethod from "../types/SpellcastingMethod";
 
 export function getCantripDice(who: Combatant) {
   if (who.level < 5) return 1;
@@ -88,7 +91,14 @@ export const scalingSpell = <T extends object>({
     | "getDamage"
   >,
   "getConfig" | "getLevel" | "scaling"
-> & { getConfig: Spell<T>["getConfig"] }): Spell<T & Scales> => ({
+> & {
+  getConfig: (
+    g: Engine,
+    actor: Combatant,
+    method: SpellcastingMethod,
+    config: Partial<T & Scales>
+  ) => ActionConfig<T>;
+}): Spell<T & Scales> => ({
   name,
   level,
   scaling: true,
@@ -102,9 +112,9 @@ export const scalingSpell = <T extends object>({
   apply,
   check,
   getAffectedArea,
-  getConfig(g, actor, method) {
+  getConfig(g, actor, method, config) {
     return {
-      ...getConfig(g, actor, method),
+      ...getConfig(g, actor, method, config),
       slot: new SlotResolver(this, method),
     };
   },

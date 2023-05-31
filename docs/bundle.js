@@ -719,6 +719,9 @@
     getAffectedArea() {
       return void 0;
     }
+    getConfig() {
+      return this.config;
+    }
     getDamage() {
       return [this.weapon.damage];
     }
@@ -729,7 +732,7 @@
       return __async(this, arguments, function* ({ target }) {
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
         const { attack, critical, hit } = yield g2.attack({
-          attacker,
+          who: attacker,
           target,
           ability,
           weapon,
@@ -870,8 +873,8 @@
     }
   };
   var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
-      bonus.add(attacker[ability], AbilityScoreRule);
+    g2.events.on("beforeAttack", ({ detail: { who, ability, bonus } }) => {
+      bonus.add(who[ability], AbilityScoreRule);
     });
     g2.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
       if (ability)
@@ -895,8 +898,8 @@
     });
   });
   var BlindedRule = new DndRule("Blinded", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { attacker, diceType, target } }) => {
-      if (attacker.conditions.has("Blinded"))
+    g2.events.on("beforeAttack", ({ detail: { who, diceType, target } }) => {
+      if (who.conditions.has("Blinded"))
         diceType.add("disadvantage", BlindedRule);
       if (target.conditions.has("Blinded"))
         diceType.add("advantage", BlindedRule);
@@ -912,8 +915,8 @@
   var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g2) => {
     g2.events.on(
       "beforeAttack",
-      ({ detail: { attacker, target, weapon, diceType } }) => {
-        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, attacker, target) > weapon.shortRange)
+      ({ detail: { who, target, weapon, diceType } }) => {
+        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, who, target) > weapon.shortRange)
           diceType.add("disadvantage", LongRangeAttacksRule);
       }
     );
@@ -945,13 +948,10 @@
     });
   });
   var ProficiencyRule = new DndRule("Proficiency", (g2) => {
-    g2.events.on(
-      "beforeAttack",
-      ({ detail: { attacker, bonus, spell, weapon } }) => {
-        const mul = weapon ? attacker.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
-        bonus.add(attacker.pb * mul, ProficiencyRule);
-      }
-    );
+    g2.events.on("beforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
+      const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
+      bonus.add(who.pb * mul, ProficiencyRule);
+    });
   });
   var ResourcesRule = new DndRule("Resources", (g2) => {
     g2.events.on("turnStarted", ({ detail: { who } }) => {
@@ -993,14 +993,15 @@
 
   // src/BaseEffect.ts
   var BaseEffect = class {
-    constructor(name, durationTimer) {
+    constructor(name, durationTimer, quiet = false) {
       this.name = name;
       this.durationTimer = durationTimer;
+      this.quiet = quiet;
     }
   };
 
   // src/effects.ts
-  var Dead = new BaseEffect("Dead", "turnStart");
+  var Dead = new BaseEffect("Dead", "turnStart", true);
 
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
@@ -1378,7 +1379,7 @@
         if (pre.defaultPrevented)
           return { outcome: "cancelled", hit: false };
         const roll = yield this.roll(
-          { type: "attack", who: e.attacker, target: e.target, ability: e.ability },
+          { type: "attack", who: e.who, target: e.target, ability: e.ability },
           pre.detail.diceType.result
         );
         const total = roll.value + pre.detail.bonus.result;
@@ -1621,6 +1622,13 @@
       this.ammunitionTag = "sling";
     }
   };
+  var Longsword = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "longsword", "martial", "melee", dd(1, 8, "slashing"), [
+        "versatile"
+      ]);
+    }
+  };
   var Rapier = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
@@ -1719,6 +1727,17 @@
   var LeatherArmor = class extends AbstractArmor {
     constructor(g2) {
       super(g2, "leather armor", "light", 11);
+    }
+  };
+  var SplintArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "splint armor", "heavy", 17, true, 15);
+    }
+  };
+  var Shield = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "shield", "shield", 2);
+      this.hands = 1;
     }
   };
 
@@ -1890,12 +1909,14 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     constructor(g2, actor) {
       this.g = g2;
       this.actor = actor;
-      this.config = {};
       this.name = "Steady Aim";
       this.time = "bonus action";
     }
     getAffectedArea() {
       return void 0;
+    }
+    getConfig() {
+      return {};
     }
     getDamage() {
       return void 0;
@@ -1927,13 +1948,13 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         if (who.hasEffect(SteadyAimNoMoveEffect))
           multiplier.add(0, SteadyAimNoMoveEffect);
       });
-      g2.events.on("beforeAttack", ({ detail: { attacker, diceType } }) => {
-        if (attacker.hasEffect(SteadyAimAdvantageEffect))
+      g2.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
+        if (who.hasEffect(SteadyAimAdvantageEffect))
           diceType.add("advantage", SteadyAimAdvantageEffect);
       });
       g2.events.on("attack", ({ detail: { pre } }) => {
         if (pre.diceType.involved(SteadyAimAdvantageEffect))
-          pre.attacker.removeEffect(SteadyAimAdvantageEffect);
+          pre.who.removeEffect(SteadyAimAdvantageEffect);
       });
     }
   );
@@ -2385,8 +2406,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.name = `${spell.name} (${method.name})`;
       this.time = spell.time;
     }
-    get config() {
-      return this.spell.getConfig(this.g, this.actor, this.method);
+    getConfig(config) {
+      return this.spell.getConfig(this.g, this.actor, this.method, config);
     }
     getAffectedArea(config) {
       return this.spell.getAffectedArea(this.g, config);
@@ -2546,8 +2567,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     apply,
     check: check2,
     getAffectedArea,
-    getConfig(g2, actor, method) {
-      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method)), {
+    getConfig(g2, actor, method, config) {
+      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
         slot: new SlotResolver(this, method)
       });
     },
@@ -2622,6 +2643,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var Aura = class extends PC {
     constructor(g2) {
       super(g2, "Aura", Aura_token_default);
+      this.toolProficiencies.set("dice set", 1);
+      this.toolProficiencies.set("horn", 1);
       this.setAbilityScores(8, 15, 11, 14, 9, 14);
       this.setRace(AirGenasi);
       this.addSubclass(Scout_default);
@@ -3021,7 +3044,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const { attack, critical, hit } = yield g2.attack({
-          attacker,
+          who: attacker,
           target,
           ability: method.ability,
           spell: FireBolt,
@@ -3129,7 +3152,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const { attack, critical, hit } = yield g2.attack({
-          attacker,
+          who: attacker,
           target,
           ability: method.ability,
           spell: RayOfFrost,
@@ -3185,7 +3208,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
         const { attack, hit, critical } = yield g2.attack({
-          attacker,
+          who: attacker,
           target,
           ability: method.ability,
           spell: IceKnife,
@@ -3335,6 +3358,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         return points.map(
           (centre) => ({ type: "sphere", centre, radius: 5 })
         );
+    }
+    getConfig() {
+      return this.config;
     }
     getDamage() {
       return [dd(2, 6, "fire")];
@@ -3488,7 +3514,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.dexScore++;
       this.conScore++;
       this.strScore++;
+      this.languages.add("Common");
       this.languages.add("Draconic");
+      this.languages.add("Elvish");
+      this.languages.add("Infernal");
       this.addSubclass(Evocation_default);
       this.addClassLevel(wizard_default);
       this.addClassLevel(wizard_default);
@@ -3521,6 +3550,281 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         // IntellectFortress,
         // LeomundsTinyHut,
         // WallOfFire
+      );
+    }
+  };
+
+  // src/classes/paladin/index.ts
+  var DivineSense = notImplementedFeature(
+    "Divine Sense",
+    `The presence of strong evil registers on your senses like a noxious odor, and powerful good rings like heavenly music in your ears. As an action, you can open your awareness to detect such forces. Until the end of your next turn, you know the location of any celestial, fiend, or undead within 60 feet of you that is not behind total cover. You know the type (celestial, fiend, or undead) of any being whose presence you sense, but not its identity (the vampire Count Strahd von Zarovich, for instance). Within the same radius, you also detect the presence of any place or object that has been consecrated or desecrated, as with the hallow spell.
+
+You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`
+  );
+  var LayOnHands = notImplementedFeature(
+    "Lay on Hands",
+    `Your blessed touch can heal wounds. You have a pool of healing power that replenishes when you take a long rest. With that pool, you can restore a total number of hit points equal to your paladin level \xD7 5.
+
+As an action, you can touch a creature and draw power from the pool to restore a number of hit points to that creature, up to the maximum amount remaining in your pool.
+
+Alternatively, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.
+
+This feature has no effect on undead and constructs.`
+  );
+  var DivineSmite = notImplementedFeature(
+    "Divine Smite",
+    `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`
+  );
+  var FightingStyle = notImplementedFeature(
+    "Fighting Style",
+    `At 2nd level, you adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`
+  );
+  var PaladinSpellcasting = new NormalSpellcasting(
+    "Spellcasting",
+    "cha",
+    "half"
+  );
+  var Spellcasting2 = new SimpleFeature(
+    "Spellcasting",
+    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
+    (g2, me) => {
+      var _a;
+      PaladinSpellcasting.initialise(me, (_a = me.classLevels.get("Paladin")) != null ? _a : 1);
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          for (const spell of me.preparedSpells) {
+            if (spell.lists.includes("Paladin"))
+              actions.push(new CastSpell(g2, me, PaladinSpellcasting, spell));
+          }
+        }
+      });
+    }
+  );
+  var DivineHealth = notImplementedFeature(
+    "Divine Health",
+    `By 3rd level, the divine magic flowing through you makes you immune to disease.`
+  );
+  var MartialVersatility = nonCombatFeature(
+    "Martial Versatility",
+    `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace a fighting style you know with another fighting style available to paladins. This replacement represents a shift of focus in your martial practice.`
+  );
+  var ExtraAttack = notImplementedFeature(
+    "Extra Attack",
+    `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
+  );
+  var AuraOfProtection = notImplementedFeature(
+    "Aura of Protection",
+    `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
+
+At 18th level, the range of this aura increases to 30 feet.`
+  );
+  var AuraOfCourage = notImplementedFeature(
+    "Aura of Courage",
+    `Starting at 10th level, you and friendly creatures within 10 feet of you can't be frightened while you are conscious.
+
+At 18th level, the range of this aura increases to 30 feet.`
+  );
+  var ImprovedDivineSmite = notImplementedFeature(
+    "Improved Divine Smite",
+    `By 11th level, you are so suffused with righteous might that all your melee weapon strikes carry divine power with them. Whenever you hit a creature with a melee weapon, the creature takes an extra 1d8 radiant damage.`
+  );
+  var CleansingTouch = notImplementedFeature(
+    "Cleansing Touch",
+    `Beginning at 14th level, you can use your action to end one spell on yourself or on one willing creature that you touch.
+
+You can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain expended uses when you finish a long rest.`
+  );
+  var ASI43 = makeASI("Paladin", 4);
+  var ASI83 = makeASI("Paladin", 8);
+  var ASI123 = makeASI("Paladin", 12);
+  var ASI163 = makeASI("Paladin", 16);
+  var ASI193 = makeASI("Paladin", 19);
+  var Paladin = {
+    name: "Paladin",
+    hitDieSize: 10,
+    armorProficiencies: /* @__PURE__ */ new Set(["light", "medium", "heavy", "shield"]),
+    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple", "martial"]),
+    saveProficiencies: /* @__PURE__ */ new Set(["wis", "cha"]),
+    skillChoices: 2,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Athletics",
+      "Insight",
+      "Intimidation",
+      "Medicine",
+      "Persuasion",
+      "Religion"
+    ]),
+    features: /* @__PURE__ */ new Map([
+      [1, [DivineSense, LayOnHands]],
+      [2, [DivineSmite, FightingStyle, Spellcasting2]],
+      [3, [DivineHealth]],
+      [4, [ASI43, MartialVersatility]],
+      [5, [ExtraAttack]],
+      [6, [AuraOfProtection]],
+      [8, [ASI83]],
+      [10, [AuraOfCourage]],
+      [11, [ImprovedDivineSmite]],
+      [12, [ASI123]],
+      [14, [CleansingTouch]],
+      [16, [ASI163]],
+      [19, [ASI193]]
+    ])
+  };
+  var paladin_default = Paladin;
+
+  // src/classes/paladin/Devotion/index.ts
+  var Devotion = {
+    className: "Paladin",
+    name: "Oath ofDevotion",
+    features: /* @__PURE__ */ new Map()
+  };
+  var Devotion_default = Devotion;
+
+  // src/races/Human.ts
+  var Human = {
+    name: "Human",
+    size: "medium",
+    abilities: /* @__PURE__ */ new Map([
+      ["str", 1],
+      ["dex", 1],
+      ["con", 1],
+      ["int", 1],
+      ["wis", 1],
+      ["cha", 1]
+    ]),
+    movement: /* @__PURE__ */ new Map([["speed", 30]]),
+    languages: /* @__PURE__ */ new Set(["Common"])
+  };
+  var Human_default = Human;
+
+  // src/spells/level1/Bless.ts
+  var BlessEffect = new BaseEffect("Bless", "turnEnd");
+  var Bless = scalingSpell({
+    name: "Bless",
+    level: 1,
+    school: "Enchantment",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a sprinkling of holy water",
+    lists: ["Cleric", "Paladin"],
+    getConfig: (g2, caster, method, { slot }) => ({
+      targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 30, true)
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { targets }) {
+        const blessCallback = (me) => ({ detail: { who, bonus } }) => {
+          if (who === me && me.hasEffect(BlessEffect)) {
+            const dr = g2.dice.roll({ type: "bless", who }, "normal");
+            bonus.add(dr.value, BlessEffect);
+          }
+        };
+        const cleanup = targets.flatMap((target) => {
+          target.addEffect(BlessEffect, minutes(1));
+          return [
+            g2.events.on("beforeAttack", blessCallback(target)),
+            g2.events.on("beforeSave", blessCallback(target))
+          ];
+        });
+        caster.concentrateOn({
+          spell: Bless,
+          duration: minutes(1),
+          onSpellEnd: () => __async(this, null, function* () {
+            for (const target of targets)
+              target.removeEffect(BlessEffect);
+            for (const cb of cleanup)
+              cb();
+          })
+        });
+      });
+    }
+  });
+  var Bless_default = Bless;
+
+  // src/spells/level1/DivineFavor.ts
+  var DivineFavorEffect = new BaseEffect("Divine Favor", "turnEnd");
+  var DivineFavor = simpleSpell({
+    name: "Divine Favor",
+    level: 1,
+    school: "Evocation",
+    concentration: true,
+    time: "bonus action",
+    v: true,
+    s: true,
+    lists: ["Paladin"],
+    getConfig: () => ({}),
+    apply(g2, caster, method) {
+      return __async(this, null, function* () {
+        caster.addEffect(DivineFavorEffect, minutes(1));
+        const cleanup = g2.events.on(
+          "gatherDamage",
+          ({ detail: { attacker, map, weapon } }) => {
+            if (attacker === caster && weapon) {
+              const dr = g2.dice.roll(
+                {
+                  type: "damage",
+                  attacker,
+                  size: 4,
+                  spell: DivineFavor,
+                  method,
+                  damageType: "radiant"
+                },
+                "normal"
+              );
+              map.add("radiant", dr.value);
+            }
+          }
+        );
+        caster.concentrateOn({
+          spell: DivineFavor,
+          duration: minutes(1),
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              caster.removeEffect(DivineFavorEffect);
+              cleanup();
+            });
+          }
+        });
+      });
+    }
+  });
+  var DivineFavor_default = DivineFavor;
+
+  // src/pcs/davies/Galilea_token.png
+  var Galilea_token_default = "./Galilea_token-D4XX5FIV.png";
+
+  // src/pcs/davies/Galilea.ts
+  var Galilea = class extends PC {
+    constructor(g2) {
+      super(g2, "Galilea", Galilea_token_default);
+      this.toolProficiencies.set("playing card set", 1);
+      this.setAbilityScores(13, 10, 15, 11, 11, 13);
+      this.setRace(Human_default);
+      this.languages.add("Sylvan");
+      this.addSubclass(Devotion_default);
+      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default);
+      this.setConfig(ASI43, { type: "ability", abilities: ["str", "str"] });
+      this.skills.set("Insight", 1);
+      this.skills.set("Intimidation", 1);
+      this.skills.set("History", 1);
+      this.skills.set("Persuasion", 1);
+      this.don(new Longsword(g2));
+      this.don(new Shield(g2));
+      this.don(new SplintArmor(g2));
+      this.inventory.add(new LightCrossbow(g2));
+      this.inventory.add(new CrossbowBolt(g2, 20));
+      this.addPreparedSpells(
+        Bless_default,
+        DivineFavor_default
+        // TODO ShieldOfFaith,
+        // TODO Aid,
+        // TODO MagicWeapon
       );
     }
   };
@@ -3849,7 +4153,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   function check(action, config) {
     const ec = new ErrorCollector();
     action.check(config, ec);
-    for (const [key, resolver] of Object.entries(action.config)) {
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
       const value = config[key];
       resolver.check(value, action, ec);
     }
@@ -4381,7 +4685,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
   function getInitialConfig(action, initial) {
     const config = __spreadValues({}, initial);
-    for (const [key, resolver] of Object.entries(action.config)) {
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
       if (resolver instanceof SlotResolver && !config[key])
         config[key] = resolver.getMinimum(action.actor);
     }
@@ -4415,7 +4719,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         onExecute(action, config);
     }, [action, config, onExecute]);
     const elements = (0, import_hooks6.useMemo)(
-      () => Object.entries(action.config).map(([key, resolver]) => {
+      () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
         const props = {
           key,
           action,
@@ -4520,16 +4824,16 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o("li", { "aria-label": message, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function AttackMessage({
-    pre: { attacker, target, weapon, ammo, spell },
+    pre: { who, target, weapon, ammo, spell },
     roll,
     total
   }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${attacker.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${spell ? ` with ${spell.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
+        message: `${who.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${spell ? ` with ${spell.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
         children: [
-          /* @__PURE__ */ o(CombatantRef, { who: attacker }),
+          /* @__PURE__ */ o(CombatantRef, { who }),
           "attacks\xA0",
           /* @__PURE__ */ o(CombatantRef, { who: target }),
           roll.diceType !== "normal" && ` at ${roll.diceType}`,
@@ -4654,14 +4958,14 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "combatantDied",
         ({ detail }) => addMessage(/* @__PURE__ */ o(DeathMessage, __spreadValues({}, detail)))
       );
-      g2.events.on(
-        "effectAdded",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(EffectAddedMessage, __spreadValues({}, detail)))
-      );
-      g2.events.on(
-        "effectRemoved",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(EffectRemovedMessage, __spreadValues({}, detail)))
-      );
+      g2.events.on("effectAdded", ({ detail }) => {
+        if (!detail.effect.quiet)
+          addMessage(/* @__PURE__ */ o(EffectAddedMessage, __spreadValues({}, detail)));
+      });
+      g2.events.on("effectRemoved", ({ detail }) => {
+        if (!detail.effect.quiet)
+          addMessage(/* @__PURE__ */ o(EffectRemovedMessage, __spreadValues({}, detail)));
+      });
       g2.events.on(
         "spellCast",
         ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
@@ -4830,7 +5134,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         if (checkConfig(action2, config)) {
           onExecuteAction(action2, config);
         } else
-          console.warn(config, "does not match", action2.config);
+          console.warn(config, "does not match", action2.getConfig(config));
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
@@ -4947,11 +5251,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           const hunk = new Tethilssethanar(g);
           const aura = new Aura(g);
           const beldalynn = new Beldalynn(g);
+          const galilea = new Galilea(g);
           g.place(thug, 0, 0);
           g.place(badger, 10, 0);
-          g.place(hunk, 10, 20);
+          g.place(hunk, 10, 5);
           g.place(aura, 20, 20);
           g.place(beldalynn, 40, 20);
+          g.place(galilea, 5, 0);
           g.start();
         }
       }

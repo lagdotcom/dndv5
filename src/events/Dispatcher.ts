@@ -1,8 +1,8 @@
 import EventType, { EventTypes } from "./EventType";
 
-type EventListener<T extends EventType> = (e: EventTypes[T]) => void;
+export type EventListener<T extends EventType> = (e: EventTypes[T]) => void;
 
-type Unsubscribe = () => void;
+export type Unsubscribe = () => void;
 
 export default class Dispatcher {
   constructor(public debug = false, private target = new EventTarget()) {}

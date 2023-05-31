@@ -25,7 +25,10 @@ export default class Beldalynn extends PC {
     this.dexScore++;
     this.conScore++;
     this.strScore++;
+    this.languages.add("Common");
     this.languages.add("Draconic");
+    this.languages.add("Elvish");
+    this.languages.add("Infernal");
 
     this.addSubclass(Evocation);
     this.addClassLevel(Wizard);

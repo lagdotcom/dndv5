@@ -5,7 +5,7 @@ export function check<T extends object>(action: Action<T>, config: Partial<T>) {
   const ec = new ErrorCollector();
   action.check(config, ec);
 
-  for (const [key, resolver] of Object.entries(action.config)) {
+  for (const [key, resolver] of Object.entries(action.getConfig(config))) {
     const value = config[key as keyof T] as unknown;
     (resolver as Resolver<unknown>).check(value, action, ec);
   }

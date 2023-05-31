@@ -29,19 +29,19 @@ function LogMessage({
 }
 
 function AttackMessage({
-  pre: { attacker, target, weapon, ammo, spell },
+  pre: { who, target, weapon, ammo, spell },
   roll,
   total,
 }: EventData["attack"]) {
   return (
     <LogMessage
-      message={`${attacker.name} attacks ${target.name}${
+      message={`${who.name} attacks ${target.name}${
         roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""
       }${weapon ? ` with ${weapon.name}` : ""}${
         spell ? ` with ${spell.name}` : ""
       }${ammo ? `, firing ${ammo.name}` : ""} (${total}).`}
     >
-      <CombatantRef who={attacker} />
+      <CombatantRef who={who} />
       attacks&nbsp;
       <CombatantRef who={target} />
       {roll.diceType !== "normal" && ` at ${roll.diceType}`}
@@ -173,12 +173,13 @@ export default function EventLog({ g }: { g: Engine }) {
     g.events.on("combatantDied", ({ detail }) =>
       addMessage(<DeathMessage {...detail} />)
     );
-    g.events.on("effectAdded", ({ detail }) =>
-      addMessage(<EffectAddedMessage {...detail} />)
-    );
-    g.events.on("effectRemoved", ({ detail }) =>
-      addMessage(<EffectRemovedMessage {...detail} />)
-    );
+    g.events.on("effectAdded", ({ detail }) => {
+      if (!detail.effect.quiet) addMessage(<EffectAddedMessage {...detail} />);
+    });
+    g.events.on("effectRemoved", ({ detail }) => {
+      if (!detail.effect.quiet)
+        addMessage(<EffectRemovedMessage {...detail} />);
+    });
     g.events.on("spellCast", ({ detail }) =>
       addMessage(<CastMessage {...detail} />)
     );

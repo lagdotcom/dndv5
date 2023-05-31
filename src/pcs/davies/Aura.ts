@@ -17,6 +17,8 @@ export default class Aura extends PC {
   constructor(g: Engine) {
     super(g, "Aura", tokenUrl);
 
+    this.toolProficiencies.set("dice set", 1);
+    this.toolProficiencies.set("horn", 1);
     this.setAbilityScores(8, 15, 11, 14, 9, 14);
     this.setRace(AirGenasi);
 

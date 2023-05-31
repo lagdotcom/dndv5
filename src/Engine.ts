@@ -246,7 +246,7 @@ export default class Engine {
       return { outcome: "cancelled", hit: false } as const;
 
     const roll = await this.roll(
-      { type: "attack", who: e.attacker, target: e.target, ability: e.ability },
+      { type: "attack", who: e.who, target: e.target, ability: e.ability },
       pre.detail.diceType.result
     );
 

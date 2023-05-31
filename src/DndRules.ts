@@ -16,8 +16,8 @@ export class DndRule {
 }
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
-  g.events.on("beforeAttack", ({ detail: { attacker, ability, bonus } }) => {
-    bonus.add(attacker[ability], AbilityScoreRule);
+  g.events.on("beforeAttack", ({ detail: { who, ability, bonus } }) => {
+    bonus.add(who[ability], AbilityScoreRule);
   });
 
   g.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
@@ -47,8 +47,8 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
 });
 
 export const BlindedRule = new DndRule("Blinded", (g) => {
-  g.events.on("beforeAttack", ({ detail: { attacker, diceType, target } }) => {
-    if (attacker.conditions.has("Blinded"))
+  g.events.on("beforeAttack", ({ detail: { who, diceType, target } }) => {
+    if (who.conditions.has("Blinded"))
       diceType.add("disadvantage", BlindedRule);
     if (target.conditions.has("Blinded"))
       diceType.add("advantage", BlindedRule);
@@ -66,10 +66,10 @@ export const EffectsRule = new DndRule("Effects", (g) => {
 export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
   g.events.on(
     "beforeAttack",
-    ({ detail: { attacker, target, weapon, diceType } }) => {
+    ({ detail: { who, target, weapon, diceType } }) => {
       if (
         typeof weapon?.shortRange === "number" &&
-        distance(g, attacker, target) > weapon.shortRange
+        distance(g, who, target) > weapon.shortRange
       )
         diceType.add("disadvantage", LongRangeAttacksRule);
     }
@@ -106,18 +106,11 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
 });
 
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
-  g.events.on(
-    "beforeAttack",
-    ({ detail: { attacker, bonus, spell, weapon } }) => {
-      const mul = weapon
-        ? attacker.getProficiencyMultiplier(weapon)
-        : spell
-        ? 1
-        : 0;
+  g.events.on("beforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
+    const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
 
-      bonus.add(attacker.pb * mul, ProficiencyRule);
-    }
-  );
+    bonus.add(who.pb * mul, ProficiencyRule);
+  });
 });
 
 export const ResourcesRule = new DndRule("Resources", (g) => {

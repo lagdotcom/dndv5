@@ -16,7 +16,7 @@ const FireBolt = simpleSpell<HasTarget>({
 
   async apply(g, attacker, method, { target }) {
     const { attack, critical, hit } = await g.attack({
-      attacker,
+      who: attacker,
       target,
       ability: method.ability,
       spell: FireBolt,

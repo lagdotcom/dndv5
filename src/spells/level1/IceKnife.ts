@@ -31,7 +31,7 @@ const IceKnife = scalingSpell<HasTarget>({
 
   async apply(g, attacker, method, { slot, target }) {
     const { attack, hit, critical } = await g.attack({
-      attacker,
+      who: attacker,
       target,
       ability: method.ability,
       spell: IceKnife,
