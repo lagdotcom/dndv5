@@ -98,6 +98,7 @@ type EventData = {
     who: Combatant;
     bonus: BonusCollector;
     diceType: DiceTypeCollector;
+    interrupt: InterruptionCollector;
   };
   getSpeed: {
     who: Combatant;

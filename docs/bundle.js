@@ -880,6 +880,9 @@
       if (ability)
         bonus.add(attacker[ability], AbilityScoreRule);
     });
+    g2.events.on("getInitiative", ({ detail: { who, bonus } }) => {
+      bonus.add(who.dex, AbilityScoreRule);
+    });
   });
   var ArmorCalculationRule = new DndRule("Armor Calculation", (g2) => {
     g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
@@ -1129,6 +1132,13 @@
     }
   };
 
+  // src/events/GetInitiativeEvent.ts
+  var GetInitiativeEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("getInitiative", { detail });
+    }
+  };
+
   // src/events/ListChoiceEvent.ts
   var ListChoiceEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1264,8 +1274,19 @@
     }
     rollInitiative(who) {
       return __async(this, null, function* () {
-        const roll = yield this.roll({ type: "initiative", who });
-        return roll.value + who.dex;
+        const gi = yield this.resolve(
+          new GetInitiativeEvent({
+            who,
+            bonus: new BonusCollector(),
+            diceType: new DiceTypeCollector(),
+            interrupt: new InterruptionCollector()
+          })
+        );
+        const roll = yield this.roll(
+          { type: "initiative", who },
+          gi.detail.diceType.result
+        );
+        return roll.value + gi.detail.bonus.result;
       });
     }
     savingThrow(dc, e) {
@@ -2934,6 +2955,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var BronzeDragonborn = makeAncestry("Bronze", "lightning");
 
   // src/utils/text.ts
+  var niceAbilityName = {
+    str: "Strength",
+    dex: "Dexterity",
+    con: "Constitution",
+    int: "Intelligence",
+    wis: "Wisdom",
+    cha: "Charisma"
+  };
+  function describeAbility(ability) {
+    return niceAbilityName[ability];
+  }
   function describeRange(min, max) {
     if (min === 0) {
       if (max === Infinity)
@@ -4907,26 +4939,36 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "."
     ] });
   }
-  var niceAbilityName = {
-    str: "Strength",
-    dex: "Dexterity",
-    con: "Constitution",
-    int: "Intelligence",
-    wis: "Wisdom",
-    cha: "Charisma"
-  };
+  function InitiativeMessage({ diceType, type, value }) {
+    return /* @__PURE__ */ o(
+      LogMessage,
+      {
+        message: `${type.who.name} rolls a ${value} for initiative${diceType !== "normal" && ` at ${diceType}`}.`,
+        children: [
+          /* @__PURE__ */ o(CombatantRef, { who: type.who }),
+          " rolls a ",
+          value,
+          " for initiative",
+          diceType !== "normal" && ` at ${diceType}`,
+          "."
+        ]
+      }
+    );
+  }
   function SaveMessage({ type, value }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${type.who.name} rolls a ${value} on a ${niceAbilityName[type.ability]} saving throw.`,
+        message: `${type.who.name} rolls a ${value} on a ${describeAbility(
+          type.ability
+        )} saving throw.`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: type.who }),
           " rolls a ",
           value,
           " on a",
           " ",
-          niceAbilityName[type.ability],
+          describeAbility(type.ability),
           " saving throw."
         ]
       }
@@ -4971,7 +5013,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
       );
       g2.events.on("diceRolled", ({ detail }) => {
-        if (detail.type.type === "save")
+        if (detail.type.type === "initiative")
+          addMessage(/* @__PURE__ */ o(InitiativeMessage, __spreadValues({}, detail)));
+        else if (detail.type.type === "save")
           addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)));
       });
     }, [addMessage, g2]);

@@ -1,4 +1,18 @@
+import Ability from "../types/Ability";
 import Point from "../types/Point";
+
+const niceAbilityName: Record<Ability, string> = {
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+};
+
+export function describeAbility(ability: Ability) {
+  return niceAbilityName[ability];
+}
 
 export function describeRange(min: number, max: number) {
   if (min === 0) {

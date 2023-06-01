@@ -3,10 +3,10 @@ import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
 import EventData from "../events/EventData";
-import Ability from "../types/Ability";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
-import { SavingThrow } from "../types/RollType";
+import { InitiativeRoll, SavingThrow } from "../types/RollType";
+import { describeAbility } from "../utils/text";
 import CombatantRef from "./CombatantRef";
 import common from "./common.module.scss";
 import styles from "./EventLog.module.scss";
@@ -125,26 +125,30 @@ function EffectRemovedMessage({ who, effect }: EventData["effectRemoved"]) {
   );
 }
 
-const niceAbilityName: Record<Ability, string> = {
-  str: "Strength",
-  dex: "Dexterity",
-  con: "Constitution",
-  int: "Intelligence",
-  wis: "Wisdom",
-  cha: "Charisma",
-};
-
 type Roll<T> = Omit<EventData["diceRolled"], "type"> & { type: T };
+
+function InitiativeMessage({ diceType, type, value }: Roll<InitiativeRoll>) {
+  return (
+    <LogMessage
+      message={`${type.who.name} rolls a ${value} for initiative${
+        diceType !== "normal" && ` at ${diceType}`
+      }.`}
+    >
+      <CombatantRef who={type.who} /> rolls a {value} for initiative
+      {diceType !== "normal" && ` at ${diceType}`}.
+    </LogMessage>
+  );
+}
 
 function SaveMessage({ type, value }: Roll<SavingThrow>) {
   return (
     <LogMessage
-      message={`${type.who.name} rolls a ${value} on a ${
-        niceAbilityName[type.ability]
-      } saving throw.`}
+      message={`${type.who.name} rolls a ${value} on a ${describeAbility(
+        type.ability
+      )} saving throw.`}
     >
       <CombatantRef who={type.who} /> rolls a {value} on a{" "}
-      {niceAbilityName[type.ability]} saving throw.
+      {describeAbility(type.ability)} saving throw.
     </LogMessage>
   );
 }
@@ -184,7 +188,9 @@ export default function EventLog({ g }: { g: Engine }) {
       addMessage(<CastMessage {...detail} />)
     );
     g.events.on("diceRolled", ({ detail }) => {
-      if (detail.type.type === "save")
+      if (detail.type.type === "initiative")
+        addMessage(<InitiativeMessage {...(detail as Roll<InitiativeRoll>)} />);
+      else if (detail.type.type === "save")
         addMessage(<SaveMessage {...(detail as Roll<SavingThrow>)} />);
     });
   }, [addMessage, g]);

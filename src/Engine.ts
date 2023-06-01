@@ -25,6 +25,7 @@ import GatherDamageEvent from "./events/GatherDamageEvent";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
+import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import ListChoiceEvent from "./events/ListChoiceEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
@@ -103,9 +104,20 @@ export default class Engine {
   }
 
   async rollInitiative(who: Combatant) {
-    // TODO get initiative roll type
-    const roll = await this.roll({ type: "initiative", who });
-    return roll.value + who.dex;
+    const gi = await this.resolve(
+      new GetInitiativeEvent({
+        who,
+        bonus: new BonusCollector(),
+        diceType: new DiceTypeCollector(),
+        interrupt: new InterruptionCollector(),
+      })
+    );
+
+    const roll = await this.roll(
+      { type: "initiative", who },
+      gi.detail.diceType.result
+    );
+    return roll.value + gi.detail.bonus.result;
   }
 
   async savingThrow(dc: number, e: Omit<SavingThrow, "type">) {

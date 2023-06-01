@@ -23,6 +23,10 @@ export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
     if (ability) bonus.add(attacker[ability], AbilityScoreRule);
   });
+
+  g.events.on("getInitiative", ({ detail: { who, bonus } }) => {
+    bonus.add(who.dex, AbilityScoreRule);
+  });
 });
 
 export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
