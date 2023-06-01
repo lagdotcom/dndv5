@@ -1,4 +1,6 @@
-import PickFromListChoice from "../interruptions/PickFromListChoice";
+import PickFromListChoice, {
+  PickChoice,
+} from "../interruptions/PickFromListChoice";
 import { TurnResource } from "../resources";
 import DamageType from "../types/DamageType";
 import Enchantment from "../types/Enchantment";
@@ -15,6 +17,12 @@ const chaoticBurstTypes: DamageType[] = [
   "psychic",
   "thunder",
 ];
+
+const getOptionFromRoll = (roll: number): PickChoice<DamageType> => {
+  const value = chaoticBurstTypes[roll - 1];
+  return { label: value, value };
+};
+
 export const chaoticBurst: Enchantment<"weapon"> = {
   name: "chaotic burst",
   setup(g, item) {
@@ -55,12 +63,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
                 chaoticBurst,
                 "Chaotic Burst",
                 "Choose the damage type:",
-                new Map(
-                  [a, b].map((i) => [
-                    chaoticBurstTypes[i - 1],
-                    chaoticBurstTypes[i - 1],
-                  ])
-                ),
+                [a, b].map(getOptionFromRoll),
                 async (type) => addBurst(type)
               )
             );

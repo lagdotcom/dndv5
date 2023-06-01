@@ -2185,6 +2185,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     "psychic",
     "thunder"
   ];
+  var getOptionFromRoll = (roll) => {
+    const value = chaoticBurstTypes[roll - 1];
+    return { label: value, value };
+  };
   var chaoticBurst = {
     name: "chaotic burst",
     setup(g2, item) {
@@ -2217,12 +2221,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
                   chaoticBurst,
                   "Chaotic Burst",
                   "Choose the damage type:",
-                  new Map(
-                    [a, b].map((i) => [
-                      chaoticBurstTypes[i - 1],
-                      chaoticBurstTypes[i - 1]
-                    ])
-                  ),
+                  [a, b].map(getOptionFromRoll),
                   (type) => __async(this, null, function* () {
                     return addBurst(type);
                   })
@@ -2746,6 +2745,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     ]
   };
   var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  function getMaxSpellSlotAvailable(who) {
+    for (let level = 1; level <= 9; level++) {
+      const name = getSpellSlotResourceName(level);
+      if (!who.resources.has(name))
+        return level - 1;
+    }
+    return 9;
+  }
   var NormalSpellcasting = class {
     constructor(name, ability, strength) {
       this.name = name;
@@ -3603,9 +3610,52 @@ Alternatively, you can expend 5 hit points from your pool of healing to cure the
 
 This feature has no effect on undead and constructs.`
   );
-  var DivineSmite = notImplementedFeature(
+  var DivineSmite = new SimpleFeature(
     "Divine Smite",
-    `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`
+    `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`,
+    (g2, me) => {
+      g2.events.on(
+        "gatherDamage",
+        ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
+          var _a;
+          if (attacker === me && ((_a = attack == null ? void 0 : attack.pre.weapon) == null ? void 0 : _a.rangeCategory) === "melee")
+            interrupt.add(
+              new PickFromListChoice(
+                attacker,
+                DivineSmite,
+                "Divine Smite",
+                "Choose a spell slot to use.",
+                [
+                  { label: "None", value: NaN },
+                  ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => {
+                    var _a2;
+                    return {
+                      label: ordinal(value),
+                      value,
+                      disabled: ((_a2 = me.resources.get(getSpellSlotResourceName(value))) != null ? _a2 : 0) < 1
+                    };
+                  })
+                ],
+                (slot) => __async(void 0, null, function* () {
+                  var _a2;
+                  if (isNaN(slot))
+                    return;
+                  const name = getSpellSlotResourceName(slot);
+                  me.resources.set(name, ((_a2 = me.resources.get(name)) != null ? _a2 : 0) - 1);
+                  const count = Math.min(5, slot + 1);
+                  const extra = target.type === "undead" || target.type === "fiend" ? 1 : 0;
+                  const damage = yield g2.rollDamage(
+                    count + extra,
+                    { attacker, size: 8 },
+                    critical
+                  );
+                  map.add("radiant", damage);
+                })
+              )
+            );
+        }
+      );
+    }
   );
   var FightingStyle = notImplementedFeature(
     "Fighting Style",
@@ -5073,7 +5123,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [resolve]
     );
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [...interruption.items].map(([label, value]) => /* @__PURE__ */ o("button", { onClick: () => decide(value), children: label })) });
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [...interruption.items].map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label })) });
   }
 
   // src/ui/Menu.module.scss

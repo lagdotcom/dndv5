@@ -57,6 +57,15 @@ const SpellSlots = {
 export const getSpellSlotResourceName = (level: number) =>
   `Spell Slot (${level})` as const;
 
+export function getMaxSpellSlotAvailable(who: Combatant) {
+  for (let level = 1; level <= 9; level++) {
+    const name = getSpellSlotResourceName(level);
+    if (!who.resources.has(name)) return level - 1;
+  }
+
+  return 9;
+}
+
 interface Entry {
   resources: Resource[];
 }

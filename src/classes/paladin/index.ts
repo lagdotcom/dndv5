@@ -1,8 +1,13 @@
 import CastSpell from "../../actions/CastSpell";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
-import NormalSpellcasting from "../../spells/NormalSpellcasting";
+import PickFromListChoice from "../../interruptions/PickFromListChoice";
+import NormalSpellcasting, {
+  getMaxSpellSlotAvailable,
+  getSpellSlotResourceName,
+} from "../../spells/NormalSpellcasting";
 import PCClass from "../../types/PCClass";
+import { enumerate, ordinal } from "../../utils/numbers";
 import { makeASI } from "../common";
 
 // TODO
@@ -25,10 +30,52 @@ Alternatively, you can expend 5 hit points from your pool of healing to cure the
 This feature has no effect on undead and constructs.`
 );
 
-// TODO
-const DivineSmite = notImplementedFeature(
+const DivineSmite = new SimpleFeature(
   "Divine Smite",
-  `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`
+  `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`,
+  (g, me) => {
+    g.events.on(
+      "gatherDamage",
+      ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
+        if (attacker === me && attack?.pre.weapon?.rangeCategory === "melee")
+          interrupt.add(
+            new PickFromListChoice(
+              attacker,
+              DivineSmite,
+              "Divine Smite",
+              "Choose a spell slot to use.",
+              [
+                { label: "None", value: NaN },
+                ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
+                  label: ordinal(value),
+                  value,
+                  disabled:
+                    (me.resources.get(getSpellSlotResourceName(value)) ?? 0) <
+                    1,
+                })),
+              ],
+              async (slot) => {
+                if (isNaN(slot)) return;
+
+                const name = getSpellSlotResourceName(slot);
+                me.resources.set(name, (me.resources.get(name) ?? 0) - 1);
+
+                const count = Math.min(5, slot + 1);
+                const extra =
+                  target.type === "undead" || target.type === "fiend" ? 1 : 0;
+
+                const damage = await g.rollDamage(
+                  count + extra,
+                  { attacker, size: 8 },
+                  critical
+                );
+                map.add("radiant", damage);
+              }
+            )
+          );
+      }
+    );
+  }
 );
 
 // TODO
