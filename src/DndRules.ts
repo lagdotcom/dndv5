@@ -121,8 +121,7 @@ export const ResourcesRule = new DndRule("Resources", (g) => {
   g.events.on("turnStarted", ({ detail: { who } }) => {
     for (const name of who.resources.keys()) {
       const resource = ResourceRegistry.get(name);
-      if (resource?.refresh === "turnStart")
-        who.resources.set(name, resource.maximum);
+      if (resource?.refresh === "turnStart") who.refreshResource(resource);
     }
   });
 });

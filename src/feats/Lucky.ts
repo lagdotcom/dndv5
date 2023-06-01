@@ -32,7 +32,7 @@ const Lucky = new SimpleFeature(
 - You can also spend one luck point when an attack roll is made against you. Roll a d20, and then choose whether the attack uses the attacker's roll or yours. If more than one creature spends a luck point to influence the outcome of a roll, the points cancel each other out; no additional dice are rolled.
 - You regain your expended luck points when you finish a long rest.`,
   (g, me) => {
-    me.addResource(LuckPoint);
+    me.initResource(LuckPoint);
 
     g.events.on("diceRolled", ({ detail }) => {
       const { type, interrupt, value } = detail;

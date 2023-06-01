@@ -27,6 +27,7 @@ import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
 import SkillName from "./types/SkillName";
 import Spell from "./types/Spell";
+import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
 import { getAbilityBonus } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
@@ -95,6 +96,8 @@ export default abstract class AbstractCombatant implements Combatant {
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
+  resourcesMax: Map<string, number>;
+  spellcastingMethods: Set<SpellcastingMethod>;
 
   constructor(
     public g: Engine,
@@ -179,6 +182,8 @@ export default abstract class AbstractCombatant implements Combatant {
     this.knownSpells = new Set();
     this.preparedSpells = new Set();
     this.toolProficiencies = new Map();
+    this.resourcesMax = new Map();
+    this.spellcastingMethods = new Set();
   }
 
   get str() {
@@ -330,15 +335,28 @@ export default abstract class AbstractCombatant implements Combatant {
     return 0;
   }
 
-  addResource(resource: Resource, amount?: number): void {
-    this.resources.set(resource.name, amount ?? resource.maximum);
+  initResource(resource: Resource, amount = resource.maximum, max = amount) {
+    this.resources.set(resource.name, amount);
+    this.resourcesMax.set(resource.name, max);
   }
 
-  hasResource(resource: Resource, amount = 1): boolean {
+  giveResource(resource: Resource, amount: number) {
+    const old = this.resources.get(resource.name) ?? 0;
+    this.resources.set(
+      resource.name,
+      Math.min(old + amount, this.getResourceMax(resource))
+    );
+  }
+
+  hasResource(resource: Resource, amount = 1) {
     return (this.resources.get(resource.name) ?? 0) >= amount;
   }
 
-  spendResource(resource: Resource, amount = 1): void {
+  refreshResource(resource: Resource): void {
+    this.resources.set(resource.name, this.getResourceMax(resource));
+  }
+
+  spendResource(resource: Resource, amount = 1) {
     const old = this.resources.get(resource.name) ?? 0;
     if (old < amount)
       throw new Error(`Cannot spend ${amount} of ${resource.name} resource`);
@@ -346,7 +364,19 @@ export default abstract class AbstractCombatant implements Combatant {
     this.resources.set(resource.name, old - amount);
   }
 
-  getConfig<T>(key: string): T | undefined {
+  getResource(resource: Resource) {
+    return this.resources.get(resource.name) ?? 0;
+  }
+
+  getResourceMax(resource: Resource) {
+    return this.resourcesMax.get(resource.name) ?? resource.maximum;
+  }
+
+  removeResource(resource: Resource) {
+    this.resources.delete(resource.name);
+  }
+
+  getConfig<T>(key: string) {
     return this.configs.get(key) as T | undefined;
   }
 
@@ -354,7 +384,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.configs.set(feature.name, config);
   }
 
-  concentrateOn(entry: Concentration): void {
+  concentrateOn(entry: Concentration) {
     // TODO destroy existing concentratingOn entries?
     this.concentratingOn.add(entry);
   }

@@ -7,6 +7,7 @@ import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
+import { enumerate } from "../utils/numbers";
 
 type SpellcastingStrength = "full" | "half";
 
@@ -60,6 +61,10 @@ const SpellSlots = {
 export const getSpellSlotResourceName = (level: number) =>
   `Spell Slot (${level})` as const;
 
+export const SpellSlotResources = enumerate(0, 9).map(
+  (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+);
+
 export function getMaxSpellSlotAvailable(who: Combatant) {
   for (let level = 1; level <= 9; level++) {
     const name = getSpellSlotResourceName(level);
@@ -90,15 +95,14 @@ export default class NormalSpellcasting implements SpellcastingMethod {
 
     this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
       this.initialise(me, me.classLevels.get(className) ?? 1);
+      me.spellcastingMethods.add(this);
 
       g.events.on("getActions", ({ detail: { who, actions } }) => {
         if (who === me) {
-          const { spells } = this.getEntry(who);
-
           // TODO rituals in knownSpells
 
           for (const spell of me.preparedSpells) {
-            if (spell.lists.includes(list) || spells.has(spell))
+            if (this.canCast(spell, who))
               actions.push(new CastSpell(g, me, this, spell));
           }
         }
@@ -115,7 +119,12 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     return entry;
   }
 
-  addCastableSpell(spell: Spell<object>, caster: Combatant): void {
+  canCast(spell: Spell, caster: Combatant) {
+    const { spells } = this.getEntry(caster);
+    return spell.lists.includes(this.list) || spells.has(spell);
+  }
+
+  addCastableSpell(spell: Spell, caster: Combatant) {
     const { spells } = this.getEntry(caster);
     spells.add(spell);
   }
@@ -125,12 +134,8 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     const resources: Resource[] = [];
 
     for (let i = 0; i < slots.length; i++) {
-      const resource = new LongRestResource(
-        getSpellSlotResourceName(i + 1),
-        slots[i]
-      );
-      who.addResource(resource);
-
+      const resource = SpellSlotResources[i + 1];
+      who.initResource(resource, slots[i]);
       resources.push(resource);
     }
 

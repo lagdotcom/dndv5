@@ -478,6 +478,8 @@
       this.knownSpells = /* @__PURE__ */ new Set();
       this.preparedSpells = /* @__PURE__ */ new Set();
       this.toolProficiencies = /* @__PURE__ */ new Map();
+      this.resourcesMax = /* @__PURE__ */ new Map();
+      this.spellcastingMethods = /* @__PURE__ */ new Set();
     }
     get str() {
       return getAbilityBonus(this.strScore);
@@ -611,12 +613,24 @@
       }
       return 0;
     }
-    addResource(resource, amount) {
-      this.resources.set(resource.name, amount != null ? amount : resource.maximum);
+    initResource(resource, amount = resource.maximum, max = amount) {
+      this.resources.set(resource.name, amount);
+      this.resourcesMax.set(resource.name, max);
+    }
+    giveResource(resource, amount) {
+      var _a;
+      const old = (_a = this.resources.get(resource.name)) != null ? _a : 0;
+      this.resources.set(
+        resource.name,
+        Math.min(old + amount, this.getResourceMax(resource))
+      );
     }
     hasResource(resource, amount = 1) {
       var _a;
       return ((_a = this.resources.get(resource.name)) != null ? _a : 0) >= amount;
+    }
+    refreshResource(resource) {
+      this.resources.set(resource.name, this.getResourceMax(resource));
     }
     spendResource(resource, amount = 1) {
       var _a;
@@ -624,6 +638,17 @@
       if (old < amount)
         throw new Error(`Cannot spend ${amount} of ${resource.name} resource`);
       this.resources.set(resource.name, old - amount);
+    }
+    getResource(resource) {
+      var _a;
+      return (_a = this.resources.get(resource.name)) != null ? _a : 0;
+    }
+    getResourceMax(resource) {
+      var _a;
+      return (_a = this.resourcesMax.get(resource.name)) != null ? _a : resource.maximum;
+    }
+    removeResource(resource) {
+      this.resources.delete(resource.name);
     }
     getConfig(key) {
       return this.configs.get(key);
@@ -807,6 +832,14 @@
 
   // src/resources.ts
   var ResourceRegistry = /* @__PURE__ */ new Map();
+  var ShortRestResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "shortRest";
+    }
+  };
   var LongRestResource = class {
     constructor(name, maximum) {
       this.name = name;
@@ -963,7 +996,7 @@
       for (const name of who.resources.keys()) {
         const resource = ResourceRegistry.get(name);
         if ((resource == null ? void 0 : resource.refresh) === "turnStart")
-          who.resources.set(name, resource.maximum);
+          who.refreshResource(resource);
       }
     });
   });
@@ -1863,12 +1896,13 @@
       const spells = entries.filter((entry) => entry.level <= casterLevel);
       for (const { resource, spell } of spells) {
         if (resource)
-          me.addResource(resource);
+          me.initResource(resource);
         if (addAsList) {
           me.preparedSpells.add(spell);
           method.addCastableSpell(spell, me);
         }
       }
+      me.spellcastingMethods.add(method);
       if (!addAsList)
         g2.events.on("getActions", ({ detail: { who, actions } }) => {
           if (who === me)
@@ -1959,7 +1993,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     (g2, me) => {
       var _a;
       const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
-      me.addResource(SneakAttackResource);
+      me.initResource(SneakAttackResource);
       g2.events.on(
         "gatherDamage",
         ({
@@ -2288,7 +2322,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       item.name = `chaotic burst ${item.weaponType}`;
       g2.events.on("turnStarted", ({ detail: { who } }) => {
         if (who.equipment.has(item) && who.attunements.has(item))
-          who.addResource(ChaoticBurstResource);
+          who.initResource(ChaoticBurstResource);
       });
       g2.events.on(
         "gatherDamage",
@@ -2354,7 +2388,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 - You can also spend one luck point when an attack roll is made against you. Roll a d20, and then choose whether the attack uses the attacker's roll or yours. If more than one creature spends a luck point to influence the outcome of a roll, the points cancel each other out; no additional dice are rolled.
 - You regain your expended luck points when you finish a long rest.`,
     (g2, me) => {
-      me.addResource(LuckPoint);
+      me.initResource(LuckPoint);
       g2.events.on("diceRolled", ({ detail }) => {
         const { type, interrupt, value } = detail;
         if ((type.type === "attack" || type.type === "check" || type.type === "save") && type.who === me && me.hasResource(LuckPoint))
@@ -2676,7 +2710,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     "Mingle with the Wind",
     `You can cast the levitate spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell.`,
     (g2, me) => {
-      me.addResource(MingleWithTheWindResource);
+      me.initResource(MingleWithTheWindResource);
       g2.events.on("getActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new CastSpell(g2, me, MingleWithTheWindMethod, Levitate_default));
@@ -2780,6 +2814,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     ]
   };
   var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var SpellSlotResources = enumerate(0, 9).map(
+    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+  );
   function getMaxSpellSlotAvailable(who) {
     for (let level = 1; level <= 9; level++) {
       const name = getSpellSlotResourceName(level);
@@ -2800,11 +2837,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.feature = new SimpleFeature("Spellcasting", text, (g2, me) => {
         var _a;
         this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        me.spellcastingMethods.add(this);
         g2.events.on("getActions", ({ detail: { who, actions } }) => {
           if (who === me) {
-            const { spells } = this.getEntry(who);
             for (const spell of me.preparedSpells) {
-              if (spell.lists.includes(list) || spells.has(spell))
+              if (this.canCast(spell, who))
                 actions.push(new CastSpell(g2, me, this, spell));
             }
           }
@@ -2819,6 +2856,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         );
       return entry;
     }
+    canCast(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      return spell.lists.includes(this.list) || spells.has(spell);
+    }
     addCastableSpell(spell, caster) {
       const { spells } = this.getEntry(caster);
       spells.add(spell);
@@ -2827,11 +2868,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       const slots = SpellSlots[this.strength][casterLevel - 1];
       const resources = [];
       for (let i = 0; i < slots.length; i++) {
-        const resource = new LongRestResource(
-          getSpellSlotResourceName(i + 1),
-          slots[i]
-        );
-        who.addResource(resource);
+        const resource = SpellSlotResources[i + 1];
+        who.initResource(resource, slots[i]);
         resources.push(resource);
       }
       this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
@@ -3481,7 +3519,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { points, slot }) {
         const meteors = slot * 2;
-        attacker.addResource(MeteorResource, meteors);
+        attacker.initResource(MeteorResource, meteors);
         yield fireMeteors(g2, attacker, method, { points });
         let meteorActionEnabled = false;
         const removeMeteorAction = g2.events.on(
@@ -3507,7 +3545,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             return __async(this, null, function* () {
               removeMeteorAction();
               removeTurnListener();
-              attacker.resources.set(MeteorResource.name, 0);
+              attacker.removeResource(MeteorResource);
             });
           }
         });
@@ -3639,6 +3677,115 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/classes/paladin/common.ts
+  var PaladinSpellcasting = new NormalSpellcasting(
+    "Paladin",
+    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
+    "cha",
+    "half",
+    "Paladin",
+    "Paladin"
+  );
+  var ChannelDivinityResource = new ShortRestResource(
+    "Channel Divinity",
+    1
+  );
+
+  // src/resolvers/ChoiceResolver.ts
+  var ChoiceResolver = class {
+    constructor(g2, entries) {
+      this.g = g2;
+      this.entries = entries;
+      this.type = "Choice";
+    }
+    get name() {
+      return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
+    }
+    check(value, action, ec = new ErrorCollector()) {
+      if (!value)
+        ec.add("No choice made", this);
+      else if (!this.entries.find((e) => e.value === value))
+        ec.add("Invalid choice", this);
+      return ec;
+    }
+  };
+
+  // src/classes/paladin/HarnessDivinePower.ts
+  var HarnessDivinePowerResource = new LongRestResource(
+    "Harness Divine Power",
+    1
+  );
+  var HarnessDivinePowerAction = class {
+    constructor(g2, actor) {
+      this.g = g2;
+      this.actor = actor;
+      this.name = "Harness Divine Power";
+      this.time = "bonus action";
+      this.config = {
+        slot: new ChoiceResolver(
+          g2,
+          enumerate(1, 9).filter((slot) => actor.resources.has(getSpellSlotResourceName(slot))).map((value) => {
+            const resource = SpellSlotResources[value];
+            return {
+              label: ordinal(value),
+              value,
+              disabled: actor.getResourceMax(resource) <= actor.getResource(resource)
+            };
+          })
+        )
+      };
+    }
+    getAffectedArea() {
+      return void 0;
+    }
+    getConfig() {
+      return this.config;
+    }
+    getDamage() {
+      return void 0;
+    }
+    check({ slot }, ec = new ErrorCollector()) {
+      if (!this.actor.hasResource(HarnessDivinePowerResource))
+        ec.add("no Harness Divine Power left", this);
+      if (slot) {
+        const resource = SpellSlotResources[slot];
+        if (this.actor.getResource(resource) === this.actor.getResourceMax(resource))
+          ec.add(`full on ${resource.name}`, this);
+      }
+      return ec;
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ slot }) {
+        this.actor.spendResource(ChannelDivinityResource);
+        this.actor.time.delete("bonus action");
+        this.actor.giveResource(SpellSlotResources[slot], 1);
+      });
+    }
+  };
+  function getHarnessCount(level) {
+    if (level < 7)
+      return 1;
+    if (level < 15)
+      return 2;
+    return 3;
+  }
+  var HarnessDivinePower = new SimpleFeature(
+    "Channel Divinity: Harness Divine Power",
+    `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`,
+    (g2, me) => {
+      var _a;
+      me.initResource(
+        HarnessDivinePowerResource,
+        getHarnessCount((_a = me.classLevels.get("Paladin")) != null ? _a : 3)
+      );
+      g2.events.on("getActions", ({ detail: { actions, who } }) => {
+        if (who === me)
+          actions.push(new HarnessDivinePowerAction(g2, me));
+      });
+    }
+  );
+  var HarnessDivinePower_default = HarnessDivinePower;
+
   // src/classes/paladin/index.ts
   var DivineSense = notImplementedFeature(
     "Divine Sense",
@@ -3672,21 +3819,16 @@ This feature has no effect on undead and constructs.`
                 "Choose a spell slot to use.",
                 [
                   { label: "None", value: NaN },
-                  ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => {
-                    var _a;
-                    return {
-                      label: ordinal(value),
-                      value,
-                      disabled: ((_a = me.resources.get(getSpellSlotResourceName(value))) != null ? _a : 0) < 1
-                    };
-                  })
+                  ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
+                    label: ordinal(value),
+                    value,
+                    disabled: me.getResource(SpellSlotResources[value]) < 1
+                  }))
                 ],
                 (slot) => __async(void 0, null, function* () {
-                  var _a;
                   if (isNaN(slot))
                     return;
-                  const name = getSpellSlotResourceName(slot);
-                  me.resources.set(name, ((_a = me.resources.get(name)) != null ? _a : 0) - 1);
+                  me.spendResource(SpellSlotResources[slot], 1);
                   const count = Math.min(5, slot + 1);
                   const extra = target.type === "undead" || target.type === "fiend" ? 1 : 0;
                   const damage = yield g2.rollDamage(
@@ -3706,17 +3848,18 @@ This feature has no effect on undead and constructs.`
     "Fighting Style",
     `At 2nd level, you adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`
   );
-  var PaladinSpellcasting = new NormalSpellcasting(
-    "Paladin",
-    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-    "cha",
-    "half",
-    "Paladin",
-    "Paladin"
-  );
   var DivineHealth = notImplementedFeature(
     "Divine Health",
     `By 3rd level, the divine magic flowing through you makes you immune to disease.`
+  );
+  var ChannelDivinity = new SimpleFeature(
+    "Channel Divinity",
+    `Your oath allows you to channel divine energy to fuel magical effects. Each Channel Divinity option provided by your oath explains how to use it.
+When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
+Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
+    (g2, me) => {
+      me.initResource(ChannelDivinityResource);
+    }
   );
   var MartialVersatility = nonCombatFeature(
     "Martial Versatility",
@@ -3771,7 +3914,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     features: /* @__PURE__ */ new Map([
       [1, [DivineSense, LayOnHands]],
       [2, [DivineSmite, FightingStyle, PaladinSpellcasting.feature]],
-      [3, [DivineHealth]],
+      [3, [DivineHealth, ChannelDivinity, HarnessDivinePower_default]],
       [4, [ASI43, MartialVersatility]],
       [5, [ExtraAttack]],
       [6, [AuraOfProtection]],
@@ -4197,26 +4340,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   });
   var GustOfWind_default = GustOfWind;
 
-  // src/resolvers/TextChoiceResolver.ts
-  var TextChoiceResolver = class {
-    constructor(g2, choices) {
-      this.g = g2;
-      this.type = "Text";
-      this.values = new Set(choices);
-    }
-    get name() {
-      return `One of: ${[...this.values].join(", ")}`;
-    }
-    check(value, action, ec = new ErrorCollector()) {
-      if (!value)
-        ec.add("No choice made", this);
-      else if (!this.values.has(value))
-        ec.add("Invalid choice", this);
-      return ec;
-    }
-  };
-
   // src/spells/level3/WallOfWater.ts
+  var shapeChoices = [
+    { label: "line", value: "line" },
+    { label: "ring", value: "ring" }
+  ];
   var WallOfWater = simpleSpell({
     name: "Wall of Water",
     level: 3,
@@ -4228,7 +4356,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({
       point: new PointResolver(g2, 60),
-      shape: new TextChoiceResolver(g2, ["line", "ring"])
+      shape: new ChoiceResolver(g2, shapeChoices)
     }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
@@ -4875,6 +5003,30 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       )) })
     ] });
   }
+  function ChooseText({
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Choice: ",
+        value != null ? value : "NONE"
+      ] }),
+      /* @__PURE__ */ o("div", { children: resolver.entries.map((e) => /* @__PURE__ */ o(
+        "button",
+        {
+          className: classnames({ [ChooseActionConfigPanel_module_default.active]: value === e.value }),
+          "aria-pressed": value === e.value,
+          onClick: () => onChange(field, e.value),
+          disabled: e.disabled,
+          children: e.label
+        },
+        e.label
+      )) })
+    ] });
+  }
   function getInitialConfig(action, initial) {
     const config = __spreadValues({}, initial);
     for (const [key, resolver] of Object.entries(action.getConfig(config))) {
@@ -4932,6 +5084,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           return /* @__PURE__ */ o(ChoosePoints, __spreadValues({}, props));
         else if (resolver instanceof SlotResolver)
           return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, props));
+        else if (resolver instanceof ChoiceResolver)
+          return /* @__PURE__ */ o(ChooseText, __spreadValues({}, props));
         else
           return /* @__PURE__ */ o("div", { children: [
             "(no frontend for resolver type [",

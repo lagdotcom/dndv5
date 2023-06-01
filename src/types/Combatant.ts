@@ -15,6 +15,7 @@ import SizeCategory from "./SizeCategory";
 import SkillName from "./SkillName";
 import Source from "./Source";
 import Spell from "./Spell";
+import SpellcastingMethod from "./SpellcastingMethod";
 import ToolName from "./ToolName";
 
 export default interface Combatant extends Source {
@@ -66,6 +67,7 @@ export default interface Combatant extends Source {
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
+  spellcastingMethods: Set<SpellcastingMethod>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;
@@ -75,9 +77,14 @@ export default interface Combatant extends Source {
   addFeature(feature: Feature): boolean;
   getConfig<T>(key: string): T | undefined;
   getProficiencyMultiplier(thing: Item | Ability | SkillName): number;
-  addResource(resource: Resource, amount?: number): void;
+  initResource(resource: Resource, amount?: number, max?: number): void;
+  giveResource(resource: Resource, amount: number): void;
   hasResource(resource: Resource, amount?: number): boolean;
+  refreshResource(resource: Resource): void;
   spendResource(resource: Resource, amount?: number): void;
+  getResource(resource: Resource): number;
+  getResourceMax(resource: Resource): number;
+  removeResource(resource: Resource): void;
   concentrateOn(entry: Concentration): void;
   finalise(): void;
   addEffect(effect: CombatantEffect, duration: number): void;

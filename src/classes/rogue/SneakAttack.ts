@@ -30,7 +30,7 @@ You don't need advantage on the attack roll if another enemy of the target is wi
 The amount of the extra damage increases as you gain levels in this class, as shown in the Sneak Attack column of the Rogue table.`,
   (g, me) => {
     const count = getSneakAttackDice(me.classLevels.get("Rogue") ?? 1);
-    me.addResource(SneakAttackResource);
+    me.initResource(SneakAttackResource);
 
     g.events.on(
       "gatherDamage",

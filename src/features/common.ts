@@ -25,12 +25,14 @@ export function bonusSpellsFeature(
 
     const spells = entries.filter((entry) => entry.level <= casterLevel);
     for (const { resource, spell } of spells) {
-      if (resource) me.addResource(resource);
+      if (resource) me.initResource(resource);
       if (addAsList) {
         me.preparedSpells.add(spell);
         method.addCastableSpell(spell, me);
       }
     }
+
+    me.spellcastingMethods.add(method);
 
     if (!addAsList)
       g.events.on("getActions", ({ detail: { who, actions } }) => {

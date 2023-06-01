@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
 
+import ChoiceResolver from "../resolvers/ChoiceResolver";
 import MultiPointResolver from "../resolvers/MultiPointResolver";
 import MultiTargetResolver from "../resolvers/MultiTargetResolver";
 import PointResolver from "../resolvers/PointResolver";
@@ -230,6 +231,32 @@ function ChooseSlot({
   );
 }
 
+function ChooseText<T>({
+  field,
+  resolver,
+  value,
+  onChange,
+}: ChooserProps<T, ChoiceResolver<T>>) {
+  return (
+    <div>
+      <div>Choice: {value ?? "NONE"}</div>
+      <div>
+        {resolver.entries.map((e) => (
+          <button
+            key={e.label}
+            className={classnames({ [styles.active]: value === e.value })}
+            aria-pressed={value === e.value}
+            onClick={() => onChange(field, e.value)}
+            disabled={e.disabled}
+          >
+            {e.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function getInitialConfig<T extends object>(
   action: Action<T>,
   initial?: Partial<T>
@@ -303,6 +330,8 @@ export default function ChooseActionConfigPanel<T extends object>({
           return <ChoosePoints {...props} />;
         else if (resolver instanceof SlotResolver)
           return <ChooseSlot {...props} />;
+        else if (resolver instanceof ChoiceResolver)
+          return <ChooseText {...props} />;
         else
           return (
             <div>

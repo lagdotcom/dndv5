@@ -1,9 +1,17 @@
 import { HasPoint } from "../../configs";
+import { PickChoice } from "../../interruptions/PickFromListChoice";
+import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import PointResolver from "../../resolvers/PointResolver";
-import TextChoiceResolver from "../../resolvers/TextChoiceResolver";
 import { simpleSpell } from "../common";
 
-const WallOfWater = simpleSpell<HasPoint & { shape: "line" | "ring" }>({
+type Shape = "line" | "ring";
+
+const shapeChoices: PickChoice<Shape>[] = [
+  { label: "line", value: "line" },
+  { label: "ring", value: "ring" },
+];
+
+const WallOfWater = simpleSpell<HasPoint & { shape: Shape }>({
   name: "Wall of Water",
   level: 3,
   school: "Evocation",
@@ -15,7 +23,7 @@ const WallOfWater = simpleSpell<HasPoint & { shape: "line" | "ring" }>({
 
   getConfig: (g) => ({
     point: new PointResolver(g, 60),
-    shape: new TextChoiceResolver(g, ["line", "ring"]),
+    shape: new ChoiceResolver(g, shapeChoices),
   }),
 
   async apply(g, caster, method, { point, shape }) {

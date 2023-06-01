@@ -1,13 +1,15 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
-import NormalSpellcasting, {
+import {
   getMaxSpellSlotAvailable,
-  getSpellSlotResourceName,
+  SpellSlotResources,
 } from "../../spells/NormalSpellcasting";
 import PCClass from "../../types/PCClass";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { makeASI } from "../common";
+import { ChannelDivinityResource, PaladinSpellcasting } from "./common";
+import HarnessDivinePower from "./HarnessDivinePower";
 
 // TODO
 const DivineSense = notImplementedFeature(
@@ -48,16 +50,13 @@ const DivineSmite = new SimpleFeature(
                 ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
                   label: ordinal(value),
                   value,
-                  disabled:
-                    (me.resources.get(getSpellSlotResourceName(value)) ?? 0) <
-                    1,
+                  disabled: me.getResource(SpellSlotResources[value]) < 1,
                 })),
               ],
               async (slot) => {
                 if (isNaN(slot)) return;
 
-                const name = getSpellSlotResourceName(slot);
-                me.resources.set(name, (me.resources.get(name) ?? 0) - 1);
+                me.spendResource(SpellSlotResources[slot], 1);
 
                 const count = Math.min(5, slot + 1);
                 const extra =
@@ -83,19 +82,20 @@ const FightingStyle = notImplementedFeature(
   `At 2nd level, you adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`
 );
 
-export const PaladinSpellcasting = new NormalSpellcasting(
-  "Paladin",
-  `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-  "cha",
-  "half",
-  "Paladin",
-  "Paladin"
-);
-
 // TODO
 const DivineHealth = notImplementedFeature(
   "Divine Health",
   `By 3rd level, the divine magic flowing through you makes you immune to disease.`
+);
+
+const ChannelDivinity = new SimpleFeature(
+  "Channel Divinity",
+  `Your oath allows you to channel divine energy to fuel magical effects. Each Channel Divinity option provided by your oath explains how to use it.
+When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
+Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
+  (g, me) => {
+    me.initResource(ChannelDivinityResource);
+  }
 );
 
 const MartialVersatility = nonCombatFeature(
@@ -163,7 +163,7 @@ const Paladin: PCClass = {
   features: new Map([
     [1, [DivineSense, LayOnHands]],
     [2, [DivineSmite, FightingStyle, PaladinSpellcasting.feature]],
-    [3, [DivineHealth]],
+    [3, [DivineHealth, ChannelDivinity, HarnessDivinePower]],
     [4, [ASI4, MartialVersatility]],
     [5, [ExtraAttack]],
     [6, [AuraOfProtection]],

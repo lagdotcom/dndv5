@@ -128,7 +128,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
 
   async apply(g, attacker, method, { points, slot }) {
     const meteors = slot * 2;
-    attacker.addResource(MeteorResource, meteors);
+    attacker.initResource(MeteorResource, meteors);
 
     await fireMeteors(g, attacker, method, { points });
 
@@ -158,7 +158,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
       async onSpellEnd() {
         removeMeteorAction();
         removeTurnListener();
-        attacker.resources.set(MeteorResource.name, 0);
+        attacker.removeResource(MeteorResource);
       },
     });
   },

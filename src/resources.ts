@@ -2,6 +2,14 @@ import Resource from "./types/Resource";
 
 export const ResourceRegistry = new Map<string, Resource>();
 
+export class ShortRestResource implements Resource {
+  refresh: "shortRest";
+  constructor(public name: string, public maximum: number) {
+    ResourceRegistry.set(name, this);
+    this.refresh = "shortRest";
+  }
+}
+
 export class LongRestResource implements Resource {
   refresh: "longRest";
   constructor(public name: string, public maximum: number) {

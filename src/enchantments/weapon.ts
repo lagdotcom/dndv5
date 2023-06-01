@@ -31,7 +31,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
 
     g.events.on("turnStarted", ({ detail: { who } }) => {
       if (who.equipment.has(item) && who.attunements.has(item))
-        who.addResource(ChaoticBurstResource);
+        who.initResource(ChaoticBurstResource);
     });
 
     g.events.on(

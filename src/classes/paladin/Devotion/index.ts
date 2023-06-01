@@ -2,7 +2,7 @@ import { bonusSpellsFeature } from "../../../features/common";
 import ProtectionFromEvilAndGood from "../../../spells/level1/ProtectionFromEvilAndGood";
 import Sanctuary from "../../../spells/level1/Sanctuary";
 import PCSubclass from "../../../types/PCSubclass";
-import { PaladinSpellcasting } from "..";
+import { PaladinSpellcasting } from "../common";
 
 // TODO Sacred Weapon, Turn the Unholy, Aura of Devotion, Purity of Spirit, Holy Nimbus
 

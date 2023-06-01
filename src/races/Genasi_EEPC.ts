@@ -34,7 +34,7 @@ const MingleWithTheWind = new SimpleFeature(
   "Mingle with the Wind",
   `You can cast the levitate spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell.`,
   (g, me) => {
-    me.addResource(MingleWithTheWindResource);
+    me.initResource(MingleWithTheWindResource);
 
     g.events.on("getActions", ({ detail: { who, actions } }) => {
       if (who === me)
