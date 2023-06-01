@@ -1,5 +1,5 @@
-import CastSpell from "../actions/CastSpell";
 import {
+  bonusSpellsFeature,
   darkvisionFeature,
   nonCombatFeature,
   notImplementedFeature,
@@ -47,21 +47,12 @@ const ControlAirAndWaterMethod = new InnateSpellcasting(
   }
 );
 
-const ControlAirAndWater = new SimpleFeature(
+const ControlAirAndWater = bonusSpellsFeature(
   "Control Air and Water",
   `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can’t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
-  (g, me) => {
-    const spells = ControlAirAndWaterSpells.filter(
-      (entry) => entry.level <= me.level
-    );
-    for (const { resource } of spells) me.addResource(resource);
-
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
-      if (who === me)
-        for (const { spell } of spells)
-          actions.push(new CastSpell(g, me, ControlAirAndWaterMethod, spell));
-    });
-  }
+  "level",
+  ControlAirAndWaterMethod,
+  ControlAirAndWaterSpells
 );
 
 const Darkvision = darkvisionFeature();

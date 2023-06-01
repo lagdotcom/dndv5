@@ -1,11 +1,20 @@
-import BaseEffect from "../../BaseEffect";
 import { HasTarget } from "../../configs";
+import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { getCantripDice, simpleSpell } from "../common";
 
-const MindSliverEffect = new BaseEffect("Mind Sliver", "turnStart");
+const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
+  g.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+    if (who.hasEffect(MindSliverEffect)) {
+      who.removeEffect(MindSliverEffect);
+
+      const { value } = g.dice.roll({ type: "bane", who }, "normal");
+      bonus.add(-value, MindSliver);
+    }
+  });
+});
 
 const MindSliver = simpleSpell<HasTarget>({
   name: "Mind Sliver",
@@ -44,22 +53,15 @@ const MindSliver = simpleSpell<HasTarget>({
       );
 
       let endCounter = 2;
-      const kill1 = g.events.on("turnEnded", ({ detail: { who } }) => {
-        if (who === attacker && endCounter-- <= 0) {
-          kill1();
-          kill2();
+      const removeTurnTracker = g.events.on(
+        "turnEnded",
+        ({ detail: { who } }) => {
+          if (who === attacker && endCounter-- <= 0) {
+            removeTurnTracker();
+            target.removeEffect(MindSliverEffect);
+          }
         }
-      });
-      const kill2 = g.events.on("beforeSave", ({ detail: { who, bonus } }) => {
-        if (who === target) {
-          kill1();
-          kill2();
-          target.removeEffect(MindSliverEffect);
-
-          const { value } = g.dice.roll({ type: "bane", who }, "normal");
-          bonus.add(-value, MindSliver);
-        }
-      });
+      );
       target.addEffect(MindSliverEffect, 2);
     }
   },

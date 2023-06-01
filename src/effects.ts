@@ -1,3 +1,3 @@
-import BaseEffect from "./BaseEffect";
+import Effect from "./Effect";
 
-export const Dead = new BaseEffect("Dead", "turnStart", true);
+export const Dead = new Effect("Dead", "turnStart", undefined, true);

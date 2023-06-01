@@ -10,11 +10,11 @@ import Ability from "../types/Ability";
 import ACMethod from "../types/ACMethod";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import CombatantEffect from "../types/CombatantEffect";
 import { ConditionName } from "../types/ConditionName";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import DiceType from "../types/DiceType";
-import Effect from "../types/Effect";
 import EffectArea from "../types/EffectArea";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Point from "../types/Point";
@@ -35,6 +35,7 @@ type EventData = {
     who: Combatant;
     target: Combatant;
     ability: Ability;
+    type: "melee" | "ranged";
     weapon?: WeaponItem;
     ammo?: AmmoItem;
     spell?: Spell;
@@ -68,8 +69,12 @@ type EventData = {
     otherValues: Set<number>;
     interrupt: InterruptionCollector;
   };
-  effectAdded: { who: Combatant; effect: Effect; duration: number };
-  effectRemoved: { who: Combatant; effect: Effect; durationRemaining: number };
+  effectAdded: { who: Combatant; effect: CombatantEffect; duration: number };
+  effectRemoved: {
+    who: Combatant;
+    effect: CombatantEffect;
+    durationRemaining: number;
+  };
   gatherDamage: {
     attacker: Combatant;
     target: Combatant;

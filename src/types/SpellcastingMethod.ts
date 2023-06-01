@@ -7,6 +7,7 @@ import Spell from "./Spell";
 export default interface SpellcastingMethod extends Source {
   ability: Ability;
 
+  addCastableSpell(spell: Spell, caster: Combatant): void;
   getMinSlot(spell: Spell, caster: Combatant): number;
   getMaxSlot(spell: Spell, caster: Combatant): number;
   getResourceForSpell(

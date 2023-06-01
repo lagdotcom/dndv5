@@ -8,10 +8,10 @@ import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import Ability, { Abilities } from "./types/Ability";
 import Combatant from "./types/Combatant";
+import CombatantEffect from "./types/CombatantEffect";
 import Concentration from "./types/Concentration";
 import { ConditionName } from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
-import Effect from "./types/Effect";
 import Feature from "./types/Feature";
 import Item, {
   AmmoItem,
@@ -91,7 +91,7 @@ export default abstract class AbstractCombatant implements Combatant {
   time: Set<"action" | "bonus action" | "reaction">;
   attunements: Set<Item>;
   movedSoFar: number;
-  effects: Map<Effect, number>;
+  effects: Map<CombatantEffect, number>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
@@ -366,16 +366,16 @@ export default abstract class AbstractCombatant implements Combatant {
     this.hp = this.hpMax;
   }
 
-  addEffect(effect: Effect, duration: number) {
+  addEffect(effect: CombatantEffect, duration: number) {
     this.effects.set(effect, duration);
     this.g.fire(new EffectAddedEvent({ who: this, effect, duration }));
   }
 
-  hasEffect(effect: Effect) {
+  hasEffect(effect: CombatantEffect) {
     return this.effects.has(effect);
   }
 
-  removeEffect(effect: Effect) {
+  removeEffect(effect: CombatantEffect) {
     const durationRemaining = this.effects.get(effect) ?? NaN;
 
     this.effects.delete(effect);
@@ -384,7 +384,7 @@ export default abstract class AbstractCombatant implements Combatant {
     );
   }
 
-  tickEffects(durationTimer: Effect["durationTimer"]) {
+  tickEffects(durationTimer: CombatantEffect["durationTimer"]) {
     for (const [effect, duration] of this.effects) {
       if (effect.durationTimer === durationTimer) {
         this.effects.set(effect, duration - 1);

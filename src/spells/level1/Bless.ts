@@ -1,12 +1,27 @@
-import BaseEffect from "../../BaseEffect";
+import BonusCollector from "../../collectors/BonusCollector";
 import { HasTargets } from "../../configs";
-import { EventListener } from "../../events/Dispatcher";
+import Effect from "../../Effect";
+import Engine from "../../Engine";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
-const BlessEffect = new BaseEffect("Bless", "turnEnd");
+function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
+  if (who.hasEffect(BlessEffect)) {
+    const dr = g.dice.roll({ type: "bless", who }, "normal");
+    bonus.add(dr.value, BlessEffect);
+  }
+}
+
+const BlessEffect = new Effect("Bless", "turnEnd", (g) => {
+  g.events.on("beforeAttack", ({ detail: { bonus, who } }) =>
+    applyBless(g, who, bonus)
+  );
+  g.events.on("beforeSave", ({ detail: { bonus, who } }) =>
+    applyBless(g, who, bonus)
+  );
+});
 
 const Bless = scalingSpell<HasTargets>({
   name: "Bless",
@@ -23,30 +38,13 @@ const Bless = scalingSpell<HasTargets>({
   }),
 
   async apply(g, caster, method, { targets }) {
-    const blessCallback =
-      (me: Combatant): EventListener<"beforeAttack" | "beforeSave"> =>
-      ({ detail: { who, bonus } }) => {
-        if (who === me && me.hasEffect(BlessEffect)) {
-          const dr = g.dice.roll({ type: "bless", who }, "normal");
-          bonus.add(dr.value, BlessEffect);
-        }
-      };
-
-    const cleanup = targets.flatMap((target) => {
-      target.addEffect(BlessEffect, minutes(1));
-
-      return [
-        g.events.on("beforeAttack", blessCallback(target)),
-        g.events.on("beforeSave", blessCallback(target)),
-      ];
-    });
+    for (const target of targets) target.addEffect(BlessEffect, minutes(1));
 
     caster.concentrateOn({
       spell: Bless,
       duration: minutes(1),
       onSpellEnd: async () => {
         for (const target of targets) target.removeEffect(BlessEffect);
-        for (const cb of cleanup) cb();
       },
     });
   },

@@ -1,8 +1,11 @@
+import CastSpell from "../actions/CastSpell";
+import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
 import Ability from "../types/Ability";
 import Combatant from "../types/Combatant";
+import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
-import Spell from "../types/Spell";
+import Spell, { SpellList } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
 type SpellcastingStrength = "full" | "half";
@@ -68,17 +71,39 @@ export function getMaxSpellSlotAvailable(who: Combatant) {
 
 interface Entry {
   resources: Resource[];
+  spells: Set<Spell>;
 }
 
 export default class NormalSpellcasting implements SpellcastingMethod {
   entries: Map<Combatant, Entry>;
+  feature: SimpleFeature;
 
   constructor(
     public name: string,
+    public text: string,
     public ability: Ability,
-    public strength: SpellcastingStrength
+    public strength: SpellcastingStrength,
+    public className: PCClassName,
+    public list: SpellList
   ) {
     this.entries = new Map();
+
+    this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
+      this.initialise(me, me.classLevels.get(className) ?? 1);
+
+      g.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          const { spells } = this.getEntry(who);
+
+          // TODO rituals in knownSpells
+
+          for (const spell of me.preparedSpells) {
+            if (spell.lists.includes(list) || spells.has(spell))
+              actions.push(new CastSpell(g, me, this, spell));
+          }
+        }
+      });
+    });
   }
 
   private getEntry(who: Combatant) {
@@ -88,6 +113,11 @@ export default class NormalSpellcasting implements SpellcastingMethod {
         `${who.name} has not initialised their ${this.name} spellcasting method.`
       );
     return entry;
+  }
+
+  addCastableSpell(spell: Spell<object>, caster: Combatant): void {
+    const { spells } = this.getEntry(caster);
+    spells.add(spell);
   }
 
   initialise(who: Combatant, casterLevel: number) {
@@ -104,7 +134,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
       resources.push(resource);
     }
 
-    this.entries.set(who, { resources });
+    this.entries.set(who, { resources, spells: new Set() });
   }
 
   getMinSlot(spell: Spell) {

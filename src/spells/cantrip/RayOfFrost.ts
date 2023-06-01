@@ -1,16 +1,13 @@
-import BaseEffect from "../../BaseEffect";
 import { HasTarget } from "../../configs";
-import { DndRule } from "../../DndRules";
+import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
-const RayOfFrostEffect = new BaseEffect("Ray of Frost", "turnEnd");
-
-const RayOfFrostRule = new DndRule("Ray of Frost", (g) => {
+const RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g) => {
   g.events.on("getSpeed", ({ detail: { who, bonus } }) => {
-    if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostRule);
+    if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
   });
 });
 
@@ -28,6 +25,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
   async apply(g, attacker, method, { target }) {
     const { attack, critical, hit } = await g.attack({
       who: attacker,
+      type: "ranged",
       target,
       ability: method.ability,
       spell: RayOfFrost,

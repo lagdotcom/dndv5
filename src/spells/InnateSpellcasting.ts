@@ -13,6 +13,9 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     ) => Resource | undefined
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  addCastableSpell(): void {}
+
   getMinSlot(spell: Spell): number {
     return spell.level;
   }

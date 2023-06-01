@@ -1,4 +1,45 @@
+import CastSpell from "../actions/CastSpell";
+import PCClassName from "../types/PCClassName";
+import Resource from "../types/Resource";
+import Spell, { SpellList } from "../types/Spell";
+import SpellcastingMethod from "../types/SpellcastingMethod";
 import SimpleFeature from "./SimpleFeature";
+
+export type BonusSpellEntry = {
+  level: number;
+  resource?: Resource;
+  spell: Spell;
+};
+
+export function bonusSpellsFeature(
+  name: string,
+  text: string,
+  levelType: PCClassName | "level",
+  method: SpellcastingMethod,
+  entries: BonusSpellEntry[],
+  addAsList?: SpellList
+) {
+  return new SimpleFeature(name, text, (g, me) => {
+    const casterLevel =
+      levelType === "level" ? me.level : me.classLevels.get(levelType) ?? 1;
+
+    const spells = entries.filter((entry) => entry.level <= casterLevel);
+    for (const { resource, spell } of spells) {
+      if (resource) me.addResource(resource);
+      if (addAsList) {
+        me.preparedSpells.add(spell);
+        method.addCastableSpell(spell, me);
+      }
+    }
+
+    if (!addAsList)
+      g.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          for (const { spell } of spells)
+            actions.push(new CastSpell(g, me, method, spell));
+      });
+  });
+}
 
 export function darkvisionFeature(range = 60) {
   return new SimpleFeature(

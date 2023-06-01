@@ -8,6 +8,7 @@ import Action, { ActionConfig } from "../types/Action";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
+import { distance } from "../utils/units";
 
 export default class WeaponAttack implements Action<HasTarget> {
   ability: Ability;
@@ -51,8 +52,12 @@ export default class WeaponAttack implements Action<HasTarget> {
 
     // TODO spend action/attack
 
+    const type =
+      distance(g, attacker, target) > attacker.reach ? "ranged" : "melee";
+
     const { attack, critical, hit } = await g.attack({
       who: attacker,
+      type,
       target,
       ability,
       weapon,

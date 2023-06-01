@@ -1,9 +1,9 @@
 import Ability from "./Ability";
 import ActionTime from "./ActionTime";
+import CombatantEffect from "./CombatantEffect";
 import Concentration from "./Concentration";
 import { ConditionName } from "./ConditionName";
 import CreatureType from "./CreatureType";
-import Effect from "./Effect";
 import Feature from "./Feature";
 import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
 import LanguageName from "./LanguageName";
@@ -80,8 +80,8 @@ export default interface Combatant extends Source {
   spendResource(resource: Resource, amount?: number): void;
   concentrateOn(entry: Concentration): void;
   finalise(): void;
-  addEffect(effect: Effect, duration: number): void;
-  hasEffect(effect: Effect): boolean;
-  removeEffect(effect: Effect): void;
-  tickEffects(durationTimer: Effect["durationTimer"]): void;
+  addEffect(effect: CombatantEffect, duration: number): void;
+  hasEffect(effect: CombatantEffect): boolean;
+  removeEffect(effect: CombatantEffect): void;
+  tickEffects(durationTimer: CombatantEffect["durationTimer"]): void;
 }

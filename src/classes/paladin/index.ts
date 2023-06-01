@@ -1,4 +1,3 @@
-import CastSpell from "../../actions/CastSpell";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
@@ -37,7 +36,7 @@ const DivineSmite = new SimpleFeature(
     g.events.on(
       "gatherDamage",
       ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
-        if (attacker === me && attack?.pre.weapon?.rangeCategory === "melee")
+        if (attacker === me && attack?.pre.type === "melee")
           interrupt.add(
             new PickFromListChoice(
               attacker,
@@ -85,27 +84,12 @@ const FightingStyle = notImplementedFeature(
 );
 
 export const PaladinSpellcasting = new NormalSpellcasting(
-  "Spellcasting",
-  "cha",
-  "half"
-);
-const Spellcasting = new SimpleFeature(
-  "Spellcasting",
+  "Paladin",
   `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-  (g, me) => {
-    PaladinSpellcasting.initialise(me, me.classLevels.get("Paladin") ?? 1);
-
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
-      if (who === me) {
-        // TODO rituals in knownSpells
-
-        for (const spell of me.preparedSpells) {
-          if (spell.lists.includes("Paladin"))
-            actions.push(new CastSpell(g, me, PaladinSpellcasting, spell));
-        }
-      }
-    });
-  }
+  "cha",
+  "half",
+  "Paladin",
+  "Paladin"
 );
 
 // TODO
@@ -178,7 +162,7 @@ const Paladin: PCClass = {
   ]),
   features: new Map([
     [1, [DivineSense, LayOnHands]],
-    [2, [DivineSmite, FightingStyle, Spellcasting]],
+    [2, [DivineSmite, FightingStyle, PaladinSpellcasting.feature]],
     [3, [DivineHealth]],
     [4, [ASI4, MartialVersatility]],
     [5, [ExtraAttack]],

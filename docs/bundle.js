@@ -731,8 +731,10 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
+        const type = distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee";
         const { attack, critical, hit } = yield g2.attack({
           who: attacker,
+          type,
           target,
           ability,
           weapon,
@@ -994,17 +996,19 @@
     }
   };
 
-  // src/BaseEffect.ts
-  var BaseEffect = class {
-    constructor(name, durationTimer, quiet = false) {
+  // src/Effect.ts
+  var Effect = class {
+    constructor(name, durationTimer, setup, quiet = false) {
       this.name = name;
       this.durationTimer = durationTimer;
       this.quiet = quiet;
+      if (setup)
+        this.rule = new DndRule(name, setup);
     }
   };
 
   // src/effects.ts
-  var Dead = new BaseEffect("Dead", "turnStart", true);
+  var Dead = new Effect("Dead", "turnStart", void 0, true);
 
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
@@ -1782,6 +1786,66 @@
     }
   };
 
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("spellCast", { detail });
+    }
+  };
+
+  // src/actions/CastSpell.ts
+  var CastSpell = class {
+    constructor(g2, actor, method, spell) {
+      this.g = g2;
+      this.actor = actor;
+      this.method = method;
+      this.spell = spell;
+      this.name = `${spell.name} (${method.name})`;
+      this.time = spell.time;
+    }
+    getConfig(config) {
+      return this.spell.getConfig(this.g, this.actor, this.method, config);
+    }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(this.g, config);
+    }
+    getDamage(config) {
+      return this.spell.getDamage(this.g, this.actor, config);
+    }
+    getResource(config) {
+      var _a;
+      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      return this.method.getResourceForSpell(this.spell, level, this.actor);
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.time.has(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      const resource = this.getResource(config);
+      if (resource && !this.actor.hasResource(resource))
+        ec.add(`No ${resource.name} left`, this.method);
+      return this.spell.check(this.g, config, ec);
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        this.actor.time.delete(this.spell.time);
+        const resource = this.getResource(config);
+        if (resource)
+          this.actor.spendResource(resource, 1);
+        const sc = this.g.fire(
+          new SpellCastEvent({
+            who: this.actor,
+            spell: this.spell,
+            method: this.method,
+            level: this.spell.getLevel(config)
+          })
+        );
+        if (sc.defaultPrevented)
+          return;
+        return this.spell.apply(this.g, this.actor, this.method, config);
+      });
+    }
+  };
+
   // src/features/SimpleFeature.ts
   var SimpleFeature = class {
     constructor(name, text, setup) {
@@ -1792,6 +1856,27 @@
   };
 
   // src/features/common.ts
+  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
+    return new SimpleFeature(name, text, (g2, me) => {
+      var _a;
+      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
+      const spells = entries.filter((entry) => entry.level <= casterLevel);
+      for (const { resource, spell } of spells) {
+        if (resource)
+          me.addResource(resource);
+        if (addAsList) {
+          me.preparedSpells.add(spell);
+          method.addCastableSpell(spell, me);
+        }
+      }
+      if (!addAsList)
+        g2.events.on("getActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            for (const { spell } of spells)
+              actions.push(new CastSpell(g2, me, method, spell));
+        });
+    });
+  }
   function darkvisionFeature(range = 60) {
     return new SimpleFeature(
       "Darkvision",
@@ -1921,10 +2006,29 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   var SneakAttack_default = SneakAttack;
 
   // src/classes/rogue/SteadyAim.ts
-  var SteadyAimNoMoveEffect = new BaseEffect("Steady Aim (No Move)", "turnEnd");
-  var SteadyAimAdvantageEffect = new BaseEffect(
+  var SteadyAimNoMoveEffect = new Effect(
+    "Steady Aim (No Move)",
+    "turnEnd",
+    (g2) => {
+      g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+        if (who.hasEffect(SteadyAimNoMoveEffect))
+          multiplier.add(0, SteadyAimNoMoveEffect);
+      });
+    }
+  );
+  var SteadyAimAdvantageEffect = new Effect(
     "Steady Aim (Advantage)",
-    "turnEnd"
+    "turnEnd",
+    (g2) => {
+      g2.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
+        if (who.hasEffect(SteadyAimAdvantageEffect))
+          diceType.add("advantage", SteadyAimAdvantageEffect);
+      });
+      g2.events.on("attack", ({ detail: { pre } }) => {
+        if (pre.diceType.involved(SteadyAimAdvantageEffect))
+          pre.who.removeEffect(SteadyAimAdvantageEffect);
+      });
+    }
   );
   var SteadyAimAction = class {
     constructor(g2, actor) {
@@ -1964,18 +2068,6 @@ The amount of the extra damage increases as you gain levels in this class, as sh
       g2.events.on("getActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new SteadyAimAction(g2, me));
-      });
-      g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
-        if (who.hasEffect(SteadyAimNoMoveEffect))
-          multiplier.add(0, SteadyAimNoMoveEffect);
-      });
-      g2.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
-        if (who.hasEffect(SteadyAimAdvantageEffect))
-          diceType.add("advantage", SteadyAimAdvantageEffect);
-      });
-      g2.events.on("attack", ({ detail: { pre } }) => {
-        if (pre.diceType.involved(SteadyAimAdvantageEffect))
-          pre.who.removeEffect(SteadyAimAdvantageEffect);
       });
     }
   );
@@ -2409,72 +2501,15 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
-  // src/events/SpellCastEvent.ts
-  var SpellCastEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("spellCast", { detail });
-    }
-  };
-
-  // src/actions/CastSpell.ts
-  var CastSpell = class {
-    constructor(g2, actor, method, spell) {
-      this.g = g2;
-      this.actor = actor;
-      this.method = method;
-      this.spell = spell;
-      this.name = `${spell.name} (${method.name})`;
-      this.time = spell.time;
-    }
-    getConfig(config) {
-      return this.spell.getConfig(this.g, this.actor, this.method, config);
-    }
-    getAffectedArea(config) {
-      return this.spell.getAffectedArea(this.g, config);
-    }
-    getDamage(config) {
-      return this.spell.getDamage(this.g, this.actor, config);
-    }
-    getResource(config) {
-      var _a;
-      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
-      return this.method.getResourceForSpell(this.spell, level, this.actor);
-    }
-    check(config, ec = new ErrorCollector()) {
-      if (!this.actor.time.has(this.spell.time))
-        ec.add(`No ${this.spell.time} left`, this);
-      const resource = this.getResource(config);
-      if (resource && !this.actor.hasResource(resource))
-        ec.add(`No ${resource.name} left`, this.method);
-      return this.spell.check(this.g, config, ec);
-    }
-    apply(config) {
-      return __async(this, null, function* () {
-        this.actor.time.delete(this.spell.time);
-        const resource = this.getResource(config);
-        if (resource)
-          this.actor.spendResource(resource, 1);
-        const sc = this.g.fire(
-          new SpellCastEvent({
-            who: this.actor,
-            spell: this.spell,
-            method: this.method,
-            level: this.spell.getLevel(config)
-          })
-        );
-        if (sc.defaultPrevented)
-          return;
-        return this.spell.apply(this.g, this.actor, this.method, config);
-      });
-    }
-  };
-
   // src/spells/InnateSpellcasting.ts
   var InnateSpellcasting = class {
     constructor(name, ability, getResourceForSpell) {
       this.name = name;
       this.ability = ability;
       this.getResourceForSpell = getResourceForSpell;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    addCastableSpell() {
     }
     getMinSlot(spell) {
       return spell.level;
@@ -2754,11 +2789,27 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     return 9;
   }
   var NormalSpellcasting = class {
-    constructor(name, ability, strength) {
+    constructor(name, text, ability, strength, className, list) {
       this.name = name;
+      this.text = text;
       this.ability = ability;
       this.strength = strength;
+      this.className = className;
+      this.list = list;
       this.entries = /* @__PURE__ */ new Map();
+      this.feature = new SimpleFeature("Spellcasting", text, (g2, me) => {
+        var _a;
+        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        g2.events.on("getActions", ({ detail: { who, actions } }) => {
+          if (who === me) {
+            const { spells } = this.getEntry(who);
+            for (const spell of me.preparedSpells) {
+              if (spell.lists.includes(list) || spells.has(spell))
+                actions.push(new CastSpell(g2, me, this, spell));
+            }
+          }
+        });
+      });
     }
     getEntry(who) {
       const entry = this.entries.get(who);
@@ -2767,6 +2818,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
           `${who.name} has not initialised their ${this.name} spellcasting method.`
         );
       return entry;
+    }
+    addCastableSpell(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      spells.add(spell);
     }
     initialise(who, casterLevel) {
       const slots = SpellSlots[this.strength][casterLevel - 1];
@@ -2779,7 +2834,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         who.addResource(resource);
         resources.push(resource);
       }
-      this.entries.set(who, { resources });
+      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
     }
     getMinSlot(spell) {
       return spell.level;
@@ -2807,24 +2862,11 @@ You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
   );
   var WizardSpellcasting = new NormalSpellcasting(
     "Wizard",
-    "int",
-    "full"
-  );
-  var Spellcasting = new SimpleFeature(
-    "Spellcasting",
     `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power.`,
-    (g2, me) => {
-      var _a;
-      WizardSpellcasting.initialise(me, (_a = me.classLevels.get("Wizard")) != null ? _a : 1);
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
-        if (who === me) {
-          for (const spell of me.preparedSpells) {
-            if (spell.lists.includes("Wizard"))
-              actions.push(new CastSpell(g2, me, WizardSpellcasting, spell));
-          }
-        }
-      });
-    }
+    "int",
+    "full",
+    "Wizard",
+    "Wizard"
   );
   var CantripFormulas = nonCombatFeature(
     "Cantrip Formulas",
@@ -2868,7 +2910,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       "Religion"
     ]),
     features: /* @__PURE__ */ new Map([
-      [1, [ArcaneRecovery, Spellcasting]],
+      [1, [ArcaneRecovery, WizardSpellcasting.feature]],
       [3, [CantripFormulas]],
       [4, [ASI42]],
       [8, [ASI82]],
@@ -3084,6 +3126,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const { attack, critical, hit } = yield g2.attack({
           who: attacker,
+          type: "ranged",
           target,
           ability: method.ability,
           spell: FireBolt,
@@ -3115,7 +3158,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var FireBolt_default = FireBolt;
 
   // src/spells/cantrip/MindSliver.ts
-  var MindSliverEffect = new BaseEffect("Mind Sliver", "turnStart");
+  var MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g2) => {
+    g2.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+      if (who.hasEffect(MindSliverEffect)) {
+        who.removeEffect(MindSliverEffect);
+        const { value } = g2.dice.roll({ type: "bane", who }, "normal");
+        bonus.add(-value, MindSliver);
+      }
+    });
+  });
   var MindSliver = simpleSpell({
     name: "Mind Sliver",
     level: 0,
@@ -3149,21 +3200,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             [["psychic", damage]]
           );
           let endCounter = 2;
-          const kill1 = g2.events.on("turnEnded", ({ detail: { who } }) => {
-            if (who === attacker && endCounter-- <= 0) {
-              kill1();
-              kill2();
+          const removeTurnTracker = g2.events.on(
+            "turnEnded",
+            ({ detail: { who } }) => {
+              if (who === attacker && endCounter-- <= 0) {
+                removeTurnTracker();
+                target.removeEffect(MindSliverEffect);
+              }
             }
-          });
-          const kill2 = g2.events.on("beforeSave", ({ detail: { who, bonus } }) => {
-            if (who === target) {
-              kill1();
-              kill2();
-              target.removeEffect(MindSliverEffect);
-              const { value } = g2.dice.roll({ type: "bane", who }, "normal");
-              bonus.add(-value, MindSliver);
-            }
-          });
+          );
           target.addEffect(MindSliverEffect, 2);
         }
       });
@@ -3172,11 +3217,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MindSliver_default = MindSliver;
 
   // src/spells/cantrip/RayOfFrost.ts
-  var RayOfFrostEffect = new BaseEffect("Ray of Frost", "turnEnd");
-  var RayOfFrostRule = new DndRule("Ray of Frost", (g2) => {
+  var RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g2) => {
     g2.events.on("getSpeed", ({ detail: { who, bonus } }) => {
       if (who.hasEffect(RayOfFrostEffect))
-        bonus.add(-10, RayOfFrostRule);
+        bonus.add(-10, RayOfFrostEffect);
     });
   });
   var RayOfFrost = simpleSpell({
@@ -3192,6 +3236,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const { attack, critical, hit } = yield g2.attack({
           who: attacker,
+          type: "ranged",
           target,
           ability: method.ability,
           spell: RayOfFrost,
@@ -3248,6 +3293,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
         const { attack, hit, critical } = yield g2.attack({
           who: attacker,
+          type: "ranged",
           target,
           ability: method.ability,
           spell: IceKnife,
@@ -3617,8 +3663,7 @@ This feature has no effect on undead and constructs.`
       g2.events.on(
         "gatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
-          var _a;
-          if (attacker === me && ((_a = attack == null ? void 0 : attack.pre.weapon) == null ? void 0 : _a.rangeCategory) === "melee")
+          if (attacker === me && (attack == null ? void 0 : attack.pre.type) === "melee")
             interrupt.add(
               new PickFromListChoice(
                 attacker,
@@ -3628,20 +3673,20 @@ This feature has no effect on undead and constructs.`
                 [
                   { label: "None", value: NaN },
                   ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => {
-                    var _a2;
+                    var _a;
                     return {
                       label: ordinal(value),
                       value,
-                      disabled: ((_a2 = me.resources.get(getSpellSlotResourceName(value))) != null ? _a2 : 0) < 1
+                      disabled: ((_a = me.resources.get(getSpellSlotResourceName(value))) != null ? _a : 0) < 1
                     };
                   })
                 ],
                 (slot) => __async(void 0, null, function* () {
-                  var _a2;
+                  var _a;
                   if (isNaN(slot))
                     return;
                   const name = getSpellSlotResourceName(slot);
-                  me.resources.set(name, ((_a2 = me.resources.get(name)) != null ? _a2 : 0) - 1);
+                  me.resources.set(name, ((_a = me.resources.get(name)) != null ? _a : 0) - 1);
                   const count = Math.min(5, slot + 1);
                   const extra = target.type === "undead" || target.type === "fiend" ? 1 : 0;
                   const damage = yield g2.rollDamage(
@@ -3662,25 +3707,12 @@ This feature has no effect on undead and constructs.`
     `At 2nd level, you adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`
   );
   var PaladinSpellcasting = new NormalSpellcasting(
-    "Spellcasting",
-    "cha",
-    "half"
-  );
-  var Spellcasting2 = new SimpleFeature(
-    "Spellcasting",
+    "Paladin",
     `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-    (g2, me) => {
-      var _a;
-      PaladinSpellcasting.initialise(me, (_a = me.classLevels.get("Paladin")) != null ? _a : 1);
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
-        if (who === me) {
-          for (const spell of me.preparedSpells) {
-            if (spell.lists.includes("Paladin"))
-              actions.push(new CastSpell(g2, me, PaladinSpellcasting, spell));
-          }
-        }
-      });
-    }
+    "cha",
+    "half",
+    "Paladin",
+    "Paladin"
   );
   var DivineHealth = notImplementedFeature(
     "Divine Health",
@@ -3738,7 +3770,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     ]),
     features: /* @__PURE__ */ new Map([
       [1, [DivineSense, LayOnHands]],
-      [2, [DivineSmite, FightingStyle, Spellcasting2]],
+      [2, [DivineSmite, FightingStyle, PaladinSpellcasting.feature]],
       [3, [DivineHealth]],
       [4, [ASI43, MartialVersatility]],
       [5, [ExtraAttack]],
@@ -3754,11 +3786,100 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   };
   var paladin_default = Paladin;
 
+  // src/spells/level1/ProtectionFromEvilAndGood.ts
+  var affectedTypes = [
+    "aberration",
+    "celestial",
+    "elemental",
+    "fey",
+    "fiend",
+    "undead"
+  ];
+  var ProtectionEffect = new Effect(
+    "Protection from Evil and Good",
+    "turnStart",
+    (g2) => {
+      g2.events.on("beforeAttack", ({ detail: { who, target, diceType } }) => {
+        if (affectedTypes.includes(target.type) && who.hasEffect(ProtectionEffect))
+          diceType.add("disadvantage", ProtectionEffect);
+      });
+    }
+  );
+  var ProtectionFromEvilAndGood = simpleSpell({
+    name: "Protection from Evil and Good",
+    level: 1,
+    school: "Abjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "holy water or powdered silver and iron, which the spell consumes",
+    lists: ["Cleric", "Paladin", "Warlock", "Wizard"],
+    getConfig: (g2, caster) => ({
+      target: new TargetResolver(g2, caster.reach, true)
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+        target.addEffect(ProtectionEffect, minutes(10));
+        caster.concentrateOn({
+          spell: ProtectionFromEvilAndGood,
+          duration: minutes(10),
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              target.removeEffect(ProtectionEffect);
+            });
+          }
+        });
+      });
+    }
+  });
+  var ProtectionFromEvilAndGood_default = ProtectionFromEvilAndGood;
+
+  // src/spells/level1/Sanctuary.ts
+  var SanctuaryEffect = new Effect("Sanctuary", "turnStart", (g2) => {
+  });
+  var Sanctuary = simpleSpell({
+    name: "Sanctuary",
+    level: 1,
+    school: "Abjuration",
+    time: "bonus action",
+    v: true,
+    s: true,
+    m: "a small silver mirror",
+    lists: ["Artificer", "Cleric"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 30, true) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+        target.addEffect(SanctuaryEffect, minutes(1));
+      });
+    }
+  });
+  var Sanctuary_default = Sanctuary;
+
   // src/classes/paladin/Devotion/index.ts
+  var OathSpells = bonusSpellsFeature(
+    "Oath Spells",
+    `You gain oath spells at the paladin levels listed.`,
+    "Paladin",
+    PaladinSpellcasting,
+    [
+      { level: 3, spell: ProtectionFromEvilAndGood_default },
+      { level: 3, spell: Sanctuary_default }
+      // TODO more Oath Spells
+      // { level: 5, spell: LesserRestoration },
+      // { level: 5, spell: ZoneOfTruth },
+      // { level: 9, spell: BeaconOfHope },
+      // { level: 9, spell: DispelMagic },
+      // { level: 13, spell: FreedomOfMovement },
+      // { level: 13, spell: GuardianOfFaith },
+      // { level: 17, spell: Commune },
+      // { level: 17, spell: FlameStrike },
+    ],
+    "Paladin"
+  );
   var Devotion = {
     className: "Paladin",
     name: "Oath ofDevotion",
-    features: /* @__PURE__ */ new Map()
+    features: /* @__PURE__ */ new Map([[3, [OathSpells]]])
   };
   var Devotion_default = Devotion;
 
@@ -3780,7 +3901,22 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var Human_default = Human;
 
   // src/spells/level1/Bless.ts
-  var BlessEffect = new BaseEffect("Bless", "turnEnd");
+  function applyBless(g2, who, bonus) {
+    if (who.hasEffect(BlessEffect)) {
+      const dr = g2.dice.roll({ type: "bless", who }, "normal");
+      bonus.add(dr.value, BlessEffect);
+    }
+  }
+  var BlessEffect = new Effect("Bless", "turnEnd", (g2) => {
+    g2.events.on(
+      "beforeAttack",
+      ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
+    );
+    g2.events.on(
+      "beforeSave",
+      ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
+    );
+  });
   var Bless = scalingSpell({
     name: "Bless",
     level: 1,
@@ -3795,27 +3931,14 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
-        const blessCallback = (me) => ({ detail: { who, bonus } }) => {
-          if (who === me && me.hasEffect(BlessEffect)) {
-            const dr = g2.dice.roll({ type: "bless", who }, "normal");
-            bonus.add(dr.value, BlessEffect);
-          }
-        };
-        const cleanup = targets.flatMap((target) => {
+        for (const target of targets)
           target.addEffect(BlessEffect, minutes(1));
-          return [
-            g2.events.on("beforeAttack", blessCallback(target)),
-            g2.events.on("beforeSave", blessCallback(target))
-          ];
-        });
         caster.concentrateOn({
           spell: Bless,
           duration: minutes(1),
           onSpellEnd: () => __async(this, null, function* () {
             for (const target of targets)
               target.removeEffect(BlessEffect);
-            for (const cb of cleanup)
-              cb();
           })
         });
       });
@@ -3824,7 +3947,23 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var Bless_default = Bless;
 
   // src/spells/level1/DivineFavor.ts
-  var DivineFavorEffect = new BaseEffect("Divine Favor", "turnEnd");
+  var DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g2) => {
+    g2.events.on("gatherDamage", ({ detail: { attacker, map, weapon } }) => {
+      if (attacker.hasEffect(DivineFavorEffect) && weapon) {
+        const dr = g2.dice.roll(
+          {
+            type: "damage",
+            attacker,
+            size: 4,
+            spell: DivineFavor,
+            damageType: "radiant"
+          },
+          "normal"
+        );
+        map.add("radiant", dr.value);
+      }
+    });
+  });
   var DivineFavor = simpleSpell({
     name: "Divine Favor",
     level: 1,
@@ -3835,35 +3974,15 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     s: true,
     lists: ["Paladin"],
     getConfig: () => ({}),
-    apply(g2, caster, method) {
+    apply(g2, caster) {
       return __async(this, null, function* () {
         caster.addEffect(DivineFavorEffect, minutes(1));
-        const cleanup = g2.events.on(
-          "gatherDamage",
-          ({ detail: { attacker, map, weapon } }) => {
-            if (attacker === caster && weapon) {
-              const dr = g2.dice.roll(
-                {
-                  type: "damage",
-                  attacker,
-                  size: 4,
-                  spell: DivineFavor,
-                  method,
-                  damageType: "radiant"
-                },
-                "normal"
-              );
-              map.add("radiant", dr.value);
-            }
-          }
-        );
         caster.concentrateOn({
           spell: DivineFavor,
           duration: minutes(1),
           onSpellEnd() {
             return __async(this, null, function* () {
               caster.removeEffect(DivineFavorEffect);
-              cleanup();
             });
           }
         });
@@ -4152,21 +4271,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         return WallOfWaterResource;
     }
   );
-  var ControlAirAndWater = new SimpleFeature(
+  var ControlAirAndWater = bonusSpellsFeature(
     "Control Air and Water",
     `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can\u2019t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
-    (g2, me) => {
-      const spells = ControlAirAndWaterSpells.filter(
-        (entry) => entry.level <= me.level
-      );
-      for (const { resource } of spells)
-        me.addResource(resource);
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
-        if (who === me)
-          for (const { spell } of spells)
-            actions.push(new CastSpell(g2, me, ControlAirAndWaterMethod, spell));
-      });
-    }
+    "level",
+    ControlAirAndWaterMethod,
+    ControlAirAndWaterSpells
   );
   var Darkvision = darkvisionFeature();
   var EmissaryOfTheSea = nonCombatFeature(
