@@ -5,7 +5,13 @@ import Concentration from "./Concentration";
 import { ConditionName } from "./ConditionName";
 import CreatureType from "./CreatureType";
 import Feature from "./Feature";
-import Item, { AmmoItem, ArmorItem, WeaponItem } from "./Item";
+import Item, {
+  AmmoItem,
+  ArmorCategory,
+  ArmorItem,
+  WeaponCategory,
+  WeaponItem,
+} from "./Item";
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
 import PCClassName from "./PCClassName";
@@ -54,6 +60,9 @@ export default interface Combatant extends Source {
   equipment: Set<Item>;
   inventory: Set<Item>;
   senses: Map<SenseName, number>;
+  weaponProficiencies: Set<string>;
+  weaponCategoryProficiencies: Set<WeaponCategory>;
+  armorProficiencies: Set<ArmorCategory>;
   naturalWeapons: Set<WeaponItem>;
   resources: Map<string, number>;
   classLevels: Map<PCClassName, number>;

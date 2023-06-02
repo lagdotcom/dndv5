@@ -8,6 +8,7 @@ import Thug from "./monsters/Thug";
 import Aura from "./pcs/davies/Aura";
 import Beldalynn from "./pcs/davies/Beldalynn";
 import Galilea from "./pcs/davies/Galilea";
+import Salgar from "./pcs/davies/Salgar";
 import Tethilssethanar from "./pcs/wizards/Tethilssethanar";
 import App from "./ui/App";
 
@@ -24,12 +25,14 @@ render(
       const aura = new Aura(g);
       const beldalynn = new Beldalynn(g);
       const galilea = new Galilea(g);
+      const salgar = new Salgar(g);
       g.place(thug, 0, 0);
       g.place(badger, 10, 0);
       g.place(hunk, 10, 5);
       g.place(aura, 20, 20);
-      g.place(beldalynn, 40, 20);
+      g.place(beldalynn, 10, 30);
       g.place(galilea, 5, 0);
+      g.place(salgar, 15, 30);
       g.start();
     }}
   />,

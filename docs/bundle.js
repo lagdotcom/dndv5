@@ -869,6 +869,7 @@
   function resolveArea(area) {
     const points = [];
     switch (area.type) {
+      case "cylinder":
       case "sphere": {
         const left = area.centre.x - area.radius;
         const top = area.centre.y - area.radius;
@@ -1618,6 +1619,21 @@
       this.quantity = quantity;
     }
   };
+  var Handaxe = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "handaxe",
+        "simple",
+        "melee",
+        dd(1, 6, "slashing"),
+        ["light", "thrown"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
   var Mace = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "mace", "simple", "melee", dd(1, 6, "bludgeoning"));
@@ -1633,6 +1649,21 @@
   var Sickle = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
+    }
+  };
+  var Spear = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "spear",
+        "simple",
+        "melee",
+        dd(1, 6, "piercing"),
+        ["thrown", "versatile"],
+        20,
+        60
+      );
+      this.quantity = quantity;
     }
   };
   var LightCrossbow = class extends AbstractWeapon {
@@ -1690,6 +1721,14 @@
   var Rapier = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
+    }
+  };
+  var Shortsword = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "shortsword", "martial", "melee", dd(1, 6, "piercing"), [
+        "finesse",
+        "light"
+      ]);
     }
   };
   var HeavyCrossbow = class extends AbstractWeapon {
@@ -1785,6 +1824,11 @@
   var LeatherArmor = class extends AbstractArmor {
     constructor(g2) {
       super(g2, "leather armor", "light", 11);
+    }
+  };
+  var HideArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "hide armor", "medium", 12);
     }
   };
   var SplintArmor = class extends AbstractArmor {
@@ -2606,27 +2650,35 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
     getAffectedArea = () => void 0,
     getConfig,
-    getDamage = () => void 0
-  }) => ({
-    name,
-    level,
-    scaling: false,
-    school,
-    concentration,
-    time,
-    v,
-    s,
-    m,
-    lists,
-    apply,
-    check: check2,
-    getAffectedArea,
-    getConfig,
-    getDamage,
-    getLevel() {
-      return level;
-    }
-  });
+    getDamage = () => void 0,
+    incomplete = false,
+    implemented = false
+  }) => {
+    if (incomplete)
+      console.warn(`[Spell Not Complete] ${name}`);
+    else if (!implemented)
+      console.warn(`[Spell Missing] ${name}`);
+    return {
+      name,
+      level,
+      scaling: false,
+      school,
+      concentration,
+      time,
+      v,
+      s,
+      m,
+      lists,
+      apply,
+      check: check2,
+      getAffectedArea,
+      getConfig,
+      getDamage,
+      getLevel() {
+        return level;
+      }
+    };
+  };
   var scalingSpell = ({
     name,
     level,
@@ -2641,31 +2693,39 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
     getAffectedArea = () => void 0,
     getConfig,
-    getDamage = () => void 0
-  }) => ({
-    name,
-    level,
-    scaling: true,
-    school,
-    concentration,
-    time,
-    v,
-    s,
-    m,
-    lists,
-    apply,
-    check: check2,
-    getAffectedArea,
-    getConfig(g2, actor, method, config) {
-      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
-        slot: new SlotResolver(this, method)
-      });
-    },
-    getDamage,
-    getLevel({ slot }) {
-      return slot;
-    }
-  });
+    getDamage = () => void 0,
+    incomplete = false,
+    implemented = false
+  }) => {
+    if (incomplete)
+      console.warn(`[Spell Not Complete] ${name}`);
+    else if (!implemented)
+      console.warn(`[Spell Missing] ${name}`);
+    return {
+      name,
+      level,
+      scaling: true,
+      school,
+      concentration,
+      time,
+      v,
+      s,
+      m,
+      lists,
+      apply,
+      check: check2,
+      getAffectedArea,
+      getConfig(g2, actor, method, config) {
+        return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
+          slot: new SlotResolver(this, method)
+        });
+      },
+      getDamage,
+      getLevel({ slot }) {
+        return slot;
+      }
+    };
+  };
 
   // src/spells/level2/Levitate.ts
   var Levitate = simpleSpell({
@@ -3103,6 +3163,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/AcidSplash.ts
   var AcidSplash = simpleSpell({
+    implemented: true,
     name: "Acid Splash",
     level: 0,
     school: "Conjuration",
@@ -3152,6 +3213,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/FireBolt.ts
   var FireBolt = simpleSpell({
+    implemented: true,
     name: "Fire Bolt",
     level: 0,
     school: "Evocation",
@@ -3206,6 +3268,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
   });
   var MindSliver = simpleSpell({
+    implemented: true,
     name: "Mind Sliver",
     level: 0,
     school: "Enchantment",
@@ -3262,6 +3325,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
   });
   var RayOfFrost = simpleSpell({
+    implemented: true,
     name: "Ray of Frost",
     level: 0,
     school: "Evocation",
@@ -3308,6 +3372,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/level1/IceKnife.ts
   var IceKnife = scalingSpell({
+    implemented: true,
     name: "Ice Knife",
     level: 1,
     school: "Conjuration",
@@ -3390,6 +3455,29 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
   var IceKnife_default = IceKnife;
+
+  // src/spells/level2/HoldPerson.ts
+  var HoldPerson = scalingSpell({
+    name: "Hold Person",
+    level: 2,
+    school: "Enchantment",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a small, straight piece of iron",
+    lists: ["Bard", "Cleric", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    getConfig: (g2, actor, method, { slot }) => ({
+      targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 2) - 1, 60)
+    }),
+    check(g2, { targets }, ec = new ErrorCollector()) {
+      return ec;
+    },
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { targets }) {
+      });
+    }
+  });
+  var HoldPerson_default = HoldPerson;
 
   // src/resolvers/MultiPointResolver.ts
   var MultiPointResolver = class {
@@ -3503,6 +3591,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
   var MelfsMinuteMeteors = scalingSpell({
+    implemented: true,
     name: "Melf's Minute Meteors",
     level: 3,
     school: "Evocation",
@@ -3579,6 +3668,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/level3/Fireball.ts
   var Fireball = scalingSpell({
+    implemented: true,
     name: "Fireball",
     level: 3,
     school: "Evocation",
@@ -3667,7 +3757,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         // MagicMissile,
         // Shield,
         // EnlargeReduce,
-        // HoldPerson,
+        HoldPerson_default,
         MelfsMinuteMeteors_default,
         Fireball_default
         // IntellectFortress,
@@ -3949,6 +4039,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
+    incomplete: true,
     name: "Protection from Evil and Good",
     level: 1,
     school: "Abjuration",
@@ -4061,6 +4152,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     );
   });
   var Bless = scalingSpell({
+    implemented: true,
     name: "Bless",
     level: 1,
     school: "Enchantment",
@@ -4108,6 +4200,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     });
   });
   var DivineFavor = simpleSpell({
+    implemented: true,
     name: "Divine Favor",
     level: 1,
     school: "Evocation",
@@ -4170,6 +4263,537 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         // TODO Aid,
         // TODO MagicWeapon
       );
+    }
+  };
+
+  // src/classes/druid/index.ts
+  var Druidic = nonCombatFeature(
+    "Druidic",
+    `You know Druidic, the secret language of druids. You can speak the language and use it to leave hidden messages. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful DC 15 Wisdom (Perception) check but can't decipher it without magic.`
+  );
+  var DruidSpellcasting = new NormalSpellcasting(
+    "Druid",
+    `Drawing on the divine essence of nature itself, you can cast spells to shape that essence to your will.`,
+    "wis",
+    "full",
+    "Druid",
+    "Druid"
+  );
+  var WildShape = notImplementedFeature(
+    "Wild Shape",
+    `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`
+  );
+  var WildCompanion = notImplementedFeature(
+    "Wild Companion",
+    `You gain the ability to summon a spirit that assumes an animal form: as an action, you can expend a use of your Wild Shape feature to cast the find familiar spell, without material components.`
+  );
+  var CantripVersatility = nonCombatFeature(
+    "Cantrip Versatility",
+    `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace one cantrip you learned from this class's Spellcasting feature with another cantrip from the druid spell list.`
+  );
+  var TimelessBody = nonCombatFeature(
+    "Timeless Body",
+    `Starting at 18th level, the primal magic that you wield causes you to age more slowly. For every 10 years that pass, your body ages only 1 year.`
+  );
+  var BeastSpells = notImplementedFeature(
+    "Beast Spells",
+    `Beginning at 18th level, you can cast many of your druid spells in any shape you assume using Wild Shape. You can perform the somatic and verbal components of a druid spell while in a beast shape, but you aren't able to provide material components.`
+  );
+  var Archdruid = notImplementedFeature(
+    "Archdruid",
+    `At 20th level, you can use your Wild Shape an unlimited number of times.
+
+Additionally, you can ignore the verbal and somatic components of your druid spells, as well as any material components that lack a cost and aren't consumed by a spell. You gain this benefit in both your normal shape and your beast shape from Wild Shape.`
+  );
+  var ASI44 = makeASI("Druid", 4);
+  var ASI84 = makeASI("Druid", 8);
+  var ASI124 = makeASI("Druid", 12);
+  var ASI164 = makeASI("Druid", 16);
+  var ASI194 = makeASI("Druid", 19);
+  var Druid = {
+    name: "Druid",
+    hitDieSize: 8,
+    // TODO druids will not wear armor or use shields made of metal
+    armorProficiencies: /* @__PURE__ */ new Set(["light", "medium", "shield"]),
+    weaponProficiencies: /* @__PURE__ */ new Set([
+      "club",
+      "dagger",
+      "dart",
+      "javelin",
+      "mace",
+      "quarterstaff",
+      "scimitar",
+      "sickle",
+      "sling",
+      "spear"
+    ]),
+    toolProficiencies: /* @__PURE__ */ new Set(["herbalism kit"]),
+    saveProficiencies: /* @__PURE__ */ new Set(["int", "wis"]),
+    skillChoices: 2,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Arcana",
+      "Animal Handling",
+      "Insight",
+      "Medicine",
+      "Nature",
+      "Perception",
+      "Religion",
+      "Survival"
+    ]),
+    features: /* @__PURE__ */ new Map([
+      [1, [Druidic, DruidSpellcasting.feature]],
+      [2, [WildShape, WildCompanion]],
+      [4, [ASI44, CantripVersatility]],
+      [8, [ASI84]],
+      [12, [ASI124]],
+      [16, [ASI164]],
+      [18, [TimelessBody, BeastSpells]],
+      [19, [ASI194]],
+      [20, [Archdruid]]
+    ])
+  };
+  var druid_default = Druid;
+
+  // src/spells/level2/SpikeGrowth.ts
+  var SpikeGrowth = simpleSpell({
+    name: "Spike Growth",
+    level: 2,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    m: "seven sharp thorns or seven small twigs, each sharpened to a point",
+    concentration: true,
+    lists: ["Druid", "Ranger"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
+    getAffectedArea: (g2, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var SpikeGrowth_default = SpikeGrowth;
+
+  // src/spells/level3/SleetStorm.ts
+  var SleetStorm = simpleSpell({
+    name: "Sleet Storm",
+    level: 3,
+    school: "Conjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a pinch of dust and a few drops of water",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
+    getAffectedArea: (g2, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point }) {
+      });
+    }
+  });
+  var SleetStorm_default = SleetStorm;
+
+  // src/spells/level3/Slow.ts
+  var Slow = simpleSpell({
+    name: "Slow",
+    level: 3,
+    school: "Transmutation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a drop of molasses",
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 6, 120) }),
+    check(g2, config, ec = new ErrorCollector()) {
+      return ec;
+    },
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { targets }) {
+      });
+    }
+  });
+  var Slow_default = Slow;
+
+  // src/spells/level4/FreedomOfMovement.ts
+  var FreedomOfMovement = simpleSpell({
+    name: "Freedom of Movement",
+    level: 4,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    m: "a leather strap, bound around the arm or a similar appendage",
+    lists: ["Artificer", "Bard", "Cleric", "Druid", "Ranger"],
+    getConfig: (g2, caster) => ({ target: new TargetResolver(g2, caster.reach) }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+      });
+    }
+  });
+  var FreedomOfMovement_default = FreedomOfMovement;
+
+  // src/spells/level4/IceStorm.ts
+  var IceStorm = scalingSpell({
+    name: "Ice Storm",
+    level: 4,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a pinch of dust and a few drops of water",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
+    getAffectedArea: (g2, { point }) => point && [{ type: "cylinder", centre: point, radius: 20, height: 40 }],
+    getDamage: (g2, caster, { slot }) => [
+      dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
+      dd(4, 6, "cold")
+    ],
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var IceStorm_default = IceStorm;
+
+  // src/classes/druid/Land/index.ts
+  var BonusCantrip = new ConfiguredFeature(
+    "Bonus Cantrip",
+    `You learn one additional druid cantrip of your choice. This cantrip doesn't count against the number of druid cantrips you know.`,
+    (g2, me, spell) => {
+      me.preparedSpells.add(spell);
+    }
+  );
+  var NaturalRecovery = nonCombatFeature(
+    "Natural Recovery",
+    `Starting at 2nd level, you can regain some of your magical energy by sitting in meditation and communing with nature. During a short rest, you choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your druid level (rounded up), and none of the slots can be 6th level or higher. You can't use this feature again until you finish a long rest.
+
+For example, when you are a 4th-level druid, you can recover up to two levels worth of spell slots. You can recover either a 2nd-level slot or two 1st-level slots.`
+  );
+  var bonusSpells = {
+    arctic: [
+      { level: 3, spell: HoldPerson_default },
+      { level: 3, spell: SpikeGrowth_default },
+      { level: 5, spell: SleetStorm_default },
+      { level: 5, spell: Slow_default },
+      { level: 7, spell: FreedomOfMovement_default },
+      { level: 7, spell: IceStorm_default }
+      // { level: 9, spell: CommuneWithNature },
+      // { level: 9, spell: ConeOfCold },
+    ],
+    coast: [
+      // { level: 3, spell: MirrorImage },
+      // { level: 3, spell: MistyStep },
+      // { level: 5, spell: WaterBreathing },
+      // { level: 5, spell: WaterWalk },
+      // { level: 7, spell: ControlWater },
+      { level: 7, spell: FreedomOfMovement_default }
+      // { level: 9, spell: ConjureElemental },
+      // { level: 9, spell: Scrying },
+    ],
+    desert: [
+      // { level: 3, spell: Blur },
+      // { level: 3, spell: Silence },
+      // { level: 5, spell: CreateFoodAndWater },
+      // { level: 5, spell: ProtectionFromEnergy },
+      // { level: 7, spell: Blight },
+      // { level: 7, spell: HallucinatoryTerrain },
+      // { level: 9, spell: InsectPlague },
+      // { level: 9, spell: WallOfStone },
+    ],
+    forest: [
+      // { level: 3, spell: Barkskin },
+      // { level: 3, spell: SpiderClimb },
+      // { level: 5, spell: CallLightning },
+      // { level: 5, spell: PlantGrowth },
+      // { level: 7, spell: Divination },
+      { level: 7, spell: FreedomOfMovement_default }
+      // { level: 9, spell: CommuneWithNature },
+      // { level: 9, spell: TreeStride },
+    ],
+    grassland: [
+      // { level: 3, spell: Invisibility },
+      // { level: 3, spell: PassWithoutTrade },
+      // { level: 5, spell: Daylight },
+      // { level: 5, spell: Haste },
+      // { level: 7, spell: Divination },
+      { level: 7, spell: FreedomOfMovement_default }
+      // { level: 9, spell: Dream },
+      // { level: 9, spell: InsectPlague },
+    ],
+    mountain: [
+      // { level: 3, spell: SpiderClimb },
+      { level: 3, spell: SpikeGrowth_default }
+      // { level: 5, spell: LightningBolt },
+      // { level: 5, spell: MeldIntoStone },
+      // { level: 7, spell: StoneShape },
+      // { level: 7, spell: Stoneskin },
+      // { level: 9, spell: Passwall },
+      // { level: 9, spell: WallOfStone },
+    ],
+    swamp: [
+      // { level: 3, spell: Darkness },
+      // { level: 3, spell: MelfsAcidArrow },
+      // { level: 5, spell: WaterWalk },
+      // { level: 5, spell: StinkingCloud },
+      { level: 7, spell: FreedomOfMovement_default }
+      // { level: 7, spell: LocateCreature },
+      // { level: 9, spell: InsectPlague },
+      // { level: 9, spell: Scrying },
+    ],
+    Underdark: [
+      // { level: 3, spell: SpiderClimb },
+      // { level: 3, spell: Web },
+      // { level: 5, spell: GaseousForm },
+      // { level: 5, spell: StinkingCloud },
+      // { level: 7, spell: GreaterInvisibility },
+      // { level: 7, spell: StoneShape },
+      // { level: 9, spell: Cloudkill },
+      // { level: 9, spell: InsectPlague },
+    ]
+  };
+  var bonusSpellsFeatures = new Map(
+    Object.entries(bonusSpells).map(([type, entries]) => [
+      type,
+      bonusSpellsFeature(
+        "Circle Spells",
+        `Your mystical connection to the land infuses you with the ability to cast certain spells.`,
+        "Druid",
+        DruidSpellcasting,
+        entries,
+        "Druid"
+      )
+    ])
+  );
+  var CircleSpells = new ConfiguredFeature(
+    "Circle Spells",
+    `Your mystical connection to the land infuses you with the ability to cast certain spells. At 3rd, 5th, 7th, and 9th level you gain access to circle spells connected to the land where you became a druid. Choose that land\u2014arctic, coast, desert, forest, grassland, mountain, swamp, or Underdark\u2014and consult the associated list of spells.
+
+Once you gain access to a circle spell, you always have it prepared, and it doesn't count against the number of spells you can prepare each day. If you gain access to a spell that doesn't appear on the druid spell list, the spell is nonetheless a druid spell for you.`,
+    (g2, me, type) => {
+      const feature = bonusSpellsFeatures.get(type);
+      feature == null ? void 0 : feature.setup(g2, me);
+    }
+  );
+  var LandsStride = notImplementedFeature(
+    "Land's Stride",
+    `Starting at 6th level, moving through nonmagical difficult terrain costs you no extra movement. You can also pass through nonmagical plants without being slowed by them and without taking damage from them if they have thorns, spines, or a similar hazard.
+
+In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`
+  );
+  var NaturesWard = notImplementedFeature(
+    "Nature's Ward",
+    `When you reach 10th level, you can't be charmed or frightened by elementals or fey, and you are immune to poison and disease.`
+  );
+  var NaturesSanctuary = notImplementedFeature(
+    "Nature's Sanctuary",
+    `When you reach 14th level, creatures of the natural world sense your connection to nature and become hesitant to attack you. When a beast or plant creature attacks you, that creature must make a Wisdom saving throw against your druid spell save DC. On a failed save, the creature must choose a different target, or the attack automatically misses. On a successful save, the creature is immune to this effect for 24 hours.
+
+The creature is aware of this effect before it makes its attack against you.`
+  );
+  var Land = {
+    className: "Druid",
+    name: "Circle of the Land",
+    features: /* @__PURE__ */ new Map([
+      [2, [BonusCantrip, NaturalRecovery, CircleSpells]],
+      [6, [LandsStride]],
+      [10, [NaturesWard]],
+      [14, [NaturesSanctuary]]
+    ])
+  };
+  var Land_default = Land;
+
+  // src/races/Dwarf.ts
+  var Darkvision = darkvisionFeature();
+  var DwarvenResilience = new SimpleFeature(
+    "Dwarven Resilience",
+    `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
+    (g2, me) => {
+      g2.events.on("beforeSave", ({ detail: { who, diceType, tags } }) => {
+        if (who === me && tags.has("poison"))
+          diceType.add("advantage", DwarvenResilience);
+      });
+      g2.events.on(
+        "getDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who === me && damageType === "poison")
+            response.add("resist", DwarvenResilience);
+        }
+      );
+    }
+  );
+  var DwarvenCombatTraining = new SimpleFeature(
+    "Dwarven Combat Training",
+    `You have proficiency with the battleaxe, handaxe, light hammer, and warhammer.`,
+    (g2, me) => {
+      for (const weapon of ["battleaxe", "handaxe", "light hammer", "warhammer"])
+        me.weaponProficiencies.add(weapon);
+    }
+  );
+  var ToolProficiency = new ConfiguredFeature(
+    "Tool Proficiency",
+    `You gain proficiency with the artisan's tools of your choice: Smith's tools, brewer's supplies, or mason's tools.`,
+    (g2, me, tool) => {
+      me.toolProficiencies.set(tool, 1);
+    }
+  );
+  var Stonecunning = nonCombatFeature(
+    "Stonecunning",
+    `Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus.`
+  );
+  var Dwarf = {
+    name: "Dwarf",
+    abilities: /* @__PURE__ */ new Map([["con", 2]]),
+    size: "medium",
+    movement: /* @__PURE__ */ new Map([["speed", 25]]),
+    features: /* @__PURE__ */ new Set([
+      Darkvision,
+      DwarvenResilience,
+      DwarvenCombatTraining,
+      ToolProficiency,
+      Stonecunning
+    ]),
+    languages: /* @__PURE__ */ new Set(["Common", "Dwarvish"])
+  };
+  var DwarvenArmorTraining = new SimpleFeature(
+    "Dwarven Armor Training",
+    `You have proficiency with light and medium armor.`,
+    (g2, me) => {
+      me.armorProficiencies.add("light");
+      me.armorProficiencies.add("medium");
+    }
+  );
+  var MountainDwarf = {
+    parent: Dwarf,
+    name: "Mountain Dwarf",
+    abilities: /* @__PURE__ */ new Map([["str", 2]]),
+    size: "medium",
+    features: /* @__PURE__ */ new Set([DwarvenArmorTraining])
+  };
+
+  // src/spells/cantrip/MagicStone.ts
+  var MagicStoneResource = new TemporaryResource("Magic Stone", 3);
+  var MagicStoneAction = class {
+    constructor(g2, actor, method, unsubscribe) {
+      this.g = g2;
+      this.actor = actor;
+      this.method = method;
+      this.unsubscribe = unsubscribe;
+      this.name = "Throw Magic Stone";
+      this.config = { target: new TargetResolver(g2, 60) };
+    }
+    getAffectedArea() {
+      return void 0;
+    }
+    getConfig() {
+      return this.config;
+    }
+    getDamage() {
+      return [dd(1, 6, "bludgeoning")];
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.hasResource(MagicStoneResource))
+        ec.add("no magic stones left", MagicStoneAction);
+      return ec;
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ target }) {
+        this.actor.spendResource(MagicStoneResource);
+        if (this.actor.getResource(MagicStoneResource) < 1)
+          this.unsubscribe();
+        const { attack, critical, hit } = yield this.g.attack({
+          who: this.actor,
+          type: "ranged",
+          target,
+          ability: this.method.ability,
+          spell: MagicStone,
+          method: this.method
+        });
+        if (hit) {
+          const amount = yield this.g.rollDamage(
+            1,
+            {
+              size: 6,
+              damageType: "bludgeoning",
+              attacker: this.actor,
+              target,
+              ability: this.method.ability,
+              spell: MagicStone,
+              method: this.method
+            },
+            critical
+          );
+          yield this.g.damage(
+            this,
+            "bludgeoning",
+            {
+              attack,
+              attacker: this.actor,
+              target,
+              ability: this.method.ability,
+              critical,
+              spell: MagicStone,
+              method: this.method
+            },
+            [["bludgeoning", amount]]
+          );
+        }
+      });
+    }
+  };
+  var MagicStone = simpleSpell({
+    incomplete: true,
+    name: "Magic Stone",
+    level: 0,
+    school: "Transmutation",
+    time: "bonus action",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Druid", "Warlock"],
+    getConfig: () => ({}),
+    apply(g2, caster, method) {
+      return __async(this, null, function* () {
+        caster.initResource(MagicStoneResource);
+        const unsubscribe = g2.events.on(
+          "getActions",
+          ({ detail: { who, actions } }) => {
+            if (who === caster && who.hasResource(MagicStoneResource))
+              actions.push(new MagicStoneAction(g2, who, method, unsubscribe));
+          }
+        );
+      });
+    }
+  });
+  var MagicStone_default = MagicStone;
+
+  // src/pcs/davies/Salgar_token.png
+  var Salgar_token_default = "./Salgar_token-WLUJXZFZ.png";
+
+  // src/pcs/davies/Salgar.ts
+  var Salgar = class extends PC {
+    constructor(g2) {
+      super(g2, "Salgar", Salgar_token_default);
+      this.skills.set("Arcana", 1);
+      this.skills.set("History", 1);
+      this.setAbilityScores(10, 8, 14, 14, 15, 10);
+      this.setRace(MountainDwarf);
+      this.languages.add("Elvish");
+      this.languages.add("Giant");
+      this.addSubclass(Land_default);
+      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default);
+      this.setConfig(ToolProficiency, "mason's tools");
+      this.setConfig(CircleSpells, "mountain");
+      this.setConfig(BonusCantrip, MagicStone_default);
+      this.setConfig(ASI44, { type: "ability", abilities: ["cha", "wis"] });
+      this.skills.set("Insight", 1);
+      this.skills.set("Survival", 1);
+      this.don(new Spear(g2, 1), true);
+      this.don(new HideArmor(g2));
+      this.inventory.add(new Handaxe(g2, 1));
+      this.inventory.add(new Shortsword(g2));
+      this.addPreparedSpells();
     }
   };
 
@@ -4288,6 +4912,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/spells/level1/FogCloud.ts
   var FogCloud = scalingSpell({
+    implemented: true,
     name: "Fog Cloud",
     level: 1,
     school: "Conjuration",
@@ -4406,7 +5031,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     ControlAirAndWaterMethod,
     ControlAirAndWaterSpells
   );
-  var Darkvision = darkvisionFeature();
+  var Darkvision2 = darkvisionFeature();
   var EmissaryOfTheSea = nonCombatFeature(
     "Emissary of the Sea",
     `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
@@ -4440,7 +5065,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     features: /* @__PURE__ */ new Set([
       Amphibious,
       ControlAirAndWater,
-      Darkvision,
+      Darkvision2,
       EmissaryOfTheSea,
       GuardiansOfTheDepths
     ])
@@ -4621,13 +5246,18 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
     return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.square, style });
   }
-  function BattlefieldEffect({ shape, tags = /* @__PURE__ */ new Set() }) {
+  function BattlefieldEffect({
+    name = "Pending",
+    shape,
+    tags = /* @__PURE__ */ new Set()
+  }) {
     const main = (0, import_hooks2.useMemo)(() => {
       switch (shape.type) {
+        case "cylinder":
         case "sphere":
-          return /* @__PURE__ */ o(Sphere, { name: "Pending", tags, shape });
+          return /* @__PURE__ */ o(Sphere, { name, tags, shape });
       }
-    }, [shape, tags]);
+    }, [name, shape, tags]);
     const points = (0, import_hooks2.useMemo)(() => resolveArea(shape), [shape]);
     return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
       main,
@@ -4903,7 +5533,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     const setTarget = (0, import_hooks6.useCallback)(
       (p) => {
         onChange(field, p);
-        wantsCombatant.value = void 0;
+        wantsPoint.value = void 0;
       },
       [field, onChange]
     );
@@ -4919,7 +5549,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "button",
         {
           className: classnames({
-            [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === setTarget
+            [ChooseActionConfigPanel_module_default.active]: wantsPoint.value === setTarget
           }),
           onClick,
           children: "Choose Point"
@@ -5479,7 +6109,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
-        void g2.act(action2, config).then(refreshUnits);
+        void g2.act(action2, config).then(() => {
+          refreshUnits();
+          allActions.value = g2.getActions(action2.actor);
+          return;
+        });
       },
       [g2, refreshUnits]
     );
@@ -5610,12 +6244,14 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           const aura = new Aura(g);
           const beldalynn = new Beldalynn(g);
           const galilea = new Galilea(g);
+          const salgar = new Salgar(g);
           g.place(thug, 0, 0);
           g.place(badger, 10, 0);
           g.place(hunk, 10, 5);
           g.place(aura, 20, 20);
-          g.place(beldalynn, 40, 20);
+          g.place(beldalynn, 10, 30);
           g.place(galilea, 5, 0);
+          g.place(salgar, 15, 30);
           g.start();
         }
       }

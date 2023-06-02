@@ -21,6 +21,7 @@ import Point from "../types/Point";
 import RollType from "../types/RollType";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
+import SaveTag from "./SaveTag";
 
 type EventData = {
   areaPlaced: { area: EffectArea };
@@ -51,6 +52,7 @@ type EventData = {
     bonus: BonusCollector;
     spell?: Spell;
     method?: SpellcastingMethod;
+    tags: Set<SaveTag>;
   };
   combatantDamaged: {
     who: Combatant;

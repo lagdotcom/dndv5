@@ -2,6 +2,7 @@ import { useMemo } from "preact/hooks";
 
 import {
   AreaTag,
+  SpecifiedCylinder,
   SpecifiedEffectShape,
   SpecifiedSphere,
 } from "../types/EffectArea";
@@ -15,7 +16,7 @@ function Sphere({
   name,
   tags,
 }: {
-  shape: SpecifiedSphere;
+  shape: SpecifiedSphere | SpecifiedCylinder;
   name: string;
   tags: Set<AreaTag>;
 }) {
@@ -58,17 +59,23 @@ function AffectedSquare({ point }: AffectedSquareProps) {
 }
 
 interface Props {
+  name?: string;
   shape: SpecifiedEffectShape;
   tags?: Set<AreaTag>;
 }
 
-export default function BattlefieldEffect({ shape, tags = new Set() }: Props) {
+export default function BattlefieldEffect({
+  name = "Pending",
+  shape,
+  tags = new Set(),
+}: Props) {
   const main = useMemo(() => {
     switch (shape.type) {
+      case "cylinder": // TODO when height is added
       case "sphere":
-        return <Sphere name="Pending" tags={tags} shape={shape} />;
+        return <Sphere name={name} tags={tags} shape={shape} />;
     }
-  }, [shape, tags]);
+  }, [name, shape, tags]);
   const points = useMemo(() => resolveArea(shape), [shape]);
 
   return (

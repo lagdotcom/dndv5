@@ -11,6 +11,7 @@ import FireBolt from "../../spells/cantrip/FireBolt";
 import MindSliver from "../../spells/cantrip/MindSliver";
 import RayOfFrost from "../../spells/cantrip/RayOfFrost";
 import IceKnife from "../../spells/level1/IceKnife";
+import HoldPerson from "../../spells/level2/HoldPerson";
 import MelfsMinuteMeteors from "../../spells/level2/MelfsMinuteMeteors";
 import Fireball from "../../spells/level3/Fireball";
 import { enchant } from "../../utils/items";
@@ -70,7 +71,7 @@ export default class Beldalynn extends PC {
       // Shield,
 
       // EnlargeReduce,
-      // HoldPerson,
+      HoldPerson,
       MelfsMinuteMeteors,
 
       Fireball

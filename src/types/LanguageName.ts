@@ -1,7 +1,9 @@
 export const LanguageNames = [
   "Common",
   "Draconic",
+  "Dwarvish",
   "Elvish",
+  "Giant",
   "Infernal",
   "Primordial",
   "Sylvan",

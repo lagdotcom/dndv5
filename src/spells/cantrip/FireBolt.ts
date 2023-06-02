@@ -4,6 +4,7 @@ import { dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
 const FireBolt = simpleSpell<HasTarget>({
+  implemented: true,
   name: "Fire Bolt",
   level: 0,
   school: "Evocation",

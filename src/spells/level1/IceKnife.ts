@@ -5,6 +5,7 @@ import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 const IceKnife = scalingSpell<HasTarget>({
+  implemented: true,
   name: "Ice Knife",
   level: 1,
   school: "Conjuration",

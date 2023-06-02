@@ -11,6 +11,12 @@
     ]
   },
 
+  "Bonus Spell Entry": {
+    "scope": "typescript",
+    "prefix": "bsentry",
+    "body": "{ level: $1, spell: $2 },"
+  },
+
   "Enum Type": {
     "scope": "typescript",
     "prefix": "enumtype",

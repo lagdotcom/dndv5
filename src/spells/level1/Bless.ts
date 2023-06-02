@@ -24,6 +24,7 @@ const BlessEffect = new Effect("Bless", "turnEnd", (g) => {
 });
 
 const Bless = scalingSpell<HasTargets>({
+  implemented: true,
   name: "Bless",
   level: 1,
   school: "Enchantment",

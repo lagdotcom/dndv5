@@ -108,6 +108,7 @@ class FireMeteorsAction implements Action<HasPoints> {
 }
 
 const MelfsMinuteMeteors = scalingSpell<HasPoints>({
+  implemented: true,
   name: "Melf's Minute Meteors",
   level: 3,
   school: "Evocation",

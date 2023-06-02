@@ -88,7 +88,11 @@ export default function App({ g, onMount }: Props) {
     <T extends object>(action: Action<T>, config: T) => {
       setAction(undefined);
       actionAreas.value = undefined;
-      void g.act(action, config).then(refreshUnits);
+      void g.act(action, config).then(() => {
+        refreshUnits();
+        allActions.value = g.getActions(action.actor);
+        return;
+      });
     },
     [g, refreshUnits]
   );

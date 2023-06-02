@@ -17,6 +17,7 @@ const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
 });
 
 const MindSliver = simpleSpell<HasTarget>({
+  implemented: true,
   name: "Mind Sliver",
   level: 0,
   school: "Enchantment",

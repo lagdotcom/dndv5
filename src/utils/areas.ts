@@ -5,6 +5,7 @@ export function resolveArea(area: SpecifiedEffectShape): Point[] {
   const points: Point[] = [];
 
   switch (area.type) {
+    case "cylinder": // TODO once height exists
     case "sphere": {
       const left = area.centre.x - area.radius;
       const top = area.centre.y - area.radius;

@@ -5,6 +5,7 @@ import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 const Fireball = scalingSpell<HasPoint>({
+  implemented: true,
   name: "Fireball",
   level: 3,
   school: "Evocation",

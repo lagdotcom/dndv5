@@ -31,6 +31,8 @@ export const simpleSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
+  incomplete = false,
+  implemented = false,
 }: Omit<
   MarkOptional<
     Spell<T>,
@@ -43,26 +45,30 @@ export const simpleSpell = <T extends object>({
     | "getDamage"
   >,
   "getLevel" | "scaling"
->): Spell<T> => ({
-  name,
-  level,
-  scaling: false,
-  school,
-  concentration,
-  time,
-  v,
-  s,
-  m,
-  lists,
-  apply,
-  check,
-  getAffectedArea,
-  getConfig,
-  getDamage,
-  getLevel() {
-    return level;
-  },
-});
+> & { incomplete?: boolean; implemented?: boolean }): Spell<T> => {
+  if (incomplete) console.warn(`[Spell Not Complete] ${name}`);
+  else if (!implemented) console.warn(`[Spell Missing] ${name}`);
+  return {
+    name,
+    level,
+    scaling: false,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    lists,
+    apply,
+    check,
+    getAffectedArea,
+    getConfig,
+    getDamage,
+    getLevel() {
+      return level;
+    },
+  };
+};
 
 export const scalingSpell = <T extends object>({
   name,
@@ -79,6 +85,8 @@ export const scalingSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
+  incomplete = false,
+  implemented = false,
 }: Omit<
   MarkOptional<
     Spell<T & Scales>,
@@ -92,34 +100,40 @@ export const scalingSpell = <T extends object>({
   >,
   "getConfig" | "getLevel" | "scaling"
 > & {
+  incomplete?: boolean;
+  implemented?: boolean;
   getConfig: (
     g: Engine,
     actor: Combatant,
     method: SpellcastingMethod,
     config: Partial<T & Scales>
   ) => ActionConfig<T>;
-}): Spell<T & Scales> => ({
-  name,
-  level,
-  scaling: true,
-  school,
-  concentration,
-  time,
-  v,
-  s,
-  m,
-  lists,
-  apply,
-  check,
-  getAffectedArea,
-  getConfig(g, actor, method, config) {
-    return {
-      ...getConfig(g, actor, method, config),
-      slot: new SlotResolver(this, method),
-    };
-  },
-  getDamage,
-  getLevel({ slot }) {
-    return slot;
-  },
-});
+}): Spell<T & Scales> => {
+  if (incomplete) console.warn(`[Spell Not Complete] ${name}`);
+  else if (!implemented) console.warn(`[Spell Missing] ${name}`);
+  return {
+    name,
+    level,
+    scaling: true,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    lists,
+    apply,
+    check,
+    getAffectedArea,
+    getConfig(g, actor, method, config) {
+      return {
+        ...getConfig(g, actor, method, config),
+        slot: new SlotResolver(this, method),
+      };
+    },
+    getDamage,
+    getLevel({ slot }) {
+      return slot;
+    },
+  };
+};

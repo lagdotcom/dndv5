@@ -119,7 +119,7 @@ function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
   const setTarget = useCallback(
     (p?: Point) => {
       onChange(field, p);
-      wantsCombatant.value = undefined;
+      wantsPoint.value = undefined;
     },
     [field, onChange]
   );
@@ -133,7 +133,7 @@ function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
       <div>Point: {describePoint(value)}</div>
       <button
         className={classnames({
-          [styles.active]: wantsCombatant.value === setTarget,
+          [styles.active]: wantsPoint.value === setTarget,
         })}
         onClick={onClick}
       >
