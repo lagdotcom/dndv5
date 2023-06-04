@@ -144,18 +144,24 @@ export default function App({ g, onMount }: Props) {
       setAction(undefined);
       actionAreas.value = undefined;
 
-      if (activeCombatant.value) {
+      const me = activeCombatant.value;
+      if (me) {
         setTarget(who);
 
         const items = allActions.value
-          .map((action) => ({
-            label: action.name,
-            value: action,
-            disabled: !checkConfig(action, {
-              target: who,
-              point: g.getState(who).position,
-            }),
-          }))
+          .map((action) => {
+            const testConfig = { target: who, point: g.getState(who).position };
+            const invalidConfig = !checkConfig(action, testConfig);
+            const config = action.getConfig(testConfig);
+            const needsTarget = "target" in config || me.who === who;
+            const needsPoint = "point" in config;
+
+            return {
+              label: action.name,
+              value: action,
+              disabled: invalidConfig || (!needsTarget && !needsPoint),
+            };
+          })
           // TODO would this be useful at some point?
           .filter((item) => !item.disabled);
 

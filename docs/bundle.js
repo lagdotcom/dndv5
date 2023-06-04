@@ -6296,16 +6296,21 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         }
         setAction(void 0);
         actionAreas.value = void 0;
-        if (activeCombatant.value) {
+        const me = activeCombatant.value;
+        if (me) {
           setTarget(who);
-          const items = allActions.value.map((action2) => ({
-            label: action2.name,
-            value: action2,
-            disabled: !checkConfig(action2, {
-              target: who,
-              point: g2.getState(who).position
-            })
-          })).filter((item) => !item.disabled);
+          const items = allActions.value.map((action2) => {
+            const testConfig = { target: who, point: g2.getState(who).position };
+            const invalidConfig = !checkConfig(action2, testConfig);
+            const config = action2.getConfig(testConfig);
+            const needsTarget = "target" in config || me.who === who;
+            const needsPoint = "point" in config;
+            return {
+              label: action2.name,
+              value: action2,
+              disabled: invalidConfig || !needsTarget && !needsPoint
+            };
+          }).filter((item) => !item.disabled);
           setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
         }
       },
