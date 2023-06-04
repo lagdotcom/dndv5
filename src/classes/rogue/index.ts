@@ -1,3 +1,5 @@
+import DashAction from "../../actions/DashAction";
+import DisengageAction from "../../actions/DisengageAction";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -35,10 +37,23 @@ const ThievesCant = nonCombatFeature(
 In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`
 );
 
-// TODO
-const CunningAction = notImplementedFeature(
+const CunningAction = new SimpleFeature(
   "Cunning Action",
-  `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`
+  `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
+  (g, me) => {
+    g.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who === me) {
+        // TODO HideAction
+        const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
+        for (const action of cunning) {
+          action.name += " (Cunning Action)";
+          action.time = "bonus action";
+        }
+
+        actions.push(...cunning);
+      }
+    });
+  }
 );
 
 const UncannyDodge = new SimpleFeature(

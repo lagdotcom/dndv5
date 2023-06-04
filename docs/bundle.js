@@ -2270,9 +2270,21 @@ The amount of the extra damage increases as you gain levels in this class, as sh
 
 In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`
   );
-  var CunningAction = notImplementedFeature(
+  var CunningAction = new SimpleFeature(
     "Cunning Action",
-    `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`
+    `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
+    (g2, me) => {
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          const cunning = [new DashAction(g2, who), new DisengageAction(g2, who)];
+          for (const action of cunning) {
+            action.name += " (Cunning Action)";
+            action.time = "bonus action";
+          }
+          actions.push(...cunning);
+        }
+      });
+    }
   );
   var UncannyDodge = new SimpleFeature(
     "Uncanny Dodge",
