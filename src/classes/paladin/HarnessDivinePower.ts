@@ -1,3 +1,4 @@
+import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { Scales } from "../../configs";
 import Engine from "../../Engine";
@@ -8,8 +9,6 @@ import {
   getSpellSlotResourceName,
   SpellSlotResources,
 } from "../../spells/NormalSpellcasting";
-import Action, { ActionConfig } from "../../types/Action";
-import ActionTime from "../../types/ActionTime";
 import Combatant from "../../types/Combatant";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { ChannelDivinityResource } from "./common";
@@ -19,43 +18,33 @@ const HarnessDivinePowerResource = new LongRestResource(
   1
 );
 
-class HarnessDivinePowerAction implements Action<Scales> {
-  config: ActionConfig<Scales>;
-  name: string;
-  time: ActionTime;
+class HarnessDivinePowerAction extends AbstractAction<Scales> {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Harness Divine Power",
+      {
+        slot: new ChoiceResolver(
+          g,
+          enumerate(1, 9)
+            .filter((slot) =>
+              actor.resources.has(getSpellSlotResourceName(slot))
+            )
+            .map((value) => {
+              const resource = SpellSlotResources[value];
 
-  constructor(public g: Engine, public actor: Combatant) {
-    this.name = "Harness Divine Power";
-    this.time = "bonus action";
-    this.config = {
-      slot: new ChoiceResolver(
-        g,
-        enumerate(1, 9)
-          .filter((slot) => actor.resources.has(getSpellSlotResourceName(slot)))
-          .map((value) => {
-            const resource = SpellSlotResources[value];
-
-            return {
-              label: ordinal(value),
-              value,
-              disabled:
-                actor.getResourceMax(resource) <= actor.getResource(resource),
-            };
-          })
-      ),
-    };
-  }
-
-  getAffectedArea() {
-    return undefined;
-  }
-
-  getConfig() {
-    return this.config;
-  }
-
-  getDamage() {
-    return undefined;
+              return {
+                label: ordinal(value),
+                value,
+                disabled:
+                  actor.getResourceMax(resource) <= actor.getResource(resource),
+              };
+            })
+        ),
+      },
+      "bonus action"
+    );
   }
 
   check({ slot }: Partial<Scales>, ec = new ErrorCollector()): ErrorCollector {
@@ -71,13 +60,13 @@ class HarnessDivinePowerAction implements Action<Scales> {
         ec.add(`full on ${resource.name}`, this);
     }
 
-    return ec;
+    return super.check({ slot }, ec);
   }
 
   async apply({ slot }: Scales) {
-    this.actor.spendResource(ChannelDivinityResource);
-    this.actor.time.delete("bonus action");
+    super.apply({ slot });
 
+    this.actor.spendResource(ChannelDivinityResource);
     this.actor.giveResource(SpellSlotResources[slot], 1);
   }
 }

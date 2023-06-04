@@ -1,4 +1,8 @@
+import DashAction from "./actions/DashAction";
+import DisengageAction from "./actions/DisengageAction";
+import DodgeAction from "./actions/DodgeAction";
 import WeaponAttack from "./actions/WeaponAttack";
+import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
 import PointSet from "./PointSet";
 import { ResourceRegistry } from "./resources";
@@ -6,14 +10,6 @@ import Item from "./types/Item";
 import { resolveArea } from "./utils/areas";
 import { getValidAmmunition } from "./utils/items";
 import { distance, getSquares } from "./utils/units";
-
-export const RuleRepository = new Set<DndRule>();
-
-export class DndRule {
-  constructor(public name: string, public setup: (g: Engine) => void) {
-    RuleRepository.add(this);
-  }
-}
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("beforeAttack", ({ detail: { who, ability, bonus } }) => {
@@ -56,6 +52,14 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
       diceType.add("disadvantage", BlindedRule);
     if (target.conditions.has("Blinded"))
       diceType.add("advantage", BlindedRule);
+  });
+});
+
+export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
+  g.events.on("getActions", ({ detail: { who, actions } }) => {
+    actions.push(new DashAction(g, who));
+    actions.push(new DisengageAction(g, who));
+    actions.push(new DodgeAction(g, who));
   });
 });
 

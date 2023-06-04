@@ -1,70 +1,47 @@
+import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
-import Action from "../../types/Action";
-import ActionTime from "../../types/ActionTime";
 import Combatant from "../../types/Combatant";
 
 const SteadyAimNoMoveEffect = new Effect(
-  "Steady Aim (No Move)",
+  "Steady Aim",
   "turnEnd",
   (g) => {
     g.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
       if (who.hasEffect(SteadyAimNoMoveEffect))
         multiplier.add(0, SteadyAimNoMoveEffect);
     });
-  }
+  },
+  true
 );
 
-const SteadyAimAdvantageEffect = new Effect(
-  "Steady Aim (Advantage)",
-  "turnEnd",
-  (g) => {
-    g.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
-      if (who.hasEffect(SteadyAimAdvantageEffect))
-        diceType.add("advantage", SteadyAimAdvantageEffect);
-    });
+const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
+  g.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
+    if (who.hasEffect(SteadyAimAdvantageEffect))
+      diceType.add("advantage", SteadyAimAdvantageEffect);
+  });
 
-    g.events.on("attack", ({ detail: { pre } }) => {
-      if (pre.diceType.involved(SteadyAimAdvantageEffect))
-        pre.who.removeEffect(SteadyAimAdvantageEffect);
-    });
-  }
-);
+  g.events.on("attack", ({ detail: { pre } }) => {
+    if (pre.diceType.involved(SteadyAimAdvantageEffect))
+      pre.who.removeEffect(SteadyAimAdvantageEffect);
+  });
+});
 
-class SteadyAimAction implements Action<object> {
-  name: string;
-  time: ActionTime;
-
-  constructor(public g: Engine, public actor: Combatant) {
-    this.name = "Steady Aim";
-    this.time = "bonus action";
-  }
-
-  getAffectedArea() {
-    return undefined;
-  }
-
-  getConfig() {
-    return {};
-  }
-
-  getDamage() {
-    return undefined;
+class SteadyAimAction extends AbstractAction {
+  constructor(g: Engine, actor: Combatant) {
+    super(g, actor, "Steady Aim", {}, "bonus action");
   }
 
   check(config: never, ec = new ErrorCollector()) {
-    if (!this.actor.time.has("bonus action"))
-      ec.add("No bonus action left", this);
-
     if (this.actor.movedSoFar) ec.add("Already moved this turn", this);
 
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply() {
-    this.actor.time.delete("bonus action");
+    super.apply({});
 
     this.actor.addEffect(SteadyAimNoMoveEffect, 1);
     this.actor.addEffect(SteadyAimAdvantageEffect, 1);

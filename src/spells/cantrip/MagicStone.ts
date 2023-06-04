@@ -1,10 +1,10 @@
+import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { TemporaryResource } from "../../resources";
-import Action, { ActionConfig } from "../../types/Action";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { dd } from "../../utils/dice";
@@ -12,38 +12,34 @@ import { simpleSpell } from "../common";
 
 const MagicStoneResource = new TemporaryResource("Magic Stone", 3);
 
-class MagicStoneAction implements Action<HasTarget> {
-  config: ActionConfig<HasTarget>;
-  name: string;
-
+class MagicStoneAction extends AbstractAction<HasTarget> {
   constructor(
-    public g: Engine,
-    public actor: Combatant,
+    g: Engine,
+    actor: Combatant,
     public method: SpellcastingMethod,
     public unsubscribe: Unsubscribe
   ) {
-    this.name = "Throw Magic Stone";
-    this.config = { target: new TargetResolver(g, 60) };
-  }
-
-  getAffectedArea() {
-    return undefined;
-  }
-  getConfig() {
-    return this.config;
-  }
-  getDamage() {
-    return [dd(1, 6, "bludgeoning")];
+    super(
+      g,
+      actor,
+      "Throw Magic Stone",
+      { target: new TargetResolver(g, 60) },
+      undefined,
+      undefined,
+      [dd(1, 6, "bludgeoning")]
+    );
   }
 
   check(config: Partial<HasTarget>, ec = new ErrorCollector()): ErrorCollector {
     if (!this.actor.hasResource(MagicStoneResource))
       ec.add("no magic stones left", MagicStoneAction);
 
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {
+    super.apply({ target });
+
     this.actor.spendResource(MagicStoneResource);
     if (this.actor.getResource(MagicStoneResource) < 1) this.unsubscribe();
 

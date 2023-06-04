@@ -1,10 +1,9 @@
+import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasPoints } from "../../configs";
 import Engine from "../../Engine";
 import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
-import Action, { ActionConfig } from "../../types/Action";
-import ActionTime from "../../types/ActionTime";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { dd } from "../../utils/dice";
@@ -60,47 +59,38 @@ async function fireMeteors(
   // TODO stop concentrating if resource=0
 }
 
-class FireMeteorsAction implements Action<HasPoints> {
-  config: ActionConfig<HasPoints>;
-  name: string;
-  time: ActionTime;
-
-  constructor(
-    public g: Engine,
-    public actor: Combatant,
-    public method: SpellcastingMethod
-  ) {
-    this.name = "Melf's Minute Meteors";
-    this.time = "bonus action";
-
-    const meteors = actor.resources.get(MeteorResource.name) ?? 2;
-    this.config = {
-      points: new MultiPointResolver(g, 1, Math.min(2, meteors), 120),
-    };
+class FireMeteorsAction extends AbstractAction<HasPoints> {
+  constructor(g: Engine, actor: Combatant, public method: SpellcastingMethod) {
+    super(
+      g,
+      actor,
+      "Melf's Minute Meteors",
+      {
+        points: new MultiPointResolver(
+          g,
+          1,
+          Math.min(2, actor.resources.get(MeteorResource.name) ?? 2),
+          120
+        ),
+      },
+      "bonus action",
+      undefined,
+      [dd(2, 6, "fire")]
+    );
   }
 
-  getAffectedArea({ points }: HasPoints) {
+  getAffectedArea({ points }: Partial<HasPoints>) {
     if (points)
       return points.map(
         (centre) => ({ type: "sphere", centre, radius: 5 } as const)
       );
   }
 
-  getConfig() {
-    return this.config;
-  }
-
-  getDamage() {
-    return [dd(2, 6, "fire")];
-  }
-
   check({ points }: Partial<HasPoints>, ec = new ErrorCollector()) {
-    if (!this.actor.time.has(this.time)) ec.add(`No ${this.time} left`, this);
-
     if (!this.actor.hasResource(MeteorResource, points?.length ?? 1))
       ec.add(`Not enough meteors left`, this);
 
-    return ec;
+    return super.check({ points }, ec);
   }
 
   async apply(config: HasPoints) {

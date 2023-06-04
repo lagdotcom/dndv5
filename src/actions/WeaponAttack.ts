@@ -4,47 +4,37 @@ import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
 import TargetResolver from "../resolvers/TargetResolver";
 import Ability from "../types/Ability";
-import Action, { ActionConfig } from "../types/Action";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { distance } from "../utils/units";
+import AbstractAction from "./AbstractAction";
 
-export default class WeaponAttack implements Action<HasTarget> {
+export default class WeaponAttack extends AbstractAction<HasTarget> {
   ability: Ability;
-  config: ActionConfig<HasTarget>;
-  name: string;
 
   constructor(
-    public g: Engine,
-    public actor: Combatant,
+    g: Engine,
+    actor: Combatant,
     public weapon: WeaponItem,
     public ammo?: AmmoItem
   ) {
-    const range = getWeaponRange(actor, weapon);
+    super(
+      g,
+      actor,
+      ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
+      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) },
+      undefined,
+      undefined,
+      [weapon.damage]
+    );
     this.ability = getWeaponAbility(actor, weapon);
-
-    this.config = { target: new TargetResolver(g, range) };
-    this.name = ammo ? `${weapon.name} (${ammo.name})` : weapon.name;
-  }
-
-  getAffectedArea() {
-    // TODO exploding ammo???
-    return undefined;
-  }
-
-  getConfig() {
-    return this.config;
-  }
-
-  getDamage() {
-    return [this.weapon.damage];
   }
 
   check(config: Partial<HasTarget>, ec = new ErrorCollector()): ErrorCollector {
     // TODO check action economy
 
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {

@@ -1,4 +1,4 @@
-import { DndRule } from "./DndRules";
+import DndRule from "./DndRule";
 import Engine from "./Engine";
 import CombatantEffect from "./types/CombatantEffect";
 
