@@ -47,6 +47,7 @@ const AcidSplash = simpleSpell<HasTargets>({
         ability: "dex",
         spell: AcidSplash,
         method,
+        tags: new Set(),
       });
 
       if (!save)

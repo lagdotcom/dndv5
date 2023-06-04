@@ -34,6 +34,7 @@ const MindSliver = simpleSpell<HasTarget>({
       ability: "int",
       spell: MindSliver,
       method,
+      tags: new Set(),
     });
 
     const damage = await g.rollDamage(getCantripDice(attacker), {

@@ -83,6 +83,7 @@ const IceKnife = scalingSpell<HasTarget>({
         spell: IceKnife,
         method,
         who: victim,
+        tags: new Set(),
       });
       if (!save)
         await g.damage(

@@ -43,6 +43,7 @@ async function fireMeteors(
         spell: MelfsMinuteMeteors,
         method,
         who: target,
+        tags: new Set(),
       });
 
       const mul = save ? 0.5 : 1;

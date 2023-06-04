@@ -42,6 +42,7 @@ const Fireball = scalingSpell<HasPoint>({
         spell: Fireball,
         method,
         who: target,
+        tags: new Set(),
       });
 
       const mul = save ? 0.5 : 1;

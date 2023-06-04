@@ -1,3 +1,4 @@
+import SaveTag from "../events/SaveTag";
 import Ability from "./Ability";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
@@ -42,6 +43,7 @@ export type SavingThrow = {
   ability: Ability;
   spell?: Spell;
   method?: SpellcastingMethod;
+  tags: Set<SaveTag>;
 };
 
 type RollType =
