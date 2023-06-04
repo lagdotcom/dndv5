@@ -5624,9 +5624,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     value,
     onChange
   }) {
+    var _a;
     const addTarget = (0, import_hooks6.useCallback)(
       (who) => {
-        if (who)
+        if (who && !(value != null ? value : []).includes(who))
           onChange(field, (value != null ? value : []).concat(who));
         wantsCombatant.value = void 0;
       },
@@ -5647,25 +5648,26 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "Targets (",
         describeRange(resolver.minimum, resolver.maximum),
         "):",
-        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((who, i) => /* @__PURE__ */ o("li", { children: [
+        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((who) => /* @__PURE__ */ o("li", { children: [
           /* @__PURE__ */ o(CombatantRef, { who }),
           " ",
-          /* @__PURE__ */ o(
-            "button",
-            {
-              className: classnames({
-                [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === addTarget
-              }),
-              onClick: () => remove(who),
-              children: [
-                "remove ",
-                who.name
-              ]
-            }
-          )
-        ] }, i)) }) : ` NONE`
+          /* @__PURE__ */ o("button", { onClick: () => remove(who), children: [
+            "remove ",
+            who.name
+          ] })
+        ] }, who.id)) }) : ` NONE`
       ] }),
-      /* @__PURE__ */ o("button", { onClick, children: "Add Target" })
+      /* @__PURE__ */ o(
+        "button",
+        {
+          className: classnames({
+            [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === addTarget
+          }),
+          disabled: ((_a = value == null ? void 0 : value.length) != null ? _a : 0) >= resolver.maximum,
+          onClick,
+          children: "Add Target"
+        }
+      )
     ] });
   }
   function ChoosePoint({ field, value, onChange }) {

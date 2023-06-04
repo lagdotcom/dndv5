@@ -65,7 +65,8 @@ function ChooseTargets({
 }: ChooserProps<Combatant[], MultiTargetResolver>) {
   const addTarget = useCallback(
     (who?: Combatant) => {
-      if (who) onChange(field, (value ?? []).concat(who));
+      if (who && !(value ?? []).includes(who))
+        onChange(field, (value ?? []).concat(who));
       wantsCombatant.value = undefined;
     },
     [field, onChange, value]
@@ -92,17 +93,10 @@ function ChooseTargets({
         ):
         {(value ?? []).length ? (
           <ul>
-            {(value ?? []).map((who, i) => (
-              <li key={i}>
+            {(value ?? []).map((who) => (
+              <li key={who.id}>
                 <CombatantRef who={who} />{" "}
-                <button
-                  className={classnames({
-                    [styles.active]: wantsCombatant.value === addTarget,
-                  })}
-                  onClick={() => remove(who)}
-                >
-                  remove {who.name}
-                </button>
+                <button onClick={() => remove(who)}>remove {who.name}</button>
               </li>
             ))}
           </ul>
@@ -110,7 +104,15 @@ function ChooseTargets({
           ` NONE`
         )}
       </div>
-      <button onClick={onClick}>Add Target</button>
+      <button
+        className={classnames({
+          [styles.active]: wantsCombatant.value === addTarget,
+        })}
+        disabled={(value?.length ?? 0) >= resolver.maximum}
+        onClick={onClick}
+      >
+        Add Target
+      </button>
     </div>
   );
 }
