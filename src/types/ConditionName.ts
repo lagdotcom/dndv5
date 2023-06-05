@@ -14,4 +14,5 @@ export const ConditionNames = [
   "Stunned",
   "Unconscious",
 ] as const;
-export type ConditionName = (typeof ConditionNames)[number];
+type ConditionName = (typeof ConditionNames)[number];
+export default ConditionName;

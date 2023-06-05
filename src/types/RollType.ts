@@ -1,4 +1,4 @@
-import Ability from "./Ability";
+import AbilityName from "./AbilityName";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
 import { WeaponItem } from "./Item";
@@ -10,7 +10,7 @@ import SpellcastingMethod from "./SpellcastingMethod";
 export type AbilityCheck = {
   type: "check";
   who: Combatant;
-  ability: Ability;
+  ability: AbilityName;
   skill: SkillName;
 };
 export type AttackRoll = {
@@ -18,7 +18,7 @@ export type AttackRoll = {
   who: Combatant;
   target: Combatant;
   weapon?: WeaponItem;
-  ability: Ability;
+  ability: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
 };
@@ -30,7 +30,7 @@ export type DamageRoll = {
   size: number;
   damageType?: DamageType;
   weapon?: WeaponItem;
-  ability?: Ability;
+  ability?: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
 };
@@ -40,7 +40,7 @@ export type SavingThrow = {
   type: "save";
   who: Combatant;
   attacker: Combatant;
-  ability: Ability;
+  ability: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
   tags: Set<SaveTag>;

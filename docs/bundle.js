@@ -386,6 +386,48 @@
     }
   };
 
+  // src/utils/dnd.ts
+  function getAbilityBonus(ability) {
+    return Math.floor((ability - 10) / 2);
+  }
+  function getDiceAverage(count, size) {
+    return (size + 1) / 2 * count;
+  }
+  function getProficiencyBonusByLevel(level) {
+    return Math.ceil(level / 4) + 1;
+  }
+  function getSaveDC(who, ability) {
+    return 8 + who.pb + who[ability].score;
+  }
+
+  // src/AbilityScore.ts
+  var AbilityScore = class {
+    constructor(baseScore = 10, baseMaximum = 20) {
+      this.baseScore = baseScore;
+      this.baseMaximum = baseMaximum;
+    }
+    get score() {
+      return Math.min(this.baseScore, this.maximum);
+    }
+    set score(value) {
+      this.baseScore = value;
+    }
+    get maximum() {
+      return this.baseMaximum;
+    }
+    set maximum(value) {
+      this.baseMaximum = value;
+    }
+    get bonus() {
+      return getAbilityBonus(this.score);
+    }
+    setScore(value, extendMaximum = false) {
+      this.baseScore = value;
+      if (extendMaximum)
+        this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+  };
+
   // src/events/EffectAddedEvent.ts
   var EffectAddedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -414,22 +456,8 @@
     }
   };
 
-  // src/types/Ability.ts
-  var Abilities = ["str", "dex", "con", "int", "wis", "cha"];
-
-  // src/utils/dnd.ts
-  function getAbilityBonus(ability) {
-    return Math.floor((ability - 10) / 2);
-  }
-  function getDiceAverage(count, size) {
-    return (size + 1) / 2 * count;
-  }
-  function getProficiencyBonusByLevel(level) {
-    return Math.ceil(level / 4) + 1;
-  }
-  function getSaveDC(who, ability) {
-    return 8 + who.pb + who[ability];
-  }
+  // src/types/AbilityName.ts
+  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
 
   // src/utils/types.ts
   function isDefined(value) {
@@ -574,12 +602,12 @@
       this.side = side;
       this.size = size;
       this.type = type;
-      this.strScore = strScore;
-      this.dexScore = dexScore;
-      this.conScore = conScore;
-      this.intScore = intScore;
-      this.wisScore = wisScore;
-      this.chaScore = chaScore;
+      this.str = new AbilityScore(strScore);
+      this.dex = new AbilityScore(dexScore);
+      this.con = new AbilityScore(conScore);
+      this.int = new AbilityScore(intScore);
+      this.wis = new AbilityScore(wisScore);
+      this.cha = new AbilityScore(chaScore);
       this.movement = /* @__PURE__ */ new Map();
       this.skills = /* @__PURE__ */ new Map();
       this.languages = /* @__PURE__ */ new Set();
@@ -605,24 +633,6 @@
       this.toolProficiencies = /* @__PURE__ */ new Map();
       this.resourcesMax = /* @__PURE__ */ new Map();
       this.spellcastingMethods = /* @__PURE__ */ new Set();
-    }
-    get str() {
-      return getAbilityBonus(this.strScore);
-    }
-    get dex() {
-      return getAbilityBonus(this.dexScore);
-    }
-    get con() {
-      return getAbilityBonus(this.conScore);
-    }
-    get int() {
-      return getAbilityBonus(this.intScore);
-    }
-    get wis() {
-      return getAbilityBonus(this.wisScore);
-    }
-    get cha() {
-      return getAbilityBonus(this.chaScore);
     }
     get ac() {
       return this.g.getAC(this);
@@ -691,13 +701,13 @@
       this.features.set(feature.name, feature);
       return true;
     }
-    setAbilityScores(str, dex, con, int, wis, cha) {
-      this.strScore = str;
-      this.dexScore = dex;
-      this.conScore = con;
-      this.intScore = int;
-      this.wisScore = wis;
-      this.chaScore = cha;
+    setAbilityScores(str, dex, con, int, wis, cha, updateMaximums = false) {
+      this.str.setScore(str, updateMaximums);
+      this.dex.setScore(dex, updateMaximums);
+      this.con.setScore(con, updateMaximums);
+      this.int.setScore(int, updateMaximums);
+      this.wis.setScore(wis, updateMaximums);
+      this.cha.setScore(cha, updateMaximums);
     }
     don(item, attune = false) {
       if (item.itemType === "armor") {
@@ -719,7 +729,7 @@
     getProficiencyMultiplier(thing) {
       var _a;
       if (typeof thing === "string") {
-        if (isA(thing, Abilities))
+        if (isA(thing, AbilityNames))
           return this.saveProficiencies.has(thing) ? 1 : 0;
         return (_a = this.skills.get(thing)) != null ? _a : 0;
       }
@@ -1022,14 +1032,14 @@
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-      bonus.add(who[ability], AbilityScoreRule);
+      bonus.add(who[ability].bonus, AbilityScoreRule);
     });
     g2.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
       if (ability)
-        bonus.add(attacker[ability], AbilityScoreRule);
+        bonus.add(attacker[ability].bonus, AbilityScoreRule);
     });
     g2.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
-      bonus.add(who.dex, AbilityScoreRule);
+      bonus.add(who.dex.bonus, AbilityScoreRule);
     });
   });
   var ArmorCalculationRule = new DndRule("Armor Calculation", (g2) => {
@@ -1044,7 +1054,7 @@
       if (shield)
         uses.add(shield);
       const name = armor ? `${armor.category} armor` : "unarmored";
-      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex;
+      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex.bonus, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex.bonus;
       methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
     });
   });
@@ -1823,102 +1833,6 @@
   // src/monsters/Badger_token.png
   var Badger_token_default = "./Badger_token-53MEBA7R.png";
 
-  // src/monsters/Badger.ts
-  var Bite = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "bite", "natural", "melee", {
-        type: "flat",
-        amount: 1,
-        damageType: "piercing"
-      });
-      this.hands = 0;
-      this.forceAbilityScore = "dex";
-    }
-  };
-  var Badger = class extends Monster {
-    constructor(g2) {
-      super(g2, "badger", 0, "beast", "tiny", Badger_token_default);
-      this.hp = this.hpMax = 3;
-      this.movement.set("speed", 20);
-      this.movement.set("burrow", 5);
-      this.setAbilityScores(4, 11, 12, 2, 12, 5);
-      this.senses.set("darkvision", 30);
-      this.pb = 2;
-      this.naturalWeapons.add(new Bite(g2));
-    }
-  };
-
-  // src/items/ammunition.ts
-  var AbstractAmmo = class extends AbstractItem {
-    constructor(g2, name, ammunitionTag, quantity) {
-      super(g2, "ammo", name);
-      this.ammunitionTag = ammunitionTag;
-      this.quantity = quantity;
-    }
-  };
-  var CrossbowBolt = class extends AbstractAmmo {
-    constructor(g2, quantity) {
-      super(g2, "crossbow bolt", "crossbow", quantity);
-    }
-  };
-  var SlingBullet = class extends AbstractAmmo {
-    constructor(g2, quantity) {
-      super(g2, "sling bullet", "sling", quantity);
-    }
-  };
-
-  // src/items/armor.ts
-  var AbstractArmor = class extends AbstractItem {
-    constructor(g2, name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
-      super(g2, "armor", name);
-      this.category = category;
-      this.ac = ac;
-      this.stealthDisadvantage = stealthDisadvantage;
-      this.minimumStrength = minimumStrength;
-    }
-  };
-  var LeatherArmor = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "leather armor", "light", 11);
-    }
-  };
-  var HideArmor = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "hide armor", "medium", 12);
-    }
-  };
-  var SplintArmor = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "splint armor", "heavy", 17, true, 15);
-    }
-  };
-  var Shield = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "shield", "shield", 2);
-      this.hands = 1;
-    }
-  };
-
-  // src/monsters/Thug_token.png
-  var Thug_token_default = "./Thug_token-IXRM6PKF.png";
-
-  // src/monsters/Thug.ts
-  var Thug = class extends Monster {
-    constructor(g2) {
-      super(g2, "thug", 0.5, "humanoid", "medium", Thug_token_default);
-      this.don(new LeatherArmor(g2), true);
-      this.hp = this.hpMax = 32;
-      this.movement.set("speed", 30);
-      this.setAbilityScores(15, 11, 14, 10, 10, 11);
-      this.skills.set("Intimidation", 1);
-      this.languages.add("Common");
-      this.pb = 2;
-      this.don(new Mace(g2), true);
-      this.don(new HeavyCrossbow(g2), true);
-      this.inventory.add(new CrossbowBolt(g2, Infinity));
-    }
-  };
-
   // src/events/SpellCastEvent.ts
   var SpellCastEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2030,6 +1944,118 @@
     });
   }
 
+  // src/monsters/common.ts
+  var KeenSmell = notImplementedFeature(
+    "Keen Smell",
+    `This has advantage on Wisdom (Perception) checks that rely on smell.`
+  );
+  var PackTactics = notImplementedFeature(
+    "Pack Tactics",
+    `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`
+  );
+  function makeMultiattack(text) {
+    return notImplementedFeature("Multiattack", text);
+  }
+
+  // src/monsters/Badger.ts
+  var Bite = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "bite", "natural", "melee", {
+        type: "flat",
+        amount: 1,
+        damageType: "piercing"
+      });
+      this.hands = 0;
+      this.forceAbilityScore = "dex";
+    }
+  };
+  var Badger = class extends Monster {
+    constructor(g2) {
+      super(g2, "badger", 0, "beast", "tiny", Badger_token_default);
+      this.hp = this.hpMax = 3;
+      this.movement.set("speed", 20);
+      this.movement.set("burrow", 5);
+      this.setAbilityScores(4, 11, 12, 2, 12, 5);
+      this.senses.set("darkvision", 30);
+      this.pb = 2;
+      this.addFeature(KeenSmell);
+      this.naturalWeapons.add(new Bite(g2));
+    }
+  };
+
+  // src/items/ammunition.ts
+  var AbstractAmmo = class extends AbstractItem {
+    constructor(g2, name, ammunitionTag, quantity) {
+      super(g2, "ammo", name);
+      this.ammunitionTag = ammunitionTag;
+      this.quantity = quantity;
+    }
+  };
+  var CrossbowBolt = class extends AbstractAmmo {
+    constructor(g2, quantity) {
+      super(g2, "crossbow bolt", "crossbow", quantity);
+    }
+  };
+  var SlingBullet = class extends AbstractAmmo {
+    constructor(g2, quantity) {
+      super(g2, "sling bullet", "sling", quantity);
+    }
+  };
+
+  // src/items/armor.ts
+  var AbstractArmor = class extends AbstractItem {
+    constructor(g2, name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
+      super(g2, "armor", name);
+      this.category = category;
+      this.ac = ac;
+      this.stealthDisadvantage = stealthDisadvantage;
+      this.minimumStrength = minimumStrength;
+    }
+  };
+  var LeatherArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "leather armor", "light", 11);
+    }
+  };
+  var HideArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "hide armor", "medium", 12);
+    }
+  };
+  var SplintArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "splint armor", "heavy", 17, true, 15);
+    }
+  };
+  var Shield = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "shield", "shield", 2);
+      this.hands = 1;
+    }
+  };
+
+  // src/monsters/Thug_token.png
+  var Thug_token_default = "./Thug_token-IXRM6PKF.png";
+
+  // src/monsters/Thug.ts
+  var Thug = class extends Monster {
+    constructor(g2) {
+      super(g2, "thug", 0.5, "humanoid", "medium", Thug_token_default);
+      this.don(new LeatherArmor(g2), true);
+      this.hp = this.hpMax = 32;
+      this.movement.set("speed", 30);
+      this.setAbilityScores(15, 11, 14, 10, 10, 11);
+      this.skills.set("Intimidation", 1);
+      this.languages.add("Common");
+      this.pb = 2;
+      this.addFeature(PackTactics);
+      this.addFeature(makeMultiattack("The thug makes two melee attacks."));
+      this.don(new Mace(g2), true);
+      this.don(new HeavyCrossbow(g2), true);
+      this.inventory.add(new CrossbowBolt(g2, Infinity));
+    }
+  };
+
   // src/features/ConfiguredFeature.ts
   var ConfiguredFeature = class {
     constructor(name, text, apply) {
@@ -2082,7 +2108,7 @@
   function asiSetup(g2, me, config) {
     if (config.type === "ability")
       for (const ability of config.abilities)
-        me[`${ability}Score`]++;
+        me[ability].score++;
     else
       me.addFeature(config.feat);
   }
@@ -2643,8 +2669,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         this.setRace(race.parent);
       this.race = race;
       this.size = race.size;
-      for (const [key, val] of (_a = race == null ? void 0 : race.abilities) != null ? _a : [])
-        this[`${key}Score`] += val;
+      for (const [ability, bonus] of (_a = race == null ? void 0 : race.abilities) != null ? _a : [])
+        this[ability].score += bonus;
       for (const [type, value] of (_b = race == null ? void 0 : race.movement) != null ? _b : [])
         this.movement.set(type, value);
       for (const language of (_c = race == null ? void 0 : race.languages) != null ? _c : [])
@@ -2658,7 +2684,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.classLevels.set(cls.name, level);
       this.level++;
       this.pb = getProficiencyBonusByLevel(this.level);
-      this.hpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con;
+      this.hpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.bonus;
       if (level === 1) {
         for (const prof of (_b = cls == null ? void 0 : cls.armorProficiencies) != null ? _b : [])
           this.armorProficiencies.add(prof);
@@ -3887,9 +3913,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       super(g2, "Beldalynn", Beldalynn_token_default);
       this.setAbilityScores(11, 13, 13, 15, 13, 8);
       this.setRace(BronzeDragonborn);
-      this.dexScore++;
-      this.conScore++;
-      this.strScore++;
+      this.dex.score++;
+      this.con.score++;
+      this.str.score++;
       this.languages.add("Common");
       this.languages.add("Draconic");
       this.languages.add("Elvish");
@@ -4595,7 +4621,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
       g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
         if (who === me && !me.armor) {
           const uses = /* @__PURE__ */ new Set();
-          let ac = 10 + me.dex + me.con;
+          let ac = 10 + me.dex.bonus + me.con.bonus;
           if (me.shield) {
             ac += me.shield.ac;
             uses.add(me.shield);
@@ -5363,7 +5389,7 @@ The creature is aware of this effect before it makes its attack against you.`
         if (who === me && !me.armor && !me.shield)
           methods.push({
             name: "Unarmored Defense",
-            ac: 10 + me.dex + me.wis,
+            ac: 10 + me.dex.bonus + me.wis.bonus,
             uses: /* @__PURE__ */ new Set()
           });
       });

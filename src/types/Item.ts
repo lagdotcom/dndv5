@@ -1,4 +1,4 @@
-import Ability from "./Ability";
+import AbilityName from "./AbilityName";
 import DamageAmount from "./DamageAmount";
 import Enchantment from "./Enchantment";
 import Source from "./Source";
@@ -39,7 +39,7 @@ export interface WeaponItem extends BaseItem {
   shortRange?: number;
   longRange?: number;
   ammunitionTag?: AmmunitionTag;
-  forceAbilityScore?: Ability;
+  forceAbilityScore?: AbilityName;
   quantity: number;
 
   addEnchantment(e: Enchantment<"weapon">): void;

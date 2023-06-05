@@ -1,3 +1,4 @@
+import AbilityScore from "./AbilityScore";
 import BonusCollector from "./collectors/BonusCollector";
 import MultiplierCollector from "./collectors/MultiplierCollector";
 import Engine from "./Engine";
@@ -6,11 +7,12 @@ import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
-import Ability, { Abilities } from "./types/Ability";
+import AbilityName, { AbilityNames } from "./types/AbilityName";
 import Combatant from "./types/Combatant";
 import CombatantEffect from "./types/CombatantEffect";
+import CombatantScore from "./types/CombatantScore";
 import Concentration from "./types/Concentration";
-import { ConditionName } from "./types/ConditionName";
+import ConditionName from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
 import Feature from "./types/Feature";
 import Item, {
@@ -29,7 +31,6 @@ import SkillName from "./types/SkillName";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
-import { getAbilityBonus } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
 import { isA } from "./utils/types";
 import { convertSizeToUnit } from "./utils/units";
@@ -66,12 +67,12 @@ export default abstract class AbstractCombatant implements Combatant {
   hpMax: number;
   pb: number;
 
-  strScore: number;
-  dexScore: number;
-  conScore: number;
-  intScore: number;
-  wisScore: number;
-  chaScore: number;
+  str: CombatantScore;
+  dex: CombatantScore;
+  con: CombatantScore;
+  int: CombatantScore;
+  wis: CombatantScore;
+  cha: CombatantScore;
 
   movement: Map<MovementType, number>;
   skills: Map<SkillName, number>;
@@ -85,7 +86,7 @@ export default abstract class AbstractCombatant implements Combatant {
   naturalWeapons: Set<WeaponItem>;
   resources: Map<string, number>;
   configs: Map<string, unknown>;
-  saveProficiencies: Set<Ability>;
+  saveProficiencies: Set<AbilityName>;
   features: Map<string, Feature>;
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
@@ -152,12 +153,12 @@ export default abstract class AbstractCombatant implements Combatant {
     this.side = side;
     this.size = size;
     this.type = type;
-    this.strScore = strScore;
-    this.dexScore = dexScore;
-    this.conScore = conScore;
-    this.intScore = intScore;
-    this.wisScore = wisScore;
-    this.chaScore = chaScore;
+    this.str = new AbilityScore(strScore);
+    this.dex = new AbilityScore(dexScore);
+    this.con = new AbilityScore(conScore);
+    this.int = new AbilityScore(intScore);
+    this.wis = new AbilityScore(wisScore);
+    this.cha = new AbilityScore(chaScore);
 
     this.movement = new Map();
     this.skills = new Map();
@@ -184,25 +185,6 @@ export default abstract class AbstractCombatant implements Combatant {
     this.toolProficiencies = new Map();
     this.resourcesMax = new Map();
     this.spellcastingMethods = new Set();
-  }
-
-  get str() {
-    return getAbilityBonus(this.strScore);
-  }
-  get dex() {
-    return getAbilityBonus(this.dexScore);
-  }
-  get con() {
-    return getAbilityBonus(this.conScore);
-  }
-  get int() {
-    return getAbilityBonus(this.intScore);
-  }
-  get wis() {
-    return getAbilityBonus(this.wisScore);
-  }
-  get cha() {
-    return getAbilityBonus(this.chaScore);
   }
 
   get ac(): number {
@@ -283,14 +265,15 @@ export default abstract class AbstractCombatant implements Combatant {
     con: number,
     int: number,
     wis: number,
-    cha: number
+    cha: number,
+    updateMaximums = false
   ) {
-    this.strScore = str;
-    this.dexScore = dex;
-    this.conScore = con;
-    this.intScore = int;
-    this.wisScore = wis;
-    this.chaScore = cha;
+    this.str.setScore(str, updateMaximums);
+    this.dex.setScore(dex, updateMaximums);
+    this.con.setScore(con, updateMaximums);
+    this.int.setScore(int, updateMaximums);
+    this.wis.setScore(wis, updateMaximums);
+    this.cha.setScore(cha, updateMaximums);
   }
 
   don(item: Item, attune = false) {
@@ -315,9 +298,9 @@ export default abstract class AbstractCombatant implements Combatant {
     }
   }
 
-  getProficiencyMultiplier(thing: Item | Ability | SkillName): number {
+  getProficiencyMultiplier(thing: Item | AbilityName | SkillName): number {
     if (typeof thing === "string") {
-      if (isA(thing, Abilities))
+      if (isA(thing, AbilityNames))
         return this.saveProficiencies.has(thing) ? 1 : 0;
       return this.skills.get(thing) ?? 0;
     }

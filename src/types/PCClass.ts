@@ -1,4 +1,4 @@
-import Ability from "./Ability";
+import AbilityName from "./AbilityName";
 import Feature from "./Feature";
 import { ArmorCategory, WeaponCategory } from "./Item";
 import PCClassName from "./PCClassName";
@@ -12,7 +12,7 @@ export default interface PCClass {
   weaponCategoryProficiencies?: Set<WeaponCategory>;
   weaponProficiencies?: Set<string>;
   toolProficiencies?: Set<ToolName>;
-  saveProficiencies?: Set<Ability>;
+  saveProficiencies?: Set<AbilityName>;
   skillChoices: number;
   skillProficiencies: Set<SkillName>;
   features: Map<number, Feature[]>;

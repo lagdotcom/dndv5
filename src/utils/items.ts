@@ -1,4 +1,4 @@
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import Enchantment from "../types/Enchantment";
 import Item, {
@@ -15,7 +15,10 @@ export const isSuitOfArmor = (item: Item): item is ArmorItem =>
 export const isShield = (item: Item): item is ArmorItem =>
   item.itemType === "armor" && item.category === "shield";
 
-export function getWeaponAbility(who: Combatant, weapon: WeaponItem): Ability {
+export function getWeaponAbility(
+  who: Combatant,
+  weapon: WeaponItem
+): AbilityName {
   if (weapon.forceAbilityScore) return weapon.forceAbilityScore;
 
   const { str, dex } = who;

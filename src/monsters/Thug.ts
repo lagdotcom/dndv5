@@ -3,6 +3,7 @@ import { CrossbowBolt } from "../items/ammunition";
 import { LeatherArmor } from "../items/armor";
 import { HeavyCrossbow, Mace } from "../items/weapons";
 import Monster from "../Monster";
+import { makeMultiattack, PackTactics } from "./common";
 import tokenUrl from "./Thug_token.png";
 
 export default class Thug extends Monster {
@@ -16,9 +17,8 @@ export default class Thug extends Monster {
     this.languages.add("Common");
     this.pb = 2;
 
-    // TODO Pack Tactics. The thug has advantage on an attack roll against a creature if at least one of the thug's allies is within 5 feet of the creature and the ally isn't incapacitated.
-
-    // TODO Multiattack. The thug makes two melee attacks.
+    this.addFeature(PackTactics);
+    this.addFeature(makeMultiattack("The thug makes two melee attacks."));
 
     this.don(new Mace(g), true);
     this.don(new HeavyCrossbow(g), true);

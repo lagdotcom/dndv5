@@ -1,5 +1,5 @@
 import Combatant from "../types/Combatant";
-import { ConditionName } from "../types/ConditionName";
+import ConditionName from "../types/ConditionName";
 
 export interface GetConditionsDetail {
   who: Combatant;

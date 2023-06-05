@@ -1,4 +1,4 @@
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import Resource from "../types/Resource";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
@@ -6,7 +6,7 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 export default class InnateSpellcasting implements SpellcastingMethod {
   constructor(
     public name: string,
-    public ability: Ability,
+    public ability: AbilityName,
     public getResourceForSpell: (
       spell: Spell,
       level: number

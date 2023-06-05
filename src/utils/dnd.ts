@@ -1,4 +1,4 @@
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 
 export function getAbilityBonus(ability: number) {
@@ -13,6 +13,6 @@ export function getProficiencyBonusByLevel(level: number) {
   return Math.ceil(level / 4) + 1;
 }
 
-export function getSaveDC(who: Combatant, ability: Ability) {
-  return 8 + who.pb + who[ability];
+export function getSaveDC(who: Combatant, ability: AbilityName) {
+  return 8 + who.pb + who[ability].score;
 }

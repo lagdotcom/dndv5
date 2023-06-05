@@ -1,8 +1,9 @@
-import Ability from "./Ability";
+import AbilityName from "./AbilityName";
 import ActionTime from "./ActionTime";
 import CombatantEffect from "./CombatantEffect";
+import CombatantScore from "./CombatantScore";
 import Concentration from "./Concentration";
-import { ConditionName } from "./ConditionName";
+import ConditionName from "./ConditionName";
 import CreatureType from "./CreatureType";
 import Feature from "./Feature";
 import Item, {
@@ -41,18 +42,12 @@ export default interface Combatant extends Source {
   ac: number;
   pb: number;
 
-  str: number;
-  dex: number;
-  con: number;
-  int: number;
-  wis: number;
-  cha: number;
-  strScore: number;
-  dexScore: number;
-  conScore: number;
-  intScore: number;
-  wisScore: number;
-  chaScore: number;
+  str: CombatantScore;
+  dex: CombatantScore;
+  con: CombatantScore;
+  int: CombatantScore;
+  wis: CombatantScore;
+  cha: CombatantScore;
 
   movement: Map<MovementType, number>;
   skills: Map<SkillName, number>;
@@ -72,7 +67,7 @@ export default interface Combatant extends Source {
   attunements: Set<Item>;
   movedSoFar: number;
   speed: number;
-  saveProficiencies: Set<Ability>;
+  saveProficiencies: Set<AbilityName>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
@@ -85,7 +80,7 @@ export default interface Combatant extends Source {
 
   addFeature(feature: Feature): boolean;
   getConfig<T>(key: string): T | undefined;
-  getProficiencyMultiplier(thing: Item | Ability | SkillName): number;
+  getProficiencyMultiplier(thing: Item | AbilityName | SkillName): number;
   initResource(resource: Resource, amount?: number, max?: number): void;
   giveResource(resource: Resource, amount: number): void;
   hasResource(resource: Resource, amount?: number): boolean;

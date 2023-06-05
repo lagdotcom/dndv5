@@ -13,15 +13,15 @@ import { distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-    bonus.add(who[ability], AbilityScoreRule);
+    bonus.add(who[ability].bonus, AbilityScoreRule);
   });
 
   g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-    if (ability) bonus.add(attacker[ability], AbilityScoreRule);
+    if (ability) bonus.add(attacker[ability].bonus, AbilityScoreRule);
   });
 
   g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
-    bonus.add(who.dex, AbilityScoreRule);
+    bonus.add(who.dex.bonus, AbilityScoreRule);
   });
 });
 
@@ -38,10 +38,10 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
     const name = armor ? `${armor.category} armor` : "unarmored";
     const dexMod =
       armor?.category === "medium"
-        ? Math.min(dex, 2)
+        ? Math.min(dex.bonus, 2)
         : armor?.category === "heavy"
         ? 0
-        : dex;
+        : dex.bonus;
     methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
   });
 });

@@ -2,6 +2,7 @@ import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
 import tokenUrl from "./Badger_token.png";
+import { KeenSmell } from "./common";
 
 class Bite extends AbstractWeapon {
   constructor(g: Engine) {
@@ -25,7 +26,7 @@ export default class Badger extends Monster {
     this.senses.set("darkvision", 30);
     this.pb = 2;
 
-    // TODO Keen Smell. The badger has advantage on Wisdom (Perception) checks that rely on smell.
+    this.addFeature(KeenSmell);
 
     this.naturalWeapons.add(new Bite(g));
   }

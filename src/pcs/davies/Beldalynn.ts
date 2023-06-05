@@ -23,9 +23,9 @@ export default class Beldalynn extends PC {
 
     this.setAbilityScores(11, 13, 13, 15, 13, 8);
     this.setRace(BronzeDragonborn);
-    this.dexScore++;
-    this.conScore++;
-    this.strScore++;
+    this.dex.score++;
+    this.con.score++;
+    this.str.score++;
     this.languages.add("Common");
     this.languages.add("Draconic");
     this.languages.add("Elvish");

@@ -3,7 +3,7 @@ import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
 import TargetResolver from "../resolvers/TargetResolver";
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
@@ -11,7 +11,7 @@ import { distance } from "../utils/units";
 import AbstractAction from "./AbstractAction";
 
 export default class WeaponAttack extends AbstractAction<HasTarget> {
-  ability: Ability;
+  ability: AbilityName;
 
   constructor(
     g: Engine,

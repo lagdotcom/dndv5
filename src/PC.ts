@@ -44,8 +44,8 @@ export default class PC extends AbstractCombatant {
     this.race = race;
     this.size = race.size;
 
-    for (const [key, val] of race?.abilities ?? [])
-      this[`${key}Score` as const] += val;
+    for (const [ability, bonus] of race?.abilities ?? [])
+      this[ability].score += bonus;
 
     for (const [type, value] of race?.movement ?? [])
       this.movement.set(type, value);
@@ -64,7 +64,7 @@ export default class PC extends AbstractCombatant {
     // TODO multi class
 
     this.hpMax +=
-      (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con;
+      (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.bonus;
 
     if (level === 1) {
       for (const prof of cls?.armorProficiencies ?? [])

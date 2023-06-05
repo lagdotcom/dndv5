@@ -1,7 +1,7 @@
 import CastSpell from "../actions/CastSpell";
 import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
@@ -86,7 +86,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
   constructor(
     public name: string,
     public text: string,
-    public ability: Ability,
+    public ability: AbilityName,
     public strength: SpellcastingStrength,
     public className: PCClassName,
     public list: SpellList

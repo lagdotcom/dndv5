@@ -1,5 +1,5 @@
 import Engine from "../Engine";
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import DamageAmount from "../types/DamageAmount";
 import {
   AmmunitionTag,
@@ -16,7 +16,7 @@ export abstract class AbstractWeapon
   implements WeaponItem
 {
   ammunitionTag?: AmmunitionTag;
-  forceAbilityScore?: Ability;
+  forceAbilityScore?: AbilityName;
   properties: Set<WeaponProperty>;
   quantity: number;
   weaponType: string;

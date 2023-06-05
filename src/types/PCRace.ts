@@ -1,4 +1,4 @@
-import Ability from "./Ability";
+import AbilityName from "./AbilityName";
 import Feature from "./Feature";
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
@@ -7,7 +7,7 @@ import Source from "./Source";
 
 export default interface PCRace extends Source {
   parent?: PCRace;
-  abilities?: Map<Ability, number>;
+  abilities?: Map<AbilityName, number>;
   size: SizeCategory;
   movement?: Map<MovementType, number>;
   features?: Set<Feature>;

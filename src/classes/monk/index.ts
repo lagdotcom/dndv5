@@ -17,7 +17,7 @@ const UnarmoredDefense = new SimpleFeature(
       if (who === me && !me.armor && !me.shield)
         methods.push({
           name: "Unarmored Defense",
-          ac: 10 + me.dex + me.wis,
+          ac: 10 + me.dex.bonus + me.wis.bonus,
           uses: new Set(),
         });
     });

@@ -1,7 +1,7 @@
-import Ability from "../types/Ability";
+import AbilityName from "../types/AbilityName";
 import Point from "../types/Point";
 
-const niceAbilityName: Record<Ability, string> = {
+const niceAbilityName: Record<AbilityName, string> = {
   str: "Strength",
   dex: "Dexterity",
   con: "Constitution",
@@ -10,7 +10,7 @@ const niceAbilityName: Record<Ability, string> = {
   cha: "Charisma",
 };
 
-export function describeAbility(ability: Ability) {
+export function describeAbility(ability: AbilityName) {
   return niceAbilityName[ability];
 }
 
