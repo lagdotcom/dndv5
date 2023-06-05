@@ -19,9 +19,9 @@ import EffectArea from "../types/EffectArea";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Point from "../types/Point";
 import RollType from "../types/RollType";
+import SaveTag from "../types/SaveTag";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
-import SaveTag from "./SaveTag";
 
 type EventData = {
   areaPlaced: { area: EffectArea };

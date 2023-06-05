@@ -4,13 +4,13 @@ import {
   nonCombatFeature,
   notImplementedFeature,
 } from "../features/common";
-import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
 import FogCloud from "../spells/level1/FogCloud";
 import GustOfWind from "../spells/level2/GustOfWind";
 import WallOfWater from "../spells/level3/WallOfWater";
 import PCRace from "../types/PCRace";
+import { resistanceFeature } from "./common";
 
 // TODO
 const Amphibious = notImplementedFeature(
@@ -62,18 +62,10 @@ const EmissaryOfTheSea = nonCombatFeature(
   `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
 );
 
-const GuardiansOfTheDepths = new SimpleFeature(
+const GuardiansOfTheDepths = resistanceFeature(
   "Guardians of the Depths",
   `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
-  (g, me) => {
-    g.events.on(
-      "getDamageResponse",
-      ({ detail: { who, damageType, response: result } }) => {
-        if (who === me && damageType === "cold")
-          result.add("resist", GuardiansOfTheDepths);
-      }
-    );
-  }
+  ["cold"]
 );
 
 const Triton: PCRace = {

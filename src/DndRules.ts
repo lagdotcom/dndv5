@@ -116,7 +116,11 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
   g.events.on("beforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
     const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
+    bonus.add(who.pb * mul, ProficiencyRule);
+  });
 
+  g.events.on("beforeSave", ({ detail: { who, ability, bonus } }) => {
+    const mul = who.getProficiencyMultiplier(ability);
     bonus.add(who.pb * mul, ProficiencyRule);
   });
 });

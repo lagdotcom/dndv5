@@ -1,8 +1,8 @@
-import SaveTag from "../events/SaveTag";
 import Ability from "./Ability";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
 import { WeaponItem } from "./Item";
+import SaveTag from "./SaveTag";
 import SkillName from "./SkillName";
 import Spell from "./Spell";
 import SpellcastingMethod from "./SpellcastingMethod";

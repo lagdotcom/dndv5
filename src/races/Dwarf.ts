@@ -2,26 +2,13 @@ import { darkvisionFeature, nonCombatFeature } from "../features/common";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
 import PCRace from "../types/PCRace";
+import { poisonResistance } from "./common";
 
 const Darkvision = darkvisionFeature();
 
-const DwarvenResilience = new SimpleFeature(
+const DwarvenResilience = poisonResistance(
   "Dwarven Resilience",
-  `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
-  (g, me) => {
-    g.events.on("beforeSave", ({ detail: { who, diceType, tags } }) => {
-      if (who === me && tags.has("poison"))
-        diceType.add("advantage", DwarvenResilience);
-    });
-
-    g.events.on(
-      "getDamageResponse",
-      ({ detail: { who, damageType, response } }) => {
-        if (who === me && damageType === "poison")
-          response.add("resist", DwarvenResilience);
-      }
-    );
-  }
+  `You have advantage on saving throws against poison, and you have resistance against poison damage.`
 );
 
 const DwarvenCombatTraining = new SimpleFeature(

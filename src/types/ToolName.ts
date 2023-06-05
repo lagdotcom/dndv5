@@ -7,6 +7,8 @@ export const ToolNames = [
   "playing card set",
   "smith's tools",
   "thieves' tools",
+  "vehicles (land)",
+  "woodcarver's tools",
 ] as const;
 type ToolName = (typeof ToolNames)[number];
 export default ToolName;

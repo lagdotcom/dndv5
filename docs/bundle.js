@@ -1110,6 +1110,10 @@
       const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
       bonus.add(who.pb * mul, ProficiencyRule);
     });
+    g2.events.on("beforeSave", ({ detail: { who, ability, bonus } }) => {
+      const mul = who.getProficiencyMultiplier(ability);
+      bonus.add(who.pb * mul, ProficiencyRule);
+    });
   });
   var ResourcesRule = new DndRule("Resources", (g2) => {
     g2.events.on("turnStarted", ({ detail: { who } }) => {
@@ -4441,6 +4445,391 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   };
 
+  // src/classes/barbarian/Rage.ts
+  function getRageCount(level) {
+    if (level < 3)
+      return 2;
+    if (level < 6)
+      return 3;
+    if (level < 12)
+      return 4;
+    if (level < 17)
+      return 5;
+    if (level < 20)
+      return 6;
+    return Infinity;
+  }
+  function getRageBonus(level) {
+    if (level < 9)
+      return 2;
+    if (level < 16)
+      return 3;
+    return 4;
+  }
+  var RageResource = new LongRestResource("Rage", 2);
+  var EndRageAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "End Rage", {}, "bonus action");
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.hasEffect(RageEffect))
+        ec.add("Not raging", this);
+      return ec;
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(EndRageAction.prototype, this, "apply").call(this, {});
+        this.actor.removeEffect(RageEffect);
+      });
+    }
+  };
+  var RageEffect = new Effect("Rage", "turnStart", (g2) => {
+    g2.events.on("beforeSave", ({ detail: { who, ability, diceType } }) => {
+      if (who.hasEffect(RageEffect) && ability === "str")
+        diceType.add("advantage", RageEffect);
+    });
+    g2.events.on(
+      "gatherDamage",
+      ({ detail: { attacker, attack, weapon, bonus } }) => {
+        var _a;
+        if (attacker.hasEffect(RageEffect) && (attack == null ? void 0 : attack.pre.type) === "melee" && weapon)
+          bonus.add(
+            getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
+            RageEffect
+          );
+      }
+    );
+    g2.events.on(
+      "getDamageResponse",
+      ({ detail: { who, damageType, response } }) => {
+        if (who.hasEffect(RageEffect) && ["bludgeoning", "piercing", "slashing"].includes(damageType))
+          response.add("resist", RageEffect);
+      }
+    );
+    g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      if (who.hasEffect(RageEffect))
+        actions.push(new EndRageAction(g2, who));
+    });
+  });
+  var RageAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Rage", {}, "bonus action");
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.hasResource(RageResource))
+        ec.add("No rages left", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(RageAction.prototype, this, "apply").call(this, {});
+        this.actor.spendResource(RageResource);
+        this.actor.addEffect(RageEffect, minutes(1));
+      });
+    }
+  };
+  var Rage = new SimpleFeature(
+    "Rage",
+    `In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.
+
+While raging, you gain the following benefits if you aren't wearing heavy armor:
+
+- You have advantage on Strength checks and Strength saving throws.
+- When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
+- You have resistance to bludgeoning, piercing, and slashing damage.
+
+If you are able to cast spells, you can't cast them or concentrate on them while raging.
+
+Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.
+
+Once you have raged the maximum number of times for your barbarian level, you must finish a long rest before you can rage again. You may rage 2 times at 1st level, 3 at 3rd, 4 at 6th, 5 at 12th, and 6 at 17th.`,
+    (g2, me) => {
+      var _a;
+      me.initResource(
+        RageResource,
+        getRageCount((_a = me.classLevels.get("Barbarian")) != null ? _a : 0)
+      );
+      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        if (who === me && !me.hasEffect(RageEffect))
+          actions.push(new RageAction(g2, who));
+      });
+    }
+  );
+  var Rage_default = Rage;
+
+  // src/classes/barbarian/index.ts
+  var UnarmoredDefense = new SimpleFeature(
+    "Unarmored Defense",
+    `While you are not wearing any armor, your Armor Class equals 10 + your Dexterity modifier + your Constitution modifier. You can use a shield and still gain this benefit.`,
+    (g2, me) => {
+      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+        if (who === me && !me.armor) {
+          const uses = /* @__PURE__ */ new Set();
+          let ac = 10 + me.dex + me.con;
+          if (me.shield) {
+            ac += me.shield.ac;
+            uses.add(me.shield);
+          }
+          methods.push({ name: "Unarmored Defense", ac, uses });
+        }
+      });
+    }
+  );
+  var DangerSense = notImplementedFeature(
+    "Danger Sense",
+    `At 2nd level, you gain an uncanny sense of when things nearby aren't as they should be, giving you an edge when you dodge away from danger. You have advantage on Dexterity saving throws against effects that you can see, such as traps and spells. To gain this benefit, you can't be blinded, deafened, or incapacitated.`
+  );
+  var RecklessAttack = notImplementedFeature(
+    "Reckless Attack",
+    `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`
+  );
+  var PrimalKnowledge = new ConfiguredFeature(
+    "Primal Knowledge",
+    `When you reach 3rd level and again at 10th level, you gain proficiency in one skill of your choice from the list of skills available to barbarians at 1st level.`,
+    (g2, me, skills) => {
+      for (const skill of skills)
+        me.skills.set(skill, 1);
+    }
+  );
+  var ExtraAttack2 = notImplementedFeature(
+    "Extra Attack",
+    `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
+  );
+  var FastMovement = new SimpleFeature(
+    "Fast Movement",
+    `Starting at 5th level, your speed increases by 10 feet while you aren't wearing heavy armor.`,
+    (g2, me) => {
+      g2.events.on("getSpeed", ({ detail: { who, bonus } }) => {
+        var _a;
+        if (who === me && ((_a = me.armor) == null ? void 0 : _a.category) !== "heavy")
+          bonus.add(10, FastMovement);
+      });
+    }
+  );
+  var FeralInstinct = notImplementedFeature(
+    "Feral Instinct",
+    `By 7th level, your instincts are so honed that you have advantage on initiative rolls.
+
+Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.`
+  );
+  var InstinctivePounce = notImplementedFeature(
+    "Instinctive Pounce",
+    `As part of the bonus action you take to enter your rage, you can move up to half your speed.`
+  );
+  var BrutalCritical = notImplementedFeature(
+    "Brutal Critical",
+    `Beginning at 9th level, you can roll one additional weapon damage die when determining the extra damage for a critical hit with a melee attack.
+
+This increases to two additional dice at 13th level and three additional dice at 17th level.`
+  );
+  var RelentlessRage = notImplementedFeature(
+    "Relentless Rage",
+    `Starting at 11th level, your rage can keep you fighting despite grievous wounds. If you drop to 0 hit points while you're raging and don't die outright, you can make a DC 10 Constitution saving throw. If you succeed, you drop to 1 hit point instead.
+
+Each time you use this feature after the first, the DC increases by 5. When you finish a short or long rest, the DC resets to 10.`
+  );
+  var PersistentRage = notImplementedFeature(
+    "Persistent Rage",
+    `Beginning at 15th level, your rage is so fierce that it ends early only if you fall unconscious or if you choose to end it.`
+  );
+  var IndomitableMight = notImplementedFeature(
+    "Indomitable Might",
+    `Beginning at 18th level, if your total for a Strength check is less than your Strength score, you can use that score in place of the total.`
+  );
+  var PrimalChampion = notImplementedFeature(
+    "Primal Champion",
+    `At 20th level, you embody the power of the wilds. Your Strength and Constitution scores increase by 4. Your maximum for those scores is now 24.`
+  );
+  var ASI44 = makeASI("Barbarian", 4);
+  var ASI84 = makeASI("Barbarian", 8);
+  var ASI124 = makeASI("Barbarian", 12);
+  var ASI164 = makeASI("Barbarian", 16);
+  var ASI194 = makeASI("Barbarian", 19);
+  var Barbarian = {
+    name: "Barbarian",
+    hitDieSize: 12,
+    armorProficiencies: /* @__PURE__ */ new Set(["light", "medium", "shield"]),
+    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple", "martial"]),
+    saveProficiencies: /* @__PURE__ */ new Set(["str", "con"]),
+    skillChoices: 2,
+    skillProficiencies: /* @__PURE__ */ new Set([
+      "Animal Handling",
+      "Athletics",
+      "Intimidation",
+      "Nature",
+      "Perception",
+      "Survival"
+    ]),
+    features: /* @__PURE__ */ new Map([
+      [1, [Rage_default, UnarmoredDefense]],
+      [2, [DangerSense, RecklessAttack]],
+      [3, [PrimalKnowledge]],
+      [4, [ASI44]],
+      [5, [ExtraAttack2, FastMovement]],
+      [7, [FeralInstinct, InstinctivePounce]],
+      [8, [ASI84]],
+      [9, [BrutalCritical]],
+      [11, [RelentlessRage]],
+      [12, [ASI124]],
+      [15, [PersistentRage]],
+      [16, [ASI164]],
+      [18, [IndomitableMight]],
+      [19, [ASI194]],
+      [20, [PrimalChampion]]
+    ])
+  };
+  var barbarian_default = Barbarian;
+
+  // src/classes/barbarian/Berserker/index.ts
+  var Frenzy = notImplementedFeature(
+    "Frenzy",
+    `Starting when you choose this path at 3rd level, you can go into a frenzy when you rage. If you do so, for the duration of your rage you can make a single melee weapon attack as a bonus action on each of your turns after this one. When your rage ends, you suffer one level of exhaustion.`
+  );
+  var MindlessRage = notImplementedFeature(
+    "Mindless Rage",
+    `Beginning at 6th level, you can't be charmed or frightened while raging. If you are charmed or frightened when you enter your rage, the effect is suspended for the duration of the rage.`
+  );
+  var IntimidatingPresence = notImplementedFeature(
+    "Intimidating Presence",
+    `Beginning at 10th level, you can use your action to frighten someone with your menacing presence. When you do so, choose one creature that you can see within 30 feet of you. If the creature can see or hear you, it must succeed on a Wisdom saving throw (DC equal to 8 + your proficiency bonus + your Charisma modifier) or be frightened of you until the end of your next turn. On subsequent turns, you can use your action to extend the duration of this effect on the frightened creature until the end of your next turn. This effect ends if the creature ends its turn out of line of sight or more than 60 feet away from you.
+
+If the creature succeeds on its saving throw, you can't use this feature on that creature again for 24 hours.`
+  );
+  var Retaliation = notImplementedFeature(
+    "Retaliation",
+    `Starting at 14th level, when you take damage from a creature that is within 5 feet of you, you can use your reaction to make a melee weapon attack against that creature.`
+  );
+  var Berserker = {
+    className: "Barbarian",
+    name: "Path of the Berserker",
+    features: /* @__PURE__ */ new Map([
+      [3, [Frenzy]],
+      [6, [MindlessRage]],
+      [10, [IntimidatingPresence]],
+      [14, [Retaliation]]
+    ])
+  };
+  var Berserker_default = Berserker;
+
+  // src/items/magicWeapons.ts
+  var SpearOfTheDarkSun = class extends Spear {
+    constructor(g2) {
+      super(g2, 1);
+      this.name = "Spear of the Dark Sun";
+      g2.events.on("gatherDamage", ({ detail: { attacker, weapon, map } }) => {
+        if (weapon === this && attacker.attunements.has(weapon)) {
+          const amount = g2.dice.roll(
+            { attacker, weapon, type: "damage", size: 10 },
+            "normal"
+          );
+          const type = "radiant";
+          map.add(type, amount.value);
+        }
+      });
+    }
+  };
+
+  // src/races/common.ts
+  function poisonResistance(name, text) {
+    const feature = new SimpleFeature(name, text, (g2, me) => {
+      g2.events.on("beforeSave", ({ detail: { who, diceType, tags } }) => {
+        if (who === me && tags.has("poison"))
+          diceType.add("advantage", feature);
+      });
+      g2.events.on(
+        "getDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who === me && damageType === "poison")
+            response.add("resist", feature);
+        }
+      );
+    });
+    return feature;
+  }
+  function resistanceFeature(name, text, types) {
+    const feature = new SimpleFeature(name, text, (g2, me) => {
+      g2.events.on(
+        "getDamageResponse",
+        ({ detail: { who, damageType, response: result } }) => {
+          if (who === me && types.includes(damageType))
+            result.add("resist", feature);
+        }
+      );
+    });
+    return feature;
+  }
+
+  // src/races/Halfling.ts
+  var Lucky2 = notImplementedFeature(
+    "Lucky",
+    `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`
+  );
+  var Brave = new SimpleFeature(
+    "Brave",
+    `You have advantage on saving throws against being frightened.`,
+    (g2, me) => {
+      g2.events.on("beforeSave", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("frightened"))
+          diceType.add("advantage", Brave);
+      });
+    }
+  );
+  var HalflingNimbleness = notImplementedFeature(
+    "Halfling Nimbleness",
+    `You can move through the space of any creature that is of a size larger than yours.`
+  );
+  var Halfling = {
+    name: "Halfling",
+    abilities: /* @__PURE__ */ new Map([["dex", 2]]),
+    size: "small",
+    movement: /* @__PURE__ */ new Map([["speed", 25]]),
+    features: /* @__PURE__ */ new Set([Lucky2, Brave, HalflingNimbleness]),
+    languages: /* @__PURE__ */ new Set(["Common", "Halfling"])
+  };
+  var StoutResilience = poisonResistance(
+    "Stout Resilience",
+    `You have advantage on saving throws against poison, and you have resistance against poison damage.`
+  );
+  var StoutHalfling = {
+    parent: Halfling,
+    name: "Stout Halfling",
+    abilities: /* @__PURE__ */ new Map([["con", 1]]),
+    size: "small",
+    features: /* @__PURE__ */ new Set([StoutResilience])
+  };
+
+  // src/pcs/davies/Hagrond_token.png
+  var Hagrond_token_default = "./Hagrond_token-SXREGQ37.png";
+
+  // src/pcs/davies/Hagrond.ts
+  var Hagrond = class extends PC {
+    constructor(g2) {
+      super(g2, "Hagrond", Hagrond_token_default);
+      this.skills.set("Survival", 1);
+      this.skills.set("Sleight of Hand", 1);
+      this.toolProficiencies.set("vehicles (land)", 1);
+      this.toolProficiencies.set("woodcarver's tools", 1);
+      this.setAbilityScores(15, 15, 13, 10, 8, 10);
+      this.setRace(StoutHalfling);
+      this.addSubclass(Berserker_default);
+      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default);
+      this.setConfig(ASI44, { type: "ability", abilities: ["str", "con"] });
+      this.setConfig(PrimalKnowledge, ["Perception"]);
+      this.skills.set("Intimidation", 1);
+      this.skills.set("Animal Handling", 1);
+      this.don(new SpearOfTheDarkSun(g2), true);
+      this.inventory.add(new Dagger(g2, 4));
+      this.inventory.add(new Handaxe(g2, 1));
+      this.inventory.add(new Spear(g2, 1));
+    }
+  };
+
   // src/classes/druid/index.ts
   var Druidic = nonCombatFeature(
     "Druidic",
@@ -4480,11 +4869,11 @@ Once you use this feature, you can't use it again until you finish a long rest.
 
 Additionally, you can ignore the verbal and somatic components of your druid spells, as well as any material components that lack a cost and aren't consumed by a spell. You gain this benefit in both your normal shape and your beast shape from Wild Shape.`
   );
-  var ASI44 = makeASI("Druid", 4);
-  var ASI84 = makeASI("Druid", 8);
-  var ASI124 = makeASI("Druid", 12);
-  var ASI164 = makeASI("Druid", 16);
-  var ASI194 = makeASI("Druid", 19);
+  var ASI45 = makeASI("Druid", 4);
+  var ASI85 = makeASI("Druid", 8);
+  var ASI125 = makeASI("Druid", 12);
+  var ASI165 = makeASI("Druid", 16);
+  var ASI195 = makeASI("Druid", 19);
   var Druid = {
     name: "Druid",
     hitDieSize: 8,
@@ -4518,12 +4907,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     features: /* @__PURE__ */ new Map([
       [1, [Druidic, DruidSpellcasting.feature]],
       [2, [WildShape, WildCompanion]],
-      [4, [ASI44, CantripVersatility]],
-      [8, [ASI84]],
-      [12, [ASI124]],
-      [16, [ASI164]],
+      [4, [ASI45, CantripVersatility]],
+      [8, [ASI85]],
+      [12, [ASI125]],
+      [16, [ASI165]],
       [18, [TimelessBody, BeastSpells]],
-      [19, [ASI194]],
+      [19, [ASI195]],
       [20, [Archdruid]]
     ])
   };
@@ -4776,22 +5165,9 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/races/Dwarf.ts
   var Darkvision = darkvisionFeature();
-  var DwarvenResilience = new SimpleFeature(
+  var DwarvenResilience = poisonResistance(
     "Dwarven Resilience",
-    `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
-    (g2, me) => {
-      g2.events.on("beforeSave", ({ detail: { who, diceType, tags } }) => {
-        if (who === me && tags.has("poison"))
-          diceType.add("advantage", DwarvenResilience);
-      });
-      g2.events.on(
-        "getDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (who === me && damageType === "poison")
-            response.add("resist", DwarvenResilience);
-        }
-      );
-    }
+    `You have advantage on saving throws against poison, and you have resistance against poison damage.`
   );
   var DwarvenCombatTraining = new SimpleFeature(
     "Dwarven Combat Training",
@@ -4958,7 +5334,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(ToolProficiency, "mason's tools");
       this.setConfig(CircleSpells, "mountain");
       this.setConfig(BonusCantrip, MagicStone_default);
-      this.setConfig(ASI44, { type: "ability", abilities: ["cha", "wis"] });
+      this.setConfig(ASI45, { type: "ability", abilities: ["cha", "wis"] });
       this.skills.set("Insight", 1);
       this.skills.set("Survival", 1);
       this.don(new Spear(g2, 1), true);
@@ -4970,7 +5346,7 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/classes/monk/index.ts
-  var UnarmoredDefense = new SimpleFeature(
+  var UnarmoredDefense2 = new SimpleFeature(
     "Unarmored Defense",
     `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
     (g2, me) => {
@@ -5066,7 +5442,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "Religion",
       "Stealth"
     ]),
-    features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense, MartialArts]]])
+    features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense2, MartialArts]]])
   };
   var monk_default = Monk;
 
@@ -5208,18 +5584,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     "Emissary of the Sea",
     `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
   );
-  var GuardiansOfTheDepths = new SimpleFeature(
+  var GuardiansOfTheDepths = resistanceFeature(
     "Guardians of the Depths",
     `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
-    (g2, me) => {
-      g2.events.on(
-        "getDamageResponse",
-        ({ detail: { who, damageType, response: result } }) => {
-          if (who === me && damageType === "cold")
-            result.add("resist", GuardiansOfTheDepths);
-        }
-      );
-    }
+    ["cold"]
   );
   var Triton = {
     name: "Triton",
@@ -6424,6 +6792,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           const beldalynn = new Beldalynn(g);
           const galilea = new Galilea(g);
           const salgar = new Salgar(g);
+          const hagrond = new Hagrond(g);
           g.place(thug, 0, 0);
           g.place(badger, 10, 0);
           g.place(hunk, 10, 5);
@@ -6431,6 +6800,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           g.place(beldalynn, 10, 30);
           g.place(galilea, 5, 0);
           g.place(salgar, 15, 30);
+          g.place(hagrond, 0, 5);
           g.start();
         }
       }
