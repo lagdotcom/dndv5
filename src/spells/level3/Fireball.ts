@@ -16,7 +16,7 @@ const Fireball = scalingSpell<HasPoint>({
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
 
-  getAffectedArea: (g, { point }) =>
+  getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "sphere", centre: point, radius: 20 }],
 
   getDamage: (g, caster, { slot }) => [dd(5 + (slot ?? 3), 6, "fire")],
@@ -30,6 +30,8 @@ const Fireball = scalingSpell<HasPoint>({
       attacker,
     });
     const dc = getSaveDC(attacker, method.ability);
+
+    // TODO The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
     for (const target of g.getInside({
       type: "sphere",

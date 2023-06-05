@@ -15,3 +15,9 @@ export const DamageTypes = [
 ] as const;
 type DamageType = (typeof DamageTypes)[number];
 export default DamageType;
+
+export const MundaneDamageTypes: DamageType[] = [
+  "bludgeoning",
+  "piercing",
+  "slashing",
+];

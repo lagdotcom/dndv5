@@ -5,12 +5,26 @@ import {
   notImplementedFeature,
 } from "../../../features/common";
 import ConfiguredFeature from "../../../features/ConfiguredFeature";
+import Blur from "../../../spells/level2/Blur";
 import HoldPerson from "../../../spells/level2/HoldPerson";
+import MirrorImage from "../../../spells/level2/MirrorImage";
+import MistyStep from "../../../spells/level2/MistyStep";
+import Silence from "../../../spells/level2/Silence";
+import SpiderClimb from "../../../spells/level2/SpiderClimb";
 import SpikeGrowth from "../../../spells/level2/SpikeGrowth";
+import LightningBolt from "../../../spells/level3/LightningBolt";
 import SleetStorm from "../../../spells/level3/SleetStorm";
 import Slow from "../../../spells/level3/Slow";
+import WaterBreathing from "../../../spells/level3/WaterBreathing";
+import WaterWalk from "../../../spells/level3/WaterWalk";
+import ControlWater from "../../../spells/level4/ControlWater";
 import FreedomOfMovement from "../../../spells/level4/FreedomOfMovement";
 import IceStorm from "../../../spells/level4/IceStorm";
+import Stoneskin from "../../../spells/level4/Stoneskin";
+import CommuneWithNature from "../../../spells/level5/CommuneWithNature";
+import ConeOfCold from "../../../spells/level5/ConeOfCold";
+import ConjureElemental from "../../../spells/level5/ConjureElemental";
+import Scrying from "../../../spells/level5/Scrying";
 import PCSubclass from "../../../types/PCSubclass";
 import Spell from "../../../types/Spell";
 import { DruidSpellcasting } from "..";
@@ -48,22 +62,22 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     { level: 5, spell: Slow },
     { level: 7, spell: FreedomOfMovement },
     { level: 7, spell: IceStorm },
-    // { level: 9, spell: CommuneWithNature },
-    // { level: 9, spell: ConeOfCold },
+    { level: 9, spell: CommuneWithNature },
+    { level: 9, spell: ConeOfCold },
   ],
   coast: [
-    // { level: 3, spell: MirrorImage },
-    // { level: 3, spell: MistyStep },
-    // { level: 5, spell: WaterBreathing },
-    // { level: 5, spell: WaterWalk },
-    // { level: 7, spell: ControlWater },
+    { level: 3, spell: MirrorImage },
+    { level: 3, spell: MistyStep },
+    { level: 5, spell: WaterBreathing },
+    { level: 5, spell: WaterWalk },
+    { level: 7, spell: ControlWater },
     { level: 7, spell: FreedomOfMovement },
-    // { level: 9, spell: ConjureElemental },
-    // { level: 9, spell: Scrying },
+    { level: 9, spell: ConjureElemental },
+    { level: 9, spell: Scrying },
   ],
   desert: [
-    // { level: 3, spell: Blur },
-    // { level: 3, spell: Silence },
+    { level: 3, spell: Blur },
+    { level: 3, spell: Silence },
     // { level: 5, spell: CreateFoodAndWater },
     // { level: 5, spell: ProtectionFromEnergy },
     // { level: 7, spell: Blight },
@@ -73,12 +87,12 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
   ],
   forest: [
     // { level: 3, spell: Barkskin },
-    // { level: 3, spell: SpiderClimb },
+    { level: 3, spell: SpiderClimb },
     // { level: 5, spell: CallLightning },
     // { level: 5, spell: PlantGrowth },
     // { level: 7, spell: Divination },
     { level: 7, spell: FreedomOfMovement },
-    // { level: 9, spell: CommuneWithNature },
+    { level: 9, spell: CommuneWithNature },
     // { level: 9, spell: TreeStride },
   ],
   grassland: [
@@ -92,27 +106,27 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     // { level: 9, spell: InsectPlague },
   ],
   mountain: [
-    // { level: 3, spell: SpiderClimb },
+    { level: 3, spell: SpiderClimb },
     { level: 3, spell: SpikeGrowth },
-    // { level: 5, spell: LightningBolt },
+    { level: 5, spell: LightningBolt },
     // { level: 5, spell: MeldIntoStone },
     // { level: 7, spell: StoneShape },
-    // { level: 7, spell: Stoneskin },
+    { level: 7, spell: Stoneskin },
     // { level: 9, spell: Passwall },
     // { level: 9, spell: WallOfStone },
   ],
   swamp: [
     // { level: 3, spell: Darkness },
     // { level: 3, spell: MelfsAcidArrow },
-    // { level: 5, spell: WaterWalk },
+    { level: 5, spell: WaterWalk },
     // { level: 5, spell: StinkingCloud },
     { level: 7, spell: FreedomOfMovement },
     // { level: 7, spell: LocateCreature },
     // { level: 9, spell: InsectPlague },
-    // { level: 9, spell: Scrying },
+    { level: 9, spell: Scrying },
   ],
   Underdark: [
-    // { level: 3, spell: SpiderClimb },
+    { level: 3, spell: SpiderClimb },
     // { level: 3, spell: Web },
     // { level: 5, spell: GaseousForm },
     // { level: 5, spell: StinkingCloud },

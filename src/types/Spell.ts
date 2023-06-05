@@ -14,6 +14,7 @@ export const SpellSchools = [
   "Divination",
   "Enchantment",
   "Evocation",
+  "Illusion",
   "Necromancy",
   "Transmutation",
 ] as const;
@@ -34,6 +35,7 @@ export type SpellList = (typeof SpellLists)[number];
 
 export default interface Spell<T extends object = object> extends Source {
   level: number;
+  ritual: boolean;
   scaling: boolean;
   school: SpellSchool;
   concentration: boolean;
@@ -56,6 +58,7 @@ export default interface Spell<T extends object = object> extends Source {
   ): ErrorCollector;
   getAffectedArea(
     g: Engine,
+    caster: Combatant,
     config: Partial<T>
   ): SpecifiedEffectShape[] | undefined;
   getConfig(

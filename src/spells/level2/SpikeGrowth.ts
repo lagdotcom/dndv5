@@ -14,7 +14,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
 
-  getAffectedArea: (g, { point }) =>
+  getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "sphere", centre: point, radius: 20 }],
 
   async apply(g, caster, method, config) {

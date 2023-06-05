@@ -5,6 +5,7 @@ import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
+import { MundaneDamageTypes } from "../../types/DamageType";
 import { minutes } from "../../utils/time";
 
 function getRageCount(level: number) {
@@ -70,10 +71,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
   g.events.on(
     "GetDamageResponse",
     ({ detail: { who, damageType, response } }) => {
-      if (
-        who.hasEffect(RageEffect) &&
-        ["bludgeoning", "piercing", "slashing"].includes(damageType)
-      )
+      if (who.hasEffect(RageEffect) && MundaneDamageTypes.includes(damageType))
         response.add("resist", RageEffect);
     }
   );

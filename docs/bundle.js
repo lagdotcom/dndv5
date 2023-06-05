@@ -1013,7 +1013,7 @@
               points.push({ x: left + x, y: top + y });
           }
         }
-        return points;
+        break;
       }
       case "within": {
         const left = area.position.x - area.radius;
@@ -1024,9 +1024,10 @@
             points.push({ x: left + x, y: top + y });
           }
         }
-        return points;
+        break;
       }
     }
+    return points;
   }
 
   // src/DndRules.ts
@@ -1854,7 +1855,7 @@
       return this.spell.getConfig(this.g, this.actor, this.method, config);
     }
     getAffectedArea(config) {
-      return this.spell.getAffectedArea(this.g, config);
+      return this.spell.getAffectedArea(this.g, this.actor, config);
     }
     getDamage(config) {
       return this.spell.getDamage(this.g, this.actor, config);
@@ -2774,6 +2775,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var simpleSpell = ({
     name,
     level,
+    ritual = false,
     school,
     concentration = false,
     time = "action",
@@ -2796,6 +2798,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     return {
       name,
       level,
+      ritual,
       scaling: false,
       school,
       concentration,
@@ -2817,6 +2820,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var scalingSpell = ({
     name,
     level,
+    ritual = false,
     school,
     concentration = false,
     time = "action",
@@ -2839,6 +2843,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     return {
       name,
       level,
+      ritual,
       scaling: true,
       school,
       concentration,
@@ -3572,7 +3577,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a drop of water or piece of ice",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getAffectedArea: (g2, { target }) => target && [
+    getAffectedArea: (g2, caster, { target }) => target && [
       {
         type: "within",
         target,
@@ -3797,7 +3802,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2) => ({
       points: new MultiPointResolver(g2, 1, 2, 120)
     }),
-    getAffectedArea: (g2, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
+    getAffectedArea: (g2, caster, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
     getDamage: () => [dd(2, 6, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { points, slot }) {
@@ -3871,7 +3876,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a tiny ball of bat guano and sulfur",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
-    getAffectedArea: (g2, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
+    getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
     getDamage: (g2, caster, { slot }) => [dd(5 + (slot != null ? slot : 3), 6, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
@@ -3949,15 +3954,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         MindSliver_default,
         RayOfFrost_default,
         IceKnife_default,
-        // MagicMissile,
-        // Shield,
-        // EnlargeReduce,
+        // TODO MagicMissile,
+        // TODO Shield,
+        // TODO EnlargeReduce,
         HoldPerson_default,
         MelfsMinuteMeteors_default,
         Fireball_default
-        // IntellectFortress,
-        // LeomundsTinyHut,
-        // WallOfFire
+        // TODO IntellectFortress,
+        // TODO LeomundsTinyHut,
+        // TODO WallOfFire
       );
     }
   };
@@ -4507,6 +4512,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   };
 
+  // src/types/DamageType.ts
+  var MundaneDamageTypes = [
+    "bludgeoning",
+    "piercing",
+    "slashing"
+  ];
+
   // src/classes/barbarian/Rage.ts
   function getRageCount(level) {
     if (level < 3)
@@ -4568,7 +4580,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     g2.events.on(
       "GetDamageResponse",
       ({ detail: { who, damageType, response } }) => {
-        if (who.hasEffect(RageEffect) && ["bludgeoning", "piercing", "slashing"].includes(damageType))
+        if (who.hasEffect(RageEffect) && MundaneDamageTypes.includes(damageType))
           response.add("resist", RageEffect);
       }
     );
@@ -4963,6 +4975,93 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   };
   var druid_default = Druid;
 
+  // src/spells/level2/Blur.ts
+  var Blur = simpleSpell({
+    name: "Blur",
+    level: 2,
+    school: "Illusion",
+    concentration: true,
+    v: true,
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    getConfig: () => ({}),
+    apply(g2, caster, method) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var Blur_default = Blur;
+
+  // src/spells/level2/MirrorImage.ts
+  var MirrorImage = simpleSpell({
+    name: "Mirror Image",
+    level: 2,
+    school: "Illusion",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    getConfig: () => ({}),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var MirrorImage_default = MirrorImage;
+
+  // src/spells/level2/MistyStep.ts
+  var MistyStep = simpleSpell({
+    name: "Misty Step",
+    level: 2,
+    school: "Conjuration",
+    time: "bonus action",
+    v: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 30) }),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var MistyStep_default = MistyStep;
+
+  // src/spells/level2/Silence.ts
+  var Silence = simpleSpell({
+    name: "Silence",
+    level: 2,
+    ritual: true,
+    school: "Illusion",
+    concentration: true,
+    v: true,
+    s: true,
+    lists: ["Bard", "Cleric", "Ranger"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
+    getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", radius: 20, centre: point }],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point }) {
+      });
+    }
+  });
+  var Silence_default = Silence;
+
+  // src/spells/level2/SpiderClimb.ts
+  var SpiderClimb = simpleSpell({
+    name: "Spider Climb",
+    level: 2,
+    school: "Transmutation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a drop of bitumen and a spider",
+    lists: ["Artificer", "Sorcerer", "Warlock", "Wizard"],
+    getConfig: (g2, caster) => ({
+      target: new TargetResolver(g2, caster.reach, true)
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+      });
+    }
+  });
+  var SpiderClimb_default = SpiderClimb;
+
   // src/spells/level2/SpikeGrowth.ts
   var SpikeGrowth = simpleSpell({
     name: "Spike Growth",
@@ -4974,13 +5073,73 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     concentration: true,
     lists: ["Druid", "Ranger"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
-    getAffectedArea: (g2, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
+    getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
     }
   });
   var SpikeGrowth_default = SpikeGrowth;
+
+  // src/spells/level3/LightningBolt.ts
+  var LightningBolt = scalingSpell({
+    implemented: true,
+    name: "Lightning Bolt",
+    level: 3,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a bit of fur and a rod of amber, crystal, or glass",
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
+    getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 3) + 5, 6, "lightning")],
+    getAffectedArea: (g2, caster, { point }) => point && [
+      {
+        type: "line",
+        length: 100,
+        width: 5,
+        start: g2.getState(caster).position,
+        target: point
+      }
+    ],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
+        const damage = yield g2.rollDamage(5 + slot, {
+          size: 6,
+          spell: LightningBolt,
+          method,
+          damageType: "lightning",
+          attacker
+        });
+        const dc = getSaveDC(attacker, method.ability);
+        for (const target of g2.getInside({
+          type: "line",
+          length: 100,
+          width: 5,
+          start: g2.getState(attacker).position,
+          target: point
+        })) {
+          const save = yield g2.savingThrow(dc, {
+            attacker,
+            ability: "dex",
+            spell: LightningBolt,
+            method,
+            who: target,
+            tags: /* @__PURE__ */ new Set()
+          });
+          const mul = save ? 0.5 : 1;
+          yield g2.damage(
+            LightningBolt,
+            "lightning",
+            { attacker, spell: LightningBolt, method, target },
+            [["lightning", damage]],
+            mul
+          );
+        }
+      });
+    }
+  });
+  var LightningBolt_default = LightningBolt;
 
   // src/spells/level3/SleetStorm.ts
   var SleetStorm = simpleSpell({
@@ -4993,7 +5152,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
-    getAffectedArea: (g2, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
+    getAffectedArea: (g2, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
       });
@@ -5022,6 +5181,59 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var Slow_default = Slow;
 
+  // src/spells/level3/WaterBreathing.ts
+  var WaterBreathing = simpleSpell({
+    name: "Water Breathing",
+    level: 3,
+    ritual: true,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    m: "a short reed or piece of straw",
+    lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var WaterBreathing_default = WaterBreathing;
+
+  // src/spells/level3/WaterWalk.ts
+  var WaterWalk = simpleSpell({
+    name: "Water Walk",
+    level: 3,
+    ritual: true,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    m: "a piece of cork",
+    lists: ["Artificer", "Cleric", "Druid", "Ranger", "Sorcerer"],
+    getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var WaterWalk_default = WaterWalk;
+
+  // src/spells/level4/ControlWater.ts
+  var ControlWater = simpleSpell({
+    name: "Control Water",
+    level: 4,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    m: "a drop of water and a pinch of dust",
+    lists: ["Cleric", "Druid", "Wizard"],
+    getConfig: () => ({}),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var ControlWater_default = ControlWater;
+
   // src/spells/level4/FreedomOfMovement.ts
   var FreedomOfMovement = simpleSpell({
     name: "Freedom of Movement",
@@ -5049,7 +5261,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
-    getAffectedArea: (g2, { point }) => point && [{ type: "cylinder", centre: point, radius: 20, height: 40 }],
+    getAffectedArea: (g2, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 20, height: 40 }],
     getDamage: (g2, caster, { slot }) => [
       dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       dd(4, 6, "cold")
@@ -5060,6 +5272,125 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }
   });
   var IceStorm_default = IceStorm;
+
+  // src/spells/level4/Stoneskin.ts
+  var StoneskinEffect = new Effect("Stoneskin", "turnStart", (g2) => {
+    g2.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, response } }) => {
+        if (who.hasEffect(StoneskinEffect) && MundaneDamageTypes.includes(damageType))
+          response.add("resist", StoneskinEffect);
+      }
+    );
+  });
+  var Stoneskin = simpleSpell({
+    name: "Stoneskin",
+    level: 4,
+    school: "Abjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "diamond dust worth 100gp, which the spell consumes",
+    lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
+    getConfig: (g2, caster) => ({
+      target: new TargetResolver(g2, caster.reach, true)
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+        target.addEffect(StoneskinEffect, hours(1));
+        caster.concentrateOn({
+          spell: Stoneskin,
+          duration: hours(1),
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              target.removeEffect(StoneskinEffect);
+            });
+          }
+        });
+      });
+    }
+  });
+  var Stoneskin_default = Stoneskin;
+
+  // src/spells/level5/CommuneWithNature.ts
+  var CommuneWithNature = simpleSpell({
+    name: "Commune with Nature",
+    level: 5,
+    ritual: true,
+    school: "Divination",
+    time: "long",
+    v: true,
+    s: true,
+    lists: ["Druid", "Ranger"],
+    getConfig: () => ({}),
+    apply(g2, caster, method) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var CommuneWithNature_default = CommuneWithNature;
+
+  // src/spells/level5/ConeOfCold.ts
+  var ConeOfCold = scalingSpell({
+    name: "Cone of Cold",
+    level: 5,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a small crystal or glass cone",
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
+    getAffectedArea: (g2, caster, { point }) => point && [
+      {
+        type: "cone",
+        radius: 60,
+        centre: g2.getState(caster).position,
+        target: point
+      }
+    ],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { slot, point }) {
+      });
+    }
+  });
+  var ConeOfCold_default = ConeOfCold;
+
+  // src/spells/level5/ConjureElemental.ts
+  var ConjureElemental = scalingSpell({
+    name: "Conjure Elemental",
+    level: 5,
+    school: "Conjuration",
+    concentration: true,
+    time: "long",
+    v: true,
+    s: true,
+    m: "burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water",
+    lists: ["Druid", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 90) }),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var ConjureElemental_default = ConjureElemental;
+
+  // src/spells/level5/Scrying.ts
+  var Scrying = simpleSpell({
+    name: "Scrying",
+    level: 5,
+    school: "Divination",
+    time: "long",
+    v: true,
+    s: true,
+    m: "a focus worth at least 1,000 gp, such as a crystal ball, a silver mirror, or a font filled with holy water",
+    lists: ["Bard", "Cleric", "Druid", "Warlock", "Wizard"],
+    getConfig: () => ({}),
+    apply(g2, caster, method) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var Scrying_default = Scrying;
 
   // src/classes/druid/Land/index.ts
   var BonusCantrip = new ConfiguredFeature(
@@ -5082,23 +5413,23 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 5, spell: SleetStorm_default },
       { level: 5, spell: Slow_default },
       { level: 7, spell: FreedomOfMovement_default },
-      { level: 7, spell: IceStorm_default }
-      // { level: 9, spell: CommuneWithNature },
-      // { level: 9, spell: ConeOfCold },
+      { level: 7, spell: IceStorm_default },
+      { level: 9, spell: CommuneWithNature_default },
+      { level: 9, spell: ConeOfCold_default }
     ],
     coast: [
-      // { level: 3, spell: MirrorImage },
-      // { level: 3, spell: MistyStep },
-      // { level: 5, spell: WaterBreathing },
-      // { level: 5, spell: WaterWalk },
-      // { level: 7, spell: ControlWater },
-      { level: 7, spell: FreedomOfMovement_default }
-      // { level: 9, spell: ConjureElemental },
-      // { level: 9, spell: Scrying },
+      { level: 3, spell: MirrorImage_default },
+      { level: 3, spell: MistyStep_default },
+      { level: 5, spell: WaterBreathing_default },
+      { level: 5, spell: WaterWalk_default },
+      { level: 7, spell: ControlWater_default },
+      { level: 7, spell: FreedomOfMovement_default },
+      { level: 9, spell: ConjureElemental_default },
+      { level: 9, spell: Scrying_default }
     ],
     desert: [
-      // { level: 3, spell: Blur },
-      // { level: 3, spell: Silence },
+      { level: 3, spell: Blur_default },
+      { level: 3, spell: Silence_default }
       // { level: 5, spell: CreateFoodAndWater },
       // { level: 5, spell: ProtectionFromEnergy },
       // { level: 7, spell: Blight },
@@ -5108,12 +5439,12 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
     ],
     forest: [
       // { level: 3, spell: Barkskin },
-      // { level: 3, spell: SpiderClimb },
+      { level: 3, spell: SpiderClimb_default },
       // { level: 5, spell: CallLightning },
       // { level: 5, spell: PlantGrowth },
       // { level: 7, spell: Divination },
-      { level: 7, spell: FreedomOfMovement_default }
-      // { level: 9, spell: CommuneWithNature },
+      { level: 7, spell: FreedomOfMovement_default },
+      { level: 9, spell: CommuneWithNature_default }
       // { level: 9, spell: TreeStride },
     ],
     grassland: [
@@ -5127,27 +5458,27 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       // { level: 9, spell: InsectPlague },
     ],
     mountain: [
-      // { level: 3, spell: SpiderClimb },
-      { level: 3, spell: SpikeGrowth_default }
-      // { level: 5, spell: LightningBolt },
+      { level: 3, spell: SpiderClimb_default },
+      { level: 3, spell: SpikeGrowth_default },
+      { level: 5, spell: LightningBolt_default },
       // { level: 5, spell: MeldIntoStone },
       // { level: 7, spell: StoneShape },
-      // { level: 7, spell: Stoneskin },
+      { level: 7, spell: Stoneskin_default }
       // { level: 9, spell: Passwall },
       // { level: 9, spell: WallOfStone },
     ],
     swamp: [
       // { level: 3, spell: Darkness },
       // { level: 3, spell: MelfsAcidArrow },
-      // { level: 5, spell: WaterWalk },
+      { level: 5, spell: WaterWalk_default },
       // { level: 5, spell: StinkingCloud },
-      { level: 7, spell: FreedomOfMovement_default }
+      { level: 7, spell: FreedomOfMovement_default },
       // { level: 7, spell: LocateCreature },
       // { level: 9, spell: InsectPlague },
-      // { level: 9, spell: Scrying },
+      { level: 9, spell: Scrying_default }
     ],
     Underdark: [
-      // { level: 3, spell: SpiderClimb },
+      { level: 3, spell: SpiderClimb_default }
       // { level: 3, spell: Web },
       // { level: 5, spell: GaseousForm },
       // { level: 5, spell: StinkingCloud },
@@ -5513,7 +5844,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     v: true,
     s: true,
     lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
-    getAffectedArea(g2, { point, slot }) {
+    getAffectedArea(g2, caster, { point, slot }) {
       if (!point)
         return;
       return [{ type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point }];

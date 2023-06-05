@@ -113,7 +113,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
     points: new MultiPointResolver(g, 1, 2, 120),
   }),
 
-  getAffectedArea: (g, { points }) =>
+  getAffectedArea: (g, caster, { points }) =>
     points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
 
   getDamage: () => [dd(2, 6, "fire")],

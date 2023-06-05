@@ -13,7 +13,7 @@ const IceStorm = scalingSpell<HasPoint>({
   lists: ["Druid", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 300) }),
-  getAffectedArea: (g, { point }) =>
+  getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "cylinder", centre: point, radius: 20, height: 40 }],
   getDamage: (g, caster, { slot }) => [
     dd((slot ?? 4) - 2, 8, "bludgeoning"),

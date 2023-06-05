@@ -19,6 +19,7 @@ export function getCantripDice(who: Combatant) {
 export const simpleSpell = <T extends object>({
   name,
   level,
+  ritual = false,
   school,
   concentration = false,
   time = "action",
@@ -37,6 +38,7 @@ export const simpleSpell = <T extends object>({
   MarkOptional<
     Spell<T>,
     | "concentration"
+    | "ritual"
     | "time"
     | "v"
     | "s"
@@ -51,6 +53,7 @@ export const simpleSpell = <T extends object>({
   return {
     name,
     level,
+    ritual,
     scaling: false,
     school,
     concentration,
@@ -73,6 +76,7 @@ export const simpleSpell = <T extends object>({
 export const scalingSpell = <T extends object>({
   name,
   level,
+  ritual = false,
   school,
   concentration = false,
   time = "action",
@@ -91,6 +95,7 @@ export const scalingSpell = <T extends object>({
   MarkOptional<
     Spell<T & Scales>,
     | "concentration"
+    | "ritual"
     | "time"
     | "v"
     | "s"
@@ -114,6 +119,7 @@ export const scalingSpell = <T extends object>({
   return {
     name,
     level,
+    ritual,
     scaling: true,
     school,
     concentration,

@@ -20,8 +20,7 @@ export function resolveArea(area: SpecifiedEffectShape): Point[] {
           if (d <= area.radius) points.push({ x: left + x, y: top + y });
         }
       }
-
-      return points;
+      break;
     }
 
     case "within": {
@@ -33,8 +32,10 @@ export function resolveArea(area: SpecifiedEffectShape): Point[] {
           points.push({ x: left + x, y: top + y });
         }
       }
-
-      return points;
+      break;
     }
   }
+
+  // TODO: cone, line
+  return points;
 }

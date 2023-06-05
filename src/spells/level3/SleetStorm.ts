@@ -13,7 +13,7 @@ const SleetStorm = simpleSpell<HasPoint>({
   lists: ["Druid", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-  getAffectedArea: (g, { point }) =>
+  getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
 
   async apply(g, caster, method, { point }) {

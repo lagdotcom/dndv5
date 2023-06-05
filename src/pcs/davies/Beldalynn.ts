@@ -67,18 +67,18 @@ export default class Beldalynn extends PC {
       RayOfFrost,
 
       IceKnife,
-      // MagicMissile,
-      // Shield,
+      // TODO MagicMissile,
+      // TODO Shield,
 
-      // EnlargeReduce,
+      // TODO EnlargeReduce,
       HoldPerson,
       MelfsMinuteMeteors,
 
       Fireball
-      // IntellectFortress,
-      // LeomundsTinyHut,
+      // TODO IntellectFortress,
+      // TODO LeomundsTinyHut,
 
-      // WallOfFire
+      // TODO WallOfFire
     );
   }
 }
