@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
+import SpellAttack from "../SpellAttack";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
 const RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g) => {
@@ -24,35 +25,13 @@ const RayOfFrost = simpleSpell<HasTarget>({
   getDamage: (_, caster) => [dd(getCantripDice(caster), 8, "cold")],
 
   async apply(g, attacker, method, { target }) {
-    const { attack, critical, hit } = await g.attack({
-      who: attacker,
-      type: "ranged",
+    const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
       target,
-      ability: method.ability,
-      spell: RayOfFrost,
-      method,
     });
 
-    if (hit) {
-      const amount = await g.rollDamage(
-        getCantripDice(attacker),
-        {
-          size: 8,
-          damageType: "cold",
-          attacker,
-          target,
-          spell: RayOfFrost,
-          method,
-        },
-        critical
-      );
-
-      await g.damage(
-        RayOfFrost,
-        "cold",
-        { attack, attacker, target, critical, spell: RayOfFrost, method },
-        [["cold", amount]]
-      );
+    if ((await rsa.attack(target)).hit) {
+      const damage = await rsa.getDamage(target);
+      await rsa.damage(target, damage);
 
       target.addEffect(RayOfFrostEffect, 1);
     }

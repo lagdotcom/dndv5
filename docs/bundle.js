@@ -3315,6 +3315,81 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var AcidSplash_default = AcidSplash;
 
+  // src/spells/SpellAttack.ts
+  var SpellAttack = class {
+    constructor(g2, caster, spell, method, type, config) {
+      this.g = g2;
+      this.caster = caster;
+      this.spell = spell;
+      this.method = method;
+      this.type = type;
+      this.config = config;
+    }
+    attack(target) {
+      return __async(this, null, function* () {
+        const { caster: who, method, spell, type } = this;
+        this.attackResult = yield this.g.attack({
+          who,
+          target,
+          ability: method.ability,
+          type,
+          spell,
+          method
+        });
+        return this.attackResult;
+      });
+    }
+    getDamage(target) {
+      return __async(this, null, function* () {
+        if (!this.attackResult)
+          throw new Error("Run .attack() first");
+        const { critical } = this.attackResult;
+        const { g: g2, caster: attacker, config, method, spell } = this;
+        const damage = spell.getDamage(g2, attacker, config);
+        if (damage) {
+          const amounts = [];
+          let first = true;
+          for (const { type, amount, damageType } of damage) {
+            if (first) {
+              this.baseDamageType = damageType;
+              first = false;
+            }
+            if (type === "dice") {
+              const { count, size } = amount;
+              const roll = yield g2.rollDamage(
+                count,
+                { size, damageType, attacker, target, spell, method },
+                critical
+              );
+              amounts.push([damageType, roll]);
+            } else
+              amounts.push([damageType, amount]);
+          }
+          return amounts;
+        }
+      });
+    }
+    damage(target, initialiser) {
+      return __async(this, null, function* () {
+        if (!this.attackResult)
+          throw new Error("Run .attack() first");
+        const { attack, critical, hit } = this.attackResult;
+        if (!hit)
+          return;
+        const { g: g2, baseDamageType, caster: attacker, method, spell } = this;
+        if (!baseDamageType)
+          throw new Error("Run .getDamage() first");
+        const damageResult = yield g2.damage(
+          spell,
+          baseDamageType,
+          { attack, attacker, target, critical, spell, method },
+          initialiser
+        );
+        return damageResult;
+      });
+    }
+  };
+
   // src/spells/cantrip/FireBolt.ts
   var FireBolt = simpleSpell({
     implemented: true,
@@ -3328,33 +3403,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getDamage: (_2, caster) => [dd(getCantripDice(caster), 10, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const { attack, critical, hit } = yield g2.attack({
-          who: attacker,
-          type: "ranged",
-          target,
-          ability: method.ability,
-          spell: FireBolt,
-          method
+        const rsa = new SpellAttack(g2, attacker, FireBolt, method, "ranged", {
+          target
         });
-        if (hit) {
-          const amount = yield g2.rollDamage(
-            getCantripDice(attacker),
-            {
-              size: 10,
-              damageType: "fire",
-              attacker,
-              target,
-              spell: FireBolt,
-              method
-            },
-            critical
-          );
-          yield g2.damage(
-            FireBolt,
-            "fire",
-            { attack, attacker, target, critical, spell: FireBolt, method },
-            [["fire", amount]]
-          );
+        if ((yield rsa.attack(target)).hit) {
+          const damage = yield rsa.getDamage(target);
+          yield rsa.damage(target, damage);
         }
       });
     }
@@ -3441,33 +3495,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getDamage: (_2, caster) => [dd(getCantripDice(caster), 8, "cold")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const { attack, critical, hit } = yield g2.attack({
-          who: attacker,
-          type: "ranged",
-          target,
-          ability: method.ability,
-          spell: RayOfFrost,
-          method
+        const rsa = new SpellAttack(g2, attacker, RayOfFrost, method, "ranged", {
+          target
         });
-        if (hit) {
-          const amount = yield g2.rollDamage(
-            getCantripDice(attacker),
-            {
-              size: 8,
-              damageType: "cold",
-              attacker,
-              target,
-              spell: RayOfFrost,
-              method
-            },
-            critical
-          );
-          yield g2.damage(
-            RayOfFrost,
-            "cold",
-            { attack, attacker, target, critical, spell: RayOfFrost, method },
-            [["cold", amount]]
-          );
+        if ((yield rsa.attack(target)).hit) {
+          const damage = yield rsa.getDamage(target);
+          yield rsa.damage(target, damage);
           target.addEffect(RayOfFrostEffect, 1);
         }
       });

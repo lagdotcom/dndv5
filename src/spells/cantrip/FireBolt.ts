@@ -2,6 +2,7 @@ import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
+import SpellAttack from "../SpellAttack";
 
 const FireBolt = simpleSpell<HasTarget>({
   implemented: true,
@@ -16,35 +17,13 @@ const FireBolt = simpleSpell<HasTarget>({
   getDamage: (_, caster) => [dd(getCantripDice(caster), 10, "fire")],
 
   async apply(g, attacker, method, { target }) {
-    const { attack, critical, hit } = await g.attack({
-      who: attacker,
-      type: "ranged",
+    const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
       target,
-      ability: method.ability,
-      spell: FireBolt,
-      method,
     });
 
-    if (hit) {
-      const amount = await g.rollDamage(
-        getCantripDice(attacker),
-        {
-          size: 10,
-          damageType: "fire",
-          attacker,
-          target,
-          spell: FireBolt,
-          method,
-        },
-        critical
-      );
-
-      await g.damage(
-        FireBolt,
-        "fire",
-        { attack, attacker, target, critical, spell: FireBolt, method },
-        [["fire", amount]]
-      );
+    if ((await rsa.attack(target)).hit) {
+      const damage = await rsa.getDamage(target);
+      await rsa.damage(target, damage);
     }
   },
 });
