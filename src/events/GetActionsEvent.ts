@@ -1,8 +1,14 @@
-import EventData from "./EventData";
+import Action from "../types/Action";
+import Combatant from "../types/Combatant";
 
-type Detail = EventData["getActions"];
-export default class GetActionsEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("getActions", { detail });
+export interface GetActionsDetail {
+  who: Combatant;
+  target?: Combatant;
+  actions: Action[]; // TODO collector?
+}
+
+export default class GetActionsEvent extends CustomEvent<GetActionsDetail> {
+  constructor(detail: GetActionsDetail) {
+    super("GetActions", { detail });
   }
 }

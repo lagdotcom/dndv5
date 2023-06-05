@@ -3,7 +3,7 @@ import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
 const DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g) => {
-  g.events.on("gatherDamage", ({ detail: { attacker, map, weapon } }) => {
+  g.events.on("GatherDamage", ({ detail: { attacker, map, weapon } }) => {
     if (attacker.hasEffect(DivineFavorEffect) && weapon) {
       const dr = g.dice.roll(
         {

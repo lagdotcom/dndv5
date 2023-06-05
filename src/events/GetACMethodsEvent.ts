@@ -1,8 +1,13 @@
-import EventData from "./EventData";
+import ACMethod from "../types/ACMethod";
+import Combatant from "../types/Combatant";
 
-type Detail = EventData["getACMethods"];
-export default class GetACMethodsEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("getACMethods", { detail });
+export interface GetACMethodsDetail {
+  who: Combatant;
+  methods: ACMethod[]; // TODO collector?
+}
+
+export default class GetACMethodsEvent extends CustomEvent<GetACMethodsDetail> {
+  constructor(detail: GetACMethodsDetail) {
+    super("GetACMethods", { detail });
   }
 }

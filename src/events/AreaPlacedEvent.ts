@@ -1,8 +1,11 @@
-import EventData from "./EventData";
+import EffectArea from "../types/EffectArea";
 
-type Detail = EventData["areaPlaced"];
-export default class AreaPlacedEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("areaPlaced", { detail });
+export interface AreaPlacedDetail {
+  area: EffectArea;
+}
+
+export default class AreaPlacedEvent extends CustomEvent<AreaPlacedDetail> {
+  constructor(detail: AreaPlacedDetail) {
+    super("AreaPlaced", { detail });
   }
 }

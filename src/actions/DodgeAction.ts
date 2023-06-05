@@ -12,12 +12,12 @@ function canDodge(who: Combatant) {
 }
 
 export const DodgeEffect = new Effect("Dodge", "turnStart", (g) => {
-  g.events.on("beforeAttack", ({ detail: { target, diceType } }) => {
+  g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
     // TODO if you can see the attacker
     if (canDodge(target)) diceType.add("disadvantage", DodgeEffect);
   });
 
-  g.events.on("beforeSave", ({ detail: { who, diceType } }) => {
+  g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
     if (canDodge(who)) diceType.add("advantage", DodgeEffect);
   });
 });

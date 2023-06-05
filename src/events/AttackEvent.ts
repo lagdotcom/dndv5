@@ -1,8 +1,15 @@
-import EventData from "./EventData";
+import { BeforeAttackDetail } from "./BeforeAttackEvent";
+import { DiceRolledDetail } from "./DiceRolledEvent";
 
-type Detail = EventData["attack"];
-export default class AttackEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("attack", { detail });
+export interface AttackEventDetail {
+  pre: BeforeAttackDetail;
+  roll: DiceRolledDetail;
+  total: number;
+  outcome: "critical" | "hit" | "miss";
+}
+
+export default class AttackEventEvent extends CustomEvent<AttackEventDetail> {
+  constructor(detail: AttackEventDetail) {
+    super("Attack", { detail });
   }
 }

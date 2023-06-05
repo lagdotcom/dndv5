@@ -19,7 +19,7 @@ const ProtectionEffect = new Effect(
   "Protection from Evil and Good",
   "turnStart",
   (g) => {
-    g.events.on("beforeAttack", ({ detail: { who, target, diceType } }) => {
+    g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
       if (
         affectedTypes.includes(target.type) &&
         who.hasEffect(ProtectionEffect)

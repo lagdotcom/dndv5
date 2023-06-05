@@ -1,8 +1,11 @@
-import EventData from "./EventData";
+import Combatant from "../types/Combatant";
 
-type Detail = EventData["turnStarted"];
-export default class TurnStartedEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("turnStarted", { detail });
+export interface TurnStartedDetail {
+  who: Combatant;
+}
+
+export default class TurnStartedEvent extends CustomEvent<TurnStartedDetail> {
+  constructor(detail: TurnStartedDetail) {
+    super("TurnStarted", { detail });
   }
 }

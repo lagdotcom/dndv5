@@ -1,15 +1,15 @@
 import { useCallback } from "preact/hooks";
 
-import EventData from "../events/EventData";
+import { ListChoiceDetail } from "../events/ListChoiceEvent";
 import Dialog from "./Dialog";
 import { chooseFromList } from "./utils/state";
 
-export default function ListChoiceDialog({
+export default function ListChoiceDialog<T>({
   interruption,
   resolve,
-}: EventData["listChoice"]) {
+}: ListChoiceDetail<T>) {
   const decide = useCallback(
-    (value: unknown) => {
+    (value: T) => {
       chooseFromList.value = undefined;
       resolve(value);
     },

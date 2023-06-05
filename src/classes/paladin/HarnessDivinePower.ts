@@ -86,7 +86,7 @@ const HarnessDivinePower = new SimpleFeature(
       getHarnessCount(me.classLevels.get("Paladin") ?? 3)
     );
 
-    g.events.on("getActions", ({ detail: { actions, who } }) => {
+    g.events.on("GetActions", ({ detail: { actions, who } }) => {
       if (who === me) actions.push(new HarnessDivinePowerAction(g, me));
     });
   }

@@ -36,7 +36,7 @@ const MingleWithTheWind = new SimpleFeature(
   (g, me) => {
     me.initResource(MingleWithTheWindResource);
 
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me)
         actions.push(new CastSpell(g, me, MingleWithTheWindMethod, Levitate));
     });

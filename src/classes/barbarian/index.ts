@@ -11,7 +11,7 @@ const UnarmoredDefense = new SimpleFeature(
   "Unarmored Defense",
   `While you are not wearing any armor, your Armor Class equals 10 + your Dexterity modifier + your Constitution modifier. You can use a shield and still gain this benefit.`,
   (g, me) => {
-    g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+    g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
       if (who === me && !me.armor) {
         const uses = new Set<Item>();
         let ac = 10 + me.dex + me.con;
@@ -57,7 +57,7 @@ const FastMovement = new SimpleFeature(
   "Fast Movement",
   `Starting at 5th level, your speed increases by 10 feet while you aren't wearing heavy armor.`,
   (g, me) => {
-    g.events.on("getSpeed", ({ detail: { who, bonus } }) => {
+    g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
       if (who === me && me.armor?.category !== "heavy")
         bonus.add(10, FastMovement);
     });

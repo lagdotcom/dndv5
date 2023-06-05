@@ -323,7 +323,7 @@
 
   // src/actions/DashAction.ts
   var DashEffect = new Effect("Dash", "turnEnd", (g2) => {
-    g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+    g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
       if (who.hasEffect(DashEffect))
         multiplier.add(2, DashEffect);
     });
@@ -365,11 +365,11 @@
     return who.hasEffect(DodgeEffect) && who.speed > 0 && !who.conditions.has("Incapacitated");
   }
   var DodgeEffect = new Effect("Dodge", "turnStart", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { target, diceType } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
       if (canDodge(target))
         diceType.add("disadvantage", DodgeEffect);
     });
-    g2.events.on("beforeSave", ({ detail: { who, diceType } }) => {
+    g2.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
       if (canDodge(who))
         diceType.add("advantage", DodgeEffect);
     });
@@ -389,28 +389,28 @@
   // src/events/EffectAddedEvent.ts
   var EffectAddedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("effectAdded", { detail });
+      super("EffectAdded", { detail });
     }
   };
 
   // src/events/EffectRemovedEvent.ts
   var EffectRemovedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("effectRemoved", { detail });
+      super("EffectRemoved", { detail });
     }
   };
 
   // src/events/GetConditionsEvent.ts
   var GetConditionsEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getConditions", { detail });
+      super("GetConditions", { detail });
     }
   };
 
   // src/events/GetSpeedEvent.ts
   var GetSpeedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getSpeed", { detail });
+      super("GetSpeed", { detail });
     }
   };
 
@@ -1021,19 +1021,19 @@
 
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { who, ability, bonus } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
       bonus.add(who[ability], AbilityScoreRule);
     });
-    g2.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
+    g2.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
       if (ability)
         bonus.add(attacker[ability], AbilityScoreRule);
     });
-    g2.events.on("getInitiative", ({ detail: { who, bonus } }) => {
+    g2.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
       bonus.add(who.dex, AbilityScoreRule);
     });
   });
   var ArmorCalculationRule = new DndRule("Armor Calculation", (g2) => {
-    g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+    g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
       var _a, _b;
       const { armor, dex, shield } = who;
       const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
@@ -1049,7 +1049,7 @@
     });
   });
   var BlindedRule = new DndRule("Blinded", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { who, diceType, target } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
       if (who.conditions.has("Blinded"))
         diceType.add("disadvantage", BlindedRule);
       if (target.conditions.has("Blinded"))
@@ -1057,7 +1057,7 @@
     });
   });
   var CombatActionsRule = new DndRule("Combat Actions", (g2) => {
-    g2.events.on("getActions", ({ detail: { who, actions } }) => {
+    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
       actions.push(new DashAction(g2, who));
       actions.push(new DisengageAction(g2, who));
       actions.push(new DodgeAction(g2, who));
@@ -1065,14 +1065,14 @@
   });
   var EffectsRule = new DndRule("Effects", (g2) => {
     g2.events.on(
-      "turnStarted",
+      "TurnStarted",
       ({ detail: { who } }) => who.tickEffects("turnStart")
     );
-    g2.events.on("turnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
+    g2.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
   });
   var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g2) => {
     g2.events.on(
-      "beforeAttack",
+      "BeforeAttack",
       ({ detail: { who, target, weapon, diceType } }) => {
         if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g2, who, target) > weapon.shortRange)
           diceType.add("disadvantage", LongRangeAttacksRule);
@@ -1092,31 +1092,31 @@
       }
       return false;
     };
-    g2.events.on("beforeAttack", ({ detail: { diceType, target } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
       const squares = new PointSet(
         getSquares(target, g2.getState(target).position)
       );
       if (isHeavilyObscuredAnywhere(squares))
         diceType.add("disadvantage", ObscuredRule);
     });
-    g2.events.on("getConditions", ({ detail: { conditions, who } }) => {
+    g2.events.on("GetConditions", ({ detail: { conditions, who } }) => {
       const squares = new PointSet(getSquares(who, g2.getState(who).position));
       if (isHeavilyObscuredAnywhere(squares))
         conditions.add("Blinded");
     });
   });
   var ProficiencyRule = new DndRule("Proficiency", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
       const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
       bonus.add(who.pb * mul, ProficiencyRule);
     });
-    g2.events.on("beforeSave", ({ detail: { who, ability, bonus } }) => {
+    g2.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
       const mul = who.getProficiencyMultiplier(ability);
       bonus.add(who.pb * mul, ProficiencyRule);
     });
   });
   var ResourcesRule = new DndRule("Resources", (g2) => {
-    g2.events.on("turnStarted", ({ detail: { who } }) => {
+    g2.events.on("TurnStarted", ({ detail: { who } }) => {
       for (const name of who.resources.keys()) {
         const resource = ResourceRegistry.get(name);
         if ((resource == null ? void 0 : resource.refresh) === "turnStart")
@@ -1125,14 +1125,14 @@
     });
   });
   var TurnTimeRule = new DndRule("Turn Time", (g2) => {
-    g2.events.on("turnStarted", ({ detail: { who } }) => {
+    g2.events.on("TurnStarted", ({ detail: { who } }) => {
       who.time.add("action");
       who.time.add("bonus action");
       who.time.add("reaction");
     });
   });
   var WeaponAttackRule = new DndRule("Weapon Attacks", (g2) => {
-    g2.events.on("getActions", ({ detail: { who, target, actions } }) => {
+    g2.events.on("GetActions", ({ detail: { who, target, actions } }) => {
       if (who !== target) {
         for (const weapon of who.weapons) {
           if (weapon.ammunitionTag) {
@@ -1159,70 +1159,70 @@
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("areaPlaced", { detail });
+      super("AreaPlaced", { detail });
     }
   };
 
   // src/events/AreaRemovedEvent.ts
   var AreaRemovedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("areaRemoved", { detail });
+      super("AreaRemoved", { detail });
     }
   };
 
   // src/events/AttackEvent.ts
-  var AttackEvent = class extends CustomEvent {
+  var AttackEventEvent = class extends CustomEvent {
     constructor(detail) {
-      super("attack", { detail });
+      super("Attack", { detail });
     }
   };
 
   // src/events/BeforeAttackEvent.ts
   var BeforeAttackEvent = class extends CustomEvent {
     constructor(detail) {
-      super("beforeAttack", { detail });
+      super("BeforeAttack", { detail });
     }
   };
 
   // src/events/BeforeSaveEvent.ts
   var BeforeSaveEvent = class extends CustomEvent {
     constructor(detail) {
-      super("beforeSave", { detail });
+      super("BeforeSave", { detail });
     }
   };
 
   // src/events/CombatantDamagedEvent.ts
   var CombatantDamagedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantDamaged", { detail });
+      super("CombatantDamaged", { detail });
     }
   };
 
   // src/events/CombatantDiedEvent.ts
   var CombatantDiedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantDied", { detail });
+      super("CombatantDied", { detail });
     }
   };
 
   // src/events/CombatantMovedEvent.ts
   var CombatantMovedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantMoved", { detail });
+      super("CombatantMoved", { detail });
     }
   };
 
   // src/events/CombatantPlacedEvent.ts
   var CombatantPlacedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("combatantPlaced", { detail });
+      super("CombatantPlaced", { detail });
     }
   };
 
   // src/events/DiceRolledEvent.ts
   var DiceRolledEvent = class extends CustomEvent {
     constructor(detail) {
-      super("diceRolled", { detail });
+      super("DiceRolled", { detail });
     }
   };
 
@@ -1257,63 +1257,63 @@
   // src/events/GatherDamageEvent.ts
   var GatherDamageEvent = class extends CustomEvent {
     constructor(detail) {
-      super("gatherDamage", { detail });
+      super("GatherDamage", { detail });
     }
   };
 
   // src/events/GetACMethodsEvent.ts
   var GetACMethodsEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getACMethods", { detail });
+      super("GetACMethods", { detail });
     }
   };
 
   // src/events/GetActionsEvent.ts
   var GetActionsEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getActions", { detail });
+      super("GetActions", { detail });
     }
   };
 
   // src/events/GetDamageResponseEvent.ts
   var GetDamageResponseEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getDamageResponse", { detail });
+      super("GetDamageResponse", { detail });
     }
   };
 
   // src/events/GetInitiativeEvent.ts
   var GetInitiativeEvent = class extends CustomEvent {
     constructor(detail) {
-      super("getInitiative", { detail });
+      super("GetInitiative", { detail });
     }
   };
 
   // src/events/ListChoiceEvent.ts
   var ListChoiceEvent = class extends CustomEvent {
     constructor(detail) {
-      super("listChoice", { detail });
+      super("ListChoice", { detail });
     }
   };
 
   // src/events/TurnEndedEvent.ts
   var TurnEndedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("turnEnded", { detail });
+      super("TurnEnded", { detail });
     }
   };
 
   // src/events/TurnStartedEvent.ts
   var TurnStartedEvent = class extends CustomEvent {
     constructor(detail) {
-      super("turnStarted", { detail });
+      super("TurnStarted", { detail });
     }
   };
 
   // src/events/YesNoChoiceEvent.ts
   var YesNoChoiceEvent = class extends CustomEvent {
     constructor(detail) {
-      super("yesNoChoice", { detail });
+      super("YesNoChoice", { detail });
     }
   };
 
@@ -1555,7 +1555,7 @@
         );
         const total = roll.value + pre.detail.bonus.result;
         const attack = this.fire(
-          new AttackEvent({
+          new AttackEventEvent({
             pre: pre.detail,
             roll,
             total,
@@ -1978,7 +1978,7 @@
   // src/events/SpellCastEvent.ts
   var SpellCastEvent = class extends CustomEvent {
     constructor(detail) {
-      super("spellCast", { detail });
+      super("SpellCast", { detail });
     }
   };
 
@@ -2060,7 +2060,7 @@
       }
       me.spellcastingMethods.add(method);
       if (!addAsList)
-        g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me)
             for (const { spell } of spells)
               actions.push(new CastSpell(g2, me, method, spell));
@@ -2151,7 +2151,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
       const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
       me.initResource(SneakAttackResource);
       g2.events.on(
-        "gatherDamage",
+        "GatherDamage",
         ({
           detail: {
             ability,
@@ -2200,7 +2200,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     "Steady Aim",
     "turnEnd",
     (g2) => {
-      g2.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+      g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
         if (who.hasEffect(SteadyAimNoMoveEffect))
           multiplier.add(0, SteadyAimNoMoveEffect);
       });
@@ -2208,11 +2208,11 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     true
   );
   var SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g2) => {
-    g2.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
       if (who.hasEffect(SteadyAimAdvantageEffect))
         diceType.add("advantage", SteadyAimAdvantageEffect);
     });
-    g2.events.on("attack", ({ detail: { pre } }) => {
+    g2.events.on("Attack", ({ detail: { pre } }) => {
       if (pre.diceType.involved(SteadyAimAdvantageEffect))
         pre.who.removeEffect(SteadyAimAdvantageEffect);
     });
@@ -2238,7 +2238,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     "Steady Aim",
     `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
     (g2, me) => {
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new SteadyAimAction(g2, me));
       });
@@ -2278,7 +2278,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
     "Cunning Action",
     `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
     (g2, me) => {
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
           const cunning = [new DashAction(g2, who), new DisengageAction(g2, who)];
           for (const action of cunning) {
@@ -2295,7 +2295,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
     `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
     (g2, me) => {
       g2.events.on(
-        "gatherDamage",
+        "GatherDamage",
         ({ detail: { target, attack, interrupt, multiplier } }) => {
           if (attack && target === me && me.time.has("reaction"))
             interrupt.add(
@@ -2439,11 +2439,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     name: "+1 bonus",
     setup(g2, item) {
       item.name = `${item.name} +1`;
-      g2.events.on("beforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
+      g2.events.on("BeforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
         if (weapon === item || ammo === item)
           bonus.add(1, this);
       });
-      g2.events.on("gatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
+      g2.events.on("GatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
         if (weapon === item || ammo === item)
           bonus.add(1, this);
       });
@@ -2471,12 +2471,12 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     setup(g2, item) {
       plus1.setup(g2, item);
       item.name = `chaotic burst ${item.weaponType}`;
-      g2.events.on("turnStarted", ({ detail: { who } }) => {
+      g2.events.on("TurnStarted", ({ detail: { who } }) => {
         if (who.equipment.has(item) && who.attunements.has(item))
           who.initResource(ChaoticBurstResource);
       });
       g2.events.on(
-        "gatherDamage",
+        "GatherDamage",
         ({ detail: { attacker, critical, interrupt, map } }) => {
           if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
             attacker.spendResource(ChaoticBurstResource);
@@ -2513,7 +2513,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     name: "vicious",
     setup(g2, item) {
       item.name = `vicious ${item.name}`;
-      g2.events.on("gatherDamage", ({ detail: { weapon, bonus, attack } }) => {
+      g2.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
         if (weapon === item && (attack == null ? void 0 : attack.roll.value) === 20)
           bonus.add(7, vicious);
       });
@@ -2540,7 +2540,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 - You regain your expended luck points when you finish a long rest.`,
     (g2, me) => {
       me.initResource(LuckPoint);
-      g2.events.on("diceRolled", ({ detail }) => {
+      g2.events.on("DiceRolled", ({ detail }) => {
         const { type, interrupt, value } = detail;
         if ((type.type === "attack" || type.type === "check" || type.type === "save") && type.who === me && me.hasResource(LuckPoint))
           addLuckyOpportunity(
@@ -2585,7 +2585,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var BracersOfTheArbalest = class extends AbstractWondrous {
     constructor(g2) {
       super(g2, "Bracers of the Arbalest");
-      g2.events.on("gatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
+      g2.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
         if (attacker.equipment.has(this) && attacker.attunements.has(this) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
           bonus.add(2, this);
       });
@@ -2594,14 +2594,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var CloakOfProtection = class extends AbstractWondrous {
     constructor(g2) {
       super(g2, "Cloak of Protection");
-      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
         if (who.equipment.has(this) && who.attunements.has(this))
           for (const method of methods) {
             method.ac++;
             method.uses.add(this);
           }
       });
-      g2.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+      g2.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
         if (who.equipment.has(this) && who.attunements.has(this))
           bonus.add(1, this);
       });
@@ -2610,7 +2610,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var DragonTouchedFocus = class extends AbstractWondrous {
     constructor(g2, level) {
       super(g2, `Dragon-Touched Focus (${level})`, 1);
-      g2.events.on("getInitiative", ({ detail: { who, diceType } }) => {
+      g2.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
         if (who.equipment.has(this) && who.attunements.has(this))
           diceType.add("advantage", this);
       });
@@ -2878,7 +2878,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     `You can cast the levitate spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell.`,
     (g2, me) => {
       me.initResource(MingleWithTheWindResource);
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new CastSpell(g2, me, MingleWithTheWindMethod, Levitate_default));
       });
@@ -3005,7 +3005,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         var _a;
         this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
         me.spellcastingMethods.add(this);
-        g2.events.on("getActions", ({ detail: { who, actions } }) => {
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me) {
             for (const spell of me.preparedSpells) {
               if (this.canCast(spell, who))
@@ -3163,6 +3163,36 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   };
   var Evocation_default = Evocation;
 
+  // src/races/common.ts
+  function poisonResistance(name, text) {
+    const feature = new SimpleFeature(name, text, (g2, me) => {
+      g2.events.on("BeforeSave", ({ detail: { who, diceType, tags } }) => {
+        if (who === me && tags.has("poison"))
+          diceType.add("advantage", feature);
+      });
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who === me && damageType === "poison")
+            response.add("resist", feature);
+        }
+      );
+    });
+    return feature;
+  }
+  function resistanceFeature(name, text, types) {
+    const feature = new SimpleFeature(name, text, (g2, me) => {
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response: result } }) => {
+          if (who === me && types.includes(damageType))
+            result.add("resist", feature);
+        }
+      );
+    });
+    return feature;
+  }
+
   // src/races/Dragonborn_FTD.ts
   var MetallicDragonborn = {
     name: "Dragonborn (Metallic)",
@@ -3176,18 +3206,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
     );
-    const draconicResistance = new SimpleFeature(
+    const draconicResistance = resistanceFeature(
       "Draconic Resistance",
       `You have resistance to the damage type associated with your Metallic Ancestry.`,
-      (g2, me) => {
-        g2.events.on(
-          "getDamageResponse",
-          ({ detail: { who, damageType, response } }) => {
-            if (who === me && damageType === dt)
-              response.add("resist", draconicResistance);
-          }
-        );
-      }
+      [dt]
     );
     const metallicBreathWeapon = notImplementedFeature(
       "Metallic Breath Weapon",
@@ -3421,7 +3443,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/MindSliver.ts
   var MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g2) => {
-    g2.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+    g2.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
       if (who.hasEffect(MindSliverEffect)) {
         who.removeEffect(MindSliverEffect);
         const { value } = g2.dice.roll({ type: "bane", who }, "normal");
@@ -3465,7 +3487,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           );
           let endCounter = 2;
           const removeTurnTracker = g2.events.on(
-            "turnEnded",
+            "TurnEnded",
             ({ detail: { who } }) => {
               if (who === attacker && endCounter-- <= 0) {
                 removeTurnTracker();
@@ -3482,7 +3504,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/RayOfFrost.ts
   var RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g2) => {
-    g2.events.on("getSpeed", ({ detail: { who, bonus } }) => {
+    g2.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
       if (who.hasEffect(RayOfFrostEffect))
         bonus.add(-10, RayOfFrostEffect);
     });
@@ -3756,14 +3778,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         yield fireMeteors(g2, attacker, method, { points });
         let meteorActionEnabled = false;
         const removeMeteorAction = g2.events.on(
-          "getActions",
+          "GetActions",
           ({ detail: { who, actions } }) => {
             if (who === attacker && meteorActionEnabled)
               actions.push(new FireMeteorsAction(g2, attacker, method));
           }
         );
         const removeTurnListener = g2.events.on(
-          "turnEnded",
+          "TurnEnded",
           ({ detail: { who } }) => {
             if (who === attacker) {
               meteorActionEnabled = true;
@@ -4008,7 +4030,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         HarnessDivinePowerResource,
         getHarnessCount((_a = me.classLevels.get("Paladin")) != null ? _a : 3)
       );
-      g2.events.on("getActions", ({ detail: { actions, who } }) => {
+      g2.events.on("GetActions", ({ detail: { actions, who } }) => {
         if (who === me)
           actions.push(new HarnessDivinePowerAction(g2, me));
       });
@@ -4038,7 +4060,7 @@ This feature has no effect on undead and constructs.`
     `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`,
     (g2, me) => {
       g2.events.on(
-        "gatherDamage",
+        "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.type) === "melee")
             interrupt.add(
@@ -4172,7 +4194,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     "Protection from Evil and Good",
     "turnStart",
     (g2) => {
-      g2.events.on("beforeAttack", ({ detail: { who, target, diceType } }) => {
+      g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
         if (affectedTypes.includes(target.type) && who.hasEffect(ProtectionEffect))
           diceType.add("disadvantage", ProtectionEffect);
       });
@@ -4322,11 +4344,11 @@ Once you use this feature, you can't use it again until you finish a long rest.
   }
   var BlessEffect = new Effect("Bless", "turnEnd", (g2) => {
     g2.events.on(
-      "beforeAttack",
+      "BeforeAttack",
       ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
     );
     g2.events.on(
-      "beforeSave",
+      "BeforeSave",
       ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
     );
   });
@@ -4362,7 +4384,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
 
   // src/spells/level1/DivineFavor.ts
   var DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g2) => {
-    g2.events.on("gatherDamage", ({ detail: { attacker, map, weapon } }) => {
+    g2.events.on("GatherDamage", ({ detail: { attacker, map, weapon } }) => {
       if (attacker.hasEffect(DivineFavorEffect) && weapon) {
         const dr = g2.dice.roll(
           {
@@ -4484,12 +4506,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   };
   var RageEffect = new Effect("Rage", "turnStart", (g2) => {
-    g2.events.on("beforeSave", ({ detail: { who, ability, diceType } }) => {
+    g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (who.hasEffect(RageEffect) && ability === "str")
         diceType.add("advantage", RageEffect);
     });
     g2.events.on(
-      "gatherDamage",
+      "GatherDamage",
       ({ detail: { attacker, attack, weapon, bonus } }) => {
         var _a;
         if (attacker.hasEffect(RageEffect) && (attack == null ? void 0 : attack.pre.type) === "melee" && weapon)
@@ -4500,13 +4522,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
       }
     );
     g2.events.on(
-      "getDamageResponse",
+      "GetDamageResponse",
       ({ detail: { who, damageType, response } }) => {
         if (who.hasEffect(RageEffect) && ["bludgeoning", "piercing", "slashing"].includes(damageType))
           response.add("resist", RageEffect);
       }
     );
-    g2.events.on("getActions", ({ detail: { who, actions } }) => {
+    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who.hasEffect(RageEffect))
         actions.push(new EndRageAction(g2, who));
     });
@@ -4549,7 +4571,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
         RageResource,
         getRageCount((_a = me.classLevels.get("Barbarian")) != null ? _a : 0)
       );
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me && !me.hasEffect(RageEffect))
           actions.push(new RageAction(g2, who));
       });
@@ -4562,7 +4584,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
     "Unarmored Defense",
     `While you are not wearing any armor, your Armor Class equals 10 + your Dexterity modifier + your Constitution modifier. You can use a shield and still gain this benefit.`,
     (g2, me) => {
-      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
         if (who === me && !me.armor) {
           const uses = /* @__PURE__ */ new Set();
           let ac = 10 + me.dex + me.con;
@@ -4599,7 +4621,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
     "Fast Movement",
     `Starting at 5th level, your speed increases by 10 feet while you aren't wearing heavy armor.`,
     (g2, me) => {
-      g2.events.on("getSpeed", ({ detail: { who, bonus } }) => {
+      g2.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
         var _a;
         if (who === me && ((_a = me.armor) == null ? void 0 : _a.category) !== "heavy")
           bonus.add(10, FastMovement);
@@ -4716,7 +4738,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     constructor(g2) {
       super(g2, 1);
       this.name = "Spear of the Dark Sun";
-      g2.events.on("gatherDamage", ({ detail: { attacker, weapon, map } }) => {
+      g2.events.on("GatherDamage", ({ detail: { attacker, weapon, map } }) => {
         if (weapon === this && attacker.attunements.has(weapon)) {
           const amount = g2.dice.roll(
             { attacker, weapon, type: "damage", size: 10 },
@@ -4729,36 +4751,6 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     }
   };
 
-  // src/races/common.ts
-  function poisonResistance(name, text) {
-    const feature = new SimpleFeature(name, text, (g2, me) => {
-      g2.events.on("beforeSave", ({ detail: { who, diceType, tags } }) => {
-        if (who === me && tags.has("poison"))
-          diceType.add("advantage", feature);
-      });
-      g2.events.on(
-        "getDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (who === me && damageType === "poison")
-            response.add("resist", feature);
-        }
-      );
-    });
-    return feature;
-  }
-  function resistanceFeature(name, text, types) {
-    const feature = new SimpleFeature(name, text, (g2, me) => {
-      g2.events.on(
-        "getDamageResponse",
-        ({ detail: { who, damageType, response: result } }) => {
-          if (who === me && types.includes(damageType))
-            result.add("resist", feature);
-        }
-      );
-    });
-    return feature;
-  }
-
   // src/races/Halfling.ts
   var Lucky2 = notImplementedFeature(
     "Lucky",
@@ -4768,7 +4760,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     "Brave",
     `You have advantage on saving throws against being frightened.`,
     (g2, me) => {
-      g2.events.on("beforeSave", ({ detail: { who, tags, diceType } }) => {
+      g2.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
         if (who === me && tags.has("frightened"))
           diceType.add("advantage", Brave);
       });
@@ -5299,7 +5291,7 @@ The creature is aware of this effect before it makes its attack against you.`
       return __async(this, null, function* () {
         caster.initResource(MagicStoneResource);
         const unsubscribe = g2.events.on(
-          "getActions",
+          "GetActions",
           ({ detail: { who, actions } }) => {
             if (who === caster && who.hasResource(MagicStoneResource))
               actions.push(new MagicStoneAction(g2, who, method, unsubscribe));
@@ -5350,7 +5342,7 @@ The creature is aware of this effect before it makes its attack against you.`
     "Unarmored Defense",
     `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
     (g2, me) => {
-      g2.events.on("getACMethods", ({ detail: { who, methods } }) => {
+      g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
         if (who === me && !me.armor && !me.shield)
           methods.push({
             name: "Unarmored Defense",
@@ -5415,7 +5407,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       var _a;
       console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
       const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
-      g2.events.on("getActions", ({ detail: { who, actions } }) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who !== me)
           return;
         for (const wa of actions.filter(isMonkWeaponAttack)) {
@@ -6383,11 +6375,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   function getDamageEntryText([type, entry]) {
     return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
   }
-  function DamageMessage({
-    who,
-    total,
-    breakdown
-  }) {
+  function DamageMessage({ who, total, breakdown }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
@@ -6475,30 +6463,30 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     }, []);
     (0, import_hooks8.useEffect)(() => {
       g2.events.on(
-        "attack",
+        "Attack",
         ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
       );
       g2.events.on(
-        "combatantDamaged",
+        "CombatantDamaged",
         ({ detail }) => addMessage(/* @__PURE__ */ o(DamageMessage, __spreadValues({}, detail)))
       );
       g2.events.on(
-        "combatantDied",
+        "CombatantDied",
         ({ detail }) => addMessage(/* @__PURE__ */ o(DeathMessage, __spreadValues({}, detail)))
       );
-      g2.events.on("effectAdded", ({ detail }) => {
+      g2.events.on("EffectAdded", ({ detail }) => {
         if (!detail.effect.quiet)
           addMessage(/* @__PURE__ */ o(EffectAddedMessage, __spreadValues({}, detail)));
       });
-      g2.events.on("effectRemoved", ({ detail }) => {
+      g2.events.on("EffectRemoved", ({ detail }) => {
         if (!detail.effect.quiet)
           addMessage(/* @__PURE__ */ o(EffectRemovedMessage, __spreadValues({}, detail)));
       });
       g2.events.on(
-        "spellCast",
+        "SpellCast",
         ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
       );
-      g2.events.on("diceRolled", ({ detail }) => {
+      g2.events.on("DiceRolled", ({ detail }) => {
         if (detail.type.type === "initiative")
           addMessage(/* @__PURE__ */ o(InitiativeMessage, __spreadValues({}, detail)));
         else if (detail.type.type === "save")
@@ -6633,18 +6621,18 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       allEffects.value = [...g2.effects];
     }, [g2]);
     (0, import_hooks12.useEffect)(() => {
-      g2.events.on("combatantPlaced", refreshUnits);
-      g2.events.on("combatantMoved", refreshUnits);
-      g2.events.on("combatantDied", refreshUnits);
-      g2.events.on("areaPlaced", refreshAreas);
-      g2.events.on("areaRemoved", refreshAreas);
-      g2.events.on("turnStarted", ({ detail: { who } }) => {
+      g2.events.on("CombatantPlaced", refreshUnits);
+      g2.events.on("CombatantMoved", refreshUnits);
+      g2.events.on("CombatantDied", refreshUnits);
+      g2.events.on("AreaPlaced", refreshAreas);
+      g2.events.on("AreaRemoved", refreshAreas);
+      g2.events.on("TurnStarted", ({ detail: { who } }) => {
         activeCombatantId.value = who.id;
         hideActionMenu();
         allActions.value = g2.getActions(who);
       });
-      g2.events.on("listChoice", (e) => chooseFromList.value = e);
-      g2.events.on("yesNoChoice", (e) => chooseYesNo.value = e);
+      g2.events.on("ListChoice", (e) => chooseFromList.value = e);
+      g2.events.on("YesNoChoice", (e) => chooseYesNo.value = e);
       onMount == null ? void 0 : onMount(g2);
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
     const onExecuteAction = (0, import_hooks12.useCallback)(

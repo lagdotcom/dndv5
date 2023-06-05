@@ -12,7 +12,9 @@ import { Dead } from "./effects";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
 import AttackEvent from "./events/AttackEvent";
-import BeforeAttackEvent from "./events/BeforeAttackEvent";
+import BeforeAttackEvent, {
+  BeforeAttackDetail,
+} from "./events/BeforeAttackEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
@@ -20,8 +22,9 @@ import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import CombatantPlacedEvent from "./events/CombatantPlacedEvent";
 import DiceRolledEvent from "./events/DiceRolledEvent";
 import Dispatcher from "./events/Dispatcher";
-import EventData from "./events/EventData";
-import GatherDamageEvent from "./events/GatherDamageEvent";
+import GatherDamageEvent, {
+  GatherDamageDetail,
+} from "./events/GatherDamageEvent";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
@@ -246,7 +249,7 @@ export default class Engine {
     }
   }
 
-  async attack(e: Omit<EventData["beforeAttack"], "bonus" | "diceType">) {
+  async attack(e: Omit<BeforeAttackDetail, "bonus" | "diceType">) {
     const pre = this.fire(
       new BeforeAttackEvent({
         ...e,
@@ -292,10 +295,7 @@ export default class Engine {
     source: Source,
     damageType: DamageType,
     e: MarkOptional<
-      Omit<
-        EventData["gatherDamage"],
-        "map" | "bonus" | "interrupt" | "multiplier"
-      >,
+      Omit<GatherDamageDetail, "map" | "bonus" | "interrupt" | "multiplier">,
       "critical"
     >,
     damageInitialiser: DamageInitialiser = [],

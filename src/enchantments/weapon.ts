@@ -29,13 +29,13 @@ export const chaoticBurst: Enchantment<"weapon"> = {
     plus1.setup(g, item);
     item.name = `chaotic burst ${item.weaponType}`;
 
-    g.events.on("turnStarted", ({ detail: { who } }) => {
+    g.events.on("TurnStarted", ({ detail: { who } }) => {
       if (who.equipment.has(item) && who.attunements.has(item))
         who.initResource(ChaoticBurstResource);
     });
 
     g.events.on(
-      "gatherDamage",
+      "GatherDamage",
       ({ detail: { attacker, critical, interrupt, map } }) => {
         if (
           critical &&
@@ -78,7 +78,7 @@ export const vicious: Enchantment<"weapon"> = {
   setup(g, item) {
     item.name = `vicious ${item.name}`;
 
-    g.events.on("gatherDamage", ({ detail: { weapon, bonus, attack } }) => {
+    g.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
       if (weapon === item && attack?.roll.value === 20) bonus.add(7, vicious);
     });
   },

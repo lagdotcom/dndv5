@@ -1,8 +1,18 @@
-import EventData from "./EventData";
+import InterruptionCollector from "../collectors/InterruptionCollector";
+import DiceType from "../types/DiceType";
+import RollType from "../types/RollType";
 
-type Detail = EventData["diceRolled"];
-export default class DiceRolledEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("diceRolled", { detail });
+export interface DiceRolledDetail {
+  type: RollType;
+  diceType: DiceType;
+  size: number;
+  value: number;
+  otherValues: Set<number>;
+  interrupt: InterruptionCollector;
+}
+
+export default class DiceRolledEvent extends CustomEvent<DiceRolledDetail> {
+  constructor(detail: DiceRolledDetail) {
+    super("DiceRolled", { detail });
   }
 }

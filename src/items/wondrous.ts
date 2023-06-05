@@ -18,7 +18,7 @@ export class BracersOfTheArbalest extends AbstractWondrous {
     // TODO While wearing these bracers, you have proficiency with all crossbows
 
     // ... you gain a +2 bonus to damage rolls on ranged attacks made with such weapons.
-    g.events.on("gatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
+    g.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
       if (
         attacker.equipment.has(this) &&
         attacker.attunements.has(this) &&
@@ -33,7 +33,7 @@ export class CloakOfProtection extends AbstractWondrous {
   constructor(g: Engine) {
     super(g, "Cloak of Protection");
 
-    g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+    g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
       if (who.equipment.has(this) && who.attunements.has(this))
         for (const method of methods) {
           method.ac++;
@@ -41,7 +41,7 @@ export class CloakOfProtection extends AbstractWondrous {
         }
     });
 
-    g.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+    g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
       if (who.equipment.has(this) && who.attunements.has(this))
         bonus.add(1, this);
     });
@@ -56,7 +56,7 @@ export class DragonTouchedFocus extends AbstractWondrous {
     super(g, `Dragon-Touched Focus (${level})`, 1);
 
     // TODO While you are holding the focus, it can function as a spellcasting focus for all your spells.
-    g.events.on("getInitiative", ({ detail: { who, diceType } }) => {
+    g.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
       if (who.equipment.has(this) && who.attunements.has(this))
         diceType.add("advantage", this);
     });

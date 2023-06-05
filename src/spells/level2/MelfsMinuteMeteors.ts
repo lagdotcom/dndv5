@@ -127,7 +127,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
     let meteorActionEnabled = false;
 
     const removeMeteorAction = g.events.on(
-      "getActions",
+      "GetActions",
       ({ detail: { who, actions } }) => {
         if (who === attacker && meteorActionEnabled)
           actions.push(new FireMeteorsAction(g, attacker, method));
@@ -135,7 +135,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
     );
 
     const removeTurnListener = g.events.on(
-      "turnEnded",
+      "TurnEnded",
       ({ detail: { who } }) => {
         if (who === attacker) {
           meteorActionEnabled = true;

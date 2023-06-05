@@ -30,11 +30,10 @@
     "scope": "typescript",
     "prefix": "eventtype",
     "body": [
-      "import EventData from \"./EventData\";",
+      "export interface $1Detail {$0};",
       "",
-      "type Detail = EventData[\"$1\"];",
-      "export default class $0$1Event extends CustomEvent<Detail> {",
-      "constructor(detail: Detail) {",
+      "export default class $1Event extends CustomEvent<$1Detail> {",
+      "constructor(detail: $1Detail) {",
       "super(\"$1\", { detail });",
       "}",
       "}"

@@ -1,7 +1,7 @@
 import { notImplementedFeature } from "../features/common";
-import SimpleFeature from "../features/SimpleFeature";
 import DamageType from "../types/DamageType";
 import PCRace from "../types/PCRace";
+import { resistanceFeature } from "./common";
 
 const MetallicDragonborn: PCRace = {
   name: "Dragonborn (Metallic)",
@@ -20,18 +20,10 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
   You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
   );
 
-  const draconicResistance = new SimpleFeature(
+  const draconicResistance = resistanceFeature(
     "Draconic Resistance",
     `You have resistance to the damage type associated with your Metallic Ancestry.`,
-    (g, me) => {
-      g.events.on(
-        "getDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (who === me && damageType === dt)
-            response.add("resist", draconicResistance);
-        }
-      );
-    }
+    [dt]
   );
 
   // TODO

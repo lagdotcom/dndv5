@@ -41,7 +41,7 @@ const CunningAction = new SimpleFeature(
   "Cunning Action",
   `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
   (g, me) => {
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) {
         // TODO HideAction
         const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
@@ -61,7 +61,7 @@ const UncannyDodge = new SimpleFeature(
   `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
   (g, me) => {
     g.events.on(
-      "gatherDamage",
+      "GatherDamage",
       ({ detail: { target, attack, interrupt, multiplier } }) => {
         // TODO [...] when an attacker that you can see [...]
         if (attack && target === me && me.time.has("reaction"))

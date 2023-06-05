@@ -6,7 +6,7 @@ import { getSaveDC } from "../../utils/dnd";
 import { getCantripDice, simpleSpell } from "../common";
 
 const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
-  g.events.on("beforeSave", ({ detail: { who, bonus } }) => {
+  g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
     if (who.hasEffect(MindSliverEffect)) {
       who.removeEffect(MindSliverEffect);
 
@@ -56,7 +56,7 @@ const MindSliver = simpleSpell<HasTarget>({
 
       let endCounter = 2;
       const removeTurnTracker = g.events.on(
-        "turnEnded",
+        "TurnEnded",
         ({ detail: { who } }) => {
           if (who === attacker && endCounter-- <= 0) {
             removeTurnTracker();

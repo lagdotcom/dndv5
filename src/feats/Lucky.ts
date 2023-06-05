@@ -34,7 +34,7 @@ const Lucky = new SimpleFeature(
   (g, me) => {
     me.initResource(LuckPoint);
 
-    g.events.on("diceRolled", ({ detail }) => {
+    g.events.on("DiceRolled", ({ detail }) => {
       const { type, interrupt, value } = detail;
 
       if (

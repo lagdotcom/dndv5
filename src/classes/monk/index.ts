@@ -13,7 +13,7 @@ const UnarmoredDefense = new SimpleFeature(
   "Unarmored Defense",
   `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
   (g, me) => {
-    g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+    g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
       if (who === me && !me.armor && !me.shield)
         methods.push({
           name: "Unarmored Defense",
@@ -84,7 +84,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
     const diceSize = getMartialArtsDie(me.classLevels.get("Monk") ?? 0);
 
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who !== me) return;
 
       for (const wa of actions.filter(isMonkWeaponAttack)) {

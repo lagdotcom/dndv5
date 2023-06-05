@@ -5,7 +5,7 @@ import Combatant from "../types/Combatant";
 import AbstractAction from "./AbstractAction";
 
 export const DashEffect = new Effect("Dash", "turnEnd", (g) => {
-  g.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+  g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
     if (who.hasEffect(DashEffect)) multiplier.add(2, DashEffect);
   });
 });

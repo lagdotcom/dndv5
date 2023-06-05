@@ -12,21 +12,21 @@ import { getValidAmmunition } from "./utils/items";
 import { distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
-  g.events.on("beforeAttack", ({ detail: { who, ability, bonus } }) => {
+  g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
     bonus.add(who[ability], AbilityScoreRule);
   });
 
-  g.events.on("gatherDamage", ({ detail: { attacker, ability, bonus } }) => {
+  g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
     if (ability) bonus.add(attacker[ability], AbilityScoreRule);
   });
 
-  g.events.on("getInitiative", ({ detail: { who, bonus } }) => {
+  g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
     bonus.add(who.dex, AbilityScoreRule);
   });
 });
 
 export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
-  g.events.on("getACMethods", ({ detail: { who, methods } }) => {
+  g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
     const { armor, dex, shield } = who;
     const armorAC = armor?.ac ?? 10;
     const shieldAC = shield?.ac ?? 0;
@@ -47,7 +47,7 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
 });
 
 export const BlindedRule = new DndRule("Blinded", (g) => {
-  g.events.on("beforeAttack", ({ detail: { who, diceType, target } }) => {
+  g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
     if (who.conditions.has("Blinded"))
       diceType.add("disadvantage", BlindedRule);
     if (target.conditions.has("Blinded"))
@@ -56,7 +56,7 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
 });
 
 export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
-  g.events.on("getActions", ({ detail: { who, actions } }) => {
+  g.events.on("GetActions", ({ detail: { who, actions } }) => {
     actions.push(new DashAction(g, who));
     actions.push(new DisengageAction(g, who));
     actions.push(new DodgeAction(g, who));
@@ -64,16 +64,16 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
 });
 
 export const EffectsRule = new DndRule("Effects", (g) => {
-  g.events.on("turnStarted", ({ detail: { who } }) =>
+  g.events.on("TurnStarted", ({ detail: { who } }) =>
     who.tickEffects("turnStart")
   );
 
-  g.events.on("turnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
+  g.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
 });
 
 export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
   g.events.on(
-    "beforeAttack",
+    "BeforeAttack",
     ({ detail: { who, target, weapon, diceType } }) => {
       if (
         typeof weapon?.shortRange === "number" &&
@@ -99,7 +99,7 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
   };
 
   // TODO should really check anywhere along the path...
-  g.events.on("beforeAttack", ({ detail: { diceType, target } }) => {
+  g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
     const squares = new PointSet(
       getSquares(target, g.getState(target).position)
     );
@@ -107,26 +107,26 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
       diceType.add("disadvantage", ObscuredRule);
   });
 
-  g.events.on("getConditions", ({ detail: { conditions, who } }) => {
+  g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
     const squares = new PointSet(getSquares(who, g.getState(who).position));
     if (isHeavilyObscuredAnywhere(squares)) conditions.add("Blinded");
   });
 });
 
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
-  g.events.on("beforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
+  g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
     const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
     bonus.add(who.pb * mul, ProficiencyRule);
   });
 
-  g.events.on("beforeSave", ({ detail: { who, ability, bonus } }) => {
+  g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
     const mul = who.getProficiencyMultiplier(ability);
     bonus.add(who.pb * mul, ProficiencyRule);
   });
 });
 
 export const ResourcesRule = new DndRule("Resources", (g) => {
-  g.events.on("turnStarted", ({ detail: { who } }) => {
+  g.events.on("TurnStarted", ({ detail: { who } }) => {
     for (const name of who.resources.keys()) {
       const resource = ResourceRegistry.get(name);
       if (resource?.refresh === "turnStart") who.refreshResource(resource);
@@ -135,7 +135,7 @@ export const ResourcesRule = new DndRule("Resources", (g) => {
 });
 
 export const TurnTimeRule = new DndRule("Turn Time", (g) => {
-  g.events.on("turnStarted", ({ detail: { who } }) => {
+  g.events.on("TurnStarted", ({ detail: { who } }) => {
     who.time.add("action");
     who.time.add("bonus action");
     who.time.add("reaction");
@@ -143,7 +143,7 @@ export const TurnTimeRule = new DndRule("Turn Time", (g) => {
 });
 
 export const WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
-  g.events.on("getActions", ({ detail: { who, target, actions } }) => {
+  g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
     if (who !== target) {
       for (const weapon of who.weapons) {
         if (weapon.ammunitionTag) {

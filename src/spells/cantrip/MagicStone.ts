@@ -105,7 +105,7 @@ const MagicStone = simpleSpell({
 
     // TODO if you cast it twice in a row this will not work well
     const unsubscribe = g.events.on(
-      "getActions",
+      "GetActions",
       ({ detail: { who, actions } }) => {
         if (who === caster && who.hasResource(MagicStoneResource))
           actions.push(new MagicStoneAction(g, who, method, unsubscribe));

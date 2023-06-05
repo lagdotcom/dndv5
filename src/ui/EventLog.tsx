@@ -2,7 +2,13 @@ import { ComponentChildren, VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
-import EventData from "../events/EventData";
+import { AttackEventDetail } from "../events/AttackEvent";
+import { CombatantDamagedDetail } from "../events/CombatantDamagedEvent";
+import { CombatantDiedDetail } from "../events/CombatantDiedEvent";
+import { DiceRolledDetail } from "../events/DiceRolledEvent";
+import { EffectAddedDetail } from "../events/EffectAddedEvent";
+import { EffectRemovedDetail } from "../events/EffectRemovedEvent";
+import { SpellCastDetail } from "../events/SpellCastEvent";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
 import { InitiativeRoll, SavingThrow } from "../types/RollType";
@@ -32,7 +38,7 @@ function AttackMessage({
   pre: { who, target, weapon, ammo, spell },
   roll,
   total,
-}: EventData["attack"]) {
+}: AttackEventDetail) {
   return (
     <LogMessage
       message={`${who.name} attacks ${target.name}${
@@ -53,7 +59,7 @@ function AttackMessage({
   );
 }
 
-function CastMessage({ level, spell, who }: EventData["spellCast"]) {
+function CastMessage({ level, spell, who }: SpellCastDetail) {
   // TODO should probably not show you all this info...
   return (
     <LogMessage
@@ -77,11 +83,7 @@ function getDamageEntryText([type, entry]: [
   }`;
 }
 
-function DamageMessage({
-  who,
-  total,
-  breakdown,
-}: EventData["combatantDamaged"]) {
+function DamageMessage({ who, total, breakdown }: CombatantDamagedDetail) {
   return (
     <LogMessage
       message={`${who.name} takes ${total} damage. (${[...breakdown]
@@ -100,7 +102,7 @@ function DamageMessage({
   );
 }
 
-function DeathMessage({ who }: EventData["combatantDied"]) {
+function DeathMessage({ who }: CombatantDiedDetail) {
   return (
     <LogMessage message={`${who.name} dies!`}>
       <CombatantRef who={who} />
@@ -109,7 +111,7 @@ function DeathMessage({ who }: EventData["combatantDied"]) {
   );
 }
 
-function EffectAddedMessage({ who, effect }: EventData["effectAdded"]) {
+function EffectAddedMessage({ who, effect }: EffectAddedDetail) {
   return (
     <LogMessage message={`${who.name} gains effect: ${effect.name}`}>
       <CombatantRef who={who} /> gains effect: {effect.name}.
@@ -117,7 +119,7 @@ function EffectAddedMessage({ who, effect }: EventData["effectAdded"]) {
   );
 }
 
-function EffectRemovedMessage({ who, effect }: EventData["effectRemoved"]) {
+function EffectRemovedMessage({ who, effect }: EffectRemovedDetail) {
   return (
     <LogMessage message={`${who.name} loses effect: ${effect.name}`}>
       <CombatantRef who={who} /> loses effect: {effect.name}.
@@ -125,7 +127,7 @@ function EffectRemovedMessage({ who, effect }: EventData["effectRemoved"]) {
   );
 }
 
-type Roll<T> = Omit<EventData["diceRolled"], "type"> & { type: T };
+type Roll<T> = Omit<DiceRolledDetail, "type"> & { type: T };
 
 function InitiativeMessage({ diceType, type, value }: Roll<InitiativeRoll>) {
   return (
@@ -168,26 +170,26 @@ export default function EventLog({ g }: { g: Engine }) {
   }, []);
 
   useEffect(() => {
-    g.events.on("attack", ({ detail }) =>
+    g.events.on("Attack", ({ detail }) =>
       addMessage(<AttackMessage {...detail} />)
     );
-    g.events.on("combatantDamaged", ({ detail }) =>
+    g.events.on("CombatantDamaged", ({ detail }) =>
       addMessage(<DamageMessage {...detail} />)
     );
-    g.events.on("combatantDied", ({ detail }) =>
+    g.events.on("CombatantDied", ({ detail }) =>
       addMessage(<DeathMessage {...detail} />)
     );
-    g.events.on("effectAdded", ({ detail }) => {
+    g.events.on("EffectAdded", ({ detail }) => {
       if (!detail.effect.quiet) addMessage(<EffectAddedMessage {...detail} />);
     });
-    g.events.on("effectRemoved", ({ detail }) => {
+    g.events.on("EffectRemoved", ({ detail }) => {
       if (!detail.effect.quiet)
         addMessage(<EffectRemovedMessage {...detail} />);
     });
-    g.events.on("spellCast", ({ detail }) =>
+    g.events.on("SpellCast", ({ detail }) =>
       addMessage(<CastMessage {...detail} />)
     );
-    g.events.on("diceRolled", ({ detail }) => {
+    g.events.on("DiceRolled", ({ detail }) => {
       if (detail.type.type === "initiative")
         addMessage(<InitiativeMessage {...(detail as Roll<InitiativeRoll>)} />);
       else if (detail.type.type === "save")

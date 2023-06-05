@@ -7,7 +7,7 @@ import SpellAttack from "../SpellAttack";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
 const RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g) => {
-  g.events.on("getSpeed", ({ detail: { who, bonus } }) => {
+  g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
     if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
   });
 });

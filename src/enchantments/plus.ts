@@ -7,11 +7,11 @@ export const plus1: Enchantment<"weapon" | "ammo"> = {
   setup(g: Engine, item: WeaponItem | AmmoItem) {
     item.name = `${item.name} +1`;
 
-    g.events.on("beforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
+    g.events.on("BeforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
       if (weapon === item || ammo === item) bonus.add(1, this);
     });
 
-    g.events.on("gatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
+    g.events.on("GatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
       if (weapon === item || ammo === item) bonus.add(1, this);
     });
   },

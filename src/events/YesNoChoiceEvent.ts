@@ -1,8 +1,12 @@
-import EventData from "./EventData";
+import YesNoChoice from "../interruptions/YesNoChoice";
 
-type Detail = EventData["yesNoChoice"];
-export default class YesNoChoiceEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("yesNoChoice", { detail });
+export interface YesNoChoiceDetail {
+  interruption: YesNoChoice;
+  resolve(choice: boolean): void;
+}
+
+export default class YesNoChoiceEvent extends CustomEvent<YesNoChoiceDetail> {
+  constructor(detail: YesNoChoiceDetail) {
+    super("YesNoChoice", { detail });
   }
 }

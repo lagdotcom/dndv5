@@ -9,7 +9,7 @@ const SteadyAimNoMoveEffect = new Effect(
   "Steady Aim",
   "turnEnd",
   (g) => {
-    g.events.on("getSpeed", ({ detail: { who, multiplier } }) => {
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
       if (who.hasEffect(SteadyAimNoMoveEffect))
         multiplier.add(0, SteadyAimNoMoveEffect);
     });
@@ -18,12 +18,12 @@ const SteadyAimNoMoveEffect = new Effect(
 );
 
 const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
-  g.events.on("beforeAttack", ({ detail: { who, diceType } }) => {
+  g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
     if (who.hasEffect(SteadyAimAdvantageEffect))
       diceType.add("advantage", SteadyAimAdvantageEffect);
   });
 
-  g.events.on("attack", ({ detail: { pre } }) => {
+  g.events.on("Attack", ({ detail: { pre } }) => {
     if (pre.diceType.involved(SteadyAimAdvantageEffect))
       pre.who.removeEffect(SteadyAimAdvantageEffect);
   });
@@ -52,7 +52,7 @@ const SteadyAim = new SimpleFeature(
   "Steady Aim",
   `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
   (g, me) => {
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) actions.push(new SteadyAimAction(g, me));
     });
   }

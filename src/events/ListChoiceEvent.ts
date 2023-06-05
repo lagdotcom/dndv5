@@ -1,8 +1,14 @@
-import EventData from "./EventData";
+import PickFromListChoice from "../interruptions/PickFromListChoice";
 
-type Detail = EventData["listChoice"];
-export default class ListChoiceEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("listChoice", { detail });
+export interface ListChoiceDetail<T> {
+  interruption: PickFromListChoice<T>;
+  resolve(choice: T): void;
+}
+
+export default class ListChoiceEvent<T = unknown> extends CustomEvent<
+  ListChoiceDetail<T>
+> {
+  constructor(detail: ListChoiceDetail<T>) {
+    super("ListChoice", { detail });
   }
 }

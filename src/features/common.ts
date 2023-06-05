@@ -35,7 +35,7 @@ export function bonusSpellsFeature(
     me.spellcastingMethods.add(method);
 
     if (!addAsList)
-      g.events.on("getActions", ({ detail: { who, actions } }) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           for (const { spell } of spells)
             actions.push(new CastSpell(g, me, method, spell));

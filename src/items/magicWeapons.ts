@@ -6,7 +6,7 @@ export class SpearOfTheDarkSun extends Spear {
     super(g, 1);
     this.name = "Spear of the Dark Sun";
 
-    g.events.on("gatherDamage", ({ detail: { attacker, weapon, map } }) => {
+    g.events.on("GatherDamage", ({ detail: { attacker, weapon, map } }) => {
       if (weapon === this && attacker.attunements.has(weapon)) {
         const amount = g.dice.roll(
           { attacker, weapon, type: "damage", size: 10 },

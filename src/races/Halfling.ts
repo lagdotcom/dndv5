@@ -12,7 +12,7 @@ const Brave = new SimpleFeature(
   "Brave",
   `You have advantage on saving throws against being frightened.`,
   (g, me) => {
-    g.events.on("beforeSave", ({ detail: { who, tags, diceType } }) => {
+    g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
       if (who === me && tags.has("frightened"))
         diceType.add("advantage", Brave);
     });

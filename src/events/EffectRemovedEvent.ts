@@ -1,8 +1,14 @@
-import EventData from "./EventData";
+import Combatant from "../types/Combatant";
+import CombatantEffect from "../types/CombatantEffect";
 
-type Detail = EventData["effectRemoved"];
-export default class EffectRemovedEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("effectRemoved", { detail });
+export interface EffectRemovedDetail {
+  who: Combatant;
+  effect: CombatantEffect;
+  durationRemaining: number;
+}
+
+export default class EffectRemovedEvent extends CustomEvent<EffectRemovedDetail> {
+  constructor(detail: EffectRemovedDetail) {
+    super("EffectRemoved", { detail });
   }
 }

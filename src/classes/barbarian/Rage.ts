@@ -44,13 +44,13 @@ class EndRageAction extends AbstractAction {
 export const RageEffect = new Effect("Rage", "turnStart", (g) => {
   // TODO advantage on Strength checks
 
-  g.events.on("beforeSave", ({ detail: { who, ability, diceType } }) => {
+  g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
     if (who.hasEffect(RageEffect) && ability === "str")
       diceType.add("advantage", RageEffect);
   });
 
   g.events.on(
-    "gatherDamage",
+    "GatherDamage",
     ({ detail: { attacker, attack, weapon, bonus } }) => {
       if (
         attacker.hasEffect(RageEffect) &&
@@ -65,7 +65,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
   );
 
   g.events.on(
-    "getDamageResponse",
+    "GetDamageResponse",
     ({ detail: { who, damageType, response } }) => {
       if (
         who.hasEffect(RageEffect) &&
@@ -77,7 +77,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
 
   // TODO It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
 
-  g.events.on("getActions", ({ detail: { who, actions } }) => {
+  g.events.on("GetActions", ({ detail: { who, actions } }) => {
     if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
   });
 });
@@ -122,7 +122,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
       getRageCount(me.classLevels.get("Barbarian") ?? 0)
     );
 
-    g.events.on("getActions", ({ detail: { who, actions } }) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me && !me.hasEffect(RageEffect))
         actions.push(new RageAction(g, who));
     });

@@ -64,22 +64,22 @@ export default function App({ g, onMount }: Props) {
   }, [g]);
 
   useEffect(() => {
-    g.events.on("combatantPlaced", refreshUnits);
-    g.events.on("combatantMoved", refreshUnits);
-    g.events.on("combatantDied", refreshUnits);
+    g.events.on("CombatantPlaced", refreshUnits);
+    g.events.on("CombatantMoved", refreshUnits);
+    g.events.on("CombatantDied", refreshUnits);
 
-    g.events.on("areaPlaced", refreshAreas);
-    g.events.on("areaRemoved", refreshAreas);
+    g.events.on("AreaPlaced", refreshAreas);
+    g.events.on("AreaRemoved", refreshAreas);
 
-    g.events.on("turnStarted", ({ detail: { who } }) => {
+    g.events.on("TurnStarted", ({ detail: { who } }) => {
       activeCombatantId.value = who.id;
       hideActionMenu();
 
       allActions.value = g.getActions(who);
     });
 
-    g.events.on("listChoice", (e) => (chooseFromList.value = e));
-    g.events.on("yesNoChoice", (e) => (chooseYesNo.value = e));
+    g.events.on("ListChoice", (e) => (chooseFromList.value = e));
+    g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e));
 
     onMount?.(g);
   }, [g, hideActionMenu, onMount, refreshAreas, refreshUnits]);

@@ -97,7 +97,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
       this.initialise(me, me.classLevels.get(className) ?? 1);
       me.spellcastingMethods.add(this);
 
-      g.events.on("getActions", ({ detail: { who, actions } }) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
           // TODO rituals in knownSpells
 

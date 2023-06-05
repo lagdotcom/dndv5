@@ -1,8 +1,15 @@
-import EventData from "./EventData";
+import BonusCollector from "../collectors/BonusCollector";
+import MultiplierCollector from "../collectors/MultiplierCollector";
+import Combatant from "../types/Combatant";
 
-type Detail = EventData["getSpeed"];
-export default class GetSpeedEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("getSpeed", { detail });
+export interface GetSpeedDetail {
+  who: Combatant;
+  bonus: BonusCollector;
+  multiplier: MultiplierCollector;
+}
+
+export default class GetSpeedEvent extends CustomEvent<GetSpeedDetail> {
+  constructor(detail: GetSpeedDetail) {
+    super("GetSpeed", { detail });
   }
 }

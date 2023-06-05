@@ -1,8 +1,11 @@
-import EventData from "./EventData";
+import EffectArea from "../types/EffectArea";
 
-type Detail = EventData["areaRemoved"];
-export default class AreaRemovedEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("areaRemoved", { detail });
+export interface AreaRemovedDetail {
+  area: EffectArea;
+}
+
+export default class AreaRemovedEvent extends CustomEvent<AreaRemovedDetail> {
+  constructor(detail: AreaRemovedDetail) {
+    super("AreaRemoved", { detail });
   }
 }

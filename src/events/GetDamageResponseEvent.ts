@@ -1,8 +1,15 @@
-import EventData from "./EventData";
+import DamageResponseCollector from "../collectors/DamageResponseCollector";
+import Combatant from "../types/Combatant";
+import DamageType from "../types/DamageType";
 
-type Detail = EventData["getDamageResponse"];
-export default class GetDamageResponseEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("getDamageResponse", { detail });
+export interface GetDamageResponseDetail {
+  who: Combatant;
+  damageType: DamageType;
+  response: DamageResponseCollector;
+}
+
+export default class GetDamageResponseEvent extends CustomEvent<GetDamageResponseDetail> {
+  constructor(detail: GetDamageResponseDetail) {
+    super("GetDamageResponse", { detail });
   }
 }

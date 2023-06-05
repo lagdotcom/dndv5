@@ -1,8 +1,16 @@
-import EventData from "./EventData";
+import Combatant from "../types/Combatant";
+import DamageBreakdown from "../types/DamageBreakdown";
+import DamageType from "../types/DamageType";
 
-type Detail = EventData["combatantDamaged"];
-export default class CombatantDamagedEvent extends CustomEvent<Detail> {
-  constructor(detail: Detail) {
-    super("combatantDamaged", { detail });
+export interface CombatantDamagedDetail {
+  who: Combatant;
+  attacker: Combatant;
+  total: number;
+  breakdown: Map<DamageType, DamageBreakdown>;
+}
+
+export default class CombatantDamagedEvent extends CustomEvent<CombatantDamagedDetail> {
+  constructor(detail: CombatantDamagedDetail) {
+    super("CombatantDamaged", { detail });
   }
 }
