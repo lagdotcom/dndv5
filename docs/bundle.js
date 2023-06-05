@@ -1945,9 +1945,15 @@
   }
 
   // src/monsters/common.ts
-  var KeenSmell = notImplementedFeature(
+  var KeenSmell = new SimpleFeature(
     "Keen Smell",
-    `This has advantage on Wisdom (Perception) checks that rely on smell.`
+    `This has advantage on Wisdom (Perception) checks that rely on smell.`,
+    (g2, me) => {
+      g2.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("smell"))
+          diceType.add("advantage", KeenSmell);
+      });
+    }
   );
   var PackTactics = notImplementedFeature(
     "Pack Tactics",
@@ -4540,6 +4546,10 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   };
   var RageEffect = new Effect("Rage", "turnStart", (g2) => {
+    g2.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
+      if (who.hasEffect(RageEffect) && ability === "str")
+        diceType.add("advantage", RageEffect);
+    });
     g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (who.hasEffect(RageEffect) && ability === "str")
         diceType.add("advantage", RageEffect);

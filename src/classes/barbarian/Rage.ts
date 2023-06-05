@@ -42,7 +42,10 @@ class EndRageAction extends AbstractAction {
 }
 
 export const RageEffect = new Effect("Rage", "turnStart", (g) => {
-  // TODO advantage on Strength checks
+  g.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
+    if (who.hasEffect(RageEffect) && ability === "str")
+      diceType.add("advantage", RageEffect);
+  });
 
   g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
     if (who.hasEffect(RageEffect) && ability === "str")
