@@ -29,12 +29,8 @@ import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import GetInitiativeEvent from "./events/GetInitiativeEvent";
-import ListChoiceEvent from "./events/ListChoiceEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
-import YesNoChoiceEvent from "./events/YesNoChoiceEvent";
-import PickFromListChoice from "./interruptions/PickFromListChoice";
-import YesNoChoice from "./interruptions/YesNoChoice";
 import PointSet from "./PointSet";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
@@ -360,23 +356,8 @@ export default class Engine {
   ): Promise<CustomEvent<T>> {
     this.events.fire(e);
 
-    for (const interruption of e.detail.interrupt) {
-      if (interruption instanceof YesNoChoice) {
-        const choice = await new Promise<boolean>((resolve) =>
-          this.fire(new YesNoChoiceEvent({ interruption, resolve }))
-        );
-        if (choice) await interruption.yes?.();
-        else await interruption.no?.();
-      } else if (interruption instanceof PickFromListChoice) {
-        const choice = await new Promise((resolve) =>
-          this.fire(new ListChoiceEvent({ interruption, resolve }))
-        );
-        await interruption.chosen(choice);
-      } else {
-        console.error(interruption);
-        throw new Error("Unknown interruption type");
-      }
-    }
+    for (const interruption of e.detail.interrupt)
+      await interruption.apply(this);
 
     return e;
   }

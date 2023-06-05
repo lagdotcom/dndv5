@@ -133,7 +133,7 @@ function InitiativeMessage({ diceType, type, value }: Roll<InitiativeRoll>) {
   return (
     <LogMessage
       message={`${type.who.name} rolls a ${value} for initiative${
-        diceType !== "normal" && ` at ${diceType}`
+        diceType !== "normal" ? ` at ${diceType}` : ""
       }.`}
     >
       <CombatantRef who={type.who} /> rolls a {value} for initiative

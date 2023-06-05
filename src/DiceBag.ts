@@ -47,10 +47,10 @@ export default class DiceBag {
     }
   }
 
-  roll(rt: RollType, dt: DiceType) {
+  roll(rt: RollType, dt: DiceType = "normal") {
     const size = sizeOfDice(rt);
     let value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
-    const otherValues = new Set<number>();
+    const otherValues: number[] = [];
 
     if (dt !== "normal") {
       const second = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
@@ -59,9 +59,9 @@ export default class DiceBag {
         (dt === "advantage" && second > value) ||
         (dt === "disadvantage" && value > second)
       ) {
-        otherValues.add(value);
+        otherValues.push(value);
         value = second;
-      } else otherValues.add(second);
+      } else otherValues.push(second);
     }
 
     return { size, value, otherValues };

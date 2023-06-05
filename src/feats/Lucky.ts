@@ -51,9 +51,9 @@ const Lucky = new SimpleFeature(
           interrupt,
           (roll) => {
             if (roll > value) {
-              detail.otherValues.add(value);
+              detail.otherValues.push(value);
               detail.value = roll;
-            } else detail.otherValues.add(roll);
+            } else detail.otherValues.push(roll);
           }
         );
 
@@ -70,9 +70,9 @@ const Lucky = new SimpleFeature(
           interrupt,
           (roll) => {
             if (roll < value) {
-              detail.otherValues.add(value);
+              detail.otherValues.push(value);
               detail.value = roll;
-            } else detail.otherValues.add(roll);
+            } else detail.otherValues.push(roll);
           }
         );
     });

@@ -7,7 +7,7 @@ export interface DiceRolledDetail {
   diceType: DiceType;
   size: number;
   value: number;
-  otherValues: Set<number>;
+  otherValues: number[];
   interrupt: InterruptionCollector;
 }
 

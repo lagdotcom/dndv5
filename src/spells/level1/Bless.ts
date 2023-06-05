@@ -9,7 +9,7 @@ import { scalingSpell } from "../common";
 
 function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
   if (who.hasEffect(BlessEffect)) {
-    const dr = g.dice.roll({ type: "bless", who }, "normal");
+    const dr = g.dice.roll({ type: "bless", who });
     bonus.add(dr.value, BlessEffect);
   }
 }

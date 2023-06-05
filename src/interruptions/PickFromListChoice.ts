@@ -1,3 +1,5 @@
+import Engine from "../Engine";
+import ListChoiceEvent from "../events/ListChoiceEvent";
 import Combatant from "../types/Combatant";
 import Interruption from "../types/Interruption";
 import Source from "../types/Source";
@@ -17,4 +19,11 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     public items: PickChoice<T>[],
     public chosen: (choice: T) => Promise<void>
   ) {}
+
+  async apply(g: Engine) {
+    const choice = await new Promise<T>((resolve) =>
+      g.fire(new ListChoiceEvent<T>({ interruption: this, resolve }))
+    );
+    return this.chosen(choice);
+  }
 }

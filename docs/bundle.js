@@ -228,18 +228,18 @@
         }
       }
     }
-    roll(rt, dt) {
+    roll(rt, dt = "normal") {
       var _a, _b;
       const size = sizeOfDice(rt);
       let value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
-      const otherValues = /* @__PURE__ */ new Set();
+      const otherValues = [];
       if (dt !== "normal") {
         const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
         if (dt === "advantage" && second > value || dt === "disadvantage" && value > second) {
-          otherValues.add(value);
+          otherValues.push(value);
           value = second;
         } else
-          otherValues.add(second);
+          otherValues.push(second);
       }
       return { size, value, otherValues };
     }
@@ -1289,13 +1289,6 @@
     }
   };
 
-  // src/events/ListChoiceEvent.ts
-  var ListChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("ListChoice", { detail });
-    }
-  };
-
   // src/events/TurnEndedEvent.ts
   var TurnEndedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1307,37 +1300,6 @@
   var TurnStartedEvent = class extends CustomEvent {
     constructor(detail) {
       super("TurnStarted", { detail });
-    }
-  };
-
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/PickFromListChoice.ts
-  var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.items = items;
-      this.chosen = chosen;
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
     }
   };
 
@@ -1622,27 +1584,9 @@
     }
     resolve(e) {
       return __async(this, null, function* () {
-        var _a, _b;
         this.events.fire(e);
-        for (const interruption of e.detail.interrupt) {
-          if (interruption instanceof YesNoChoice) {
-            const choice = yield new Promise(
-              (resolve) => this.fire(new YesNoChoiceEvent({ interruption, resolve }))
-            );
-            if (choice)
-              yield (_a = interruption.yes) == null ? void 0 : _a.call(interruption);
-            else
-              yield (_b = interruption.no) == null ? void 0 : _b.call(interruption);
-          } else if (interruption instanceof PickFromListChoice) {
-            const choice = yield new Promise(
-              (resolve) => this.fire(new ListChoiceEvent({ interruption, resolve }))
-            );
-            yield interruption.chosen(choice);
-          } else {
-            console.error(interruption);
-            throw new Error("Unknown interruption type");
-          }
-        }
+        for (const interruption of e.detail.interrupt)
+          yield interruption.apply(this);
         return e;
       });
     }
@@ -2103,6 +2047,37 @@
     }
   };
 
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+    }
+    apply(g2) {
+      return __async(this, null, function* () {
+        var _a, _b;
+        const choice = yield new Promise(
+          (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+        );
+        if (choice)
+          yield (_a = this.yes) == null ? void 0 : _a.call(this);
+        else
+          yield (_b = this.no) == null ? void 0 : _b.call(this);
+      });
+    }
+  };
+
   // src/classes/common.ts
   function asiSetup(g2, me, config) {
     if (config.type === "ability")
@@ -2450,6 +2425,33 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
+  // src/events/ListChoiceEvent.ts
+  var ListChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("ListChoice", { detail });
+    }
+  };
+
+  // src/interruptions/PickFromListChoice.ts
+  var PickFromListChoice = class {
+    constructor(who, source, title, text, items, chosen) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.items = items;
+      this.chosen = chosen;
+    }
+    apply(g2) {
+      return __async(this, null, function* () {
+        const choice = yield new Promise(
+          (resolve) => g2.fire(new ListChoiceEvent({ interruption: this, resolve }))
+        );
+        return this.chosen(choice);
+      });
+    }
+  };
+
   // src/enchantments/weapon.ts
   var ChaoticBurstResource = new TurnResource("Chaotic Burst", 1);
   var chaoticBurstTypes = [
@@ -2480,14 +2482,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         ({ detail: { attacker, critical, interrupt, map } }) => {
           if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
             attacker.spendResource(ChaoticBurstResource);
-            const a = g2.dice.roll(
-              { type: "damage", attacker, size: 8 },
-              "normal"
-            ).value;
-            const b = g2.dice.roll(
-              { type: "damage", attacker, size: 8 },
-              "normal"
-            ).value;
+            const a = g2.dice.roll({ type: "damage", attacker, size: 8 }).value;
+            const b = g2.dice.roll({ type: "damage", attacker, size: 8 }).value;
             const addBurst = (type) => map.add(type, a + b);
             if (a === b)
               addBurst(chaoticBurstTypes[a - 1]);
@@ -2550,10 +2546,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
             interrupt,
             (roll) => {
               if (roll > value) {
-                detail.otherValues.add(value);
+                detail.otherValues.push(value);
                 detail.value = roll;
               } else
-                detail.otherValues.add(roll);
+                detail.otherValues.push(roll);
             }
           );
         if (type.type === "attack" && type.target === me && me.hasResource(LuckPoint))
@@ -2564,10 +2560,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
             interrupt,
             (roll) => {
               if (roll < value) {
-                detail.otherValues.add(value);
+                detail.otherValues.push(value);
                 detail.value = roll;
               } else
-                detail.otherValues.add(roll);
+                detail.otherValues.push(roll);
             }
           );
       });
@@ -3446,7 +3442,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     g2.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
       if (who.hasEffect(MindSliverEffect)) {
         who.removeEffect(MindSliverEffect);
-        const { value } = g2.dice.roll({ type: "bane", who }, "normal");
+        const { value } = g2.dice.roll({ type: "bane", who });
         bonus.add(-value, MindSliver);
       }
     });
@@ -4338,7 +4334,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   // src/spells/level1/Bless.ts
   function applyBless(g2, who, bonus) {
     if (who.hasEffect(BlessEffect)) {
-      const dr = g2.dice.roll({ type: "bless", who }, "normal");
+      const dr = g2.dice.roll({ type: "bless", who });
       bonus.add(dr.value, BlessEffect);
     }
   }
@@ -4382,23 +4378,35 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var Bless_default = Bless;
 
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply) {
+      this.who = who;
+      this.source = source;
+      this.apply = apply;
+    }
+  };
+
   // src/spells/level1/DivineFavor.ts
   var DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g2) => {
-    g2.events.on("GatherDamage", ({ detail: { attacker, map, weapon } }) => {
-      if (attacker.hasEffect(DivineFavorEffect) && weapon) {
-        const dr = g2.dice.roll(
-          {
-            type: "damage",
-            attacker,
-            size: 4,
-            spell: DivineFavor,
-            damageType: "radiant"
-          },
-          "normal"
-        );
-        map.add("radiant", dr.value);
+    g2.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
+        if (attacker.hasEffect(DivineFavorEffect) && weapon)
+          interrupt.add(
+            new EvaluateLater(attacker, DivineFavorEffect, () => __async(void 0, null, function* () {
+              map.add(
+                "radiant",
+                yield g2.rollDamage(
+                  1,
+                  { size: 4, attacker, damageType: "radiant" },
+                  critical
+                )
+              );
+            }))
+          );
       }
-    });
+    );
   });
   var DivineFavor = simpleSpell({
     implemented: true,
@@ -4738,16 +4746,25 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     constructor(g2) {
       super(g2, 1);
       this.name = "Spear of the Dark Sun";
-      g2.events.on("GatherDamage", ({ detail: { attacker, weapon, map } }) => {
-        if (weapon === this && attacker.attunements.has(weapon)) {
-          const amount = g2.dice.roll(
-            { attacker, weapon, type: "damage", size: 10 },
-            "normal"
-          );
-          const type = "radiant";
-          map.add(type, amount.value);
+      g2.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
+          if (weapon === this && attacker.attunements.has(weapon))
+            interrupt.add(
+              new EvaluateLater(attacker, this, () => __async(this, null, function* () {
+                const damageType = "radiant";
+                map.add(
+                  damageType,
+                  yield g2.rollDamage(
+                    1,
+                    { size: 10, attacker, damageType },
+                    critical
+                  )
+                );
+              }))
+            );
         }
-      });
+      );
     }
   };
 
@@ -6417,7 +6434,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${type.who.name} rolls a ${value} for initiative${diceType !== "normal" && ` at ${diceType}`}.`,
+        message: `${type.who.name} rolls a ${value} for initiative${diceType !== "normal" ? ` at ${diceType}` : ""}.`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: type.who }),
           " rolls a ",

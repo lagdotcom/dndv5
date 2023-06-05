@@ -10,7 +10,7 @@ const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
     if (who.hasEffect(MindSliverEffect)) {
       who.removeEffect(MindSliverEffect);
 
-      const { value } = g.dice.roll({ type: "bane", who }, "normal");
+      const { value } = g.dice.roll({ type: "bane", who });
       bonus.add(-value, MindSliver);
     }
   });

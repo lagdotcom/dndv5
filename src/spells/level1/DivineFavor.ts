@@ -1,23 +1,27 @@
 import Effect from "../../Effect";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
 const DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g) => {
-  g.events.on("GatherDamage", ({ detail: { attacker, map, weapon } }) => {
-    if (attacker.hasEffect(DivineFavorEffect) && weapon) {
-      const dr = g.dice.roll(
-        {
-          type: "damage",
-          attacker,
-          size: 4,
-          spell: DivineFavor,
-          damageType: "radiant",
-        },
-        "normal"
-      );
-      map.add("radiant", dr.value);
+  g.events.on(
+    "GatherDamage",
+    ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
+      if (attacker.hasEffect(DivineFavorEffect) && weapon)
+        interrupt.add(
+          new EvaluateLater(attacker, DivineFavorEffect, async () => {
+            map.add(
+              "radiant",
+              await g.rollDamage(
+                1,
+                { size: 4, attacker, damageType: "radiant" },
+                critical
+              )
+            );
+          })
+        );
     }
-  });
+  );
 });
 
 const DivineFavor = simpleSpell({
