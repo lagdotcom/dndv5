@@ -64,7 +64,8 @@ export default class PC extends AbstractCombatant {
     // TODO multi class
 
     this.hpMax +=
-      (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.bonus;
+      (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) +
+      this.con.modifier;
 
     if (level === 1) {
       for (const prof of cls?.armorProficiencies ?? [])

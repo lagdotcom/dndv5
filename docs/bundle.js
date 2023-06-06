@@ -387,7 +387,7 @@
   };
 
   // src/utils/dnd.ts
-  function getAbilityBonus(ability) {
+  function getAbilityModifier(ability) {
     return Math.floor((ability - 10) / 2);
   }
   function getDiceAverage(count, size) {
@@ -397,7 +397,7 @@
     return Math.ceil(level / 4) + 1;
   }
   function getSaveDC(who, ability) {
-    return 8 + who.pb + who[ability].score;
+    return 8 + who.pb + who[ability].modifier;
   }
 
   // src/AbilityScore.ts
@@ -418,8 +418,8 @@
     set maximum(value) {
       this.baseMaximum = value;
     }
-    get bonus() {
-      return getAbilityBonus(this.score);
+    get modifier() {
+      return getAbilityModifier(this.score);
     }
     setScore(value, extendMaximum = false) {
       this.baseScore = value;
@@ -958,6 +958,9 @@
       for (const tag of this.set)
         yield asPoint(tag);
     }
+    map(transformer) {
+      return [...this.set].map((tag, index) => transformer(asPoint(tag), index));
+    }
   };
 
   // src/resources.ts
@@ -995,52 +998,227 @@
     }
   };
 
+  // src/Polygon.ts
+  var Polygon = class {
+    constructor(points) {
+      this.points = points;
+      const lines = [];
+      for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        const a = points[i];
+        const b = points[j];
+        lines.push([a, b]);
+      }
+      this.lines = lines;
+    }
+    containsPoint({ x, y }) {
+      let inside = false;
+      for (const line of this.lines) {
+        const [a, b] = line;
+        if (a.y > y != b.y > y && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x)
+          inside = !inside;
+      }
+      return inside;
+    }
+  };
+
+  // src/utils/numbers.ts
+  function modulo(value, max) {
+    return value % max;
+  }
+  function round(n, size) {
+    return Math.floor(n / size) * size;
+  }
+  function roundUp(n, size) {
+    return Math.ceil(n / size) * size;
+  }
+  function enumerate(min, max) {
+    const values = [];
+    for (let i = min; i <= max; i++)
+      values.push(i);
+    return values;
+  }
+  function ordinal(n) {
+    if (n >= 11 && n <= 13)
+      return `${n}th`;
+    const last = n % 10;
+    switch (last) {
+      case 1:
+        return `${n}st`;
+      case 2:
+        return `${n}nd`;
+      case 3:
+        return `${n}rd`;
+      default:
+        return `${n}th`;
+    }
+  }
+
+  // src/MapSquare.ts
+  var MapSquareSize = 5;
+  var HalfSquare = MapSquareSize / 2;
+  var MapSquare = class extends Polygon {
+    constructor(x, y) {
+      super([
+        { x, y },
+        { x: x + MapSquareSize, y },
+        { x: x + MapSquareSize, y: y + MapSquareSize },
+        { x, y: y + MapSquareSize }
+      ]);
+      this.x = x;
+      this.y = y;
+    }
+    getMiddle() {
+      return { x: this.x + HalfSquare, y: this.y + HalfSquare };
+    }
+  };
+  function* enumerateMapSquares(minX, minY, maxX, maxY) {
+    for (let y = minY; y < maxY; y += MapSquareSize)
+      for (let x = minX; x < maxX; x += MapSquareSize)
+        yield new MapSquare(x, y);
+  }
+  function getAllMapSquaresContainingPolygon(poly) {
+    const box = getBoundingBox(poly.points);
+    const minX = round(box.x, MapSquareSize);
+    const minY = round(box.y, MapSquareSize);
+    const maxX = roundUp(box.x + box.w, MapSquareSize);
+    const maxY = roundUp(box.y + box.h, MapSquareSize);
+    return enumerateMapSquares(minX, minY, maxX, maxY);
+  }
+  function getAllMapSquaresContainingCircle(centre, radius) {
+    const minX = round(centre.x - radius, MapSquareSize);
+    const minY = round(centre.y - radius, MapSquareSize);
+    const maxX = roundUp(centre.x + radius, MapSquareSize);
+    const maxY = roundUp(centre.y + radius, MapSquareSize);
+    return enumerateMapSquares(minX, minY, maxX, maxY);
+  }
+
   // src/utils/areas.ts
+  function resolvePolygon(points) {
+    const poly = new Polygon(points);
+    const set = new PointSet();
+    for (const square of getAllMapSquaresContainingPolygon(poly)) {
+      if (poly.containsPoint(square.getMiddle()))
+        set.add(square.getTopLeft());
+    }
+    return set;
+  }
+  function getBoundingBox(points) {
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const { x, y } of points) {
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }
+  function getTilesWithinCircle(centre, radius) {
+    const set = new PointSet();
+    for (const square of getAllMapSquaresContainingCircle(centre, radius)) {
+      const midpoint = square.getMiddle();
+      const dx = midpoint.x - centre.x;
+      const dy = midpoint.y - centre.y;
+      const distance2 = Math.sqrt(dx * dx + dy * dy);
+      if (distance2 <= radius)
+        set.add(square.getTopLeft());
+    }
+    return set;
+  }
+  function getRectangleAsPolygon({ x, y }, width, height) {
+    return [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height }
+    ];
+  }
+  function getTilesWithinRectangle(topLeft, width, height) {
+    return resolvePolygon(getRectangleAsPolygon(topLeft, width, height));
+  }
+  function getLineAsPolygon({ x: sx, y: sy }, { x: tx, y: ty }, width, length) {
+    const dir = Math.atan2(ty - sy, tx - sx);
+    const off = dir - Math.PI / 2;
+    const xd = length * Math.cos(dir);
+    const yd = length * Math.sin(dir);
+    const w2 = width / 2;
+    const xo = w2 * Math.cos(off);
+    const yo = w2 * Math.sin(off);
+    const ax = sx + xo;
+    const ay = sy + yo;
+    const bx = sx - xo;
+    const by = sy - yo;
+    const cx = bx + xd;
+    const cy = by + yd;
+    const dx = ax + xd;
+    const dy = ay + yd;
+    return [
+      { x: ax, y: ay },
+      { x: bx, y: by },
+      { x: cx, y: cy },
+      { x: dx, y: dy }
+    ];
+  }
+  function getTilesWithinLine(start, end, width, length) {
+    return resolvePolygon(getLineAsPolygon(start, end, width, length));
+  }
+  function getConeAsPolygon({ x: sx, y: sy }, { x: tx, y: ty }, radius) {
+    const dir = Math.atan2(ty - sy, tx - sx);
+    const off = dir - Math.PI / 2;
+    const xd = radius * Math.cos(dir);
+    const yd = radius * Math.sin(dir);
+    const w2 = radius / 2;
+    const xo = w2 * Math.cos(off);
+    const yo = w2 * Math.sin(off);
+    const ax = sx + xd + xo;
+    const ay = sy + yd + yo;
+    const bx = sx + xd - xo;
+    const by = sy + yd - yo;
+    return [
+      { x: sx, y: sy },
+      { x: ax, y: ay },
+      { x: bx, y: by }
+    ];
+  }
+  function getTilesWithinCone(start, end, radius) {
+    return resolvePolygon(getConeAsPolygon(start, end, radius));
+  }
   function resolveArea(area) {
-    const points = [];
     switch (area.type) {
       case "cylinder":
-      case "sphere": {
-        const left = area.centre.x - area.radius;
-        const top = area.centre.y - area.radius;
-        const size = area.radius * 2;
-        for (let y = 0; y <= size; y += 5) {
-          const dy = y - area.radius + 2.5;
-          for (let x = 0; x <= size; x += 5) {
-            const dx = x - area.radius + 2.5;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d <= area.radius)
-              points.push({ x: left + x, y: top + y });
-          }
-        }
-        break;
-      }
+      case "sphere":
+        return getTilesWithinCircle(area.centre, area.radius);
       case "within": {
-        const left = area.position.x - area.radius;
-        const top = area.position.y - area.radius;
-        const size = area.target.sizeInUnits + area.radius;
-        for (let y = 0; y <= size; y += 5) {
-          for (let x = 0; x <= size; x += 5) {
-            points.push({ x: left + x, y: top + y });
-          }
-        }
-        break;
+        const x = area.position.x - area.radius;
+        const y = area.position.y - area.radius;
+        const size = area.target.sizeInUnits + area.radius * 2;
+        return getTilesWithinRectangle({ x, y }, size, size);
       }
+      case "cone":
+        return getTilesWithinCone(area.centre, area.target, area.radius);
+      case "line":
+        return getTilesWithinLine(
+          area.start,
+          area.target,
+          area.width,
+          area.length
+        );
     }
-    return points;
   }
 
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-      bonus.add(who[ability].bonus, AbilityScoreRule);
+      bonus.add(who[ability].modifier, AbilityScoreRule);
     });
     g2.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
       if (ability)
-        bonus.add(attacker[ability].bonus, AbilityScoreRule);
+        bonus.add(attacker[ability].modifier, AbilityScoreRule);
     });
     g2.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
-      bonus.add(who.dex.bonus, AbilityScoreRule);
+      bonus.add(who.dex.modifier, AbilityScoreRule);
     });
   });
   var ArmorCalculationRule = new DndRule("Armor Calculation", (g2) => {
@@ -1055,7 +1233,7 @@
       if (shield)
         uses.add(shield);
       const name = armor ? `${armor.category} armor` : "unarmored";
-      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex.bonus, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex.bonus;
+      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex.modifier, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex.modifier;
       methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
     });
   });
@@ -1095,7 +1273,7 @@
       for (const effect of g2.effects) {
         if (!effect.tags.has("heavily obscured"))
           continue;
-        const area = new PointSet(resolveArea(effect.shape));
+        const area = resolveArea(effect.shape);
         for (const square of squares) {
           if (area.has(square))
             return true;
@@ -1321,35 +1499,6 @@
       entries.push(entry);
     entries.sort(comparator);
     return entries.map(([k]) => k);
-  }
-
-  // src/utils/numbers.ts
-  function modulo(value, max) {
-    return value % max;
-  }
-  function round(n, size) {
-    return Math.floor(n / size) * size;
-  }
-  function enumerate(min, max) {
-    const values = [];
-    for (let i = min; i <= max; i++)
-      values.push(i);
-    return values;
-  }
-  function ordinal(n) {
-    if (n >= 11 && n <= 13)
-      return `${n}th`;
-    const last = n % 10;
-    switch (last) {
-      case 1:
-        return `${n}st`;
-      case 2:
-        return `${n}nd`;
-      case 3:
-        return `${n}rd`;
-      default:
-        return `${n}th`;
-    }
   }
 
   // src/Engine.ts
@@ -1618,7 +1767,7 @@
       this.fire(new AreaRemovedEvent({ area }));
     }
     getInside(area) {
-      const points = new PointSet(resolveArea(area));
+      const points = resolveArea(area);
       const inside = [];
       for (const [combatant, state] of this.combatants) {
         const squares = new PointSet(getSquares(combatant, state.position));
@@ -2691,7 +2840,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.classLevels.set(cls.name, level);
       this.level++;
       this.pb = getProficiencyBonusByLevel(this.level);
-      this.hpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.bonus;
+      this.hpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.modifier;
       if (level === 1) {
         for (const prof of (_b = cls == null ? void 0 : cls.armorProficiencies) != null ? _b : [])
           this.armorProficiencies.add(prof);
@@ -3196,6 +3345,88 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   };
   var Evocation_default = Evocation;
 
+  // src/aim.ts
+  function addPoints(a, b) {
+    return { x: a.x + b.x, y: a.y + b.y };
+  }
+  function mulPoint(p, mul) {
+    return { x: p.x * mul, y: p.y * mul };
+  }
+  var eighth = Math.PI / 4;
+  var eighthOffset = eighth / 2;
+  var octant1 = eighthOffset;
+  var octant2 = octant1 + eighth;
+  var octant3 = octant2 + eighth;
+  var octant4 = octant3 + eighth;
+  var octant5 = octant4 + eighth;
+  var octant6 = octant5 + eighth;
+  var octant7 = octant6 + eighth;
+  var octant8 = octant7 + eighth;
+  function getAimOffset(a, b) {
+    let angle = Math.atan2(b.y - a.y, b.x - a.x);
+    if (angle < 0)
+      angle += Math.PI * 2;
+    if (angle < octant1)
+      return { x: 1, y: 0.5 };
+    else if (angle < octant2)
+      return { x: 1, y: 1 };
+    else if (angle < octant3)
+      return { x: 0.5, y: 1 };
+    else if (angle < octant4)
+      return { x: 0, y: 1 };
+    else if (angle < octant5)
+      return { x: 0, y: 0.5 };
+    else if (angle < octant6)
+      return { x: 0, y: 0 };
+    else if (angle < octant7)
+      return { x: 0.5, y: 0 };
+    else if (angle < octant8)
+      return { x: 1, y: 0 };
+    return { x: 1, y: 0.5 };
+  }
+  function aimCone({ position, size }, aim, radius) {
+    const offset = getAimOffset(position, aim);
+    return {
+      type: "cone",
+      radius,
+      centre: addPoints(position, mulPoint(offset, size)),
+      target: addPoints(aim, mulPoint(offset, 5))
+    };
+  }
+  function aimLine({ position, size }, aim, length, width) {
+    const offset = getAimOffset(position, aim);
+    return {
+      type: "line",
+      length,
+      width,
+      start: addPoints(position, mulPoint(offset, size)),
+      target: addPoints(aim, mulPoint(offset, 5))
+    };
+  }
+
+  // src/resolvers/PointResolver.ts
+  var PointResolver = class {
+    constructor(g2, maxRange) {
+      this.g = g2;
+      this.maxRange = maxRange;
+      this.type = "Point";
+    }
+    get name() {
+      if (this.maxRange === Infinity)
+        return "any point";
+      return `point within ${this.maxRange}'`;
+    }
+    check(value, action, ec = new ErrorCollector()) {
+      if (!isPoint(value))
+        ec.add("No target", this);
+      else {
+        if (distanceTo(this.g, action.actor, value) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
+    }
+  };
+
   // src/races/common.ts
   function poisonResistance(name, text) {
     const feature = new SimpleFeature(name, text, (g2, me) => {
@@ -3232,12 +3463,96 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     size: "medium",
     movement: /* @__PURE__ */ new Map([["speed", 30]])
   };
+  var BreathWeaponResource = new LongRestResource("Breath Weapon", 2);
+  var BreathWeaponAction = class extends AbstractAction {
+    constructor(g2, actor, damageType, damageDice) {
+      super(
+        g2,
+        actor,
+        "Breath Weapon",
+        { point: new PointResolver(g2, 15) },
+        void 0,
+        void 0,
+        [dd(damageDice, 10, damageType)]
+      );
+      this.damageType = damageType;
+      this.damageDice = damageDice;
+    }
+    getArea(point) {
+      const position = this.g.getState(this.actor).position;
+      const size = this.actor.sizeInUnits;
+      return aimCone({ position, size }, point, 15);
+    }
+    getAffectedArea({
+      point
+    }) {
+      if (point)
+        return [this.getArea(point)];
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.hasResource(BreathWeaponResource))
+        ec.add("No breath weapons left", this);
+      return super.check(config, ec);
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ point }) {
+        const { actor: attacker, g: g2, damageDice, damageType } = this;
+        __superGet(BreathWeaponAction.prototype, this, "apply").call(this, { point });
+        attacker.spendResource(BreathWeaponResource);
+        const damage = yield g2.rollDamage(damageDice, {
+          attacker,
+          size: 10,
+          damageType
+        });
+        const dc = 8 + attacker.con.modifier + attacker.pb;
+        for (const target of g2.getInside(this.getArea(point))) {
+          const save = yield g2.savingThrow(dc, {
+            attacker,
+            who: target,
+            ability: "dex",
+            tags: /* @__PURE__ */ new Set()
+          });
+          const mul = save ? 0.5 : 1;
+          yield g2.damage(
+            this,
+            damageType,
+            { attacker, target },
+            [[damageType, damage]],
+            mul
+          );
+        }
+      });
+    }
+  };
+  function getBreathWeaponDamageDice(level) {
+    if (level < 5)
+      return 1;
+    if (level < 11)
+      return 2;
+    if (level < 17)
+      return 3;
+    return 4;
+  }
   function makeAncestry(a, dt) {
-    const breathWeapon = notImplementedFeature(
+    const breathWeapon = new SimpleFeature(
       "Breath Weapon",
       `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
 
-  You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
+  You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`,
+      (g2, me) => {
+        me.initResource(BreathWeaponResource, me.pb);
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            actions.push(
+              new BreathWeaponAction(
+                g2,
+                me,
+                dt,
+                getBreathWeaponDamageDice(me.level)
+              )
+            );
+        });
+      }
     );
     const draconicResistance = resistanceFeature(
       "Draconic Resistance",
@@ -3841,29 +4156,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
   var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
-
-  // src/resolvers/PointResolver.ts
-  var PointResolver = class {
-    constructor(g2, maxRange) {
-      this.g = g2;
-      this.maxRange = maxRange;
-      this.type = "Point";
-    }
-    get name() {
-      if (this.maxRange === Infinity)
-        return "any point";
-      return `point within ${this.maxRange}'`;
-    }
-    check(value, action, ec = new ErrorCollector()) {
-      if (!isPoint(value))
-        ec.add("No target", this);
-      else {
-        if (distanceTo(this.g, action.actor, value) > this.maxRange)
-          ec.add("Out of range", this);
-      }
-      return ec;
-    }
-  };
 
   // src/spells/level3/Fireball.ts
   var Fireball = scalingSpell({
@@ -4643,7 +4935,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
       g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
         if (who === me && !me.armor) {
           const uses = /* @__PURE__ */ new Set();
-          let ac = 10 + me.dex.bonus + me.con.bonus;
+          let ac = 10 + me.dex.modifier + me.con.modifier;
           if (me.shield) {
             ac += me.shield.ac;
             uses.add(me.shield);
@@ -5082,6 +5374,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var SpikeGrowth_default = SpikeGrowth;
 
   // src/spells/level3/LightningBolt.ts
+  function getArea(g2, actor, point) {
+    const position = g2.getState(actor).position;
+    const size = actor.sizeInUnits;
+    return aimLine({ position, size }, point, 100, 5);
+  }
   var LightningBolt = scalingSpell({
     implemented: true,
     name: "Lightning Bolt",
@@ -5093,15 +5390,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
     getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 3) + 5, 6, "lightning")],
-    getAffectedArea: (g2, caster, { point }) => point && [
-      {
-        type: "line",
-        length: 100,
-        width: 5,
-        start: g2.getState(caster).position,
-        target: point
-      }
-    ],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea(g2, caster, point)],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(5 + slot, {
@@ -5112,13 +5401,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside({
-          type: "line",
-          length: 100,
-          width: 5,
-          start: g2.getState(attacker).position,
-          target: point
-        })) {
+        for (const target of g2.getInside(getArea(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "dex",
@@ -5730,7 +6013,7 @@ The creature is aware of this effect before it makes its attack against you.`
         if (who === me && !me.armor && !me.shield)
           methods.push({
             name: "Unarmored Defense",
-            ac: 10 + me.dex.bonus + me.wis.bonus,
+            ac: 10 + me.dex.modifier + me.wis.modifier,
             uses: /* @__PURE__ */ new Set()
           });
       });

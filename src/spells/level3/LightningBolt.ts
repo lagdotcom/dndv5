@@ -1,8 +1,18 @@
+import { aimLine } from "../../aim";
 import { HasPoint } from "../../configs";
+import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
+import Combatant from "../../types/Combatant";
+import Point from "../../types/Point";
 import { dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
+
+function getArea(g: Engine, actor: Combatant, point: Point) {
+  const position = g.getState(actor).position;
+  const size = actor.sizeInUnits;
+  return aimLine({ position, size }, point, 100, 5);
+}
 
 const LightningBolt = scalingSpell<HasPoint>({
   implemented: true,
@@ -17,15 +27,7 @@ const LightningBolt = scalingSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 100) }),
   getDamage: (g, caster, { slot }) => [dd((slot ?? 3) + 5, 6, "lightning")],
   getAffectedArea: (g, caster, { point }) =>
-    point && [
-      {
-        type: "line",
-        length: 100,
-        width: 5,
-        start: g.getState(caster).position,
-        target: point,
-      },
-    ],
+    point && [getArea(g, caster, point)],
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(5 + slot, {
@@ -39,13 +41,7 @@ const LightningBolt = scalingSpell<HasPoint>({
 
     // TODO The lightning ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside({
-      type: "line",
-      length: 100,
-      width: 5,
-      start: g.getState(attacker).position,
-      target: point,
-    })) {
+    for (const target of g.getInside(getArea(g, attacker, point))) {
       const save = await g.savingThrow(dc, {
         attacker,
         ability: "dex",

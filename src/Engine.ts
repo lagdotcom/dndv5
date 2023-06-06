@@ -383,7 +383,7 @@ export default class Engine {
   }
 
   getInside(area: SpecifiedEffectShape) {
-    const points = new PointSet(resolveArea(area));
+    const points = resolveArea(area);
     const inside: Combatant[] = [];
 
     for (const [combatant, state] of this.combatants) {

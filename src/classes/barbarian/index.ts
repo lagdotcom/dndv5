@@ -14,7 +14,7 @@ const UnarmoredDefense = new SimpleFeature(
     g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
       if (who === me && !me.armor) {
         const uses = new Set<Item>();
-        let ac = 10 + me.dex.bonus + me.con.bonus;
+        let ac = 10 + me.dex.modifier + me.con.modifier;
 
         if (me.shield) {
           ac += me.shield.ac;

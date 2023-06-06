@@ -13,15 +13,15 @@ import { distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-    bonus.add(who[ability].bonus, AbilityScoreRule);
+    bonus.add(who[ability].modifier, AbilityScoreRule);
   });
 
   g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-    if (ability) bonus.add(attacker[ability].bonus, AbilityScoreRule);
+    if (ability) bonus.add(attacker[ability].modifier, AbilityScoreRule);
   });
 
   g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
-    bonus.add(who.dex.bonus, AbilityScoreRule);
+    bonus.add(who.dex.modifier, AbilityScoreRule);
   });
 });
 
@@ -38,10 +38,10 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
     const name = armor ? `${armor.category} armor` : "unarmored";
     const dexMod =
       armor?.category === "medium"
-        ? Math.min(dex.bonus, 2)
+        ? Math.min(dex.modifier, 2)
         : armor?.category === "heavy"
         ? 0
-        : dex.bonus;
+        : dex.modifier;
     methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
   });
 });
@@ -89,7 +89,7 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
     for (const effect of g.effects) {
       if (!effect.tags.has("heavily obscured")) continue;
 
-      const area = new PointSet(resolveArea(effect.shape));
+      const area = resolveArea(effect.shape);
       for (const square of squares) {
         if (area.has(square)) return true;
       }

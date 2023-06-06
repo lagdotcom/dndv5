@@ -7,6 +7,10 @@ export function round(n: number, size: number) {
   return Math.floor(n / size) * size;
 }
 
+export function roundUp(n: number, size: number) {
+  return Math.ceil(n / size) * size;
+}
+
 export function enumerate(min: number, max: number) {
   const values: number[] = [];
   for (let i = min; i <= max; i++) values.push(i);
