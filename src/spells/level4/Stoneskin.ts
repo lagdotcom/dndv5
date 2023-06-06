@@ -8,10 +8,10 @@ import { simpleSpell } from "../common";
 const StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
   g.events.on(
     "GetDamageResponse",
-    ({ detail: { who, damageType, response } }) => {
-      // TODO nonmagical
+    ({ detail: { who, damageType, response, attack } }) => {
       if (
         who.hasEffect(StoneskinEffect) &&
+        !attack?.pre.tags.has("magical") &&
         MundaneDamageTypes.includes(damageType)
       )
         response.add("resist", StoneskinEffect);

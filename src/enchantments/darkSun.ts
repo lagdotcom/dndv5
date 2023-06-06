@@ -1,16 +1,18 @@
-import Engine from "../Engine";
 import EvaluateLater from "../interruptions/EvaluateLater";
-import { Spear } from "./weapons";
+import Enchantment from "../types/Enchantment";
+import { weaponPlus1 } from "./plus";
 
-export class SpearOfTheDarkSun extends Spear {
-  constructor(g: Engine) {
-    super(g, 1);
-    this.name = "Spear of the Dark Sun";
+const darkSun: Enchantment<"weapon"> = {
+  name: "dark sun",
+  setup(g, item) {
+    weaponPlus1.setup(g, item);
+    item.name = `${item.weaponType} of the dark sun`;
+    item.rarity = "Rare";
 
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
-        if (weapon === this && attacker.attunements.has(weapon))
+        if (weapon === item && attacker.attunements.has(weapon))
           interrupt.add(
             new EvaluateLater(attacker, this, async () => {
               const damageType = "radiant"; // TODO daylight check
@@ -26,5 +28,6 @@ export class SpearOfTheDarkSun extends Spear {
           );
       }
     );
-  }
-}
+  },
+};
+export default darkSun;

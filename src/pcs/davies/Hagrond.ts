@@ -1,10 +1,11 @@
 import Barbarian, { ASI4, PrimalKnowledge } from "../../classes/barbarian";
 import Berserker from "../../classes/barbarian/Berserker";
+import darkSun from "../../enchantments/darkSun";
 import Engine from "../../Engine";
-import { SpearOfTheDarkSun } from "../../items/magicWeapons";
 import { Dagger, Handaxe, Spear } from "../../items/weapons";
 import PC from "../../PC";
 import { StoutHalfling } from "../../races/Halfling";
+import { enchant } from "../../utils/items";
 import tokenUrl from "./Hagrond_token.png";
 
 export default class Hagrond extends PC {
@@ -33,7 +34,7 @@ export default class Hagrond extends PC {
     this.skills.set("Intimidation", 1);
     this.skills.set("Animal Handling", 1);
 
-    this.don(new SpearOfTheDarkSun(g), true);
+    this.don(enchant(new Spear(g, 1), darkSun), true);
     // TODO this.don(new TridentOfTheDeep(g), true);
     this.inventory.add(new Dagger(g, 4));
     this.inventory.add(new Handaxe(g, 1));

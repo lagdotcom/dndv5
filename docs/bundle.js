@@ -886,10 +886,17 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
-        const type = distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee";
+        const tags = /* @__PURE__ */ new Set();
+        tags.add(
+          distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee"
+        );
+        if (weapon.category !== "natural")
+          tags.add("weapon");
+        if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
+          tags.add("magical");
         const { attack, critical, hit } = yield g2.attack({
           who: attacker,
-          type,
+          tags,
           target,
           ability,
           weapon,
@@ -1623,6 +1630,7 @@
     }
     applyDamage(_0, _1) {
       return __async(this, arguments, function* (damage, {
+        attack,
         attacker,
         multiplier: baseMultiplier = 1,
         target
@@ -1633,6 +1641,7 @@
           const collector = new DamageResponseCollector();
           this.fire(
             new GetDamageResponseEvent({
+              attack,
               who: target,
               damageType,
               response: collector
@@ -1716,6 +1725,7 @@
         map.add(damageType, gather.detail.bonus.result);
         yield this.applyDamage(map, {
           source,
+          attack: e.attack,
           attacker: e.attacker,
           target: e.target,
           multiplier: multiplier.value
@@ -1802,6 +1812,7 @@
       this.name = name;
       this.hands = hands;
       this.enchantments = /* @__PURE__ */ new Set();
+      this.rarity = "Common";
     }
     addEnchantment(e) {
       this.enchantments.add(e);
@@ -2596,20 +2607,25 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var Scout_default = Scout;
 
   // src/enchantments/plus.ts
-  var plus1 = {
-    name: "+1 bonus",
+  var weaponPlus = (value, rarity) => ({
+    name: `+${value} bonus`,
     setup(g2, item) {
-      item.name = `${item.name} +1`;
+      item.name = `${item.name} +${value}`;
+      item.magical = true;
+      item.rarity = rarity;
       g2.events.on("BeforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
         if (weapon === item || ammo === item)
-          bonus.add(1, this);
+          bonus.add(value, this);
       });
       g2.events.on("GatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
         if (weapon === item || ammo === item)
-          bonus.add(1, this);
+          bonus.add(value, this);
       });
     }
-  };
+  });
+  var weaponPlus1 = weaponPlus(1, "Uncommon");
+  var weaponPlus2 = weaponPlus(2, "Rare");
+  var weaponPlus3 = weaponPlus(3, "Very Rare");
 
   // src/events/ListChoiceEvent.ts
   var ListChoiceEvent = class extends CustomEvent {
@@ -2657,8 +2673,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var chaoticBurst = {
     name: "chaotic burst",
     setup(g2, item) {
-      plus1.setup(g2, item);
+      weaponPlus1.setup(g2, item);
       item.name = `chaotic burst ${item.weaponType}`;
+      item.rarity = "Rare";
       g2.events.on("TurnStarted", ({ detail: { who } }) => {
         if (who.equipment.has(item) && who.attunements.has(item))
           who.initResource(ChaoticBurstResource);
@@ -2695,6 +2712,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     name: "vicious",
     setup(g2, item) {
       item.name = `vicious ${item.name}`;
+      item.magical = true;
+      item.rarity = "Rare";
       g2.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
         if (weapon === item && (attack == null ? void 0 : attack.roll.value) === 20)
           bonus.add(7, vicious);
@@ -3115,7 +3134,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.don(new BracersOfTheArbalest(g2), true);
       this.don(new Rapier(g2));
       this.inventory.add(new CrossbowBolt(g2, 20));
-      this.inventory.add(enchant(new CrossbowBolt(g2, 15), plus1));
+      this.inventory.add(enchant(new CrossbowBolt(g2, 15), weaponPlus1));
     }
   };
 
@@ -3710,7 +3729,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           who,
           target,
           ability: method.ability,
-          type,
+          tags: /* @__PURE__ */ new Set([type, "spell", "magical"]),
           spell,
           method
         });
@@ -3912,7 +3931,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
         const { attack, hit, critical } = yield g2.attack({
           who: attacker,
-          type: "ranged",
+          tags: /* @__PURE__ */ new Set(["ranged", "spell", "magical"]),
           target,
           ability: method.ability,
           spell: IceKnife,
@@ -4273,6 +4292,22 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/utils/set.ts
+  function hasAll(set, matches2) {
+    if (!set)
+      return false;
+    for (const item of matches2)
+      if (!set.has(item))
+        return false;
+    return true;
+  }
+  function intersects(a, b) {
+    for (const item of a)
+      if (b.has(item))
+        return true;
+    return false;
+  }
+
   // src/classes/paladin/common.ts
   var PaladinSpellcasting = new NormalSpellcasting(
     "Paladin",
@@ -4406,7 +4441,7 @@ This feature has no effect on undead and constructs.`
       g2.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
-          if (attacker === me && (attack == null ? void 0 : attack.pre.type) === "melee")
+          if (attacker === me && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]))
             interrupt.add(
               new PickFromListChoice(
                 attacker,
@@ -4933,9 +4968,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
     });
     g2.events.on(
       "GatherDamage",
-      ({ detail: { attacker, attack, weapon, bonus } }) => {
+      ({ detail: { attacker, attack, ability, bonus } }) => {
         var _a;
-        if (attacker.hasEffect(RageEffect) && (attack == null ? void 0 : attack.pre.type) === "melee" && weapon)
+        if (attacker.hasEffect(RageEffect) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
           bonus.add(
             getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
             RageEffect
@@ -5000,6 +5035,51 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   );
   var Rage_default = Rage;
 
+  // src/classes/barbarian/RecklessAttack.ts
+  var RecklessAttackResource = new TurnResource("Reckless Attack", 1);
+  function canBeReckless(who, tags, ability) {
+    return who.hasEffect(RecklessAttackEffect) && hasAll(tags, ["melee", "weapon"]) && ability === "str";
+  }
+  var RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g2) => {
+    g2.events.on(
+      "BeforeAttack",
+      ({ detail: { who, target, diceType, ability, tags } }) => {
+        if (canBeReckless(who, tags, ability))
+          diceType.add("advantage", RecklessAttackEffect);
+        if (target.hasEffect(RecklessAttackEffect))
+          diceType.add("advantage", RecklessAttackEffect);
+      }
+    );
+  });
+  var RecklessAttack = new SimpleFeature(
+    "Reckless Attack",
+    `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`,
+    (g2, me) => {
+      me.initResource(RecklessAttackResource);
+      g2.events.on(
+        "BeforeAttack",
+        ({ detail: { who, interrupt, tags, ability, diceType } }) => {
+          if (who === me && me.hasResource(RecklessAttackResource)) {
+            me.spendResource(RecklessAttackResource);
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                RecklessAttack,
+                "Reckless Attack",
+                `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
+                () => __async(void 0, null, function* () {
+                  me.addEffect(RecklessAttackEffect, 1);
+                  if (canBeReckless(who, tags, ability))
+                    diceType.add("advantage", RecklessAttackEffect);
+                })
+              )
+            );
+          }
+        }
+      );
+    }
+  );
+
   // src/classes/barbarian/index.ts
   var UnarmoredDefense = new SimpleFeature(
     "Unarmored Defense",
@@ -5018,13 +5098,20 @@ Once you have raged the maximum number of times for your barbarian level, you mu
       });
     }
   );
-  var DangerSense = notImplementedFeature(
+  var dangerSenseConditions = /* @__PURE__ */ new Set([
+    "Blinded",
+    "Deafened",
+    "Incapacitated"
+  ]);
+  var DangerSense = new SimpleFeature(
     "Danger Sense",
-    `At 2nd level, you gain an uncanny sense of when things nearby aren't as they should be, giving you an edge when you dodge away from danger. You have advantage on Dexterity saving throws against effects that you can see, such as traps and spells. To gain this benefit, you can't be blinded, deafened, or incapacitated.`
-  );
-  var RecklessAttack = notImplementedFeature(
-    "Reckless Attack",
-    `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`
+    `At 2nd level, you gain an uncanny sense of when things nearby aren't as they should be, giving you an edge when you dodge away from danger. You have advantage on Dexterity saving throws against effects that you can see, such as traps and spells. To gain this benefit, you can't be blinded, deafened, or incapacitated.`,
+    (g2, me) => {
+      g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+        if (who === me && ability === "dex" && !intersects(me.conditions, dangerSenseConditions))
+          diceType.add("advantage", DangerSense);
+      });
+    }
   );
   var PrimalKnowledge = new ConfiguredFeature(
     "Primal Knowledge",
@@ -5049,11 +5136,17 @@ Once you have raged the maximum number of times for your barbarian level, you mu
       });
     }
   );
-  var FeralInstinct = notImplementedFeature(
+  var FeralInstinct = new SimpleFeature(
     "Feral Instinct",
     `By 7th level, your instincts are so honed that you have advantage on initiative rolls.
 
-Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.`
+Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.`,
+    (g2, me) => {
+      g2.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
+        if (who === me)
+          diceType.add("advantage", FeralInstinct);
+      });
+    }
   );
   var InstinctivePounce = notImplementedFeature(
     "Instinctive Pounce",
@@ -5154,15 +5247,17 @@ If the creature succeeds on its saving throw, you can't use this feature on that
   };
   var Berserker_default = Berserker;
 
-  // src/items/magicWeapons.ts
-  var SpearOfTheDarkSun = class extends Spear {
-    constructor(g2) {
-      super(g2, 1);
-      this.name = "Spear of the Dark Sun";
+  // src/enchantments/darkSun.ts
+  var darkSun = {
+    name: "dark sun",
+    setup(g2, item) {
+      weaponPlus1.setup(g2, item);
+      item.name = `${item.weaponType} of the dark sun`;
+      item.rarity = "Rare";
       g2.events.on(
         "GatherDamage",
         ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
-          if (weapon === this && attacker.attunements.has(weapon))
+          if (weapon === item && attacker.attunements.has(weapon))
             interrupt.add(
               new EvaluateLater(attacker, this, () => __async(this, null, function* () {
                 const damageType = "radiant";
@@ -5180,6 +5275,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       );
     }
   };
+  var darkSun_default = darkSun;
 
   // src/races/Halfling.ts
   var Lucky2 = notImplementedFeature(
@@ -5245,7 +5341,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       this.setConfig(PrimalKnowledge, ["Perception"]);
       this.skills.set("Intimidation", 1);
       this.skills.set("Animal Handling", 1);
-      this.don(new SpearOfTheDarkSun(g2), true);
+      this.don(enchant(new Spear(g2, 1), darkSun_default), true);
       this.inventory.add(new Dagger(g2, 4));
       this.inventory.add(new Handaxe(g2, 1));
       this.inventory.add(new Spear(g2, 1));
@@ -5633,8 +5729,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var StoneskinEffect = new Effect("Stoneskin", "turnStart", (g2) => {
     g2.events.on(
       "GetDamageResponse",
-      ({ detail: { who, damageType, response } }) => {
-        if (who.hasEffect(StoneskinEffect) && MundaneDamageTypes.includes(damageType))
+      ({ detail: { who, damageType, response, attack } }) => {
+        if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && MundaneDamageTypes.includes(damageType))
           response.add("resist", StoneskinEffect);
       }
     );
@@ -5979,7 +6075,7 @@ The creature is aware of this effect before it makes its attack against you.`
           this.unsubscribe();
         const { attack, critical, hit } = yield this.g.attack({
           who: this.actor,
-          type: "ranged",
+          tags: /* @__PURE__ */ new Set(["ranged", "spell", "magical"]),
           target,
           ability: this.method.ability,
           spell: MagicStone,

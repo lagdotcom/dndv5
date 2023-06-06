@@ -4,7 +4,7 @@ import PickFromListChoice, {
 import { TurnResource } from "../resources";
 import DamageType from "../types/DamageType";
 import Enchantment from "../types/Enchantment";
-import { plus1 } from "./plus";
+import { weaponPlus1 } from "./plus";
 
 const ChaoticBurstResource = new TurnResource("Chaotic Burst", 1);
 const chaoticBurstTypes: DamageType[] = [
@@ -26,8 +26,9 @@ const getOptionFromRoll = (roll: number): PickChoice<DamageType> => {
 export const chaoticBurst: Enchantment<"weapon"> = {
   name: "chaotic burst",
   setup(g, item) {
-    plus1.setup(g, item);
+    weaponPlus1.setup(g, item);
     item.name = `chaotic burst ${item.weaponType}`;
+    item.rarity = "Rare";
 
     g.events.on("TurnStarted", ({ detail: { who } }) => {
       if (who.equipment.has(item) && who.attunements.has(item))
@@ -71,6 +72,8 @@ export const vicious: Enchantment<"weapon"> = {
   name: "vicious",
   setup(g, item) {
     item.name = `vicious ${item.name}`;
+    item.magical = true;
+    item.rarity = "Rare";
 
     g.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
       if (weapon === item && attack?.roll.value === 20) bonus.add(7, vicious);

@@ -1,9 +1,10 @@
 import Engine from "../Engine";
 import Enchantment from "../types/Enchantment";
-import { ItemByTypeKey, ItemType } from "../types/Item";
+import { ItemByTypeKey, ItemRarity, ItemType } from "../types/Item";
 
 export default abstract class AbstractItem<T extends ItemType> {
   enchantments: Set<Enchantment<T>>;
+  rarity: ItemRarity;
 
   constructor(
     public g: Engine,
@@ -12,6 +13,7 @@ export default abstract class AbstractItem<T extends ItemType> {
     public hands = 0
   ) {
     this.enchantments = new Set();
+    this.rarity = "Common";
   }
 
   addEnchantment(e: Enchantment<T>) {

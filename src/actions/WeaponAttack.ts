@@ -4,6 +4,7 @@ import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
 import TargetResolver from "../resolvers/TargetResolver";
 import AbilityName from "../types/AbilityName";
+import AttackTag from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
@@ -42,12 +43,16 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
 
     // TODO spend action/attack
 
-    const type =
-      distance(g, attacker, target) > attacker.reach ? "ranged" : "melee";
+    const tags = new Set<AttackTag>();
+    tags.add(
+      distance(g, attacker, target) > attacker.reach ? "ranged" : "melee"
+    );
+    if (weapon.category !== "natural") tags.add("weapon");
+    if (weapon.magical || ammo?.magical) tags.add("magical");
 
     const { attack, critical, hit } = await g.attack({
       who: attacker,
-      type,
+      tags,
       target,
       ability,
       weapon,

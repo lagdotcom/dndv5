@@ -1,6 +1,6 @@
 import Rogue, { ASI4, Expertise } from "../../classes/rogue";
 import Scout from "../../classes/rogue/Scout";
-import { plus1 } from "../../enchantments/plus";
+import { weaponPlus1 } from "../../enchantments/plus";
 import { vicious } from "../../enchantments/weapon";
 import Engine from "../../Engine";
 import Lucky from "../../feats/Lucky";
@@ -51,6 +51,6 @@ export default class Aura extends PC {
     this.don(new BracersOfTheArbalest(g), true);
     this.don(new Rapier(g));
     this.inventory.add(new CrossbowBolt(g, 20));
-    this.inventory.add(enchant(new CrossbowBolt(g, 15), plus1));
+    this.inventory.add(enchant(new CrossbowBolt(g, 15), weaponPlus1));
   }
 }

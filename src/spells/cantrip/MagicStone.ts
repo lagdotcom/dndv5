@@ -47,7 +47,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
 
     const { attack, critical, hit } = await this.g.attack({
       who: this.actor,
-      type: "ranged",
+      tags: new Set(["ranged", "spell", "magical"]),
       target,
       ability: this.method.ability,
       spell: MagicStone,

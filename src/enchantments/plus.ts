@@ -1,18 +1,27 @@
 import Engine from "../Engine";
 import Enchantment from "../types/Enchantment";
-import { AmmoItem, WeaponItem } from "../types/Item";
+import { AmmoItem, ItemRarity, WeaponItem } from "../types/Item";
 
-export const plus1: Enchantment<"weapon" | "ammo"> = {
-  name: "+1 bonus",
+const weaponPlus = (
+  value: number,
+  rarity: ItemRarity
+): Enchantment<"weapon" | "ammo"> => ({
+  name: `+${value} bonus`,
   setup(g: Engine, item: WeaponItem | AmmoItem) {
-    item.name = `${item.name} +1`;
+    item.name = `${item.name} +${value}`;
+    item.magical = true;
+    item.rarity = rarity;
 
     g.events.on("BeforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
-      if (weapon === item || ammo === item) bonus.add(1, this);
+      if (weapon === item || ammo === item) bonus.add(value, this);
     });
 
     g.events.on("GatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
-      if (weapon === item || ammo === item) bonus.add(1, this);
+      if (weapon === item || ammo === item) bonus.add(value, this);
     });
   },
-};
+});
+
+export const weaponPlus1 = weaponPlus(1, "Uncommon");
+export const weaponPlus2 = weaponPlus(2, "Rare");
+export const weaponPlus3 = weaponPlus(3, "Very Rare");

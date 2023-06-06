@@ -6,6 +6,7 @@ import SimpleFeature from "../../features/SimpleFeature";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
 
 function getRageCount(level: number) {
@@ -55,11 +56,11 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
 
   g.events.on(
     "GatherDamage",
-    ({ detail: { attacker, attack, weapon, bonus } }) => {
+    ({ detail: { attacker, attack, ability, bonus } }) => {
       if (
         attacker.hasEffect(RageEffect) &&
-        attack?.pre.type === "melee" &&
-        weapon
+        hasAll(attack?.pre.tags, ["melee", "weapon"]) &&
+        ability === "str"
       )
         bonus.add(
           getRageBonus(attacker.classLevels.get("Barbarian") ?? 0),

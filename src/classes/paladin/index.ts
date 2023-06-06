@@ -11,6 +11,7 @@ import Feature from "../../types/Feature";
 import PCClass from "../../types/PCClass";
 import Point from "../../types/Point";
 import { enumerate, ordinal } from "../../utils/numbers";
+import { hasAll } from "../../utils/set";
 import { distance } from "../../utils/units";
 import { makeASI } from "../common";
 import {
@@ -47,7 +48,7 @@ const DivineSmite = new SimpleFeature(
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
-        if (attacker === me && attack?.pre.type === "melee")
+        if (attacker === me && hasAll(attack?.pre.tags, ["melee", "weapon"]))
           interrupt.add(
             new PickFromListChoice(
               attacker,

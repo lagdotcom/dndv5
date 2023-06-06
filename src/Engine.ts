@@ -11,7 +11,7 @@ import DndRules from "./DndRules";
 import { Dead } from "./effects";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
-import AttackEvent from "./events/AttackEvent";
+import AttackEvent, { AttackEventDetail } from "./events/AttackEvent";
 import BeforeAttackEvent, {
   BeforeAttackDetail,
 } from "./events/BeforeAttackEvent";
@@ -192,11 +192,13 @@ export default class Engine {
   private async applyDamage(
     damage: DamageMap,
     {
+      attack,
       attacker,
       multiplier: baseMultiplier = 1,
       target,
     }: {
       source: Source;
+      attack?: AttackEventDetail;
       attacker: Combatant;
       target: Combatant;
       multiplier?: number;
@@ -210,6 +212,7 @@ export default class Engine {
       const collector = new DamageResponseCollector();
       this.fire(
         new GetDamageResponseEvent({
+          attack,
           who: target,
           damageType,
           response: collector,
@@ -319,6 +322,7 @@ export default class Engine {
     map.add(damageType, gather.detail.bonus.result);
     await this.applyDamage(map, {
       source,
+      attack: e.attack,
       attacker: e.attacker,
       target: e.target,
       multiplier: multiplier.value,

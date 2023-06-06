@@ -3,8 +3,19 @@ import DamageAmount from "./DamageAmount";
 import Enchantment from "./Enchantment";
 import Source from "./Source";
 
+export const ItemRarities = [
+  "Common",
+  "Uncommon",
+  "Rare",
+  "Very Rare",
+  "Legendary",
+  "Artifact",
+] as const;
+export type ItemRarity = (typeof ItemRarities)[number];
+
 export interface BaseItem extends Source {
   hands: number;
+  rarity: ItemRarity;
 }
 
 export const WeaponCategories = ["natural", "simple", "martial"] as const;
@@ -31,6 +42,7 @@ export type AmmunitionTag = (typeof AmmunitionTags)[number];
 
 export interface WeaponItem extends BaseItem {
   itemType: "weapon";
+  magical?: boolean;
   weaponType: string;
   category: WeaponCategory;
   rangeCategory: WeaponRangeCategory;
@@ -47,6 +59,7 @@ export interface WeaponItem extends BaseItem {
 
 export interface AmmoItem extends BaseItem {
   itemType: "ammo";
+  magical?: boolean;
   ammunitionTag: AmmunitionTag;
   quantity: number;
 

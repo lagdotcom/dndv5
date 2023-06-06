@@ -25,7 +25,7 @@ export default class SpellAttack<T extends object> {
       who,
       target,
       ability: method.ability,
-      type,
+      tags: new Set([type, "spell", "magical"]),
       spell,
       method,
     });

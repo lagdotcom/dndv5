@@ -1,11 +1,14 @@
 import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
+import ConditionName from "../../types/ConditionName";
 import Item from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName from "../../types/SkillName";
+import { intersects } from "../../utils/set";
 import { makeASI } from "../common";
 import Rage from "./Rage";
+import { RecklessAttack } from "./RecklessAttack";
 
 const UnarmoredDefense = new SimpleFeature(
   "Unarmored Defense",
@@ -27,16 +30,25 @@ const UnarmoredDefense = new SimpleFeature(
   }
 );
 
-// TODO
-const DangerSense = notImplementedFeature(
+const dangerSenseConditions = new Set<ConditionName>([
+  "Blinded",
+  "Deafened",
+  "Incapacitated",
+]);
+const DangerSense = new SimpleFeature(
   "Danger Sense",
-  `At 2nd level, you gain an uncanny sense of when things nearby aren't as they should be, giving you an edge when you dodge away from danger. You have advantage on Dexterity saving throws against effects that you can see, such as traps and spells. To gain this benefit, you can't be blinded, deafened, or incapacitated.`
-);
-
-// TODO
-const RecklessAttack = notImplementedFeature(
-  "Reckless Attack",
-  `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`
+  `At 2nd level, you gain an uncanny sense of when things nearby aren't as they should be, giving you an edge when you dodge away from danger. You have advantage on Dexterity saving throws against effects that you can see, such as traps and spells. To gain this benefit, you can't be blinded, deafened, or incapacitated.`,
+  (g, me) => {
+    g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+      // TODO against effects that you can see
+      if (
+        who === me &&
+        ability === "dex" &&
+        !intersects(me.conditions, dangerSenseConditions)
+      )
+        diceType.add("advantage", DangerSense);
+    });
+  }
 );
 
 export const PrimalKnowledge = new ConfiguredFeature<SkillName[]>(
@@ -64,12 +76,18 @@ const FastMovement = new SimpleFeature(
   }
 );
 
-// TODO
-const FeralInstinct = notImplementedFeature(
+const FeralInstinct = new SimpleFeature(
   "Feral Instinct",
   `By 7th level, your instincts are so honed that you have advantage on initiative rolls.
 
-Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.`
+Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.`,
+  (g, me) => {
+    g.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
+      if (who === me) diceType.add("advantage", FeralInstinct);
+    });
+
+    // TODO Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.
+  }
 );
 
 // TODO

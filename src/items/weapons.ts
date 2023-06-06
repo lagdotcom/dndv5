@@ -17,6 +17,7 @@ export abstract class AbstractWeapon
 {
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: AbilityName;
+  magical?: boolean;
   properties: Set<WeaponProperty>;
   quantity: number;
   weaponType: string;
