@@ -39,18 +39,18 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/BattlefieldEffect.module.scss */
-._main_13t22_1 {
+._main_1f9zd_1 {
   position: absolute;
   z-index: 5;
   display: flex;
   justify-content: center;
   align-items: center;
-  opacity: 0.4;
+  opacity: 0.25;
 }
-._label_13t22_10 {
+._label_1f9zd_10 {
   pointer-events: none;
 }
-._square_13t22_14 {
+._square_1f9zd_14 {
   position: absolute;
   pointer-events: none;
   z-index: 3;

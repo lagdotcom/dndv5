@@ -5,11 +5,17 @@ import {
   SpecifiedCylinder,
   SpecifiedEffectShape,
   SpecifiedSphere,
+  SpecifiedWithin,
 } from "../types/EffectArea";
 import Point from "../types/Point";
 import { resolveArea } from "../utils/areas";
 import styles from "./BattlefieldEffect.module.scss";
 import { scale } from "./utils/state";
+
+function getAuraColour(tags: Set<AreaTag>) {
+  if (tags.has("heavily obscured")) return "silver";
+  if (tags.has("holy")) return "yellow";
+}
 
 function Sphere({
   shape,
@@ -28,13 +34,46 @@ function Sphere({
       width: size * 2,
       height: size * 2,
       borderRadius: size * 2,
-      backgroundColor: tags.has("heavily obscured") ? "silver" : undefined,
+      backgroundColor: getAuraColour(tags),
     };
   }, [shape.centre.x, shape.centre.y, shape.radius, tags]);
 
   return (
     <div className={styles.main} style={style}>
-      <div className={styles.label}>{`${name} Effect`}</div>
+      <div className={styles.label}>{name}</div>
+    </div>
+  );
+}
+
+function WithinArea({
+  shape,
+  name,
+  tags,
+}: {
+  shape: SpecifiedWithin;
+  name: string;
+  tags: Set<AreaTag>;
+}) {
+  const style = useMemo(() => {
+    const size = (shape.radius * 2 + shape.target.sizeInUnits) * scale.value;
+    return {
+      left: (shape.position.x - shape.radius) * scale.value,
+      top: (shape.position.y - shape.radius) * scale.value,
+      width: size,
+      height: size,
+      backgroundColor: getAuraColour(tags),
+    };
+  }, [
+    shape.position.x,
+    shape.position.y,
+    shape.radius,
+    shape.target.sizeInUnits,
+    tags,
+  ]);
+
+  return (
+    <div className={styles.main} style={style}>
+      <div className={styles.label}>{name}</div>
     </div>
   );
 }
@@ -74,6 +113,9 @@ export default function BattlefieldEffect({
       case "cylinder": // TODO when height is added
       case "sphere":
         return <Sphere name={name} tags={tags} shape={shape} />;
+
+      case "within":
+        return <WithinArea name={name} tags={tags} shape={shape} />;
     }
   }, [name, shape, tags]);
   const points = useMemo(() => resolveArea(shape), [shape]);

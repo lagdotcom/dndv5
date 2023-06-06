@@ -1067,6 +1067,9 @@
       this.x = x;
       this.y = y;
     }
+    getTopLeft() {
+      return { x: this.x, y: this.y };
+    }
     getMiddle() {
       return { x: this.x + HalfSquare, y: this.y + HalfSquare };
     }
@@ -4259,6 +4262,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/ActiveEffectArea.ts
+  var ActiveEffectArea = class {
+    constructor(name, shape, tags) {
+      this.name = name;
+      this.shape = shape;
+      this.tags = tags;
+      this.id = NaN;
+    }
+  };
+
   // src/classes/paladin/common.ts
   var PaladinSpellcasting = new NormalSpellcasting(
     "Paladin",
@@ -4272,6 +4285,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Channel Divinity",
     1
   );
+  function getPaladinAuraRadius(level) {
+    if (level < 18)
+      return 10;
+    return 30;
+  }
 
   // src/resolvers/ChoiceResolver.ts
   var ChoiceResolver = class {
@@ -4446,11 +4464,35 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     "Extra Attack",
     `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
   );
-  var AuraOfProtection = notImplementedFeature(
+  var AuraOfProtection = new SimpleFeature(
     "Aura of Protection",
     `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
 
-At 18th level, the range of this aura increases to 30 feet.`
+At 18th level, the range of this aura increases to 30 feet.`,
+    (g2, me) => {
+      var _a;
+      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 6);
+      let area;
+      const updateAura = (position) => {
+        if (area)
+          g2.removeEffectArea(area);
+        area = new ActiveEffectArea(
+          `Paladin Aura (${me.name})`,
+          { type: "within", radius, target: me, position },
+          /* @__PURE__ */ new Set(["holy"])
+        );
+        g2.addEffectArea(area);
+      };
+      g2.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+        if (who.side === me.side && !me.conditions.has("Unconscious") && distance(g2, me, who) <= radius)
+          bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
+      });
+      g2.events.on("CombatantMoved", ({ detail: { who, position } }) => {
+        if (who === me)
+          updateAura(position);
+      });
+      updateAura(g2.getState(me).position);
+    }
   );
   var AuraOfCourage = notImplementedFeature(
     "Aura of Courage",
@@ -6105,18 +6147,6 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
   var monk_default = Monk;
 
-  // src/areas/SphereEffectArea.ts
-  var SphereEffectArea = class {
-    constructor(name, centre, radius, tags = []) {
-      this.name = name;
-      this.centre = centre;
-      this.radius = radius;
-      this.id = NaN;
-      this.tags = new Set(tags);
-      this.shape = { type: "sphere", centre, radius };
-    }
-  };
-
   // src/spells/level1/FogCloud.ts
   var FogCloud = scalingSpell({
     implemented: true,
@@ -6138,10 +6168,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, _method, { point, slot }) {
         const radius = 20 * slot;
-        const area = new SphereEffectArea("Fog Cloud", point, radius, [
-          "heavily obscured"
-        ]);
-        yield g2.addEffectArea(area);
+        const area = new ActiveEffectArea(
+          "Fog Cloud",
+          { type: "sphere", centre: point, radius },
+          /* @__PURE__ */ new Set(["heavily obscured"])
+        );
+        g2.addEffectArea(area);
         caster.concentrateOn({
           spell: FogCloud,
           duration: hours(1),
@@ -6409,12 +6441,18 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
-    "main": "_main_13t22_1",
-    "label": "_label_13t22_10",
-    "square": "_square_13t22_14"
+    "main": "_main_1f9zd_1",
+    "label": "_label_1f9zd_10",
+    "square": "_square_1f9zd_14"
   };
 
   // src/ui/BattlefieldEffect.tsx
+  function getAuraColour(tags) {
+    if (tags.has("heavily obscured"))
+      return "silver";
+    if (tags.has("holy"))
+      return "yellow";
+  }
   function Sphere({
     shape,
     name,
@@ -6428,10 +6466,33 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         width: size * 2,
         height: size * 2,
         borderRadius: size * 2,
-        backgroundColor: tags.has("heavily obscured") ? "silver" : void 0
+        backgroundColor: getAuraColour(tags)
       };
     }, [shape.centre.x, shape.centre.y, shape.radius, tags]);
-    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: `${name} Effect` }) });
+    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: name }) });
+  }
+  function WithinArea({
+    shape,
+    name,
+    tags
+  }) {
+    const style = (0, import_hooks2.useMemo)(() => {
+      const size = (shape.radius * 2 + shape.target.sizeInUnits) * scale.value;
+      return {
+        left: (shape.position.x - shape.radius) * scale.value,
+        top: (shape.position.y - shape.radius) * scale.value,
+        width: size,
+        height: size,
+        backgroundColor: getAuraColour(tags)
+      };
+    }, [
+      shape.position.x,
+      shape.position.y,
+      shape.radius,
+      shape.target.sizeInUnits,
+      tags
+    ]);
+    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: name }) });
   }
   function AffectedSquare({ point }) {
     const style = (0, import_hooks2.useMemo)(
@@ -6455,6 +6516,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         case "cylinder":
         case "sphere":
           return /* @__PURE__ */ o(Sphere, { name, tags, shape });
+        case "within":
+          return /* @__PURE__ */ o(WithinArea, { name, tags, shape });
       }
     }, [name, shape, tags]);
     const points = (0, import_hooks2.useMemo)(() => resolveArea(shape), [shape]);

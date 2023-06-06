@@ -14,3 +14,8 @@ export const ChannelDivinityResource = new ShortRestResource(
   "Channel Divinity",
   1
 );
+
+export function getPaladinAuraRadius(level: number) {
+  if (level < 18) return 10;
+  return 30;
+}

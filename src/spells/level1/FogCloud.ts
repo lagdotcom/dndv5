@@ -1,4 +1,4 @@
-import SphereEffectArea from "../../areas/SphereEffectArea";
+import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { hours } from "../../utils/time";
@@ -29,10 +29,12 @@ const FogCloud = scalingSpell<HasPoint>({
     At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st. */
 
     const radius = 20 * slot;
-    const area = new SphereEffectArea("Fog Cloud", point, radius, [
-      "heavily obscured",
-    ]);
-    await g.addEffectArea(area);
+    const area = new ActiveEffectArea(
+      "Fog Cloud",
+      { type: "sphere", centre: point, radius },
+      new Set(["heavily obscured"])
+    );
+    g.addEffectArea(area);
 
     caster.concentrateOn({
       spell: FogCloud,

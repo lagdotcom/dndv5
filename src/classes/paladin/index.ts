@@ -1,3 +1,4 @@
+import ActiveEffectArea from "../../ActiveEffectArea";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
@@ -6,9 +7,15 @@ import {
   SpellSlotResources,
 } from "../../spells/NormalSpellcasting";
 import PCClass from "../../types/PCClass";
+import Point from "../../types/Point";
 import { enumerate, ordinal } from "../../utils/numbers";
+import { distance } from "../../utils/units";
 import { makeASI } from "../common";
-import { ChannelDivinityResource, PaladinSpellcasting } from "./common";
+import {
+  ChannelDivinityResource,
+  getPaladinAuraRadius,
+  PaladinSpellcasting,
+} from "./common";
 import HarnessDivinePower from "./HarnessDivinePower";
 
 // TODO
@@ -109,12 +116,44 @@ const ExtraAttack = notImplementedFeature(
   `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
 );
 
-// TODO
-const AuraOfProtection = notImplementedFeature(
+const AuraOfProtection = new SimpleFeature(
   "Aura of Protection",
   `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
 
-At 18th level, the range of this aura increases to 30 feet.`
+At 18th level, the range of this aura increases to 30 feet.`,
+  (g, me) => {
+    const radius = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 6);
+
+    // TODO this is stupid
+    let area: ActiveEffectArea | undefined;
+    const updateAura = (position: Point) => {
+      if (area) g.removeEffectArea(area);
+
+      area = new ActiveEffectArea(
+        `Paladin Aura (${me.name})`,
+        { type: "within", radius, target: me, position },
+        new Set(["holy"])
+      );
+      g.addEffectArea(area);
+    };
+
+    g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+      if (
+        who.side === me.side &&
+        !me.conditions.has("Unconscious") &&
+        distance(g, me, who) <= radius
+      )
+        bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
+    });
+
+    g.events.on("CombatantMoved", ({ detail: { who, position } }) => {
+      if (who === me) updateAura(position);
+    });
+
+    // TODO remove aura when unconscious
+
+    updateAura(g.getState(me).position);
+  }
 );
 
 // TODO
