@@ -1,5 +1,6 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
@@ -17,6 +18,7 @@ export interface BeforeAttackDetail {
   method?: SpellcastingMethod;
   diceType: DiceTypeCollector;
   bonus: BonusCollector;
+  interrupt: InterruptionCollector;
 }
 
 export default class BeforeAttackEvent extends CustomEvent<BeforeAttackDetail> {

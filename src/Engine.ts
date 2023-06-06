@@ -245,12 +245,15 @@ export default class Engine {
     }
   }
 
-  async attack(e: Omit<BeforeAttackDetail, "bonus" | "diceType">) {
-    const pre = this.fire(
+  async attack(
+    e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt">
+  ) {
+    const pre = await this.resolve(
       new BeforeAttackEvent({
         ...e,
         diceType: new DiceTypeCollector(),
         bonus: new BonusCollector(),
+        interrupt: new InterruptionCollector(),
       })
     );
     if (pre.defaultPrevented)

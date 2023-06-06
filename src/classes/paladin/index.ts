@@ -1,11 +1,13 @@
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
+import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import {
   getMaxSpellSlotAvailable,
   SpellSlotResources,
 } from "../../spells/NormalSpellcasting";
+import Feature from "../../types/Feature";
 import PCClass from "../../types/PCClass";
 import Point from "../../types/Point";
 import { enumerate, ordinal } from "../../utils/numbers";
@@ -83,10 +85,12 @@ const DivineSmite = new SimpleFeature(
   }
 );
 
-// TODO
-const FightingStyle = notImplementedFeature(
-  "Fighting Style",
-  `At 2nd level, you adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`
+export const PaladinFightingStyle = new ConfiguredFeature<Feature>(
+  "Fighting Style (Paladin)",
+  `At 2nd level, you adopt a particular style of fighting as your specialty. You can't take the same Fighting Style option more than once, even if you get to choose again.`,
+  (g, me, style) => {
+    me.addFeature(style);
+  }
 );
 
 // TODO
@@ -201,7 +205,7 @@ const Paladin: PCClass = {
   ]),
   features: new Map([
     [1, [DivineSense, LayOnHands]],
-    [2, [DivineSmite, FightingStyle, PaladinSpellcasting.feature]],
+    [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],
     [3, [DivineHealth, ChannelDivinity, HarnessDivinePower]],
     [4, [ASI4, MartialVersatility]],
     [5, [ExtraAttack]],

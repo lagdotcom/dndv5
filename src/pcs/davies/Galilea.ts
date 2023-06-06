@@ -1,6 +1,7 @@
-import Paladin, { ASI4 } from "../../classes/paladin";
+import Paladin, { ASI4, PaladinFightingStyle } from "../../classes/paladin";
 import Devotion from "../../classes/paladin/Devotion";
 import Engine from "../../Engine";
+import { FightingStyleProtection } from "../../features/fightingStyles";
 import { CrossbowBolt } from "../../items/ammunition";
 import { Shield, SplintArmor } from "../../items/armor";
 import { LightCrossbow, Longsword } from "../../items/weapons";
@@ -28,6 +29,7 @@ export default class Galilea extends PC {
     this.addClassLevel(Paladin);
     this.addClassLevel(Paladin);
 
+    this.setConfig(PaladinFightingStyle, FightingStyleProtection);
     this.setConfig(ASI4, { type: "ability", abilities: ["str", "str"] });
 
     this.skills.set("Insight", 1);

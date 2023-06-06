@@ -1666,10 +1666,11 @@
     }
     attack(e) {
       return __async(this, null, function* () {
-        const pre = this.fire(
+        const pre = yield this.resolve(
           new BeforeAttackEvent(__spreadProps(__spreadValues({}, e), {
             diceType: new DiceTypeCollector(),
-            bonus: new BonusCollector()
+            bonus: new BonusCollector(),
+            interrupt: new InterruptionCollector()
           }))
         );
         if (pre.defaultPrevented)
@@ -4439,9 +4440,12 @@ This feature has no effect on undead and constructs.`
       );
     }
   );
-  var FightingStyle = notImplementedFeature(
-    "Fighting Style",
-    `At 2nd level, you adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`
+  var PaladinFightingStyle = new ConfiguredFeature(
+    "Fighting Style (Paladin)",
+    `At 2nd level, you adopt a particular style of fighting as your specialty. You can't take the same Fighting Style option more than once, even if you get to choose again.`,
+    (g2, me, style) => {
+      me.addFeature(style);
+    }
   );
   var DivineHealth = notImplementedFeature(
     "Divine Health",
@@ -4532,7 +4536,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     ]),
     features: /* @__PURE__ */ new Map([
       [1, [DivineSense, LayOnHands]],
-      [2, [DivineSmite, FightingStyle, PaladinSpellcasting.feature]],
+      [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],
       [3, [DivineHealth, ChannelDivinity, HarnessDivinePower_default]],
       [4, [ASI43, MartialVersatility]],
       [5, [ExtraAttack]],
@@ -4685,6 +4689,32 @@ Once you use this feature, you can't use it again until you finish a long rest.
   };
   var Devotion_default = Devotion;
 
+  // src/features/fightingStyles.ts
+  var FightingStyleProtection = new SimpleFeature(
+    "Fighting Style: Protection",
+    `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
+    (g2, me) => {
+      g2.events.on(
+        "BeforeAttack",
+        ({ detail: { target, interrupt, diceType } }) => {
+          if (target !== me && target.side === me.side && me.time.has("reaction") && me.shield && distance(g2, me, target) <= 5)
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                FightingStyleProtection,
+                "Fighting Style: Protection",
+                `${target.name} is being attacked. Impose disadvantage?`,
+                () => __async(void 0, null, function* () {
+                  me.time.delete("reaction");
+                  diceType.add("disadvantage", FightingStyleProtection);
+                })
+              )
+            );
+        }
+      );
+    }
+  );
+
   // src/races/Human.ts
   var Human = {
     name: "Human",
@@ -4826,6 +4856,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.addClassLevel(paladin_default);
       this.addClassLevel(paladin_default);
       this.addClassLevel(paladin_default);
+      this.setConfig(PaladinFightingStyle, FightingStyleProtection);
       this.setConfig(ASI43, { type: "ability", abilities: ["str", "str"] });
       this.skills.set("Insight", 1);
       this.skills.set("Intimidation", 1);
