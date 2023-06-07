@@ -4657,13 +4657,63 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   });
   var Sanctuary_default = Sanctuary;
 
-  // src/classes/paladin/Devotion/index.ts
-  var SacredWeapon = notImplementedFeature(
+  // src/classes/paladin/Devotion/SacredWeapon.ts
+  var SacredWeapons = /* @__PURE__ */ new Map();
+  var SacredWeaponEffect = new Effect("Sacred Weapon", "turnStart", (g2) => {
+    g2.events.on("BeforeAttack", ({ detail: { who, bonus, weapon, tags } }) => {
+      const sacred = SacredWeapons.get(who);
+      if (sacred && sacred === weapon) {
+        bonus.add(Math.max(1, who.cha.modifier), SacredWeaponEffect);
+        tags.add("magical");
+      }
+    });
+  });
+  var SacredWeaponAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Channel Divinity: Sacred Weapon",
+        {
+          weapon: new ChoiceResolver(
+            g2,
+            actor.weapons.filter((weapon) => weapon.category !== "natural").map((value) => ({ label: value.name, value }))
+          )
+        },
+        "action"
+      );
+    }
+    check(config, ec = new ErrorCollector()) {
+      if (!this.actor.hasResource(ChannelDivinityResource))
+        ec.add("no Channel Divinity left", this);
+      if (this.actor.hasEffect(SacredWeaponEffect))
+        ec.add("already active", this);
+      return ec;
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ weapon }) {
+        __superGet(SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
+        this.actor.spendResource(ChannelDivinityResource);
+        this.actor.addEffect(SacredWeaponEffect, minutes(1));
+        SacredWeapons.set(this.actor, weapon);
+      });
+    }
+  };
+  var SacredWeapon = new SimpleFeature(
     "Channel Divinity: Sacred Weapon",
     `As an action, you can imbue one weapon that you are holding with positive energy, using your Channel Divinity. For 1 minute, you add your Charisma modifier to attack rolls made with that weapon (with a minimum bonus of +1). The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that. If the weapon is not already magical, it becomes magical for the duration.
 
-You can end this effect on your turn as part of any other action. If you are no longer holding or carrying this weapon, or if you fall unconscious, this effect ends.`
+You can end this effect on your turn as part of any other action. If you are no longer holding or carrying this weapon, or if you fall unconscious, this effect ends.`,
+    (g2, me) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new SacredWeaponAction(g2, me));
+      });
+    }
   );
+  var SacredWeapon_default = SacredWeapon;
+
+  // src/classes/paladin/Devotion/index.ts
   var TurnTheUnholy = notImplementedFeature(
     "Channel Divinity: Turn the Unholy",
     `As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.
@@ -4700,15 +4750,14 @@ Once you use this feature, you can't use it again until you finish a long rest.
     [
       { level: 3, spell: ProtectionFromEvilAndGood_default },
       { level: 3, spell: Sanctuary_default }
-      // TODO more Oath Spells
-      // { level: 5, spell: LesserRestoration },
-      // { level: 5, spell: ZoneOfTruth },
-      // { level: 9, spell: BeaconOfHope },
-      // { level: 9, spell: DispelMagic },
-      // { level: 13, spell: FreedomOfMovement },
-      // { level: 13, spell: GuardianOfFaith },
-      // { level: 17, spell: Commune },
-      // { level: 17, spell: FlameStrike },
+      // TODO { level: 5, spell: LesserRestoration },
+      // TODO { level: 5, spell: ZoneOfTruth },
+      // TODO { level: 9, spell: BeaconOfHope },
+      // TODO { level: 9, spell: DispelMagic },
+      // TODO { level: 13, spell: FreedomOfMovement },
+      // TODO { level: 13, spell: GuardianOfFaith },
+      // TODO { level: 17, spell: Commune },
+      // TODO { level: 17, spell: FlameStrike },
     ],
     "Paladin"
   );
@@ -4716,7 +4765,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     className: "Paladin",
     name: "Oath ofDevotion",
     features: /* @__PURE__ */ new Map([
-      [3, [OathSpells, SacredWeapon, TurnTheUnholy]],
+      [3, [OathSpells, SacredWeapon_default, TurnTheUnholy]],
       [7, [AuraOfDevotion]],
       [15, [PurityOfSpirit]],
       [20, [HolyNimbus]]
@@ -4731,8 +4780,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
     (g2, me) => {
       g2.events.on(
         "BeforeAttack",
-        ({ detail: { target, interrupt, diceType } }) => {
-          if (target !== me && target.side === me.side && me.time.has("reaction") && me.shield && distance(g2, me, target) <= 5)
+        ({ detail: { who, target, interrupt, diceType } }) => {
+          if (who !== me && target !== me && target.side === me.side && me.time.has("reaction") && me.shield && distance(g2, me, target) <= 5)
             interrupt.add(
               new YesNoChoice(
                 me,

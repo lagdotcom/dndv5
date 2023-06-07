@@ -8,10 +8,11 @@ export const FightingStyleProtection = new SimpleFeature(
   (g, me) => {
     g.events.on(
       "BeforeAttack",
-      ({ detail: { target, interrupt, diceType } }) => {
+      ({ detail: { who, target, interrupt, diceType } }) => {
         // TODO creature you can see
 
         if (
+          who !== me &&
           target !== me &&
           target.side === me.side &&
           me.time.has("reaction") &&
