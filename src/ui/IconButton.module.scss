@@ -1,0 +1,22 @@
+.main {
+  margin: 0;
+  padding: 0;
+  position: relative;
+  box-sizing: content-box;
+}
+
+.image,
+.sub {
+  position: absolute;
+  bottom: 0;
+  background-position: center;
+  background-size: contain;
+}
+
+.image {
+  left: 0;
+}
+
+.sub {
+  right: 0;
+}

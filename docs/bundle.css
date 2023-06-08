@@ -6,6 +6,27 @@
   padding: 2px;
 }
 
+/* esbuild-sass-plugin:css-chunk:src/ui/IconButton.module.scss */
+._main_1x2nt_1 {
+  margin: 0;
+  padding: 0;
+  position: relative;
+  box-sizing: content-box;
+}
+._image_1x2nt_8,
+._sub_1x2nt_9 {
+  position: absolute;
+  bottom: 0;
+  background-position: center;
+  background-size: contain;
+}
+._image_1x2nt_8 {
+  left: 0;
+}
+._sub_1x2nt_9 {
+  right: 0;
+}
+
 /* esbuild-sass-plugin:css-chunk:src/ui/Labelled.module.scss */
 ._label_6lltv_1 {
   font-size: 0.8em;

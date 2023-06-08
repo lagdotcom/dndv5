@@ -29,6 +29,7 @@ const config = {
     ".json": "file",
     ".ogg": "file",
     ".png": "file",
+    ".svg": "file",
   },
 };
 export default config;

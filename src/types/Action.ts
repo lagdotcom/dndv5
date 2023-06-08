@@ -8,8 +8,12 @@ import Source from "./Source";
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
 
+export type ActionIcon = { url: string; colour?: string };
+
 export default interface Action<T extends object = object> extends Source {
   actor: Combatant;
+  icon?: ActionIcon;
+  subIcon?: ActionIcon;
   time?: ActionTime;
 
   apply(config: T): Promise<void>;

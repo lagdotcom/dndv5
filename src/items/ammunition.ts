@@ -1,6 +1,7 @@
 import Engine from "../Engine";
 import { AmmoItem, AmmunitionTag } from "../types/Item";
 import AbstractItem from "./AbstractItem";
+import boltUrl from "./icons/bolt.svg";
 
 export class AbstractAmmo extends AbstractItem<"ammo"> implements AmmoItem {
   constructor(
@@ -28,6 +29,7 @@ export class BlowgunNeedle extends AbstractAmmo {
 export class CrossbowBolt extends AbstractAmmo {
   constructor(g: Engine, quantity: number) {
     super(g, "crossbow bolt", "crossbow", quantity);
+    this.iconUrl = boltUrl;
   }
 }
 

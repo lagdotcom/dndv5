@@ -1,5 +1,6 @@
 import Action from "../types/Action";
 import styles from "./ActiveUnitPanel.module.scss";
+import IconButton from "./IconButton";
 import Labelled from "./Labelled";
 import { allActions } from "./utils/state";
 import { UnitData } from "./utils/types";
@@ -21,11 +22,21 @@ export default function ActiveUnitPanel({
       <button onClick={onPass}>End Turn</button>
       <hr />
       <Labelled label="Actions">
-        {allActions.value.map((action) => (
-          <button key={action.name} onClick={() => onChooseAction(action)}>
-            {action.name}
-          </button>
-        ))}
+        {allActions.value.map((action) =>
+          action.icon ? (
+            <IconButton
+              key={action.name}
+              onClick={() => onChooseAction(action)}
+              icon={action.icon}
+              sub={action.subIcon}
+              alt={action.name}
+            />
+          ) : (
+            <button key={action.name} onClick={() => onChooseAction(action)}>
+              {action.name}
+            </button>
+          )
+        )}
       </Labelled>
     </aside>
   );

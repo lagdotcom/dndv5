@@ -50,5 +50,11 @@
       "}",
       "}"
     ]
+  },
+
+  "SVG Polyline": {
+    "scope": "svg",
+    "prefix": "poly",
+    "body": "<polyline points=\"$0\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />"
   }
 }

@@ -1,0 +1,8 @@
+<svg version="1.1" width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <polyline points="4 4 13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+
+  <polyline points="14 16 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+  <polyline points="16 18 18 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+
+  <polyline points="19 19 28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+</svg>

@@ -7,7 +7,7 @@ module.exports = {
   testEnvironment: "jsdom",
   transform: {
     ".+\\.(css|styl|less|sass|scss)$": "jest-css-modules-transform",
-    ".+\\.(png)$": "jest-transform-stub",
+    ".+\\.(png|svg)$": "jest-transform-stub",
     "^.+\\.tsx?$": "ts-jest",
   },
 };

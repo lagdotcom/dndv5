@@ -10,6 +10,11 @@ import {
 } from "../types/Item";
 import { dd } from "../utils/dice";
 import AbstractItem from "./AbstractItem";
+import lightCrossbowUrl from "./icons/light-crossbow.svg";
+import longswordUrl from "./icons/longsword.svg";
+import quarterstaffUrl from "./icons/quarterstaff.svg";
+import spearUrl from "./icons/spear.svg";
+import tridentUrl from "./icons/trident.svg";
 
 export abstract class AbstractWeapon
   extends AbstractItem<"weapon">
@@ -128,6 +133,7 @@ export class Quarterstaff extends AbstractWeapon {
     super(g, "quarterstaff", "simple", "melee", dd(1, 6, "bludgeoning"), [
       "versatile",
     ]);
+    this.iconUrl = quarterstaffUrl;
   }
 }
 
@@ -150,6 +156,7 @@ export class Spear extends AbstractWeapon {
       60
     );
     this.quantity = quantity;
+    this.iconUrl = spearUrl;
   }
 }
 
@@ -166,6 +173,7 @@ export class LightCrossbow extends AbstractWeapon {
       320
     );
     this.ammunitionTag = "crossbow";
+    this.iconUrl = lightCrossbowUrl;
   }
 }
 
@@ -281,6 +289,7 @@ export class Longsword extends AbstractWeapon {
     super(g, "longsword", "martial", "melee", dd(1, 8, "slashing"), [
       "versatile",
     ]);
+    this.iconUrl = longswordUrl;
   }
 }
 
@@ -346,6 +355,7 @@ export class Trident extends AbstractWeapon {
       60
     );
     this.quantity = quantity;
+    this.iconUrl = tridentUrl;
   }
 }
 

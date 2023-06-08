@@ -7,6 +7,7 @@ export default abstract class AbstractItem<T extends ItemType> {
   magic?: boolean;
   enchantments: Set<Enchantment<T>>;
   rarity: ItemRarity;
+  iconUrl?: string;
 
   constructor(
     public g: Engine,

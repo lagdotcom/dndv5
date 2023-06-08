@@ -368,6 +368,20 @@
     }
   };
 
+  // src/colours.ts
+  var ItemRarityColours = {
+    Common: "",
+    Uncommon: "invert(43%) sepia(73%) saturate(789%) hue-rotate(76deg) brightness(114%) contrast(97%)",
+    Rare: "invert(54%) sepia(70%) saturate(1877%) hue-rotate(189deg) brightness(92%) contrast(92%)",
+    "Very Rare": "invert(17%) sepia(86%) saturate(4261%) hue-rotate(276deg) brightness(87%) contrast(112%)",
+    Legendary: "invert(70%) sepia(84%) saturate(1467%) hue-rotate(339deg) brightness(101%) contrast(99%)",
+    Artifact: "invert(70%) sepia(84%) saturate(1467%) hue-rotate(339deg) brightness(101%) contrast(99%)"
+  };
+  function getItemIcon(item) {
+    if (item == null ? void 0 : item.iconUrl)
+      return { url: item.iconUrl, colour: ItemRarityColours[item.rarity] };
+  }
+
   // src/utils/dnd.ts
   function getAbilityModifier(ability) {
     return Math.floor((ability - 10) / 2);
@@ -873,6 +887,8 @@
       this.weapon = weapon;
       this.ammo = ammo;
       this.ability = getWeaponAbility(actor, weapon);
+      this.icon = getItemIcon(weapon);
+      this.subIcon = getItemIcon(ammo);
     }
     check(config, ec) {
       return super.check(config, ec);
@@ -1827,6 +1843,21 @@
     }
   };
 
+  // src/items/icons/light-crossbow.svg
+  var light_crossbow_default = "./light-crossbow-GA5KGYMD.svg";
+
+  // src/items/icons/longsword.svg
+  var longsword_default = "./longsword-UJJYNSYJ.svg";
+
+  // src/items/icons/quarterstaff.svg
+  var quarterstaff_default = "./quarterstaff-YWQGWE6Q.svg";
+
+  // src/items/icons/spear.svg
+  var spear_default = "./spear-QQSF6VQQ.svg";
+
+  // src/items/icons/trident.svg
+  var trident_default = "./trident-56MTMKCV.svg";
+
   // src/items/weapons.ts
   var AbstractWeapon = class extends AbstractItem {
     constructor(g2, name, category, rangeCategory, damage, properties = [], shortRange, longRange) {
@@ -1882,6 +1913,7 @@
       super(g2, "quarterstaff", "simple", "melee", dd(1, 6, "bludgeoning"), [
         "versatile"
       ]);
+      this.iconUrl = quarterstaff_default;
     }
   };
   var Sickle = class extends AbstractWeapon {
@@ -1902,6 +1934,7 @@
         60
       );
       this.quantity = quantity;
+      this.iconUrl = spear_default;
     }
   };
   var LightCrossbow = class extends AbstractWeapon {
@@ -1917,6 +1950,7 @@
         320
       );
       this.ammunitionTag = "crossbow";
+      this.iconUrl = light_crossbow_default;
     }
   };
   var Dart = class extends AbstractWeapon {
@@ -1954,6 +1988,7 @@
       super(g2, "longsword", "martial", "melee", dd(1, 8, "slashing"), [
         "versatile"
       ]);
+      this.iconUrl = longsword_default;
     }
   };
   var Rapier = class extends AbstractWeapon {
@@ -1982,6 +2017,7 @@
         60
       );
       this.quantity = quantity;
+      this.iconUrl = trident_default;
     }
   };
   var HeavyCrossbow = class extends AbstractWeapon {
@@ -2176,6 +2212,9 @@
     }
   };
 
+  // src/items/icons/bolt.svg
+  var bolt_default = "./bolt-WY3COZUE.svg";
+
   // src/items/ammunition.ts
   var AbstractAmmo = class extends AbstractItem {
     constructor(g2, name, ammunitionTag, quantity) {
@@ -2187,6 +2226,7 @@
   var CrossbowBolt = class extends AbstractAmmo {
     constructor(g2, quantity) {
       super(g2, "crossbow bolt", "crossbow", quantity);
+      this.iconUrl = bolt_default;
     }
   };
   var SlingBullet = class extends AbstractAmmo {
@@ -2648,6 +2688,18 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var weaponPlus1 = weaponPlus(1, "Uncommon");
   var weaponPlus2 = weaponPlus(2, "Rare");
   var weaponPlus3 = weaponPlus(3, "Very Rare");
+  var armorPlus = (value, rarity) => ({
+    name: `+${value} bonus`,
+    setup(g2, item) {
+      item.name = `${item.name} +${value}`;
+      item.magical = true;
+      item.rarity = rarity;
+      item.ac += value;
+    }
+  });
+  var armorPlus1 = armorPlus(1, "Rare");
+  var armorPlus2 = armorPlus(2, "Very Rare");
+  var armorPlus3 = armorPlus(3, "Legendary");
 
   // src/events/ListChoiceEvent.ts
   var ListChoiceEvent = class extends CustomEvent {
@@ -6878,12 +6930,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     "main": "_main_spvfs_1"
   };
 
-  // src/ui/Labelled.tsx
-  var import_hooks = __toESM(require_hooks());
-
-  // src/ui/Labelled.module.scss
-  var Labelled_module_default = {
-    "label": "_label_6lltv_1"
+  // src/ui/IconButton.module.scss
+  var IconButton_module_default = {
+    "main": "_main_1x2nt_1",
+    "image": "_image_1x2nt_8",
+    "sub": "_sub_1x2nt_9"
   };
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
@@ -6900,6 +6951,63 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         void 0 === a[u] && (a[u] = s[u]);
     return import_preact.options.vnode && import_preact.options.vnode(i), i;
   }
+
+  // src/ui/IconButton.tsx
+  function IconButton({
+    onClick,
+    alt,
+    icon,
+    size = 48,
+    sub,
+    subSize = 24
+  }) {
+    return /* @__PURE__ */ o(
+      "button",
+      {
+        className: IconButton_module_default.main,
+        style: { width: size, height: size },
+        onClick,
+        title: alt,
+        "aria-label": alt,
+        children: [
+          /* @__PURE__ */ o(
+            "div",
+            {
+              className: IconButton_module_default.image,
+              "aria-hidden": true,
+              style: {
+                width: size,
+                height: size,
+                backgroundImage: `url(${icon.url})`,
+                filter: icon.colour
+              }
+            }
+          ),
+          sub && /* @__PURE__ */ o(
+            "div",
+            {
+              className: IconButton_module_default.sub,
+              "aria-hidden": true,
+              style: {
+                width: subSize,
+                height: subSize,
+                backgroundImage: `url(${sub.url})`,
+                filter: sub.colour
+              }
+            }
+          )
+        ]
+      }
+    );
+  }
+
+  // src/ui/Labelled.tsx
+  var import_hooks = __toESM(require_hooks());
+
+  // src/ui/Labelled.module.scss
+  var Labelled_module_default = {
+    "label": "_label_6lltv_1"
+  };
 
   // src/ui/Labelled.tsx
   function Labelled({ children, label, role = "group" }) {
@@ -6953,7 +7061,18 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       /* @__PURE__ */ o(Labelled, { label: "Current Turn", children: who.name }),
       /* @__PURE__ */ o("button", { onClick: onPass, children: "End Turn" }),
       /* @__PURE__ */ o("hr", {}),
-      /* @__PURE__ */ o(Labelled, { label: "Actions", children: allActions.value.map((action) => /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)) })
+      /* @__PURE__ */ o(Labelled, { label: "Actions", children: allActions.value.map(
+        (action) => action.icon ? /* @__PURE__ */ o(
+          IconButton,
+          {
+            onClick: () => onChooseAction(action),
+            icon: action.icon,
+            sub: action.subIcon,
+            alt: action.name
+          },
+          action.name
+        ) : /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)
+      ) })
     ] });
   }
 

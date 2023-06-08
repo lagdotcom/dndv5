@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action from "../types/Action";
+import Action, { ActionIcon } from "../types/Action";
 import { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
@@ -11,6 +11,9 @@ import Empty from "../types/Empty";
 export default abstract class AbstractAction<T extends object = Empty>
   implements Action<T>
 {
+  icon?: ActionIcon;
+  subIcon?: ActionIcon;
+
   constructor(
     public g: Engine,
     public actor: Combatant,
