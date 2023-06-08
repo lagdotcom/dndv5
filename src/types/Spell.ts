@@ -54,7 +54,7 @@ export default interface Spell<T extends object = object> extends Source {
   check(
     g: Engine,
     config: Partial<T>,
-    collector?: ErrorCollector
+    collector: ErrorCollector
   ): ErrorCollector;
   getAffectedArea(
     g: Engine,

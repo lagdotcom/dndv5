@@ -9,11 +9,14 @@ import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import AbilityName, { AbilityNames } from "./types/AbilityName";
 import Combatant from "./types/Combatant";
-import CombatantEffect from "./types/CombatantEffect";
 import CombatantScore from "./types/CombatantScore";
 import Concentration from "./types/Concentration";
 import ConditionName from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
+import EffectType, {
+  EffectConfig,
+  EffectDurationTimer,
+} from "./types/EffectType";
 import Feature from "./types/Feature";
 import Item, {
   AmmoItem,
@@ -93,7 +96,7 @@ export default abstract class AbstractCombatant implements Combatant {
   time: Set<"action" | "bonus action" | "reaction">;
   attunements: Set<Item>;
   movedSoFar: number;
-  effects: Map<CombatantEffect, number>;
+  effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
@@ -379,29 +382,32 @@ export default abstract class AbstractCombatant implements Combatant {
     this.hp = this.hpMax;
   }
 
-  addEffect(effect: CombatantEffect, duration: number) {
-    this.effects.set(effect, duration);
-    this.g.fire(new EffectAddedEvent({ who: this, effect, duration }));
+  addEffect<T>(effect: EffectType<T>, config: EffectConfig<T>) {
+    this.effects.set(effect, config);
+    this.g.fire(new EffectAddedEvent({ who: this, effect, config }));
   }
 
-  hasEffect(effect: CombatantEffect) {
+  getEffectConfig<T>(effect: EffectType<T>) {
+    return this.effects.get(effect) as EffectConfig<T> | undefined;
+  }
+
+  hasEffect<T>(effect: EffectType<T>) {
     return this.effects.has(effect);
   }
 
-  removeEffect(effect: CombatantEffect) {
-    const durationRemaining = this.effects.get(effect) ?? NaN;
+  removeEffect<T>(effect: EffectType<T>) {
+    const config = this.getEffectConfig(effect);
 
-    this.effects.delete(effect);
-    this.g.fire(
-      new EffectRemovedEvent({ who: this, effect, durationRemaining })
-    );
+    if (config) {
+      this.effects.delete(effect);
+      this.g.fire(new EffectRemovedEvent({ who: this, effect, config }));
+    }
   }
 
-  tickEffects(durationTimer: CombatantEffect["durationTimer"]) {
-    for (const [effect, duration] of this.effects) {
+  tickEffects(durationTimer: EffectDurationTimer) {
+    for (const [effect, config] of this.effects) {
       if (effect.durationTimer === durationTimer) {
-        this.effects.set(effect, duration - 1);
-        if (duration <= 1) this.removeEffect(effect);
+        if (--config.duration <= 1) this.removeEffect(effect);
       }
     }
   }

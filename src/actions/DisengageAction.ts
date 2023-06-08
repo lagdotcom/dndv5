@@ -14,6 +14,6 @@ export default class DisengageAction extends AbstractAction {
 
   async apply(): Promise<void> {
     super.apply({});
-    this.actor.addEffect(DisengageEffect, 1);
+    this.actor.addEffect(DisengageEffect, { duration: 1 });
   }
 }

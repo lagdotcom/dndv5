@@ -30,7 +30,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
     );
   }
 
-  check(config: Partial<HasTarget>, ec = new ErrorCollector()): ErrorCollector {
+  check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
     if (!this.actor.hasResource(MagicStoneResource))
       ec.add("no magic stones left", MagicStoneAction);
 

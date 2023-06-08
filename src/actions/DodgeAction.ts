@@ -29,6 +29,6 @@ export default class DodgeAction extends AbstractAction {
 
   async apply(): Promise<void> {
     super.apply({});
-    this.actor.addEffect(DodgeEffect, 1);
+    this.actor.addEffect(DodgeEffect, { duration: 1 });
   }
 }

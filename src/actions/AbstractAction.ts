@@ -36,7 +36,7 @@ export default abstract class AbstractAction<T extends object = Empty>
     return this.damage;
   }
 
-  check(config: Partial<T>, ec = new ErrorCollector()) {
+  check(config: Partial<T>, ec: ErrorCollector) {
     if (this.time && !this.actor.time.has(this.time))
       ec.add(`No ${this.time} left`, this);
 

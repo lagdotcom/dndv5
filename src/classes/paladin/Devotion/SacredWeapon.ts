@@ -6,21 +6,22 @@ import Engine from "../../../Engine";
 import SimpleFeature from "../../../features/SimpleFeature";
 import ChoiceResolver from "../../../resolvers/ChoiceResolver";
 import Combatant from "../../../types/Combatant";
-import { WeaponItem } from "../../../types/Item";
 import { minutes } from "../../../utils/time";
 import { ChannelDivinityResource } from "../common";
 
-const SacredWeapons = new Map<Combatant, WeaponItem>();
-
-const SacredWeaponEffect = new Effect("Sacred Weapon", "turnStart", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { who, bonus, weapon, tags } }) => {
-    const sacred = SacredWeapons.get(who);
-    if (sacred && sacred === weapon) {
-      bonus.add(Math.max(1, who.cha.modifier), SacredWeaponEffect);
-      tags.add("magical");
-    }
-  });
-});
+const SacredWeaponEffect = new Effect<HasWeapon>(
+  "Sacred Weapon",
+  "turnStart",
+  (g) => {
+    g.events.on("BeforeAttack", ({ detail: { who, bonus, weapon, tags } }) => {
+      const config = who.getEffectConfig(SacredWeaponEffect);
+      if (config && config.weapon === weapon) {
+        bonus.add(Math.max(1, who.cha.modifier), SacredWeaponEffect);
+        tags.add("magical");
+      }
+    });
+  }
+);
 
 class SacredWeaponAction extends AbstractAction<HasWeapon> {
   constructor(g: Engine, actor: Combatant) {
@@ -40,7 +41,7 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
     );
   }
 
-  check(config: never, ec = new ErrorCollector()) {
+  check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasResource(ChannelDivinityResource))
       ec.add("no Channel Divinity left", this);
 
@@ -53,8 +54,7 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
   async apply({ weapon }: HasWeapon) {
     super.apply({ weapon });
     this.actor.spendResource(ChannelDivinityResource);
-    this.actor.addEffect(SacredWeaponEffect, minutes(1));
-    SacredWeapons.set(this.actor, weapon);
+    this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
 
     // TODO The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that.
     // TODO You can end this effect on your turn as part of any other action.

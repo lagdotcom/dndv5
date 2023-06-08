@@ -1,14 +1,16 @@
 import Combatant from "../types/Combatant";
-import CombatantEffect from "../types/CombatantEffect";
+import EffectType, { EffectConfig } from "../types/EffectType";
 
-export interface EffectRemovedDetail {
+export interface EffectRemovedDetail<T = unknown> {
   who: Combatant;
-  effect: CombatantEffect;
-  durationRemaining: number;
+  effect: EffectType<T>;
+  config: EffectConfig<T>;
 }
 
-export default class EffectRemovedEvent extends CustomEvent<EffectRemovedDetail> {
-  constructor(detail: EffectRemovedDetail) {
+export default class EffectRemovedEvent<T = object> extends CustomEvent<
+  EffectRemovedDetail<T>
+> {
+  constructor(detail: EffectRemovedDetail<T>) {
     super("EffectRemoved", { detail });
   }
 }

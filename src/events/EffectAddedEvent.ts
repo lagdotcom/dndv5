@@ -1,14 +1,16 @@
 import Combatant from "../types/Combatant";
-import CombatantEffect from "../types/CombatantEffect";
+import EffectType, { EffectConfig } from "../types/EffectType";
 
-export interface EffectAddedDetail {
+export interface EffectAddedDetail<T = unknown> {
   who: Combatant;
-  effect: CombatantEffect;
-  duration: number;
+  effect: EffectType<T>;
+  config: EffectConfig<T>;
 }
 
-export default class EffectAddedEvent extends CustomEvent<EffectAddedDetail> {
-  constructor(detail: EffectAddedDetail) {
+export default class EffectAddedEvent<T = object> extends CustomEvent<
+  EffectAddedDetail<T>
+> {
+  constructor(detail: EffectAddedDetail<T>) {
     super("EffectAdded", { detail });
   }
 }

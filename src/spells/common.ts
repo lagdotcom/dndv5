@@ -1,6 +1,5 @@
 import { MarkOptional } from "ts-essentials";
 
-import ErrorCollector from "../collectors/ErrorCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SlotResolver from "../resolvers/SlotResolver";
@@ -28,7 +27,7 @@ export const simpleSpell = <T extends object>({
   m,
   lists,
   apply,
-  check = (_g, _config, ec = new ErrorCollector()) => ec,
+  check = (_g, _config, ec) => ec,
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
@@ -85,7 +84,7 @@ export const scalingSpell = <T extends object>({
   m,
   lists,
   apply,
-  check = (_g, _config, ec = new ErrorCollector()) => ec,
+  check = (_g, _config, ec) => ec,
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,

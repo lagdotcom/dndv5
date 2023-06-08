@@ -42,7 +42,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.method.getResourceForSpell(this.spell, level, this.actor);
   }
 
-  check(config: Partial<T>, ec = new ErrorCollector()): ErrorCollector {
+  check(config: Partial<T>, ec: ErrorCollector): ErrorCollector {
     if (!this.actor.time.has(this.spell.time))
       ec.add(`No ${this.spell.time} left`, this);
 

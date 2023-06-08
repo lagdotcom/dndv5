@@ -1,7 +1,8 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import { PickChoice } from "../interruptions/PickFromListChoice";
-import Action, { Resolver } from "../types/Action";
+import Action from "../types/Action";
+import Resolver from "../types/Resolver";
 
 export default class ChoiceResolver<T> implements Resolver<T> {
   type: "Choice";
@@ -14,7 +15,7 @@ export default class ChoiceResolver<T> implements Resolver<T> {
     return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
   }
 
-  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+  check(value: unknown, action: Action, ec: ErrorCollector) {
     if (!value) ec.add("No choice made", this);
     else if (!this.entries.find((e) => e.value === value))
       ec.add("Invalid choice", this);

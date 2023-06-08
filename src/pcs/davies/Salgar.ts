@@ -6,6 +6,7 @@ import { Handaxe, Shortsword, Spear } from "../../items/weapons";
 import PC from "../../PC";
 import { MountainDwarf, ToolProficiency } from "../../races/Dwarf";
 import MagicStone from "../../spells/cantrip/MagicStone";
+import LesserRestoration from "../../spells/level2/LesserRestoration";
 import tokenUrl from "./Salgar_token.png";
 
 export default class Salgar extends PC {
@@ -45,8 +46,7 @@ export default class Salgar extends PC {
     // TODO silvered
     this.inventory.add(new Shortsword(g));
 
-    this
-      .addPreparedSpells
+    this.addPreparedSpells(
       // TODO Druidcraft,
       // TODO Mending,
       // TODO MoldEarth,
@@ -56,7 +56,7 @@ export default class Salgar extends PC {
       // TODO HealingWord,
       // TODO SpeakWithAnimals,
 
-      // TODO LesserRestoration,
+      LesserRestoration
       // TODO LocateObject,
       // TODO Moonbeam,
 
@@ -64,6 +64,6 @@ export default class Salgar extends PC {
 
       // TODO CharmMonster,
       // TODO GuardianOfNature
-      ();
+    );
   }
 }

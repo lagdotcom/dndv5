@@ -32,7 +32,7 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
     this.ability = getWeaponAbility(actor, weapon);
   }
 
-  check(config: Partial<HasTarget>, ec = new ErrorCollector()): ErrorCollector {
+  check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
     // TODO check action economy
 
     return super.check(config, ec);

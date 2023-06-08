@@ -1,8 +1,9 @@
 import AbstractCombatant from "../AbstractCombatant";
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action, { Resolver } from "../types/Action";
+import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import Resolver from "../types/Resolver";
 import { distance } from "../utils/units";
 
 export default class TargetResolver implements Resolver<Combatant> {
@@ -25,7 +26,7 @@ export default class TargetResolver implements Resolver<Combatant> {
     return clauses.length ? clauses.join(", ") : "any target";
   }
 
-  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+  check(value: unknown, action: Action, ec: ErrorCollector) {
     if (!(value instanceof AbstractCombatant)) ec.add("No target", this);
     else {
       if (!this.allowSelf && value === action.actor)

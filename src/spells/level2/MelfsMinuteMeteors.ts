@@ -86,7 +86,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
       );
   }
 
-  check({ points }: Partial<HasPoints>, ec = new ErrorCollector()) {
+  check({ points }: Partial<HasPoints>, ec: ErrorCollector) {
     if (!this.actor.hasResource(MeteorResource, points?.length ?? 1))
       ec.add(`Not enough meteors left`, this);
 

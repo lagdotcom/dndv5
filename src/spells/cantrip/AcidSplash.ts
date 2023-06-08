@@ -1,4 +1,3 @@
-import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { dd } from "../../utils/dice";
@@ -19,7 +18,7 @@ const AcidSplash = simpleSpell<HasTargets>({
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 2, 60) }),
   getDamage: (_, caster) => [dd(getCantripDice(caster), 6, "acid")],
 
-  check(g, { targets }, ec = new ErrorCollector()) {
+  check(g, { targets }, ec) {
     if (isCombatantArray(targets) && targets.length === 2) {
       const [a, b] = targets;
       if (distance(g, a, b) > 5)

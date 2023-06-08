@@ -15,13 +15,13 @@ export default class DashAction extends AbstractAction {
     super(g, actor, "Dash", {}, "action");
   }
 
-  check(config: never, ec = new ErrorCollector()): ErrorCollector {
+  check(config: never, ec: ErrorCollector): ErrorCollector {
     if (this.actor.speed <= 0) ec.add("Zero speed", this);
     return super.check(config, ec);
   }
 
   async apply(): Promise<void> {
     super.apply({});
-    this.actor.addEffect(DashEffect, 1);
+    this.actor.addEffect(DashEffect, { duration: 1 });
   }
 }

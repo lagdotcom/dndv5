@@ -1,13 +1,14 @@
 import DndRule from "./DndRule";
 import Engine from "./Engine";
-import CombatantEffect from "./types/CombatantEffect";
+import EffectType, { EffectDurationTimer } from "./types/EffectType";
 
-export default class Effect implements CombatantEffect {
+export default class Effect<T = object> implements EffectType<T> {
   rule?: DndRule;
+  example?: T;
 
   constructor(
     public name: string,
-    public durationTimer: CombatantEffect["durationTimer"],
+    public durationTimer: EffectDurationTimer,
     setup?: (g: Engine) => void,
     public quiet = false
   ) {

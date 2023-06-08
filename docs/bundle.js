@@ -245,24 +245,6 @@
     }
   };
 
-  // src/collectors/ErrorCollector.ts
-  var ErrorCollector = class {
-    constructor() {
-      this.errors = /* @__PURE__ */ new Set();
-    }
-    add(value, source) {
-      this.errors.add({ value, source });
-    }
-    get messages() {
-      return [...this.errors].map(
-        (entry) => `${entry.value} (${entry.source.name})`
-      );
-    }
-    get valid() {
-      return this.errors.size === 0;
-    }
-  };
-
   // src/DndRule.ts
   var RuleRepository = /* @__PURE__ */ new Set();
   var DndRule = class {
@@ -307,7 +289,7 @@
     getDamage(config) {
       return this.damage;
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (this.time && !this.actor.time.has(this.time))
         ec.add(`No ${this.time} left`, this);
       return ec;
@@ -332,7 +314,7 @@
     constructor(g2, actor) {
       super(g2, actor, "Dash", {}, "action");
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (this.actor.speed <= 0)
         ec.add("Zero speed", this);
       return super.check(config, ec);
@@ -340,7 +322,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(DashAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(DashEffect, 1);
+        this.actor.addEffect(DashEffect, { duration: 1 });
       });
     }
   };
@@ -355,7 +337,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(DisengageAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(DisengageEffect, 1);
+        this.actor.addEffect(DisengageEffect, { duration: 1 });
       });
     }
   };
@@ -381,7 +363,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(DodgeAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(DodgeEffect, 1);
+        this.actor.addEffect(DodgeEffect, { duration: 1 });
       });
     }
   };
@@ -799,26 +781,27 @@
         feature.setup(this.g, this, this.getConfig(feature.name));
       this.hp = this.hpMax;
     }
-    addEffect(effect, duration) {
-      this.effects.set(effect, duration);
-      this.g.fire(new EffectAddedEvent({ who: this, effect, duration }));
+    addEffect(effect, config) {
+      this.effects.set(effect, config);
+      this.g.fire(new EffectAddedEvent({ who: this, effect, config }));
+    }
+    getEffectConfig(effect) {
+      return this.effects.get(effect);
     }
     hasEffect(effect) {
       return this.effects.has(effect);
     }
     removeEffect(effect) {
-      var _a;
-      const durationRemaining = (_a = this.effects.get(effect)) != null ? _a : NaN;
-      this.effects.delete(effect);
-      this.g.fire(
-        new EffectRemovedEvent({ who: this, effect, durationRemaining })
-      );
+      const config = this.getEffectConfig(effect);
+      if (config) {
+        this.effects.delete(effect);
+        this.g.fire(new EffectRemovedEvent({ who: this, effect, config }));
+      }
     }
     tickEffects(durationTimer) {
-      for (const [effect, duration] of this.effects) {
+      for (const [effect, config] of this.effects) {
         if (effect.durationTimer === durationTimer) {
-          this.effects.set(effect, duration - 1);
-          if (duration <= 1)
+          if (--config.duration <= 1)
             this.removeEffect(effect);
         }
       }
@@ -851,7 +834,7 @@
         clauses.push("not self");
       return clauses.length ? clauses.join(", ") : "any target";
     }
-    check(value, action, ec = new ErrorCollector()) {
+    check(value, action, ec) {
       if (!(value instanceof AbstractCombatant))
         ec.add("No target", this);
       else {
@@ -880,7 +863,7 @@
       this.ammo = ammo;
       this.ability = getWeaponAbility(actor, weapon);
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       return super.check(config, ec);
     }
     apply(_0) {
@@ -1541,7 +1524,7 @@
           this.combatants,
           ([, a], [, b]) => b.initiative - a.initiative
         );
-        this.nextTurn();
+        yield this.nextTurn();
       });
     }
     rollDamage(count, e, critical = false) {
@@ -1600,19 +1583,32 @@
       });
     }
     nextTurn() {
-      if (this.activeCombatant)
-        this.fire(new TurnEndedEvent({ who: this.activeCombatant }));
-      let who = this.initiativeOrder[this.initiativePosition];
-      let scan = true;
-      while (scan) {
-        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
-        who = this.initiativeOrder[this.initiativePosition];
-        if (!who.hasEffect(Dead))
-          scan = false;
-      }
-      this.activeCombatant = who;
-      who.movedSoFar = 0;
-      this.fire(new TurnStartedEvent({ who }));
+      return __async(this, null, function* () {
+        if (this.activeCombatant)
+          yield this.resolve(
+            new TurnEndedEvent({
+              who: this.activeCombatant,
+              interrupt: new InterruptionCollector()
+            })
+          );
+        let who = this.initiativeOrder[this.initiativePosition];
+        let scan = true;
+        while (scan) {
+          this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
+          who = this.initiativeOrder[this.initiativePosition];
+          if (!who.hasEffect(Dead))
+            scan = false;
+          else {
+            who.tickEffects("turnStart");
+            who.tickEffects("turnEnd");
+          }
+        }
+        this.activeCombatant = who;
+        who.movedSoFar = 0;
+        yield this.resolve(
+          new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
+        );
+      });
     }
     move(who, dx, dy, track = true) {
       return __async(this, null, function* () {
@@ -1666,7 +1662,7 @@
         if (target.hp <= 0) {
           if (target.diesAtZero) {
             this.combatants.delete(target);
-            target.addEffect(Dead, Infinity);
+            target.addEffect(Dead, { duration: Infinity });
             this.fire(new CombatantDiedEvent({ who: target, attacker }));
           } else {
           }
@@ -2029,7 +2025,7 @@
       const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
       return this.method.getResourceForSpell(this.spell, level, this.actor);
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (!this.actor.time.has(this.spell.time))
         ec.add(`No ${this.spell.time} left`, this);
       const resource = this.getResource(config);
@@ -2393,7 +2389,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     constructor(g2, actor) {
       super(g2, actor, "Steady Aim", {}, "bonus action");
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (this.actor.movedSoFar)
         ec.add("Already moved this turn", this);
       return super.check(config, ec);
@@ -2401,8 +2397,8 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     apply() {
       return __async(this, null, function* () {
         __superGet(SteadyAimAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(SteadyAimNoMoveEffect, 1);
-        this.actor.addEffect(SteadyAimAdvantageEffect, 1);
+        this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
+        this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
       });
     }
   };
@@ -2919,7 +2915,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     getMaximum(who) {
       return this.method.getMaxSlot(this.spell, who);
     }
-    check(value, action, ec = new ErrorCollector()) {
+    check(value, action, ec) {
       if (action instanceof CastSpell)
         this.method = action.method;
       if (typeof value !== "number")
@@ -2956,7 +2952,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     m,
     lists,
     apply,
-    check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
+    check: check2 = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
@@ -3001,7 +2997,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     m,
     lists,
     apply,
-    check: check2 = (_g, _config, ec = new ErrorCollector()) => ec,
+    check: check2 = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
@@ -3439,7 +3435,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         return "any point";
       return `point within ${this.maxRange}'`;
     }
-    check(value, action, ec = new ErrorCollector()) {
+    check(value, action, ec) {
       if (!isPoint(value))
         ec.add("No target", this);
       else {
@@ -3512,7 +3508,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (point)
         return [this.getArea(point)];
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (!this.actor.hasResource(BreathWeaponResource))
         ec.add("No breath weapons left", this);
       return super.check(config, ec);
@@ -3642,7 +3638,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     get name() {
       return `${describeRange(this.minimum, this.maximum)} targets${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}${this.allowSelf ? "" : ", not self"}`;
     }
-    check(value, action, ec = new ErrorCollector()) {
+    check(value, action, ec) {
       if (!isCombatantArray(value))
         ec.add("No target", this);
       else {
@@ -3672,7 +3668,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 2, 60) }),
     getDamage: (_2, caster) => [dd(getCantripDice(caster), 6, "acid")],
-    check(g2, { targets }, ec = new ErrorCollector()) {
+    check(g2, { targets }, ec) {
       if (isCombatantArray(targets) && targets.length === 2) {
         const [a, b] = targets;
         if (distance(g2, a, b) > 5)
@@ -3866,7 +3862,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               }
             }
           );
-          target.addEffect(MindSliverEffect, 2);
+          target.addEffect(MindSliverEffect, { duration: 2 });
         }
       });
     }
@@ -3898,7 +3894,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if ((yield rsa.attack(target)).hit) {
           const damage = yield rsa.getDamage(target);
           yield rsa.damage(target, damage);
-          target.addEffect(RayOfFrostEffect, 1);
+          target.addEffect(RayOfFrostEffect, { duration: 1 });
         }
       });
     }
@@ -3992,8 +3988,50 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IceKnife_default = IceKnife;
 
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply) {
+      this.who = who;
+      this.source = source;
+      this.apply = apply;
+    }
+  };
+
+  // src/utils/time.ts
+  var TURNS_PER_MINUTE = 10;
+  var minutes = (n) => n * TURNS_PER_MINUTE;
+  var hours = (n) => minutes(n * 60);
+
   // src/spells/level2/HoldPerson.ts
+  var HoldPersonEffect = new Effect("Hold Person", "turnStart", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(HoldPersonEffect))
+        conditions.add("Paralyzed");
+    });
+    g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+      const config = who.getEffectConfig(HoldPersonEffect);
+      if (config) {
+        const dc = getSaveDC(config.caster, config.method.ability);
+        interrupt.add(
+          new EvaluateLater(who, HoldPersonEffect, () => __async(void 0, null, function* () {
+            const save = yield g2.savingThrow(dc, {
+              who,
+              attacker: config.caster,
+              ability: "wis",
+              spell: HoldPerson,
+              tags: /* @__PURE__ */ new Set(["Paralyzed"])
+            });
+            if (save) {
+              who.removeEffect(HoldPersonEffect);
+              config.affected.delete(who);
+            }
+          }))
+        );
+      }
+    });
+  });
   var HoldPerson = scalingSpell({
+    incomplete: true,
     name: "Hold Person",
     level: 2,
     school: "Enchantment",
@@ -4005,11 +4043,42 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2, actor, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 2) - 1, 60)
     }),
-    check(g2, { targets }, ec = new ErrorCollector()) {
+    check(g2, { targets }, ec) {
       return ec;
     },
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
+        const dc = getSaveDC(caster, method.ability);
+        const affected = /* @__PURE__ */ new Set();
+        const duration = minutes(1);
+        for (const target of targets) {
+          const save = yield g2.savingThrow(dc, {
+            who: target,
+            attacker: caster,
+            ability: "wis",
+            spell: HoldPerson,
+            tags: /* @__PURE__ */ new Set(["Paralyzed"])
+          });
+          if (!save) {
+            target.addEffect(HoldPersonEffect, {
+              affected,
+              caster,
+              method,
+              duration
+            });
+            affected.add(target);
+          }
+        }
+        caster.concentrateOn({
+          spell: HoldPerson,
+          duration,
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              for (const target of affected)
+                target.removeEffect(HoldPersonEffect);
+            });
+          }
+        });
       });
     }
   });
@@ -4027,7 +4096,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     get name() {
       return `${describeRange(this.minimum, this.maximum)} points${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
     }
-    check(value, action, ec = new ErrorCollector()) {
+    check(value, action, ec) {
       if (!isPointArray(value))
         ec.add("No points", this);
       else {
@@ -4043,11 +4112,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return ec;
     }
   };
-
-  // src/utils/time.ts
-  var TURNS_PER_MINUTE = 10;
-  var minutes = (n) => n * TURNS_PER_MINUTE;
-  var hours = (n) => minutes(n * 60);
 
   // src/spells/level2/MelfsMinuteMeteors.ts
   var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
@@ -4115,7 +4179,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           (centre) => ({ type: "sphere", centre, radius: 5 })
         );
     }
-    check({ points }, ec = new ErrorCollector()) {
+    check({ points }, ec) {
       var _a;
       if (!this.actor.hasResource(MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1))
         ec.add(`Not enough meteors left`, this);
@@ -4337,7 +4401,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     get name() {
       return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
     }
-    check(value, action, ec = new ErrorCollector()) {
+    check(value, action, ec) {
       if (!value)
         ec.add("No choice made", this);
       else if (!this.entries.find((e) => e.value === value))
@@ -4375,7 +4439,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "bonus action"
       );
     }
-    check({ slot }, ec = new ErrorCollector()) {
+    check({ slot }, ec) {
       if (!this.actor.hasResource(HarnessDivinePowerResource))
         ec.add("no Harness Divine Power left", this);
       if (slot) {
@@ -4621,10 +4685,11 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        target.addEffect(ProtectionEffect, minutes(10));
+        const duration = minutes(10);
+        target.addEffect(ProtectionEffect, { duration });
         caster.concentrateOn({
           spell: ProtectionFromEvilAndGood,
-          duration: minutes(10),
+          duration,
           onSpellEnd() {
             return __async(this, null, function* () {
               target.removeEffect(ProtectionEffect);
@@ -4651,23 +4716,66 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getConfig: (g2) => ({ target: new TargetResolver(g2, 30, true) }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        target.addEffect(SanctuaryEffect, minutes(1));
+        target.addEffect(SanctuaryEffect, { caster, method, duration: minutes(1) });
       });
     }
   });
   var Sanctuary_default = Sanctuary;
 
-  // src/classes/paladin/Devotion/SacredWeapon.ts
-  var SacredWeapons = /* @__PURE__ */ new Map();
-  var SacredWeaponEffect = new Effect("Sacred Weapon", "turnStart", (g2) => {
-    g2.events.on("BeforeAttack", ({ detail: { who, bonus, weapon, tags } }) => {
-      const sacred = SacredWeapons.get(who);
-      if (sacred && sacred === weapon) {
-        bonus.add(Math.max(1, who.cha.modifier), SacredWeaponEffect);
-        tags.add("magical");
-      }
-    });
+  // src/spells/level2/LesserRestoration.ts
+  var validConditions = [
+    "Blinded",
+    "Deafened",
+    "Paralyzed",
+    "Poisoned"
+  ];
+  var LesserRestoration = simpleSpell({
+    name: "Lesser Restoration",
+    level: 2,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+    getConfig: (g2, caster, method, { target }) => {
+      const conditions = target ? target.conditions : new Set(validConditions);
+      return {
+        target: new TargetResolver(g2, caster.reach, true),
+        condition: new ChoiceResolver(
+          g2,
+          validConditions.map((value) => ({
+            label: value,
+            value,
+            disabled: !conditions.has(value)
+          }))
+        )
+      };
+    },
+    check(g2, { condition, target }, ec) {
+      if (target && condition && !target.conditions.has(condition))
+        ec.add("target does not have condition", LesserRestoration);
+      return ec;
+    },
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target, condition }) {
+      });
+    }
   });
+  var LesserRestoration_default = LesserRestoration;
+
+  // src/classes/paladin/Devotion/SacredWeapon.ts
+  var SacredWeaponEffect = new Effect(
+    "Sacred Weapon",
+    "turnStart",
+    (g2) => {
+      g2.events.on("BeforeAttack", ({ detail: { who, bonus, weapon, tags } }) => {
+        const config = who.getEffectConfig(SacredWeaponEffect);
+        if (config && config.weapon === weapon) {
+          bonus.add(Math.max(1, who.cha.modifier), SacredWeaponEffect);
+          tags.add("magical");
+        }
+      });
+    }
+  );
   var SacredWeaponAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
@@ -4683,7 +4791,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         "action"
       );
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (!this.actor.hasResource(ChannelDivinityResource))
         ec.add("no Channel Divinity left", this);
       if (this.actor.hasEffect(SacredWeaponEffect))
@@ -4694,8 +4802,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       return __async(this, arguments, function* ({ weapon }) {
         __superGet(SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
         this.actor.spendResource(ChannelDivinityResource);
-        this.actor.addEffect(SacredWeaponEffect, minutes(1));
-        SacredWeapons.set(this.actor, weapon);
+        this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
       });
     }
   };
@@ -4749,8 +4856,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
     PaladinSpellcasting,
     [
       { level: 3, spell: ProtectionFromEvilAndGood_default },
-      { level: 3, spell: Sanctuary_default }
-      // TODO { level: 5, spell: LesserRestoration },
+      { level: 3, spell: Sanctuary_default },
+      { level: 5, spell: LesserRestoration_default }
       // TODO { level: 5, spell: ZoneOfTruth },
       // TODO { level: 9, spell: BeaconOfHope },
       // TODO { level: 9, spell: DispelMagic },
@@ -4848,11 +4955,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
+        const duration = minutes(1);
         for (const target of targets)
-          target.addEffect(BlessEffect, minutes(1));
+          target.addEffect(BlessEffect, { duration });
         caster.concentrateOn({
           spell: Bless,
-          duration: minutes(1),
+          duration,
           onSpellEnd: () => __async(this, null, function* () {
             for (const target of targets)
               target.removeEffect(BlessEffect);
@@ -4862,15 +4970,6 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   });
   var Bless_default = Bless;
-
-  // src/interruptions/EvaluateLater.ts
-  var EvaluateLater = class {
-    constructor(who, source, apply) {
-      this.who = who;
-      this.source = source;
-      this.apply = apply;
-    }
-  };
 
   // src/spells/level1/DivineFavor.ts
   var DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g2) => {
@@ -4906,10 +5005,11 @@ Once you use this feature, you can't use it again until you finish a long rest.
     getConfig: () => ({}),
     apply(g2, caster) {
       return __async(this, null, function* () {
-        caster.addEffect(DivineFavorEffect, minutes(1));
+        const duration = minutes(1);
+        caster.addEffect(DivineFavorEffect, { duration });
         caster.concentrateOn({
           spell: DivineFavor,
-          duration: minutes(1),
+          duration,
           onSpellEnd() {
             return __async(this, null, function* () {
               caster.removeEffect(DivineFavorEffect);
@@ -4994,7 +5094,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     constructor(g2, actor) {
       super(g2, actor, "End Rage", {}, "bonus action");
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
         ec.add("Not raging", this);
       return ec;
@@ -5042,7 +5142,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     constructor(g2, actor) {
       super(g2, actor, "Rage", {}, "bonus action");
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (!this.actor.hasResource(RageResource))
         ec.add("No rages left", this);
       return super.check(config, ec);
@@ -5051,7 +5151,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       return __async(this, null, function* () {
         __superGet(RageAction.prototype, this, "apply").call(this, {});
         this.actor.spendResource(RageResource);
-        this.actor.addEffect(RageEffect, minutes(1));
+        this.actor.addEffect(RageEffect, { duration: minutes(1) });
       });
     }
   };
@@ -5117,7 +5217,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
                 "Reckless Attack",
                 `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
                 () => __async(void 0, null, function* () {
-                  me.addEffect(RecklessAttackEffect, 1);
+                  me.addEffect(RecklessAttackEffect, { duration: 1 });
                   if (canBeReckless(who, tags, ability))
                     diceType.add("advantage", RecklessAttackEffect);
                 })
@@ -5486,7 +5586,14 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var druid_default = Druid;
 
   // src/spells/level2/Blur.ts
+  var BlurEffect = new Effect("Blur", "turnStart", (g2) => {
+    g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+      if (who.hasEffect(BlurEffect))
+        diceType.add("disadvantage", BlurEffect);
+    });
+  });
   var Blur = simpleSpell({
+    incomplete: true,
     name: "Blur",
     level: 2,
     school: "Illusion",
@@ -5494,8 +5601,19 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: () => ({}),
-    apply(g2, caster, method) {
+    apply(g2, caster) {
       return __async(this, null, function* () {
+        const duration = minutes(1);
+        caster.addEffect(BlurEffect, { duration });
+        caster.concentrateOn({
+          spell: Blur,
+          duration,
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              caster.removeEffect(BlurEffect);
+            });
+          }
+        });
       });
     }
   });
@@ -5672,7 +5790,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a drop of molasses",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 6, 120) }),
-    check(g2, config, ec = new ErrorCollector()) {
+    check(g2, config, ec) {
       return ec;
     },
     apply(_0, _1, _2, _3) {
@@ -5798,10 +5916,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        target.addEffect(StoneskinEffect, hours(1));
+        const duration = hours(1);
+        target.addEffect(StoneskinEffect, { duration });
         caster.concentrateOn({
           spell: Stoneskin,
-          duration: hours(1),
+          duration,
           onSpellEnd() {
             return __async(this, null, function* () {
               target.removeEffect(StoneskinEffect);
@@ -6111,7 +6230,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.method = method;
       this.unsubscribe = unsubscribe;
     }
-    check(config, ec = new ErrorCollector()) {
+    check(config, ec) {
       if (!this.actor.hasResource(MagicStoneResource))
         ec.add("no magic stones left", MagicStoneAction);
       return super.check(config, ec);
@@ -6218,7 +6337,21 @@ The creature is aware of this effect before it makes its attack against you.`
       this.don(new HideArmor(g2));
       this.inventory.add(new Handaxe(g2, 1));
       this.inventory.add(new Shortsword(g2));
-      this.addPreparedSpells();
+      this.addPreparedSpells(
+        // TODO Druidcraft,
+        // TODO Mending,
+        // TODO MoldEarth,
+        // TODO DetectMagic,
+        // TODO EarthTremor,
+        // TODO HealingWord,
+        // TODO SpeakWithAnimals,
+        LesserRestoration_default
+        // TODO LocateObject,
+        // TODO Moonbeam,
+        // TODO EruptingEarth,
+        // TODO CharmMonster,
+        // TODO GuardianOfNature
+      );
     }
   };
 
@@ -6325,7 +6458,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/spells/level1/FogCloud.ts
   var FogCloud = scalingSpell({
-    implemented: true,
+    incomplete: true,
     name: "Fog Cloud",
     level: 1,
     school: "Conjuration",
@@ -6500,6 +6633,24 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.tsx
   var import_hooks12 = __toESM(require_hooks());
+
+  // src/collectors/ErrorCollector.ts
+  var ErrorCollector = class {
+    constructor() {
+      this.errors = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.errors.add({ value, source });
+    }
+    get messages() {
+      return [...this.errors].map(
+        (entry) => `${entry.value} (${entry.source.name})`
+      );
+    }
+    get valid() {
+      return this.errors.size === 0;
+    }
+  };
 
   // src/utils/config.ts
   function check(action, config) {

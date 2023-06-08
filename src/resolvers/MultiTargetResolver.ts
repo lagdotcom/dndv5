@@ -1,7 +1,8 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action, { Resolver } from "../types/Action";
+import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import Resolver from "../types/Resolver";
 import { describeRange } from "../utils/text";
 import { isCombatantArray } from "../utils/types";
 import { distance } from "../utils/units";
@@ -25,7 +26,7 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
     }${this.allowSelf ? "" : ", not self"}`;
   }
 
-  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+  check(value: unknown, action: Action, ec: ErrorCollector) {
     if (!isCombatantArray(value)) ec.add("No target", this);
     else {
       if (value.length < this.minimum)

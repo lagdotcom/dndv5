@@ -45,11 +45,12 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
   }),
 
   async apply(g, caster, method, { target }) {
-    target.addEffect(ProtectionEffect, minutes(10));
+    const duration = minutes(10);
+    target.addEffect(ProtectionEffect, { duration });
 
     caster.concentrateOn({
       spell: ProtectionFromEvilAndGood,
-      duration: minutes(10),
+      duration,
       async onSpellEnd() {
         target.removeEffect(ProtectionEffect);
       },

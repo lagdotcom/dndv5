@@ -1,10 +1,10 @@
 import AbilityName from "./AbilityName";
 import ActionTime from "./ActionTime";
-import CombatantEffect from "./CombatantEffect";
 import CombatantScore from "./CombatantScore";
 import Concentration from "./Concentration";
 import ConditionName from "./ConditionName";
 import CreatureType from "./CreatureType";
+import EffectType, { EffectConfig, EffectDurationTimer } from "./EffectType";
 import Feature from "./Feature";
 import Item, {
   AmmoItem,
@@ -91,8 +91,9 @@ export default interface Combatant extends Source {
   removeResource(resource: Resource): void;
   concentrateOn(entry: Concentration): void;
   finalise(): void;
-  addEffect(effect: CombatantEffect, duration: number): void;
-  hasEffect(effect: CombatantEffect): boolean;
-  removeEffect(effect: CombatantEffect): void;
-  tickEffects(durationTimer: CombatantEffect["durationTimer"]): void;
+  addEffect<T>(effect: EffectType<T>, config: EffectConfig<T>): void;
+  getEffectConfig<T>(effect: EffectType<T>): EffectConfig<T> | undefined;
+  hasEffect<T>(effect: EffectType<T>): boolean;
+  removeEffect<T>(effect: EffectType<T>): void;
+  tickEffects(durationTimer: EffectDurationTimer): void;
 }

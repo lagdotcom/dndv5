@@ -1,6 +1,16 @@
+import Effect from "../../Effect";
+import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
+const BlurEffect = new Effect("Blur", "turnStart", (g) => {
+  g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+    // TODO  An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.
+    if (who.hasEffect(BlurEffect)) diceType.add("disadvantage", BlurEffect);
+  });
+});
+
 const Blur = simpleSpell({
+  incomplete: true,
   name: "Blur",
   level: 2,
   school: "Illusion",
@@ -10,8 +20,17 @@ const Blur = simpleSpell({
 
   getConfig: () => ({}),
 
-  async apply(g, caster, method) {
-    // TODO Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.
+  async apply(g, caster) {
+    const duration = minutes(1);
+    caster.addEffect(BlurEffect, { duration });
+
+    caster.concentrateOn({
+      spell: Blur,
+      duration,
+      async onSpellEnd() {
+        caster.removeEffect(BlurEffect);
+      },
+    });
   },
 });
 export default Blur;

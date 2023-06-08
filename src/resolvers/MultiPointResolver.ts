@@ -1,7 +1,8 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action, { Resolver } from "../types/Action";
+import Action from "../types/Action";
 import Point from "../types/Point";
+import Resolver from "../types/Resolver";
 import { describeRange } from "../utils/text";
 import { isPointArray } from "../utils/types";
 import { distanceTo } from "../utils/units";
@@ -24,7 +25,7 @@ export default class MultiPointResolver implements Resolver<Point[]> {
     }`;
   }
 
-  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+  check(value: unknown, action: Action, ec: ErrorCollector) {
     if (!isPointArray(value)) ec.add("No points", this);
     else {
       if (value.length < this.minimum)

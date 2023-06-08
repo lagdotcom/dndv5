@@ -31,7 +31,7 @@ class EndRageAction extends AbstractAction {
     super(g, actor, "End Rage", {}, "bonus action");
   }
 
-  check(config: never, ec = new ErrorCollector()) {
+  check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasEffect(RageEffect)) ec.add("Not raging", this);
 
     return ec;
@@ -89,7 +89,7 @@ class RageAction extends AbstractAction {
     super(g, actor, "Rage", {}, "bonus action");
   }
 
-  check(config: never, ec = new ErrorCollector()) {
+  check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasResource(RageResource)) ec.add("No rages left", this);
 
     return super.check(config, ec);
@@ -98,7 +98,7 @@ class RageAction extends AbstractAction {
   async apply() {
     super.apply({});
     this.actor.spendResource(RageResource);
-    this.actor.addEffect(RageEffect, minutes(1));
+    this.actor.addEffect(RageEffect, { duration: minutes(1) });
     // TODO lose concentration
   }
 }

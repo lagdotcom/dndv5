@@ -84,7 +84,7 @@ export default class Engine {
       this.combatants,
       ([, a], [, b]) => b.initiative - a.initiative
     );
-    this.nextTurn();
+    await this.nextTurn();
   }
 
   async rollDamage(
@@ -152,9 +152,14 @@ export default class Engine {
     ).detail;
   }
 
-  nextTurn() {
+  async nextTurn() {
     if (this.activeCombatant)
-      this.fire(new TurnEndedEvent({ who: this.activeCombatant }));
+      await this.resolve(
+        new TurnEndedEvent({
+          who: this.activeCombatant,
+          interrupt: new InterruptionCollector(),
+        })
+      );
 
     let who = this.initiativeOrder[this.initiativePosition];
     let scan = true;
@@ -166,11 +171,17 @@ export default class Engine {
       who = this.initiativeOrder[this.initiativePosition];
 
       if (!who.hasEffect(Dead)) scan = false;
+      else {
+        who.tickEffects("turnStart");
+        who.tickEffects("turnEnd");
+      }
     }
 
     this.activeCombatant = who;
     who.movedSoFar = 0;
-    this.fire(new TurnStartedEvent({ who }));
+    await this.resolve(
+      new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
+    );
   }
 
   async move(who: Combatant, dx: number, dy: number, track = true) {
@@ -240,7 +251,7 @@ export default class Engine {
     if (target.hp <= 0) {
       if (target.diesAtZero) {
         this.combatants.delete(target);
-        target.addEffect(Dead, Infinity);
+        target.addEffect(Dead, { duration: Infinity });
         this.fire(new CombatantDiedEvent({ who: target, attacker }));
       } else {
         // TODO

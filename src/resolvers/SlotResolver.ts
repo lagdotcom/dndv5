@@ -1,7 +1,8 @@
 import CastSpell from "../actions/CastSpell";
 import ErrorCollector from "../collectors/ErrorCollector";
-import Action, { Resolver } from "../types/Action";
+import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import Resolver from "../types/Resolver";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
@@ -22,7 +23,7 @@ export default class SlotResolver implements Resolver<number> {
     return this.method.getMaxSlot(this.spell, who);
   }
 
-  check(value: unknown, action: Action, ec = new ErrorCollector()) {
+  check(value: unknown, action: Action, ec: ErrorCollector) {
     if (action instanceof CastSpell) this.method = action.method;
 
     if (typeof value !== "number") ec.add("No spell level chosen", this);

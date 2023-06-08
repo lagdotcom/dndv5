@@ -34,11 +34,12 @@ const Stoneskin = simpleSpell<HasTarget>({
   }),
 
   async apply(g, caster, method, { target }) {
-    target.addEffect(StoneskinEffect, hours(1));
+    const duration = hours(1);
+    target.addEffect(StoneskinEffect, { duration });
 
     caster.concentrateOn({
       spell: Stoneskin,
-      duration: hours(1),
+      duration,
       async onSpellEnd() {
         target.removeEffect(StoneskinEffect);
       },

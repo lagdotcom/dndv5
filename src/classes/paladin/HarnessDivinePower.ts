@@ -47,7 +47,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
     );
   }
 
-  check({ slot }: Partial<Scales>, ec = new ErrorCollector()): ErrorCollector {
+  check({ slot }: Partial<Scales>, ec: ErrorCollector): ErrorCollector {
     if (!this.actor.hasResource(HarnessDivinePowerResource))
       ec.add("no Harness Divine Power left", this);
 

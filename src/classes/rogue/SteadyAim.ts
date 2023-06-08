@@ -34,7 +34,7 @@ class SteadyAimAction extends AbstractAction {
     super(g, actor, "Steady Aim", {}, "bonus action");
   }
 
-  check(config: never, ec = new ErrorCollector()) {
+  check(config: never, ec: ErrorCollector) {
     if (this.actor.movedSoFar) ec.add("Already moved this turn", this);
 
     return super.check(config, ec);
@@ -43,8 +43,8 @@ class SteadyAimAction extends AbstractAction {
   async apply() {
     super.apply({});
 
-    this.actor.addEffect(SteadyAimNoMoveEffect, 1);
-    this.actor.addEffect(SteadyAimAdvantageEffect, 1);
+    this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
+    this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
   }
 }
 

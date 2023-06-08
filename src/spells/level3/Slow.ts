@@ -1,4 +1,3 @@
-import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { simpleSpell } from "../common";
@@ -15,7 +14,7 @@ const Slow = simpleSpell<HasTargets>({
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120) }),
 
-  check(g, config, ec = new ErrorCollector()) {
+  check(g, config, ec) {
     // TODO You alter time around up to six creatures of your choice in a 40-foot cube within range.
 
     return ec;

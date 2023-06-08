@@ -64,7 +64,7 @@ const MindSliver = simpleSpell<HasTarget>({
           }
         }
       );
-      target.addEffect(MindSliverEffect, 2);
+      target.addEffect(MindSliverEffect, { duration: 2 });
     }
   },
 });

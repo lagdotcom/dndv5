@@ -55,7 +55,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
     if (point) return [this.getArea(point)];
   }
 
-  check(config: never, ec = new ErrorCollector()) {
+  check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasResource(BreathWeaponResource))
       ec.add("No breath weapons left", this);
 

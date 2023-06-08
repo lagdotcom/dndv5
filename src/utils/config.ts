@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
-import Action, { Resolver } from "../types/Action";
+import Action from "../types/Action";
+import Resolver from "../types/Resolver";
 
 export function check<T extends object>(action: Action<T>, config: Partial<T>) {
   const ec = new ErrorCollector();
