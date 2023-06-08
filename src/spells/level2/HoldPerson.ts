@@ -43,7 +43,7 @@ const HoldPersonEffect = new Effect<{
 });
 
 const HoldPerson = scalingSpell<HasTargets>({
-  incomplete: true,
+  status: "incomplete",
   name: "Hold Person",
   level: 2,
   school: "Enchantment",

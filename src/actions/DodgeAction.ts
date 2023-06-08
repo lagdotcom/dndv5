@@ -24,7 +24,7 @@ export const DodgeEffect = new Effect("Dodge", "turnStart", (g) => {
 
 export default class DodgeAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Dodge", {}, "action");
+    super(g, actor, "Dodge", "incomplete", {}, "action");
   }
 
   async apply(): Promise<void> {

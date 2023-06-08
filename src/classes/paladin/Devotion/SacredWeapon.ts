@@ -29,6 +29,7 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
       g,
       actor,
       "Channel Divinity: Sacred Weapon",
+      "implemented",
       {
         weapon: new ChoiceResolver(
           g,

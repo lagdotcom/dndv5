@@ -9,6 +9,7 @@ class CloakHoodAction extends AbstractAction {
       g,
       actor,
       cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
+      "incomplete",
       {},
       "action"
     );

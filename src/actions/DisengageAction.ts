@@ -9,7 +9,7 @@ export const DisengageEffect = new Effect("Disengage", "turnEnd", () => {
 
 export default class DisengageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Disengage", {}, "action");
+    super(g, actor, "Disengage", "missing", {}, "action");
   }
 
   async apply(): Promise<void> {

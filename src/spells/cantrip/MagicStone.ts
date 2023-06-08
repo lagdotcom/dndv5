@@ -23,6 +23,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
       g,
       actor,
       "Throw Magic Stone",
+      "incomplete",
       { target: new TargetResolver(g, 60) },
       undefined,
       undefined,
@@ -91,7 +92,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
 
 // TODO technically you can cast this on someone else
 const MagicStone = simpleSpell({
-  incomplete: true,
+  status: "incomplete",
   name: "Magic Stone",
   level: 0,
   school: "Transmutation",

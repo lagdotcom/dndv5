@@ -13,7 +13,7 @@ const RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g) => {
 });
 
 const RayOfFrost = simpleSpell<HasTarget>({
-  implemented: true,
+  status: "implemented",
   name: "Ray of Frost",
   level: 0,
   school: "Evocation",

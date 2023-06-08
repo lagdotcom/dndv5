@@ -14,7 +14,7 @@ interface Props<T> {
 export default function Menu<T>({ caption, items, onClick, x, y }: Props<T>) {
   return (
     <menu className={styles.main} style={{ left: x, top: y }}>
-      <Labelled label={caption}>
+      <Labelled label={caption} contentsClass={styles.sub}>
         {items.length === 0 ? (
           <div>(empty)</div>
         ) : (

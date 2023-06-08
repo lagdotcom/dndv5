@@ -65,6 +65,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
       g,
       actor,
       "Melf's Minute Meteors",
+      "incomplete",
       {
         points: new MultiPointResolver(
           g,
@@ -99,7 +100,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
 }
 
 const MelfsMinuteMeteors = scalingSpell<HasPoints>({
-  implemented: true,
+  status: "implemented",
   name: "Melf's Minute Meteors",
   level: 3,
   school: "Evocation",

@@ -1,4 +1,5 @@
 import CastSpell from "../actions/CastSpell";
+import { spellImplementationWarning } from "../spells/common";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
@@ -29,7 +30,7 @@ export function bonusSpellsFeature(
       if (addAsList) {
         me.preparedSpells.add(spell);
         method.addCastableSpell(spell, me);
-      }
+      } else spellImplementationWarning(spell, me);
     }
 
     me.spellcastingMethods.add(method);

@@ -36,6 +36,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
       g,
       actor,
       "Breath Weapon",
+      "incomplete",
       { point: new PointResolver(g, 15) },
       undefined,
       undefined,

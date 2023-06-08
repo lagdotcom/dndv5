@@ -11,9 +11,14 @@ import FireBolt from "../../spells/cantrip/FireBolt";
 import MindSliver from "../../spells/cantrip/MindSliver";
 import RayOfFrost from "../../spells/cantrip/RayOfFrost";
 import IceKnife from "../../spells/level1/IceKnife";
+import MagicMissile from "../../spells/level1/MagicMissile";
+import Shield from "../../spells/level1/Shield";
+import EnlargeReduce from "../../spells/level2/EnlargeReduce";
 import HoldPerson from "../../spells/level2/HoldPerson";
 import MelfsMinuteMeteors from "../../spells/level2/MelfsMinuteMeteors";
 import Fireball from "../../spells/level3/Fireball";
+import IntellectFortress from "../../spells/level3/IntellectFortress";
+import WallOfFire from "../../spells/level4/WallOfFire";
 import { enchant } from "../../utils/items";
 import tokenUrl from "./Beldalynn_token.png";
 
@@ -66,18 +71,18 @@ export default class Beldalynn extends PC {
       RayOfFrost,
 
       IceKnife,
-      // TODO MagicMissile,
-      // TODO Shield,
+      MagicMissile,
+      Shield,
 
-      // TODO EnlargeReduce,
+      EnlargeReduce,
       HoldPerson,
       MelfsMinuteMeteors,
 
-      Fireball
-      // TODO IntellectFortress,
+      Fireball,
+      IntellectFortress,
       // TODO LeomundsTinyHut,
 
-      // TODO WallOfFire
+      WallOfFire
     );
   }
 }

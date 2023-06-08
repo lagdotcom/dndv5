@@ -12,7 +12,7 @@ export const DashEffect = new Effect("Dash", "turnEnd", (g) => {
 
 export default class DashAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Dash", {}, "action");
+    super(g, actor, "Dash", "implemented", {}, "action");
   }
 
   check(config: never, ec: ErrorCollector): ErrorCollector {

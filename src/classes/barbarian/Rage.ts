@@ -28,7 +28,7 @@ export const RageResource = new LongRestResource("Rage", 2);
 
 class EndRageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "End Rage", {}, "bonus action");
+    super(g, actor, "End Rage", "implemented", {}, "bonus action");
   }
 
   check(config: never, ec: ErrorCollector) {
@@ -86,7 +86,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
 
 class RageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Rage", {}, "bonus action");
+    super(g, actor, "Rage", "incomplete", {}, "bonus action");
   }
 
   check(config: never, ec: ErrorCollector) {

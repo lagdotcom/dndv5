@@ -8,3 +8,13 @@
 .active {
   background-color: yellow;
 }
+
+.warning {
+  font-size: 0.8em;
+  font-weight: bold;
+  color: red;
+
+  &::before {
+    content: "WARNING: ";
+  }
+}

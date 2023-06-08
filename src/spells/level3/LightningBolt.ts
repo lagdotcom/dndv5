@@ -15,7 +15,7 @@ function getArea(g: Engine, actor: Combatant, point: Point) {
 }
 
 const LightningBolt = scalingSpell<HasPoint>({
-  implemented: true,
+  status: "implemented",
   name: "Lightning Bolt",
   level: 3,
   school: "Evocation",

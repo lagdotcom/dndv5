@@ -25,7 +25,7 @@ const DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g) => {
 });
 
 const DivineFavor = simpleSpell({
-  implemented: true,
+  status: "implemented",
   name: "Divine Favor",
   level: 1,
   school: "Evocation",

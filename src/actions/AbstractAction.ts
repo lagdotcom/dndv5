@@ -7,6 +7,7 @@ import Combatant from "../types/Combatant";
 import DamageAmount from "../types/DamageAmount";
 import { SpecifiedEffectShape } from "../types/EffectArea";
 import Empty from "../types/Empty";
+import ImplementationStatus from "../types/ImplementationStatus";
 
 export default abstract class AbstractAction<T extends object = Empty>
   implements Action<T>
@@ -18,6 +19,7 @@ export default abstract class AbstractAction<T extends object = Empty>
     public g: Engine,
     public actor: Combatant,
     public name: string,
+    public status: ImplementationStatus,
     public config: ActionConfig<T>,
     public time?: ActionTime,
     public area?: SpecifiedEffectShape[],

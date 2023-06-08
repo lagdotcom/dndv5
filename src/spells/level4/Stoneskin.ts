@@ -20,6 +20,7 @@ const StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
 });
 
 const Stoneskin = simpleSpell<HasTarget>({
+  status: "implemented",
   name: "Stoneskin",
   level: 4,
   school: "Abjuration",

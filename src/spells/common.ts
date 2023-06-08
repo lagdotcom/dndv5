@@ -5,6 +5,7 @@ import Engine from "../Engine";
 import SlotResolver from "../resolvers/SlotResolver";
 import { ActionConfig } from "../types/Action";
 import Combatant from "../types/Combatant";
+import Source from "../types/Source";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
@@ -31,11 +32,11 @@ export const simpleSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
-  incomplete = false,
-  implemented = false,
+  status = "missing",
 }: Omit<
   MarkOptional<
     Spell<T>,
+    | "status"
     | "concentration"
     | "ritual"
     | "time"
@@ -46,31 +47,28 @@ export const simpleSpell = <T extends object>({
     | "getDamage"
   >,
   "getLevel" | "scaling"
-> & { incomplete?: boolean; implemented?: boolean }): Spell<T> => {
-  if (incomplete) console.warn(`[Spell Not Complete] ${name}`);
-  else if (!implemented) console.warn(`[Spell Missing] ${name}`);
-  return {
-    name,
-    level,
-    ritual,
-    scaling: false,
-    school,
-    concentration,
-    time,
-    v,
-    s,
-    m,
-    lists,
-    apply,
-    check,
-    getAffectedArea,
-    getConfig,
-    getDamage,
-    getLevel() {
-      return level;
-    },
-  };
-};
+>): Spell<T> => ({
+  status,
+  name,
+  level,
+  ritual,
+  scaling: false,
+  school,
+  concentration,
+  time,
+  v,
+  s,
+  m,
+  lists,
+  apply,
+  check,
+  getAffectedArea,
+  getConfig,
+  getDamage,
+  getLevel() {
+    return level;
+  },
+});
 
 export const scalingSpell = <T extends object>({
   name,
@@ -88,11 +86,11 @@ export const scalingSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
-  incomplete = false,
-  implemented = false,
+  status = "missing",
 }: Omit<
   MarkOptional<
     Spell<T & Scales>,
+    | "status"
     | "concentration"
     | "ritual"
     | "time"
@@ -104,41 +102,43 @@ export const scalingSpell = <T extends object>({
   >,
   "getConfig" | "getLevel" | "scaling"
 > & {
-  incomplete?: boolean;
-  implemented?: boolean;
   getConfig: (
     g: Engine,
     actor: Combatant,
     method: SpellcastingMethod,
     config: Partial<T & Scales>
   ) => ActionConfig<T>;
-}): Spell<T & Scales> => {
-  if (incomplete) console.warn(`[Spell Not Complete] ${name}`);
-  else if (!implemented) console.warn(`[Spell Missing] ${name}`);
-  return {
-    name,
-    level,
-    ritual,
-    scaling: true,
-    school,
-    concentration,
-    time,
-    v,
-    s,
-    m,
-    lists,
-    apply,
-    check,
-    getAffectedArea,
-    getConfig(g, actor, method, config) {
-      return {
-        ...getConfig(g, actor, method, config),
-        slot: new SlotResolver(this, method),
-      };
-    },
-    getDamage,
-    getLevel({ slot }) {
-      return slot;
-    },
-  };
-};
+}): Spell<T & Scales> => ({
+  status,
+  name,
+  level,
+  ritual,
+  scaling: true,
+  school,
+  concentration,
+  time,
+  v,
+  s,
+  m,
+  lists,
+  apply,
+  check,
+  getAffectedArea,
+  getConfig(g, actor, method, config) {
+    return {
+      ...getConfig(g, actor, method, config),
+      slot: new SlotResolver(this, method),
+    };
+  },
+  getDamage,
+  getLevel({ slot }) {
+    return slot;
+  },
+});
+
+export function spellImplementationWarning(spell: Spell, owner: Source) {
+  if (spell.status === "incomplete")
+    console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
+  else if (spell.status === "missing")
+    console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
+}

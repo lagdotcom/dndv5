@@ -5,7 +5,7 @@ import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
 const FogCloud = scalingSpell<HasPoint>({
-  incomplete: true,
+  status: "incomplete",
   name: "Fog Cloud",
   level: 1,
   school: "Conjuration",

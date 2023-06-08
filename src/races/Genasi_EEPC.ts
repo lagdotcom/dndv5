@@ -2,6 +2,7 @@ import CastSpell from "../actions/CastSpell";
 import { notImplementedFeature } from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
+import { spellImplementationWarning } from "../spells/common";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
 import Levitate from "../spells/level2/Levitate";
 import PCRace from "../types/PCRace";
@@ -35,6 +36,7 @@ const MingleWithTheWind = new SimpleFeature(
   `You can cast the levitate spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell.`,
   (g, me) => {
     me.initResource(MingleWithTheWindResource);
+    spellImplementationWarning(Levitate, me);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me)

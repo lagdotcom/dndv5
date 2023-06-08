@@ -24,6 +24,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
       g,
       actor,
       "Harness Divine Power",
+      "implemented",
       {
         slot: new ChoiceResolver(
           g,

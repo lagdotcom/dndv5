@@ -22,6 +22,10 @@ export default class CastSpell<T extends object> implements Action<T> {
     this.time = spell.time;
   }
 
+  get status() {
+    return this.spell.status;
+  }
+
   getConfig(config: Partial<T>) {
     return this.spell.getConfig(this.g, this.actor, this.method, config);
   }

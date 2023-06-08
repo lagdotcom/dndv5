@@ -268,10 +268,11 @@
 
   // src/actions/AbstractAction.ts
   var AbstractAction = class {
-    constructor(g2, actor, name, config, time, area, damage) {
+    constructor(g2, actor, name, status, config, time, area, damage) {
       this.g = g2;
       this.actor = actor;
       this.name = name;
+      this.status = status;
       this.config = config;
       this.time = time;
       this.area = area;
@@ -312,7 +313,7 @@
   });
   var DashAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Dash", {}, "action");
+      super(g2, actor, "Dash", "implemented", {}, "action");
     }
     check(config, ec) {
       if (this.actor.speed <= 0)
@@ -332,7 +333,7 @@
   });
   var DisengageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Disengage", {}, "action");
+      super(g2, actor, "Disengage", "missing", {}, "action");
     }
     apply() {
       return __async(this, null, function* () {
@@ -358,7 +359,7 @@
   });
   var DodgeAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Dodge", {}, "action");
+      super(g2, actor, "Dodge", "incomplete", {}, "action");
     }
     apply() {
       return __async(this, null, function* () {
@@ -453,6 +454,197 @@
     }
   };
 
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("SpellCast", { detail });
+    }
+  };
+
+  // src/actions/CastSpell.ts
+  var CastSpell = class {
+    constructor(g2, actor, method, spell) {
+      this.g = g2;
+      this.actor = actor;
+      this.method = method;
+      this.spell = spell;
+      this.name = `${spell.name} (${method.name})`;
+      this.time = spell.time;
+    }
+    get status() {
+      return this.spell.status;
+    }
+    getConfig(config) {
+      return this.spell.getConfig(this.g, this.actor, this.method, config);
+    }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(this.g, this.actor, config);
+    }
+    getDamage(config) {
+      return this.spell.getDamage(this.g, this.actor, config);
+    }
+    getResource(config) {
+      var _a;
+      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      return this.method.getResourceForSpell(this.spell, level, this.actor);
+    }
+    check(config, ec) {
+      if (!this.actor.time.has(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      const resource = this.getResource(config);
+      if (resource && !this.actor.hasResource(resource))
+        ec.add(`No ${resource.name} left`, this.method);
+      return this.spell.check(this.g, config, ec);
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        this.actor.time.delete(this.spell.time);
+        const resource = this.getResource(config);
+        if (resource)
+          this.actor.spendResource(resource, 1);
+        const sc = this.g.fire(
+          new SpellCastEvent({
+            who: this.actor,
+            spell: this.spell,
+            method: this.method,
+            level: this.spell.getLevel(config)
+          })
+        );
+        if (sc.defaultPrevented)
+          return;
+        return this.spell.apply(this.g, this.actor, this.method, config);
+      });
+    }
+  };
+
+  // src/resolvers/SlotResolver.ts
+  var SlotResolver = class {
+    constructor(spell, method) {
+      this.spell = spell;
+      this.method = method;
+      this.name = "spell slot";
+      this.type = "SpellSlot";
+    }
+    getMinimum(who) {
+      return this.method.getMinSlot(this.spell, who);
+    }
+    getMaximum(who) {
+      return this.method.getMaxSlot(this.spell, who);
+    }
+    check(value, action, ec) {
+      if (action instanceof CastSpell)
+        this.method = action.method;
+      if (typeof value !== "number")
+        ec.add("No spell level chosen", this);
+      else {
+        if (value < this.getMinimum(action.actor))
+          ec.add("Too low", this);
+        if (value > this.getMaximum(action.actor))
+          ec.add("Too high", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/common.ts
+  function getCantripDice(who) {
+    if (who.level < 5)
+      return 1;
+    if (who.level < 11)
+      return 2;
+    if (who.level < 17)
+      return 3;
+    return 4;
+  }
+  var simpleSpell = ({
+    name,
+    level,
+    ritual = false,
+    school,
+    concentration = false,
+    time = "action",
+    v = false,
+    s = false,
+    m,
+    lists,
+    apply,
+    check: check2 = (_g, _config, ec) => ec,
+    getAffectedArea = () => void 0,
+    getConfig,
+    getDamage = () => void 0,
+    status = "missing"
+  }) => ({
+    status,
+    name,
+    level,
+    ritual,
+    scaling: false,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    lists,
+    apply,
+    check: check2,
+    getAffectedArea,
+    getConfig,
+    getDamage,
+    getLevel() {
+      return level;
+    }
+  });
+  var scalingSpell = ({
+    name,
+    level,
+    ritual = false,
+    school,
+    concentration = false,
+    time = "action",
+    v = false,
+    s = false,
+    m,
+    lists,
+    apply,
+    check: check2 = (_g, _config, ec) => ec,
+    getAffectedArea = () => void 0,
+    getConfig,
+    getDamage = () => void 0,
+    status = "missing"
+  }) => ({
+    status,
+    name,
+    level,
+    ritual,
+    scaling: true,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    lists,
+    apply,
+    check: check2,
+    getAffectedArea,
+    getConfig(g2, actor, method, config) {
+      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
+        slot: new SlotResolver(this, method)
+      });
+    },
+    getDamage,
+    getLevel({ slot }) {
+      return slot;
+    }
+  });
+  function spellImplementationWarning(spell, owner) {
+    if (spell.status === "incomplete")
+      console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
+    else if (spell.status === "missing")
+      console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
+  }
+
   // src/types/AbilityName.ts
   var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -491,7 +683,7 @@
       return weapon.forceAbilityScore;
     const { str, dex } = who;
     if (weapon.properties.has("finesse")) {
-      if (dex >= str)
+      if (dex.score >= str.score)
         return "dex";
     }
     if (weapon.rangeCategory === "ranged")
@@ -805,6 +997,8 @@
       for (const feature of this.features.values())
         feature.setup(this.g, this, this.getConfig(feature.name));
       this.hp = this.hpMax;
+      for (const spell of /* @__PURE__ */ new Set([...this.knownSpells, ...this.preparedSpells]))
+        spellImplementationWarning(spell, this);
     }
     addEffect(effect, config) {
       this.effects.set(effect, config);
@@ -879,10 +1073,8 @@
         g2,
         actor,
         ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
-        { target: new TargetResolver(g2, getWeaponRange(actor, weapon)) },
-        void 0,
-        void 0,
-        [weapon.damage]
+        "incomplete",
+        { target: new TargetResolver(g2, getWeaponRange(actor, weapon)) }
       );
       this.weapon = weapon;
       this.ammo = ammo;
@@ -892,6 +1084,9 @@
     }
     check(config, ec) {
       return super.check(config, ec);
+    }
+    getDamage() {
+      return [this.weapon.damage];
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
@@ -2056,66 +2251,6 @@
   // src/monsters/Badger_token.png
   var Badger_token_default = "./Badger_token-53MEBA7R.png";
 
-  // src/events/SpellCastEvent.ts
-  var SpellCastEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("SpellCast", { detail });
-    }
-  };
-
-  // src/actions/CastSpell.ts
-  var CastSpell = class {
-    constructor(g2, actor, method, spell) {
-      this.g = g2;
-      this.actor = actor;
-      this.method = method;
-      this.spell = spell;
-      this.name = `${spell.name} (${method.name})`;
-      this.time = spell.time;
-    }
-    getConfig(config) {
-      return this.spell.getConfig(this.g, this.actor, this.method, config);
-    }
-    getAffectedArea(config) {
-      return this.spell.getAffectedArea(this.g, this.actor, config);
-    }
-    getDamage(config) {
-      return this.spell.getDamage(this.g, this.actor, config);
-    }
-    getResource(config) {
-      var _a;
-      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
-      return this.method.getResourceForSpell(this.spell, level, this.actor);
-    }
-    check(config, ec) {
-      if (!this.actor.time.has(this.spell.time))
-        ec.add(`No ${this.spell.time} left`, this);
-      const resource = this.getResource(config);
-      if (resource && !this.actor.hasResource(resource))
-        ec.add(`No ${resource.name} left`, this.method);
-      return this.spell.check(this.g, config, ec);
-    }
-    apply(config) {
-      return __async(this, null, function* () {
-        this.actor.time.delete(this.spell.time);
-        const resource = this.getResource(config);
-        if (resource)
-          this.actor.spendResource(resource, 1);
-        const sc = this.g.fire(
-          new SpellCastEvent({
-            who: this.actor,
-            spell: this.spell,
-            method: this.method,
-            level: this.spell.getLevel(config)
-          })
-        );
-        if (sc.defaultPrevented)
-          return;
-        return this.spell.apply(this.g, this.actor, this.method, config);
-      });
-    }
-  };
-
   // src/features/SimpleFeature.ts
   var SimpleFeature = class {
     constructor(name, text, setup) {
@@ -2137,7 +2272,8 @@
         if (addAsList) {
           me.preparedSpells.add(spell);
           method.addCastableSpell(spell, me);
-        }
+        } else
+          spellImplementationWarning(spell, me);
       }
       me.spellcastingMethods.add(method);
       if (!addAsList)
@@ -2453,7 +2589,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   });
   var SteadyAimAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Steady Aim", {}, "bonus action");
+      super(g2, actor, "Steady Aim", "implemented", {}, "bonus action");
     }
     check(config, ec) {
       if (this.actor.movedSoFar)
@@ -2512,6 +2648,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
     "Cunning Action",
     `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
     (g2, me) => {
+      console.warn(`[Feature Not Complete] Cunning Action (on ${me.name})`);
       g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
           const cunning = [new DashAction(g2, who), new DisengageAction(g2, who)];
@@ -2851,6 +2988,15 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   );
   var Lucky_default = Lucky;
 
+  // src/features/boons.ts
+  var BoonOfVassetri = notImplementedFeature(
+    "Boon of Vassetri",
+    `You dared ask Vassetri for a boon of power and a bite on the neck was your reward. It provides the following benefits:
+
+  - You may cast the spell [speak with animals] at will, but it can only target snakes.
+  - As a bonus action, you hiss threateningly at an enemy within 5 feet. If the enemy fails a Wisdom save, they must spend their reaction to move half of their speed away from you in any direction. The DC is 8 + your proficiency bonus + your Charisma modifier. You can only use this ability once per short or long rest, and only when you are able to speak.`
+  );
+
   // src/items/wondrous.ts
   var AbstractWondrous = class extends AbstractItem {
     constructor(g2, name, hands = 0) {
@@ -3020,140 +3166,6 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
-  // src/resolvers/SlotResolver.ts
-  var SlotResolver = class {
-    constructor(spell, method) {
-      this.spell = spell;
-      this.method = method;
-      this.name = "spell slot";
-      this.type = "SpellSlot";
-    }
-    getMinimum(who) {
-      return this.method.getMinSlot(this.spell, who);
-    }
-    getMaximum(who) {
-      return this.method.getMaxSlot(this.spell, who);
-    }
-    check(value, action, ec) {
-      if (action instanceof CastSpell)
-        this.method = action.method;
-      if (typeof value !== "number")
-        ec.add("No spell level chosen", this);
-      else {
-        if (value < this.getMinimum(action.actor))
-          ec.add("Too low", this);
-        if (value > this.getMaximum(action.actor))
-          ec.add("Too high", this);
-      }
-      return ec;
-    }
-  };
-
-  // src/spells/common.ts
-  function getCantripDice(who) {
-    if (who.level < 5)
-      return 1;
-    if (who.level < 11)
-      return 2;
-    if (who.level < 17)
-      return 3;
-    return 4;
-  }
-  var simpleSpell = ({
-    name,
-    level,
-    ritual = false,
-    school,
-    concentration = false,
-    time = "action",
-    v = false,
-    s = false,
-    m,
-    lists,
-    apply,
-    check: check2 = (_g, _config, ec) => ec,
-    getAffectedArea = () => void 0,
-    getConfig,
-    getDamage = () => void 0,
-    incomplete = false,
-    implemented = false
-  }) => {
-    if (incomplete)
-      console.warn(`[Spell Not Complete] ${name}`);
-    else if (!implemented)
-      console.warn(`[Spell Missing] ${name}`);
-    return {
-      name,
-      level,
-      ritual,
-      scaling: false,
-      school,
-      concentration,
-      time,
-      v,
-      s,
-      m,
-      lists,
-      apply,
-      check: check2,
-      getAffectedArea,
-      getConfig,
-      getDamage,
-      getLevel() {
-        return level;
-      }
-    };
-  };
-  var scalingSpell = ({
-    name,
-    level,
-    ritual = false,
-    school,
-    concentration = false,
-    time = "action",
-    v = false,
-    s = false,
-    m,
-    lists,
-    apply,
-    check: check2 = (_g, _config, ec) => ec,
-    getAffectedArea = () => void 0,
-    getConfig,
-    getDamage = () => void 0,
-    incomplete = false,
-    implemented = false
-  }) => {
-    if (incomplete)
-      console.warn(`[Spell Not Complete] ${name}`);
-    else if (!implemented)
-      console.warn(`[Spell Missing] ${name}`);
-    return {
-      name,
-      level,
-      ritual,
-      scaling: true,
-      school,
-      concentration,
-      time,
-      v,
-      s,
-      m,
-      lists,
-      apply,
-      check: check2,
-      getAffectedArea,
-      getConfig(g2, actor, method, config) {
-        return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
-          slot: new SlotResolver(this, method)
-        });
-      },
-      getDamage,
-      getLevel({ slot }) {
-        return slot;
-      }
-    };
-  };
-
   // src/spells/level2/Levitate.ts
   var Levitate = simpleSpell({
     name: "Levitate",
@@ -3198,6 +3210,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     `You can cast the levitate spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell.`,
     (g2, me) => {
       me.initResource(MingleWithTheWindResource);
+      spellImplementationWarning(Levitate_default, me);
       g2.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new CastSpell(g2, me, MingleWithTheWindMethod, Levitate_default));
@@ -3238,6 +3251,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         "Investigation"
       ]);
       this.setConfig(ASI4, { type: "feat", feat: Lucky_default });
+      this.addFeature(BoonOfVassetri);
       this.skills.set("Acrobatics", 1);
       this.skills.set("Athletics", 1);
       this.skills.set("Deception", 1);
@@ -3608,6 +3622,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         g2,
         actor,
         "Breath Weapon",
+        "incomplete",
         { point: new PointResolver(g2, 15) },
         void 0,
         void 0,
@@ -3778,7 +3793,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/AcidSplash.ts
   var AcidSplash = simpleSpell({
-    implemented: true,
+    status: "implemented",
     name: "Acid Splash",
     level: 0,
     school: "Conjuration",
@@ -3904,7 +3919,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/FireBolt.ts
   var FireBolt = simpleSpell({
-    implemented: true,
+    status: "implemented",
     name: "Fire Bolt",
     level: 0,
     school: "Evocation",
@@ -3938,7 +3953,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
   });
   var MindSliver = simpleSpell({
-    implemented: true,
+    status: "implemented",
     name: "Mind Sliver",
     level: 0,
     school: "Enchantment",
@@ -3996,7 +4011,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
   });
   var RayOfFrost = simpleSpell({
-    implemented: true,
+    status: "implemented",
     name: "Ray of Frost",
     level: 0,
     school: "Evocation",
@@ -4022,7 +4037,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/level1/IceKnife.ts
   var IceKnife = scalingSpell({
-    implemented: true,
+    status: "implemented",
     name: "Ice Knife",
     level: 1,
     school: "Conjuration",
@@ -4107,6 +4122,85 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IceKnife_default = IceKnife;
 
+  // src/spells/level1/MagicMissile.ts
+  var MagicMissile = scalingSpell({
+    name: "Magic Missile",
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: (g2, caster, method, { slot }) => ({
+      targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 120)
+    }),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var MagicMissile_default = MagicMissile;
+
+  // src/spells/level1/Shield.ts
+  var Shield2 = simpleSpell({
+    name: "Shield",
+    level: 1,
+    school: "Abjuration",
+    time: "reaction",
+    // TODO which you take when you are hit by an attack or targeted by the magic missile spell
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    getConfig: () => ({}),
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var Shield_default = Shield2;
+
+  // src/resolvers/ChoiceResolver.ts
+  var ChoiceResolver = class {
+    constructor(g2, entries) {
+      this.g = g2;
+      this.entries = entries;
+      this.type = "Choice";
+    }
+    get name() {
+      return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
+    }
+    check(value, action, ec) {
+      if (!value)
+        ec.add("No choice made", this);
+      else if (!this.entries.find((e) => e.value === value))
+        ec.add("Invalid choice", this);
+      return ec;
+    }
+  };
+
+  // src/spells/level2/EnlargeReduce.ts
+  var EnlargeReduce = simpleSpell({
+    name: "Enlarge/Reduce",
+    level: 2,
+    school: "Transmutation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a pinch of powdered iron",
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({
+      target: new TargetResolver(g2, 30, true),
+      mode: new ChoiceResolver(g2, [
+        { label: "enlarge", value: "enlarge" },
+        { label: "reduce", value: "reduce" }
+      ])
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { mode, target }) {
+      });
+    }
+  });
+  var EnlargeReduce_default = EnlargeReduce;
+
   // src/interruptions/EvaluateLater.ts
   var EvaluateLater = class {
     constructor(who, source, apply) {
@@ -4150,7 +4244,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
   });
   var HoldPerson = scalingSpell({
-    incomplete: true,
+    status: "incomplete",
     name: "Hold Person",
     level: 2,
     school: "Enchantment",
@@ -4278,6 +4372,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         g2,
         actor,
         "Melf's Minute Meteors",
+        "incomplete",
         {
           points: new MultiPointResolver(
             g2,
@@ -4311,7 +4406,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
   var MelfsMinuteMeteors = scalingSpell({
-    implemented: true,
+    status: "implemented",
     name: "Melf's Minute Meteors",
     level: 3,
     school: "Evocation",
@@ -4365,7 +4460,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/level3/Fireball.ts
   var Fireball = scalingSpell({
-    implemented: true,
+    status: "implemented",
     name: "Fireball",
     level: 3,
     school: "Evocation",
@@ -4413,6 +4508,84 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var Fireball_default = Fireball;
 
+  // src/spells/level3/IntellectFortress.ts
+  var mental = ["int", "wis", "cha"];
+  var IntellectFortressEffect = new Effect(
+    "Intellect Fortress",
+    "turnStart",
+    (g2) => {
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who.hasEffect(IntellectFortressEffect) && damageType === "psychic")
+            response.add("resist", IntellectFortressEffect);
+        }
+      );
+      g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+        if (who.hasEffect(IntellectFortressEffect) && mental.includes(ability))
+          diceType.add("advantage", IntellectFortressEffect);
+      });
+    }
+  );
+  var IntellectFortress = scalingSpell({
+    status: "incomplete",
+    name: "Intellect Fortress",
+    level: 3,
+    school: "Abjuration",
+    concentration: true,
+    v: true,
+    lists: ["Artificer", "Bard", "Sorcerer", "Warlock", "Wizard"],
+    // TODO  The creatures must be within 30 feet of each other when you target them.
+    getConfig: (g2, caster, method, { slot }) => ({
+      targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 3) - 2, 30, true)
+    }),
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { targets }) {
+        const duration = hours(1);
+        for (const target of targets)
+          target.addEffect(IntellectFortressEffect, { duration });
+        caster.concentrateOn({
+          spell: IntellectFortress,
+          duration,
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              for (const target of targets)
+                target.removeEffect(IntellectFortressEffect);
+            });
+          }
+        });
+      });
+    }
+  });
+  var IntellectFortress_default = IntellectFortress;
+
+  // src/spells/level4/WallOfFire.ts
+  var shapeChoices = [
+    { label: "line", value: "line" },
+    { label: "ring", value: "ring" }
+  ];
+  var WallOfFire = scalingSpell({
+    name: "Wall of Fire",
+    level: 4,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a small piece of phosphorus",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    // TODO choose dimensions of line wall
+    getConfig: (g2) => ({
+      point: new PointResolver(g2, 120),
+      shape: new ChoiceResolver(g2, shapeChoices)
+    }),
+    getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 4) + 1, 8, "fire")],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
+      });
+    }
+  });
+  var WallOfFire_default = WallOfFire;
+
   // src/pcs/davies/Beldalynn_token.png
   var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
 
@@ -4452,15 +4625,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         MindSliver_default,
         RayOfFrost_default,
         IceKnife_default,
-        // TODO MagicMissile,
-        // TODO Shield,
-        // TODO EnlargeReduce,
+        MagicMissile_default,
+        Shield_default,
+        EnlargeReduce_default,
         HoldPerson_default,
         MelfsMinuteMeteors_default,
-        Fireball_default
-        // TODO IntellectFortress,
+        Fireball_default,
+        IntellectFortress_default,
         // TODO LeomundsTinyHut,
-        // TODO WallOfFire
+        WallOfFire_default
       );
     }
   };
@@ -4510,25 +4683,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return 30;
   }
 
-  // src/resolvers/ChoiceResolver.ts
-  var ChoiceResolver = class {
-    constructor(g2, entries) {
-      this.g = g2;
-      this.entries = entries;
-      this.type = "Choice";
-    }
-    get name() {
-      return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
-    }
-    check(value, action, ec) {
-      if (!value)
-        ec.add("No choice made", this);
-      else if (!this.entries.find((e) => e.value === value))
-        ec.add("Invalid choice", this);
-      return ec;
-    }
-  };
-
   // src/classes/paladin/HarnessDivinePower.ts
   var HarnessDivinePowerResource = new LongRestResource(
     "Harness Divine Power",
@@ -4540,6 +4694,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         g2,
         actor,
         "Harness Divine Power",
+        "implemented",
         {
           slot: new ChoiceResolver(
             g2,
@@ -4808,7 +4963,6 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
-    incomplete: true,
     name: "Protection from Evil and Good",
     level: 1,
     school: "Abjuration",
@@ -4919,6 +5073,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         g2,
         actor,
         "Channel Divinity: Sacred Weapon",
+        "implemented",
         {
           weapon: new ChoiceResolver(
             g2,
@@ -5088,7 +5243,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     );
   });
   var Bless = scalingSpell({
-    implemented: true,
+    status: "implemented",
     name: "Bless",
     level: 1,
     school: "Enchantment",
@@ -5140,7 +5295,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     );
   });
   var DivineFavor = simpleSpell({
-    implemented: true,
+    status: "implemented",
     name: "Divine Favor",
     level: 1,
     school: "Evocation",
@@ -5245,7 +5400,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var RageResource = new LongRestResource("Rage", 2);
   var EndRageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "End Rage", {}, "bonus action");
+      super(g2, actor, "End Rage", "implemented", {}, "bonus action");
     }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
@@ -5293,7 +5448,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var RageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Rage", {}, "bonus action");
+      super(g2, actor, "Rage", "incomplete", {}, "bonus action");
     }
     check(config, ec) {
       if (!this.actor.hasResource(RageResource))
@@ -5784,7 +5939,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     });
   });
   var Blur = simpleSpell({
-    incomplete: true,
+    status: "incomplete",
     name: "Blur",
     level: 2,
     school: "Illusion",
@@ -5907,7 +6062,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     return aimLine({ position, size }, point, 100, 5);
   }
   var LightningBolt = scalingSpell({
-    implemented: true,
+    status: "implemented",
     name: "Lightning Bolt",
     level: 3,
     school: "Evocation",
@@ -6094,6 +6249,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     );
   });
   var Stoneskin = simpleSpell({
+    status: "implemented",
     name: "Stoneskin",
     level: 4,
     school: "Abjuration",
@@ -6370,6 +6526,7 @@ The creature is aware of this effect before it makes its attack against you.`
         g2,
         actor,
         cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
+        "incomplete",
         {},
         "action"
       );
@@ -6478,6 +6635,7 @@ The creature is aware of this effect before it makes its attack against you.`
         g2,
         actor,
         "Throw Magic Stone",
+        "incomplete",
         { target: new TargetResolver(g2, 60) },
         void 0,
         void 0,
@@ -6538,7 +6696,7 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
   var MagicStone = simpleSpell({
-    incomplete: true,
+    status: "incomplete",
     name: "Magic Stone",
     level: 0,
     school: "Transmutation",
@@ -6688,7 +6846,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         if (who !== me)
           return;
         for (const wa of actions.filter(isMonkWeaponAttack)) {
-          if (me.dex > me.str)
+          if (me.dex.score > me.str.score)
             wa.ability = "dex";
           if (canUpgradeDamage(wa.weapon.damage, diceSize))
             wa.weapon = new MonkWeaponWrapper(g2, wa.weapon, diceSize);
@@ -6717,7 +6875,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/spells/level1/FogCloud.ts
   var FogCloud = scalingSpell({
-    incomplete: true,
+    status: "incomplete",
     name: "Fog Cloud",
     level: 1,
     school: "Conjuration",
@@ -6773,7 +6931,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   var GustOfWind_default = GustOfWind;
 
   // src/spells/level3/WallOfWater.ts
-  var shapeChoices = [
+  var shapeChoices2 = [
     { label: "line", value: "line" },
     { label: "ring", value: "ring" }
   ];
@@ -6788,7 +6946,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({
       point: new PointResolver(g2, 60),
-      shape: new ChoiceResolver(g2, shapeChoices)
+      shape: new ChoiceResolver(g2, shapeChoices2)
     }),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
@@ -7006,15 +7164,47 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Labelled.module.scss
   var Labelled_module_default = {
-    "label": "_label_6lltv_1"
+    "label": "_label_1t2tr_1"
   };
 
+  // src/ui/utils/classnames.ts
+  function classnames(...items) {
+    const names = [];
+    for (const item of items) {
+      if (typeof item === "undefined")
+        continue;
+      else if (typeof item === "string")
+        names.push(item);
+      else {
+        for (const [key, value] of Object.entries(item)) {
+          if (value)
+            names.push(key);
+        }
+      }
+    }
+    return names.join(" ");
+  }
+
   // src/ui/Labelled.tsx
-  function Labelled({ children, label, role = "group" }) {
+  function Labelled({
+    children,
+    label,
+    labelClass,
+    contentsClass,
+    role = "group"
+  }) {
     const labelId = (0, import_hooks.useId)();
     return /* @__PURE__ */ o("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
-      /* @__PURE__ */ o("div", { id: labelId, className: Labelled_module_default.label, "aria-hidden": "true", children: label }),
-      children
+      /* @__PURE__ */ o(
+        "div",
+        {
+          id: labelId,
+          className: classnames(Labelled_module_default.label, labelClass),
+          "aria-hidden": "true",
+          children: label
+        }
+      ),
+      /* @__PURE__ */ o("div", { className: classnames(Labelled_module_default.contents, contentsClass), children })
     ] });
   }
 
@@ -7201,22 +7391,6 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     "moveW": "_moveW_1goup_40"
   };
 
-  // src/ui/utils/classnames.ts
-  function classnames(...items) {
-    const names = [];
-    for (const item of items) {
-      if (typeof item === "string")
-        names.push(item);
-      else {
-        for (const [key, value] of Object.entries(item)) {
-          if (value)
-            names.push(key);
-        }
-      }
-    }
-    return names.join(" ");
-  }
-
   // src/ui/UnitMoveButton.tsx
   var makeButtonType = (className, emoji, label, dx, dy) => ({ className: UnitMoveButton_module_default[className], emoji, label, dx, dy });
   var buttonTypes = {
@@ -7341,8 +7515,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_z1296_1",
-    "active": "_active_z1296_8"
+    "main": "_main_1qdcm_1",
+    "active": "_active_1qdcm_8",
+    "warning": "_warning_1qdcm_12"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -7642,8 +7817,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       }),
       [action, config, patchConfig]
     );
+    const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
     return /* @__PURE__ */ o("aside", { className: ChooseActionConfigPanel_module_default.main, "aria-label": "Action Options", children: [
       /* @__PURE__ */ o("div", { children: action.name }),
+      statusWarning,
       damage && /* @__PURE__ */ o("div", { children: [
         "Damage:",
         " ",
@@ -7935,12 +8112,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Menu.module.scss
   var Menu_module_default = {
-    "main": "_main_1ct3i_1"
+    "main": "_main_g21m6_1",
+    "sub": "_sub_g21m6_14"
   };
 
   // src/ui/Menu.tsx
   function Menu({ caption, items, onClick, x, y }) {
-    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ o(Labelled, { label: caption, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ o(Labelled, { label: caption, contentsClass: Menu_module_default.sub, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
       "button",
       {
         role: "menuitem",

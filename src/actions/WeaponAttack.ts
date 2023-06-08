@@ -25,10 +25,8 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
       g,
       actor,
       ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
-      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) },
-      undefined,
-      undefined,
-      [weapon.damage]
+      "incomplete",
+      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) }
     );
     this.ability = getWeaponAbility(actor, weapon);
 
@@ -40,6 +38,10 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
     // TODO [ATTACKCOUNT] check action economy
 
     return super.check(config, ec);
+  }
+
+  getDamage() {
+    return [this.weapon.damage];
   }
 
   async apply({ target }: HasTarget) {

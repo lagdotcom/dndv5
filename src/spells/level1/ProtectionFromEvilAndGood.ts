@@ -30,7 +30,6 @@ const ProtectionEffect = new Effect(
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
-  incomplete: true,
   name: "Protection from Evil and Good",
   level: 1,
   school: "Abjuration",

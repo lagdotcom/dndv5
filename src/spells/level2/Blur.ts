@@ -10,7 +10,7 @@ const BlurEffect = new Effect("Blur", "turnStart", (g) => {
 });
 
 const Blur = simpleSpell({
-  incomplete: true,
+  status: "incomplete",
   name: "Blur",
   level: 2,
   school: "Illusion",

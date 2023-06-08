@@ -7,7 +7,7 @@ import { distance } from "../../utils/units";
 import { getCantripDice, simpleSpell } from "../common";
 
 const AcidSplash = simpleSpell<HasTargets>({
-  implemented: true,
+  status: "implemented",
   name: "Acid Splash",
   level: 0,
   school: "Conjuration",

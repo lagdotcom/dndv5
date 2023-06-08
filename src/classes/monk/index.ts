@@ -89,7 +89,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
       for (const wa of actions.filter(isMonkWeaponAttack)) {
         // TODO should really be a choice
-        if (me.dex > me.str) wa.ability = "dex";
+        if (me.dex.score > me.str.score) wa.ability = "dex";
 
         if (canUpgradeDamage(wa.weapon.damage, diceSize))
           wa.weapon = new MonkWeaponWrapper(g, wa.weapon, diceSize);

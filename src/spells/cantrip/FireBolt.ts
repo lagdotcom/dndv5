@@ -5,7 +5,7 @@ import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
 const FireBolt = simpleSpell<HasTarget>({
-  implemented: true,
+  status: "implemented",
   name: "Fire Bolt",
   level: 0,
   school: "Evocation",

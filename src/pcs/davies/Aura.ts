@@ -4,6 +4,7 @@ import { weaponPlus1 } from "../../enchantments/plus";
 import { vicious } from "../../enchantments/weapon";
 import Engine from "../../Engine";
 import Lucky from "../../feats/Lucky";
+import { BoonOfVassetri } from "../../features/boons";
 import { CrossbowBolt } from "../../items/ammunition";
 import { LeatherArmor } from "../../items/armor";
 import { LightCrossbow, Rapier } from "../../items/weapons";
@@ -38,6 +39,7 @@ export default class Aura extends PC {
       "Investigation",
     ]);
     this.setConfig(ASI4, { type: "feat", feat: Lucky });
+    this.addFeature(BoonOfVassetri);
 
     this.skills.set("Acrobatics", 1);
     this.skills.set("Athletics", 1);

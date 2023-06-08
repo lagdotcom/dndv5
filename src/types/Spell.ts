@@ -5,6 +5,7 @@ import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
+import ImplementationStatus from "./ImplementationStatus";
 import Source from "./Source";
 import SpellcastingMethod from "./SpellcastingMethod";
 
@@ -34,6 +35,7 @@ export const SpellLists = [
 export type SpellList = (typeof SpellLists)[number];
 
 export default interface Spell<T extends object = object> extends Source {
+  status: ImplementationStatus;
   level: number;
   ritual: boolean;
   scaling: boolean;

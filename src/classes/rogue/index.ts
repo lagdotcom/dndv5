@@ -41,6 +41,8 @@ const CunningAction = new SimpleFeature(
   "Cunning Action",
   `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
   (g, me) => {
+    console.warn(`[Feature Not Complete] Cunning Action (on ${me.name})`);
+
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) {
         // TODO [SIGHT] HideAction

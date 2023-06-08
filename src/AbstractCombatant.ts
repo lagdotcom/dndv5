@@ -7,6 +7,7 @@ import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
+import { spellImplementationWarning } from "./spells/common";
 import AbilityName, { AbilityNames } from "./types/AbilityName";
 import Combatant from "./types/Combatant";
 import CombatantScore from "./types/CombatantScore";
@@ -384,6 +385,9 @@ export default abstract class AbstractCombatant implements Combatant {
       feature.setup(this.g, this, this.getConfig(feature.name));
 
     this.hp = this.hpMax;
+
+    for (const spell of new Set([...this.knownSpells, ...this.preparedSpells]))
+      spellImplementationWarning(spell, this);
   }
 
   addEffect<T>(effect: EffectType<T>, config: EffectConfig<T>) {

@@ -7,9 +7,9 @@ import PointResolver from "../resolvers/PointResolver";
 import SlotResolver from "../resolvers/SlotResolver";
 import TargetResolver from "../resolvers/TargetResolver";
 import Action from "../types/Action";
-import Resolver from "../types/Resolver";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
+import Resolver from "../types/Resolver";
 import { check, checkConfig } from "../utils/config";
 import { getDiceAverage } from "../utils/dnd";
 import { enumerate } from "../utils/numbers";
@@ -345,9 +345,17 @@ export default function ChooseActionConfigPanel<T extends object>({
     [action, config, patchConfig]
   );
 
+  const statusWarning =
+    action.status === "incomplete" ? (
+      <div className={styles.warning}>Incomplete implementation</div>
+    ) : action.status === "missing" ? (
+      <div className={styles.warning}>Not implemented</div>
+    ) : null;
+
   return (
     <aside className={styles.main} aria-label="Action Options">
       <div>{action.name}</div>
+      {statusWarning}
       {damage && (
         <div>
           Damage:{" "}
