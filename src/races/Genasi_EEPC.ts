@@ -14,7 +14,7 @@ const Genasi: PCRace = {
   languages: new Set(["Common", "Primordial"]),
 };
 
-// TODO
+// TODO [TERRAIN] [CHOKING]
 const UnendingBreath = notImplementedFeature(
   "Unending Breath",
   `You can hold your breath indefinitely while you’re not incapacitated.`

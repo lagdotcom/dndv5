@@ -59,6 +59,8 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
     if (!this.actor.hasResource(BreathWeaponResource))
       ec.add("No breath weapons left", this);
 
+    // TODO [ATTACKCOUNT]
+
     return super.check(config, ec);
   }
 
@@ -67,7 +69,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
 
     super.apply({ point });
     attacker.spendResource(BreathWeaponResource);
-    // TODO spend attack
+    // TODO [ATTACKCOUNT]
 
     const damage = await g.rollDamage(damageDice, {
       attacker,
@@ -132,7 +134,7 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
     [dt]
   );
 
-  // TODO
+  // TODO [ATTACKCOUNT]
   const metallicBreathWeapon = notImplementedFeature(
     "Metallic Breath Weapon",
     `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus. Whenever you use this trait, choose one:

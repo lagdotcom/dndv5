@@ -141,7 +141,7 @@ export function getTilesWithinCone(start: Point, end: Point, radius: number) {
 
 export function resolveArea(area: SpecifiedEffectShape) {
   switch (area.type) {
-    case "cylinder": // TODO once height exists
+    case "cylinder": // TODO [HEIGHT]
     case "sphere":
       return getTilesWithinCircle(area.centre, area.radius);
 

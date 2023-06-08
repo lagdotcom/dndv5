@@ -45,7 +45,7 @@ const LesserRestoration = simpleSpell<HasCondition & HasTarget>({
   },
 
   async apply(g, caster, method, { target, condition }) {
-    // TODO how do I do this lol
+    // TODO [EFFECTREMOVAL] how do I do this lol
   },
 });
 export default LesserRestoration;

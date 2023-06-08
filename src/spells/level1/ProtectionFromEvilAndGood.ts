@@ -14,7 +14,7 @@ const affectedTypes: CreatureType[] = [
   "undead",
 ];
 
-// TODO The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.
+// TODO [CANCELEFFECT] [CANCELCONDITION] The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.
 const ProtectionEffect = new Effect(
   "Protection from Evil and Good",
   "turnStart",
@@ -48,7 +48,7 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
     const duration = minutes(10);
     target.addEffect(ProtectionEffect, { duration });
 
-    caster.concentrateOn({
+    await caster.concentrateOn({
       spell: ProtectionFromEvilAndGood,
       duration,
       async onSpellEnd() {

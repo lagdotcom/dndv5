@@ -3,5 +3,6 @@ export default interface CombatantScore {
   maximum: number;
   modifier: number;
 
-  setScore(value: number, extendMaximum?: boolean): void;
+  setMaximum(value: number): void;
+  setScore(value: number): void;
 }

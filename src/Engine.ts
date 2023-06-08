@@ -192,9 +192,9 @@ export default class Engine {
     const x = old.x + dx;
     const y = old.y + dy;
 
-    if (track) who.movedSoFar += Math.max(Math.abs(dx), Math.abs(dy));
+    // TODO [BEFOREMOVE] prevent movement, attacks of opportunity etc.
 
-    // TODO prevent movement, attacks of opportunity etc.
+    if (track) who.movedSoFar += Math.max(Math.abs(dx), Math.abs(dy));
 
     state.position = { x, y };
     this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
@@ -232,7 +232,7 @@ export default class Engine {
 
       const response = collector.result;
       if (response === "immune") continue;
-      // TODO absorb
+      // TODO [ABSORB]
 
       let multiplier = baseMultiplier;
       if (response === "resist") multiplier *= 0.5;
@@ -254,7 +254,7 @@ export default class Engine {
         target.addEffect(Dead, { duration: Infinity });
         this.fire(new CombatantDiedEvent({ who: target, attacker }));
       } else {
-        // TODO
+        // TODO [DYING]
       }
     }
   }

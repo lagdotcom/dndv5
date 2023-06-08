@@ -4,7 +4,7 @@ import { simpleSpell } from "../common";
 
 const BlurEffect = new Effect("Blur", "turnStart", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-    // TODO  An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.
+    // TODO [SIGHT] An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.
     if (who.hasEffect(BlurEffect)) diceType.add("disadvantage", BlurEffect);
   });
 });
@@ -24,7 +24,7 @@ const Blur = simpleSpell({
     const duration = minutes(1);
     caster.addEffect(BlurEffect, { duration });
 
-    caster.concentrateOn({
+    await caster.concentrateOn({
       spell: Blur,
       duration,
       async onSpellEnd() {

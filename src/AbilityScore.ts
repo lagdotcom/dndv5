@@ -24,8 +24,11 @@ export default class AbilityScore implements CombatantScore {
     return getAbilityModifier(this.score);
   }
 
-  setScore(value: number, extendMaximum = false) {
+  setMaximum(value: number): void {
+    this.baseMaximum = Math.max(this.baseMaximum, value);
+  }
+
+  setScore(value: number) {
     this.baseScore = value;
-    if (extendMaximum) this.baseMaximum = Math.max(this.baseMaximum, value);
   }
 }

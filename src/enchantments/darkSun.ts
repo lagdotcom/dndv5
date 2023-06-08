@@ -7,6 +7,7 @@ const darkSun: Enchantment<"weapon"> = {
   setup(g, item) {
     weaponPlus1.setup(g, item);
     item.name = `${item.weaponType} of the dark sun`;
+    item.attunement = true;
     item.rarity = "Rare";
 
     g.events.on(
@@ -15,7 +16,7 @@ const darkSun: Enchantment<"weapon"> = {
         if (weapon === item && attacker.attunements.has(weapon))
           interrupt.add(
             new EvaluateLater(attacker, this, async () => {
-              const damageType = "radiant"; // TODO daylight check
+              const damageType = "radiant"; // TODO [TERRAIN] daylight check
               map.add(
                 damageType,
                 await g.rollDamage(

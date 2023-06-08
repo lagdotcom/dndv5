@@ -9,13 +9,13 @@ const EvocationSavant = nonCombatFeature(
   `Beginning when you select this school at 2nd level, the gold and time you must spend to copy an evocation spell into your spellbook is halved.`
 );
 
-// TODO
+// TODO [DAMAGEMULTIPLIER]
 const SculptSpells = notImplementedFeature(
   "Sculpt Spells",
   `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`
 );
 
-// TODO
+// TODO [DAMAGEMULTIPLIER]
 const PotentCantrip = notImplementedFeature(
   "Potent Cantrip",
   `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`

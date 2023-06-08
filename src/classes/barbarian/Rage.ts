@@ -77,7 +77,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
     }
   );
 
-  // TODO It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
+  // TODO [CONDITIONREACTION] It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
 
   g.events.on("GetActions", ({ detail: { who, actions } }) => {
     if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
@@ -99,10 +99,11 @@ class RageAction extends AbstractAction {
     super.apply({});
     this.actor.spendResource(RageResource);
     this.actor.addEffect(RageEffect, { duration: minutes(1) });
-    // TODO lose concentration
+    await this.actor.endConcentration();
   }
 }
 
+// TODO [CANCELSPELL]
 const Rage = new SimpleFeature(
   "Rage",
   `In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.

@@ -1,12 +1,17 @@
 import Druid, { ASI4 } from "../../classes/druid";
 import Land, { BonusCantrip, CircleSpells } from "../../classes/druid/Land";
+import silvered from "../../enchantments/silvered";
 import Engine from "../../Engine";
 import { HideArmor } from "../../items/armor";
+import CloakOfElvenkind from "../../items/CloakOfElvenkind";
+import { ArrowCatchingShield } from "../../items/shields";
 import { Handaxe, Shortsword, Spear } from "../../items/weapons";
+import { BootsOfTheWinterlands } from "../../items/wondrous";
 import PC from "../../PC";
 import { MountainDwarf, ToolProficiency } from "../../races/Dwarf";
 import MagicStone from "../../spells/cantrip/MagicStone";
 import LesserRestoration from "../../spells/level2/LesserRestoration";
+import { enchant } from "../../utils/items";
 import tokenUrl from "./Salgar_token.png";
 
 export default class Salgar extends PC {
@@ -37,14 +42,13 @@ export default class Salgar extends PC {
     this.skills.set("Insight", 1);
     this.skills.set("Survival", 1);
 
-    // TODO this.don(new ArrowCatchingShield(g), true);
-    // TODO this.don(new BootsOfTheWinterlands(g), true);
-    // TODO this.don(new CloakOfElvenkind(g), true);
+    this.don(new ArrowCatchingShield(g), true);
+    this.don(new BootsOfTheWinterlands(g), true);
+    this.don(new CloakOfElvenkind(g), true);
     this.don(new Spear(g, 1), true);
     this.don(new HideArmor(g));
     this.inventory.add(new Handaxe(g, 1));
-    // TODO silvered
-    this.inventory.add(new Shortsword(g));
+    this.inventory.add(enchant(new Shortsword(g), silvered));
 
     this.addPreparedSpells(
       // TODO Druidcraft,

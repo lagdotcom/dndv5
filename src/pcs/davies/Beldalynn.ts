@@ -52,12 +52,11 @@ export default class Beldalynn extends PC {
     this.don(new DragonTouchedFocus(g, "Slumbering"), true);
     this.inventory.add(new Dagger(g, 1));
 
-    // TODO
     // this.addKnownSpells(
-    //   ComprehendLanguages,
-    //   FindFamiliar,
-    //   FloatingDisk,
-    //   Identify
+    //   TODO ComprehendLanguages,
+    //   TODO FindFamiliar,
+    //   TODO FloatingDisk,
+    //   TODO Identify
     // );
 
     this.addPreparedSpells(

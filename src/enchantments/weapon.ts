@@ -28,6 +28,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
   setup(g, item) {
     weaponPlus1.setup(g, item);
     item.name = `chaotic burst ${item.weaponType}`;
+    item.attunement = true;
     item.rarity = "Rare";
 
     g.events.on("TurnStarted", ({ detail: { who } }) => {

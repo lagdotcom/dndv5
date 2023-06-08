@@ -9,7 +9,7 @@ export const FightingStyleProtection = new SimpleFeature(
     g.events.on(
       "BeforeAttack",
       ({ detail: { who, target, interrupt, diceType } }) => {
-        // TODO creature you can see
+        // TODO [SIGHT] creature you can see
 
         if (
           who !== me &&

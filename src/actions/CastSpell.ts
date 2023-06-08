@@ -67,7 +67,7 @@ export default class CastSpell<T extends object> implements Action<T> {
         level: this.spell.getLevel(config),
       })
     );
-    // TODO report this somehow
+    // TODO [MESSAGES] report this somehow
     if (sc.defaultPrevented) return;
 
     return this.spell.apply(this.g, this.actor, this.method, config);

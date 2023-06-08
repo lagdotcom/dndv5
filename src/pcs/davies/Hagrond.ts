@@ -1,8 +1,10 @@
 import Barbarian, { ASI4, PrimalKnowledge } from "../../classes/barbarian";
 import Berserker from "../../classes/barbarian/Berserker";
 import darkSun from "../../enchantments/darkSun";
+import ofTheDeep from "../../enchantments/ofTheDeep";
 import Engine from "../../Engine";
-import { Dagger, Handaxe, Spear } from "../../items/weapons";
+import { PotionOfGiantStrength } from "../../items/potions";
+import { Dagger, Handaxe, Spear, Trident } from "../../items/weapons";
 import PC from "../../PC";
 import { StoutHalfling } from "../../races/Halfling";
 import { enchant } from "../../utils/items";
@@ -35,10 +37,10 @@ export default class Hagrond extends PC {
     this.skills.set("Animal Handling", 1);
 
     this.don(enchant(new Spear(g, 1), darkSun), true);
-    // TODO this.don(new TridentOfTheDeep(g), true);
+    this.don(enchant(new Trident(g, 1), ofTheDeep), true);
     this.inventory.add(new Dagger(g, 4));
     this.inventory.add(new Handaxe(g, 1));
     this.inventory.add(new Spear(g, 1));
-    // TODO this.inventory.add(new PotionOfHillGiantStrength(g));
+    this.inventory.add(new PotionOfGiantStrength(g, "Hill"));
   }
 }

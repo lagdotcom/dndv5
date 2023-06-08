@@ -268,15 +268,14 @@ export default abstract class AbstractCombatant implements Combatant {
     con: number,
     int: number,
     wis: number,
-    cha: number,
-    updateMaximums = false
+    cha: number
   ) {
-    this.str.setScore(str, updateMaximums);
-    this.dex.setScore(dex, updateMaximums);
-    this.con.setScore(con, updateMaximums);
-    this.int.setScore(int, updateMaximums);
-    this.wis.setScore(wis, updateMaximums);
-    this.cha.setScore(cha, updateMaximums);
+    this.str.setScore(str);
+    this.dex.setScore(dex);
+    this.con.setScore(con);
+    this.int.setScore(int);
+    this.wis.setScore(wis);
+    this.cha.setScore(cha);
   }
 
   don(item: Item, attune = false) {
@@ -370,8 +369,13 @@ export default abstract class AbstractCombatant implements Combatant {
     this.configs.set(feature.name, config);
   }
 
-  concentrateOn(entry: Concentration) {
-    // TODO destroy existing concentratingOn entries?
+  async endConcentration() {
+    for (const other of this.concentratingOn) await other.onSpellEnd();
+    this.concentratingOn.clear();
+  }
+
+  async concentrateOn(entry: Concentration) {
+    await this.endConcentration();
     this.concentratingOn.add(entry);
   }
 

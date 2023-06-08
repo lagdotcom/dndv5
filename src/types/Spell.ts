@@ -42,7 +42,7 @@ export default interface Spell<T extends object = object> extends Source {
   time: ActionTime;
   v: boolean;
   s: boolean;
-  m?: string; // TODO real costs
+  m?: string; // TODO [MATERIALCOST]
   lists: SpellList[];
 
   apply(

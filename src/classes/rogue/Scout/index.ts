@@ -2,7 +2,7 @@ import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
 import PCSubclass from "../../../types/PCSubclass";
 
-// TODO
+// TODO [BOUNDEDMOVE]
 const Skirmisher = notImplementedFeature(
   "Skirmisher",
   `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`

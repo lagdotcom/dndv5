@@ -403,10 +403,11 @@
     get modifier() {
       return getAbilityModifier(this.score);
     }
-    setScore(value, extendMaximum = false) {
+    setMaximum(value) {
+      this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+    setScore(value) {
       this.baseScore = value;
-      if (extendMaximum)
-        this.baseMaximum = Math.max(this.baseMaximum, value);
     }
   };
 
@@ -683,13 +684,13 @@
       this.features.set(feature.name, feature);
       return true;
     }
-    setAbilityScores(str, dex, con, int, wis, cha, updateMaximums = false) {
-      this.str.setScore(str, updateMaximums);
-      this.dex.setScore(dex, updateMaximums);
-      this.con.setScore(con, updateMaximums);
-      this.int.setScore(int, updateMaximums);
-      this.wis.setScore(wis, updateMaximums);
-      this.cha.setScore(cha, updateMaximums);
+    setAbilityScores(str, dex, con, int, wis, cha) {
+      this.str.setScore(str);
+      this.dex.setScore(dex);
+      this.con.setScore(con);
+      this.int.setScore(int);
+      this.wis.setScore(wis);
+      this.cha.setScore(cha);
     }
     don(item, attune = false) {
       if (item.itemType === "armor") {
@@ -773,8 +774,18 @@
     setConfig(feature, config) {
       this.configs.set(feature.name, config);
     }
+    endConcentration() {
+      return __async(this, null, function* () {
+        for (const other of this.concentratingOn)
+          yield other.onSpellEnd();
+        this.concentratingOn.clear();
+      });
+    }
     concentrateOn(entry) {
-      this.concentratingOn.add(entry);
+      return __async(this, null, function* () {
+        yield this.endConcentration();
+        this.concentratingOn.add(entry);
+      });
     }
     finalise() {
       for (const feature of this.features.values())
@@ -1958,6 +1969,21 @@
       ]);
     }
   };
+  var Trident = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "trident",
+        "martial",
+        "melee",
+        dd(1, 6, "piercing"),
+        ["thrown", "versatile"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
   var HeavyCrossbow = class extends AbstractWeapon {
     constructor(g2) {
       super(
@@ -2671,6 +2697,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     setup(g2, item) {
       weaponPlus1.setup(g2, item);
       item.name = `chaotic burst ${item.weaponType}`;
+      item.attunement = true;
       item.rarity = "Rare";
       g2.events.on("TurnStarted", ({ detail: { who } }) => {
         if (who.equipment.has(item) && who.attunements.has(item))
@@ -2782,15 +2809,33 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var BracersOfTheArbalest = class extends AbstractWondrous {
     constructor(g2) {
       super(g2, "Bracers of the Arbalest");
+      this.attunement = true;
+      this.rarity = "Uncommon";
       g2.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
         if (attacker.equipment.has(this) && attacker.attunements.has(this) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
           bonus.add(2, this);
       });
     }
   };
+  var BootsOfTheWinterlands = class extends AbstractWondrous {
+    constructor(g2) {
+      super(g2, "Boots of the Winterlands");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who.equipment.has(this) && who.attunements.has(this) && damageType === "cold")
+            response.add("resist", this);
+        }
+      );
+    }
+  };
   var CloakOfProtection = class extends AbstractWondrous {
     constructor(g2) {
       super(g2, "Cloak of Protection");
+      this.attunement = true;
+      this.rarity = "Uncommon";
       g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
         if (who.equipment.has(this) && who.attunements.has(this))
           for (const method of methods) {
@@ -2807,10 +2852,32 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var DragonTouchedFocus = class extends AbstractWondrous {
     constructor(g2, level) {
       super(g2, `Dragon-Touched Focus (${level})`, 1);
+      this.attunement = true;
+      this.rarity = "Uncommon";
       g2.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
         if (who.equipment.has(this) && who.attunements.has(this))
           diceType.add("advantage", this);
       });
+    }
+  };
+  var FigurineOfWondrousPower = class extends AbstractWondrous {
+    constructor(g2, type) {
+      super(g2, `Figurine of Wondrous Power, ${type}`, 0);
+      this.type = type;
+    }
+  };
+  var RingOfAwe = class extends AbstractWondrous {
+    constructor(g2) {
+      super(g2, "Ring of Awe", 0);
+      this.attunement = true;
+      this.rarity = "Rare";
+    }
+  };
+  var SilverShiningAmulet = class extends AbstractWondrous {
+    constructor(g2) {
+      super(g2, "Silver Shining Amulet", 0);
+      this.attunement = true;
+      this.rarity = "Rare";
     }
   };
 
@@ -3258,7 +3325,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   };
 
   // src/classes/wizard/index.ts
-  var ArcaneRecovery = notImplementedFeature(
+  var ArcaneRecovery = nonCombatFeature(
     "Arcane Recovery",
     `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
 
@@ -4069,7 +4136,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             affected.add(target);
           }
         }
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: HoldPerson,
           duration,
           onSpellEnd() {
@@ -4228,7 +4295,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             }
           }
         );
-        attacker.concentrateOn({
+        yield attacker.concentrateOn({
           spell: MelfsMinuteMeteors,
           duration: minutes(10),
           onSpellEnd() {
@@ -4603,9 +4670,27 @@ At 18th level, the range of this aura increases to 30 feet.`,
 
 At 18th level, the range of this aura increases to 30 feet.`
   );
-  var ImprovedDivineSmite = notImplementedFeature(
+  var ImprovedDivineSmite = new SimpleFeature(
     "Improved Divine Smite",
-    `By 11th level, you are so suffused with righteous might that all your melee weapon strikes carry divine power with them. Whenever you hit a creature with a melee weapon, the creature takes an extra 1d8 radiant damage.`
+    `By 11th level, you are so suffused with righteous might that all your melee weapon strikes carry divine power with them. Whenever you hit a creature with a melee weapon, the creature takes an extra 1d8 radiant damage.`,
+    (g2, me) => {
+      g2.events.on(
+        "GatherDamage",
+        ({ detail: { attack, attacker, critical, target, interrupt, map } }) => {
+          if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
+            interrupt.add(
+              new EvaluateLater(attacker, ImprovedDivineSmite, () => __async(void 0, null, function* () {
+                const amount = yield g2.rollDamage(
+                  1,
+                  { attacker, target, size: 8, damageType: "radiant" },
+                  critical
+                );
+                map.add("radiant", amount);
+              }))
+            );
+        }
+      );
+    }
   );
   var CleansingTouch = notImplementedFeature(
     "Cleansing Touch",
@@ -4687,7 +4772,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = minutes(10);
         target.addEffect(ProtectionEffect, { duration });
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: ProtectionFromEvilAndGood,
           duration,
           onSpellEnd() {
@@ -4906,6 +4991,16 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   );
 
+  // src/items/wands.ts
+  var WandOfWeb = class extends AbstractWondrous {
+    constructor(g2, charges = 7) {
+      super(g2, "Wand of Web", 1);
+      this.charges = charges;
+      this.attunement = true;
+      this.rarity = "Uncommon";
+    }
+  };
+
   // src/races/Human.ts
   var Human = {
     name: "Human",
@@ -4958,7 +5053,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
         const duration = minutes(1);
         for (const target of targets)
           target.addEffect(BlessEffect, { duration });
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: Bless,
           duration,
           onSpellEnd: () => __async(this, null, function* () {
@@ -5007,7 +5102,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       return __async(this, null, function* () {
         const duration = minutes(1);
         caster.addEffect(DivineFavorEffect, { duration });
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: DivineFavor,
           duration,
           onSpellEnd() {
@@ -5049,6 +5144,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.don(new Longsword(g2));
       this.don(new Shield(g2));
       this.don(new SplintArmor(g2));
+      this.don(new RingOfAwe(g2), true);
+      this.don(new SilverShiningAmulet(g2), true);
+      this.inventory.add(new FigurineOfWondrousPower(g2, "Silver Raven"));
+      const wand = new WandOfWeb(g2);
+      this.inventory.add(wand);
+      this.attunements.add(wand);
       this.inventory.add(new LightCrossbow(g2));
       this.inventory.add(new CrossbowBolt(g2, 20));
       this.addPreparedSpells(
@@ -5152,6 +5253,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
         __superGet(RageAction.prototype, this, "apply").call(this, {});
         this.actor.spendResource(RageResource);
         this.actor.addEffect(RageEffect, { duration: minutes(1) });
+        yield this.actor.endConcentration();
       });
     }
   };
@@ -5321,9 +5423,15 @@ Each time you use this feature after the first, the DC increases by 5. When you 
     "Indomitable Might",
     `Beginning at 18th level, if your total for a Strength check is less than your Strength score, you can use that score in place of the total.`
   );
-  var PrimalChampion = notImplementedFeature(
+  var PrimalChampion = new SimpleFeature(
     "Primal Champion",
-    `At 20th level, you embody the power of the wilds. Your Strength and Constitution scores increase by 4. Your maximum for those scores is now 24.`
+    `At 20th level, you embody the power of the wilds. Your Strength and Constitution scores increase by 4. Your maximum for those scores is now 24.`,
+    (g2, me) => {
+      me.str.setMaximum(24);
+      me.con.setMaximum(24);
+      me.str.score += 4;
+      me.con.score += 4;
+    }
   );
   var ASI44 = makeASI("Barbarian", 4);
   var ASI84 = makeASI("Barbarian", 8);
@@ -5402,6 +5510,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     setup(g2, item) {
       weaponPlus1.setup(g2, item);
       item.name = `${item.weaponType} of the dark sun`;
+      item.attunement = true;
       item.rarity = "Rare";
       g2.events.on(
         "GatherDamage",
@@ -5425,6 +5534,34 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     }
   };
   var darkSun_default = darkSun;
+
+  // src/enchantments/ofTheDeep.ts
+  var ofTheDeep = {
+    name: "of the deep",
+    setup(g2, item) {
+      item.name = `${item.name} of the deep`;
+      item.magical = true;
+      item.rarity = "Rare";
+    }
+  };
+  var ofTheDeep_default = ofTheDeep;
+
+  // src/items/potions.ts
+  var GiantStats = {
+    Hill: { str: 21, rarity: "Uncommon" },
+    Stone: { str: 23, rarity: "Rare" },
+    Frost: { str: 23, rarity: "Rare" },
+    Fire: { str: 25, rarity: "Rare" },
+    Cloud: { str: 27, rarity: "Very Rare" },
+    Storm: { str: 29, rarity: "Legendary" }
+  };
+  var PotionOfGiantStrength = class extends AbstractWondrous {
+    constructor(g2, type) {
+      super(g2, `Potion of ${type} Giant Strength`, 0);
+      this.type = type;
+      this.rarity = GiantStats[type].rarity;
+    }
+  };
 
   // src/races/Halfling.ts
   var Lucky2 = notImplementedFeature(
@@ -5491,9 +5628,11 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       this.skills.set("Intimidation", 1);
       this.skills.set("Animal Handling", 1);
       this.don(enchant(new Spear(g2, 1), darkSun_default), true);
+      this.don(enchant(new Trident(g2, 1), ofTheDeep_default), true);
       this.inventory.add(new Dagger(g2, 4));
       this.inventory.add(new Handaxe(g2, 1));
       this.inventory.add(new Spear(g2, 1));
+      this.inventory.add(new PotionOfGiantStrength(g2, "Hill"));
     }
   };
 
@@ -5605,7 +5744,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       return __async(this, null, function* () {
         const duration = minutes(1);
         caster.addEffect(BlurEffect, { duration });
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: Blur,
           duration,
           onSpellEnd() {
@@ -5918,7 +6057,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = hours(1);
         target.addEffect(StoneskinEffect, { duration });
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: Stoneskin,
           duration,
           onSpellEnd() {
@@ -6159,6 +6298,71 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var Land_default = Land;
 
+  // src/enchantments/silvered.ts
+  var silvered = {
+    name: "silvered",
+    setup(g2, item) {
+      item.name = `silvered ${item.name}`;
+      g2.events.on("BeforeAttack", ({ detail: { weapon, ammo, tags } }) => {
+        if (weapon === item || ammo === item)
+          tags.add("silvered");
+      });
+    }
+  };
+  var silvered_default = silvered;
+
+  // src/items/CloakOfElvenkind.ts
+  var CloakHoodAction = class extends AbstractAction {
+    constructor(g2, actor, cloak) {
+      super(
+        g2,
+        actor,
+        cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
+        {},
+        "action"
+      );
+      this.cloak = cloak;
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(CloakHoodAction.prototype, this, "apply").call(this, {});
+        this.cloak.hoodUp = !this.cloak.hoodUp;
+      });
+    }
+  };
+  var CloakOfElvenkind = class extends AbstractWondrous {
+    constructor(g2, hoodUp = true) {
+      super(g2, "Cloak of Elvenkind");
+      this.hoodUp = hoodUp;
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      const cloaked = (who) => who && who.equipment.has(this) && who.attunements.has(this) && this.hoodUp;
+      g2.events.on(
+        "BeforeCheck",
+        ({ detail: { who, target, skill, diceType } }) => {
+          if (skill === "Perception" && cloaked(target))
+            diceType.add("disadvantage", this);
+          if (skill === "Stealth" && cloaked(who))
+            diceType.add("advantage", this);
+        }
+      );
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who.equipment.has(this) && who.attunements.has(this))
+          actions.push(new CloakHoodAction(g2, who, this));
+      });
+    }
+  };
+
+  // src/items/shields.ts
+  var ArrowCatchingShield = class extends Shield {
+    constructor(g2) {
+      super(g2);
+      this.name = "Arrow-Catching Shield";
+      this.attunement = true;
+      this.rarity = "Rare";
+    }
+  };
+
   // src/races/Dwarf.ts
   var Darkvision = darkvisionFeature();
   var DwarvenResilience = poisonResistance(
@@ -6333,10 +6537,13 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(ASI45, { type: "ability", abilities: ["cha", "wis"] });
       this.skills.set("Insight", 1);
       this.skills.set("Survival", 1);
+      this.don(new ArrowCatchingShield(g2), true);
+      this.don(new BootsOfTheWinterlands(g2), true);
+      this.don(new CloakOfElvenkind(g2), true);
       this.don(new Spear(g2, 1), true);
       this.don(new HideArmor(g2));
       this.inventory.add(new Handaxe(g2, 1));
-      this.inventory.add(new Shortsword(g2));
+      this.inventory.add(enchant(new Shortsword(g2), silvered_default));
       this.addPreparedSpells(
         // TODO Druidcraft,
         // TODO Mending,
@@ -6483,7 +6690,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           /* @__PURE__ */ new Set(["heavily obscured"])
         );
         g2.addEffectArea(area);
-        caster.concentrateOn({
+        yield caster.concentrateOn({
           spell: FogCloud,
           duration: hours(1),
           onSpellEnd: () => __async(this, null, function* () {

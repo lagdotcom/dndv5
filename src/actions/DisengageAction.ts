@@ -4,7 +4,7 @@ import Combatant from "../types/Combatant";
 import AbstractAction from "./AbstractAction";
 
 export const DisengageEffect = new Effect("Disengage", "turnEnd", () => {
-  // TODO
+  // TODO [OPPORTUNITY]
 });
 
 export default class DisengageAction extends AbstractAction {

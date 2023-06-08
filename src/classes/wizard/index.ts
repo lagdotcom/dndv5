@@ -3,8 +3,7 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import PCClass from "../../types/PCClass";
 import { makeASI } from "../common";
 
-// TODO
-const ArcaneRecovery = notImplementedFeature(
+const ArcaneRecovery = nonCombatFeature(
   "Arcane Recovery",
   `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
 

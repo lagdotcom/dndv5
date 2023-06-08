@@ -98,7 +98,7 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
     return false;
   };
 
-  // TODO should really check anywhere along the path...
+  // TODO [PROJECTILE] should really check anywhere along the path...
   g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
     const squares = new PointSet(
       getSquares(target, g.getState(target).position)

@@ -7,6 +7,7 @@ import SkillName from "../types/SkillName";
 
 export interface BeforeCheckDetail {
   who: Combatant;
+  target?: Combatant;
   ability: AbilityName;
   skill: SkillName;
   diceType: DiceTypeCollector;

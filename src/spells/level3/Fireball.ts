@@ -31,7 +31,7 @@ const Fireball = scalingSpell<HasPoint>({
     });
     const dc = getSaveDC(attacker, method.ability);
 
-    // TODO The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
+    // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
     for (const target of g.getInside({
       type: "sphere",

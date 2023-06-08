@@ -20,7 +20,7 @@ export function distance(g: Engine, a: Combatant, b: Combatant) {
   const as = g.getState(a);
   const bs = g.getState(b);
 
-  // TODO unit sizes
+  // TODO [SIZE] unit sizes
   const dx = Math.abs(as.position.x - bs.position.x);
   const dy = Math.abs(as.position.y - bs.position.y);
   return Math.max(dx, dy);
@@ -29,7 +29,7 @@ export function distance(g: Engine, a: Combatant, b: Combatant) {
 export function distanceTo(g: Engine, who: Combatant, to: Point) {
   const s = g.getState(who);
 
-  // TODO unit sizes
+  // TODO [SIZE] unit sizes
   const dx = Math.abs(s.position.x - to.x);
   const dy = Math.abs(s.position.y - to.y);
   return Math.max(dx, dy);

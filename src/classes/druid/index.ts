@@ -17,13 +17,13 @@ export const DruidSpellcasting = new NormalSpellcasting(
   "Druid"
 );
 
-// TODO
+// TODO [CANCELACTION]
 const WildShape = notImplementedFeature(
   "Wild Shape",
   `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`
 );
 
-// TODO
+// TODO [SUMMONING]
 const WildCompanion = notImplementedFeature(
   "Wild Companion",
   `You gain the ability to summon a spirit that assumes an animal form: as an action, you can expend a use of your Wild Shape feature to cast the find familiar spell, without material components.`
@@ -39,13 +39,13 @@ const TimelessBody = nonCombatFeature(
   `Starting at 18th level, the primal magic that you wield causes you to age more slowly. For every 10 years that pass, your body ages only 1 year.`
 );
 
-// TODO
+// TODO [GETSPELLINFO]
 const BeastSpells = notImplementedFeature(
   "Beast Spells",
   `Beginning at 18th level, you can cast many of your druid spells in any shape you assume using Wild Shape. You can perform the somatic and verbal components of a druid spell while in a beast shape, but you aren't able to provide material components.`
 );
 
-// TODO
+// TODO [GETSPELLINFO]
 const Archdruid = notImplementedFeature(
   "Archdruid",
   `At 20th level, you can use your Wild Shape an unlimited number of times.

@@ -99,7 +99,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
 
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
-          // TODO rituals in knownSpells
+          // TODO [RITUAL]
 
           for (const spell of me.preparedSpells) {
             if (this.canCast(spell, who))

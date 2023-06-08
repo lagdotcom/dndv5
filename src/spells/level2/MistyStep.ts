@@ -13,7 +13,7 @@ const MistyStep = simpleSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 30) }),
 
   async apply(g, caster, method, config) {
-    // TODO Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.
+    // TODO [TELEPORT] Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.
   },
 });
 export default MistyStep;

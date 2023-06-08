@@ -17,7 +17,6 @@ export abstract class AbstractWeapon
 {
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: AbilityName;
-  magical?: boolean;
   properties: Set<WeaponProperty>;
   quantity: number;
   weaponType: string;
@@ -273,7 +272,7 @@ export class Halberd extends AbstractWeapon {
 export class Lance extends AbstractWeapon {
   constructor(g: Engine) {
     super(g, "lance", "martial", "melee", dd(1, 12, "piercing"), ["reach"]);
-    // TODO You have disadvantage when you use a lance to attack a target within 5 feet of you. Also, a lance requires two hands to wield when you aren't mounted.
+    // TODO [HANDS] You have disadvantage when you use a lance to attack a target within 5 feet of you. Also, a lance requires two hands to wield when you aren't mounted.
   }
 }
 

@@ -144,7 +144,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
       }
     );
 
-    attacker.concentrateOn({
+    await attacker.concentrateOn({
       spell: MelfsMinuteMeteors,
       duration: minutes(10),
       async onSpellEnd() {

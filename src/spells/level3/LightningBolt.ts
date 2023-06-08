@@ -39,7 +39,7 @@ const LightningBolt = scalingSpell<HasPoint>({
     });
     const dc = getSaveDC(attacker, method.ability);
 
-    // TODO The lightning ignites flammable objects in the area that aren't being worn or carried.
+    // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.
 
     for (const target of g.getInside(getArea(g, attacker, point))) {
       const save = await g.savingThrow(dc, {

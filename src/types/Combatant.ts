@@ -89,7 +89,8 @@ export default interface Combatant extends Source {
   getResource(resource: Resource): number;
   getResourceMax(resource: Resource): number;
   removeResource(resource: Resource): void;
-  concentrateOn(entry: Concentration): void;
+  endConcentration(): Promise<void>;
+  concentrateOn(entry: Concentration): Promise<void>;
   finalise(): void;
   addEffect<T>(effect: EffectType<T>, config: EffectConfig<T>): void;
   getEffectConfig<T>(effect: EffectType<T>): EffectConfig<T> | undefined;

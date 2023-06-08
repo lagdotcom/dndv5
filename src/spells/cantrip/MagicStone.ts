@@ -34,6 +34,8 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
     if (!this.actor.hasResource(MagicStoneResource))
       ec.add("no magic stones left", MagicStoneAction);
 
+    // TODO [ATTACKCOUNT]
+
     return super.check(config, ec);
   }
 
@@ -43,7 +45,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
     this.actor.spendResource(MagicStoneResource);
     if (this.actor.getResource(MagicStoneResource) < 1) this.unsubscribe();
 
-    // TODO spend action/attack
+    // TODO [ATTACKCOUNT]
 
     const { attack, critical, hit } = await this.g.attack({
       who: this.actor,

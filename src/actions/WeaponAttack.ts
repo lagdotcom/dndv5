@@ -33,7 +33,7 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
   }
 
   check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
-    // TODO check action economy
+    // TODO [ATTACKCOUNT] check action economy
 
     return super.check(config, ec);
   }
@@ -41,7 +41,7 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
   async apply({ target }: HasTarget) {
     const { ability, ammo, weapon, actor: attacker, g } = this;
 
-    // TODO spend action/attack
+    // TODO [ATTACKCOUNT] spend action/attack
 
     const tags = new Set<AttackTag>();
     tags.add(
@@ -60,7 +60,7 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
     });
 
     if (hit) {
-      // TODO throwing
+      // TODO [SPAWNITEMS] throwing
 
       if (ammo) ammo.quantity--;
 

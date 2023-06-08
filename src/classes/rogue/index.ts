@@ -43,7 +43,7 @@ const CunningAction = new SimpleFeature(
   (g, me) => {
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) {
-        // TODO HideAction
+        // TODO [SIGHT] HideAction
         const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
         for (const action of cunning) {
           action.name += " (Cunning Action)";
@@ -63,7 +63,7 @@ const UncannyDodge = new SimpleFeature(
     g.events.on(
       "GatherDamage",
       ({ detail: { target, attack, interrupt, multiplier } }) => {
-        // TODO [...] when an attacker that you can see [...]
+        // TODO [SIGHT] [...] when an attacker that you can see [...]
         if (attack && target === me && me.time.has("reaction"))
           interrupt.add(
             new YesNoChoice(
@@ -82,7 +82,7 @@ const UncannyDodge = new SimpleFeature(
   }
 );
 
-// TODO
+// TODO [DAMAGEMULTIPLIER]
 const Evasion = notImplementedFeature(
   "Evasion",
   `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`
@@ -94,7 +94,7 @@ const ReliableTalent = notImplementedFeature(
   `By 11th level, you have refined your chosen skills until they approach perfection. Whenever you make an ability check that lets you add your proficiency bonus, you can treat a d20 roll of 9 or lower as a 10.`
 );
 
-// TODO
+// TODO [SIGHT]
 const Blindsense = notImplementedFeature(
   "Blindsense",
   `Starting at 14th level, if you are able to hear, you are aware of the location of any hidden or invisible creature within 10 feet of you.`

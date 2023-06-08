@@ -12,7 +12,7 @@ import WallOfWater from "../spells/level3/WallOfWater";
 import PCRace from "../types/PCRace";
 import { resistanceFeature } from "./common";
 
-// TODO
+// TODO [TERRAIN] [CHOKING]
 const Amphibious = notImplementedFeature(
   "Amphibious",
   `You can breathe air and water.`

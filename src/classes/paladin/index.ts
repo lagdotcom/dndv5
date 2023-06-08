@@ -2,6 +2,7 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import {
   getMaxSpellSlotAvailable,
@@ -21,7 +22,7 @@ import {
 } from "./common";
 import HarnessDivinePower from "./HarnessDivinePower";
 
-// TODO
+// TODO [SIGHT]
 const DivineSense = notImplementedFeature(
   "Divine Sense",
   `The presence of strong evil registers on your senses like a noxious odor, and powerful good rings like heavenly music in your ears. As an action, you can open your awareness to detect such forces. Until the end of your next turn, you know the location of any celestial, fiend, or undead within 60 feet of you that is not behind total cover. You know the type (celestial, fiend, or undead) of any being whose presence you sense, but not its identity (the vampire Count Strahd von Zarovich, for instance). Within the same radius, you also detect the presence of any place or object that has been consecrated or desecrated, as with the hallow spell.
@@ -29,7 +30,7 @@ const DivineSense = notImplementedFeature(
 You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`
 );
 
-// TODO
+// TODO [EFFECTREMOVAL] [CONDITIONREMOVAL]
 const LayOnHands = notImplementedFeature(
   "Lay on Hands",
   `Your blessed touch can heal wounds. You have a pool of healing power that replenishes when you take a long rest. With that pool, you can restore a total number of hit points equal to your paladin level × 5.
@@ -94,7 +95,7 @@ export const PaladinFightingStyle = new ConfiguredFeature<Feature>(
   }
 );
 
-// TODO
+// TODO [CANCELEFFECT]
 const DivineHealth = notImplementedFeature(
   "Divine Health",
   `By 3rd level, the divine magic flowing through you makes you immune to disease.`
@@ -115,7 +116,7 @@ const MartialVersatility = nonCombatFeature(
   `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace a fighting style you know with another fighting style available to paladins. This replacement represents a shift of focus in your martial practice.`
 );
 
-// TODO
+// TODO [ATTACKCOUNT]
 const ExtraAttack = notImplementedFeature(
   "Extra Attack",
   `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
@@ -155,13 +156,13 @@ At 18th level, the range of this aura increases to 30 feet.`,
       if (who === me) updateAura(position);
     });
 
-    // TODO remove aura when unconscious
+    // TODO [CONDITIONREACT] remove aura when unconscious
 
     updateAura(g.getState(me).position);
   }
 );
 
-// TODO
+// TODO [CANCELCONDITION]
 const AuraOfCourage = notImplementedFeature(
   "Aura of Courage",
   `Starting at 10th level, you and friendly creatures within 10 feet of you can't be frightened while you are conscious.
@@ -169,13 +170,34 @@ const AuraOfCourage = notImplementedFeature(
 At 18th level, the range of this aura increases to 30 feet.`
 );
 
-// TODO
-const ImprovedDivineSmite = notImplementedFeature(
+const ImprovedDivineSmite = new SimpleFeature(
   "Improved Divine Smite",
-  `By 11th level, you are so suffused with righteous might that all your melee weapon strikes carry divine power with them. Whenever you hit a creature with a melee weapon, the creature takes an extra 1d8 radiant damage.`
+  `By 11th level, you are so suffused with righteous might that all your melee weapon strikes carry divine power with them. Whenever you hit a creature with a melee weapon, the creature takes an extra 1d8 radiant damage.`,
+  (g, me) => {
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attack, attacker, critical, target, interrupt, map } }) => {
+        if (
+          attacker === me &&
+          attack?.pre.tags.has("melee") &&
+          attack.pre.tags.has("weapon")
+        )
+          interrupt.add(
+            new EvaluateLater(attacker, ImprovedDivineSmite, async () => {
+              const amount = await g.rollDamage(
+                1,
+                { attacker, target, size: 8, damageType: "radiant" },
+                critical
+              );
+              map.add("radiant", amount);
+            })
+          );
+      }
+    );
+  }
 );
 
-// TODO
+// TODO [DISPEL]
 const CleansingTouch = notImplementedFeature(
   "Cleansing Touch",
   `Beginning at 14th level, you can use your action to end one spell on yourself or on one willing creature that you touch.

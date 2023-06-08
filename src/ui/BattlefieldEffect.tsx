@@ -110,7 +110,7 @@ export default function BattlefieldEffect({
 }: Props) {
   const main = useMemo(() => {
     switch (shape.type) {
-      case "cylinder": // TODO when height is added
+      case "cylinder": // TODO [HEIGHT]
       case "sphere":
         return <Sphere name={name} tags={tags} shape={shape} />;
 

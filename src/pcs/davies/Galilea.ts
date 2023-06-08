@@ -4,7 +4,13 @@ import Engine from "../../Engine";
 import { FightingStyleProtection } from "../../features/fightingStyles";
 import { CrossbowBolt } from "../../items/ammunition";
 import { Shield, SplintArmor } from "../../items/armor";
+import { WandOfWeb } from "../../items/wands";
 import { LightCrossbow, Longsword } from "../../items/weapons";
+import {
+  FigurineOfWondrousPower,
+  RingOfAwe,
+  SilverShiningAmulet,
+} from "../../items/wondrous";
 import PC from "../../PC";
 import Human from "../../races/Human";
 import Bless from "../../spells/level1/Bless";
@@ -40,12 +46,12 @@ export default class Galilea extends PC {
     this.don(new Longsword(g));
     this.don(new Shield(g));
     this.don(new SplintArmor(g));
-    // TODO this.don(new RingOfAwe(g), true);
-    // TODO this.don(new SilverShiningAmulet(g), true);
-    // TODO this.inventory.add(new FigurineOfWondrousPower(g, "silver raven"));
-    // TODO const wand = new WandOfWeb(g);
-    // this.inventory.add(wand);
-    // this.attunements.add(wand);
+    this.don(new RingOfAwe(g), true);
+    this.don(new SilverShiningAmulet(g), true);
+    this.inventory.add(new FigurineOfWondrousPower(g, "Silver Raven"));
+    const wand = new WandOfWeb(g);
+    this.inventory.add(wand);
+    this.attunements.add(wand);
     this.inventory.add(new LightCrossbow(g));
     this.inventory.add(new CrossbowBolt(g, 20));
 
