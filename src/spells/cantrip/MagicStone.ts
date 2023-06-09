@@ -29,60 +29,60 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
       undefined,
       [dd(1, 6, "bludgeoning")]
     );
+
+    this.attack = true;
   }
 
   check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
     if (!this.actor.hasResource(MagicStoneResource))
       ec.add("no magic stones left", MagicStoneAction);
 
-    // TODO [ATTACKCOUNT]
-
     return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {
     super.apply({ target });
+    const { g, actor, method } = this;
 
-    this.actor.spendResource(MagicStoneResource);
-    if (this.actor.getResource(MagicStoneResource) < 1) this.unsubscribe();
+    actor.spendResource(MagicStoneResource);
+    if (actor.getResource(MagicStoneResource) < 1) this.unsubscribe();
+    actor.attacksSoFar.add(this);
 
-    // TODO [ATTACKCOUNT]
-
-    const { attack, critical, hit } = await this.g.attack({
-      who: this.actor,
+    const { attack, critical, hit } = await g.attack({
+      who: actor,
       tags: new Set(["ranged", "spell", "magical"]),
       target,
-      ability: this.method.ability,
+      ability: method.ability,
       spell: MagicStone,
-      method: this.method,
+      method,
     });
 
     if (hit) {
-      const amount = await this.g.rollDamage(
+      const amount = await g.rollDamage(
         1,
         {
           size: 6,
           damageType: "bludgeoning",
-          attacker: this.actor,
+          attacker: actor,
           target,
-          ability: this.method.ability,
+          ability: method.ability,
           spell: MagicStone,
-          method: this.method,
+          method,
         },
         critical
       );
 
-      await this.g.damage(
+      await g.damage(
         this,
         "bludgeoning",
         {
           attack,
-          attacker: this.actor,
+          attacker: actor,
           target,
-          ability: this.method.ability,
+          ability: method.ability,
           critical,
           spell: MagicStone,
-          method: this.method,
+          method,
         },
         [["bludgeoning", amount]]
       );

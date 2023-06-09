@@ -56,8 +56,9 @@ The amount of the extra damage increases as you gain levels in this class, as sh
             weapon.properties.has("finesse") ||
             weapon.rangeCategory === "ranged";
           const hasAdvantage = attack.roll.diceType === "advantage";
-          const didNotHaveDisadvantage =
-            attack.pre.diceType.disadvantage.size === 0;
+          const didNotHaveDisadvantage = !attack.pre.diceType
+            .getValidEntries()
+            .includes("disadvantage");
 
           if (
             isFinesseOrRangedWeapon &&

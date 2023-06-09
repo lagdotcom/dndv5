@@ -11,7 +11,7 @@ import { scalingSpell } from "../common";
 function getArea(g: Engine, actor: Combatant, point: Point) {
   const position = g.getState(actor).position;
   const size = actor.sizeInUnits;
-  return aimLine({ position, size }, point, 100, 5);
+  return aimLine(position, size, point, 100, 5);
 }
 
 const LightningBolt = scalingSpell<HasPoint>({

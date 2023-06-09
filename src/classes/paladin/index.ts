@@ -14,7 +14,7 @@ import Point from "../../types/Point";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { hasAll } from "../../utils/set";
 import { distance } from "../../utils/units";
-import { makeASI } from "../common";
+import { makeASI, makeExtraAttack } from "../common";
 import {
   ChannelDivinityResource,
   getPaladinAuraRadius,
@@ -116,8 +116,7 @@ const MartialVersatility = nonCombatFeature(
   `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace a fighting style you know with another fighting style available to paladins. This replacement represents a shift of focus in your martial practice.`
 );
 
-// TODO [ATTACKCOUNT]
-const ExtraAttack = notImplementedFeature(
+const ExtraAttack = makeExtraAttack(
   "Extra Attack",
   `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
 );

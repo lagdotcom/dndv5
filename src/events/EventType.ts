@@ -4,6 +4,7 @@ import AttackEvent from "./AttackEvent";
 import BeforeAttackEvent from "./BeforeAttackEvent";
 import BeforeCheckEvent from "./BeforeCheckEvent";
 import BeforeSaveEvent from "./BeforeSaveEvent";
+import CheckActionEvent from "./CheckActionEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
 import CombatantMovedEvent from "./CombatantMovedEvent";
@@ -31,6 +32,7 @@ export type EventTypes = {
   BeforeAttack: BeforeAttackEvent;
   BeforeCheck: BeforeCheckEvent;
   BeforeSave: BeforeSaveEvent;
+  CheckAction: CheckActionEvent;
   CombatantDamaged: CombatantDamagedEvent;
   CombatantDied: CombatantDiedEvent;
   CombatantMoved: CombatantMovedEvent;

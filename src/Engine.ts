@@ -3,6 +3,7 @@ import { MarkOptional } from "ts-essentials";
 import BonusCollector from "./collectors/BonusCollector";
 import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DiceTypeCollector from "./collectors/DiceTypeCollector";
+import ErrorCollector from "./collectors/ErrorCollector";
 import InterruptionCollector from "./collectors/InterruptionCollector";
 import MultiplierCollector from "./collectors/MultiplierCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
@@ -16,6 +17,7 @@ import BeforeAttackEvent, {
   BeforeAttackDetail,
 } from "./events/BeforeAttackEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
+import CheckActionEvent from "./events/CheckActionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
@@ -178,6 +180,7 @@ export default class Engine {
     }
 
     this.activeCombatant = who;
+    who.attacksSoFar.clear();
     who.movedSoFar = 0;
     await this.resolve(
       new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
@@ -336,8 +339,14 @@ export default class Engine {
       attack: e.attack,
       attacker: e.attacker,
       target: e.target,
-      multiplier: multiplier.value,
+      multiplier: multiplier.result,
     });
+  }
+
+  check<T extends object>(action: Action<T>, config: Partial<T>) {
+    const error = new ErrorCollector();
+    this.fire(new CheckActionEvent({ action, config, error }));
+    return error;
   }
 
   async act<T extends object>(action: Action<T>, config: T) {

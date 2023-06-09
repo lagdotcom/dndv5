@@ -1,5 +1,7 @@
+import { OneAttackPerTurnRule } from "../DndRules";
 import Engine from "../Engine";
 import ConfiguredFeature from "../features/ConfiguredFeature";
+import SimpleFeature from "../features/SimpleFeature";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import Feature from "../types/Feature";
@@ -26,4 +28,18 @@ export function makeASI(className: PCClassName, level: number) {
 If your DM allows the use of feats, you may instead take a feat.`,
     asiSetup
   );
+}
+
+export function makeExtraAttack(name: string, text: string, extra = 1) {
+  const feature = new SimpleFeature(name, text, (g, me) => {
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (
+        action.attack &&
+        action.actor === me &&
+        action.actor.attacksSoFar.size <= extra
+      )
+        error.ignore(OneAttackPerTurnRule);
+    });
+  });
+  return feature;
 }

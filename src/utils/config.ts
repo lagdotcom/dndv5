@@ -1,9 +1,13 @@
-import ErrorCollector from "../collectors/ErrorCollector";
+import Engine from "../Engine";
 import Action from "../types/Action";
 import Resolver from "../types/Resolver";
 
-export function check<T extends object>(action: Action<T>, config: Partial<T>) {
-  const ec = new ErrorCollector();
+export function check<T extends object>(
+  g: Engine,
+  action: Action<T>,
+  config: Partial<T>
+) {
+  const ec = g.check(action, config);
   action.check(config, ec);
 
   for (const [key, resolver] of Object.entries(action.getConfig(config))) {
@@ -15,8 +19,9 @@ export function check<T extends object>(action: Action<T>, config: Partial<T>) {
 }
 
 export function checkConfig<T extends object>(
+  g: Engine,
   action: Action<T>,
   config: Partial<T>
 ): config is T {
-  return check(action, config).valid;
+  return check(g, action, config).result;
 }

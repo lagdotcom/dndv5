@@ -9,6 +9,7 @@ import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import { spellImplementationWarning } from "./spells/common";
 import AbilityName, { AbilityNames } from "./types/AbilityName";
+import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantScore from "./types/CombatantScore";
 import Concentration from "./types/Concentration";
@@ -97,6 +98,7 @@ export default abstract class AbstractCombatant implements Combatant {
   time: Set<"action" | "bonus action" | "reaction">;
   attunements: Set<Item>;
   movedSoFar: number;
+  attacksSoFar: Set<Action>;
   effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
@@ -183,6 +185,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.time = new Set();
     this.attunements = new Set();
     this.movedSoFar = 0;
+    this.attacksSoFar = new Set();
     this.effects = new Map();
     this.knownSpells = new Set();
     this.preparedSpells = new Set();
@@ -248,7 +251,7 @@ export default abstract class AbstractCombatant implements Combatant {
       })
     );
 
-    return bonus.result * e.detail.multiplier.value;
+    return bonus.result * e.detail.multiplier.result;
   }
 
   addFeature(feature: Feature) {

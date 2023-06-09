@@ -1,21 +1,7 @@
-import Source from "../types/Source";
+import AbstractCollector from "./AbstractCollector";
 
-type Bonus = { value: number; source: Source };
-
-export default class BonusCollector {
-  effects: Set<Bonus>;
-
-  constructor() {
-    this.effects = new Set();
-  }
-
-  add(value: number, source: Source) {
-    this.effects.add({ value, source });
-  }
-
-  get result() {
-    let total = 0;
-    for (const { value } of this.effects) total += value;
-    return total;
+export default class BonusCollector extends AbstractCollector<number> {
+  getResult(values: number[]): number {
+    return values.reduce((total, value) => total + value, 0);
   }
 }

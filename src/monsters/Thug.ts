@@ -3,7 +3,7 @@ import { CrossbowBolt } from "../items/ammunition";
 import { LeatherArmor } from "../items/armor";
 import { HeavyCrossbow, Mace } from "../items/weapons";
 import Monster from "../Monster";
-import { makeMultiattack, PackTactics } from "./common";
+import { isMeleeAttackAction, makeMultiattack, PackTactics } from "./common";
 import tokenUrl from "./Thug_token.png";
 
 export default class Thug extends Monster {
@@ -18,7 +18,13 @@ export default class Thug extends Monster {
     this.pb = 2;
 
     this.addFeature(PackTactics);
-    this.addFeature(makeMultiattack("The thug makes two melee attacks."));
+    this.addFeature(
+      makeMultiattack("The thug makes two melee attacks.", (me, action) => {
+        if (me.attacksSoFar.size !== 1) return false;
+        const [previous] = me.attacksSoFar;
+        return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
+      })
+    );
 
     this.don(new Mace(g), true);
     this.don(new HeavyCrossbow(g), true);

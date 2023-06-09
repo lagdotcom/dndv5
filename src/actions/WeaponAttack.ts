@@ -30,13 +30,12 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
     );
     this.ability = getWeaponAbility(actor, weapon);
 
+    this.attack = true;
     this.icon = getItemIcon(weapon);
     this.subIcon = getItemIcon(ammo);
   }
 
   check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
-    // TODO [ATTACKCOUNT] check action economy
-
     return super.check(config, ec);
   }
 
@@ -46,8 +45,7 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
 
   async apply({ target }: HasTarget) {
     const { ability, ammo, weapon, actor: attacker, g } = this;
-
-    // TODO [ATTACKCOUNT] spend action/attack
+    attacker.attacksSoFar.add(this);
 
     const tags = new Set<AttackTag>();
     tags.add(

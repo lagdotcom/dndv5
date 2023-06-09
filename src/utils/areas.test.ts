@@ -79,9 +79,7 @@ const cone15s = sh(`
 .x.
 xxx`);
 it("can calculate a 15' cone properly", () => {
-  const actual = resolveArea(
-    aimCone({ position: p(5, 0), size: 5 }, p(5, 10), 15)
-  );
+  const actual = resolveArea(aimCone(p(5, 0), 5, p(5, 10), 15));
   expect(convertToShape(actual)).toEqual(cone15s);
 });
 
@@ -92,9 +90,7 @@ xxxxx
 ..x..
 ..x..`);
 it("can calculate a 25' cone properly", () => {
-  const actual = resolveArea(
-    aimCone({ position: p(10, 25), size: 5 }, p(10, 0), 25)
-  );
+  const actual = resolveArea(aimCone(p(10, 25), 5, p(10, 0), 25));
   expect(convertToShape(actual)).toEqual(cone25n);
 });
 
@@ -105,8 +101,6 @@ x
 x
 x`);
 it("can calculate a 20' cardinal line properly", () => {
-  const actual = resolveArea(
-    aimLine({ position: p(0, 0), size: 5 }, p(0, 10), 20, 5)
-  );
+  const actual = resolveArea(aimLine(p(0, 0), 5, p(0, 10), 20, 5));
   expect(convertToShape(actual)).toEqual(line1);
 });

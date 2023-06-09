@@ -17,6 +17,7 @@ export default interface Action<T extends object = object> extends Source {
   icon?: ActionIcon;
   subIcon?: ActionIcon;
   time?: ActionTime;
+  attack?: boolean;
 
   apply(config: T): Promise<void>;
   check(config: Partial<T>, collector: ErrorCollector): ErrorCollector;

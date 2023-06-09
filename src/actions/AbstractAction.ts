@@ -14,6 +14,7 @@ export default abstract class AbstractAction<T extends object = Empty>
 {
   icon?: ActionIcon;
   subIcon?: ActionIcon;
+  attack?: boolean;
 
   constructor(
     public g: Engine,

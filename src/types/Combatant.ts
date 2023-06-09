@@ -1,4 +1,5 @@
 import AbilityName from "./AbilityName";
+import Action from "./Action";
 import ActionTime from "./ActionTime";
 import CombatantScore from "./CombatantScore";
 import Concentration from "./Concentration";
@@ -66,6 +67,7 @@ export default interface Combatant extends Source {
   conditions: Set<ConditionName>;
   attunements: Set<Item>;
   movedSoFar: number;
+  attacksSoFar: Set<Action>;
   speed: number;
   saveProficiencies: Set<AbilityName>;
   knownSpells: Set<Spell>;

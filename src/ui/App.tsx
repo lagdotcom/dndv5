@@ -104,7 +104,7 @@ export default function App({ g, onMount }: Props) {
 
       const point = target ? g.getState(target).position : undefined;
       const config = { target, point };
-      if (checkConfig(action, config)) {
+      if (checkConfig(g, action, config)) {
         onExecuteAction(action, config);
       } else console.warn(config, "does not match", action.getConfig(config));
     },
@@ -151,7 +151,7 @@ export default function App({ g, onMount }: Props) {
         const items = allActions.value
           .map((action) => {
             const testConfig = { target: who, point: g.getState(who).position };
-            const invalidConfig = !checkConfig(action, testConfig);
+            const invalidConfig = !checkConfig(g, action, testConfig);
             const config = action.getConfig(testConfig);
             const needsTarget = "target" in config || me.who === who;
             const needsPoint = "point" in config;
@@ -218,6 +218,7 @@ export default function App({ g, onMount }: Props) {
         )}
         {action && (
           <ChooseActionConfigPanel
+            g={g}
             action={action}
             onCancel={onCancelAction}
             onExecute={onExecuteAction}

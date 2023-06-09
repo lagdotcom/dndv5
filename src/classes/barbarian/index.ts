@@ -6,7 +6,7 @@ import Item from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName from "../../types/SkillName";
 import { intersects } from "../../utils/set";
-import { makeASI } from "../common";
+import { makeASI, makeExtraAttack } from "../common";
 import Rage from "./Rage";
 import { RecklessAttack } from "./RecklessAttack";
 
@@ -59,8 +59,7 @@ export const PrimalKnowledge = new ConfiguredFeature<SkillName[]>(
   }
 );
 
-// TODO [ATTACKCOUNT]
-const ExtraAttack = notImplementedFeature(
+const ExtraAttack = makeExtraAttack(
   "Extra Attack",
   `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
 );

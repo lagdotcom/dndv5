@@ -113,6 +113,13 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
   });
 });
 
+export const OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (action.attack && action.actor.attacksSoFar.size)
+      error.add("No attacks left", OneAttackPerTurnRule);
+  });
+});
+
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
     const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;

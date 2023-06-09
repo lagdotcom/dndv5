@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
 
+import Engine from "../Engine";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import MultiPointResolver from "../resolvers/MultiPointResolver";
 import MultiTargetResolver from "../resolvers/MultiTargetResolver";
@@ -275,12 +276,14 @@ function getInitialConfig<T extends object>(
 }
 
 interface Props<T extends object> {
+  g: Engine;
   action: Action<T>;
   initialConfig?: Partial<T>;
   onCancel(): void;
   onExecute(action: Action<T>, config: T): void;
 }
 export default function ChooseActionConfigPanel<T extends object>({
+  g,
   action,
   initialConfig = {},
   onCancel,
@@ -299,15 +302,15 @@ export default function ChooseActionConfigPanel<T extends object>({
   );
 
   const errors = useMemo(
-    () => check(action, config).messages,
-    [action, config]
+    () => check(g, action, config).messages,
+    [g, action, config]
   );
   const disabled = useMemo(() => errors.length > 0, [errors]);
   const damage = useMemo(() => action.getDamage(config), [action, config]);
 
   const execute = useCallback(() => {
-    if (checkConfig(action, config)) onExecute(action, config);
-  }, [action, config, onExecute]);
+    if (checkConfig(g, action, config)) onExecute(action, config);
+  }, [g, action, config, onExecute]);
 
   const elements = useMemo(
     () =>

@@ -4,22 +4,30 @@ type ErrorEntry = { value: string; source: Source };
 
 export default class ErrorCollector {
   errors: Set<ErrorEntry>;
+  ignored: Set<Source>;
 
   constructor() {
     this.errors = new Set();
+    this.ignored = new Set();
   }
 
   add(value: string, source: Source) {
     this.errors.add({ value, source });
   }
 
-  get messages() {
-    return [...this.errors].map(
-      (entry) => `${entry.value} (${entry.source.name})`
-    );
+  ignore(source: Source) {
+    this.ignored.add(source);
   }
 
   get valid() {
-    return this.errors.size === 0;
+    return [...this.errors].filter((entry) => !this.ignored.has(entry.source));
+  }
+
+  get messages() {
+    return this.valid.map((entry) => `${entry.value} (${entry.source.name})`);
+  }
+
+  get result() {
+    return this.valid.length === 0;
   }
 }

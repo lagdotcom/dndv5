@@ -1,11 +1,6 @@
 import { SpecifiedEffectShape } from "./types/EffectArea";
 import Point from "./types/Point";
 
-export interface Aimer {
-  position: Point;
-  size: number;
-}
-
 function addPoints(a: Point, b: Point): Point {
   return { x: a.x + b.x, y: a.y + b.y };
 }
@@ -42,7 +37,8 @@ export function getAimOffset(a: Point, b: Point): Point {
 }
 
 export function aimCone(
-  { position, size }: Aimer,
+  position: Point,
+  size: number,
   aim: Point,
   radius: number
 ): SpecifiedEffectShape {
@@ -57,7 +53,8 @@ export function aimCone(
 }
 
 export function aimLine(
-  { position, size }: Aimer,
+  position: Point,
+  size: number,
   aim: Point,
   length: number,
   width: number
