@@ -2,6 +2,7 @@ import CastSpell from "../actions/CastSpell";
 import SimpleFeature from "../features/SimpleFeature";
 import { LongRestResource } from "../resources";
 import AbilityName from "../types/AbilityName";
+import { ActionIcon } from "../types/Action";
 import Combatant from "../types/Combatant";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
@@ -89,7 +90,8 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     public ability: AbilityName,
     public strength: SpellcastingStrength,
     public className: PCClassName,
-    public list: SpellList
+    public list: SpellList,
+    public icon?: ActionIcon
   ) {
     this.entries = new Map();
 

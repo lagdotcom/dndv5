@@ -378,12 +378,12 @@
 
   // src/colours.ts
   var ItemRarityColours = {
-    Common: "",
-    Uncommon: "invert(43%) sepia(73%) saturate(789%) hue-rotate(76deg) brightness(114%) contrast(97%)",
-    Rare: "invert(54%) sepia(70%) saturate(1877%) hue-rotate(189deg) brightness(92%) contrast(92%)",
-    "Very Rare": "invert(17%) sepia(86%) saturate(4261%) hue-rotate(276deg) brightness(87%) contrast(112%)",
-    Legendary: "invert(70%) sepia(84%) saturate(1467%) hue-rotate(339deg) brightness(101%) contrast(99%)",
-    Artifact: "invert(70%) sepia(84%) saturate(1467%) hue-rotate(339deg) brightness(101%) contrast(99%)"
+    Common: "#242528",
+    Uncommon: "#1FC219",
+    Rare: "#4990E2",
+    "Very Rare": "#9810E0",
+    Legendary: "#FEA227",
+    Artifact: "#BE8972"
   };
   function getItemIcon(item) {
     if (item == null ? void 0 : item.iconUrl)
@@ -477,6 +477,8 @@
       this.spell = spell;
       this.name = `${spell.name} (${method.name})`;
       this.time = spell.time;
+      this.icon = spell.icon;
+      this.subIcon = method.icon;
     }
     get status() {
       return this.spell.status;
@@ -574,6 +576,7 @@
     s = false,
     m,
     lists,
+    icon,
     apply,
     check: check2 = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
@@ -593,6 +596,7 @@
     s,
     m,
     lists,
+    icon,
     apply,
     check: check2,
     getAffectedArea,
@@ -613,6 +617,7 @@
     s = false,
     m,
     lists,
+    icon,
     apply,
     check: check2 = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
@@ -632,6 +637,7 @@
     s,
     m,
     lists,
+    icon,
     apply,
     check: check2,
     getAffectedArea,
@@ -2068,19 +2074,19 @@
   };
 
   // src/items/icons/light-crossbow.svg
-  var light_crossbow_default = "./light-crossbow-GA5KGYMD.svg";
+  var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
 
   // src/items/icons/longsword.svg
-  var longsword_default = "./longsword-UJJYNSYJ.svg";
+  var longsword_default = "./longsword-B4PZKYLG.svg";
 
   // src/items/icons/quarterstaff.svg
-  var quarterstaff_default = "./quarterstaff-YWQGWE6Q.svg";
+  var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
 
   // src/items/icons/spear.svg
-  var spear_default = "./spear-QQSF6VQQ.svg";
+  var spear_default = "./spear-JE22DTMJ.svg";
 
   // src/items/icons/trident.svg
-  var trident_default = "./trident-56MTMKCV.svg";
+  var trident_default = "./trident-XL6WP2YY.svg";
 
   // src/items/weapons.ts
   var AbstractWeapon = class extends AbstractItem {
@@ -2390,7 +2396,7 @@
   };
 
   // src/items/icons/bolt.svg
-  var bolt_default = "./bolt-WY3COZUE.svg";
+  var bolt_default = "./bolt-RV5OQWXW.svg";
 
   // src/items/ammunition.ts
   var AbstractAmmo = class extends AbstractItem {
@@ -3207,10 +3213,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/spells/InnateSpellcasting.ts
   var InnateSpellcasting = class {
-    constructor(name, ability, getResourceForSpell) {
+    constructor(name, ability, getResourceForSpell, icon) {
       this.name = name;
       this.ability = ability;
       this.getResourceForSpell = getResourceForSpell;
+      this.icon = icon;
     }
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     addCastableSpell() {
@@ -3384,13 +3391,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     return 9;
   }
   var NormalSpellcasting = class {
-    constructor(name, text, ability, strength, className, list) {
+    constructor(name, text, ability, strength, className, list, icon) {
       this.name = name;
       this.text = text;
       this.ability = ability;
       this.strength = strength;
       this.className = className;
       this.list = list;
+      this.icon = icon;
       this.entries = /* @__PURE__ */ new Map();
       this.feature = new SimpleFeature("Spellcasting", text, (g2, me) => {
         var _a;
@@ -7212,7 +7220,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/App.tsx
-  var import_hooks12 = __toESM(require_hooks());
+  var import_hooks13 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function check(g2, action, config) {
@@ -7240,6 +7248,22 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     "sub": "_sub_1x2nt_9"
   };
 
+  // src/ui/SVGIcon.tsx
+  var import_hooks = __toESM(require_hooks());
+
+  // src/ui/utils/fetchCache.ts
+  var promiseCache = /* @__PURE__ */ new Map();
+  function cachedFetch(src, init) {
+    return __async(this, null, function* () {
+      const cached = promiseCache.get(src);
+      if (cached)
+        return cached;
+      const promise = fetch(src, init).then((r2) => r2.text());
+      promiseCache.set(src, promise);
+      return promise;
+    });
+  }
+
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact = __toESM(require_preact());
   var import_preact2 = __toESM(require_preact());
@@ -7253,6 +7277,27 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       for (u in s)
         void 0 === a[u] && (a[u] = s[u]);
     return import_preact.options.vnode && import_preact.options.vnode(i), i;
+  }
+
+  // src/ui/SVGIcon.tsx
+  function SVGIcon({ className, color, size, src }) {
+    const ref = (0, import_hooks.useRef)(null);
+    (0, import_hooks.useEffect)(() => {
+      void cachedFetch(src).then((html) => {
+        if (ref.current)
+          ref.current.innerHTML = html;
+        return html;
+      });
+    }, [src]);
+    return /* @__PURE__ */ o(
+      "div",
+      {
+        ref,
+        className,
+        "aria-hidden": true,
+        style: { color, width: size, height: size }
+      }
+    );
   }
 
   // src/ui/IconButton.tsx
@@ -7274,29 +7319,21 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "aria-label": alt,
         children: [
           /* @__PURE__ */ o(
-            "div",
+            SVGIcon,
             {
               className: IconButton_module_default.image,
-              "aria-hidden": true,
-              style: {
-                width: size,
-                height: size,
-                backgroundImage: `url(${icon.url})`,
-                filter: icon.colour
-              }
+              src: icon.url,
+              size,
+              color: icon.colour
             }
           ),
           sub && /* @__PURE__ */ o(
-            "div",
+            SVGIcon,
             {
               className: IconButton_module_default.sub,
-              "aria-hidden": true,
-              style: {
-                width: subSize,
-                height: subSize,
-                backgroundImage: `url(${sub.url})`,
-                filter: sub.colour
-              }
+              src: sub.url,
+              size: subSize,
+              color: sub.colour
             }
           )
         ]
@@ -7305,7 +7342,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/Labelled.tsx
-  var import_hooks = __toESM(require_hooks());
+  var import_hooks2 = __toESM(require_hooks());
 
   // src/ui/Labelled.module.scss
   var Labelled_module_default = {
@@ -7338,7 +7375,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     contentsClass,
     role = "group"
   }) {
-    const labelId = (0, import_hooks.useId)();
+    const labelId = (0, import_hooks2.useId)();
     return /* @__PURE__ */ o("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
       /* @__PURE__ */ o(
         "div",
@@ -7417,7 +7454,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/Battlefield.tsx
-  var import_hooks5 = __toESM(require_hooks());
+  var import_hooks6 = __toESM(require_hooks());
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
@@ -7425,7 +7462,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/BattlefieldEffect.tsx
-  var import_hooks2 = __toESM(require_hooks());
+  var import_hooks3 = __toESM(require_hooks());
 
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
@@ -7446,7 +7483,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     name,
     tags
   }) {
-    const style = (0, import_hooks2.useMemo)(() => {
+    const style = (0, import_hooks3.useMemo)(() => {
       const size = shape.radius * scale.value;
       return {
         left: shape.centre.x * scale.value - size,
@@ -7464,7 +7501,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     name,
     tags
   }) {
-    const style = (0, import_hooks2.useMemo)(() => {
+    const style = (0, import_hooks3.useMemo)(() => {
       const size = (shape.radius * 2 + shape.target.sizeInUnits) * scale.value;
       return {
         left: (shape.position.x - shape.radius) * scale.value,
@@ -7483,7 +7520,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: name }) });
   }
   function AffectedSquare({ point }) {
-    const style = (0, import_hooks2.useMemo)(
+    const style = (0, import_hooks3.useMemo)(
       () => ({
         left: point.x * scale.value,
         top: point.y * scale.value,
@@ -7499,7 +7536,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     shape,
     tags = /* @__PURE__ */ new Set()
   }) {
-    const main = (0, import_hooks2.useMemo)(() => {
+    const main = (0, import_hooks3.useMemo)(() => {
       switch (shape.type) {
         case "cylinder":
         case "sphere":
@@ -7508,7 +7545,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           return /* @__PURE__ */ o(WithinArea, { name, tags, shape });
       }
     }, [name, shape, tags]);
-    const points = (0, import_hooks2.useMemo)(() => resolveArea(shape), [shape]);
+    const points = (0, import_hooks3.useMemo)(() => resolveArea(shape), [shape]);
     return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
       main,
       points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { shape, point: p }, i))
@@ -7516,7 +7553,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/Unit.tsx
-  var import_hooks4 = __toESM(require_hooks());
+  var import_hooks5 = __toESM(require_hooks());
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
@@ -7525,7 +7562,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/UnitMoveButton.tsx
-  var import_hooks3 = __toESM(require_hooks());
+  var import_hooks4 = __toESM(require_hooks());
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
@@ -7545,11 +7582,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     west: makeButtonType("moveW", "\u2B05\uFE0F", "Move West", -5, 0)
   };
   function UnitMoveButton({ disabled, onClick, type }) {
-    const { className, emoji, label, dx, dy } = (0, import_hooks3.useMemo)(
+    const { className, emoji, label, dx, dy } = (0, import_hooks4.useMemo)(
       () => buttonTypes[type],
       [type]
     );
-    const clicked = (0, import_hooks3.useCallback)(
+    const clicked = (0, import_hooks4.useCallback)(
       (e) => {
         e.stopPropagation();
         onClick(dx, dy);
@@ -7581,11 +7618,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       height: u.sizeInUnits * scale.value
     };
     const disabled = u.movedSoFar >= u.speed;
-    const clicked = (0, import_hooks4.useCallback)(
+    const clicked = (0, import_hooks5.useCallback)(
       (e) => onClick(u.who, e),
       [onClick, u]
     );
-    const moved = (0, import_hooks4.useCallback)(
+    const moved = (0, import_hooks5.useCallback)(
       (dx, dy) => onMove(u.who, dx, dy),
       [onMove, u]
     );
@@ -7627,12 +7664,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     onMoveCombatant
   }) {
     var _a;
-    const convertCoordinate = (0, import_hooks5.useCallback)((e) => {
+    const convertCoordinate = (0, import_hooks6.useCallback)((e) => {
       const x = round(Math.floor(e.pageX / scale.value), 5);
       const y = round(Math.floor(e.pageY / scale.value), 5);
       return { x, y };
     }, []);
-    const onClick = (0, import_hooks5.useCallback)(
+    const onClick = (0, import_hooks6.useCallback)(
       (e) => onClickBattlefield(convertCoordinate(e), e),
       [convertCoordinate, onClickBattlefield]
     );
@@ -7656,7 +7693,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/ChooseActionConfigPanel.tsx
-  var import_hooks6 = __toESM(require_hooks());
+  var import_hooks7 = __toESM(require_hooks());
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
@@ -7687,14 +7724,14 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
-    const setTarget = (0, import_hooks6.useCallback)(
+    const setTarget = (0, import_hooks7.useCallback)(
       (who) => {
         onChange(field, who);
         wantsCombatant.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks6.useCallback)(() => {
+    const onClick = (0, import_hooks7.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ o("div", { children: [
@@ -7721,7 +7758,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     onChange
   }) {
     var _a;
-    const addTarget = (0, import_hooks6.useCallback)(
+    const addTarget = (0, import_hooks7.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).includes(who))
           onChange(field, (value != null ? value : []).concat(who));
@@ -7729,10 +7766,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks6.useCallback)(() => {
+    const onClick = (0, import_hooks7.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks6.useCallback)(
+    const remove = (0, import_hooks7.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== who)
@@ -7767,14 +7804,14 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     ] });
   }
   function ChoosePoint({ field, value, onChange }) {
-    const setTarget = (0, import_hooks6.useCallback)(
+    const setTarget = (0, import_hooks7.useCallback)(
       (p) => {
         onChange(field, p);
         wantsPoint.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks6.useCallback)(() => {
+    const onClick = (0, import_hooks7.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ o("div", { children: [
@@ -7800,7 +7837,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     value,
     onChange
   }) {
-    const addPoint = (0, import_hooks6.useCallback)(
+    const addPoint = (0, import_hooks7.useCallback)(
       (p) => {
         if (p)
           onChange(field, (value != null ? value : []).concat(p));
@@ -7808,10 +7845,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks6.useCallback)(() => {
+    const onClick = (0, import_hooks7.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== addPoint ? addPoint : void 0;
     }, [addPoint]);
-    const remove = (0, import_hooks6.useCallback)(
+    const remove = (0, import_hooks7.useCallback)(
       (p) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== p)
@@ -7909,8 +7946,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     onCancel,
     onExecute
   }) {
-    const [config, setConfig] = (0, import_hooks6.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks6.useCallback)(
+    const [config, setConfig] = (0, import_hooks7.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks7.useCallback)(
       (key, value) => {
         setConfig((old) => {
           const newConfig = __spreadProps(__spreadValues({}, old), { [key]: value });
@@ -7920,17 +7957,17 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [action]
     );
-    const errors = (0, import_hooks6.useMemo)(
+    const errors = (0, import_hooks7.useMemo)(
       () => check(g2, action, config).messages,
       [g2, action, config]
     );
-    const disabled = (0, import_hooks6.useMemo)(() => errors.length > 0, [errors]);
-    const damage = (0, import_hooks6.useMemo)(() => action.getDamage(config), [action, config]);
-    const execute = (0, import_hooks6.useCallback)(() => {
+    const disabled = (0, import_hooks7.useMemo)(() => errors.length > 0, [errors]);
+    const damage = (0, import_hooks7.useMemo)(() => action.getDamage(config), [action, config]);
+    const execute = (0, import_hooks7.useCallback)(() => {
       if (checkConfig(g2, action, config))
         onExecute(action, config);
     }, [g2, action, config, onExecute]);
-    const elements = (0, import_hooks6.useMemo)(
+    const elements = (0, import_hooks7.useMemo)(
       () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
         const props = {
           key,
@@ -7995,7 +8032,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/EventLog.tsx
-  var import_hooks8 = __toESM(require_hooks());
+  var import_hooks9 = __toESM(require_hooks());
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
@@ -8006,10 +8043,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/hooks/useTimeout.ts
-  var import_hooks7 = __toESM(require_hooks());
+  var import_hooks8 = __toESM(require_hooks());
   function useTimeout(handler, ms = void 0) {
-    const [handle, setHandle] = (0, import_hooks7.useState)();
-    const fire = (0, import_hooks7.useCallback)(
+    const [handle, setHandle] = (0, import_hooks8.useState)();
+    const fire = (0, import_hooks8.useCallback)(
       () => setHandle((old) => {
         if (old)
           return old;
@@ -8020,7 +8057,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       }),
       [handler, ms]
     );
-    const cancel = (0, import_hooks7.useCallback)(
+    const cancel = (0, import_hooks8.useCallback)(
       () => setHandle((old) => {
         if (old)
           clearTimeout(old);
@@ -8028,7 +8065,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       }),
       []
     );
-    (0, import_hooks7.useEffect)(() => cancel, [cancel]);
+    (0, import_hooks8.useEffect)(() => cancel, [cancel]);
     return { cancel, fire, handle };
   }
 
@@ -8155,19 +8192,19 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
   }
   function EventLog({ g: g2 }) {
-    const ref = (0, import_hooks8.useRef)(null);
-    const [messages, setMessages] = (0, import_hooks8.useState)([]);
+    const ref = (0, import_hooks9.useRef)(null);
+    const [messages, setMessages] = (0, import_hooks9.useState)([]);
     const { fire } = useTimeout(
       () => {
         var _a, _b;
         return (_b = (_a = ref.current) == null ? void 0 : _a.scrollIntoView) == null ? void 0 : _b.call(_a, { behavior: "smooth" });
       }
     );
-    const addMessage = (0, import_hooks8.useCallback)((el) => {
+    const addMessage = (0, import_hooks9.useCallback)((el) => {
       setMessages((old) => old.concat(el).slice(0, 50));
       fire();
     }, []);
-    (0, import_hooks8.useEffect)(() => {
+    (0, import_hooks9.useEffect)(() => {
       g2.events.on(
         "Attack",
         ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
@@ -8206,10 +8243,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/ListChoiceDialog.tsx
-  var import_hooks10 = __toESM(require_hooks());
+  var import_hooks11 = __toESM(require_hooks());
 
   // src/ui/Dialog.tsx
-  var import_hooks9 = __toESM(require_hooks());
+  var import_hooks10 = __toESM(require_hooks());
 
   // src/ui/Dialog.module.scss
   var Dialog_module_default = {
@@ -8221,7 +8258,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Dialog.tsx
   function ReactDialog({ title, text, children }) {
-    const titleId = (0, import_hooks9.useId)();
+    const titleId = (0, import_hooks10.useId)();
     return /* @__PURE__ */ o("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ o(
       "div",
       {
@@ -8246,7 +8283,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks10.useCallback)(
+    const decide = (0, import_hooks11.useCallback)(
       (value) => {
         chooseFromList.value = void 0;
         resolve(value);
@@ -8294,20 +8331,20 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/YesNoDialog.tsx
-  var import_hooks11 = __toESM(require_hooks());
+  var import_hooks12 = __toESM(require_hooks());
   function YesNoDialog({
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks11.useCallback)(
+    const decide = (0, import_hooks12.useCallback)(
       (value) => {
         chooseYesNo.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks11.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks11.useCallback)(() => decide(false), [decide]);
+    const onYes = (0, import_hooks12.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks12.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
@@ -8316,28 +8353,28 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks12.useState)();
-    const [action, setAction] = (0, import_hooks12.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks12.useState)({
+    const [target, setTarget] = (0, import_hooks13.useState)();
+    const [action, setAction] = (0, import_hooks13.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks13.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks12.useCallback)(
+    const hideActionMenu = (0, import_hooks13.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks12.useCallback)(() => {
+    const refreshUnits = (0, import_hooks13.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push(getUnitData(who, state));
       allCombatants.value = list;
     }, [g2]);
-    const refreshAreas = (0, import_hooks12.useCallback)(() => {
+    const refreshAreas = (0, import_hooks13.useCallback)(() => {
       allEffects.value = [...g2.effects];
     }, [g2]);
-    (0, import_hooks12.useEffect)(() => {
+    (0, import_hooks13.useEffect)(() => {
       g2.events.on("CombatantPlaced", refreshUnits);
       g2.events.on("CombatantMoved", refreshUnits);
       g2.events.on("CombatantDied", refreshUnits);
@@ -8351,8 +8388,25 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       g2.events.on("ListChoice", (e) => chooseFromList.value = e);
       g2.events.on("YesNoChoice", (e) => chooseYesNo.value = e);
       onMount == null ? void 0 : onMount(g2);
+      for (const [who] of g2.combatants) {
+        for (const item of who.inventory)
+          if (item.iconUrl)
+            cachedFetch(item.iconUrl);
+        for (const item of who.equipment)
+          if (item.iconUrl)
+            cachedFetch(item.iconUrl);
+        for (const item of who.knownSpells)
+          if (item.icon)
+            cachedFetch(item.icon.url);
+        for (const item of who.preparedSpells)
+          if (item.icon)
+            cachedFetch(item.icon.url);
+        for (const item of who.spellcastingMethods)
+          if (item.icon)
+            cachedFetch(item.icon.url);
+      }
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
-    const onExecuteAction = (0, import_hooks12.useCallback)(
+    const onExecuteAction = (0, import_hooks13.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
@@ -8364,7 +8418,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, refreshUnits]
     );
-    const onClickAction = (0, import_hooks12.useCallback)(
+    const onClickAction = (0, import_hooks13.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -8377,7 +8431,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks12.useCallback)(
+    const onClickBattlefield = (0, import_hooks13.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -8389,7 +8443,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks12.useCallback)(
+    const onClickCombatant = (0, import_hooks13.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -8424,23 +8478,23 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2]
     );
-    const onMoveCombatant = (0, import_hooks12.useCallback)(
+    const onMoveCombatant = (0, import_hooks13.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         void g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks12.useCallback)(() => {
+    const onPass = (0, import_hooks13.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
       void g2.nextTurn();
     }, [g2]);
-    const onCancelAction = (0, import_hooks12.useCallback)(() => {
+    const onCancelAction = (0, import_hooks13.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks12.useCallback)(
+    const onChooseAction = (0, import_hooks13.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);

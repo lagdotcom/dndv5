@@ -1,5 +1,6 @@
 import { ActionIcon } from "../types/Action";
 import styles from "./IconButton.module.scss";
+import SVGIcon from "./SVGIcon";
 
 interface Props {
   alt: string;
@@ -27,26 +28,18 @@ export default function IconButton({
       title={alt}
       aria-label={alt}
     >
-      <div
+      <SVGIcon
         className={styles.image}
-        aria-hidden={true}
-        style={{
-          width: size,
-          height: size,
-          backgroundImage: `url(${icon.url})`,
-          filter: icon.colour,
-        }}
+        src={icon.url}
+        size={size}
+        color={icon.colour}
       />
       {sub && (
-        <div
+        <SVGIcon
           className={styles.sub}
-          aria-hidden={true}
-          style={{
-            width: subSize,
-            height: subSize,
-            backgroundImage: `url(${sub.url})`,
-            filter: sub.colour,
-          }}
+          src={sub.url}
+          size={subSize}
+          color={sub.colour}
         />
       )}
     </button>

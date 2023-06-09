@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import { ActionConfig } from "./Action";
+import { ActionConfig, ActionIcon } from "./Action";
 import ActionTime from "./ActionTime";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
@@ -46,6 +46,7 @@ export default interface Spell<T extends object = object> extends Source {
   s: boolean;
   m?: string; // TODO [MATERIALCOST]
   lists: SpellList[];
+  icon?: ActionIcon;
 
   apply(
     g: Engine,

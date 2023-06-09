@@ -2,7 +2,7 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
-import Action from "../types/Action";
+import Action, { ActionIcon } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
 import Spell from "../types/Spell";
@@ -11,6 +11,8 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 export default class CastSpell<T extends object> implements Action<T> {
   name: string;
   time: ActionTime;
+  icon?: ActionIcon;
+  subIcon?: ActionIcon;
 
   constructor(
     public g: Engine,
@@ -20,6 +22,8 @@ export default class CastSpell<T extends object> implements Action<T> {
   ) {
     this.name = `${spell.name} (${method.name})`;
     this.time = spell.time;
+    this.icon = spell.icon;
+    this.subIcon = method.icon;
   }
 
   get status() {
