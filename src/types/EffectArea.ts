@@ -9,7 +9,11 @@ import {
 import Point from "./Point";
 import Source from "./Source";
 
-export const AreaTags = ["heavily obscured", "holy"] as const;
+export const AreaTags = [
+  "difficult terrain",
+  "heavily obscured",
+  "holy",
+] as const;
 export type AreaTag = (typeof AreaTags)[number];
 
 export type SpecifiedCone = ConeShape & { centre: Point; target: Point };

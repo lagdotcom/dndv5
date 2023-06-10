@@ -61,7 +61,7 @@ class MonkWeaponWrapper extends AbstractWeapon {
       weapon.category,
       weapon.rangeCategory,
       dd(1, size, weapon.damage.damageType),
-      [...weapon.properties],
+      weapon.properties,
       weapon.shortRange,
       weapon.longRange
     );

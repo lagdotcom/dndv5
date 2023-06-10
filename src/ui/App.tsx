@@ -61,7 +61,7 @@ export default function App({ g, onMount }: Props) {
   }, [g]);
 
   const refreshAreas = useCallback(() => {
-    allEffects.value = [...g.effects];
+    allEffects.value = Array.from(g.effects);
   }, [g]);
 
   useEffect(() => {

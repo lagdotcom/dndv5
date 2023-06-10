@@ -63,6 +63,27 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
   });
 });
 
+export const DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
+  const isDifficultTerrainAnywhere = (squares: PointSet) => {
+    for (const effect of g.effects) {
+      if (!effect.tags.has("difficult terrain")) continue;
+
+      const area = resolveArea(effect.shape);
+      for (const square of squares) {
+        if (area.has(square)) return true;
+      }
+    }
+
+    return false;
+  };
+
+  g.events.on("GetMoveCost", ({ detail: { who, to, multiplier } }) => {
+    const squares = getSquares(who, to);
+    if (isDifficultTerrainAnywhere(squares))
+      multiplier.add("double", DifficultTerrainRule);
+  });
+});
+
 export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) =>
     who.tickEffects("turnStart")
@@ -100,16 +121,15 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
 
   // TODO [PROJECTILE] should really check anywhere along the path...
   g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
-    const squares = new PointSet(
-      getSquares(target, g.getState(target).position)
-    );
+    const squares = getSquares(target, g.getState(target).position);
     if (isHeavilyObscuredAnywhere(squares))
       diceType.add("disadvantage", ObscuredRule);
   });
 
   g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-    const squares = new PointSet(getSquares(who, g.getState(who).position));
-    if (isHeavilyObscuredAnywhere(squares)) conditions.add("Blinded");
+    const squares = getSquares(who, g.getState(who).position);
+    if (isHeavilyObscuredAnywhere(squares))
+      conditions.add("Blinded", ObscuredRule);
   });
 });
 

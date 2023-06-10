@@ -1,4 +1,6 @@
 import Engine from "../Engine";
+import { enumerateMapSquares } from "../MapSquare";
+import PointSet from "../PointSet";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
 import SizeCategory from "../types/SizeCategory";
@@ -36,12 +38,12 @@ export function distanceTo(g: Engine, who: Combatant, to: Point) {
 }
 
 export function getSquares(who: Combatant, position: Point) {
-  const size = who.sizeInUnits;
-
-  const points: Point[] = [];
-  for (let y = 0; y < size; y += 5)
-    for (let x = 0; x < size; x += 5)
-      points.push({ x: x + position.x, y: y + position.y });
-
-  return points;
+  return new PointSet(
+    enumerateMapSquares(
+      position.x,
+      position.y,
+      position.x + who.sizeInUnits,
+      position.y + who.sizeInUnits
+    )
+  );
 }

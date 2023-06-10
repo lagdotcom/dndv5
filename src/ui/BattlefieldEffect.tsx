@@ -114,6 +114,9 @@ export default function BattlefieldEffect({
       case "sphere":
         return <Sphere name={name} tags={tags} shape={shape} />;
 
+      // TODO line
+      // TODO cone
+
       case "within":
         return <WithinArea name={name} tags={tags} shape={shape} />;
     }

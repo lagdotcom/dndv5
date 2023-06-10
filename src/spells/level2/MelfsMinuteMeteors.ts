@@ -45,7 +45,7 @@ async function fireMeteors(
         tags: new Set(),
       });
 
-      const mul = save ? 0.5 : 1;
+      const mul = save ? "half" : undefined;
       await g.damage(
         MelfsMinuteMeteors,
         "fire",

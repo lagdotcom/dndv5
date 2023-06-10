@@ -1,9 +1,9 @@
+import ConditionCollector from "../collectors/ConditionCollector";
 import Combatant from "../types/Combatant";
-import ConditionName from "../types/ConditionName";
 
 export interface GetConditionsDetail {
   who: Combatant;
-  conditions: Set<ConditionName>; // TODO collector?
+  conditions: ConditionCollector;
 }
 
 export default class GetConditionsEvent extends CustomEvent<GetConditionsDetail> {

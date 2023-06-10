@@ -14,7 +14,8 @@ const HoldPersonEffect = new Effect<{
   method: SpellcastingMethod;
 }>("Hold Person", "turnStart", (g) => {
   g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-    if (who.hasEffect(HoldPersonEffect)) conditions.add("Paralyzed");
+    if (who.hasEffect(HoldPersonEffect))
+      conditions.add("Paralyzed", HoldPersonEffect);
   });
 
   g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {

@@ -93,7 +93,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
         tags: new Set(),
       });
 
-      const mul = save ? 0.5 : 1;
+      const mul = save ? "half" : undefined;
       await g.damage(
         this,
         damageType,
@@ -155,7 +155,7 @@ const EnervatingBreathEffect = new Effect(
   (g) => {
     g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
       if (who.hasEffect(EnervatingBreathEffect))
-        conditions.add("Incapacitated");
+        conditions.add("Incapacitated", EnervatingBreathEffect);
     });
   }
 );

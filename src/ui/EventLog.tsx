@@ -86,14 +86,14 @@ function getDamageEntryText([type, entry]: [
 function DamageMessage({ who, total, breakdown }: CombatantDamagedDetail) {
   return (
     <LogMessage
-      message={`${who.name} takes ${total} damage. (${[...breakdown]
+      message={`${who.name} takes ${total} damage. (${Array.from(breakdown)
         .map(getDamageEntryText)
         .join(", ")})`}
     >
       <CombatantRef who={who} />
       takes {total} damage. (
       <div className={common.damageList}>
-        {[...breakdown].map(([type, entry]) => (
+        {Array.from(breakdown).map(([type, entry]) => (
           <span key={type}>{getDamageEntryText([type, entry])}</span>
         ))}
       </div>

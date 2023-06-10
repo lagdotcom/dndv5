@@ -93,41 +93,54 @@
   var AbstractCollector = class {
     constructor() {
       this.entries = /* @__PURE__ */ new Set();
-      this.ignored = /* @__PURE__ */ new Set();
+      this.ignoredSources = /* @__PURE__ */ new Set();
+      this.ignoredValues = /* @__PURE__ */ new Set();
     }
     add(value, source) {
       this.entries.add({ value, source });
     }
     ignore(source) {
-      this.ignored.add(source);
+      this.ignoredSources.add(source);
     }
-    involved(source) {
-      if (this.ignored.has(source))
+    ignoreValue(value) {
+      this.ignoredValues.add(value);
+    }
+    isInvolved(source) {
+      if (this.ignoredSources.has(source))
         return false;
       for (const entry of this.entries)
-        if (entry.source === source)
+        if (entry.source === source && !this.ignoredValues.has(entry.value))
           return true;
       return false;
     }
     getValidEntries() {
-      return [...this.entries].filter((entry) => !this.ignored.has(entry.source)).map((entry) => entry.value);
+      return Array.from(this.entries).filter(
+        (entry) => !(this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value))
+      ).map((entry) => entry.value);
     }
+  };
+  var AbstractSumCollector = class extends AbstractCollector {
     get result() {
-      return this.getResult(this.getValidEntries());
+      return this.getSum(this.getValidEntries());
+    }
+  };
+  var SetCollector = class extends AbstractCollector {
+    get result() {
+      return new Set(this.getValidEntries());
     }
   };
 
   // src/collectors/BonusCollector.ts
-  var BonusCollector = class extends AbstractCollector {
-    getResult(values) {
+  var BonusCollector = class extends AbstractSumCollector {
+    getSum(values) {
       return values.reduce((total, value) => total + value, 0);
     }
   };
 
   // src/collectors/DamageResponseCollector.ts
   var priority = ["absorb", "immune", "resist", "vulnerable"];
-  var DamageResponseCollector = class extends AbstractCollector {
-    getResult(values) {
+  var DamageResponseCollector = class extends AbstractSumCollector {
+    getSum(values) {
       for (const p of priority) {
         if (values.includes(p))
           return p;
@@ -137,8 +150,8 @@
   };
 
   // src/collectors/DiceTypeCollector.ts
-  var DiceTypeCollector = class extends AbstractCollector {
-    getResult(values) {
+  var DiceTypeCollector = class extends AbstractSumCollector {
+    getSum(values) {
       const hasAdvantage = values.includes("advantage");
       const hasDisadvantage = values.includes("disadvantage");
       if (hasAdvantage === hasDisadvantage)
@@ -160,7 +173,9 @@
       this.ignored.add(source);
     }
     get valid() {
-      return [...this.errors].filter((entry) => !this.ignored.has(entry.source));
+      return Array.from(this.errors).filter(
+        (entry) => !this.ignored.has(entry.source)
+      );
     }
     get messages() {
       return this.valid.map((entry) => `${entry.value} (${entry.source.name})`);
@@ -175,9 +190,18 @@
   };
 
   // src/collectors/MultiplierCollector.ts
-  var MultiplierCollector = class extends AbstractCollector {
-    getResult(values) {
-      return values.reduce((total, value) => total * value, 1);
+  var MultiplierCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      let power = 0;
+      for (const value of values) {
+        if (value === "double")
+          power++;
+        else if (value === "half")
+          power--;
+        else if (value === "zero")
+          return 0;
+      }
+      return 2 ** power;
     }
   };
 
@@ -315,7 +339,7 @@
   var DashEffect = new Effect("Dash", "turnEnd", (g2) => {
     g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
       if (who.hasEffect(DashEffect))
-        multiplier.add(2, DashEffect);
+        multiplier.add("double", DashEffect);
     });
   });
   var DashAction = class extends AbstractAction {
@@ -431,6 +455,10 @@
     setScore(value) {
       this.baseScore = value;
     }
+  };
+
+  // src/collectors/ConditionCollector.ts
+  var ConditionCollector = class extends SetCollector {
   };
 
   // src/events/EffectAddedEvent.ts
@@ -719,6 +747,275 @@
     return item;
   }
 
+  // src/Polygon.ts
+  var Polygon = class {
+    constructor(points) {
+      this.points = points;
+      const lines = [];
+      for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        const a = points[i];
+        const b = points[j];
+        lines.push([a, b]);
+      }
+      this.lines = lines;
+    }
+    containsPoint({ x, y }) {
+      let inside = false;
+      for (const line of this.lines) {
+        const [a, b] = line;
+        if (a.y > y != b.y > y && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x)
+          inside = !inside;
+      }
+      return inside;
+    }
+  };
+
+  // src/utils/set.ts
+  function hasAll(set, matches2) {
+    if (!set)
+      return false;
+    for (const item of matches2)
+      if (!set.has(item))
+        return false;
+    return true;
+  }
+  function intersects(a, b) {
+    for (const item of a)
+      if (b.has(item))
+        return true;
+    return false;
+  }
+  function* mapSet(values, fn) {
+    let index = 0;
+    for (const item of values)
+      yield fn(item, index++, values);
+  }
+
+  // src/PointSet.ts
+  function asPoint(tag) {
+    const [x, y] = tag.split(",").map(Number);
+    return { x, y };
+  }
+  var asTag = ({ x, y }) => `${x},${y}`;
+  var PointSet = class {
+    constructor(points = []) {
+      this.set = new Set(mapSet(points, asTag));
+    }
+    add(p) {
+      return this.set.add(asTag(p));
+    }
+    delete(p) {
+      return this.set.delete(asTag(p));
+    }
+    has(p) {
+      return this.set.has(asTag(p));
+    }
+    overlaps(ps) {
+      for (const point of ps) {
+        if (this.has(point))
+          return true;
+      }
+      return false;
+    }
+    *[Symbol.iterator]() {
+      for (const tag of this.set)
+        yield asPoint(tag);
+    }
+    map(transformer) {
+      return mapSet(this.set, (tag, index) => transformer(asPoint(tag), index));
+    }
+  };
+
+  // src/utils/areas.ts
+  function resolvePolygon(points) {
+    const poly = new Polygon(points);
+    const set = new PointSet();
+    for (const square of getAllMapSquaresContainingPolygon(poly)) {
+      if (poly.containsPoint(square.getMiddle()))
+        set.add(square.getTopLeft());
+    }
+    return set;
+  }
+  function getBoundingBox(points) {
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const { x, y } of points) {
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }
+  function getTilesWithinCircle(centre, radius) {
+    const set = new PointSet();
+    for (const square of getAllMapSquaresContainingCircle(centre, radius)) {
+      const midpoint = square.getMiddle();
+      const dx = midpoint.x - centre.x;
+      const dy = midpoint.y - centre.y;
+      const distance2 = Math.sqrt(dx * dx + dy * dy);
+      if (distance2 <= radius)
+        set.add(square.getTopLeft());
+    }
+    return set;
+  }
+  function getRectangleAsPolygon({ x, y }, width, height) {
+    return [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height }
+    ];
+  }
+  function getTilesWithinRectangle(topLeft, width, height) {
+    return resolvePolygon(getRectangleAsPolygon(topLeft, width, height));
+  }
+  function getLineAsPolygon({ x: sx, y: sy }, { x: tx, y: ty }, width, length) {
+    const dir = Math.atan2(ty - sy, tx - sx);
+    const off = dir - Math.PI / 2;
+    const xd = length * Math.cos(dir);
+    const yd = length * Math.sin(dir);
+    const w2 = width / 2;
+    const xo = w2 * Math.cos(off);
+    const yo = w2 * Math.sin(off);
+    const ax = sx + xo;
+    const ay = sy + yo;
+    const bx = sx - xo;
+    const by = sy - yo;
+    const cx = bx + xd;
+    const cy = by + yd;
+    const dx = ax + xd;
+    const dy = ay + yd;
+    return [
+      { x: ax, y: ay },
+      { x: bx, y: by },
+      { x: cx, y: cy },
+      { x: dx, y: dy }
+    ];
+  }
+  function getTilesWithinLine(start, end, width, length) {
+    return resolvePolygon(getLineAsPolygon(start, end, width, length));
+  }
+  function getConeAsPolygon({ x: sx, y: sy }, { x: tx, y: ty }, radius) {
+    const dir = Math.atan2(ty - sy, tx - sx);
+    const off = dir - Math.PI / 2;
+    const xd = radius * Math.cos(dir);
+    const yd = radius * Math.sin(dir);
+    const w2 = radius / 2;
+    const xo = w2 * Math.cos(off);
+    const yo = w2 * Math.sin(off);
+    const ax = sx + xd + xo;
+    const ay = sy + yd + yo;
+    const bx = sx + xd - xo;
+    const by = sy + yd - yo;
+    return [
+      { x: sx, y: sy },
+      { x: ax, y: ay },
+      { x: bx, y: by }
+    ];
+  }
+  function getTilesWithinCone(start, end, radius) {
+    return resolvePolygon(getConeAsPolygon(start, end, radius));
+  }
+  function resolveArea(area) {
+    switch (area.type) {
+      case "cylinder":
+      case "sphere":
+        return getTilesWithinCircle(area.centre, area.radius);
+      case "within": {
+        const x = area.position.x - area.radius;
+        const y = area.position.y - area.radius;
+        const size = area.target.sizeInUnits + area.radius * 2;
+        return getTilesWithinRectangle({ x, y }, size, size);
+      }
+      case "cone":
+        return getTilesWithinCone(area.centre, area.target, area.radius);
+      case "line":
+        return getTilesWithinLine(
+          area.start,
+          area.target,
+          area.width,
+          area.length
+        );
+    }
+  }
+
+  // src/utils/numbers.ts
+  function modulo(value, max) {
+    return value % max;
+  }
+  function round(n, size) {
+    return Math.floor(n / size) * size;
+  }
+  function roundUp(n, size) {
+    return Math.ceil(n / size) * size;
+  }
+  function enumerate(min, max) {
+    const values = [];
+    for (let i = min; i <= max; i++)
+      values.push(i);
+    return values;
+  }
+  function ordinal(n) {
+    if (n >= 11 && n <= 13)
+      return `${n}th`;
+    const last = n % 10;
+    switch (last) {
+      case 1:
+        return `${n}st`;
+      case 2:
+        return `${n}nd`;
+      case 3:
+        return `${n}rd`;
+      default:
+        return `${n}th`;
+    }
+  }
+
+  // src/MapSquare.ts
+  var MapSquareSize = 5;
+  var HalfSquare = MapSquareSize / 2;
+  var MapSquare = class extends Polygon {
+    constructor(x, y) {
+      super([
+        { x, y },
+        { x: x + MapSquareSize, y },
+        { x: x + MapSquareSize, y: y + MapSquareSize },
+        { x, y: y + MapSquareSize }
+      ]);
+      this.x = x;
+      this.y = y;
+    }
+    getTopLeft() {
+      return { x: this.x, y: this.y };
+    }
+    getMiddle() {
+      return { x: this.x + HalfSquare, y: this.y + HalfSquare };
+    }
+  };
+  function* enumerateMapSquares(minX, minY, maxX, maxY) {
+    for (let y = minY; y < maxY; y += MapSquareSize)
+      for (let x = minX; x < maxX; x += MapSquareSize)
+        yield new MapSquare(x, y);
+  }
+  function getAllMapSquaresContainingPolygon(poly) {
+    const box = getBoundingBox(poly.points);
+    const minX = round(box.x, MapSquareSize);
+    const minY = round(box.y, MapSquareSize);
+    const maxX = roundUp(box.x + box.w, MapSquareSize);
+    const maxY = roundUp(box.y + box.h, MapSquareSize);
+    return enumerateMapSquares(minX, minY, maxX, maxY);
+  }
+  function getAllMapSquaresContainingCircle(centre, radius) {
+    const minX = round(centre.x - radius, MapSquareSize);
+    const minY = round(centre.y - radius, MapSquareSize);
+    const maxX = roundUp(centre.x + radius, MapSquareSize);
+    const maxY = roundUp(centre.y + radius, MapSquareSize);
+    return enumerateMapSquares(minX, minY, maxX, maxY);
+  }
+
   // src/utils/units.ts
   var categoryUnits = {
     tiny: 1,
@@ -745,12 +1042,14 @@
     return Math.max(dx, dy);
   }
   function getSquares(who, position) {
-    const size = who.sizeInUnits;
-    const points = [];
-    for (let y = 0; y < size; y += 5)
-      for (let x = 0; x < size; x += 5)
-        points.push({ x: x + position.x, y: y + position.y });
-    return points;
+    return new PointSet(
+      enumerateMapSquares(
+        position.x,
+        position.y,
+        position.x + who.sizeInUnits,
+        position.y + who.sizeInUnits
+      )
+    );
   }
 
   // src/AbstractCombatant.ts
@@ -878,8 +1177,11 @@
     }
     get conditions() {
       return this.g.fire(
-        new GetConditionsEvent({ who: this, conditions: /* @__PURE__ */ new Set() })
-      ).detail.conditions;
+        new GetConditionsEvent({
+          who: this,
+          conditions: new ConditionCollector()
+        })
+      ).detail.conditions.result;
     }
     get speed() {
       var _a;
@@ -1011,7 +1313,7 @@
       for (const feature of this.features.values())
         feature.setup(this.g, this, this.getConfig(feature.name));
       this.hp = this.hpMax;
-      for (const spell of /* @__PURE__ */ new Set([...this.knownSpells, ...this.preparedSpells]))
+      for (const spell of this.preparedSpells)
         spellImplementationWarning(spell, this);
     }
     addEffect(effect, config) {
@@ -1156,41 +1458,6 @@
     }
   };
 
-  // src/PointSet.ts
-  function asPoint(tag) {
-    const [x, y] = tag.split(",").map(Number);
-    return { x, y };
-  }
-  var asTag = ({ x, y }) => `${x},${y}`;
-  var PointSet = class {
-    constructor(points) {
-      this.set = new Set(points == null ? void 0 : points.map(asTag));
-    }
-    add(p) {
-      return this.set.add(asTag(p));
-    }
-    delete(p) {
-      return this.set.delete(asTag(p));
-    }
-    has(p) {
-      return this.set.has(asTag(p));
-    }
-    overlaps(ps) {
-      for (const point of ps) {
-        if (this.has(point))
-          return true;
-      }
-      return false;
-    }
-    *[Symbol.iterator]() {
-      for (const tag of this.set)
-        yield asPoint(tag);
-    }
-    map(transformer) {
-      return [...this.set].map((tag, index) => transformer(asPoint(tag), index));
-    }
-  };
-
   // src/resources.ts
   var ResourceRegistry = /* @__PURE__ */ new Map();
   var ShortRestResource = class {
@@ -1225,219 +1492,6 @@
       this.refresh = "turnStart";
     }
   };
-
-  // src/Polygon.ts
-  var Polygon = class {
-    constructor(points) {
-      this.points = points;
-      const lines = [];
-      for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-        const a = points[i];
-        const b = points[j];
-        lines.push([a, b]);
-      }
-      this.lines = lines;
-    }
-    containsPoint({ x, y }) {
-      let inside = false;
-      for (const line of this.lines) {
-        const [a, b] = line;
-        if (a.y > y != b.y > y && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x)
-          inside = !inside;
-      }
-      return inside;
-    }
-  };
-
-  // src/utils/numbers.ts
-  function modulo(value, max) {
-    return value % max;
-  }
-  function round(n, size) {
-    return Math.floor(n / size) * size;
-  }
-  function roundUp(n, size) {
-    return Math.ceil(n / size) * size;
-  }
-  function enumerate(min, max) {
-    const values = [];
-    for (let i = min; i <= max; i++)
-      values.push(i);
-    return values;
-  }
-  function ordinal(n) {
-    if (n >= 11 && n <= 13)
-      return `${n}th`;
-    const last = n % 10;
-    switch (last) {
-      case 1:
-        return `${n}st`;
-      case 2:
-        return `${n}nd`;
-      case 3:
-        return `${n}rd`;
-      default:
-        return `${n}th`;
-    }
-  }
-
-  // src/MapSquare.ts
-  var MapSquareSize = 5;
-  var HalfSquare = MapSquareSize / 2;
-  var MapSquare = class extends Polygon {
-    constructor(x, y) {
-      super([
-        { x, y },
-        { x: x + MapSquareSize, y },
-        { x: x + MapSquareSize, y: y + MapSquareSize },
-        { x, y: y + MapSquareSize }
-      ]);
-      this.x = x;
-      this.y = y;
-    }
-    getTopLeft() {
-      return { x: this.x, y: this.y };
-    }
-    getMiddle() {
-      return { x: this.x + HalfSquare, y: this.y + HalfSquare };
-    }
-  };
-  function* enumerateMapSquares(minX, minY, maxX, maxY) {
-    for (let y = minY; y < maxY; y += MapSquareSize)
-      for (let x = minX; x < maxX; x += MapSquareSize)
-        yield new MapSquare(x, y);
-  }
-  function getAllMapSquaresContainingPolygon(poly) {
-    const box = getBoundingBox(poly.points);
-    const minX = round(box.x, MapSquareSize);
-    const minY = round(box.y, MapSquareSize);
-    const maxX = roundUp(box.x + box.w, MapSquareSize);
-    const maxY = roundUp(box.y + box.h, MapSquareSize);
-    return enumerateMapSquares(minX, minY, maxX, maxY);
-  }
-  function getAllMapSquaresContainingCircle(centre, radius) {
-    const minX = round(centre.x - radius, MapSquareSize);
-    const minY = round(centre.y - radius, MapSquareSize);
-    const maxX = roundUp(centre.x + radius, MapSquareSize);
-    const maxY = roundUp(centre.y + radius, MapSquareSize);
-    return enumerateMapSquares(minX, minY, maxX, maxY);
-  }
-
-  // src/utils/areas.ts
-  function resolvePolygon(points) {
-    const poly = new Polygon(points);
-    const set = new PointSet();
-    for (const square of getAllMapSquaresContainingPolygon(poly)) {
-      if (poly.containsPoint(square.getMiddle()))
-        set.add(square.getTopLeft());
-    }
-    return set;
-  }
-  function getBoundingBox(points) {
-    let left = Infinity;
-    let top = Infinity;
-    let right = -Infinity;
-    let bottom = -Infinity;
-    for (const { x, y } of points) {
-      left = Math.min(left, x);
-      top = Math.min(top, y);
-      right = Math.max(right, x);
-      bottom = Math.max(bottom, y);
-    }
-    return { x: left, y: top, w: right - left, h: bottom - top };
-  }
-  function getTilesWithinCircle(centre, radius) {
-    const set = new PointSet();
-    for (const square of getAllMapSquaresContainingCircle(centre, radius)) {
-      const midpoint = square.getMiddle();
-      const dx = midpoint.x - centre.x;
-      const dy = midpoint.y - centre.y;
-      const distance2 = Math.sqrt(dx * dx + dy * dy);
-      if (distance2 <= radius)
-        set.add(square.getTopLeft());
-    }
-    return set;
-  }
-  function getRectangleAsPolygon({ x, y }, width, height) {
-    return [
-      { x, y },
-      { x: x + width, y },
-      { x: x + width, y: y + height },
-      { x, y: y + height }
-    ];
-  }
-  function getTilesWithinRectangle(topLeft, width, height) {
-    return resolvePolygon(getRectangleAsPolygon(topLeft, width, height));
-  }
-  function getLineAsPolygon({ x: sx, y: sy }, { x: tx, y: ty }, width, length) {
-    const dir = Math.atan2(ty - sy, tx - sx);
-    const off = dir - Math.PI / 2;
-    const xd = length * Math.cos(dir);
-    const yd = length * Math.sin(dir);
-    const w2 = width / 2;
-    const xo = w2 * Math.cos(off);
-    const yo = w2 * Math.sin(off);
-    const ax = sx + xo;
-    const ay = sy + yo;
-    const bx = sx - xo;
-    const by = sy - yo;
-    const cx = bx + xd;
-    const cy = by + yd;
-    const dx = ax + xd;
-    const dy = ay + yd;
-    return [
-      { x: ax, y: ay },
-      { x: bx, y: by },
-      { x: cx, y: cy },
-      { x: dx, y: dy }
-    ];
-  }
-  function getTilesWithinLine(start, end, width, length) {
-    return resolvePolygon(getLineAsPolygon(start, end, width, length));
-  }
-  function getConeAsPolygon({ x: sx, y: sy }, { x: tx, y: ty }, radius) {
-    const dir = Math.atan2(ty - sy, tx - sx);
-    const off = dir - Math.PI / 2;
-    const xd = radius * Math.cos(dir);
-    const yd = radius * Math.sin(dir);
-    const w2 = radius / 2;
-    const xo = w2 * Math.cos(off);
-    const yo = w2 * Math.sin(off);
-    const ax = sx + xd + xo;
-    const ay = sy + yd + yo;
-    const bx = sx + xd - xo;
-    const by = sy + yd - yo;
-    return [
-      { x: sx, y: sy },
-      { x: ax, y: ay },
-      { x: bx, y: by }
-    ];
-  }
-  function getTilesWithinCone(start, end, radius) {
-    return resolvePolygon(getConeAsPolygon(start, end, radius));
-  }
-  function resolveArea(area) {
-    switch (area.type) {
-      case "cylinder":
-      case "sphere":
-        return getTilesWithinCircle(area.centre, area.radius);
-      case "within": {
-        const x = area.position.x - area.radius;
-        const y = area.position.y - area.radius;
-        const size = area.target.sizeInUnits + area.radius * 2;
-        return getTilesWithinRectangle({ x, y }, size, size);
-      }
-      case "cone":
-        return getTilesWithinCone(area.centre, area.target, area.radius);
-      case "line":
-        return getTilesWithinLine(
-          area.start,
-          area.target,
-          area.width,
-          area.length
-        );
-    }
-  }
 
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
@@ -1483,6 +1537,25 @@
       actions.push(new DodgeAction(g2, who));
     });
   });
+  var DifficultTerrainRule = new DndRule("Difficult Terrain", (g2) => {
+    const isDifficultTerrainAnywhere = (squares) => {
+      for (const effect of g2.effects) {
+        if (!effect.tags.has("difficult terrain"))
+          continue;
+        const area = resolveArea(effect.shape);
+        for (const square of squares) {
+          if (area.has(square))
+            return true;
+        }
+      }
+      return false;
+    };
+    g2.events.on("GetMoveCost", ({ detail: { who, to, multiplier } }) => {
+      const squares = getSquares(who, to);
+      if (isDifficultTerrainAnywhere(squares))
+        multiplier.add("double", DifficultTerrainRule);
+    });
+  });
   var EffectsRule = new DndRule("Effects", (g2) => {
     g2.events.on(
       "TurnStarted",
@@ -1513,16 +1586,14 @@
       return false;
     };
     g2.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
-      const squares = new PointSet(
-        getSquares(target, g2.getState(target).position)
-      );
+      const squares = getSquares(target, g2.getState(target).position);
       if (isHeavilyObscuredAnywhere(squares))
         diceType.add("disadvantage", ObscuredRule);
     });
     g2.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-      const squares = new PointSet(getSquares(who, g2.getState(who).position));
+      const squares = getSquares(who, g2.getState(who).position);
       if (isHeavilyObscuredAnywhere(squares))
-        conditions.add("Blinded");
+        conditions.add("Blinded", ObscuredRule);
     });
   });
   var OneAttackPerTurnRule = new DndRule("Attacks per turn", (g2) => {
@@ -1581,6 +1652,68 @@
 
   // src/effects.ts
   var Dead = new Effect("Dead", "turnStart", void 0, true);
+  var DropProneAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Drop Prone", "implemented", {});
+    }
+    check(config, ec) {
+      if (this.actor.conditions.has("Prone"))
+        ec.add("already prone", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(DropProneAction.prototype, this, "apply").call(this, {});
+        this.actor.addEffect(Prone, { duration: Infinity });
+      });
+    }
+  };
+  var StandUpAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Stand Up", "implemented", {});
+    }
+    check(config, ec) {
+      if (!this.actor.conditions.has("Prone"))
+        ec.add("not prone", this);
+      const speed = this.actor.speed;
+      if (speed <= 0)
+        ec.add("cannot move", this);
+      else if (this.actor.movedSoFar > speed / 2)
+        ec.add("not enough movement", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(StandUpAction.prototype, this, "apply").call(this, {});
+        const speed = this.actor.speed;
+        this.actor.movedSoFar += speed / 2;
+        this.actor.removeEffect(Prone);
+      });
+    }
+  };
+  var Prone = new Effect("Prone", "turnEnd", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(Prone))
+        conditions.add("Prone", Prone);
+    });
+    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+      actions.push(
+        who.conditions.has("Prone") ? new StandUpAction(g2, who) : new DropProneAction(g2, who)
+      );
+    });
+    g2.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Prone"))
+        multiplier.add("double", Prone);
+    });
+    g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+      if (who.conditions.has("Prone"))
+        diceType.add("disadvantage", Prone);
+      if (target.conditions.has("Prone")) {
+        const d = distance(g2, who, target);
+        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
+      }
+    });
+  });
 
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
@@ -1719,6 +1852,13 @@
   var GetInitiativeEvent = class extends CustomEvent {
     constructor(detail) {
       super("GetInitiative", { detail });
+    }
+  };
+
+  // src/events/GetMoveCostEvent.ts
+  var GetMoveCostEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetMoveCost", { detail });
     }
   };
 
@@ -1862,7 +2002,7 @@
         );
       });
     }
-    move(who, dx, dy, track = true) {
+    move(who, dx, dy, hasCost = true) {
       return __async(this, null, function* () {
         const state = this.combatants.get(who);
         if (!state)
@@ -1870,8 +2010,14 @@
         const old = state.position;
         const x = old.x + dx;
         const y = old.y + dy;
-        if (track)
-          who.movedSoFar += Math.max(Math.abs(dx), Math.abs(dy));
+        if (hasCost) {
+          const cost = Math.max(Math.abs(dx), Math.abs(dy));
+          const multiplier = new MultiplierCollector();
+          this.fire(
+            new GetMoveCostEvent({ who, from: old, to: { x, y }, multiplier })
+          );
+          who.movedSoFar += cost * multiplier.result;
+        }
         state.position = { x, y };
         this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
       });
@@ -1958,7 +2104,7 @@
       return __async(this, arguments, function* (source, damageType, e, damageInitialiser = [], startingMultiplier) {
         const map = new DamageMap(damageInitialiser);
         const multiplier = new MultiplierCollector();
-        if (typeof startingMultiplier === "number")
+        if (typeof startingMultiplier !== "undefined")
           multiplier.add(startingMultiplier, source);
         const gather = yield this.resolve(
           new GatherDamageEvent(__spreadProps(__spreadValues({
@@ -2635,7 +2781,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     (g2) => {
       g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
         if (who.hasEffect(SteadyAimNoMoveEffect))
-          multiplier.add(0, SteadyAimNoMoveEffect);
+          multiplier.add("zero", SteadyAimNoMoveEffect);
       });
     },
     true
@@ -2646,7 +2792,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         diceType.add("advantage", SteadyAimAdvantageEffect);
     });
     g2.events.on("Attack", ({ detail: { pre } }) => {
-      if (pre.diceType.involved(SteadyAimAdvantageEffect))
+      if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
         pre.who.removeEffect(SteadyAimAdvantageEffect);
     });
   });
@@ -2740,7 +2886,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
                 `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
                 () => __async(void 0, null, function* () {
                   me.time.delete("reaction");
-                  multiplier.add(0.5, UncannyDodge);
+                  multiplier.add("half", UncannyDodge);
                 })
               )
             );
@@ -3736,7 +3882,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             ability: "dex",
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? 0.5 : 1;
+          const mul = save ? "half" : void 0;
           yield g2.damage(
             this,
             damageType,
@@ -3792,7 +3938,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     (g2) => {
       g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
         if (who.hasEffect(EnervatingBreathEffect))
-          conditions.add("Incapacitated");
+          conditions.add("Incapacitated", EnervatingBreathEffect);
       });
     }
   );
@@ -4172,7 +4318,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MindSliver_default = MindSliver;
 
   // src/spells/cantrip/RayOfFrost.ts
-  var RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g2) => {
+  var RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g2) => {
     g2.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
       if (who.hasEffect(RayOfFrostEffect))
         bonus.add(-10, RayOfFrostEffect);
@@ -4196,7 +4342,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if ((yield rsa.attack(target)).hit) {
           const damage = yield rsa.getDamage(target);
           yield rsa.damage(target, damage);
-          target.addEffect(RayOfFrostEffect, { duration: 1 });
+          target.addEffect(RayOfFrostEffect, { duration: 2 });
         }
       });
     }
@@ -4387,7 +4533,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var HoldPersonEffect = new Effect("Hold Person", "turnStart", (g2) => {
     g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
       if (who.hasEffect(HoldPersonEffect))
-        conditions.add("Paralyzed");
+        conditions.add("Paralyzed", HoldPersonEffect);
     });
     g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       const config = who.getEffectConfig(HoldPersonEffect);
@@ -4521,7 +4667,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             who: target,
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? 0.5 : 1;
+          const mul = save ? "half" : void 0;
           yield g2.damage(
             MelfsMinuteMeteors,
             "fire",
@@ -4662,7 +4808,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             who: target,
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? 0.5 : 1;
+          const mul = save ? "half" : void 0;
           yield g2.damage(
             Fireball,
             "fire",
@@ -4815,22 +4961,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.id = NaN;
     }
   };
-
-  // src/utils/set.ts
-  function hasAll(set, matches2) {
-    if (!set)
-      return false;
-    for (const item of matches2)
-      if (!set.has(item))
-        return false;
-    return true;
-  }
-  function intersects(a, b) {
-    for (const item of a)
-      if (b.has(item))
-        return true;
-    return false;
-  }
 
   // src/classes/paladin/common.ts
   var PaladinSpellcasting = new NormalSpellcasting(
@@ -5853,9 +5983,17 @@ Each time you use this feature after the first, the DC increases by 5. When you 
     "Frenzy",
     `Starting when you choose this path at 3rd level, you can go into a frenzy when you rage. If you do so, for the duration of your rage you can make a single melee weapon attack as a bonus action on each of your turns after this one. When your rage ends, you suffer one level of exhaustion.`
   );
-  var MindlessRage = notImplementedFeature(
+  var MindlessRage = new SimpleFeature(
     "Mindless Rage",
-    `Beginning at 6th level, you can't be charmed or frightened while raging. If you are charmed or frightened when you enter your rage, the effect is suspended for the duration of the rage.`
+    `Beginning at 6th level, you can't be charmed or frightened while raging. If you are charmed or frightened when you enter your rage, the effect is suspended for the duration of the rage.`,
+    (g2, me) => {
+      g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who === me && me.hasEffect(RageEffect)) {
+          conditions.ignoreValue("Charmed");
+          conditions.ignoreValue("Frightened");
+        }
+      });
+    }
   );
   var IntimidatingPresence = notImplementedFeature(
     "Intimidating Presence",
@@ -6260,7 +6398,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
             who: target,
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? 0.5 : 1;
+          const mul = save ? "half" : void 0;
           yield g2.damage(
             LightningBolt,
             "lightning",
@@ -6991,7 +7129,7 @@ The creature is aware of this effect before it makes its attack against you.`
         weapon.category,
         weapon.rangeCategory,
         dd(1, size, weapon.damage.damageType),
-        [...weapon.properties],
+        weapon.properties,
         weapon.shortRange,
         weapon.longRange
       );
@@ -8122,13 +8260,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${who.name} takes ${total} damage. (${[...breakdown].map(getDamageEntryText).join(", ")})`,
+        message: `${who.name} takes ${total} damage. (${Array.from(breakdown).map(getDamageEntryText).join(", ")})`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who }),
           "takes ",
           total,
           " damage. (",
-          /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: [...breakdown].map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
+          /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: Array.from(breakdown).map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
           ")"
         ]
       }
@@ -8290,7 +8428,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [resolve]
     );
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [...interruption.items].map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label })) });
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label })) });
   }
 
   // src/ui/Menu.module.scss
@@ -8372,7 +8510,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       allCombatants.value = list;
     }, [g2]);
     const refreshAreas = (0, import_hooks13.useCallback)(() => {
-      allEffects.value = [...g2.effects];
+      allEffects.value = Array.from(g2.effects);
     }, [g2]);
     (0, import_hooks13.useEffect)(() => {
       g2.events.on("CombatantPlaced", refreshUnits);

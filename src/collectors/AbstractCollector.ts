@@ -1,43 +1,71 @@
+import Collector from "../types/Collector";
 import Source from "../types/Source";
-import SumCollector from "../types/SumCollector";
 
 interface CollectorEntry<T> {
   value: T;
   source: Source;
 }
 
-export default abstract class AbstractCollector<T> implements SumCollector<T> {
+abstract class AbstractCollector<T> {
   entries: Set<CollectorEntry<T>>;
-  ignored: Set<Source>;
+  ignoredSources: Set<Source>;
+  ignoredValues: Set<T>;
 
   constructor() {
     this.entries = new Set();
-    this.ignored = new Set();
+    this.ignoredSources = new Set();
+    this.ignoredValues = new Set();
   }
 
-  add(value: T, source: Source): void {
+  add(value: T, source: Source) {
     this.entries.add({ value, source });
   }
 
-  ignore(source: Source): void {
-    this.ignored.add(source);
+  ignore(source: Source) {
+    this.ignoredSources.add(source);
   }
 
-  involved(source: Source): boolean {
-    if (this.ignored.has(source)) return false;
-    for (const entry of this.entries) if (entry.source === source) return true;
+  ignoreValue(value: T) {
+    this.ignoredValues.add(value);
+  }
+
+  isInvolved(source: Source): boolean {
+    if (this.ignoredSources.has(source)) return false;
+    for (const entry of this.entries)
+      if (entry.source === source && !this.ignoredValues.has(entry.value))
+        return true;
     return false;
   }
 
   getValidEntries() {
-    return [...this.entries]
-      .filter((entry) => !this.ignored.has(entry.source))
+    return Array.from(this.entries)
+      .filter(
+        (entry) =>
+          !(
+            this.ignoredSources.has(entry.source) ||
+            this.ignoredValues.has(entry.value)
+          )
+      )
       .map((entry) => entry.value);
   }
+}
 
-  abstract getResult(values: T[]): T;
+export abstract class AbstractSumCollector<TValue, TResult = TValue>
+  extends AbstractCollector<TValue>
+  implements Collector<TValue, TResult>
+{
+  abstract getSum(values: TValue[]): TResult;
 
   get result() {
-    return this.getResult(this.getValidEntries());
+    return this.getSum(this.getValidEntries());
+  }
+}
+
+export class SetCollector<T>
+  extends AbstractCollector<T>
+  implements Collector<T, Set<T>>
+{
+  get result() {
+    return new Set(this.getValidEntries());
   }
 }

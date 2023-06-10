@@ -1,5 +1,6 @@
 import AbilityScore from "./AbilityScore";
 import BonusCollector from "./collectors/BonusCollector";
+import ConditionCollector from "./collectors/ConditionCollector";
 import MultiplierCollector from "./collectors/MultiplierCollector";
 import Engine from "./Engine";
 import EffectAddedEvent from "./events/EffectAddedEvent";
@@ -235,8 +236,11 @@ export default abstract class AbstractCombatant implements Combatant {
 
   get conditions(): Set<ConditionName> {
     return this.g.fire(
-      new GetConditionsEvent({ who: this, conditions: new Set() })
-    ).detail.conditions;
+      new GetConditionsEvent({
+        who: this,
+        conditions: new ConditionCollector(),
+      })
+    ).detail.conditions.result;
   }
 
   get speed(): number {
@@ -389,7 +393,7 @@ export default abstract class AbstractCombatant implements Combatant {
 
     this.hp = this.hpMax;
 
-    for (const spell of new Set([...this.knownSpells, ...this.preparedSpells]))
+    for (const spell of this.preparedSpells)
       spellImplementationWarning(spell, this);
   }
 

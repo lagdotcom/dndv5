@@ -5,7 +5,9 @@ import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DiceTypeCollector from "./collectors/DiceTypeCollector";
 import ErrorCollector from "./collectors/ErrorCollector";
 import InterruptionCollector from "./collectors/InterruptionCollector";
-import MultiplierCollector from "./collectors/MultiplierCollector";
+import MultiplierCollector, {
+  MultiplierType,
+} from "./collectors/MultiplierCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
@@ -31,6 +33,7 @@ import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import GetInitiativeEvent from "./events/GetInitiativeEvent";
+import GetMoveCostEvent from "./events/GetMoveCostEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import PointSet from "./PointSet";
@@ -187,7 +190,7 @@ export default class Engine {
     );
   }
 
-  async move(who: Combatant, dx: number, dy: number, track = true) {
+  async move(who: Combatant, dx: number, dy: number, hasCost = true) {
     const state = this.combatants.get(who);
     if (!state) return;
 
@@ -197,7 +200,16 @@ export default class Engine {
 
     // TODO [BEFOREMOVE] prevent movement, attacks of opportunity etc.
 
-    if (track) who.movedSoFar += Math.max(Math.abs(dx), Math.abs(dy));
+    if (hasCost) {
+      const cost = Math.max(Math.abs(dx), Math.abs(dy));
+
+      const multiplier = new MultiplierCollector();
+      this.fire(
+        new GetMoveCostEvent({ who, from: old, to: { x, y }, multiplier })
+      );
+
+      who.movedSoFar += cost * multiplier.result;
+    }
 
     state.position = { x, y };
     this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
@@ -315,11 +327,11 @@ export default class Engine {
       "critical"
     >,
     damageInitialiser: DamageInitialiser = [],
-    startingMultiplier?: number
+    startingMultiplier?: MultiplierType
   ) {
     const map = new DamageMap(damageInitialiser);
     const multiplier = new MultiplierCollector();
-    if (typeof startingMultiplier === "number")
+    if (typeof startingMultiplier !== "undefined")
       multiplier.add(startingMultiplier, source);
 
     const gather = await this.resolve(

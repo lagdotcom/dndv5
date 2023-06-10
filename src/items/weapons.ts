@@ -32,7 +32,7 @@ export abstract class AbstractWeapon
     public category: WeaponCategory,
     public rangeCategory: WeaponRangeCategory,
     public damage: DamageAmount,
-    properties: WeaponProperty[] = [],
+    properties: Iterable<WeaponProperty> = [],
     public shortRange?: number,
     public longRange?: number
   ) {

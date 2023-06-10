@@ -11,7 +11,7 @@ const SteadyAimNoMoveEffect = new Effect(
   (g) => {
     g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
       if (who.hasEffect(SteadyAimNoMoveEffect))
-        multiplier.add(0, SteadyAimNoMoveEffect);
+        multiplier.add("zero", SteadyAimNoMoveEffect);
     });
   },
   true
@@ -24,7 +24,7 @@ const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
   });
 
   g.events.on("Attack", ({ detail: { pre } }) => {
-    if (pre.diceType.involved(SteadyAimAdvantageEffect))
+    if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
       pre.who.removeEffect(SteadyAimAdvantageEffect);
   });
 });

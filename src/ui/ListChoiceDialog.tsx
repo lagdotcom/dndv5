@@ -18,7 +18,7 @@ export default function ListChoiceDialog<T>({
 
   return (
     <Dialog title={interruption.title} text={interruption.text}>
-      {[...interruption.items].map(({ label, value, disabled }) => (
+      {interruption.items.map(({ label, value, disabled }) => (
         <button disabled={disabled} onClick={() => decide(value)}>
           {label}
         </button>

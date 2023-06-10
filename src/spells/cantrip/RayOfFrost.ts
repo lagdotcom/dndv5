@@ -6,7 +6,7 @@ import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
-const RayOfFrostEffect = new Effect("Ray of Frost", "turnEnd", (g) => {
+const RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {
   g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
     if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
   });
@@ -33,7 +33,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
       const damage = await rsa.getDamage(target);
       await rsa.damage(target, damage);
 
-      target.addEffect(RayOfFrostEffect, { duration: 1 });
+      target.addEffect(RayOfFrostEffect, { duration: 2 });
     }
   },
 });

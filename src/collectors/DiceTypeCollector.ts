@@ -1,8 +1,8 @@
 import DiceType from "../types/DiceType";
-import AbstractCollector from "./AbstractCollector";
+import { AbstractSumCollector } from "./AbstractCollector";
 
-export default class DiceTypeCollector extends AbstractCollector<DiceType> {
-  getResult(values: DiceType[]): DiceType {
+export default class DiceTypeCollector extends AbstractSumCollector<DiceType> {
+  getSum(values: DiceType[]): DiceType {
     const hasAdvantage = values.includes("advantage");
     const hasDisadvantage = values.includes("disadvantage");
 

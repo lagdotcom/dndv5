@@ -1,4 +1,5 @@
 import Point from "./types/Point";
+import { mapSet } from "./utils/set";
 
 function asPoint(tag: string): Point {
   const [x, y] = tag.split(",").map(Number);
@@ -10,8 +11,8 @@ const asTag = ({ x, y }: Point) => `${x},${y}`;
 export default class PointSet {
   set: Set<string>;
 
-  constructor(points?: Point[]) {
-    this.set = new Set(points?.map(asTag));
+  constructor(points: Iterable<Point> = []) {
+    this.set = new Set(mapSet(points, asTag));
   }
 
   add(p: Point) {
@@ -39,6 +40,6 @@ export default class PointSet {
   }
 
   map<T>(transformer: (element: Point, index: number) => T) {
-    return [...this.set].map((tag, index) => transformer(asPoint(tag), index));
+    return mapSet(this.set, (tag, index) => transformer(asPoint(tag), index));
   }
 }

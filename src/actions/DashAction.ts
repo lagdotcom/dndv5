@@ -6,7 +6,7 @@ import AbstractAction from "./AbstractAction";
 
 export const DashEffect = new Effect("Dash", "turnEnd", (g) => {
   g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-    if (who.hasEffect(DashEffect)) multiplier.add(2, DashEffect);
+    if (who.hasEffect(DashEffect)) multiplier.add("double", DashEffect);
   });
 });
 

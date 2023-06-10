@@ -51,7 +51,7 @@ const LightningBolt = scalingSpell<HasPoint>({
         tags: new Set(),
       });
 
-      const mul = save ? 0.5 : 1;
+      const mul = save ? "half" : undefined;
       await g.damage(
         LightningBolt,
         "lightning",

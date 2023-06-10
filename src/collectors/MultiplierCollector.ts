@@ -1,7 +1,20 @@
-import AbstractCollector from "./AbstractCollector";
+import { AbstractSumCollector } from "./AbstractCollector";
 
-export default class MultiplierCollector extends AbstractCollector<number> {
-  getResult(values: number[]): number {
-    return values.reduce((total, value) => total * value, 1);
+export type MultiplierType = "double" | "half" | "normal" | "zero";
+
+export default class MultiplierCollector extends AbstractSumCollector<
+  MultiplierType,
+  number
+> {
+  getSum(values: MultiplierType[]) {
+    let power = 0;
+
+    for (const value of values) {
+      if (value === "double") power++;
+      else if (value === "half") power--;
+      else if (value === "zero") return 0;
+    }
+
+    return 2 ** power;
   }
 }

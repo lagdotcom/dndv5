@@ -18,6 +18,7 @@ import GetActionsEvent from "./GetActionsEvent";
 import GetConditionsEvent from "./GetConditionsEvent";
 import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import GetInitiativeEvent from "./GetInitiativeEvent";
+import GetMoveCostEvent from "./GetMoveCostEvent";
 import GetSpeedEvent from "./GetSpeedEvent";
 import ListChoiceEvent from "./ListChoiceEvent";
 import SpellCastEvent from "./SpellCastEvent";
@@ -46,6 +47,7 @@ export type EventTypes = {
   GetConditions: GetConditionsEvent;
   GetDamageResponse: GetDamageResponseEvent;
   GetInitiative: GetInitiativeEvent;
+  GetMoveCost: GetMoveCostEvent;
   GetSpeed: GetSpeedEvent;
   ListChoice: ListChoiceEvent;
   SpellCast: SpellCastEvent;

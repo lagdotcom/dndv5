@@ -20,7 +20,9 @@ export default class ErrorCollector {
   }
 
   get valid() {
-    return [...this.errors].filter((entry) => !this.ignored.has(entry.source));
+    return Array.from(this.errors).filter(
+      (entry) => !this.ignored.has(entry.source)
+    );
   }
 
   get messages() {
