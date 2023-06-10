@@ -15,6 +15,7 @@ import { scale } from "./utils/state";
 function getAuraColour(tags: Set<AreaTag>) {
   if (tags.has("heavily obscured")) return "silver";
   if (tags.has("holy")) return "yellow";
+  if (tags.has("plants")) return "green";
 }
 
 function Sphere({
@@ -121,7 +122,7 @@ export default function BattlefieldEffect({
         return <WithinArea name={name} tags={tags} shape={shape} />;
     }
   }, [name, shape, tags]);
-  const points = useMemo(() => resolveArea(shape), [shape]);
+  const points = useMemo(() => Array.from(resolveArea(shape)), [shape]);
 
   return (
     <>

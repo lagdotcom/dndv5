@@ -212,7 +212,14 @@ export default class Engine {
     }
 
     state.position = { x, y };
-    this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
+    await this.resolve(
+      new CombatantMovedEvent({
+        who,
+        old,
+        position: state.position,
+        interrupt: new InterruptionCollector(),
+      })
+    );
   }
 
   private async applyDamage(

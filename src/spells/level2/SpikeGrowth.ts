@@ -1,8 +1,14 @@
+import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
+import { resolveArea } from "../../utils/areas";
+import { minutes } from "../../utils/time";
+import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
 
 const SpikeGrowth = simpleSpell<HasPoint>({
+  status: "incomplete",
   name: "Spike Growth",
   level: 2,
   school: "Transmutation",
@@ -17,10 +23,51 @@ const SpikeGrowth = simpleSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "sphere", centre: point, radius: 20 }],
 
-  async apply(g, caster, method, config) {
-    /* TODO [TERRAIN] The ground in a 20-foot radius centered on a point within range twists and sprouts hard spikes and thorns. The area becomes difficult terrain for the duration. When a creature moves into or within the area, it takes 2d4 piercing damage for every 5 feet it travels.
+  async apply(g, attacker, method, { point }) {
+    /* TODO [SIGHT] The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it. */
 
-The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it. */
+    const area = new ActiveEffectArea(
+      "Spike Growth",
+      { type: "sphere", centre: point, radius: 20 },
+      new Set(["difficult terrain", "plants"])
+    );
+    g.addEffectArea(area);
+    const spiky = resolveArea(area.shape);
+
+    const unsubscribe = g.events.on(
+      "CombatantMoved",
+      ({ detail: { who, position, interrupt } }) => {
+        const squares = getSquares(who, position);
+        if (spiky.overlaps(squares))
+          interrupt.add(
+            new EvaluateLater(who, SpikeGrowth, async () => {
+              const amount = await g.rollDamage(2, {
+                attacker,
+                target: who,
+                size: 4,
+                damageType: "piercing",
+                spell: SpikeGrowth,
+                method,
+              });
+              await g.damage(
+                SpikeGrowth,
+                "piercing",
+                { attacker, target: who, spell: SpikeGrowth, method },
+                [["piercing", amount]]
+              );
+            })
+          );
+      }
+    );
+
+    attacker.concentrateOn({
+      spell: SpikeGrowth,
+      duration: minutes(10),
+      async onSpellEnd() {
+        g.removeEffectArea(area);
+        unsubscribe();
+      },
+    });
   },
 });
 export default SpikeGrowth;

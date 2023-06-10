@@ -38,8 +38,4 @@ export default class PointSet {
   *[Symbol.iterator]() {
     for (const tag of this.set) yield asPoint(tag);
   }
-
-  map<T>(transformer: (element: Point, index: number) => T) {
-    return mapSet(this.set, (tag, index) => transformer(asPoint(tag), index));
-  }
 }

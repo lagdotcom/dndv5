@@ -206,22 +206,20 @@
   };
 
   // src/DamageMap.ts
-  var DamageMap = class {
+  var DamageMap = class extends Map {
     constructor(items = []) {
-      this.map = new Map(items);
-      this._total = items.reduce((total, [, value]) => total + value, 0);
+      super(items);
     }
     get total() {
-      return this._total;
+      let total = 0;
+      for (const amount of this.values())
+        total += amount;
+      return total;
     }
     add(type, value) {
       var _a;
-      const old = (_a = this.map.get(type)) != null ? _a : 0;
-      this.map.set(type, old + value);
-      this._total += value;
-    }
-    [Symbol.iterator]() {
-      return this.map[Symbol.iterator]();
+      const old = (_a = this.get(type)) != null ? _a : 0;
+      this.set(type, old + value);
     }
   };
 
@@ -820,9 +818,6 @@
     *[Symbol.iterator]() {
       for (const tag of this.set)
         yield asPoint(tag);
-    }
-    map(transformer) {
-      return mapSet(this.set, (tag, index) => transformer(asPoint(tag), index));
     }
   };
 
@@ -2019,7 +2014,14 @@
           who.movedSoFar += cost * multiplier.result;
         }
         state.position = { x, y };
-        this.fire(new CombatantMovedEvent({ who, old, position: state.position }));
+        yield this.resolve(
+          new CombatantMovedEvent({
+            who,
+            old,
+            position: state.position,
+            interrupt: new InterruptionCollector()
+          })
+        );
       });
     }
     applyDamage(_0, _1) {
@@ -6344,6 +6346,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   // src/spells/level2/SpikeGrowth.ts
   var SpikeGrowth = simpleSpell({
+    status: "incomplete",
     name: "Spike Growth",
     level: 2,
     school: "Transmutation",
@@ -6354,8 +6357,50 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Druid", "Ranger"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { point }) {
+        const area = new ActiveEffectArea(
+          "Spike Growth",
+          { type: "sphere", centre: point, radius: 20 },
+          /* @__PURE__ */ new Set(["difficult terrain", "plants"])
+        );
+        g2.addEffectArea(area);
+        const spiky = resolveArea(area.shape);
+        const unsubscribe = g2.events.on(
+          "CombatantMoved",
+          ({ detail: { who, position, interrupt } }) => {
+            const squares = getSquares(who, position);
+            if (spiky.overlaps(squares))
+              interrupt.add(
+                new EvaluateLater(who, SpikeGrowth, () => __async(this, null, function* () {
+                  const amount = yield g2.rollDamage(2, {
+                    attacker,
+                    target: who,
+                    size: 4,
+                    damageType: "piercing",
+                    spell: SpikeGrowth,
+                    method
+                  });
+                  yield g2.damage(
+                    SpikeGrowth,
+                    "piercing",
+                    { attacker, target: who, spell: SpikeGrowth, method },
+                    [["piercing", amount]]
+                  );
+                }))
+              );
+          }
+        );
+        attacker.concentrateOn({
+          spell: SpikeGrowth,
+          duration: minutes(10),
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              g2.removeEffectArea(area);
+              unsubscribe();
+            });
+          }
+        });
       });
     }
   });
@@ -7615,6 +7660,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       return "silver";
     if (tags.has("holy"))
       return "yellow";
+    if (tags.has("plants"))
+      return "green";
   }
   function Sphere({
     shape,
@@ -7683,7 +7730,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           return /* @__PURE__ */ o(WithinArea, { name, tags, shape });
       }
     }, [name, shape, tags]);
-    const points = (0, import_hooks3.useMemo)(() => resolveArea(shape), [shape]);
+    const points = (0, import_hooks3.useMemo)(() => Array.from(resolveArea(shape)), [shape]);
     return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
       main,
       points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { shape, point: p }, i))
