@@ -25,12 +25,12 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
       g,
       actor,
       ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
-      "incomplete",
+      weapon.properties.has("thrown") ? "incomplete" : "implemented",
       { target: new TargetResolver(g, getWeaponRange(actor, weapon)) }
     );
     this.ability = getWeaponAbility(actor, weapon);
 
-    this.attack = true;
+    this.isAttack = true;
     this.icon = getItemIcon(weapon);
     this.subIcon = getItemIcon(ammo);
   }

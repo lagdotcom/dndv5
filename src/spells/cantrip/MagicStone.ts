@@ -30,7 +30,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
       [dd(1, 6, "bludgeoning")]
     );
 
-    this.attack = true;
+    this.isAttack = true;
   }
 
   check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {

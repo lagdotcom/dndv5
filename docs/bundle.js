@@ -502,6 +502,7 @@
       this.method = method;
       this.spell = spell;
       this.name = `${spell.name} (${method.name})`;
+      this.isSpell = true;
       this.time = spell.time;
       this.icon = spell.icon;
       this.subIcon = method.icon;
@@ -1384,13 +1385,13 @@
         g2,
         actor,
         ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
-        "incomplete",
+        weapon.properties.has("thrown") ? "incomplete" : "implemented",
         { target: new TargetResolver(g2, getWeaponRange(actor, weapon)) }
       );
       this.weapon = weapon;
       this.ammo = ammo;
       this.ability = getWeaponAbility(actor, weapon);
-      this.attack = true;
+      this.isAttack = true;
       this.icon = getItemIcon(weapon);
       this.subIcon = getItemIcon(ammo);
     }
@@ -1593,7 +1594,7 @@
   });
   var OneAttackPerTurnRule = new DndRule("Attacks per turn", (g2) => {
     g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.attack && action.actor.attacksSoFar.size)
+      if (action.isAttack && action.actor.attacksSoFar.size)
         error.add("No attacks left", OneAttackPerTurnRule);
     });
   });
@@ -2504,13 +2505,13 @@
   function makeMultiattack(text, canStillAttack) {
     return new SimpleFeature("Multiattack", text, (g2, me) => {
       g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.actor === me && action.attack && canStillAttack(me, action))
+        if (action.actor === me && action.isAttack && canStillAttack(me, action))
           error.ignore(OneAttackPerTurnRule);
       });
     });
   }
   function isMeleeAttackAction(action) {
-    if (!action.attack)
+    if (!action.isAttack)
       return false;
     if (!(action instanceof WeaponAttack))
       return false;
@@ -2697,7 +2698,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
   function makeExtraAttack(name, text, extra = 1) {
     const feature = new SimpleFeature(name, text, (g2, me) => {
       g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.attack && action.actor === me && action.actor.attacksSoFar.size <= extra)
+        if (action.isAttack && action.actor === me && action.actor.attacksSoFar.size <= extra)
           error.ignore(OneAttackPerTurnRule);
       });
     });
@@ -3847,7 +3848,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       );
       this.damageType = damageType;
       this.damageDice = damageDice;
-      this.attack = true;
+      this.isAttack = true;
     }
     getArea(point) {
       const position = this.g.getState(this.actor).position;
@@ -5714,20 +5715,24 @@ Once you use this feature, you can't use it again until you finish a long rest.
       });
     }
   };
+  function isRaging(who) {
+    var _a;
+    return who.hasEffect(RageEffect) && ((_a = who.armor) == null ? void 0 : _a.category) !== "heavy";
+  }
   var RageEffect = new Effect("Rage", "turnStart", (g2) => {
     g2.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
-      if (who.hasEffect(RageEffect) && ability === "str")
+      if (isRaging(who) && ability === "str")
         diceType.add("advantage", RageEffect);
     });
     g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-      if (who.hasEffect(RageEffect) && ability === "str")
+      if (isRaging(who) && ability === "str")
         diceType.add("advantage", RageEffect);
     });
     g2.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, ability, bonus } }) => {
         var _a;
-        if (attacker.hasEffect(RageEffect) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
+        if (isRaging(attacker) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
           bonus.add(
             getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
             RageEffect
@@ -5737,10 +5742,14 @@ Once you use this feature, you can't use it again until you finish a long rest.
     g2.events.on(
       "GetDamageResponse",
       ({ detail: { who, damageType, response } }) => {
-        if (who.hasEffect(RageEffect) && MundaneDamageTypes.includes(damageType))
+        if (isRaging(who) && MundaneDamageTypes.includes(damageType))
           response.add("resist", RageEffect);
       }
     );
+    g2.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.actor.hasEffect(RageEffect) && action.isSpell)
+        error.add("cannot cast spells", RageEffect);
+    });
     g2.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who.hasEffect(RageEffect))
         actions.push(new EndRageAction(g2, who));
@@ -6994,7 +7003,7 @@ The creature is aware of this effect before it makes its attack against you.`
       );
       this.method = method;
       this.unsubscribe = unsubscribe;
-      this.attack = true;
+      this.isAttack = true;
     }
     check(config, ec) {
       if (!this.actor.hasResource(MagicStoneResource))

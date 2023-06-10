@@ -43,22 +43,27 @@ class EndRageAction extends AbstractAction {
   }
 }
 
+function isRaging(who: Combatant) {
+  return who.hasEffect(RageEffect) && who.armor?.category !== "heavy";
+}
+
 export const RageEffect = new Effect("Rage", "turnStart", (g) => {
+  // You have advantage on Strength checks and Strength saving throws.
   g.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
-    if (who.hasEffect(RageEffect) && ability === "str")
+    if (isRaging(who) && ability === "str")
       diceType.add("advantage", RageEffect);
   });
-
   g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-    if (who.hasEffect(RageEffect) && ability === "str")
+    if (isRaging(who) && ability === "str")
       diceType.add("advantage", RageEffect);
   });
 
+  // When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
   g.events.on(
     "GatherDamage",
     ({ detail: { attacker, attack, ability, bonus } }) => {
       if (
-        attacker.hasEffect(RageEffect) &&
+        isRaging(attacker) &&
         hasAll(attack?.pre.tags, ["melee", "weapon"]) &&
         ability === "str"
       )
@@ -69,13 +74,20 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
     }
   );
 
+  // You have resistance to bludgeoning, piercing, and slashing damage.
   g.events.on(
     "GetDamageResponse",
     ({ detail: { who, damageType, response } }) => {
-      if (who.hasEffect(RageEffect) && MundaneDamageTypes.includes(damageType))
+      if (isRaging(who) && MundaneDamageTypes.includes(damageType))
         response.add("resist", RageEffect);
     }
   );
+
+  // If you are able to cast spells, you can't cast them or concentrate on them while raging.
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (action.actor.hasEffect(RageEffect) && action.isSpell)
+      error.add("cannot cast spells", RageEffect);
+  });
 
   // TODO [CONDITIONREACTION] It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
 
@@ -103,7 +115,6 @@ class RageAction extends AbstractAction {
   }
 }
 
-// TODO [CANCELSPELL]
 const Rage = new SimpleFeature(
   "Rage",
   `In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.

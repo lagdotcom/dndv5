@@ -135,7 +135,7 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
 
 export const OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
   g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (action.attack && action.actor.attacksSoFar.size)
+    if (action.isAttack && action.actor.attacksSoFar.size)
       error.add("No attacks left", OneAttackPerTurnRule);
   });
 });

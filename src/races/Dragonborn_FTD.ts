@@ -49,7 +49,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
       [dd(damageDice, 10, damageType)]
     );
 
-    this.attack = true;
+    this.isAttack = true;
   }
 
   private getArea(point: Point) {

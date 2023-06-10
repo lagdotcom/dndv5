@@ -34,7 +34,7 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
   const feature = new SimpleFeature(name, text, (g, me) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
       if (
-        action.attack &&
+        action.isAttack &&
         action.actor === me &&
         action.actor.attacksSoFar.size <= extra
       )
