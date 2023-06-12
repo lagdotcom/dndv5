@@ -8,11 +8,13 @@ import {
 } from "@testing-library/preact";
 import userEvent from "@testing-library/user-event";
 
+import { DivineSmite } from "../classes/paladin";
 import Engine from "../Engine";
 import Badger from "../monsters/Badger";
 import Thug from "../monsters/Thug";
 import Aura from "../pcs/davies/Aura";
 import Beldalynn from "../pcs/davies/Beldalynn";
+import Galilea from "../pcs/davies/Galilea";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import Combatant from "../types/Combatant";
 import App from "../ui/App";
@@ -164,4 +166,25 @@ it("supports a typical Beldalynn attack", async () => {
   expect(
     queryLogMsg("Tethilssethanar takes 12 damage. (12 fire)")
   ).not.toBeInTheDocument();
+});
+
+it("supports a typical Galilea attack", async () => {
+  const {
+    g,
+    user,
+    combatants: [galilea],
+  } = await setupBattleTest([Galilea, 0, 0, 20], [Thug, 5, 0, 10]);
+
+  await user.click(token("thug"));
+
+  g.dice.force(10, { type: "attack", who: galilea });
+  g.dice.force(1, { type: "damage", attacker: galilea });
+  await user.click(menuitem("longsword"));
+  expect(dialog("Divine Smite")).toBeInTheDocument();
+
+  g.dice.force(1, { type: "damage", attacker: galilea, source: DivineSmite });
+  g.dice.force(1, { type: "damage", attacker: galilea, source: DivineSmite });
+  await user.click(choice("1st"));
+
+  expect(logMsg("thug takes 6 damage. (4 slashing, 2 radiant)")).toBeVisible();
 });

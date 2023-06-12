@@ -42,7 +42,7 @@ Alternatively, you can expend 5 hit points from your pool of healing to cure the
 This feature has no effect on undead and constructs.`
 );
 
-const DivineSmite = new SimpleFeature(
+export const DivineSmite = new SimpleFeature(
   "Divine Smite",
   `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`,
   (g, me) => {
@@ -75,7 +75,7 @@ const DivineSmite = new SimpleFeature(
 
                 const damage = await g.rollDamage(
                   count + extra,
-                  { attacker, size: 8 },
+                  { source: DivineSmite, attacker, size: 8 },
                   critical
                 );
                 map.add("radiant", damage);
@@ -185,7 +185,13 @@ const ImprovedDivineSmite = new SimpleFeature(
             new EvaluateLater(attacker, ImprovedDivineSmite, async () => {
               const amount = await g.rollDamage(
                 1,
-                { attacker, target, size: 8, damageType: "radiant" },
+                {
+                  source: ImprovedDivineSmite,
+                  attacker,
+                  target,
+                  size: 8,
+                  damageType: "radiant",
+                },
                 critical
               );
               map.add("radiant", amount);

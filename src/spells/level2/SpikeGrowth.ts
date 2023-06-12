@@ -42,6 +42,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
           interrupt.add(
             new EvaluateLater(who, SpikeGrowth, async () => {
               const amount = await g.rollDamage(2, {
+                source: SpikeGrowth,
                 attacker,
                 target: who,
                 size: 4,

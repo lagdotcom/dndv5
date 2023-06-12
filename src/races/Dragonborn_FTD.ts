@@ -79,6 +79,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
     attacker.attacksSoFar.add(this);
 
     const damage = await g.rollDamage(damageDice, {
+      source: this,
       attacker,
       size: 10,
       damageType,

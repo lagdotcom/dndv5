@@ -1464,6 +1464,7 @@
             const amount = yield g2.rollDamage(
               count,
               {
+                source: this,
                 size,
                 damageType: damage.damageType,
                 attacker,
@@ -2818,7 +2819,15 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                     const damageType = weapon.damage.damageType;
                     const damage = yield g2.rollDamage(
                       count,
-                      { attacker, target, size: 6, damageType, weapon, ability },
+                      {
+                        source: SneakAttack,
+                        attacker,
+                        target,
+                        size: 6,
+                        damageType,
+                        weapon,
+                        ability
+                      },
                       critical
                     );
                     map.add(damageType, damage);
@@ -4025,6 +4034,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         attacker.spendResource(BreathWeaponResource);
         attacker.attacksSoFar.add(this);
         const damage = yield g2.rollDamage(damageDice, {
+          source: this,
           attacker,
           size: 10,
           damageType
@@ -4283,6 +4293,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, attacker, method, { targets }) {
         const count = getCantripDice(attacker);
         const damage = yield g2.rollDamage(count, {
+          source: AcidSplash,
           size: 6,
           attacker,
           spell: AcidSplash,
@@ -4358,7 +4369,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               const { count, size } = amount;
               const roll = yield g2.rollDamage(
                 count,
-                { size, damageType, attacker, target, spell, method },
+                {
+                  source: spell,
+                  size,
+                  damageType,
+                  attacker,
+                  target,
+                  spell,
+                  method
+                },
                 critical
               );
               amounts.push([damageType, roll]);
@@ -4439,6 +4458,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const damage = yield g2.rollDamage(getCantripDice(attacker), {
+          source: MindSliver,
           attacker,
           target,
           spell: MindSliver,
@@ -4552,6 +4572,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           const damage2 = yield g2.rollDamage(
             1,
             {
+              source: IceKnife,
               size: 10,
               attacker,
               target,
@@ -4569,6 +4590,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           );
         }
         const damage = yield g2.rollDamage(1 + slot, {
+          source: IceKnife,
           size: 6,
           attacker,
           spell: IceKnife,
@@ -4816,6 +4838,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return __async(this, arguments, function* (g2, attacker, method, { points }) {
       attacker.spendResource(MeteorResource, points.length);
       const damage = yield g2.rollDamage(2, {
+        source: MelfsMinuteMeteors,
         attacker,
         size: 6,
         spell: MelfsMinuteMeteors,
@@ -4966,6 +4989,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
         const damage = yield g2.rollDamage(5 + slot, {
+          source: Fireball,
           size: 6,
           spell: Fireball,
           method,
@@ -5275,7 +5299,7 @@ This feature has no effect on undead and constructs.`
                   const extra = target.type === "undead" || target.type === "fiend" ? 1 : 0;
                   const damage = yield g2.rollDamage(
                     count + extra,
-                    { attacker, size: 8 },
+                    { source: DivineSmite, attacker, size: 8 },
                     critical
                   );
                   map.add("radiant", damage);
@@ -5362,7 +5386,13 @@ At 18th level, the range of this aura increases to 30 feet.`
               new EvaluateLater(attacker, ImprovedDivineSmite, () => __async(void 0, null, function* () {
                 const amount = yield g2.rollDamage(
                   1,
-                  { attacker, target, size: 8, damageType: "radiant" },
+                  {
+                    source: ImprovedDivineSmite,
+                    attacker,
+                    target,
+                    size: 8,
+                    damageType: "radiant"
+                  },
                   critical
                 );
                 map.add("radiant", amount);
@@ -5762,7 +5792,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
                 "radiant",
                 yield g2.rollDamage(
                   1,
-                  { size: 4, attacker, damageType: "radiant" },
+                  {
+                    source: DivineFavor,
+                    size: 4,
+                    attacker,
+                    damageType: "radiant"
+                  },
                   critical
                 )
               );
@@ -6224,7 +6259,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
                   damageType,
                   yield g2.rollDamage(
                     1,
-                    { size: 10, attacker, damageType },
+                    { source: darkSun, size: 10, attacker, damageType },
                     critical
                   )
                 );
@@ -6566,6 +6601,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
               interrupt.add(
                 new EvaluateLater(who, SpikeGrowth, () => __async(this, null, function* () {
                   const amount = yield g2.rollDamage(2, {
+                    source: SpikeGrowth,
                     attacker,
                     target: who,
                     size: 4,
@@ -6620,6 +6656,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(5 + slot, {
+          source: LightningBolt,
           size: 6,
           spell: LightningBolt,
           method,
@@ -6878,6 +6915,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(3 + slot, {
+          source: ConeOfCold,
           size: 8,
           spell: ConeOfCold,
           method,
@@ -7257,6 +7295,7 @@ The creature is aware of this effect before it makes its attack against you.`
           const amount = yield g2.rollDamage(
             1,
             {
+              source: MagicStone,
               size: 6,
               damageType: "bludgeoning",
               attacker: actor,

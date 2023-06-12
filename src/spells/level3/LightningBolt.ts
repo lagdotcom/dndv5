@@ -32,6 +32,7 @@ const LightningBolt = scalingSpell<HasPoint>({
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(5 + slot, {
+      source: LightningBolt,
       size: 6,
       spell: LightningBolt,
       method,

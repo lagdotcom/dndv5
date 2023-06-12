@@ -76,7 +76,15 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                   const damageType = weapon.damage.damageType;
                   const damage = await g.rollDamage(
                     count,
-                    { attacker, target, size: 6, damageType, weapon, ability },
+                    {
+                      source: SneakAttack,
+                      attacker,
+                      target,
+                      size: 6,
+                      damageType,
+                      weapon,
+                      ability,
+                    },
                     critical
                   );
                   map.add(damageType, damage);

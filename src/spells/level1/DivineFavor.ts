@@ -14,7 +14,12 @@ const DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g) => {
               "radiant",
               await g.rollDamage(
                 1,
-                { size: 4, attacker, damageType: "radiant" },
+                {
+                  source: DivineFavor,
+                  size: 4,
+                  attacker,
+                  damageType: "radiant",
+                },
                 critical
               )
             );

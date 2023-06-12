@@ -30,6 +30,7 @@ const MindSliver = simpleSpell<HasTarget>({
 
   async apply(g, attacker, method, { target }) {
     const damage = await g.rollDamage(getCantripDice(attacker), {
+      source: MindSliver,
       attacker,
       target,
       spell: MindSliver,

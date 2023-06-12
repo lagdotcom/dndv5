@@ -61,6 +61,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
       const amount = await g.rollDamage(
         1,
         {
+          source: MagicStone,
           size: 6,
           damageType: "bludgeoning",
           attacker: actor,

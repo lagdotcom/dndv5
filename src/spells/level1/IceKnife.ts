@@ -47,6 +47,7 @@ const IceKnife = scalingSpell<HasTarget>({
       const damage = await g.rollDamage(
         1,
         {
+          source: IceKnife,
           size: 10,
           attacker,
           target,
@@ -66,6 +67,7 @@ const IceKnife = scalingSpell<HasTarget>({
     }
 
     const damage = await g.rollDamage(1 + slot, {
+      source: IceKnife,
       size: 6,
       attacker,
       spell: IceKnife,

@@ -4,6 +4,7 @@ import DamageType from "./DamageType";
 import { WeaponItem } from "./Item";
 import SaveTag from "./SaveTag";
 import SkillName from "./SkillName";
+import Source from "./Source";
 import Spell from "./Spell";
 import SpellcastingMethod from "./SpellcastingMethod";
 
@@ -25,6 +26,7 @@ export type AttackRoll = {
 export type BlessRoll = { type: "bane" | "bless"; who: Combatant };
 export type DamageRoll = {
   type: "damage";
+  source: Source;
   attacker: Combatant;
   target?: Combatant;
   size: number;

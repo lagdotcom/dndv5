@@ -76,6 +76,7 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
         const amount = await g.rollDamage(
           count,
           {
+            source: this,
             size,
             damageType: damage.damageType,
             attacker,

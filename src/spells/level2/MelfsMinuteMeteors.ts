@@ -23,6 +23,7 @@ async function fireMeteors(
   attacker.spendResource(MeteorResource, points.length);
 
   const damage = await g.rollDamage(2, {
+    source: MelfsMinuteMeteors,
     attacker,
     size: 6,
     spell: MelfsMinuteMeteors,

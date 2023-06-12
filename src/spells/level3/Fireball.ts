@@ -29,6 +29,7 @@ const Fireball = scalingSpell<HasPoint>({
 
   async apply(g, attacker, method, { point, slot }) {
     const damage = await g.rollDamage(5 + slot, {
+      source: Fireball,
       size: 6,
       spell: Fireball,
       method,

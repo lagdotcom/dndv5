@@ -21,7 +21,7 @@ const darkSun: Enchantment<"weapon"> = {
                 damageType,
                 await g.rollDamage(
                   1,
-                  { size: 10, attacker, damageType },
+                  { source: darkSun, size: 10, attacker, damageType },
                   critical
                 )
               );

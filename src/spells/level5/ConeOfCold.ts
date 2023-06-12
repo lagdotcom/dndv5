@@ -37,6 +37,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(3 + slot, {
+      source: ConeOfCold,
       size: 8,
       spell: ConeOfCold,
       method,

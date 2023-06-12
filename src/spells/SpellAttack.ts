@@ -54,7 +54,15 @@ export default class SpellAttack<T extends object> {
           const { count, size } = amount;
           const roll = await g.rollDamage(
             count,
-            { size, damageType, attacker, target, spell, method },
+            {
+              source: spell,
+              size,
+              damageType,
+              attacker,
+              target,
+              spell,
+              method,
+            },
             critical
           );
           amounts.push([damageType, roll]);

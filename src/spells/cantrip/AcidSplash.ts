@@ -33,6 +33,7 @@ const AcidSplash = simpleSpell<HasTargets>({
     const count = getCantripDice(attacker);
 
     const damage = await g.rollDamage(count, {
+      source: AcidSplash,
       size: 6,
       attacker,
       spell: AcidSplash,
