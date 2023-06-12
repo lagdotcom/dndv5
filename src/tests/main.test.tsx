@@ -151,6 +151,8 @@ it("supports a typical Beldalynn attack", async () => {
   await user.click(btn("Add Point"));
   await user.click(token("thug"));
   await user.click(btn("Execute"));
+
+  expect(dialog("Sculpt Spells")).toBeInTheDocument();
   await user.click(choice("Tethilssethanar"));
 
   g.dice.force(6, { type: "damage", attacker: beldalynn });
