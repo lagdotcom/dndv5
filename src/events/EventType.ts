@@ -21,6 +21,7 @@ import GetInitiativeEvent from "./GetInitiativeEvent";
 import GetMoveCostEvent from "./GetMoveCostEvent";
 import GetSpeedEvent from "./GetSpeedEvent";
 import ListChoiceEvent from "./ListChoiceEvent";
+import MultiListChoiceEvent from "./MultiListChoiceEvent";
 import SpellCastEvent from "./SpellCastEvent";
 import TurnEndedEvent from "./TurnEndedEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
@@ -50,6 +51,7 @@ export type EventTypes = {
   GetMoveCost: GetMoveCostEvent;
   GetSpeed: GetSpeedEvent;
   ListChoice: ListChoiceEvent;
+  MultiListChoice: MultiListChoiceEvent;
   SpellCast: SpellCastEvent;
   TurnEnded: TurnEndedEvent;
   TurnStarted: TurnStartedEvent;

@@ -16,7 +16,8 @@ const AcidSplash = simpleSpell<HasTargets>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 2, 60) }),
-  getDamage: (_, caster) => [dd(getCantripDice(caster), 6, "acid")],
+  getDamage: (g, caster) => [dd(getCantripDice(caster), 6, "acid")],
+  getTargets: (g, caster, { targets }) => targets,
 
   check(g, { targets }, ec) {
     if (isCombatantArray(targets) && targets.length === 2) {
@@ -40,22 +41,26 @@ const AcidSplash = simpleSpell<HasTargets>({
     });
 
     for (const target of targets) {
-      const save = await g.savingThrow(getSaveDC(attacker, method.ability), {
-        who: target,
-        attacker,
-        ability: "dex",
-        spell: AcidSplash,
-        method,
-        tags: new Set(),
-      });
+      const save = await g.savingThrow(
+        getSaveDC(attacker, method.ability),
+        {
+          who: target,
+          attacker,
+          ability: "dex",
+          spell: AcidSplash,
+          method,
+          tags: new Set(),
+        },
+        { fail: "normal", save: "zero" }
+      );
 
-      if (!save)
-        await g.damage(
-          AcidSplash,
-          "acid",
-          { attacker, target, spell: AcidSplash, method },
-          [["acid", damage]]
-        );
+      await g.damage(
+        AcidSplash,
+        "acid",
+        { attacker, target, spell: AcidSplash, method },
+        [["acid", damage]],
+        save.damageResponse
+      );
     }
   },
 });

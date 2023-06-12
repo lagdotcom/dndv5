@@ -32,7 +32,7 @@ const HoldPersonEffect = new Effect<{
             tags: new Set(["Paralyzed"]),
           });
 
-          if (save) {
+          if (save.result) {
             who.removeEffect(HoldPersonEffect);
             config.affected.delete(who);
             // TODO [CONCENTRATION] stop concentrating if affected is empty
@@ -57,6 +57,7 @@ const HoldPerson = scalingSpell<HasTargets>({
   getConfig: (g, actor, method, { slot }) => ({
     targets: new MultiTargetResolver(g, 1, (slot ?? 2) - 1, 60),
   }),
+  getTargets: (g, caster, { targets }) => targets,
 
   check(g, { targets }, ec) {
     // TODO When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.
@@ -78,7 +79,7 @@ const HoldPerson = scalingSpell<HasTargets>({
         tags: new Set(["Paralyzed"]),
       });
 
-      if (!save) {
+      if (!save.result) {
         target.addEffect(HoldPersonEffect, {
           affected,
           caster,

@@ -102,6 +102,7 @@ const MagicStone = simpleSpell({
   lists: ["Artificer", "Druid", "Warlock"],
 
   getConfig: () => ({}),
+  getTargets: (g, caster) => [caster],
 
   async apply(g, caster, method) {
     caster.initResource(MagicStoneResource);

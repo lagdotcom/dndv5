@@ -28,6 +28,7 @@ const LightningBolt = scalingSpell<HasPoint>({
   getDamage: (g, caster, { slot }) => [dd((slot ?? 3) + 5, 6, "lightning")],
   getAffectedArea: (g, caster, { point }) =>
     point && [getArea(g, caster, point)],
+  getTargets: (g, caster, { point }) => g.getInside(getArea(g, caster, point)),
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(5 + slot, {
@@ -51,13 +52,12 @@ const LightningBolt = scalingSpell<HasPoint>({
         tags: new Set(),
       });
 
-      const mul = save ? "half" : undefined;
       await g.damage(
         LightningBolt,
         "lightning",
         { attacker, spell: LightningBolt, method, target },
         [["lightning", damage]],
-        mul
+        save.damageResponse
       );
     }
   },

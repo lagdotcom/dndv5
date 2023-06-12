@@ -1,6 +1,7 @@
 import { computed, signal } from "@preact/signals";
 
 import ListChoiceEvent from "../../events/ListChoiceEvent";
+import MultiListChoiceEvent from "../../events/MultiListChoiceEvent";
 import YesNoChoiceEvent from "../../events/YesNoChoiceEvent";
 import Action from "../../types/Action";
 import Combatant from "../../types/Combatant";
@@ -28,6 +29,10 @@ export const allEffects = signal<EffectArea[]>([]);
 
 export const chooseFromList = signal<ListChoiceEvent | undefined>(undefined);
 
+export const chooseManyFromList = signal<MultiListChoiceEvent | undefined>(
+  undefined
+);
+
 export const chooseYesNo = signal<YesNoChoiceEvent | undefined>(undefined);
 
 export const scale = signal(20);
@@ -47,6 +52,7 @@ export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
   allCombatants,
   allEffects,
   chooseFromList,
+  chooseManyFromList,
   chooseYesNo,
   scale,
   wantsCombatant,

@@ -1,7 +1,5 @@
 import {
-  findByRole,
   getByAltText,
-  getByLabelText,
   getByRole,
   queryByRole,
   render,
@@ -30,6 +28,7 @@ const token = (name: string) => getByAltText(main(), name);
 const logMsg = (name: string) => getByRole(log(), "listitem", { name });
 
 const queryToken = (name: string) => queryByRole(main(), name);
+const queryLogMsg = (name: string) => queryByRole(log(), "listitem", { name });
 
 type BattleEntry = [
   constructor: new (g: Engine) => Combatant,
@@ -141,27 +140,26 @@ it("supports a typical Beldalynn attack", async () => {
   const {
     g,
     user,
-    combatants: [beldalynn],
+    combatants: [beldalynn, thug],
   } = await setupBattleTest(
     [Beldalynn, 0, 0, 20],
-    [Aura, 25, 0, 2],
-    [Thug, 20, 0, 1]
+    [Thug, 25, 0, 1],
+    [Tethilssethanar, 20, 0, 2]
   );
 
   await user.click(btn("Melf's Minute Meteors (Wizard)"));
   await user.click(btn("Add Point"));
   await user.click(token("thug"));
   await user.click(btn("Execute"));
-  await user.selectOptions(getByLabelText(dialog("Sculpt Spells"), "Choices"), [
-    "Aura",
-  ]);
+  await user.click(choice("Tethilssethanar"));
 
   g.dice.force(6, { type: "damage", attacker: beldalynn });
   g.dice.force(6, { type: "damage", attacker: beldalynn });
-  await user.click(btn("OK"));
+  g.dice.force(1, { type: "save", who: thug });
+  await user.click(choice("OK"));
 
   expect(logMsg("thug takes 12 damage. (12 fire)")).toBeVisible();
   expect(
-    findByRole(log(), "listitem", { name: "Aura takes 12 damage. (12 fire)" })
+    queryLogMsg("Tethilssethanar takes 12 damage. (12 fire)")
   ).not.toBeInTheDocument();
 });

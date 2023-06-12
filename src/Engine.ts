@@ -8,6 +8,8 @@ import InterruptionCollector from "./collectors/InterruptionCollector";
 import MultiplierCollector, {
   MultiplierType,
 } from "./collectors/MultiplierCollector";
+import SaveDamageResponseCollector from "./collectors/SaveDamageResponseCollector";
+import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
@@ -45,6 +47,7 @@ import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
 import RollType, { DamageRoll, SavingThrow } from "./types/RollType";
+import SaveDamageResponse from "./types/SaveDamageResponse";
 import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
 import { orderedKeys } from "./utils/map";
@@ -124,21 +127,49 @@ export default class Engine {
     return roll.value + gi.detail.bonus.result;
   }
 
-  async savingThrow(dc: number, e: Omit<SavingThrow, "type">) {
+  async savingThrow(
+    dc: number,
+    e: Omit<SavingThrow, "type">,
+    { save, fail }: { save: SaveDamageResponse; fail: SaveDamageResponse } = {
+      save: "half",
+      fail: "normal",
+    }
+  ) {
+    const successResponse = new SuccessResponseCollector();
+    const saveDamageResponse = new SaveDamageResponseCollector(save);
+    const failDamageResponse = new SaveDamageResponseCollector(fail);
+
     const pre = this.fire(
       new BeforeSaveEvent({
         ...e,
         bonus: new BonusCollector(),
         diceType: new DiceTypeCollector(),
+        successResponse,
+        saveDamageResponse,
+        failDamageResponse,
       })
     );
 
-    const roll = await this.roll(
-      { type: "save", ...e },
-      pre.detail.diceType.result
-    );
+    let forced = false;
+    let result = false;
+    if (successResponse.result !== "normal") {
+      result = successResponse.result === "succeed";
+      forced = true;
+    } else {
+      const roll = await this.roll(
+        { type: "save", ...e },
+        pre.detail.diceType.result
+      );
+      result = roll.value >= dc;
+    }
 
-    return roll.value >= dc;
+    return {
+      result: result ? ("succeed" as const) : ("fail" as const),
+      forced,
+      damageResponse: result
+        ? saveDamageResponse.result
+        : failDamageResponse.result,
+    };
   }
 
   async roll(type: RollType, diceType: DiceType = "normal") {
@@ -336,6 +367,9 @@ export default class Engine {
     damageInitialiser: DamageInitialiser = [],
     startingMultiplier?: MultiplierType
   ) {
+    // just skip it lol
+    if (startingMultiplier === "zero") return;
+
     const map = new DamageMap(damageInitialiser);
     const multiplier = new MultiplierCollector();
     if (typeof startingMultiplier !== "undefined")

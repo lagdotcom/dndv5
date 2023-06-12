@@ -14,14 +14,10 @@ const FogCloud = scalingSpell<HasPoint>({
   s: true,
   lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
 
-  getAffectedArea(g, caster, { point, slot }) {
-    if (!point) return;
-    return [{ type: "sphere", radius: 20 * (slot ?? 1), centre: point }];
-  },
-
-  getConfig(g) {
-    return { point: new PointResolver(g, 120) };
-  },
+  getAffectedArea: (g, caster, { point, slot }) =>
+    point && [{ type: "sphere", radius: 20 * (slot ?? 1), centre: point }],
+  getConfig: (g) => ({ point: new PointResolver(g, 120) }),
+  getTargets: () => [],
 
   async apply(g, caster, _method, { point, slot }) {
     /* TODO [DISPERSAL] You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners, and its area is heavily obscured. It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it.

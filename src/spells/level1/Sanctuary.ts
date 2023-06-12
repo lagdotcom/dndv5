@@ -26,6 +26,7 @@ const Sanctuary = simpleSpell<HasTarget>({
   lists: ["Artificer", "Cleric"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 30, true) }),
+  getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     target.addEffect(SanctuaryEffect, { caster, method, duration: minutes(1) });

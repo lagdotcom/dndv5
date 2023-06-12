@@ -33,6 +33,7 @@ export const simpleSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
+  getTargets,
   status = "missing",
 }: Omit<
   MarkOptional<
@@ -70,6 +71,7 @@ export const simpleSpell = <T extends object>({
   getLevel() {
     return level;
   },
+  getTargets,
 });
 
 export const scalingSpell = <T extends object>({
@@ -89,6 +91,7 @@ export const scalingSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
+  getTargets,
   status = "missing",
 }: Omit<
   MarkOptional<
@@ -138,6 +141,7 @@ export const scalingSpell = <T extends object>({
   getLevel({ slot }) {
     return slot;
   },
+  getTargets,
 });
 
 export function spellImplementationWarning(spell: Spell, owner: Source) {

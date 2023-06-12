@@ -12,6 +12,7 @@ const FreedomOfMovement = simpleSpell<HasTarget>({
   lists: ["Artificer", "Bard", "Cleric", "Druid", "Ranger"],
 
   getConfig: (g, caster) => ({ target: new TargetResolver(g, caster.reach) }),
+  getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     /* TODO [TERRAIN] [CANCELCOLLECTOR] [CANCELCONDITION] You touch a willing creature. For the duration, the target's movement is unaffected by difficult terrain, and spells and other magical effects can neither reduce the target's speed nor cause the target to be paralyzed or restrained.

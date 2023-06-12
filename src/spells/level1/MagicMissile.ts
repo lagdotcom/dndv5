@@ -13,6 +13,7 @@ const MagicMissile = scalingSpell<HasTargets>({
   getConfig: (g, caster, method, { slot }) => ({
     targets: new MultiTargetResolver(g, 1, (slot ?? 1) + 2, 120),
   }),
+  getTargets: (g, caster, { targets }) => targets,
 
   async apply(g, caster, method, config) {
     // TODO You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.

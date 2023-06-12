@@ -36,6 +36,7 @@ const LesserRestoration = simpleSpell<HasCondition & HasTarget>({
       ),
     };
   },
+  getTargets: (g, caster, { target }) => [target],
 
   check(g, { condition, target }, ec) {
     if (target && condition && !target.conditions.has(condition))

@@ -27,7 +27,7 @@ const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
     point: new PointResolver(g, 120),
     shape: new ChoiceResolver(g, shapeChoices),
   }),
-
+  getTargets: () => [],
   getDamage: (g, caster, { slot }) => [dd((slot ?? 4) + 1, 8, "fire")],
 
   async apply(g, caster, method, { point, shape }) {

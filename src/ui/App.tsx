@@ -12,6 +12,7 @@ import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import EventLog from "./EventLog";
 import ListChoiceDialog from "./ListChoiceDialog";
 import Menu, { MenuItem } from "./Menu";
+import MultiListChoiceDialog from "./MultiListChoiceDialog";
 import cachedFetch from "./utils/fetchCache";
 import {
   actionAreas,
@@ -21,6 +22,7 @@ import {
   allCombatants,
   allEffects,
   chooseFromList,
+  chooseManyFromList,
   chooseYesNo,
   wantsCombatant,
   wantsPoint,
@@ -80,6 +82,7 @@ export default function App({ g, onMount }: Props) {
     });
 
     g.events.on("ListChoice", (e) => (chooseFromList.value = e));
+    g.events.on("MultiListChoice", (e) => (chooseManyFromList.value = e));
     g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e));
 
     onMount?.(g);
@@ -243,6 +246,9 @@ export default function App({ g, onMount }: Props) {
       <EventLog g={g} />
       {chooseFromList.value && (
         <ListChoiceDialog {...chooseFromList.value.detail} />
+      )}
+      {chooseManyFromList.value && (
+        <MultiListChoiceDialog {...chooseManyFromList.value.detail} />
       )}
       {chooseYesNo.value && <YesNoDialog {...chooseYesNo.value.detail} />}
     </div>

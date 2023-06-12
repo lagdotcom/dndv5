@@ -42,6 +42,7 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, true),
   }),
+  getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     const duration = minutes(10);

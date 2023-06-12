@@ -1,5 +1,7 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
+import SaveDamageResponseCollector from "../collectors/SaveDamageResponseCollector";
+import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import SaveTag from "../types/SaveTag";
@@ -12,6 +14,9 @@ export interface BeforeSaveDetail {
   ability: AbilityName;
   diceType: DiceTypeCollector;
   bonus: BonusCollector;
+  successResponse: SuccessResponseCollector;
+  saveDamageResponse: SaveDamageResponseCollector;
+  failDamageResponse: SaveDamageResponseCollector;
   spell?: Spell;
   method?: SpellcastingMethod;
   tags: Set<SaveTag>;

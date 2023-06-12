@@ -39,6 +39,7 @@ const IntellectFortress = scalingSpell<HasTargets>({
   getConfig: (g, caster, method, { slot }) => ({
     targets: new MultiTargetResolver(g, 1, (slot ?? 3) - 2, 30, true),
   }),
+  getTargets: (g, caster, { targets }) => targets,
 
   async apply(g, caster, method, { targets }) {
     const duration = hours(1);

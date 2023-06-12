@@ -19,6 +19,7 @@ const Blur = simpleSpell({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: () => ({}),
+  getTargets: (g, caster) => [caster],
 
   async apply(g, caster) {
     const duration = minutes(1);

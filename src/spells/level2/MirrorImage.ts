@@ -9,6 +9,7 @@ const MirrorImage = simpleSpell({
   lists: ["Sorcerer", "Warlock", "Wizard"],
 
   getConfig: () => ({}),
+  getTargets: (g, caster) => [caster],
 
   async apply(g, caster, method, config) {
     /* TODO [CANCELATTACK] Three illusory duplicates of yourself appear in your space. Until the spell ends, the duplicates move with you and mimic your actions, shifting position so it's impossible to track which image is real. You can use your action to dismiss the illusory duplicates.

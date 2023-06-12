@@ -19,6 +19,7 @@ async function fireMeteors(
   method: SpellcastingMethod,
   { points }: HasPoints
 ) {
+  // TODO Sculpt Spells
   attacker.spendResource(MeteorResource, points.length);
 
   const damage = await g.rollDamage(2, {
@@ -45,13 +46,12 @@ async function fireMeteors(
         tags: new Set(),
       });
 
-      const mul = save ? "half" : undefined;
       await g.damage(
         MelfsMinuteMeteors,
         "fire",
         { attacker, target, spell: MelfsMinuteMeteors, method },
         [["fire", damage]],
-        mul
+        save.damageResponse
       );
     }
   }
@@ -116,6 +116,10 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
 
   getAffectedArea: (g, caster, { points }) =>
     points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
+  getTargets: (g, caster, { points }) =>
+    points.flatMap((centre) =>
+      g.getInside({ type: "sphere", centre, radius: 5 })
+    ),
 
   getDamage: () => [dd(2, 6, "fire")],
 

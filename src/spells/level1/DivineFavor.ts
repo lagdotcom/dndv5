@@ -36,6 +36,7 @@ const DivineFavor = simpleSpell({
   lists: ["Paladin"],
 
   getConfig: () => ({}),
+  getTargets: (g, caster) => [caster],
 
   async apply(g, caster) {
     const duration = minutes(1);

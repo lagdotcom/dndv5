@@ -93,13 +93,12 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
         tags: new Set(),
       });
 
-      const mul = save ? "half" : undefined;
       await g.damage(
         this,
         damageType,
         { attacker, target },
         [[damageType, damage]],
-        mul
+        save.damageResponse
       );
     }
   }

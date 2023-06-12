@@ -26,17 +26,9 @@ const MindSliver = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
   getDamage: (_, caster) => [dd(getCantripDice(caster), 6, "psychic")],
+  getTargets: (g, caster, { target }) => [target],
 
   async apply(g, attacker, method, { target }) {
-    const save = await g.savingThrow(getSaveDC(attacker, method.ability), {
-      who: target,
-      attacker,
-      ability: "int",
-      spell: MindSliver,
-      method,
-      tags: new Set(),
-    });
-
     const damage = await g.rollDamage(getCantripDice(attacker), {
       attacker,
       target,
@@ -46,14 +38,27 @@ const MindSliver = simpleSpell<HasTarget>({
       damageType: "psychic",
     });
 
-    if (!save) {
-      await g.damage(
-        MindSliver,
-        "psychic",
-        { attacker, target, spell: MindSliver, method },
-        [["psychic", damage]]
-      );
+    const save = await g.savingThrow(
+      getSaveDC(attacker, method.ability),
+      {
+        who: target,
+        attacker,
+        ability: "int",
+        spell: MindSliver,
+        method,
+        tags: new Set(),
+      },
+      { fail: "normal", save: "zero" }
+    );
+    await g.damage(
+      MindSliver,
+      "psychic",
+      { attacker, target, spell: MindSliver, method },
+      [["psychic", damage]],
+      save.damageResponse
+    );
 
+    if (!save.result) {
       let endCounter = 2;
       const removeTurnTracker = g.events.on(
         "TurnEnded",

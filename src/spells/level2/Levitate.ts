@@ -13,6 +13,7 @@ const Levitate = simpleSpell<HasTarget>({
   lists: ["Druid", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, true) }),
+  getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     /* TODO [HEIGHT] [CANCELMOVE] One creature or loose object of your choice that you can see within range rises vertically, up to 20 feet, and remains suspended there for the duration. The spell can levitate a target that weighs up to 500 pounds. An unwilling creature that succeeds on a Constitution saving throw is unaffected.

@@ -1,8 +1,16 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { SpecifiedSphere } from "../../types/EffectArea";
+import Point from "../../types/Point";
 import { dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
+
+const getArea = (centre: Point): SpecifiedSphere => ({
+  type: "sphere",
+  centre,
+  radius: 20,
+});
 
 const Fireball = scalingSpell<HasPoint>({
   status: "implemented",
@@ -15,11 +23,9 @@ const Fireball = scalingSpell<HasPoint>({
   lists: ["Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-
-  getAffectedArea: (g, caster, { point }) =>
-    point && [{ type: "sphere", centre: point, radius: 20 }],
-
+  getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
   getDamage: (g, caster, { slot }) => [dd(5 + (slot ?? 3), 6, "fire")],
+  getTargets: (g, caster, { point }) => g.getInside(getArea(point)),
 
   async apply(g, attacker, method, { point, slot }) {
     const damage = await g.rollDamage(5 + slot, {
@@ -33,11 +39,7 @@ const Fireball = scalingSpell<HasPoint>({
 
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside({
-      type: "sphere",
-      centre: point,
-      radius: 20,
-    })) {
+    for (const target of g.getInside(getArea(point))) {
       const save = await g.savingThrow(dc, {
         attacker,
         ability: "dex",
@@ -47,13 +49,12 @@ const Fireball = scalingSpell<HasPoint>({
         tags: new Set(),
       });
 
-      const mul = save ? "half" : undefined;
       await g.damage(
         Fireball,
         "fire",
         { attacker, spell: Fireball, method, target },
         [["fire", damage]],
-        mul
+        save.damageResponse
       );
     }
   },

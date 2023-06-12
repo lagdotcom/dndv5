@@ -2,6 +2,8 @@ import {
   nonCombatFeature,
   notImplementedFeature,
 } from "../../../features/common";
+import SimpleFeature from "../../../features/SimpleFeature";
+import MultiListChoice from "../../../interruptions/MultiListChoice";
 import PCSubclass from "../../../types/PCSubclass";
 
 const EvocationSavant = nonCombatFeature(
@@ -9,16 +11,71 @@ const EvocationSavant = nonCombatFeature(
   `Beginning when you select this school at 2nd level, the gold and time you must spend to copy an evocation spell into your spellbook is halved.`
 );
 
-// TODO [DAMAGEMULTIPLIER]
-const SculptSpells = notImplementedFeature(
+const SculptSpells = new SimpleFeature(
   "Sculpt Spells",
-  `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`
+  `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`,
+  (g, me) => {
+    g.events.on(
+      "SpellCast",
+      ({ detail: { who, spell, level, targets, interrupt } }) => {
+        if (who === me && spell.school === "Evocation")
+          interrupt.add(
+            new MultiListChoice(
+              me,
+              SculptSpells,
+              "Sculpt Spells",
+              `Pick combatants who will be somewhat protected from your spell.`,
+              Array.from(targets).map((value) => ({
+                value,
+                label: value.name,
+              })),
+              0,
+              level + 1,
+              async (chosen) => {
+                for (const target of chosen) {
+                  const unsubscribe = g.events.on(
+                    "BeforeSave",
+                    ({
+                      detail: {
+                        who,
+                        spell: saveSpell,
+                        attacker,
+                        successResponse,
+                        saveDamageResponse,
+                      },
+                    }) => {
+                      if (
+                        attacker === me &&
+                        who === target &&
+                        saveSpell === spell
+                      ) {
+                        successResponse.add("succeed", SculptSpells);
+                        saveDamageResponse.add("zero", SculptSpells);
+                        unsubscribe();
+                      }
+                    }
+                  );
+                }
+              }
+            )
+          );
+      }
+    );
+  }
 );
 
-// TODO [DAMAGEMULTIPLIER]
-const PotentCantrip = notImplementedFeature(
+const PotentCantrip = new SimpleFeature(
   "Potent Cantrip",
-  `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`
+  `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`,
+  (g, me) => {
+    g.events.on(
+      "BeforeSave",
+      ({ detail: { attacker, spell, saveDamageResponse } }) => {
+        if (attacker === me && spell?.level === 0)
+          saveDamageResponse.add("half", PotentCantrip);
+      }
+    );
+  }
 );
 
 // TODO

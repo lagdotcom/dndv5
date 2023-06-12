@@ -15,6 +15,7 @@ import { check, checkConfig } from "../utils/config";
 import { getDiceAverage } from "../utils/dnd";
 import { enumerate } from "../utils/numbers";
 import { describePoint, describeRange } from "../utils/text";
+import buttonStyles from "./button.module.scss";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
 import common from "./common.module.scss";
@@ -49,7 +50,7 @@ function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
       <div>Target: {value ? <CombatantRef who={value} /> : "NONE"}</div>
       <button
         className={classnames({
-          [styles.active]: wantsCombatant.value === setTarget,
+          [buttonStyles.active]: wantsCombatant.value === setTarget,
         })}
         onClick={onClick}
       >
@@ -108,7 +109,7 @@ function ChooseTargets({
       </div>
       <button
         className={classnames({
-          [styles.active]: wantsCombatant.value === addTarget,
+          [buttonStyles.active]: wantsCombatant.value === addTarget,
         })}
         disabled={(value?.length ?? 0) >= resolver.maximum}
         onClick={onClick}
@@ -137,7 +138,7 @@ function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
       <div>Point: {describePoint(value)}</div>
       <button
         className={classnames({
-          [styles.active]: wantsPoint.value === setTarget,
+          [buttonStyles.active]: wantsPoint.value === setTarget,
         })}
         onClick={onClick}
       >
@@ -196,7 +197,7 @@ function ChoosePoints({
       </div>
       <button
         className={classnames({
-          [styles.active]: wantsPoint.value === addPoint,
+          [buttonStyles.active]: wantsPoint.value === addPoint,
         })}
         onClick={onClick}
       >
@@ -223,7 +224,7 @@ function ChooseSlot({
         ).map((slot) => (
           <button
             key={slot}
-            className={classnames({ [styles.active]: value === slot })}
+            className={classnames({ [buttonStyles.active]: value === slot })}
             aria-pressed={value === slot}
             onClick={() => onChange(field, slot)}
           >
@@ -248,7 +249,7 @@ function ChooseText<T>({
         {resolver.entries.map((e) => (
           <button
             key={e.label}
-            className={classnames({ [styles.active]: value === e.value })}
+            className={classnames({ [buttonStyles.active]: value === e.value })}
             aria-pressed={value === e.value}
             onClick={() => onChange(field, e.value)}
             disabled={e.disabled}

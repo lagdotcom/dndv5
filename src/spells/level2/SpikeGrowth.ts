@@ -19,9 +19,9 @@ const SpikeGrowth = simpleSpell<HasPoint>({
   lists: ["Druid", "Ranger"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-
   getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "sphere", centre: point, radius: 20 }],
+  getTargets: () => [],
 
   async apply(g, attacker, method, { point }) {
     /* TODO [SIGHT] The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it. */

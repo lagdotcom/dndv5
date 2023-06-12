@@ -1,4 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
@@ -64,22 +65,26 @@ export default class CastSpell<T extends object> implements Action<T> {
   }
 
   async apply(config: T) {
-    this.actor.time.delete(this.spell.time);
+    const { actor, g, method, spell } = this;
+    actor.time.delete(spell.time);
 
     const resource = this.getResource(config);
-    if (resource) this.actor.spendResource(resource, 1);
+    if (resource) actor.spendResource(resource, 1);
 
-    const sc = this.g.fire(
+    const sc = await g.resolve(
       new SpellCastEvent({
-        who: this.actor,
-        spell: this.spell,
-        method: this.method,
-        level: this.spell.getLevel(config),
+        who: actor,
+        spell,
+        method,
+        level: spell.getLevel(config),
+        targets: new Set(spell.getTargets(g, actor, config)),
+        interrupt: new InterruptionCollector(),
       })
     );
     // TODO [MESSAGES] report this somehow
     if (sc.defaultPrevented) return;
 
-    return this.spell.apply(this.g, this.actor, this.method, config);
+    // TODO use sc.detail.targets ?
+    return spell.apply(g, actor, method, config);
   }
 }

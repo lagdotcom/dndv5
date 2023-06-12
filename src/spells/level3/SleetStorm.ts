@@ -15,6 +15,7 @@ const SleetStorm = simpleSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
   getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
+  getTargets: () => [],
 
   async apply(g, caster, method, { point }) {
     /* TODO [TERRAIN] Until the spell ends, freezing rain and sleet fall in a 20-foot-tall cylinder with a 40-foot radius centered on a point you choose within range. The area is heavily obscured, and exposed flames in the area are doused.

@@ -15,6 +15,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, true),
   }),
+  getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     // TODO [TERRAIN] Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.

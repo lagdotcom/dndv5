@@ -205,6 +205,32 @@
     }
   };
 
+  // src/collectors/SaveDamageResponseCollector.ts
+  var SaveDamageResponseCollector = class extends AbstractSumCollector {
+    constructor(fallback) {
+      super();
+      this.fallback = fallback;
+    }
+    getSum(values) {
+      if (values.includes("zero"))
+        return "zero";
+      if (values.includes("half"))
+        return "half";
+      return this.fallback;
+    }
+  };
+
+  // src/collectors/SuccessResponseCollector.ts
+  var SuccessResponseCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      if (values.includes("succeed"))
+        return "succeed";
+      if (values.includes("fail"))
+        return "fail";
+      return "normal";
+    }
+  };
+
   // src/DamageMap.ts
   var DamageMap = class extends Map {
     constructor(items = []) {
@@ -534,21 +560,24 @@
     }
     apply(config) {
       return __async(this, null, function* () {
-        this.actor.time.delete(this.spell.time);
+        const { actor, g: g2, method, spell } = this;
+        actor.time.delete(spell.time);
         const resource = this.getResource(config);
         if (resource)
-          this.actor.spendResource(resource, 1);
-        const sc = this.g.fire(
+          actor.spendResource(resource, 1);
+        const sc = yield g2.resolve(
           new SpellCastEvent({
-            who: this.actor,
-            spell: this.spell,
-            method: this.method,
-            level: this.spell.getLevel(config)
+            who: actor,
+            spell,
+            method,
+            level: spell.getLevel(config),
+            targets: new Set(spell.getTargets(g2, actor, config)),
+            interrupt: new InterruptionCollector()
           })
         );
         if (sc.defaultPrevented)
           return;
-        return this.spell.apply(this.g, this.actor, this.method, config);
+        return spell.apply(g2, actor, method, config);
       });
     }
   };
@@ -609,6 +638,7 @@
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
+    getTargets,
     status = "missing"
   }) => ({
     status,
@@ -631,7 +661,8 @@
     getDamage,
     getLevel() {
       return level;
-    }
+    },
+    getTargets
   });
   var scalingSpell = ({
     name,
@@ -650,6 +681,7 @@
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
+    getTargets,
     status = "missing"
   }) => ({
     status,
@@ -676,7 +708,8 @@
     getDamage,
     getLevel({ slot }) {
       return slot;
-    }
+    },
+    getTargets
   });
   function spellImplementationWarning(spell, owner) {
     if (spell.status === "incomplete")
@@ -1941,19 +1974,40 @@
         return roll.value + gi.detail.bonus.result;
       });
     }
-    savingThrow(dc, e) {
-      return __async(this, null, function* () {
+    savingThrow(_0, _1) {
+      return __async(this, arguments, function* (dc, e, { save, fail } = {
+        save: "half",
+        fail: "normal"
+      }) {
+        const successResponse = new SuccessResponseCollector();
+        const saveDamageResponse = new SaveDamageResponseCollector(save);
+        const failDamageResponse = new SaveDamageResponseCollector(fail);
         const pre = this.fire(
           new BeforeSaveEvent(__spreadProps(__spreadValues({}, e), {
             bonus: new BonusCollector(),
-            diceType: new DiceTypeCollector()
+            diceType: new DiceTypeCollector(),
+            successResponse,
+            saveDamageResponse,
+            failDamageResponse
           }))
         );
-        const roll = yield this.roll(
-          __spreadValues({ type: "save" }, e),
-          pre.detail.diceType.result
-        );
-        return roll.value >= dc;
+        let forced = false;
+        let result = false;
+        if (successResponse.result !== "normal") {
+          result = successResponse.result === "succeed";
+          forced = true;
+        } else {
+          const roll = yield this.roll(
+            __spreadValues({ type: "save" }, e),
+            pre.detail.diceType.result
+          );
+          result = roll.value >= dc;
+        }
+        return {
+          result: result ? "succeed" : "fail",
+          forced,
+          damageResponse: result ? saveDamageResponse.result : failDamageResponse.result
+        };
       });
     }
     roll(type, diceType = "normal") {
@@ -2105,6 +2159,8 @@
     }
     damage(_0, _1, _2) {
       return __async(this, arguments, function* (source, damageType, e, damageInitialiser = [], startingMultiplier) {
+        if (startingMultiplier === "zero")
+          return;
         const map = new DamageMap(damageInitialiser);
         const multiplier = new MultiplierCollector();
         if (typeof startingMultiplier !== "undefined")
@@ -2897,9 +2953,22 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       );
     }
   );
-  var Evasion = notImplementedFeature(
+  var Evasion = new SimpleFeature(
     "Evasion",
-    `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`
+    `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`,
+    (g2, me) => {
+      g2.events.on(
+        "BeforeSave",
+        ({
+          detail: { who, ability, failDamageResponse, saveDamageResponse }
+        }) => {
+          if (who === me && ability === "dex" && saveDamageResponse.fallback === "half") {
+            failDamageResponse.add("half", Evasion);
+            saveDamageResponse.add("zero", Evasion);
+          }
+        }
+      );
+    }
   );
   var ReliableTalent = notImplementedFeature(
     "Reliable Talent",
@@ -3390,6 +3459,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     m: "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
       });
@@ -3676,18 +3746,100 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   };
   var wizard_default = Wizard;
 
+  // src/events/MultiListChoiceEvent.ts
+  var MultiListChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("MultiListChoice", { detail });
+    }
+  };
+
+  // src/interruptions/MultiListChoice.ts
+  var MultiListChoice = class {
+    constructor(who, source, title, text, items, minimum, maximum = items.length, chosen) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.items = items;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.chosen = chosen;
+    }
+    apply(g2) {
+      return __async(this, null, function* () {
+        const choice = yield new Promise(
+          (resolve) => g2.fire(new MultiListChoiceEvent({ interruption: this, resolve }))
+        );
+        return this.chosen(choice);
+      });
+    }
+  };
+
   // src/classes/wizard/Evocation/index.ts
   var EvocationSavant = nonCombatFeature(
     "Evocation Savant",
     `Beginning when you select this school at 2nd level, the gold and time you must spend to copy an evocation spell into your spellbook is halved.`
   );
-  var SculptSpells = notImplementedFeature(
+  var SculptSpells = new SimpleFeature(
     "Sculpt Spells",
-    `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`
+    `Beginning at 2nd level, you can create pockets of relative safety within the effects of your evocation spells. When you cast an evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 + the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.`,
+    (g2, me) => {
+      g2.events.on(
+        "SpellCast",
+        ({ detail: { who, spell, level, targets, interrupt } }) => {
+          if (who === me && spell.school === "Evocation")
+            interrupt.add(
+              new MultiListChoice(
+                me,
+                SculptSpells,
+                "Sculpt Spells",
+                `Pick combatants who will be somewhat protected from your spell.`,
+                Array.from(targets).map((value) => ({
+                  value,
+                  label: value.name
+                })),
+                0,
+                level + 1,
+                (chosen) => __async(void 0, null, function* () {
+                  for (const target of chosen) {
+                    const unsubscribe = g2.events.on(
+                      "BeforeSave",
+                      ({
+                        detail: {
+                          who: who2,
+                          spell: saveSpell,
+                          attacker,
+                          successResponse,
+                          saveDamageResponse
+                        }
+                      }) => {
+                        if (attacker === me && who2 === target && saveSpell === spell) {
+                          successResponse.add("succeed", SculptSpells);
+                          saveDamageResponse.add("zero", SculptSpells);
+                          unsubscribe();
+                        }
+                      }
+                    );
+                  }
+                })
+              )
+            );
+        }
+      );
+    }
   );
-  var PotentCantrip = notImplementedFeature(
+  var PotentCantrip = new SimpleFeature(
     "Potent Cantrip",
-    `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`
+    `Starting at 6th level, your damaging cantrips affect even creatures that avoid the brunt of the effect. When a creature succeeds on a saving throw against your cantrip, the creature takes half the cantrip's damage (if any) but suffers no additional effect from the cantrip.`,
+    (g2, me) => {
+      g2.events.on(
+        "BeforeSave",
+        ({ detail: { attacker, spell, saveDamageResponse } }) => {
+          if (attacker === me && (spell == null ? void 0 : spell.level) === 0)
+            saveDamageResponse.add("half", PotentCantrip);
+        }
+      );
+    }
   );
   var EmpoweredEvocation = notImplementedFeature(
     "Empowered Evocation",
@@ -3885,13 +4037,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             ability: "dex",
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? "half" : void 0;
           yield g2.damage(
             this,
             damageType,
             { attacker, target },
             [[damageType, damage]],
-            mul
+            save.damageResponse
           );
         }
       });
@@ -4118,7 +4269,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 2, 60) }),
-    getDamage: (_2, caster) => [dd(getCantripDice(caster), 6, "acid")],
+    getDamage: (g2, caster) => [dd(getCantripDice(caster), 6, "acid")],
+    getTargets: (g2, caster, { targets }) => targets,
     check(g2, { targets }, ec) {
       if (isCombatantArray(targets) && targets.length === 2) {
         const [a, b] = targets;
@@ -4138,21 +4290,25 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType: "acid"
         });
         for (const target of targets) {
-          const save = yield g2.savingThrow(getSaveDC(attacker, method.ability), {
-            who: target,
-            attacker,
-            ability: "dex",
-            spell: AcidSplash,
-            method,
-            tags: /* @__PURE__ */ new Set()
-          });
-          if (!save)
-            yield g2.damage(
-              AcidSplash,
-              "acid",
-              { attacker, target, spell: AcidSplash, method },
-              [["acid", damage]]
-            );
+          const save = yield g2.savingThrow(
+            getSaveDC(attacker, method.ability),
+            {
+              who: target,
+              attacker,
+              ability: "dex",
+              spell: AcidSplash,
+              method,
+              tags: /* @__PURE__ */ new Set()
+            },
+            { fail: "normal", save: "zero" }
+          );
+          yield g2.damage(
+            AcidSplash,
+            "acid",
+            { attacker, target, spell: AcidSplash, method },
+            [["acid", damage]],
+            save.damageResponse
+          );
         }
       });
     }
@@ -4244,7 +4400,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getDamage: (_2, caster) => [dd(getCantripDice(caster), 10, "fire")],
+    getDamage: (g2, caster) => [dd(getCantripDice(caster), 10, "fire")],
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const rsa = new SpellAttack(g2, attacker, FireBolt, method, "ranged", {
@@ -4278,16 +4435,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Sorcerer", "Warlock", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (_2, caster) => [dd(getCantripDice(caster), 6, "psychic")],
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const save = yield g2.savingThrow(getSaveDC(attacker, method.ability), {
-          who: target,
-          attacker,
-          ability: "int",
-          spell: MindSliver,
-          method,
-          tags: /* @__PURE__ */ new Set()
-        });
         const damage = yield g2.rollDamage(getCantripDice(attacker), {
           attacker,
           target,
@@ -4296,13 +4446,26 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           size: 6,
           damageType: "psychic"
         });
-        if (!save) {
-          yield g2.damage(
-            MindSliver,
-            "psychic",
-            { attacker, target, spell: MindSliver, method },
-            [["psychic", damage]]
-          );
+        const save = yield g2.savingThrow(
+          getSaveDC(attacker, method.ability),
+          {
+            who: target,
+            attacker,
+            ability: "int",
+            spell: MindSliver,
+            method,
+            tags: /* @__PURE__ */ new Set()
+          },
+          { fail: "normal", save: "zero" }
+        );
+        yield g2.damage(
+          MindSliver,
+          "psychic",
+          { attacker, target, spell: MindSliver, method },
+          [["psychic", damage]],
+          save.damageResponse
+        );
+        if (!save.result) {
           let endCounter = 2;
           const removeTurnTracker = g2.events.on(
             "TurnEnded",
@@ -4337,6 +4500,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (_2, caster) => [dd(getCantripDice(caster), 8, "cold")],
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
         const rsa = new SpellAttack(g2, attacker, RayOfFrost, method, "ranged", {
@@ -4353,6 +4517,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var RayOfFrost_default = RayOfFrost;
 
   // src/spells/level1/IceKnife.ts
+  var getArea = (g2, target) => ({
+    type: "within",
+    target,
+    position: g2.getState(target).position,
+    radius: 5
+  });
   var IceKnife = scalingSpell({
     status: "implemented",
     name: "Ice Knife",
@@ -4362,18 +4532,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a drop of water or piece of ice",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getAffectedArea: (g2, caster, { target }) => target && [
-      {
-        type: "within",
-        target,
-        position: g2.getState(target).position,
-        radius: 5
-      }
-    ],
+    getAffectedArea: (g2, caster, { target }) => target && [getArea(g2, target)],
     getDamage: (g2, caster, { slot }) => [
       dd(1, 10, "piercing"),
       dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
+    getTargets: (g2, caster, { target }) => g2.getInside(getArea(g2, target)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
         const { attack, hit, critical } = yield g2.attack({
@@ -4412,27 +4576,26 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType: "cold"
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const victim of g2.getInside({
-          type: "within",
-          target,
-          position: g2.getState(target).position,
-          radius: 5
-        })) {
-          const save = yield g2.savingThrow(dc, {
-            attacker,
-            ability: "dex",
-            spell: IceKnife,
-            method,
-            who: victim,
-            tags: /* @__PURE__ */ new Set()
-          });
-          if (!save)
-            yield g2.damage(
-              IceKnife,
-              "cold",
-              { attacker, target: victim, spell: IceKnife, method },
-              [["cold", damage]]
-            );
+        for (const victim of g2.getInside(getArea(g2, target))) {
+          const save = yield g2.savingThrow(
+            dc,
+            {
+              attacker,
+              ability: "dex",
+              spell: IceKnife,
+              method,
+              who: victim,
+              tags: /* @__PURE__ */ new Set()
+            },
+            { fail: "normal", save: "zero" }
+          );
+          yield g2.damage(
+            IceKnife,
+            "cold",
+            { attacker, target: victim, spell: IceKnife, method },
+            [["cold", damage]],
+            save.damageResponse
+          );
         }
       });
     }
@@ -4450,6 +4613,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 120)
     }),
+    getTargets: (g2, caster, { targets }) => targets,
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -4468,6 +4632,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Sorcerer", "Wizard"],
     getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -4511,6 +4676,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { label: "reduce", value: "reduce" }
       ])
     }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { mode, target }) {
       });
@@ -4551,7 +4717,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               spell: HoldPerson,
               tags: /* @__PURE__ */ new Set(["Paralyzed"])
             });
-            if (save) {
+            if (save.result) {
               who.removeEffect(HoldPersonEffect);
               config.affected.delete(who);
             }
@@ -4573,6 +4739,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2, actor, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 2) - 1, 60)
     }),
+    getTargets: (g2, caster, { targets }) => targets,
     check(g2, { targets }, ec) {
       return ec;
     },
@@ -4589,7 +4756,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             spell: HoldPerson,
             tags: /* @__PURE__ */ new Set(["Paralyzed"])
           });
-          if (!save) {
+          if (!save.result) {
             target.addEffect(HoldPersonEffect, {
               affected,
               caster,
@@ -4670,13 +4837,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             who: target,
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? "half" : void 0;
           yield g2.damage(
             MelfsMinuteMeteors,
             "fire",
             { attacker, target, spell: MelfsMinuteMeteors, method },
             [["fire", damage]],
-            mul
+            save.damageResponse
           );
         }
       }
@@ -4736,6 +4902,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       points: new MultiPointResolver(g2, 1, 2, 120)
     }),
     getAffectedArea: (g2, caster, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
+    getTargets: (g2, caster, { points }) => points.flatMap(
+      (centre) => g2.getInside({ type: "sphere", centre, radius: 5 })
+    ),
     getDamage: () => [dd(2, 6, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { points, slot }) {
@@ -4776,6 +4945,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
 
   // src/spells/level3/Fireball.ts
+  var getArea2 = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 20
+  });
   var Fireball = scalingSpell({
     status: "implemented",
     name: "Fireball",
@@ -4786,8 +4960,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a tiny ball of bat guano and sulfur",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
-    getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea2(point)],
     getDamage: (g2, caster, { slot }) => [dd(5 + (slot != null ? slot : 3), 6, "fire")],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea2(point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
         const damage = yield g2.rollDamage(5 + slot, {
@@ -4798,11 +4973,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside({
-          type: "sphere",
-          centre: point,
-          radius: 20
-        })) {
+        for (const target of g2.getInside(getArea2(point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "dex",
@@ -4811,13 +4982,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             who: target,
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? "half" : void 0;
           yield g2.damage(
             Fireball,
             "fire",
             { attacker, spell: Fireball, method, target },
             [["fire", damage]],
-            mul
+            save.damageResponse
           );
         }
       });
@@ -4856,6 +5026,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 3) - 2, 30, true)
     }),
+    getTargets: (g2, caster, { targets }) => targets,
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
         const duration = hours(1);
@@ -4895,6 +5066,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       point: new PointResolver(g2, 120),
       shape: new ChoiceResolver(g2, shapeChoices)
     }),
+    getTargets: () => [],
     getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 4) + 1, 8, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
@@ -5275,6 +5447,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getConfig: (g2, caster) => ({
       target: new TargetResolver(g2, caster.reach, true)
     }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = minutes(10);
@@ -5306,6 +5479,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     m: "a small silver mirror",
     lists: ["Artificer", "Cleric"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 30, true) }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         target.addEffect(SanctuaryEffect, { caster, method, duration: minutes(1) });
@@ -5342,6 +5516,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         )
       };
     },
+    getTargets: (g2, caster, { target }) => [target],
     check(g2, { condition, target }, ec) {
       if (target && condition && !target.conditions.has(condition))
         ec.add("target does not have condition", LesserRestoration);
@@ -5556,6 +5731,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     getConfig: (g2, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 30, true)
     }),
+    getTargets: (g2, caster, { targets }) => targets,
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
         const duration = minutes(1);
@@ -5606,6 +5782,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     s: true,
     lists: ["Paladin"],
     getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
     apply(g2, caster) {
       return __async(this, null, function* () {
         const duration = minutes(1);
@@ -6264,6 +6441,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
     apply(g2, caster) {
       return __async(this, null, function* () {
         const duration = minutes(1);
@@ -6291,6 +6469,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
     getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -6307,6 +6486,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 30) }),
+    getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -6326,6 +6506,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Bard", "Cleric", "Ranger"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", radius: 20, centre: point }],
+    getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
       });
@@ -6346,6 +6527,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g2, caster) => ({
       target: new TargetResolver(g2, caster.reach, true)
     }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
       });
@@ -6366,6 +6548,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Druid", "Ranger"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
+    getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point }) {
         const area = new ActiveEffectArea(
@@ -6416,7 +6599,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var SpikeGrowth_default = SpikeGrowth;
 
   // src/spells/level3/LightningBolt.ts
-  function getArea(g2, actor, point) {
+  function getArea3(g2, actor, point) {
     const position = g2.getState(actor).position;
     const size = actor.sizeInUnits;
     return aimLine(position, size, point, 100, 5);
@@ -6432,7 +6615,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
     getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 3) + 5, 6, "lightning")],
-    getAffectedArea: (g2, caster, { point }) => point && [getArea(g2, caster, point)],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea3(g2, caster, point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea3(g2, caster, point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(5 + slot, {
@@ -6443,7 +6627,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside(getArea(g2, attacker, point))) {
+        for (const target of g2.getInside(getArea3(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "dex",
@@ -6452,13 +6636,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
             who: target,
             tags: /* @__PURE__ */ new Set()
           });
-          const mul = save ? "half" : void 0;
           yield g2.damage(
             LightningBolt,
             "lightning",
             { attacker, spell: LightningBolt, method, target },
             [["lightning", damage]],
-            mul
+            save.damageResponse
           );
         }
       });
@@ -6478,6 +6661,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
+    getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
       });
@@ -6496,6 +6680,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a drop of molasses",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 6, 120) }),
+    getTargets: (g2, caster, { targets }) => targets,
     check(g2, config, ec) {
       return ec;
     },
@@ -6517,6 +6702,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a short reed or piece of straw",
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
+    getTargets: (g2, caster, { targets }) => targets,
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -6535,6 +6721,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a piece of cork",
     lists: ["Artificer", "Cleric", "Druid", "Ranger", "Sorcerer"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
+    getTargets: (g2, caster, { targets }) => targets,
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -6552,6 +6739,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a drop of water and a pinch of dust",
     lists: ["Cleric", "Druid", "Wizard"],
     getConfig: () => ({}),
+    getTargets: () => [],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -6569,6 +6757,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a leather strap, bound around the arm or a similar appendage",
     lists: ["Artificer", "Bard", "Cleric", "Druid", "Ranger"],
     getConfig: (g2, caster) => ({ target: new TargetResolver(g2, caster.reach) }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
       });
@@ -6577,6 +6766,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var FreedomOfMovement_default = FreedomOfMovement;
 
   // src/spells/level4/IceStorm.ts
+  var getArea4 = (centre) => ({
+    type: "cylinder",
+    centre,
+    radius: 20,
+    height: 40
+  });
   var IceStorm = scalingSpell({
     name: "Ice Storm",
     level: 4,
@@ -6586,7 +6781,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
-    getAffectedArea: (g2, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 20, height: 40 }],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea4(point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea4(point)),
     getDamage: (g2, caster, { slot }) => [
       dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       dd(4, 6, "cold")
@@ -6621,6 +6817,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g2, caster) => ({
       target: new TargetResolver(g2, caster.reach, true)
     }),
+    getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = hours(1);
@@ -6650,6 +6847,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     lists: ["Druid", "Ranger"],
     getConfig: () => ({}),
+    getTargets: () => [],
     apply(g2, caster, method) {
       return __async(this, null, function* () {
       });
@@ -6658,7 +6856,14 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var CommuneWithNature_default = CommuneWithNature;
 
   // src/spells/level5/ConeOfCold.ts
+  var getArea5 = (g2, caster, target) => ({
+    type: "cone",
+    radius: 60,
+    centre: g2.getState(caster).position,
+    target
+  });
   var ConeOfCold = scalingSpell({
+    status: "implemented",
     name: "Cone of Cold",
     level: 5,
     school: "Evocation",
@@ -6667,16 +6872,36 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a small crystal or glass cone",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
-    getAffectedArea: (g2, caster, { point }) => point && [
-      {
-        type: "cone",
-        radius: 60,
-        centre: g2.getState(caster).position,
-        target: point
-      }
-    ],
+    getDamage: (g2, caster, { slot }) => [dd(3 + (slot != null ? slot : 5), 8, "cold")],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea5(g2, caster, point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea5(g2, caster, point)),
     apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { slot, point }) {
+      return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
+        const damage = yield g2.rollDamage(3 + slot, {
+          size: 8,
+          spell: ConeOfCold,
+          method,
+          damageType: "cold",
+          attacker
+        });
+        const dc = getSaveDC(attacker, method.ability);
+        for (const target of g2.getInside(getArea5(g2, attacker, point))) {
+          const save = yield g2.savingThrow(dc, {
+            attacker,
+            ability: "con",
+            spell: ConeOfCold,
+            method,
+            who: target,
+            tags: /* @__PURE__ */ new Set()
+          });
+          yield g2.damage(
+            ConeOfCold,
+            "cold",
+            { attacker, spell: ConeOfCold, method, target },
+            [["cold", damage]],
+            save.damageResponse
+          );
+        }
       });
     }
   });
@@ -6694,6 +6919,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water",
     lists: ["Druid", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 90) }),
+    getTargets: () => [],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
       });
@@ -6712,6 +6938,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a focus worth at least 1,000 gp, such as a crystal ball, a silver mirror, or a font filled with holy water",
     lists: ["Bard", "Cleric", "Druid", "Warlock", "Wizard"],
     getConfig: () => ({}),
+    getTargets: () => [],
     apply(g2, caster, method) {
       return __async(this, null, function* () {
       });
@@ -7068,6 +7295,7 @@ The creature is aware of this effect before it makes its attack against you.`
     s: true,
     lists: ["Artificer", "Druid", "Warlock"],
     getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
     apply(g2, caster, method) {
       return __async(this, null, function* () {
         caster.initResource(MagicStoneResource);
@@ -7246,14 +7474,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     v: true,
     s: true,
     lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
-    getAffectedArea(g2, caster, { point, slot }) {
-      if (!point)
-        return;
-      return [{ type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point }];
-    },
-    getConfig(g2) {
-      return { point: new PointResolver(g2, 120) };
-    },
+    getAffectedArea: (g2, caster, { point, slot }) => point && [{ type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point }],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
+    getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, _method, { point, slot }) {
         const radius = 20 * slot;
@@ -7286,6 +7509,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     m: "a legume seed",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
+    getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
       });
@@ -7311,6 +7535,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       point: new PointResolver(g2, 60),
       shape: new ChoiceResolver(g2, shapeChoices2)
     }),
+    getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
       });
@@ -7412,7 +7637,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   };
 
   // src/ui/App.tsx
-  var import_hooks13 = __toESM(require_hooks());
+  var import_hooks15 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function check(g2, action, config) {
@@ -7595,6 +7820,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   var allCombatants = (0, import_signals.signal)([]);
   var allEffects = (0, import_signals.signal)([]);
   var chooseFromList = (0, import_signals.signal)(void 0);
+  var chooseManyFromList = (0, import_signals.signal)(
+    void 0
+  );
   var chooseYesNo = (0, import_signals.signal)(void 0);
   var scale = (0, import_signals.signal)(20);
   var wantsCombatant = (0, import_signals.signal)(
@@ -7609,6 +7837,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     allCombatants,
     allEffects,
     chooseFromList,
+    chooseManyFromList,
     chooseYesNo,
     scale,
     wantsCombatant,
@@ -7889,11 +8118,15 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   // src/ui/ChooseActionConfigPanel.tsx
   var import_hooks7 = __toESM(require_hooks());
 
+  // src/ui/button.module.scss
+  var button_module_default = {
+    "active": "_active_nvx7c_1"
+  };
+
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_1qdcm_1",
-    "active": "_active_1qdcm_8",
-    "warning": "_warning_1qdcm_12"
+    "main": "_main_1djvn_1",
+    "warning": "_warning_1djvn_8"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -7937,7 +8170,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "button",
         {
           className: classnames({
-            [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === setTarget
+            [button_module_default.active]: wantsCombatant.value === setTarget
           }),
           onClick,
           children: "Choose Target"
@@ -7988,7 +8221,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "button",
         {
           className: classnames({
-            [ChooseActionConfigPanel_module_default.active]: wantsCombatant.value === addTarget
+            [button_module_default.active]: wantsCombatant.value === addTarget
           }),
           disabled: ((_a = value == null ? void 0 : value.length) != null ? _a : 0) >= resolver.maximum,
           onClick,
@@ -8017,7 +8250,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "button",
         {
           className: classnames({
-            [ChooseActionConfigPanel_module_default.active]: wantsPoint.value === setTarget
+            [button_module_default.active]: wantsPoint.value === setTarget
           }),
           onClick,
           children: "Choose Point"
@@ -8066,7 +8299,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "button",
         {
           className: classnames({
-            [ChooseActionConfigPanel_module_default.active]: wantsPoint.value === addPoint
+            [button_module_default.active]: wantsPoint.value === addPoint
           }),
           onClick,
           children: "Add Point"
@@ -8092,7 +8325,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       ).map((slot) => /* @__PURE__ */ o(
         "button",
         {
-          className: classnames({ [ChooseActionConfigPanel_module_default.active]: value === slot }),
+          className: classnames({ [button_module_default.active]: value === slot }),
           "aria-pressed": value === slot,
           onClick: () => onChange(field, slot),
           children: slot
@@ -8115,7 +8348,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       /* @__PURE__ */ o("div", { children: resolver.entries.map((e) => /* @__PURE__ */ o(
         "button",
         {
-          className: classnames({ [ChooseActionConfigPanel_module_default.active]: value === e.value }),
+          className: classnames({ [button_module_default.active]: value === e.value }),
           "aria-pressed": value === e.value,
           onClick: () => onChange(field, e.value),
           disabled: e.disabled,
@@ -8507,6 +8740,57 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     )) }) });
   }
 
+  // src/ui/MultiListChoiceDialog.tsx
+  var import_hooks13 = __toESM(require_hooks());
+
+  // src/ui/hooks/useList.ts
+  var import_hooks12 = __toESM(require_hooks());
+  function useList(initialValue = []) {
+    const [list, setList] = (0, import_hooks12.useState)(initialValue);
+    const toggle = (0, import_hooks12.useCallback)(
+      (item) => setList(
+        (old) => old.includes(item) ? old.filter((x) => x !== item) : old.concat(item)
+      ),
+      []
+    );
+    return { list, setList, toggle };
+  }
+
+  // src/ui/MultiListChoiceDialog.tsx
+  function MultiListChoiceDialog({
+    interruption,
+    resolve
+  }) {
+    const { list, toggle } = useList();
+    const invalidSelection = list.length < interruption.minimum || list.length > interruption.maximum;
+    const decide = (0, import_hooks13.useCallback)(() => {
+      chooseManyFromList.value = void 0;
+      resolve(list);
+    }, [list, resolve]);
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Choose between ",
+        interruption.minimum,
+        " and ",
+        interruption.maximum,
+        " ",
+        "inclusive."
+      ] }),
+      interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+        "button",
+        {
+          className: classnames({
+            [button_module_default.active]: list.includes(value)
+          }),
+          disabled,
+          onClick: () => toggle(value),
+          children: label
+        }
+      )),
+      /* @__PURE__ */ o("button", { disabled: invalidSelection, onClick: decide, children: "OK" })
+    ] });
+  }
+
   // src/ui/utils/types.ts
   function getUnitData(who, state) {
     const { position } = state;
@@ -8525,20 +8809,20 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/YesNoDialog.tsx
-  var import_hooks12 = __toESM(require_hooks());
+  var import_hooks14 = __toESM(require_hooks());
   function YesNoDialog({
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks12.useCallback)(
+    const decide = (0, import_hooks14.useCallback)(
       (value) => {
         chooseYesNo.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks12.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks12.useCallback)(() => decide(false), [decide]);
+    const onYes = (0, import_hooks14.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks14.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
@@ -8547,28 +8831,28 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
-    const [target, setTarget] = (0, import_hooks13.useState)();
-    const [action, setAction] = (0, import_hooks13.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks13.useState)({
+    const [target, setTarget] = (0, import_hooks15.useState)();
+    const [action, setAction] = (0, import_hooks15.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks15.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks13.useCallback)(
+    const hideActionMenu = (0, import_hooks15.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks13.useCallback)(() => {
+    const refreshUnits = (0, import_hooks15.useCallback)(() => {
       const list = [];
       for (const [who, state] of g2.combatants)
         list.push(getUnitData(who, state));
       allCombatants.value = list;
     }, [g2]);
-    const refreshAreas = (0, import_hooks13.useCallback)(() => {
+    const refreshAreas = (0, import_hooks15.useCallback)(() => {
       allEffects.value = Array.from(g2.effects);
     }, [g2]);
-    (0, import_hooks13.useEffect)(() => {
+    (0, import_hooks15.useEffect)(() => {
       g2.events.on("CombatantPlaced", refreshUnits);
       g2.events.on("CombatantMoved", refreshUnits);
       g2.events.on("CombatantDied", refreshUnits);
@@ -8580,6 +8864,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         allActions.value = g2.getActions(who);
       });
       g2.events.on("ListChoice", (e) => chooseFromList.value = e);
+      g2.events.on("MultiListChoice", (e) => chooseManyFromList.value = e);
       g2.events.on("YesNoChoice", (e) => chooseYesNo.value = e);
       onMount == null ? void 0 : onMount(g2);
       for (const [who] of g2.combatants) {
@@ -8600,7 +8885,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
             cachedFetch(item.icon.url);
       }
     }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
-    const onExecuteAction = (0, import_hooks13.useCallback)(
+    const onExecuteAction = (0, import_hooks15.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
@@ -8612,7 +8897,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, refreshUnits]
     );
-    const onClickAction = (0, import_hooks13.useCallback)(
+    const onClickAction = (0, import_hooks15.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -8625,7 +8910,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks13.useCallback)(
+    const onClickBattlefield = (0, import_hooks15.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -8637,7 +8922,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks13.useCallback)(
+    const onClickCombatant = (0, import_hooks15.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -8672,23 +8957,23 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2]
     );
-    const onMoveCombatant = (0, import_hooks13.useCallback)(
+    const onMoveCombatant = (0, import_hooks15.useCallback)(
       (who, dx, dy) => {
         hideActionMenu();
         void g2.move(who, dx, dy);
       },
       [g2, hideActionMenu]
     );
-    const onPass = (0, import_hooks13.useCallback)(() => {
+    const onPass = (0, import_hooks15.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
       void g2.nextTurn();
     }, [g2]);
-    const onCancelAction = (0, import_hooks13.useCallback)(() => {
+    const onCancelAction = (0, import_hooks15.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks13.useCallback)(
+    const onChooseAction = (0, import_hooks15.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);
@@ -8726,6 +9011,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       ] }),
       /* @__PURE__ */ o(EventLog, { g: g2 }),
       chooseFromList.value && /* @__PURE__ */ o(ListChoiceDialog, __spreadValues({}, chooseFromList.value.detail)),
+      chooseManyFromList.value && /* @__PURE__ */ o(MultiListChoiceDialog, __spreadValues({}, chooseManyFromList.value.detail)),
       chooseYesNo.value && /* @__PURE__ */ o(YesNoDialog, __spreadValues({}, chooseYesNo.value.detail))
     ] });
   }
