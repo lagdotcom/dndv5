@@ -4,7 +4,7 @@ import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedCone } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
@@ -30,7 +30,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
   lists: ["Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-  getDamage: (g, caster, { slot }) => [dd(3 + (slot ?? 5), 8, "cold")],
+  getDamage: (g, caster, { slot }) => [_dd(3 + (slot ?? 5), 8, "cold")],
   getAffectedArea: (g, caster, { point }) =>
     point && [getArea(g, caster, point)],
   getTargets: (g, caster, { point }) => g.getInside(getArea(g, caster, point)),

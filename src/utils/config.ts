@@ -2,7 +2,7 @@ import Engine from "../Engine";
 import Action from "../types/Action";
 import Resolver from "../types/Resolver";
 
-export function check<T extends object>(
+export function getConfigErrors<T extends object>(
   g: Engine,
   action: Action<T>,
   config: Partial<T>
@@ -23,5 +23,5 @@ export function checkConfig<T extends object>(
   action: Action<T>,
   config: Partial<T>
 ): config is T {
-  return check(g, action, config).result;
+  return getConfigErrors(g, action, config).result;
 }

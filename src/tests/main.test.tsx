@@ -18,6 +18,7 @@ import Galilea from "../pcs/davies/Galilea";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import Combatant from "../types/Combatant";
 import App from "../ui/App";
+import { SVGCacheContext } from "../ui/utils/SVGCache";
 
 const dialog = (name?: string) => screen.getByRole("dialog", { name });
 const main = () => screen.getByRole("main");
@@ -39,10 +40,20 @@ type BattleEntry = [
   initiative: number
 ];
 
+const cache = {
+  async get() {
+    return "";
+  },
+};
+
 async function setupBattleTest(...entries: BattleEntry[]) {
   const user = userEvent.setup();
   const g = new Engine();
-  render(<App g={g} />);
+  render(
+    <SVGCacheContext.Provider value={cache}>
+      <App g={g} />
+    </SVGCacheContext.Provider>
+  );
 
   const combatants = entries.map(([constructor, x, y, initiative]) => {
     const z = new constructor(g);

@@ -1,6 +1,7 @@
 import { useCallback } from "preact/hooks";
 
 import Combatant from "../types/Combatant";
+import MoveDirection from "../types/MoveDirection";
 import Point from "../types/Point";
 import { round } from "../utils/numbers";
 import styles from "./Battlefield.module.scss";
@@ -17,7 +18,7 @@ import {
 interface Props {
   onClickBattlefield(pos: Point, e: MouseEvent): void;
   onClickCombatant(who: Combatant, e: MouseEvent): void;
-  onMoveCombatant(who: Combatant, dx: number, dy: number): void;
+  onMoveCombatant(who: Combatant, dir: MoveDirection): void;
 }
 
 export default function Battlefield({

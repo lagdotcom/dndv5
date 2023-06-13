@@ -4,7 +4,7 @@ import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
@@ -25,7 +25,7 @@ const LightningBolt = scalingSpell<HasPoint>({
   lists: ["Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 100) }),
-  getDamage: (g, caster, { slot }) => [dd((slot ?? 3) + 5, 6, "lightning")],
+  getDamage: (g, caster, { slot }) => [_dd((slot ?? 3) + 5, 6, "lightning")],
   getAffectedArea: (g, caster, { point }) =>
     point && [getArea(g, caster, point)],
   getTargets: (g, caster, { point }) => g.getInside(getArea(g, caster, point)),

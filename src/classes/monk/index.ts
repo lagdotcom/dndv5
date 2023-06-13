@@ -6,7 +6,7 @@ import Action from "../../types/Action";
 import DamageAmount from "../../types/DamageAmount";
 import { WeaponItem } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
 
 const UnarmoredDefense = new SimpleFeature(
@@ -60,7 +60,7 @@ class MonkWeaponWrapper extends AbstractWeapon {
       weapon.name,
       weapon.category,
       weapon.rangeCategory,
-      dd(1, size, weapon.damage.damageType),
+      _dd(1, size, weapon.damage.damageType),
       weapon.properties,
       weapon.shortRange,
       weapon.longRange

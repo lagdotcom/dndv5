@@ -1,6 +1,6 @@
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { isCombatantArray } from "../../utils/types";
 import { distance } from "../../utils/units";
@@ -16,7 +16,7 @@ const AcidSplash = simpleSpell<HasTargets>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 2, 60) }),
-  getDamage: (g, caster) => [dd(getCantripDice(caster), 6, "acid")],
+  getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
   getTargets: (g, caster, { targets }) => targets,
 
   check(g, { targets }, ec) {

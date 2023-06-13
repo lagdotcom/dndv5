@@ -2,7 +2,7 @@ import DamageAmount from "../types/DamageAmount";
 import DamageType from "../types/DamageType";
 import { getDiceAverage } from "./dnd";
 
-export const dd = (
+export const _dd = (
   count: number,
   size: number,
   damage: DamageType

@@ -87,7 +87,7 @@
   });
 
   // src/index.tsx
-  var import_preact3 = __toESM(require_preact());
+  var import_preact4 = __toESM(require_preact());
 
   // src/collectors/AbstractCollector.ts
   var AbstractCollector = class {
@@ -634,7 +634,7 @@
     lists,
     icon,
     apply,
-    check: check2 = (_g, _config, ec) => ec,
+    check = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
@@ -655,7 +655,7 @@
     lists,
     icon,
     apply,
-    check: check2,
+    check,
     getAffectedArea,
     getConfig,
     getDamage,
@@ -677,7 +677,7 @@
     lists,
     icon,
     apply,
-    check: check2 = (_g, _config, ec) => ec,
+    check = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
@@ -698,7 +698,7 @@
     lists,
     icon,
     apply,
-    check: check2,
+    check,
     getAffectedArea,
     getConfig(g2, actor, method, config) {
       return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
@@ -1773,6 +1773,13 @@
     }
   };
 
+  // src/events/BeforeMoveEvent.ts
+  var BeforeMoveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeMove", { detail });
+    }
+  };
+
   // src/events/BeforeSaveEvent.ts
   var BeforeSaveEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1915,6 +1922,28 @@
     return entries.map(([k]) => k);
   }
 
+  // src/utils/points.ts
+  var _p = (x, y) => ({ x, y });
+  function addPoints(a, b) {
+    return _p(a.x + b.x, a.y + b.y);
+  }
+  function mulPoint(z, mul) {
+    return _p(z.x * mul, z.y * mul);
+  }
+  var moveOffsets = {
+    east: _p(5, 0),
+    southeast: _p(5, 5),
+    south: _p(0, 5),
+    southwest: _p(-5, 5),
+    west: _p(-5, 0),
+    northwest: _p(-5, -5),
+    north: _p(0, -5),
+    northeast: _p(5, -5)
+  };
+  function movePoint(p, d) {
+    return addPoints(p, moveOffsets[d]);
+  }
+
   // src/Engine.ts
   var Engine = class {
     constructor(dice = new DiceBag(), events = new Dispatcher()) {
@@ -2053,31 +2082,52 @@
         );
       });
     }
-    move(who, dx, dy, hasCost = true) {
+    move(who, direction, type = "speed", moveCost = 5) {
       return __async(this, null, function* () {
         const state = this.combatants.get(who);
         if (!state)
-          return;
+          return false;
         const old = state.position;
-        const x = old.x + dx;
-        const y = old.y + dy;
-        if (hasCost) {
-          const cost = Math.max(Math.abs(dx), Math.abs(dy));
-          const multiplier = new MultiplierCollector();
-          this.fire(
-            new GetMoveCostEvent({ who, from: old, to: { x, y }, multiplier })
-          );
-          who.movedSoFar += cost * multiplier.result;
-        }
-        state.position = { x, y };
-        yield this.resolve(
-          new CombatantMovedEvent({
+        const position = movePoint(old, direction);
+        const pre = yield this.resolve(
+          new BeforeMoveEvent({
             who,
-            old,
-            position: state.position,
+            from: old,
+            direction,
+            to: position,
+            type,
+            error: new ErrorCollector(),
             interrupt: new InterruptionCollector()
           })
         );
+        if (pre.defaultPrevented)
+          return false;
+        if (moveCost) {
+          const multiplier = new MultiplierCollector();
+          this.fire(
+            new GetMoveCostEvent({
+              who,
+              from: old,
+              direction,
+              to: position,
+              type,
+              multiplier
+            })
+          );
+          who.movedSoFar += moveCost * multiplier.result;
+        }
+        state.position = position;
+        yield this.resolve(
+          new CombatantMovedEvent({
+            who,
+            direction,
+            old,
+            position,
+            type,
+            interrupt: new InterruptionCollector()
+          })
+        );
+        return true;
       });
     }
     applyDamage(_0, _1) {
@@ -2252,7 +2302,7 @@
   };
 
   // src/utils/dice.ts
-  var dd = (count, size, damage) => ({
+  var _dd = (count, size, damage) => ({
     type: "dice",
     amount: { count, size },
     damageType: damage
@@ -2316,7 +2366,7 @@
         "dagger",
         "simple",
         "melee",
-        dd(1, 4, "piercing"),
+        _dd(1, 4, "piercing"),
         ["finesse", "light", "thrown"],
         20,
         60
@@ -2331,7 +2381,7 @@
         "handaxe",
         "simple",
         "melee",
-        dd(1, 6, "slashing"),
+        _dd(1, 6, "slashing"),
         ["light", "thrown"],
         20,
         60
@@ -2341,12 +2391,12 @@
   };
   var Mace = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "mace", "simple", "melee", dd(1, 6, "bludgeoning"));
+      super(g2, "mace", "simple", "melee", _dd(1, 6, "bludgeoning"));
     }
   };
   var Quarterstaff = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "quarterstaff", "simple", "melee", dd(1, 6, "bludgeoning"), [
+      super(g2, "quarterstaff", "simple", "melee", _dd(1, 6, "bludgeoning"), [
         "versatile"
       ]);
       this.iconUrl = quarterstaff_default;
@@ -2354,7 +2404,7 @@
   };
   var Sickle = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "sickle", "simple", "melee", dd(1, 4, "slashing"), ["light"]);
+      super(g2, "sickle", "simple", "melee", _dd(1, 4, "slashing"), ["light"]);
     }
   };
   var Spear = class extends AbstractWeapon {
@@ -2364,7 +2414,7 @@
         "spear",
         "simple",
         "melee",
-        dd(1, 6, "piercing"),
+        _dd(1, 6, "piercing"),
         ["thrown", "versatile"],
         20,
         60
@@ -2380,7 +2430,7 @@
         "light crossbow",
         "simple",
         "ranged",
-        dd(1, 8, "piercing"),
+        _dd(1, 8, "piercing"),
         ["ammunition", "loading", "two-handed"],
         80,
         320
@@ -2396,7 +2446,7 @@
         "dart",
         "simple",
         "ranged",
-        dd(1, 4, "piercing"),
+        _dd(1, 4, "piercing"),
         ["finesse", "thrown"],
         20,
         60
@@ -2411,7 +2461,7 @@
         "sling",
         "simple",
         "ranged",
-        dd(1, 4, "bludgeoning"),
+        _dd(1, 4, "bludgeoning"),
         ["ammunition"],
         30,
         120
@@ -2421,7 +2471,7 @@
   };
   var Longsword = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "longsword", "martial", "melee", dd(1, 8, "slashing"), [
+      super(g2, "longsword", "martial", "melee", _dd(1, 8, "slashing"), [
         "versatile"
       ]);
       this.iconUrl = longsword_default;
@@ -2429,12 +2479,12 @@
   };
   var Rapier = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "rapier", "martial", "melee", dd(1, 8, "piercing"), ["finesse"]);
+      super(g2, "rapier", "martial", "melee", _dd(1, 8, "piercing"), ["finesse"]);
     }
   };
   var Shortsword = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "shortsword", "martial", "melee", dd(1, 6, "piercing"), [
+      super(g2, "shortsword", "martial", "melee", _dd(1, 6, "piercing"), [
         "finesse",
         "light"
       ]);
@@ -2447,7 +2497,7 @@
         "trident",
         "martial",
         "melee",
-        dd(1, 6, "piercing"),
+        _dd(1, 6, "piercing"),
         ["thrown", "versatile"],
         20,
         60
@@ -2463,7 +2513,7 @@
         "heavy crossbow",
         "martial",
         "ranged",
-        dd(1, 10, "piercing"),
+        _dd(1, 10, "piercing"),
         ["ammunition", "heavy", "loading", "two-handed"],
         100,
         400
@@ -3187,8 +3237,18 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         ({ detail: { attacker, critical, interrupt, map } }) => {
           if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
             attacker.spendResource(ChaoticBurstResource);
-            const a = g2.dice.roll({ type: "damage", attacker, size: 8 }).value;
-            const b = g2.dice.roll({ type: "damage", attacker, size: 8 }).value;
+            const a = g2.dice.roll({
+              source: chaoticBurst,
+              type: "damage",
+              attacker,
+              size: 8
+            }).value;
+            const b = g2.dice.roll({
+              source: chaoticBurst,
+              type: "damage",
+              attacker,
+              size: 8
+            }).value;
             const addBurst = (type) => map.add(type, a + b);
             if (a === b)
               addBurst(chaoticBurstTypes[a - 1]);
@@ -3873,12 +3933,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var Evocation_default = Evocation;
 
   // src/aim.ts
-  function addPoints(a, b) {
-    return { x: a.x + b.x, y: a.y + b.y };
-  }
-  function mulPoint(p, mul) {
-    return { x: p.x * mul, y: p.y * mul };
-  }
   var eighth = Math.PI / 4;
   var eighthOffset = eighth / 2;
   var octant1 = eighthOffset;
@@ -4005,7 +4059,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { point: new PointResolver(g2, 15) },
         void 0,
         void 0,
-        [dd(damageDice, 10, damageType)]
+        [_dd(damageDice, 10, damageType)]
       );
       this.damageType = damageType;
       this.damageDice = damageDice;
@@ -4279,7 +4333,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 2, 60) }),
-    getDamage: (g2, caster) => [dd(getCantripDice(caster), 6, "acid")],
+    getDamage: (g2, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g2, caster, { targets }) => targets,
     check(g2, { targets }, ec) {
       if (isCombatantArray(targets) && targets.length === 2) {
@@ -4419,7 +4473,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getDamage: (g2, caster) => [dd(getCantripDice(caster), 10, "fire")],
+    getDamage: (g2, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
@@ -4453,7 +4507,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getDamage: (_2, caster) => [dd(getCantripDice(caster), 6, "psychic")],
+    getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
@@ -4519,7 +4573,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getDamage: (_2, caster) => [dd(getCantripDice(caster), 8, "cold")],
+    getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { target }) {
@@ -4554,8 +4608,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getAffectedArea: (g2, caster, { target }) => target && [getArea(g2, target)],
     getDamage: (g2, caster, { slot }) => [
-      dd(1, 10, "piercing"),
-      dd(1 + (slot != null ? slot : 1), 6, "cold")
+      _dd(1, 10, "piercing"),
+      _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
     getTargets: (g2, caster, { target }) => g2.getInside(getArea(g2, target)),
     apply(_0, _1, _2, _3) {
@@ -4889,7 +4943,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         },
         "bonus action",
         void 0,
-        [dd(2, 6, "fire")]
+        [_dd(2, 6, "fire")]
       );
       this.method = method;
     }
@@ -4928,7 +4982,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getTargets: (g2, caster, { points }) => points.flatMap(
       (centre) => g2.getInside({ type: "sphere", centre, radius: 5 })
     ),
-    getDamage: () => [dd(2, 6, "fire")],
+    getDamage: () => [_dd(2, 6, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { points, slot }) {
         const meteors = slot * 2;
@@ -4984,7 +5038,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea2(point)],
-    getDamage: (g2, caster, { slot }) => [dd(5 + (slot != null ? slot : 3), 6, "fire")],
+    getDamage: (g2, caster, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea2(point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
@@ -5091,7 +5145,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       shape: new ChoiceResolver(g2, shapeChoices)
     }),
     getTargets: () => [],
-    getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 4) + 1, 8, "fire")],
+    getDamage: (g2, caster, { slot }) => [_dd((slot != null ? slot : 4) + 1, 8, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
       });
@@ -6650,7 +6704,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a bit of fur and a rod of amber, crystal, or glass",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
-    getDamage: (g2, caster, { slot }) => [dd((slot != null ? slot : 3) + 5, 6, "lightning")],
+    getDamage: (g2, caster, { slot }) => [_dd((slot != null ? slot : 3) + 5, 6, "lightning")],
     getAffectedArea: (g2, caster, { point }) => point && [getArea3(g2, caster, point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea3(g2, caster, point)),
     apply(_0, _1, _2, _3) {
@@ -6821,8 +6875,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getAffectedArea: (g2, caster, { point }) => point && [getArea4(point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea4(point)),
     getDamage: (g2, caster, { slot }) => [
-      dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
-      dd(4, 6, "cold")
+      _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
+      _dd(4, 6, "cold")
     ],
     apply(g2, caster, method, config) {
       return __async(this, null, function* () {
@@ -6909,7 +6963,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a small crystal or glass cone",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
-    getDamage: (g2, caster, { slot }) => [dd(3 + (slot != null ? slot : 5), 8, "cold")],
+    getDamage: (g2, caster, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g2, caster, { point }) => point && [getArea5(g2, caster, point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea5(g2, caster, point)),
     apply(_0, _1, _2, _3) {
@@ -7264,7 +7318,7 @@ The creature is aware of this effect before it makes its attack against you.`
         { target: new TargetResolver(g2, 60) },
         void 0,
         void 0,
-        [dd(1, 6, "bludgeoning")]
+        [_dd(1, 6, "bludgeoning")]
       );
       this.method = method;
       this.unsubscribe = unsubscribe;
@@ -7449,7 +7503,7 @@ The creature is aware of this effect before it makes its attack against you.`
         weapon.name,
         weapon.category,
         weapon.rangeCategory,
-        dd(1, size, weapon.damage.damageType),
+        _dd(1, size, weapon.damage.damageType),
         weapon.properties,
         weapon.shortRange,
         weapon.longRange
@@ -7679,7 +7733,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   var import_hooks15 = __toESM(require_hooks());
 
   // src/utils/config.ts
-  function check(g2, action, config) {
+  function getConfigErrors(g2, action, config) {
     const ec = g2.check(action, config);
     action.check(config, ec);
     for (const [key, resolver] of Object.entries(action.getConfig(config))) {
@@ -7689,7 +7743,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return ec;
   }
   function checkConfig(g2, action, config) {
-    return check(g2, action, config).result;
+    return getConfigErrors(g2, action, config).result;
   }
 
   // src/ui/ActiveUnitPanel.module.scss
@@ -7707,22 +7761,31 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   // src/ui/SVGIcon.tsx
   var import_hooks = __toESM(require_hooks());
 
-  // src/ui/utils/fetchCache.ts
-  var promiseCache = /* @__PURE__ */ new Map();
-  function cachedFetch(src, init) {
-    return __async(this, null, function* () {
-      const cached = promiseCache.get(src);
+  // src/ui/utils/SVGCache.ts
+  var import_preact = __toESM(require_preact());
+  var FetchCache = class {
+    constructor(init) {
+      this.init = init;
+      this.cache = /* @__PURE__ */ new Map();
+    }
+    get(src) {
+      const cached = this.cache.get(src);
       if (cached)
         return cached;
-      const promise = fetch(src, init).then((r2) => r2.text());
-      promiseCache.set(src, promise);
+      const promise = fetch(src, this.init).then((r2) => r2.text());
+      this.cache.set(src, promise);
       return promise;
-    });
-  }
+    }
+  };
+  var SVGCacheContext = (0, import_preact.createContext)({
+    get() {
+      throw new Error("Missing SVGCacheContext.Provider");
+    }
+  });
 
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
-  var import_preact = __toESM(require_preact());
   var import_preact2 = __toESM(require_preact());
+  var import_preact3 = __toESM(require_preact());
   var _ = 0;
   function o(o2, e, n, t, f, l) {
     var s, u, a = {};
@@ -7732,19 +7795,20 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     if ("function" == typeof o2 && (s = o2.defaultProps))
       for (u in s)
         void 0 === a[u] && (a[u] = s[u]);
-    return import_preact.options.vnode && import_preact.options.vnode(i), i;
+    return import_preact2.options.vnode && import_preact2.options.vnode(i), i;
   }
 
   // src/ui/SVGIcon.tsx
   function SVGIcon({ className, color, size, src }) {
+    const cache2 = (0, import_hooks.useContext)(SVGCacheContext);
     const ref = (0, import_hooks.useRef)(null);
     (0, import_hooks.useEffect)(() => {
-      void cachedFetch(src).then((html) => {
+      void cache2.get(src).then((html) => {
         if (ref.current)
           ref.current.innerHTML = html;
         return html;
       });
-    }, [src]);
+    }, [cache2, src]);
     return /* @__PURE__ */ o(
       "div",
       {
@@ -7760,6 +7824,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   function IconButton({
     onClick,
     alt,
+    disabled,
     icon,
     size = 48,
     sub,
@@ -7769,6 +7834,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "button",
       {
         className: IconButton_module_default.main,
+        disabled,
         style: { width: size, height: size },
         onClick,
         title: alt,
@@ -8008,7 +8074,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       }
     }, [name, shape, tags]);
     const points = (0, import_hooks3.useMemo)(() => Array.from(resolveArea(shape)), [shape]);
-    return /* @__PURE__ */ o(import_preact2.Fragment, { children: [
+    return /* @__PURE__ */ o(import_preact3.Fragment, { children: [
       main,
       points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { shape, point: p }, i))
     ] });
@@ -8026,34 +8092,70 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   // src/ui/UnitMoveButton.tsx
   var import_hooks4 = __toESM(require_hooks());
 
+  // src/ui/icons/e.svg
+  var e_default = "./e-DATSAPHV.svg";
+
+  // src/ui/icons/n.svg
+  var n_default = "./n-2BLT76O4.svg";
+
+  // src/ui/icons/ne.svg
+  var ne_default = "./ne-WAOZPP55.svg";
+
+  // src/ui/icons/nw.svg
+  var nw_default = "./nw-EMUGHXVG.svg";
+
+  // src/ui/icons/s.svg
+  var s_default = "./s-4OPBNP4F.svg";
+
+  // src/ui/icons/se.svg
+  var se_default = "./se-XCDEOBHI.svg";
+
+  // src/ui/icons/sw.svg
+  var sw_default = "./sw-NWNDSPVE.svg";
+
+  // src/ui/icons/w.svg
+  var w_default = "./w-IMIMIJNF.svg";
+
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_tp0xi_5",
-    "moveN": "_moveN_tp0xi_22",
-    "moveE": "_moveE_tp0xi_28",
-    "moveS": "_moveS_tp0xi_34",
-    "moveW": "_moveW_tp0xi_40"
+    "main": "_main_18tku_5",
+    "moveE": "_moveE_18tku_17",
+    "moveSE": "_moveSE_18tku_23",
+    "moveS": "_moveS_18tku_23",
+    "moveSW": "_moveSW_18tku_34",
+    "moveW": "_moveW_18tku_39",
+    "moveNW": "_moveNW_18tku_45",
+    "moveN": "_moveN_18tku_45",
+    "moveNE": "_moveNE_18tku_56"
   };
 
   // src/ui/UnitMoveButton.tsx
-  var makeButtonType = (className, emoji, label, dx, dy) => ({ className: UnitMoveButton_module_default[className], emoji, label, dx, dy });
+  var makeButtonType = (className, iconUrl, label) => ({
+    className: UnitMoveButton_module_default[className],
+    iconUrl,
+    label
+  });
   var buttonTypes = {
-    north: makeButtonType("moveN", "\u2B06\uFE0F", "Move North", 0, -5),
-    east: makeButtonType("moveE", "\u27A1\uFE0F", "Move East", 5, 0),
-    south: makeButtonType("moveS", "\u2B07\uFE0F", "Move South", 0, 5),
-    west: makeButtonType("moveW", "\u2B05\uFE0F", "Move West", -5, 0)
+    east: makeButtonType("moveE", e_default, "Move East"),
+    southeast: makeButtonType("moveSE", se_default, "Move Southeast"),
+    south: makeButtonType("moveS", s_default, "Move South"),
+    southwest: makeButtonType("moveSW", sw_default, "Move Southwest"),
+    west: makeButtonType("moveW", w_default, "Move West"),
+    northwest: makeButtonType("moveNW", nw_default, "Move Northwest"),
+    north: makeButtonType("moveN", n_default, "Move North"),
+    northeast: makeButtonType("moveNE", ne_default, "Move Northeast")
   };
   function UnitMoveButton({ disabled, onClick, type }) {
-    const { className, emoji, label, dx, dy } = (0, import_hooks4.useMemo)(
+    const { className, iconUrl, label } = (0, import_hooks4.useMemo)(
       () => buttonTypes[type],
       [type]
     );
     const clicked = (0, import_hooks4.useCallback)(
       (e) => {
         e.stopPropagation();
-        onClick(dx, dy);
+        onClick(type);
       },
-      [dx, dy, onClick]
+      [type, onClick]
     );
     return /* @__PURE__ */ o(
       "button",
@@ -8062,7 +8164,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         className: classnames(UnitMoveButton_module_default.main, className),
         onClick: clicked,
         "aria-label": label,
-        children: emoji
+        children: /* @__PURE__ */ o(SVGIcon, { src: iconUrl, size: 26 })
       }
     );
   }
@@ -8085,7 +8187,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       [onClick, u]
     );
     const moved = (0, import_hooks5.useCallback)(
-      (dx, dy) => onMove(u.who, dx, dy),
+      (dir) => onMove(u.who, dir),
       [onMove, u]
     );
     return (
@@ -8107,11 +8209,43 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
                 src: u.img
               }
             ),
-            isActive && /* @__PURE__ */ o(import_preact2.Fragment, { children: [
-              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "north" }),
+            isActive && /* @__PURE__ */ o(import_preact3.Fragment, { children: [
               /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "east" }),
+              /* @__PURE__ */ o(
+                UnitMoveButton,
+                {
+                  disabled,
+                  onClick: moved,
+                  type: "southeast"
+                }
+              ),
               /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "south" }),
-              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "west" })
+              /* @__PURE__ */ o(
+                UnitMoveButton,
+                {
+                  disabled,
+                  onClick: moved,
+                  type: "southwest"
+                }
+              ),
+              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "west" }),
+              /* @__PURE__ */ o(
+                UnitMoveButton,
+                {
+                  disabled,
+                  onClick: moved,
+                  type: "northwest"
+                }
+              ),
+              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "north" }),
+              /* @__PURE__ */ o(
+                UnitMoveButton,
+                {
+                  disabled,
+                  onClick: moved,
+                  type: "northeast"
+                }
+              )
             ] })
           ]
         }
@@ -8424,7 +8558,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       [action]
     );
     const errors = (0, import_hooks7.useMemo)(
-      () => check(g2, action, config).messages,
+      () => getConfigErrors(g2, action, config).messages,
       [g2, action, config]
     );
     const disabled = (0, import_hooks7.useMemo)(() => errors.length > 0, [errors]);
@@ -8870,6 +9004,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.tsx
   function App({ g: g2, onMount }) {
+    const cache2 = (0, import_hooks15.useContext)(SVGCacheContext);
     const [target, setTarget] = (0, import_hooks15.useState)();
     const [action, setAction] = (0, import_hooks15.useState)();
     const [actionMenu, setActionMenu] = (0, import_hooks15.useState)({
@@ -8909,21 +9044,21 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       for (const [who] of g2.combatants) {
         for (const item of who.inventory)
           if (item.iconUrl)
-            cachedFetch(item.iconUrl);
+            cache2.get(item.iconUrl);
         for (const item of who.equipment)
           if (item.iconUrl)
-            cachedFetch(item.iconUrl);
+            cache2.get(item.iconUrl);
         for (const item of who.knownSpells)
           if (item.icon)
-            cachedFetch(item.icon.url);
+            cache2.get(item.icon.url);
         for (const item of who.preparedSpells)
           if (item.icon)
-            cachedFetch(item.icon.url);
+            cache2.get(item.icon.url);
         for (const item of who.spellcastingMethods)
           if (item.icon)
-            cachedFetch(item.icon.url);
+            cache2.get(item.icon.url);
       }
-    }, [g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
+    }, [cache2, g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
     const onExecuteAction = (0, import_hooks15.useCallback)(
       (action2, config) => {
         setAction(void 0);
@@ -8997,9 +9132,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       [g2]
     );
     const onMoveCombatant = (0, import_hooks15.useCallback)(
-      (who, dx, dy) => {
+      (who, dir) => {
         hideActionMenu();
-        void g2.move(who, dx, dy);
+        void g2.move(who, dir);
       },
       [g2, hideActionMenu]
     );
@@ -9056,10 +9191,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/index.tsx
+  var cache = new FetchCache();
   var g = new Engine();
   window.g = g;
-  (0, import_preact3.render)(
-    /* @__PURE__ */ o(
+  (0, import_preact4.render)(
+    /* @__PURE__ */ o(SVGCacheContext.Provider, { value: cache, children: /* @__PURE__ */ o(
       App,
       {
         g,
@@ -9083,7 +9219,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           g.start();
         }
       }
-    ),
+    ) }),
     document.body
   );
 })();

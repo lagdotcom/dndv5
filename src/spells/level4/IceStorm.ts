@@ -2,7 +2,7 @@ import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { SpecifiedCylinder } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
 const getArea = (centre: Point): SpecifiedCylinder => ({
@@ -25,8 +25,8 @@ const IceStorm = scalingSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
   getTargets: (g, caster, { point }) => g.getInside(getArea(point)),
   getDamage: (g, caster, { slot }) => [
-    dd((slot ?? 4) - 2, 8, "bludgeoning"),
-    dd(4, 6, "cold"),
+    _dd((slot ?? 4) - 2, 8, "bludgeoning"),
+    _dd(4, 6, "cold"),
   ],
 
   async apply(g, caster, method, config) {

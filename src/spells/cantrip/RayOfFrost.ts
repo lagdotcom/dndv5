@@ -1,7 +1,7 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
@@ -22,7 +22,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
-  getDamage: (_, caster) => [dd(getCantripDice(caster), 8, "cold")],
+  getDamage: (_, caster) => [_dd(getCantripDice(caster), 8, "cold")],
   getTargets: (g, caster, { target }) => [target],
 
   async apply(g, attacker, method, { target }) {

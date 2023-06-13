@@ -11,7 +11,7 @@ import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
 import Resolver from "../types/Resolver";
-import { check, checkConfig } from "../utils/config";
+import { checkConfig, getConfigErrors } from "../utils/config";
 import { getDiceAverage } from "../utils/dnd";
 import { enumerate } from "../utils/numbers";
 import { describePoint, describeRange } from "../utils/text";
@@ -303,7 +303,7 @@ export default function ChooseActionConfigPanel<T extends object>({
   );
 
   const errors = useMemo(
-    () => check(g, action, config).messages,
+    () => getConfigErrors(g, action, config).messages,
     [g, action, config]
   );
   const disabled = useMemo(() => errors.length > 0, [errors]);

@@ -4,26 +4,15 @@
 
 .main {
   position: absolute;
-  width: var(--movebtn-size);
-  height: var(--movebtn-size);
-  margin: 0;
   padding: 0;
-  font-size: 20px;
   cursor: pointer;
   background: #ccc;
   z-index: 21;
-  display: flex;
-  justify-content: center;
+  opacity: 0.75;
 
   &:hover {
     background: #eee;
   }
-}
-
-.moveN {
-  top: 0;
-  left: 50%;
-  margin-left: calc(var(--movebtn-size) / -2);
 }
 
 .moveE {
@@ -31,15 +20,34 @@
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-
+.moveSE {
+  right: 0;
+  bottom: 0;
+}
 .moveS {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-
+.moveSW {
+  left: 0;
+  bottom: 0;
+}
 .moveW {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
+}
+.moveNW {
+  left: 0;
+  top: 0;
+}
+.moveN {
+  top: 0;
+  left: 50%;
+  margin-left: calc(var(--movebtn-size) / -2);
+}
+.moveNE {
+  right: 0;
+  top: 0;
 }

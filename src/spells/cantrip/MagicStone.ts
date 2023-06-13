@@ -7,7 +7,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
 
 const MagicStoneResource = new TemporaryResource("Magic Stone", 3);
@@ -27,7 +27,7 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, 60) },
       undefined,
       undefined,
-      [dd(1, 6, "bludgeoning")]
+      [_dd(1, 6, "bludgeoning")]
     );
 
     this.isAttack = true;

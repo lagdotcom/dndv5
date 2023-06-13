@@ -1,6 +1,6 @@
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
@@ -14,7 +14,7 @@ const FireBolt = simpleSpell<HasTarget>({
   lists: ["Artificer", "Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
-  getDamage: (g, caster) => [dd(getCantripDice(caster), 10, "fire")],
+  getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
   getTargets: (g, caster, { target }) => [target],
 
   async apply(g, attacker, method, { target }) {

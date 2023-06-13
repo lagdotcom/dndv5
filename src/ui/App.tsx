@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useContext, useEffect, useState } from "preact/hooks";
 
 import Engine from "../Engine";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import MoveDirection from "../types/MoveDirection";
 import Point from "../types/Point";
 import { checkConfig } from "../utils/config";
 import ActiveUnitPanel from "./ActiveUnitPanel";
@@ -13,7 +14,6 @@ import EventLog from "./EventLog";
 import ListChoiceDialog from "./ListChoiceDialog";
 import Menu, { MenuItem } from "./Menu";
 import MultiListChoiceDialog from "./MultiListChoiceDialog";
-import cachedFetch from "./utils/fetchCache";
 import {
   actionAreas,
   activeCombatant,
@@ -27,6 +27,7 @@ import {
   wantsCombatant,
   wantsPoint,
 } from "./utils/state";
+import { SVGCacheContext } from "./utils/SVGCache";
 import { getUnitData, UnitData } from "./utils/types";
 import YesNoDialog from "./YesNoDialog";
 
@@ -43,6 +44,7 @@ interface ActionMenuState {
 }
 
 export default function App({ g, onMount }: Props) {
+  const cache = useContext(SVGCacheContext);
   const [target, setTarget] = useState<Combatant>();
   const [action, setAction] = useState<Action>();
   const [actionMenu, setActionMenu] = useState<ActionMenuState>({
@@ -90,17 +92,17 @@ export default function App({ g, onMount }: Props) {
     // pre-fetch icons
     for (const [who] of g.combatants) {
       for (const item of who.inventory)
-        if (item.iconUrl) cachedFetch(item.iconUrl);
+        if (item.iconUrl) cache.get(item.iconUrl);
       for (const item of who.equipment)
-        if (item.iconUrl) cachedFetch(item.iconUrl);
+        if (item.iconUrl) cache.get(item.iconUrl);
       for (const item of who.knownSpells)
-        if (item.icon) cachedFetch(item.icon.url);
+        if (item.icon) cache.get(item.icon.url);
       for (const item of who.preparedSpells)
-        if (item.icon) cachedFetch(item.icon.url);
+        if (item.icon) cache.get(item.icon.url);
       for (const item of who.spellcastingMethods)
-        if (item.icon) cachedFetch(item.icon.url);
+        if (item.icon) cache.get(item.icon.url);
     }
-  }, [g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
+  }, [cache, g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
 
   const onExecuteAction = useCallback(
     <T extends object>(action: Action<T>, config: T) => {
@@ -190,9 +192,9 @@ export default function App({ g, onMount }: Props) {
   );
 
   const onMoveCombatant = useCallback(
-    (who: Combatant, dx: number, dy: number) => {
+    (who: Combatant, dir: MoveDirection) => {
       hideActionMenu();
-      void g.move(who, dx, dy);
+      void g.move(who, dir);
     },
     [g, hideActionMenu]
   );

@@ -47,8 +47,18 @@ export const chaoticBurst: Enchantment<"weapon"> = {
         ) {
           attacker.spendResource(ChaoticBurstResource);
 
-          const a = g.dice.roll({ type: "damage", attacker, size: 8 }).value;
-          const b = g.dice.roll({ type: "damage", attacker, size: 8 }).value;
+          const a = g.dice.roll({
+            source: chaoticBurst,
+            type: "damage",
+            attacker,
+            size: 8,
+          }).value;
+          const b = g.dice.roll({
+            source: chaoticBurst,
+            type: "damage",
+            attacker,
+            size: 8,
+          }).value;
           const addBurst = (type: DamageType) => map.add(type, a + b);
 
           if (a === b) addBurst(chaoticBurstTypes[a - 1]);

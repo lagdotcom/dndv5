@@ -2,7 +2,7 @@ import { HasPoint } from "../../configs";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import PointResolver from "../../resolvers/PointResolver";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
 type Shape = "line" | "ring";
@@ -28,7 +28,7 @@ const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
     shape: new ChoiceResolver(g, shapeChoices),
   }),
   getTargets: () => [],
-  getDamage: (g, caster, { slot }) => [dd((slot ?? 4) + 1, 8, "fire")],
+  getDamage: (g, caster, { slot }) => [_dd((slot ?? 4) + 1, 8, "fire")],
 
   async apply(g, caster, method, { point, shape }) {
     /* TODO [SIGHT] You create a wall of fire on a solid surface within range. You can make the wall up to 60 feet long, 20 feet high, and 1 foot thick, or a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall is opaque and lasts for the duration.

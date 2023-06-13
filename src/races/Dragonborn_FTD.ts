@@ -13,7 +13,7 @@ import { SpecifiedEffectShape } from "../types/EffectArea";
 import ImplementationStatus from "../types/ImplementationStatus";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
-import { dd } from "../utils/dice";
+import { _dd } from "../utils/dice";
 import { getSaveDC } from "../utils/dnd";
 import { resistanceFeature } from "./common";
 
@@ -46,7 +46,7 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
       { point: new PointResolver(g, 15) },
       undefined,
       undefined,
-      [dd(damageDice, 10, damageType)]
+      [_dd(damageDice, 10, damageType)]
     );
 
     this.isAttack = true;

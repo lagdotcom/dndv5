@@ -1,6 +1,7 @@
 import { useCallback } from "preact/hooks";
 
 import Combatant from "../types/Combatant";
+import MoveDirection from "../types/MoveDirection";
 import styles from "./Unit.module.scss";
 import UnitMoveButton from "./UnitMoveButton";
 import { scale } from "./utils/state";
@@ -9,7 +10,7 @@ import { UnitData } from "./utils/types";
 interface Props {
   isActive: boolean;
   onClick(who: Combatant, e: MouseEvent): void;
-  onMove(who: Combatant, dx: number, dy: number): void;
+  onMove(who: Combatant, dir: MoveDirection): void;
   u: UnitData;
 }
 
@@ -32,7 +33,7 @@ export default function Unit({ isActive, onClick, onMove, u }: Props) {
   );
 
   const moved = useCallback(
-    (dx: number, dy: number) => onMove(u.who, dx, dy),
+    (dir: MoveDirection) => onMove(u.who, dir),
     [onMove, u]
   );
 
@@ -52,10 +53,30 @@ export default function Unit({ isActive, onClick, onMove, u }: Props) {
       />
       {isActive && (
         <>
-          <UnitMoveButton disabled={disabled} onClick={moved} type="north" />
           <UnitMoveButton disabled={disabled} onClick={moved} type="east" />
+          <UnitMoveButton
+            disabled={disabled}
+            onClick={moved}
+            type="southeast"
+          />
           <UnitMoveButton disabled={disabled} onClick={moved} type="south" />
+          <UnitMoveButton
+            disabled={disabled}
+            onClick={moved}
+            type="southwest"
+          />
           <UnitMoveButton disabled={disabled} onClick={moved} type="west" />
+          <UnitMoveButton
+            disabled={disabled}
+            onClick={moved}
+            type="northwest"
+          />
+          <UnitMoveButton disabled={disabled} onClick={moved} type="north" />
+          <UnitMoveButton
+            disabled={disabled}
+            onClick={moved}
+            type="northeast"
+          />
         </>
       )}
     </div>

@@ -1,13 +1,6 @@
 import { SpecifiedEffectShape } from "./types/EffectArea";
 import Point from "./types/Point";
-
-function addPoints(a: Point, b: Point): Point {
-  return { x: a.x + b.x, y: a.y + b.y };
-}
-
-function mulPoint(p: Point, mul: number): Point {
-  return { x: p.x * mul, y: p.y * mul };
-}
+import { addPoints, mulPoint } from "./utils/points";
 
 const eighth = Math.PI / 4;
 const eighthOffset = eighth / 2;

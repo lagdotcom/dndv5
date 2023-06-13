@@ -20,6 +20,7 @@ import AttackEvent, { AttackEventDetail } from "./events/AttackEvent";
 import BeforeAttackEvent, {
   BeforeAttackDetail,
 } from "./events/BeforeAttackEvent";
+import BeforeMoveEvent from "./events/BeforeMoveEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import CheckActionEvent from "./events/CheckActionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
@@ -46,12 +47,15 @@ import DamageBreakdown from "./types/DamageBreakdown";
 import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
+import MoveDirection from "./types/MoveDirection";
+import MovementType from "./types/MovementType";
 import RollType, { DamageRoll, SavingThrow } from "./types/RollType";
 import SaveDamageResponse from "./types/SaveDamageResponse";
 import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
 import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
+import { movePoint } from "./utils/points";
 import { getSquares } from "./utils/units";
 
 export default class Engine {
@@ -221,36 +225,59 @@ export default class Engine {
     );
   }
 
-  async move(who: Combatant, dx: number, dy: number, hasCost = true) {
+  async move(
+    who: Combatant,
+    direction: MoveDirection,
+    type: MovementType = "speed",
+    moveCost = 5
+  ) {
     const state = this.combatants.get(who);
-    if (!state) return;
+    if (!state) return false;
 
     const old = state.position;
-    const x = old.x + dx;
-    const y = old.y + dy;
+    const position = movePoint(old, direction);
 
-    // TODO [BEFOREMOVE] prevent movement, attacks of opportunity etc.
-
-    if (hasCost) {
-      const cost = Math.max(Math.abs(dx), Math.abs(dy));
-
-      const multiplier = new MultiplierCollector();
-      this.fire(
-        new GetMoveCostEvent({ who, from: old, to: { x, y }, multiplier })
-      );
-
-      who.movedSoFar += cost * multiplier.result;
-    }
-
-    state.position = { x, y };
-    await this.resolve(
-      new CombatantMovedEvent({
+    const pre = await this.resolve(
+      new BeforeMoveEvent({
         who,
-        old,
-        position: state.position,
+        from: old,
+        direction,
+        to: position,
+        type,
+        error: new ErrorCollector(),
         interrupt: new InterruptionCollector(),
       })
     );
+    if (pre.defaultPrevented) return false;
+
+    if (moveCost) {
+      const multiplier = new MultiplierCollector();
+      this.fire(
+        new GetMoveCostEvent({
+          who,
+          from: old,
+          direction,
+          to: position,
+          type,
+          multiplier,
+        })
+      );
+
+      who.movedSoFar += moveCost * multiplier.result;
+    }
+
+    state.position = position;
+    await this.resolve(
+      new CombatantMovedEvent({
+        who,
+        direction,
+        old,
+        position,
+        type,
+        interrupt: new InterruptionCollector(),
+      })
+    );
+    return true;
   }
 
   private async applyDamage(

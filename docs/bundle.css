@@ -99,41 +99,52 @@
 :root {
   --movebtn-size: 30px;
 }
-._main_tp0xi_5 {
+._main_18tku_5 {
   position: absolute;
-  width: var(--movebtn-size);
-  height: var(--movebtn-size);
-  margin: 0;
   padding: 0;
-  font-size: 20px;
   cursor: pointer;
   background: #ccc;
   z-index: 21;
-  display: flex;
-  justify-content: center;
+  opacity: 0.75;
 }
-._main_tp0xi_5:hover {
+._main_18tku_5:hover {
   background: #eee;
 }
-._moveN_tp0xi_22 {
-  top: 0;
-  left: 50%;
-  margin-left: calc(var(--movebtn-size) / -2);
-}
-._moveE_tp0xi_28 {
+._moveE_18tku_17 {
   right: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveS_tp0xi_34 {
+._moveSE_18tku_23 {
+  right: 0;
+  bottom: 0;
+}
+._moveS_18tku_23 {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveW_tp0xi_40 {
+._moveSW_18tku_34 {
+  left: 0;
+  bottom: 0;
+}
+._moveW_18tku_39 {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
+}
+._moveNW_18tku_45 {
+  left: 0;
+  top: 0;
+}
+._moveN_18tku_45 {
+  top: 0;
+  left: 50%;
+  margin-left: calc(var(--movebtn-size) / -2);
+}
+._moveNE_18tku_56 {
+  right: 0;
+  top: 0;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/button.module.scss */

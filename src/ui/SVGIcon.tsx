@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useContext, useEffect, useRef } from "preact/hooks";
 
-import cachedFetch from "./utils/fetchCache";
+import { SVGCacheContext } from "./utils/SVGCache";
 
 interface Props {
   className?: string;
@@ -10,13 +10,14 @@ interface Props {
 }
 
 export default function SVGIcon({ className, color, size, src }: Props) {
+  const cache = useContext(SVGCacheContext);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    void cachedFetch(src).then((html) => {
+    void cache.get(src).then((html) => {
       if (ref.current) ref.current.innerHTML = html;
       return html;
     });
-  }, [src]);
+  }, [cache, src]);
 
   return (
     <div

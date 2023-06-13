@@ -1,32 +1,42 @@
 import { useCallback, useMemo } from "preact/hooks";
 
+import MoveDirection from "../types/MoveDirection";
+import iconEUrl from "./icons/e.svg";
+import iconNUrl from "./icons/n.svg";
+import iconNEUrl from "./icons/ne.svg";
+import iconNWUrl from "./icons/nw.svg";
+import iconSUrl from "./icons/s.svg";
+import iconSEUrl from "./icons/se.svg";
+import iconSWUrl from "./icons/sw.svg";
+import iconWUrl from "./icons/w.svg";
+import SVGIcon from "./SVGIcon";
 import styles from "./UnitMoveButton.module.scss";
 import classnames from "./utils/classnames";
 
-const makeButtonType = (
-  className: keyof typeof styles,
-  emoji: string,
-  label: string,
-  dx: number,
-  dy: number
-) => ({ className: styles[className], emoji, label, dx, dy });
+const makeButtonType = (className: string, iconUrl: string, label: string) => ({
+  className: styles[className],
+  iconUrl,
+  label,
+});
 
 const buttonTypes = {
-  north: makeButtonType("moveN", "⬆️", "Move North", 0, -5),
-  east: makeButtonType("moveE", "➡️", "Move East", 5, 0),
-  south: makeButtonType("moveS", "⬇️", "Move South", 0, 5),
-  west: makeButtonType("moveW", "⬅️", "Move West", -5, 0),
+  east: makeButtonType("moveE", iconEUrl, "Move East"),
+  southeast: makeButtonType("moveSE", iconSEUrl, "Move Southeast"),
+  south: makeButtonType("moveS", iconSUrl, "Move South"),
+  southwest: makeButtonType("moveSW", iconSWUrl, "Move Southwest"),
+  west: makeButtonType("moveW", iconWUrl, "Move West"),
+  northwest: makeButtonType("moveNW", iconNWUrl, "Move Northwest"),
+  north: makeButtonType("moveN", iconNUrl, "Move North"),
+  northeast: makeButtonType("moveNE", iconNEUrl, "Move Northeast"),
 };
-type ButtonType = keyof typeof buttonTypes;
-
 interface Props {
   disabled: boolean;
-  onClick(dx: number, dy: number): void;
-  type: ButtonType;
+  onClick(dir: MoveDirection): void;
+  type: MoveDirection;
 }
 
 export default function UnitMoveButton({ disabled, onClick, type }: Props) {
-  const { className, emoji, label, dx, dy } = useMemo(
+  const { className, iconUrl, label } = useMemo(
     () => buttonTypes[type],
     [type]
   );
@@ -34,9 +44,9 @@ export default function UnitMoveButton({ disabled, onClick, type }: Props) {
   const clicked = useCallback(
     (e: MouseEvent) => {
       e.stopPropagation();
-      onClick(dx, dy);
+      onClick(type);
     },
-    [dx, dy, onClick]
+    [type, onClick]
   );
 
   return (
@@ -46,7 +56,7 @@ export default function UnitMoveButton({ disabled, onClick, type }: Props) {
       onClick={clicked}
       aria-label={label}
     >
-      {emoji}
+      <SVGIcon src={iconUrl} size={26} />
     </button>
   );
 }

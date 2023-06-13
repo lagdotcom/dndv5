@@ -4,6 +4,7 @@ import SVGIcon from "./SVGIcon";
 
 interface Props {
   alt: string;
+  disabled?: boolean;
   icon: ActionIcon;
   size?: number;
   sub?: ActionIcon;
@@ -15,6 +16,7 @@ interface Props {
 export default function IconButton({
   onClick,
   alt,
+  disabled,
   icon,
   size = 48,
   sub,
@@ -23,6 +25,7 @@ export default function IconButton({
   return (
     <button
       className={styles.main}
+      disabled={disabled}
       style={{ width: size, height: size }}
       onClick={onClick}
       title={alt}

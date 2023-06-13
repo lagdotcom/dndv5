@@ -3,7 +3,7 @@ import Engine from "../../Engine";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
@@ -28,8 +28,8 @@ const IceKnife = scalingSpell<HasTarget>({
   getAffectedArea: (g, caster, { target }) => target && [getArea(g, target)],
 
   getDamage: (g, caster, { slot }) => [
-    dd(1, 10, "piercing"),
-    dd(1 + (slot ?? 1), 6, "cold"),
+    _dd(1, 10, "piercing"),
+    _dd(1 + (slot ?? 1), 6, "cold"),
   ],
   getTargets: (g, caster, { target }) => g.getInside(getArea(g, target)),
 

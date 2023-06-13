@@ -6,7 +6,7 @@ import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
-import { dd } from "../../utils/dice";
+import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
@@ -77,7 +77,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
       },
       "bonus action",
       undefined,
-      [dd(2, 6, "fire")]
+      [_dd(2, 6, "fire")]
     );
   }
 
@@ -122,7 +122,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
       g.getInside({ type: "sphere", centre, radius: 5 })
     ),
 
-  getDamage: () => [dd(2, 6, "fire")],
+  getDamage: () => [_dd(2, 6, "fire")],
 
   async apply(g, attacker, method, { points, slot }) {
     const meteors = slot * 2;
