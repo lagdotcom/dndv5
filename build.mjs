@@ -2,9 +2,9 @@
 
 import { build } from "esbuild";
 
-import config from "./buildConfig.mjs";
+import getBuildConfig from "./buildConfig.mjs";
 
-const result = await build(config);
+const result = await build(getBuildConfig());
 
 if (result.errors.length) {
   console.log("--- ERRORS ---");

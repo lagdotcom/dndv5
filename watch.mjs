@@ -2,10 +2,19 @@
 
 import { context } from "esbuild";
 
-import config from "./buildConfig.mjs";
+import getBuildConfig from "./buildConfig.mjs";
 
-const result = await context(config);
-const serve = await result.serve({ servedir: "docs", port: 8080 });
+const ctx = await context(
+  getBuildConfig({
+    sourcemap: true,
+    banner: {
+      js: `new EventSource('/esbuild').addEventListener('change', () => location.reload())`,
+    },
+  })
+);
+await ctx.watch();
+
+const serve = await ctx.serve({ servedir: "docs", port: 8080 });
 console.log(
   `Serving: http://${serve.host === "0.0.0.0" ? "localhost" : serve.host}:${
     serve.port

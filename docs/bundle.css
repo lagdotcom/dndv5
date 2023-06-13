@@ -1,5 +1,5 @@
 /* esbuild-sass-plugin:css-chunk:src/ui/ActiveUnitPanel.module.scss */
-._main_spvfs_1 {
+._main_8dnj2_1 {
   border: 2px solid black;
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
@@ -7,28 +7,28 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/IconButton.module.scss */
-._main_1x2nt_1 {
+._main_13fqt_1 {
   margin: 0;
   padding: 0;
   position: relative;
   box-sizing: content-box;
 }
-._image_1x2nt_8,
-._sub_1x2nt_9 {
+._image_13fqt_8,
+._sub_13fqt_9 {
   position: absolute;
   bottom: 0;
   background-position: center;
   background-size: contain;
 }
-._image_1x2nt_8 {
+._image_13fqt_8 {
   left: 0;
 }
-._sub_1x2nt_9 {
+._sub_13fqt_9 {
   right: 0;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Labelled.module.scss */
-._label_1t2tr_1 {
+._label_ehxn3_1 {
   font-size: 0.8em;
   font-variant: small-caps;
 }
@@ -37,7 +37,7 @@
 :root {
   --scale: 100px;
 }
-._sidePanel_187go_5 {
+._sidePanel_175hi_5 {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -50,7 +50,7 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Battlefield.module.scss */
-._main_ww5d6_1 {
+._main_1lt6z_1 {
   position: absolute;
   left: 0;
   top: 0;
@@ -60,7 +60,7 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/BattlefieldEffect.module.scss */
-._main_1f9zd_1 {
+._main_1mq49_1 {
   position: absolute;
   z-index: 5;
   display: flex;
@@ -68,10 +68,10 @@
   align-items: center;
   opacity: 0.25;
 }
-._label_1f9zd_10 {
+._label_1mq49_10 {
   pointer-events: none;
 }
-._square_1f9zd_14 {
+._square_1mq49_14 {
   position: absolute;
   pointer-events: none;
   z-index: 3;
@@ -80,16 +80,16 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
-._main_1m7p6_1 {
+._main_ap8hd_1 {
   position: absolute;
   cursor: pointer;
   border-radius: 1000px;
   z-index: 20;
 }
-._main_1m7p6_1:hover {
+._main_ap8hd_1:hover {
   box-shadow: silver 0px 0px 4px 4px;
 }
-._token_1m7p6_11 {
+._token_ap8hd_11 {
   position: absolute;
   left: 0;
   top: 0;
@@ -99,7 +99,7 @@
 :root {
   --movebtn-size: 30px;
 }
-._main_1goup_5 {
+._main_tp0xi_5 {
   position: absolute;
   width: var(--movebtn-size);
   height: var(--movebtn-size);
@@ -112,75 +112,75 @@
   display: flex;
   justify-content: center;
 }
-._main_1goup_5:hover {
+._main_tp0xi_5:hover {
   background: #eee;
 }
-._moveN_1goup_22 {
+._moveN_tp0xi_22 {
   top: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveE_1goup_28 {
+._moveE_tp0xi_28 {
   right: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveS_1goup_34 {
+._moveS_tp0xi_34 {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveW_1goup_40 {
+._moveW_tp0xi_40 {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/button.module.scss */
-._active_nvx7c_1 {
+._active_10ff1_1 {
   background-color: yellow;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/ChooseActionConfigPanel.module.scss */
-._main_1djvn_1 {
+._main_15meq_1 {
   border: 2px solid black;
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
   padding: 2px;
 }
-._warning_1djvn_8 {
+._warning_15meq_8 {
   font-size: 0.8em;
   font-weight: bold;
   color: red;
 }
-._warning_1djvn_8::before {
+._warning_15meq_8::before {
   content: "WARNING: ";
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/CombatantRef.module.scss */
-._main_nef8w_1 {
+._main_dtrbs_1 {
   display: inline-flex;
   align-items: center;
 }
-._icon_nef8w_6 {
+._icon_dtrbs_6 {
   width: 20px;
   height: 20px;
   margin-right: 4px;
 }
-._iconLabel_nef8w_12 {
+._iconLabel_dtrbs_12 {
   margin-right: 4px;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/common.module.scss */
-._damageList_yh7tq_1 {
+._damageList_217nc_1 {
   display: inline;
 }
-._damageList_yh7tq_1 span + span::before {
+._damageList_217nc_1 span + span::before {
   content: ", ";
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */
-._container_10k6i_1 {
+._container_8nmu9_1 {
   position: absolute;
   bottom: 8px;
   left: 8px;
@@ -192,27 +192,27 @@
   overflow-y: scroll;
   z-index: 9;
 }
-._main_10k6i_14 {
+._main_8nmu9_14 {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   margin: 0;
   padding: 0;
 }
-._messageWrapper_10k6i_22 {
+._messageWrapper_8nmu9_22 {
   list-style: none;
 }
-._message_10k6i_22 {
+._message_8nmu9_22 {
   display: flex;
   align-items: center;
   padding: 2px;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Dialog.module.scss */
-._main_1t1hm_1 {
+._main_1hd4j_1 {
   z-index: 100;
 }
-._shade_1t1hm_5 {
+._shade_1hd4j_5 {
   z-index: 99;
   position: fixed;
   left: 0;
@@ -224,17 +224,17 @@
   justify-content: center;
   align-items: center;
 }
-._react_1t1hm_18 {
+._react_1hd4j_18 {
   background-color: white;
   padding: 1em;
   border: 2px solid black;
 }
-._title_1t1hm_24 {
+._title_1hd4j_24 {
   font-size: 1.2em;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Menu.module.scss */
-._main_g21m6_1 {
+._main_1j00q_1 {
   position: absolute;
   display: flex;
   z-index: 200;
@@ -246,8 +246,7 @@
   display: flex;
   flex-direction: column;
 }
-._sub_g21m6_14 {
+._sub_1j00q_14 {
   display: flex;
   flex-direction: column;
 }
-/*# sourceMappingURL=bundle.css.map */

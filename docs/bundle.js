@@ -13,7 +13,7 @@
   var __reflectGet = Reflect.get;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __spreadValues = (a, b) => {
-    for (var prop in b ||= {})
+    for (var prop in b || (b = {}))
       if (__hasOwnProp.call(b, prop))
         __defNormalProp(a, prop, b[prop]);
     if (__getOwnPropSymbols)
@@ -7694,14 +7694,14 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ActiveUnitPanel.module.scss
   var ActiveUnitPanel_module_default = {
-    "main": "_main_spvfs_1"
+    "main": "_main_8dnj2_1"
   };
 
   // src/ui/IconButton.module.scss
   var IconButton_module_default = {
-    "main": "_main_1x2nt_1",
-    "image": "_image_1x2nt_8",
-    "sub": "_sub_1x2nt_9"
+    "main": "_main_13fqt_1",
+    "image": "_image_13fqt_8",
+    "sub": "_sub_13fqt_9"
   };
 
   // src/ui/SVGIcon.tsx
@@ -7802,7 +7802,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Labelled.module.scss
   var Labelled_module_default = {
-    "label": "_label_1t2tr_1"
+    "label": "_label_ehxn3_1"
   };
 
   // src/ui/utils/classnames.ts
@@ -7910,7 +7910,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/App.module.scss
   var App_module_default = {
-    "sidePanel": "_sidePanel_187go_5"
+    "sidePanel": "_sidePanel_175hi_5"
   };
 
   // src/ui/Battlefield.tsx
@@ -7918,7 +7918,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
-    "main": "_main_ww5d6_1"
+    "main": "_main_1lt6z_1"
   };
 
   // src/ui/BattlefieldEffect.tsx
@@ -7926,9 +7926,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
-    "main": "_main_1f9zd_1",
-    "label": "_label_1f9zd_10",
-    "square": "_square_1f9zd_14"
+    "main": "_main_1mq49_1",
+    "label": "_label_1mq49_10",
+    "square": "_square_1mq49_14"
   };
 
   // src/ui/BattlefieldEffect.tsx
@@ -8019,8 +8019,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_1m7p6_1",
-    "token": "_token_1m7p6_11"
+    "main": "_main_ap8hd_1",
+    "token": "_token_ap8hd_11"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -8028,11 +8028,11 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_1goup_5",
-    "moveN": "_moveN_1goup_22",
-    "moveE": "_moveE_1goup_28",
-    "moveS": "_moveS_1goup_34",
-    "moveW": "_moveW_1goup_40"
+    "main": "_main_tp0xi_5",
+    "moveN": "_moveN_tp0xi_22",
+    "moveE": "_moveE_tp0xi_28",
+    "moveS": "_moveS_tp0xi_34",
+    "moveW": "_moveW_tp0xi_40"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -8159,20 +8159,20 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/button.module.scss
   var button_module_default = {
-    "active": "_active_nvx7c_1"
+    "active": "_active_10ff1_1"
   };
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_1djvn_1",
-    "warning": "_warning_1djvn_8"
+    "main": "_main_15meq_1",
+    "warning": "_warning_15meq_8"
   };
 
   // src/ui/CombatantRef.module.scss
   var CombatantRef_module_default = {
-    "main": "_main_nef8w_1",
-    "icon": "_icon_nef8w_6",
-    "iconLabel": "_iconLabel_nef8w_12"
+    "main": "_main_dtrbs_1",
+    "icon": "_icon_dtrbs_6",
+    "iconLabel": "_iconLabel_dtrbs_12"
   };
 
   // src/ui/CombatantRef.tsx
@@ -8185,7 +8185,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/common.module.scss
   var common_module_default = {
-    "damageList": "_damageList_yh7tq_1"
+    "damageList": "_damageList_217nc_1"
   };
 
   // src/ui/ChooseActionConfigPanel.tsx
@@ -8502,10 +8502,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
-    "container": "_container_10k6i_1",
-    "main": "_main_10k6i_14",
-    "messageWrapper": "_messageWrapper_10k6i_22",
-    "message": "_message_10k6i_22"
+    "container": "_container_8nmu9_1",
+    "main": "_main_8nmu9_14",
+    "messageWrapper": "_messageWrapper_8nmu9_22",
+    "message": "_message_8nmu9_22"
   };
 
   // src/ui/hooks/useTimeout.ts
@@ -8716,10 +8716,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Dialog.module.scss
   var Dialog_module_default = {
-    "main": "_main_1t1hm_1",
-    "shade": "_shade_1t1hm_5",
-    "react": "_react_1t1hm_18",
-    "title": "_title_1t1hm_24"
+    "main": "_main_1hd4j_1",
+    "shade": "_shade_1hd4j_5",
+    "react": "_react_1hd4j_18",
+    "title": "_title_1hd4j_24"
   };
 
   // src/ui/Dialog.tsx
@@ -8761,8 +8761,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/Menu.module.scss
   var Menu_module_default = {
-    "main": "_main_g21m6_1",
-    "sub": "_sub_g21m6_14"
+    "main": "_main_1j00q_1",
+    "sub": "_sub_1j00q_14"
   };
 
   // src/ui/Menu.tsx
@@ -9087,4 +9087,3 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     document.body
   );
 })();
-//# sourceMappingURL=bundle.js.map

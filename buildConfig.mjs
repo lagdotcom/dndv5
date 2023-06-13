@@ -4,32 +4,34 @@ import { postcssModules, sassPlugin } from "esbuild-sass-plugin";
 
 import CDNModule from "./CDNModule.mjs";
 
-const define = {
-  [`process.env.APP_BUILD_VERSION`]: JSON.stringify(
-    process.env.npm_package_version
-  ),
-};
-
-/** @type {import('esbuild').BuildOptions} */
-const config = {
-  entryPoints: ["src/index.tsx"],
-  bundle: true,
-  sourcemap: true,
-  outfile: "docs/bundle.js",
-  define,
-  // minify: true,
-  plugins: [
-    CDNModule,
-    sassPlugin({
-      filter: /\.module\.scss$/,
-      transform: postcssModules({ basedir: "./src" }),
-    }),
-  ],
-  loader: {
-    ".json": "file",
-    ".ogg": "file",
-    ".png": "file",
-    ".svg": "file",
-  },
-};
-export default config;
+/**
+ * @param {import('esbuild').BuildOptions} [options={}] custom options
+ * @returns {import('esbuild').BuildOptions} combined options
+ */
+export default function getBuildConfig(options = {}) {
+  return {
+    entryPoints: ["src/index.tsx"],
+    bundle: true,
+    outfile: "docs/bundle.js",
+    target: "es2016",
+    define: {
+      [`process.env.APP_BUILD_VERSION`]: JSON.stringify(
+        process.env.npm_package_version
+      ),
+    },
+    plugins: [
+      CDNModule,
+      sassPlugin({
+        filter: /\.module\.scss$/,
+        transform: postcssModules({ basedir: "./src" }),
+      }),
+    ],
+    loader: {
+      ".json": "file",
+      ".ogg": "file",
+      ".png": "file",
+      ".svg": "file",
+    },
+    ...options,
+  };
+}
