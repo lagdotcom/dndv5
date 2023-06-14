@@ -9,9 +9,9 @@ import BattlefieldEffect from "./BattlefieldEffect";
 import Unit from "./Unit";
 import {
   actionAreas,
-  activeCombatantId,
   allCombatants,
   allEffects,
+  movingCombatantId,
   scale,
 } from "./utils/state";
 
@@ -43,7 +43,7 @@ export default function Battlefield({
       {allCombatants.value.map((unit) => (
         <Unit
           key={unit.id}
-          isActive={activeCombatantId.value === unit.id}
+          isMoving={movingCombatantId.value === unit.id}
           u={unit}
           onClick={onClickCombatant}
           onMove={onMoveCombatant}

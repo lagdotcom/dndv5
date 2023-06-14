@@ -1,3 +1,4 @@
+import AfterActionEvent from "./AfterActionEvent";
 import AreaPlacedEvent from "./AreaPlacedEvent";
 import AreaRemovedEvent from "./AreaRemovedEvent";
 import AttackEvent from "./AttackEvent";
@@ -5,6 +6,7 @@ import BeforeAttackEvent from "./BeforeAttackEvent";
 import BeforeCheckEvent from "./BeforeCheckEvent";
 import BeforeMoveEvent from "./BeforeMoveEvent";
 import BeforeSaveEvent from "./BeforeSaveEvent";
+import BoundedMoveEvent from "./BoundedMoveEvent";
 import CheckActionEvent from "./CheckActionEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
@@ -29,6 +31,7 @@ import TurnStartedEvent from "./TurnStartedEvent";
 import YesNoChoiceEvent from "./YesNoChoiceEvent";
 
 export type EventTypes = {
+  AfterAction: AfterActionEvent;
   AreaPlaced: AreaPlacedEvent;
   AreaRemoved: AreaRemovedEvent;
   Attack: AttackEvent;
@@ -36,6 +39,7 @@ export type EventTypes = {
   BeforeCheck: BeforeCheckEvent;
   BeforeMove: BeforeMoveEvent;
   BeforeSave: BeforeSaveEvent;
+  BoundedMove: BoundedMoveEvent;
   CheckAction: CheckActionEvent;
   CombatantDamaged: CombatantDamagedEvent;
   CombatantDied: CombatantDiedEvent;

@@ -14,6 +14,7 @@ import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
 import { Dead } from "./effects";
+import AfterActionEvent from "./events/AfterActionEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
 import AttackEvent, { AttackEventDetail } from "./events/AttackEvent";
@@ -22,6 +23,7 @@ import BeforeAttackEvent, {
 } from "./events/BeforeAttackEvent";
 import BeforeMoveEvent from "./events/BeforeMoveEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
+import StartBoundedMoveEvent from "./events/BoundedMoveEvent";
 import CheckActionEvent from "./events/CheckActionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
@@ -48,6 +50,7 @@ import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
 import MoveDirection from "./types/MoveDirection";
+import MoveHandler from "./types/MoveHandler";
 import MovementType from "./types/MovementType";
 import RollType, { DamageRoll, SavingThrow } from "./types/RollType";
 import SaveDamageResponse from "./types/SaveDamageResponse";
@@ -228,11 +231,11 @@ export default class Engine {
   async move(
     who: Combatant,
     direction: MoveDirection,
-    type: MovementType = "speed",
-    moveCost = 5
+    handler: MoveHandler,
+    type: MovementType = "speed"
   ) {
     const state = this.combatants.get(who);
-    if (!state) return false;
+    if (!state) return "invalid";
 
     const old = state.position;
     const position = movePoint(old, direction);
@@ -243,28 +246,26 @@ export default class Engine {
         from: old,
         direction,
         to: position,
+        handler,
         type,
         error: new ErrorCollector(),
         interrupt: new InterruptionCollector(),
       })
     );
-    if (pre.defaultPrevented) return false;
+    if (pre.defaultPrevented) return "prevented";
 
-    if (moveCost) {
-      const multiplier = new MultiplierCollector();
-      this.fire(
-        new GetMoveCostEvent({
-          who,
-          from: old,
-          direction,
-          to: position,
-          type,
-          multiplier,
-        })
-      );
-
-      who.movedSoFar += moveCost * multiplier.result;
-    }
+    const multiplier = new MultiplierCollector();
+    this.fire(
+      new GetMoveCostEvent({
+        who,
+        from: old,
+        direction,
+        to: position,
+        handler,
+        type,
+        multiplier,
+      })
+    );
 
     state.position = position;
     await this.resolve(
@@ -273,11 +274,16 @@ export default class Engine {
         direction,
         old,
         position,
+        handler,
         type,
         interrupt: new InterruptionCollector(),
       })
     );
-    return true;
+
+    const handlerDone = handler.onMove(who, multiplier.result * 5);
+    if (handlerDone) return "unbind";
+
+    return "ok";
   }
 
   private async applyDamage(
@@ -431,6 +437,14 @@ export default class Engine {
 
   async act<T extends object>(action: Action<T>, config: T) {
     await action.apply(config);
+
+    return this.resolve(
+      new AfterActionEvent({
+        action,
+        config,
+        interrupt: new InterruptionCollector(),
+      })
+    );
   }
 
   getActions(who: Combatant, target?: Combatant) {
@@ -500,5 +514,11 @@ export default class Engine {
     }
 
     return inside;
+  }
+
+  async applyBoundedMove(who: Combatant, handler: MoveHandler) {
+    return new Promise<void>((resolve) =>
+      this.fire(new StartBoundedMoveEvent({ who, handler, resolve }))
+    );
   }
 }

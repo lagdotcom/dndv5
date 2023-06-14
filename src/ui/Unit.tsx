@@ -8,13 +8,13 @@ import { scale } from "./utils/state";
 import { UnitData } from "./utils/types";
 
 interface Props {
-  isActive: boolean;
+  isMoving: boolean;
   onClick(who: Combatant, e: MouseEvent): void;
   onMove(who: Combatant, dir: MoveDirection): void;
   u: UnitData;
 }
 
-export default function Unit({ isActive, onClick, onMove, u }: Props) {
+export default function Unit({ isMoving, onClick, onMove, u }: Props) {
   const containerStyle = {
     left: u.position.x * scale.value,
     top: u.position.y * scale.value,
@@ -51,7 +51,7 @@ export default function Unit({ isActive, onClick, onMove, u }: Props) {
         alt={u.name}
         src={u.img}
       />
-      {isActive && (
+      {isMoving && (
         <>
           <UnitMoveButton disabled={disabled} onClick={moved} type="east" />
           <UnitMoveButton

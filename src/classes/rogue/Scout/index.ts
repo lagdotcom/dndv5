@@ -1,11 +1,37 @@
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
+import YesNoChoice from "../../../interruptions/YesNoChoice";
+import { BoundedMove } from "../../../movement";
 import PCSubclass from "../../../types/PCSubclass";
+import { distance } from "../../../utils/units";
 
-// TODO [BOUNDEDMOVE]
-const Skirmisher = notImplementedFeature(
+const Skirmisher = new SimpleFeature(
   "Skirmisher",
-  `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
+  `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
+  (g, me) => {
+    g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+      if (
+        who.side !== me.side &&
+        me.time.has("reaction") &&
+        distance(g, me, who) <= 5
+      )
+        interrupt.add(
+          new YesNoChoice(
+            me,
+            Skirmisher,
+            "Skirmisher",
+            `Use ${me.name}'s reaction to move half their speed?`,
+            async () => {
+              me.time.delete("reaction");
+              return g.applyBoundedMove(
+                me,
+                new BoundedMove(Skirmisher, me.speed / 2, false)
+              );
+            }
+          )
+        );
+    });
+  }
 );
 
 const Survivalist = new SimpleFeature(

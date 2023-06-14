@@ -1,11 +1,13 @@
 import { computed, signal } from "@preact/signals";
 
+import BoundedMoveEvent from "../../events/BoundedMoveEvent";
 import ListChoiceEvent from "../../events/ListChoiceEvent";
 import MultiListChoiceEvent from "../../events/MultiListChoiceEvent";
 import YesNoChoiceEvent from "../../events/YesNoChoiceEvent";
 import Action from "../../types/Action";
 import Combatant from "../../types/Combatant";
 import EffectArea, { SpecifiedEffectShape } from "../../types/EffectArea";
+import MoveHandler from "../../types/MoveHandler";
 import Point from "../../types/Point";
 import { UnitData } from "./types";
 
@@ -35,6 +37,16 @@ export const chooseManyFromList = signal<MultiListChoiceEvent | undefined>(
 
 export const chooseYesNo = signal<YesNoChoiceEvent | undefined>(undefined);
 
+export const moveBounds = signal<BoundedMoveEvent | undefined>(undefined);
+
+export const moveHandler = signal<MoveHandler | undefined>(undefined);
+
+export const movingCombatantId = signal<number>(NaN);
+
+export const movingCombatant = computed(() =>
+  allCombatants.value.find((u) => u.id === movingCombatantId.value)
+);
+
 export const scale = signal(20);
 
 export const wantsCombatant = signal<Listener<Combatant> | undefined>(
@@ -54,6 +66,10 @@ export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
   chooseFromList,
   chooseManyFromList,
   chooseYesNo,
+  moveBounds,
+  moveHandler,
+  movingCombatantId,
+  movingCombatant,
   scale,
   wantsCombatant,
   wantsPoint,

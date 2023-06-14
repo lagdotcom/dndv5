@@ -10,7 +10,7 @@
   z-index: 21;
   opacity: 0.75;
 
-  &:hover {
+  &:hover:enabled {
     background: #eee;
   }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import Engine from "../Engine";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
@@ -18,10 +18,15 @@ import { describePoint, describeRange } from "../utils/text";
 import buttonStyles from "./button.module.scss";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
-import common from "./common.module.scss";
+import commonStyles from "./common.module.scss";
 import Labelled from "./Labelled";
 import classnames from "./utils/classnames";
-import { actionAreas, wantsCombatant, wantsPoint } from "./utils/state";
+import {
+  actionAreas,
+  activeCombatant,
+  wantsCombatant,
+  wantsPoint,
+} from "./utils/state";
 
 type ChooserProps<T, R = Resolver<T>> = {
   action: Action;
@@ -292,15 +297,15 @@ export default function ChooseActionConfigPanel<T extends object>({
 }: Props<T>) {
   const [config, setConfig] = useState(getInitialConfig(action, initialConfig));
   const patchConfig = useCallback(
-    (key: string, value: unknown) => {
-      setConfig((old) => {
-        const newConfig = { ...old, [key]: value };
-        actionAreas.value = action.getAffectedArea(newConfig);
-        return newConfig;
-      });
-    },
-    [action]
+    (key: string, value: unknown) =>
+      setConfig((old) => ({ ...old, [key]: value })),
+    []
   );
+
+  useEffect(() => {
+    actionAreas.value = action.getAffectedArea(config);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action, activeCombatant.value, config]);
 
   const errors = useMemo(
     () => getConfigErrors(g, action, config).messages,
@@ -357,13 +362,13 @@ export default function ChooseActionConfigPanel<T extends object>({
     ) : null;
 
   return (
-    <aside className={styles.main} aria-label="Action Options">
+    <aside className={commonStyles.panel} aria-label="Action Options">
       <div>{action.name}</div>
       {statusWarning}
       {damage && (
         <div>
           Damage:{" "}
-          <div className={common.damageList}>
+          <div className={commonStyles.damageList}>
             {damage.map((dmg, i) => (
               <span key={i}>
                 {dmg.type === "flat"

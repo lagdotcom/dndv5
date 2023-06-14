@@ -1,5 +1,11 @@
-/* esbuild-sass-plugin:css-chunk:src/ui/ActiveUnitPanel.module.scss */
-._main_8dnj2_1 {
+/* esbuild-sass-plugin:css-chunk:src/ui/common.module.scss */
+._damageList_275hw_1 {
+  display: inline;
+}
+._damageList_275hw_1 span + span::before {
+  content: ", ";
+}
+._panel_275hw_8 {
   border: 2px solid black;
   background-color: white;
   box-shadow: silver 0px 0px 4px 4px;
@@ -99,7 +105,7 @@
 :root {
   --movebtn-size: 30px;
 }
-._main_18tku_5 {
+._main_etih8_5 {
   position: absolute;
   padding: 0;
   cursor: pointer;
@@ -107,42 +113,42 @@
   z-index: 21;
   opacity: 0.75;
 }
-._main_18tku_5:hover {
+._main_etih8_5:hover:enabled {
   background: #eee;
 }
-._moveE_18tku_17 {
+._moveE_etih8_17 {
   right: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveSE_18tku_23 {
+._moveSE_etih8_23 {
   right: 0;
   bottom: 0;
 }
-._moveS_18tku_23 {
+._moveS_etih8_23 {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveSW_18tku_34 {
+._moveSW_etih8_34 {
   left: 0;
   bottom: 0;
 }
-._moveW_18tku_39 {
+._moveW_etih8_39 {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveNW_18tku_45 {
+._moveNW_etih8_45 {
   left: 0;
   top: 0;
 }
-._moveN_18tku_45 {
+._moveN_etih8_45 {
   top: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveNE_18tku_56 {
+._moveNE_etih8_56 {
   right: 0;
   top: 0;
 }
@@ -153,18 +159,12 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/ChooseActionConfigPanel.module.scss */
-._main_15meq_1 {
-  border: 2px solid black;
-  background-color: white;
-  box-shadow: silver 0px 0px 4px 4px;
-  padding: 2px;
-}
-._warning_15meq_8 {
+._warning_q460t_1 {
   font-size: 0.8em;
   font-weight: bold;
   color: red;
 }
-._warning_15meq_8::before {
+._warning_q460t_1::before {
   content: "WARNING: ";
 }
 
@@ -180,14 +180,6 @@
 }
 ._iconLabel_dtrbs_12 {
   margin-right: 4px;
-}
-
-/* esbuild-sass-plugin:css-chunk:src/ui/common.module.scss */
-._damageList_217nc_1 {
-  display: inline;
-}
-._damageList_217nc_1 span + span::before {
-  content: ", ";
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */

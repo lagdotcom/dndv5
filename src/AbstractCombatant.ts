@@ -422,7 +422,7 @@ export default abstract class AbstractCombatant implements Combatant {
   tickEffects(durationTimer: EffectDurationTimer) {
     for (const [effect, config] of this.effects) {
       if (effect.durationTimer === durationTimer) {
-        if (--config.duration <= 1) this.removeEffect(effect);
+        if (--config.duration < 1) this.removeEffect(effect);
       }
     }
   }

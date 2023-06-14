@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useState } from "preact/hooks";
 
 import Engine from "../Engine";
+import { getDefaultMovement } from "../movement";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import MoveDirection from "../types/MoveDirection";
@@ -9,6 +10,7 @@ import { checkConfig } from "../utils/config";
 import ActiveUnitPanel from "./ActiveUnitPanel";
 import styles from "./App.module.scss";
 import Battlefield from "./Battlefield";
+import BoundedMovePanel from "./BoundedMovePanel";
 import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import EventLog from "./EventLog";
 import ListChoiceDialog from "./ListChoiceDialog";
@@ -24,6 +26,9 @@ import {
   chooseFromList,
   chooseManyFromList,
   chooseYesNo,
+  moveBounds,
+  moveHandler,
+  movingCombatantId,
   wantsCombatant,
   wantsPoint,
 } from "./utils/state";
@@ -78,6 +83,8 @@ export default function App({ g, onMount }: Props) {
 
     g.events.on("TurnStarted", ({ detail: { who } }) => {
       activeCombatantId.value = who.id;
+      moveHandler.value = getDefaultMovement(who);
+      movingCombatantId.value = who.id;
       hideActionMenu();
 
       allActions.value = g.getActions(who);
@@ -86,6 +93,12 @@ export default function App({ g, onMount }: Props) {
     g.events.on("ListChoice", (e) => (chooseFromList.value = e));
     g.events.on("MultiListChoice", (e) => (chooseManyFromList.value = e));
     g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e));
+
+    g.events.on("BoundedMove", (e) => {
+      moveBounds.value = e;
+      moveHandler.value = e.detail.handler;
+      movingCombatantId.value = e.detail.who.id;
+    });
 
     onMount?.(g);
 
@@ -191,12 +204,28 @@ export default function App({ g, onMount }: Props) {
     [g]
   );
 
+  const onFinishBoundedMove = useCallback(() => {
+    if (moveBounds.value) {
+      moveBounds.value.detail.resolve();
+      moveBounds.value = undefined;
+      if (g.activeCombatant) {
+        movingCombatantId.value = g.activeCombatant.id;
+        moveHandler.value = getDefaultMovement(g.activeCombatant);
+      }
+    }
+  }, [g]);
+
   const onMoveCombatant = useCallback(
     (who: Combatant, dir: MoveDirection) => {
-      hideActionMenu();
-      void g.move(who, dir);
+      if (moveHandler.value) {
+        hideActionMenu();
+        void g.move(who, dir, moveHandler.value).then((result) => {
+          if (result === "unbind") onFinishBoundedMove();
+          return result;
+        });
+      }
     },
-    [g, hideActionMenu]
+    [g, hideActionMenu, onFinishBoundedMove]
   );
 
   const onPass = useCallback(() => {
@@ -242,6 +271,12 @@ export default function App({ g, onMount }: Props) {
             action={action}
             onCancel={onCancelAction}
             onExecute={onExecuteAction}
+          />
+        )}
+        {moveBounds.value && (
+          <BoundedMovePanel
+            bounds={moveBounds.value}
+            onFinish={onFinishBoundedMove}
           />
         )}
       </div>

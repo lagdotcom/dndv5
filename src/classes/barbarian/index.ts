@@ -1,6 +1,8 @@
 import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
+import EvaluateLater from "../../interruptions/EvaluateLater";
+import { BoundedMove } from "../../movement";
 import ConditionName from "../../types/ConditionName";
 import Item from "../../types/Item";
 import PCClass from "../../types/PCClass";
@@ -89,10 +91,22 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
   }
 );
 
-// TODO [BOUNDEDMOVE]
-const InstinctivePounce = notImplementedFeature(
+const InstinctivePounce = new SimpleFeature(
   "Instinctive Pounce",
-  `As part of the bonus action you take to enter your rage, you can move up to half your speed.`
+  `As part of the bonus action you take to enter your rage, you can move up to half your speed.`,
+  (g, me) => {
+    g.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
+      if (action.name === "Rage" && action.actor === me)
+        interrupt.add(
+          new EvaluateLater(me, InstinctivePounce, async () =>
+            g.applyBoundedMove(
+              me,
+              new BoundedMove(InstinctivePounce, me.speed / 2)
+            )
+          )
+        );
+    });
+  }
 );
 
 // TODO

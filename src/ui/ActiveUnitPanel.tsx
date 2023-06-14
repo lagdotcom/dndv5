@@ -1,5 +1,5 @@
 import Action from "../types/Action";
-import styles from "./ActiveUnitPanel.module.scss";
+import commonStyles from "./common.module.scss";
 import IconButton from "./IconButton";
 import Labelled from "./Labelled";
 import { allActions } from "./utils/state";
@@ -17,7 +17,7 @@ export default function ActiveUnitPanel({
   who,
 }: Props) {
   return (
-    <aside className={styles.main} aria-label="Active Unit">
+    <aside className={commonStyles.panel} aria-label="Active Unit">
       <Labelled label="Current Turn">{who.name}</Labelled>
       <button onClick={onPass}>End Turn</button>
       <hr />

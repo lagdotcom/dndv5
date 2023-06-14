@@ -1365,7 +1365,7 @@
     tickEffects(durationTimer) {
       for (const [effect, config] of this.effects) {
         if (effect.durationTimer === durationTimer) {
-          if (--config.duration <= 1)
+          if (--config.duration < 1)
             this.removeEffect(effect);
         }
       }
@@ -1745,6 +1745,13 @@
     });
   });
 
+  // src/events/AfterActionEvent.ts
+  var AfterActionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AfterAction", { detail });
+    }
+  };
+
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1784,6 +1791,13 @@
   var BeforeSaveEvent = class extends CustomEvent {
     constructor(detail) {
       super("BeforeSave", { detail });
+    }
+  };
+
+  // src/events/BoundedMoveEvent.ts
+  var BoundedMoveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BoundedMove", { detail });
     }
   };
 
@@ -2082,11 +2096,11 @@
         );
       });
     }
-    move(who, direction, type = "speed", moveCost = 5) {
+    move(who, direction, handler, type = "speed") {
       return __async(this, null, function* () {
         const state = this.combatants.get(who);
         if (!state)
-          return false;
+          return "invalid";
         const old = state.position;
         const position = movePoint(old, direction);
         const pre = yield this.resolve(
@@ -2095,27 +2109,26 @@
             from: old,
             direction,
             to: position,
+            handler,
             type,
             error: new ErrorCollector(),
             interrupt: new InterruptionCollector()
           })
         );
         if (pre.defaultPrevented)
-          return false;
-        if (moveCost) {
-          const multiplier = new MultiplierCollector();
-          this.fire(
-            new GetMoveCostEvent({
-              who,
-              from: old,
-              direction,
-              to: position,
-              type,
-              multiplier
-            })
-          );
-          who.movedSoFar += moveCost * multiplier.result;
-        }
+          return "prevented";
+        const multiplier = new MultiplierCollector();
+        this.fire(
+          new GetMoveCostEvent({
+            who,
+            from: old,
+            direction,
+            to: position,
+            handler,
+            type,
+            multiplier
+          })
+        );
         state.position = position;
         yield this.resolve(
           new CombatantMovedEvent({
@@ -2123,11 +2136,15 @@
             direction,
             old,
             position,
+            handler,
             type,
             interrupt: new InterruptionCollector()
           })
         );
-        return true;
+        const handlerDone = handler.onMove(who, multiplier.result * 5);
+        if (handlerDone)
+          return "unbind";
+        return "ok";
       });
     }
     applyDamage(_0, _1) {
@@ -2244,6 +2261,13 @@
     act(action, config) {
       return __async(this, null, function* () {
         yield action.apply(config);
+        return this.resolve(
+          new AfterActionEvent({
+            action,
+            config,
+            interrupt: new InterruptionCollector()
+          })
+        );
       });
     }
     getActions(who, target) {
@@ -2298,6 +2322,13 @@
           inside.push(combatant);
       }
       return inside;
+    }
+    applyBoundedMove(who, handler) {
+      return __async(this, null, function* () {
+        return new Promise(
+          (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
+        );
+      });
     }
   };
 
@@ -3106,10 +3137,54 @@ Once you use this feature, you can't use it again until you finish a short or lo
   };
   var rogue_default = Rogue;
 
+  // src/movement.ts
+  var getDefaultMovement = (who) => ({
+    name: "Movement",
+    maximum: who.speed,
+    provokesOpportunityAttacks: true,
+    onMove(who2, cost) {
+      who2.movedSoFar += cost;
+      return who2.movedSoFar >= who2.speed;
+    }
+  });
+  var BoundedMove = class {
+    constructor(source, maximum, provokesOpportunityAttacks = true) {
+      this.source = source;
+      this.maximum = maximum;
+      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
+      this.name = source.name;
+      this.used = 0;
+    }
+    onMove(who, cost) {
+      this.used += cost;
+      return this.used >= this.maximum;
+    }
+  };
+
   // src/classes/rogue/Scout/index.ts
-  var Skirmisher = notImplementedFeature(
+  var Skirmisher = new SimpleFeature(
     "Skirmisher",
-    `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
+    `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
+    (g2, me) => {
+      g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        if (who.side !== me.side && me.time.has("reaction") && distance(g2, me, who) <= 5)
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              Skirmisher,
+              "Skirmisher",
+              `Use ${me.name}'s reaction to move half their speed?`,
+              () => __async(void 0, null, function* () {
+                me.time.delete("reaction");
+                return g2.applyBoundedMove(
+                  me,
+                  new BoundedMove(Skirmisher, me.speed / 2, false)
+                );
+              })
+            )
+          );
+      });
+    }
   );
   var Survivalist = new SimpleFeature(
     "Survivalist",
@@ -6181,9 +6256,26 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
       });
     }
   );
-  var InstinctivePounce = notImplementedFeature(
+  var InstinctivePounce = new SimpleFeature(
     "Instinctive Pounce",
-    `As part of the bonus action you take to enter your rage, you can move up to half your speed.`
+    `As part of the bonus action you take to enter your rage, you can move up to half your speed.`,
+    (g2, me) => {
+      g2.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
+        if (action.name === "Rage" && action.actor === me)
+          interrupt.add(
+            new EvaluateLater(
+              me,
+              InstinctivePounce,
+              () => __async(void 0, null, function* () {
+                return g2.applyBoundedMove(
+                  me,
+                  new BoundedMove(InstinctivePounce, me.speed / 2)
+                );
+              })
+            )
+          );
+      });
+    }
   );
   var BrutalCritical = notImplementedFeature(
     "Brutal Critical",
@@ -7746,9 +7838,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     return getConfigErrors(g2, action, config).result;
   }
 
-  // src/ui/ActiveUnitPanel.module.scss
-  var ActiveUnitPanel_module_default = {
-    "main": "_main_8dnj2_1"
+  // src/ui/common.module.scss
+  var common_module_default = {
+    "damageList": "_damageList_275hw_1",
+    "panel": "_panel_275hw_8"
   };
 
   // src/ui/IconButton.module.scss
@@ -7929,6 +8022,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     void 0
   );
   var chooseYesNo = (0, import_signals.signal)(void 0);
+  var moveBounds = (0, import_signals.signal)(void 0);
+  var moveHandler = (0, import_signals.signal)(void 0);
+  var movingCombatantId = (0, import_signals.signal)(NaN);
+  var movingCombatant = (0, import_signals.computed)(
+    () => allCombatants.value.find((u) => u.id === movingCombatantId.value)
+  );
   var scale = (0, import_signals.signal)(20);
   var wantsCombatant = (0, import_signals.signal)(
     void 0
@@ -7944,6 +8043,10 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     chooseFromList,
     chooseManyFromList,
     chooseYesNo,
+    moveBounds,
+    moveHandler,
+    movingCombatantId,
+    movingCombatant,
     scale,
     wantsCombatant,
     wantsPoint
@@ -7955,7 +8058,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     onPass,
     who
   }) {
-    return /* @__PURE__ */ o("aside", { className: ActiveUnitPanel_module_default.main, "aria-label": "Active Unit", children: [
+    return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Active Unit", children: [
       /* @__PURE__ */ o(Labelled, { label: "Current Turn", children: who.name }),
       /* @__PURE__ */ o("button", { onClick: onPass, children: "End Turn" }),
       /* @__PURE__ */ o("hr", {}),
@@ -8118,15 +8221,15 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_18tku_5",
-    "moveE": "_moveE_18tku_17",
-    "moveSE": "_moveSE_18tku_23",
-    "moveS": "_moveS_18tku_23",
-    "moveSW": "_moveSW_18tku_34",
-    "moveW": "_moveW_18tku_39",
-    "moveNW": "_moveNW_18tku_45",
-    "moveN": "_moveN_18tku_45",
-    "moveNE": "_moveNE_18tku_56"
+    "main": "_main_etih8_5",
+    "moveE": "_moveE_etih8_17",
+    "moveSE": "_moveSE_etih8_23",
+    "moveS": "_moveS_etih8_23",
+    "moveSW": "_moveSW_etih8_34",
+    "moveW": "_moveW_etih8_39",
+    "moveNW": "_moveNW_etih8_45",
+    "moveN": "_moveN_etih8_45",
+    "moveNE": "_moveNE_etih8_56"
   };
 
   // src/ui/UnitMoveButton.tsx
@@ -8170,7 +8273,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }
 
   // src/ui/Unit.tsx
-  function Unit({ isActive, onClick, onMove, u }) {
+  function Unit({ isMoving, onClick, onMove, u }) {
     const containerStyle = {
       left: u.position.x * scale.value,
       top: u.position.y * scale.value,
@@ -8209,7 +8312,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
                 src: u.img
               }
             ),
-            isActive && /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+            isMoving && /* @__PURE__ */ o(import_preact3.Fragment, { children: [
               /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "east" }),
               /* @__PURE__ */ o(
                 UnitMoveButton,
@@ -8275,7 +8378,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         allCombatants.value.map((unit) => /* @__PURE__ */ o(
           Unit,
           {
-            isActive: activeCombatantId.value === unit.id,
+            isMoving: movingCombatantId.value === unit.id,
             u: unit,
             onClick: onClickCombatant,
             onMove: onMoveCombatant
@@ -8288,6 +8391,19 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     );
   }
 
+  // src/ui/BoundedMovePanel.tsx
+  function BoundedMovePanel({ bounds, onFinish }) {
+    return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Bounded Movement", children: [
+      /* @__PURE__ */ o(Labelled, { label: bounds.detail.handler.name, children: bounds.detail.who.name }),
+      /* @__PURE__ */ o("div", { children: [
+        "Move up to ",
+        bounds.detail.handler.maximum,
+        " feet."
+      ] }),
+      /* @__PURE__ */ o("button", { onClick: onFinish, children: "End Movement Early" })
+    ] });
+  }
+
   // src/ui/ChooseActionConfigPanel.tsx
   var import_hooks7 = __toESM(require_hooks());
 
@@ -8298,8 +8414,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "main": "_main_15meq_1",
-    "warning": "_warning_15meq_8"
+    "warning": "_warning_q460t_1"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -8316,11 +8431,6 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
     ] });
   }
-
-  // src/ui/common.module.scss
-  var common_module_default = {
-    "damageList": "_damageList_217nc_1"
-  };
 
   // src/ui/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
@@ -8548,15 +8658,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }) {
     const [config, setConfig] = (0, import_hooks7.useState)(getInitialConfig(action, initialConfig));
     const patchConfig = (0, import_hooks7.useCallback)(
-      (key, value) => {
-        setConfig((old) => {
-          const newConfig = __spreadProps(__spreadValues({}, old), { [key]: value });
-          actionAreas.value = action.getAffectedArea(newConfig);
-          return newConfig;
-        });
-      },
-      [action]
+      (key, value) => setConfig((old) => __spreadProps(__spreadValues({}, old), { [key]: value })),
+      []
     );
+    (0, import_hooks7.useEffect)(() => {
+      actionAreas.value = action.getAffectedArea(config);
+    }, [action, activeCombatant.value, config]);
     const errors = (0, import_hooks7.useMemo)(
       () => getConfigErrors(g2, action, config).messages,
       [g2, action, config]
@@ -8601,7 +8708,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       [action, config, patchConfig]
     );
     const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
-    return /* @__PURE__ */ o("aside", { className: ChooseActionConfigPanel_module_default.main, "aria-label": "Action Options", children: [
+    return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
       /* @__PURE__ */ o("div", { children: action.name }),
       statusWarning,
       damage && /* @__PURE__ */ o("div", { children: [
@@ -9034,12 +9141,19 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       g2.events.on("AreaRemoved", refreshAreas);
       g2.events.on("TurnStarted", ({ detail: { who } }) => {
         activeCombatantId.value = who.id;
+        moveHandler.value = getDefaultMovement(who);
+        movingCombatantId.value = who.id;
         hideActionMenu();
         allActions.value = g2.getActions(who);
       });
       g2.events.on("ListChoice", (e) => chooseFromList.value = e);
       g2.events.on("MultiListChoice", (e) => chooseManyFromList.value = e);
       g2.events.on("YesNoChoice", (e) => chooseYesNo.value = e);
+      g2.events.on("BoundedMove", (e) => {
+        moveBounds.value = e;
+        moveHandler.value = e.detail.handler;
+        movingCombatantId.value = e.detail.who.id;
+      });
       onMount == null ? void 0 : onMount(g2);
       for (const [who] of g2.combatants) {
         for (const item of who.inventory)
@@ -9131,12 +9245,28 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       },
       [g2]
     );
+    const onFinishBoundedMove = (0, import_hooks15.useCallback)(() => {
+      if (moveBounds.value) {
+        moveBounds.value.detail.resolve();
+        moveBounds.value = void 0;
+        if (g2.activeCombatant) {
+          movingCombatantId.value = g2.activeCombatant.id;
+          moveHandler.value = getDefaultMovement(g2.activeCombatant);
+        }
+      }
+    }, [g2]);
     const onMoveCombatant = (0, import_hooks15.useCallback)(
       (who, dir) => {
-        hideActionMenu();
-        void g2.move(who, dir);
+        if (moveHandler.value) {
+          hideActionMenu();
+          void g2.move(who, dir, moveHandler.value).then((result) => {
+            if (result === "unbind")
+              onFinishBoundedMove();
+            return result;
+          });
+        }
       },
-      [g2, hideActionMenu]
+      [g2, hideActionMenu, onFinishBoundedMove]
     );
     const onPass = (0, import_hooks15.useCallback)(() => {
       setAction(void 0);
@@ -9180,6 +9310,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
             action,
             onCancel: onCancelAction,
             onExecute: onExecuteAction
+          }
+        ),
+        moveBounds.value && /* @__PURE__ */ o(
+          BoundedMovePanel,
+          {
+            bounds: moveBounds.value,
+            onFinish: onFinishBoundedMove
           }
         )
       ] }),
