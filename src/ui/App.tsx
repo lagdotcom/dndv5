@@ -220,7 +220,8 @@ export default function App({ g, onMount }: Props) {
       if (moveHandler.value) {
         hideActionMenu();
         void g.move(who, dir, moveHandler.value).then((result) => {
-          if (result === "unbind") onFinishBoundedMove();
+          if (result.type === "error") console.warn(result.error.messages);
+          else if (result.type === "unbind") onFinishBoundedMove();
           return result;
         });
       }
@@ -275,7 +276,7 @@ export default function App({ g, onMount }: Props) {
         )}
         {moveBounds.value && (
           <BoundedMovePanel
-            bounds={moveBounds.value}
+            bounds={moveBounds.value.detail}
             onFinish={onFinishBoundedMove}
           />
         )}

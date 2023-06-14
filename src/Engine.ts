@@ -41,6 +41,7 @@ import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import GetMoveCostEvent from "./events/GetMoveCostEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
+import { MapSquareSize } from "./MapSquare";
 import PointSet from "./PointSet";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
@@ -235,11 +236,12 @@ export default class Engine {
     type: MovementType = "speed"
   ) {
     const state = this.combatants.get(who);
-    if (!state) return "invalid";
+    if (!state) return { type: "invalid" as const };
 
     const old = state.position;
     const position = movePoint(old, direction);
 
+    const error = new ErrorCollector();
     const pre = await this.resolve(
       new BeforeMoveEvent({
         who,
@@ -248,11 +250,12 @@ export default class Engine {
         to: position,
         handler,
         type,
-        error: new ErrorCollector(),
+        error,
         interrupt: new InterruptionCollector(),
       })
     );
-    if (pre.defaultPrevented) return "prevented";
+    if (pre.defaultPrevented) return { type: "prevented" as const };
+    if (!error.result) return { type: "error" as const, error };
 
     const multiplier = new MultiplierCollector();
     this.fire(
@@ -280,10 +283,10 @@ export default class Engine {
       })
     );
 
-    const handlerDone = handler.onMove(who, multiplier.result * 5);
-    if (handlerDone) return "unbind";
+    const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+    if (handlerDone) return { type: "unbind" as const };
 
-    return "ok";
+    return { type: "ok" as const };
   }
 
   private async applyDamage(

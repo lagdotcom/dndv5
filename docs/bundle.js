@@ -513,272 +513,6 @@
     }
   };
 
-  // src/events/SpellCastEvent.ts
-  var SpellCastEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("SpellCast", { detail });
-    }
-  };
-
-  // src/actions/CastSpell.ts
-  var CastSpell = class {
-    constructor(g2, actor, method, spell) {
-      this.g = g2;
-      this.actor = actor;
-      this.method = method;
-      this.spell = spell;
-      this.name = `${spell.name} (${method.name})`;
-      this.isSpell = true;
-      this.time = spell.time;
-      this.icon = spell.icon;
-      this.subIcon = method.icon;
-    }
-    get status() {
-      return this.spell.status;
-    }
-    getConfig(config) {
-      return this.spell.getConfig(this.g, this.actor, this.method, config);
-    }
-    getAffectedArea(config) {
-      return this.spell.getAffectedArea(this.g, this.actor, config);
-    }
-    getDamage(config) {
-      return this.spell.getDamage(this.g, this.actor, config);
-    }
-    getResource(config) {
-      var _a;
-      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
-      return this.method.getResourceForSpell(this.spell, level, this.actor);
-    }
-    check(config, ec) {
-      if (!this.actor.time.has(this.spell.time))
-        ec.add(`No ${this.spell.time} left`, this);
-      const resource = this.getResource(config);
-      if (resource && !this.actor.hasResource(resource))
-        ec.add(`No ${resource.name} left`, this.method);
-      return this.spell.check(this.g, config, ec);
-    }
-    apply(config) {
-      return __async(this, null, function* () {
-        const { actor, g: g2, method, spell } = this;
-        actor.time.delete(spell.time);
-        const resource = this.getResource(config);
-        if (resource)
-          actor.spendResource(resource, 1);
-        const sc = yield g2.resolve(
-          new SpellCastEvent({
-            who: actor,
-            spell,
-            method,
-            level: spell.getLevel(config),
-            targets: new Set(spell.getTargets(g2, actor, config)),
-            interrupt: new InterruptionCollector()
-          })
-        );
-        if (sc.defaultPrevented)
-          return;
-        return spell.apply(g2, actor, method, config);
-      });
-    }
-  };
-
-  // src/resolvers/SlotResolver.ts
-  var SlotResolver = class {
-    constructor(spell, method) {
-      this.spell = spell;
-      this.method = method;
-      this.name = "spell slot";
-      this.type = "SpellSlot";
-    }
-    getMinimum(who) {
-      return this.method.getMinSlot(this.spell, who);
-    }
-    getMaximum(who) {
-      return this.method.getMaxSlot(this.spell, who);
-    }
-    check(value, action, ec) {
-      if (action instanceof CastSpell)
-        this.method = action.method;
-      if (typeof value !== "number")
-        ec.add("No spell level chosen", this);
-      else {
-        if (value < this.getMinimum(action.actor))
-          ec.add("Too low", this);
-        if (value > this.getMaximum(action.actor))
-          ec.add("Too high", this);
-      }
-      return ec;
-    }
-  };
-
-  // src/spells/common.ts
-  function getCantripDice(who) {
-    if (who.level < 5)
-      return 1;
-    if (who.level < 11)
-      return 2;
-    if (who.level < 17)
-      return 3;
-    return 4;
-  }
-  var simpleSpell = ({
-    name,
-    level,
-    ritual = false,
-    school,
-    concentration = false,
-    time = "action",
-    v = false,
-    s = false,
-    m,
-    lists,
-    icon,
-    apply,
-    check = (_g, _config, ec) => ec,
-    getAffectedArea = () => void 0,
-    getConfig,
-    getDamage = () => void 0,
-    getTargets,
-    status = "missing"
-  }) => ({
-    status,
-    name,
-    level,
-    ritual,
-    scaling: false,
-    school,
-    concentration,
-    time,
-    v,
-    s,
-    m,
-    lists,
-    icon,
-    apply,
-    check,
-    getAffectedArea,
-    getConfig,
-    getDamage,
-    getLevel() {
-      return level;
-    },
-    getTargets
-  });
-  var scalingSpell = ({
-    name,
-    level,
-    ritual = false,
-    school,
-    concentration = false,
-    time = "action",
-    v = false,
-    s = false,
-    m,
-    lists,
-    icon,
-    apply,
-    check = (_g, _config, ec) => ec,
-    getAffectedArea = () => void 0,
-    getConfig,
-    getDamage = () => void 0,
-    getTargets,
-    status = "missing"
-  }) => ({
-    status,
-    name,
-    level,
-    ritual,
-    scaling: true,
-    school,
-    concentration,
-    time,
-    v,
-    s,
-    m,
-    lists,
-    icon,
-    apply,
-    check,
-    getAffectedArea,
-    getConfig(g2, actor, method, config) {
-      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
-        slot: new SlotResolver(this, method)
-      });
-    },
-    getDamage,
-    getLevel({ slot }) {
-      return slot;
-    },
-    getTargets
-  });
-  function spellImplementationWarning(spell, owner) {
-    if (spell.status === "incomplete")
-      console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
-    else if (spell.status === "missing")
-      console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
-  }
-
-  // src/types/AbilityName.ts
-  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
-
-  // src/utils/types.ts
-  function isDefined(value) {
-    return typeof value !== "undefined";
-  }
-  function isA(value, enumeration) {
-    return enumeration.includes(value);
-  }
-  function isCombatantArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const who of value)
-      if (!(who instanceof AbstractCombatant))
-        return false;
-    return true;
-  }
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
-  }
-  function isPointArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const point of value)
-      if (!isPoint(point))
-        return false;
-    return true;
-  }
-
-  // src/utils/items.ts
-  var isSuitOfArmor = (item) => item.itemType === "armor" && item.category !== "shield";
-  var isShield = (item) => item.itemType === "armor" && item.category === "shield";
-  function getWeaponAbility(who, weapon) {
-    if (weapon.forceAbilityScore)
-      return weapon.forceAbilityScore;
-    const { str, dex } = who;
-    if (weapon.properties.has("finesse")) {
-      if (dex.score >= str.score)
-        return "dex";
-    }
-    if (weapon.rangeCategory === "ranged")
-      return "dex";
-    return "str";
-  }
-  function getWeaponRange(who, weapon) {
-    if (isDefined(weapon.longRange))
-      return weapon.longRange;
-    return who.reach;
-  }
-  function getValidAmmunition(who, weapon) {
-    return who.ammunition.filter(
-      (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
-    );
-  }
-  function enchant(item, ...enchantments) {
-    for (const enchantment of enchantments)
-      item.addEnchantment(enchantment);
-    return item;
-  }
-
   // src/Polygon.ts
   var Polygon = class {
     constructor(points) {
@@ -1045,6 +779,272 @@
     return enumerateMapSquares(minX, minY, maxX, maxY);
   }
 
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("SpellCast", { detail });
+    }
+  };
+
+  // src/actions/CastSpell.ts
+  var CastSpell = class {
+    constructor(g2, actor, method, spell) {
+      this.g = g2;
+      this.actor = actor;
+      this.method = method;
+      this.spell = spell;
+      this.name = `${spell.name} (${method.name})`;
+      this.isSpell = true;
+      this.time = spell.time;
+      this.icon = spell.icon;
+      this.subIcon = method.icon;
+    }
+    get status() {
+      return this.spell.status;
+    }
+    getConfig(config) {
+      return this.spell.getConfig(this.g, this.actor, this.method, config);
+    }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(this.g, this.actor, config);
+    }
+    getDamage(config) {
+      return this.spell.getDamage(this.g, this.actor, config);
+    }
+    getResource(config) {
+      var _a;
+      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      return this.method.getResourceForSpell(this.spell, level, this.actor);
+    }
+    check(config, ec) {
+      if (!this.actor.time.has(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      const resource = this.getResource(config);
+      if (resource && !this.actor.hasResource(resource))
+        ec.add(`No ${resource.name} left`, this.method);
+      return this.spell.check(this.g, config, ec);
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        const { actor, g: g2, method, spell } = this;
+        actor.time.delete(spell.time);
+        const resource = this.getResource(config);
+        if (resource)
+          actor.spendResource(resource, 1);
+        const sc = yield g2.resolve(
+          new SpellCastEvent({
+            who: actor,
+            spell,
+            method,
+            level: spell.getLevel(config),
+            targets: new Set(spell.getTargets(g2, actor, config)),
+            interrupt: new InterruptionCollector()
+          })
+        );
+        if (sc.defaultPrevented)
+          return;
+        return spell.apply(g2, actor, method, config);
+      });
+    }
+  };
+
+  // src/resolvers/SlotResolver.ts
+  var SlotResolver = class {
+    constructor(spell, method) {
+      this.spell = spell;
+      this.method = method;
+      this.name = "spell slot";
+      this.type = "SpellSlot";
+    }
+    getMinimum(who) {
+      return this.method.getMinSlot(this.spell, who);
+    }
+    getMaximum(who) {
+      return this.method.getMaxSlot(this.spell, who);
+    }
+    check(value, action, ec) {
+      if (action instanceof CastSpell)
+        this.method = action.method;
+      if (typeof value !== "number")
+        ec.add("No spell level chosen", this);
+      else {
+        if (value < this.getMinimum(action.actor))
+          ec.add("Too low", this);
+        if (value > this.getMaximum(action.actor))
+          ec.add("Too high", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/common.ts
+  function getCantripDice(who) {
+    if (who.level < 5)
+      return 1;
+    if (who.level < 11)
+      return 2;
+    if (who.level < 17)
+      return 3;
+    return 4;
+  }
+  var simpleSpell = ({
+    name,
+    level,
+    ritual = false,
+    school,
+    concentration = false,
+    time = "action",
+    v = false,
+    s = false,
+    m,
+    lists,
+    icon,
+    apply,
+    check = (_g, _config, ec) => ec,
+    getAffectedArea = () => void 0,
+    getConfig,
+    getDamage = () => void 0,
+    getTargets,
+    status = "missing"
+  }) => ({
+    status,
+    name,
+    level,
+    ritual,
+    scaling: false,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    lists,
+    icon,
+    apply,
+    check,
+    getAffectedArea,
+    getConfig,
+    getDamage,
+    getLevel() {
+      return level;
+    },
+    getTargets
+  });
+  var scalingSpell = ({
+    name,
+    level,
+    ritual = false,
+    school,
+    concentration = false,
+    time = "action",
+    v = false,
+    s = false,
+    m,
+    lists,
+    icon,
+    apply,
+    check = (_g, _config, ec) => ec,
+    getAffectedArea = () => void 0,
+    getConfig,
+    getDamage = () => void 0,
+    getTargets,
+    status = "missing"
+  }) => ({
+    status,
+    name,
+    level,
+    ritual,
+    scaling: true,
+    school,
+    concentration,
+    time,
+    v,
+    s,
+    m,
+    lists,
+    icon,
+    apply,
+    check,
+    getAffectedArea,
+    getConfig(g2, actor, method, config) {
+      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
+        slot: new SlotResolver(this, method)
+      });
+    },
+    getDamage,
+    getLevel({ slot }) {
+      return slot;
+    },
+    getTargets
+  });
+  function spellImplementationWarning(spell, owner) {
+    if (spell.status === "incomplete")
+      console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
+    else if (spell.status === "missing")
+      console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
+  }
+
+  // src/types/AbilityName.ts
+  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
+
+  // src/utils/types.ts
+  function isDefined(value) {
+    return typeof value !== "undefined";
+  }
+  function isA(value, enumeration) {
+    return enumeration.includes(value);
+  }
+  function isCombatantArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const who of value)
+      if (!(who instanceof AbstractCombatant))
+        return false;
+    return true;
+  }
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  function isPointArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const point of value)
+      if (!isPoint(point))
+        return false;
+    return true;
+  }
+
+  // src/utils/items.ts
+  var isSuitOfArmor = (item) => item.itemType === "armor" && item.category !== "shield";
+  var isShield = (item) => item.itemType === "armor" && item.category === "shield";
+  function getWeaponAbility(who, weapon) {
+    if (weapon.forceAbilityScore)
+      return weapon.forceAbilityScore;
+    const { str, dex } = who;
+    if (weapon.properties.has("finesse")) {
+      if (dex.score >= str.score)
+        return "dex";
+    }
+    if (weapon.rangeCategory === "ranged")
+      return "dex";
+    return "str";
+  }
+  function getWeaponRange(who, weapon) {
+    if (isDefined(weapon.longRange))
+      return weapon.longRange;
+    return who.reach;
+  }
+  function getValidAmmunition(who, weapon) {
+    return who.ammunition.filter(
+      (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
+    );
+  }
+  function enchant(item, ...enchantments) {
+    for (const enchantment of enchantments)
+      item.addEnchantment(enchantment);
+    return item;
+  }
+
   // src/utils/units.ts
   var categoryUnits = {
     tiny: 1,
@@ -1055,20 +1055,26 @@
     gargantuan: 4
   };
   function convertSizeToUnit(size) {
-    return categoryUnits[size] * 5;
+    return categoryUnits[size] * MapSquareSize;
+  }
+  function getDistanceBetween(posA, sizeA, posB, sizeB) {
+    const dx = Math.abs(posA.x - posB.x);
+    const dy = Math.abs(posA.y - posB.y);
+    return Math.max(dx, dy);
   }
   function distance(g2, a, b) {
     const as = g2.getState(a);
     const bs = g2.getState(b);
-    const dx = Math.abs(as.position.x - bs.position.x);
-    const dy = Math.abs(as.position.y - bs.position.y);
-    return Math.max(dx, dy);
+    return getDistanceBetween(
+      as.position,
+      a.sizeInUnits,
+      bs.position,
+      b.sizeInUnits
+    );
   }
   function distanceTo(g2, who, to) {
     const s = g2.getState(who);
-    const dx = Math.abs(s.position.x - to.x);
-    const dy = Math.abs(s.position.y - to.y);
-    return Math.max(dx, dy);
+    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
   }
   function getSquares(who, position) {
     return new PointSet(
@@ -1110,7 +1116,7 @@
       hp = hpMax,
       level = NaN,
       pb = 2,
-      reach = 5,
+      reach = MapSquareSize,
       chaScore = 10,
       conScore = 10,
       dexScore = 10,
@@ -1945,14 +1951,14 @@
     return _p(z.x * mul, z.y * mul);
   }
   var moveOffsets = {
-    east: _p(5, 0),
-    southeast: _p(5, 5),
-    south: _p(0, 5),
-    southwest: _p(-5, 5),
-    west: _p(-5, 0),
-    northwest: _p(-5, -5),
-    north: _p(0, -5),
-    northeast: _p(5, -5)
+    east: _p(MapSquareSize, 0),
+    southeast: _p(MapSquareSize, MapSquareSize),
+    south: _p(0, MapSquareSize),
+    southwest: _p(-MapSquareSize, MapSquareSize),
+    west: _p(-MapSquareSize, 0),
+    northwest: _p(-MapSquareSize, -MapSquareSize),
+    north: _p(0, -MapSquareSize),
+    northeast: _p(MapSquareSize, -MapSquareSize)
   };
   function movePoint(p, d) {
     return addPoints(p, moveOffsets[d]);
@@ -2100,9 +2106,10 @@
       return __async(this, null, function* () {
         const state = this.combatants.get(who);
         if (!state)
-          return "invalid";
+          return { type: "invalid" };
         const old = state.position;
         const position = movePoint(old, direction);
+        const error = new ErrorCollector();
         const pre = yield this.resolve(
           new BeforeMoveEvent({
             who,
@@ -2111,12 +2118,14 @@
             to: position,
             handler,
             type,
-            error: new ErrorCollector(),
+            error,
             interrupt: new InterruptionCollector()
           })
         );
         if (pre.defaultPrevented)
-          return "prevented";
+          return { type: "prevented" };
+        if (!error.result)
+          return { type: "error", error };
         const multiplier = new MultiplierCollector();
         this.fire(
           new GetMoveCostEvent({
@@ -2141,10 +2150,10 @@
             interrupt: new InterruptionCollector()
           })
         );
-        const handlerDone = handler.onMove(who, multiplier.result * 5);
+        const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
         if (handlerDone)
-          return "unbind";
-        return "ok";
+          return { type: "unbind" };
+        return { type: "ok" };
       });
     }
     applyDamage(_0, _1) {
@@ -3140,20 +3149,49 @@ Once you use this feature, you can't use it again until you finish a short or lo
   // src/movement.ts
   var getDefaultMovement = (who) => ({
     name: "Movement",
+    cannotApproach: /* @__PURE__ */ new Set(),
     maximum: who.speed,
+    mustUseAll: false,
     provokesOpportunityAttacks: true,
     onMove(who2, cost) {
       who2.movedSoFar += cost;
       return who2.movedSoFar >= who2.speed;
     }
   });
+  var BoundedMoveRule = new DndRule("Bounded Movement", (g2) => {
+    g2.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
+      for (const other of handler.cannotApproach) {
+        const otherPos = g2.getState(other).position;
+        const oldDistance = getDistanceBetween(
+          from,
+          who.sizeInUnits,
+          otherPos,
+          other.sizeInUnits
+        );
+        const newDistance = getDistanceBetween(
+          to,
+          who.sizeInUnits,
+          otherPos,
+          other.sizeInUnits
+        );
+        if (newDistance < oldDistance)
+          error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
+      }
+    });
+  });
   var BoundedMove = class {
-    constructor(source, maximum, provokesOpportunityAttacks = true) {
+    constructor(source, maximum, {
+      cannotApproach = [],
+      mustUseAll = false,
+      provokesOpportunityAttacks = true
+    } = {}) {
       this.source = source;
       this.maximum = maximum;
-      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
       this.name = source.name;
       this.used = 0;
+      this.cannotApproach = new Set(cannotApproach);
+      this.mustUseAll = mustUseAll;
+      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
     }
     onMove(who, cost) {
       this.used += cost;
@@ -3178,7 +3216,9 @@ Once you use this feature, you can't use it again until you finish a short or lo
                 me.time.delete("reaction");
                 return g2.applyBoundedMove(
                   me,
-                  new BoundedMove(Skirmisher, me.speed / 2, false)
+                  new BoundedMove(Skirmisher, me.speed / 2, {
+                    provokesOpportunityAttacks: false
+                  })
                 );
               })
             )
@@ -3414,12 +3454,65 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var Lucky_default = Lucky;
 
   // src/features/boons.ts
-  var BoonOfVassetri = notImplementedFeature(
+  var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
+  var HissAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Hiss (Boon of Vassetri)",
+        "implemented",
+        { target: new TargetResolver(g2, 5) },
+        "bonus action"
+      );
+    }
+    check(config, ec) {
+      if (!this.actor.hasResource(HissResource))
+        ec.add("out of hisses", this);
+      return super.check(config, ec);
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ target }) {
+        __superGet(HissAction.prototype, this, "apply").call(this, { target });
+        const { g: g2, actor } = this;
+        actor.spendResource(HissResource);
+        if (target.time.has("reaction")) {
+          const dc = getSaveDC(actor, "cha");
+          const save = yield g2.savingThrow(dc, {
+            who: target,
+            attacker: actor,
+            ability: "wis",
+            tags: /* @__PURE__ */ new Set(["frightened", "forced movement"])
+          });
+          if (save.result === "fail") {
+            target.time.delete("reaction");
+            yield g2.applyBoundedMove(
+              target,
+              new BoundedMove(this, target.speed / 2, {
+                cannotApproach: [actor],
+                mustUseAll: true,
+                provokesOpportunityAttacks: false
+              })
+            );
+          }
+        }
+      });
+    }
+  };
+  var BoonOfVassetri = new SimpleFeature(
     "Boon of Vassetri",
     `You dared ask Vassetri for a boon of power and a bite on the neck was your reward. It provides the following benefits:
 
   - You may cast the spell [speak with animals] at will, but it can only target snakes.
-  - As a bonus action, you hiss threateningly at an enemy within 5 feet. If the enemy fails a Wisdom save, they must spend their reaction to move half of their speed away from you in any direction. The DC is 8 + your proficiency bonus + your Charisma modifier. You can only use this ability once per short or long rest, and only when you are able to speak.`
+  - As a bonus action, you hiss threateningly at an enemy within 5 feet. If the enemy fails a Wisdom save, they must spend their reaction to move half of their speed away from you in any direction. The DC is 8 + your proficiency bonus + your Charisma modifier. You can only use this ability once per short or long rest, and only when you are able to speak.`,
+    (g2, me) => {
+      console.warn(`[Feature Not Complete] Boon of Vassetri (on ${me.name})`);
+      me.initResource(HissResource);
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new HissAction(g2, me));
+      });
+    }
   );
 
   // src/items/wondrous.ts
@@ -4046,7 +4139,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       type: "cone",
       radius,
       centre: addPoints(position, mulPoint(offset, size)),
-      target: addPoints(aim, mulPoint(offset, 5))
+      target: addPoints(aim, mulPoint(offset, MapSquareSize))
     };
   }
   function aimLine(position, size, aim, length, width) {
@@ -4056,7 +4149,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       length,
       width,
       start: addPoints(position, mulPoint(offset, size)),
-      target: addPoints(aim, mulPoint(offset, 5))
+      target: addPoints(aim, mulPoint(offset, MapSquareSize))
     };
   }
 
@@ -8155,8 +8248,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       () => ({
         left: point.x * scale.value,
         top: point.y * scale.value,
-        width: scale.value * 5,
-        height: scale.value * 5
+        width: scale.value * MapSquareSize,
+        height: scale.value * MapSquareSize
       }),
       [point]
     );
@@ -8364,8 +8457,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   }) {
     var _a;
     const convertCoordinate = (0, import_hooks6.useCallback)((e) => {
-      const x = round(Math.floor(e.pageX / scale.value), 5);
-      const y = round(Math.floor(e.pageY / scale.value), 5);
+      const x = round(Math.floor(e.pageX / scale.value), MapSquareSize);
+      const y = round(Math.floor(e.pageY / scale.value), MapSquareSize);
       return { x, y };
     }, []);
     const onClick = (0, import_hooks6.useCallback)(
@@ -8394,13 +8487,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
   // src/ui/BoundedMovePanel.tsx
   function BoundedMovePanel({ bounds, onFinish }) {
     return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Bounded Movement", children: [
-      /* @__PURE__ */ o(Labelled, { label: bounds.detail.handler.name, children: bounds.detail.who.name }),
+      /* @__PURE__ */ o(Labelled, { label: bounds.handler.name, children: bounds.who.name }),
       /* @__PURE__ */ o("div", { children: [
         "Move up to ",
-        bounds.detail.handler.maximum,
+        bounds.handler.maximum,
         " feet."
       ] }),
-      /* @__PURE__ */ o("button", { onClick: onFinish, children: "End Movement Early" })
+      /* @__PURE__ */ o("button", { onClick: onFinish, disabled: bounds.handler.mustUseAll, children: "End Movement Early" })
     ] });
   }
 
@@ -9260,7 +9353,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         if (moveHandler.value) {
           hideActionMenu();
           void g2.move(who, dir, moveHandler.value).then((result) => {
-            if (result === "unbind")
+            if (result.type === "error")
+              console.warn(result.error.messages);
+            else if (result.type === "unbind")
               onFinishBoundedMove();
             return result;
           });
@@ -9315,7 +9410,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         moveBounds.value && /* @__PURE__ */ o(
           BoundedMovePanel,
           {
-            bounds: moveBounds.value,
+            bounds: moveBounds.value.detail,
             onFinish: onFinishBoundedMove
           }
         )

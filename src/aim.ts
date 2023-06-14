@@ -1,3 +1,4 @@
+import { MapSquareSize } from "./MapSquare";
 import { SpecifiedEffectShape } from "./types/EffectArea";
 import Point from "./types/Point";
 import { addPoints, mulPoint } from "./utils/points";
@@ -41,7 +42,7 @@ export function aimCone(
     type: "cone",
     radius,
     centre: addPoints(position, mulPoint(offset, size)),
-    target: addPoints(aim, mulPoint(offset, 5)),
+    target: addPoints(aim, mulPoint(offset, MapSquareSize)),
   };
 }
 
@@ -59,6 +60,6 @@ export function aimLine(
     length,
     width,
     start: addPoints(position, mulPoint(offset, size)),
-    target: addPoints(aim, mulPoint(offset, 5)),
+    target: addPoints(aim, mulPoint(offset, MapSquareSize)),
   };
 }

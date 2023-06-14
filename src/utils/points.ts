@@ -1,3 +1,4 @@
+import { MapSquareSize } from "../MapSquare";
 import MoveDirection from "../types/MoveDirection";
 import Point from "../types/Point";
 
@@ -12,14 +13,14 @@ export function mulPoint(z: Point, mul: number) {
 }
 
 const moveOffsets: Record<MoveDirection, Point> = {
-  east: _p(5, 0),
-  southeast: _p(5, 5),
-  south: _p(0, 5),
-  southwest: _p(-5, 5),
-  west: _p(-5, 0),
-  northwest: _p(-5, -5),
-  north: _p(0, -5),
-  northeast: _p(5, -5),
+  east: _p(MapSquareSize, 0),
+  southeast: _p(MapSquareSize, MapSquareSize),
+  south: _p(0, MapSquareSize),
+  southwest: _p(-MapSquareSize, MapSquareSize),
+  west: _p(-MapSquareSize, 0),
+  northwest: _p(-MapSquareSize, -MapSquareSize),
+  north: _p(0, -MapSquareSize),
+  northeast: _p(MapSquareSize, -MapSquareSize),
 };
 
 export function movePoint(p: Point, d: MoveDirection) {

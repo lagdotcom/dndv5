@@ -1,5 +1,5 @@
 import Engine from "../Engine";
-import { enumerateMapSquares } from "../MapSquare";
+import { enumerateMapSquares, MapSquareSize } from "../MapSquare";
 import PointSet from "../PointSet";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
@@ -15,26 +15,37 @@ const categoryUnits: Record<SizeCategory, number> = {
 };
 
 export function convertSizeToUnit(size: SizeCategory) {
-  return categoryUnits[size] * 5;
+  return categoryUnits[size] * MapSquareSize;
+}
+
+export function getDistanceBetween(
+  posA: Point,
+  sizeA: number,
+  posB: Point,
+  sizeB: number
+) {
+  // TODO [SIZE] unit sizes
+  const dx = Math.abs(posA.x - posB.x);
+  const dy = Math.abs(posA.y - posB.y);
+  return Math.max(dx, dy);
 }
 
 export function distance(g: Engine, a: Combatant, b: Combatant) {
   const as = g.getState(a);
   const bs = g.getState(b);
 
-  // TODO [SIZE] unit sizes
-  const dx = Math.abs(as.position.x - bs.position.x);
-  const dy = Math.abs(as.position.y - bs.position.y);
-  return Math.max(dx, dy);
+  return getDistanceBetween(
+    as.position,
+    a.sizeInUnits,
+    bs.position,
+    b.sizeInUnits
+  );
 }
 
 export function distanceTo(g: Engine, who: Combatant, to: Point) {
   const s = g.getState(who);
 
-  // TODO [SIZE] unit sizes
-  const dx = Math.abs(s.position.x - to.x);
-  const dy = Math.abs(s.position.y - to.y);
-  return Math.max(dx, dy);
+  return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
 }
 
 export function getSquares(who: Combatant, position: Point) {

@@ -1,5 +1,6 @@
 import { useMemo } from "preact/hooks";
 
+import { MapSquareSize } from "../MapSquare";
 import {
   AreaTag,
   SpecifiedCylinder,
@@ -89,8 +90,8 @@ function AffectedSquare({ point }: AffectedSquareProps) {
     () => ({
       left: point.x * scale.value,
       top: point.y * scale.value,
-      width: scale.value * 5,
-      height: scale.value * 5,
+      width: scale.value * MapSquareSize,
+      height: scale.value * MapSquareSize,
     }),
     [point]
   );

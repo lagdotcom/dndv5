@@ -25,7 +25,9 @@ const Skirmisher = new SimpleFeature(
               me.time.delete("reaction");
               return g.applyBoundedMove(
                 me,
-                new BoundedMove(Skirmisher, me.speed / 2, false)
+                new BoundedMove(Skirmisher, me.speed / 2, {
+                  provokesOpportunityAttacks: false,
+                })
               );
             }
           )

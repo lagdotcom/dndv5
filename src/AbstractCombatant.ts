@@ -8,6 +8,7 @@ import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
+import { MapSquareSize } from "./MapSquare";
 import { spellImplementationWarning } from "./spells/common";
 import AbilityName, { AbilityNames } from "./types/AbilityName";
 import Action from "./types/Action";
@@ -121,7 +122,7 @@ export default abstract class AbstractCombatant implements Combatant {
       hp = hpMax,
       level = NaN,
       pb = 2,
-      reach = 5,
+      reach = MapSquareSize,
       chaScore = 10,
       conScore = 10,
       dexScore = 10,

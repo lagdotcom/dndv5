@@ -1,5 +1,6 @@
 import { useCallback } from "preact/hooks";
 
+import { MapSquareSize } from "../MapSquare";
 import Combatant from "../types/Combatant";
 import MoveDirection from "../types/MoveDirection";
 import Point from "../types/Point";
@@ -27,8 +28,8 @@ export default function Battlefield({
   onMoveCombatant,
 }: Props) {
   const convertCoordinate = useCallback((e: MouseEvent) => {
-    const x = round(Math.floor(e.pageX / scale.value), 5);
-    const y = round(Math.floor(e.pageY / scale.value), 5);
+    const x = round(Math.floor(e.pageX / scale.value), MapSquareSize);
+    const y = round(Math.floor(e.pageY / scale.value), MapSquareSize);
     return { x, y };
   }, []);
 
