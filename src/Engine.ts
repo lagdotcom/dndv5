@@ -332,11 +332,19 @@ export default class Engine {
       total += amount;
     }
 
-    this.fire(
-      new CombatantDamagedEvent({ who: target, attacker, total, breakdown })
-    );
+    if (total < 1) return;
 
     target.hp -= total;
+    await this.resolve(
+      new CombatantDamagedEvent({
+        who: target,
+        attacker,
+        total,
+        breakdown,
+        interrupt: new InterruptionCollector(),
+      })
+    );
+
     if (target.hp <= 0) {
       if (target.diesAtZero) {
         this.combatants.delete(target);

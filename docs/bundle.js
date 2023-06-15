@@ -2187,10 +2187,18 @@
           breakdown.set(damageType, { response, raw, amount });
           total += amount;
         }
-        this.fire(
-          new CombatantDamagedEvent({ who: target, attacker, total, breakdown })
-        );
+        if (total < 1)
+          return;
         target.hp -= total;
+        yield this.resolve(
+          new CombatantDamagedEvent({
+            who: target,
+            attacker,
+            total,
+            breakdown,
+            interrupt: new InterruptionCollector()
+          })
+        );
         if (target.hp <= 0) {
           if (target.diesAtZero) {
             this.combatants.delete(target);
@@ -2341,6 +2349,98 @@
     }
   };
 
+  // src/features/SimpleFeature.ts
+  var SimpleFeature = class {
+    constructor(name, text, setup) {
+      this.name = name;
+      this.text = text;
+      this.setup = setup;
+    }
+  };
+
+  // src/features/common.ts
+  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
+    return new SimpleFeature(name, text, (g2, me) => {
+      var _a;
+      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
+      const spells = entries.filter((entry) => entry.level <= casterLevel);
+      for (const { resource, spell } of spells) {
+        if (resource)
+          me.initResource(resource);
+        if (addAsList) {
+          me.preparedSpells.add(spell);
+          method.addCastableSpell(spell, me);
+        } else
+          spellImplementationWarning(spell, me);
+      }
+      me.spellcastingMethods.add(method);
+      if (!addAsList)
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            for (const { spell } of spells)
+              actions.push(new CastSpell(g2, me, method, spell));
+        });
+    });
+  }
+  function darkvisionFeature(range = 60) {
+    return new SimpleFeature(
+      "Darkvision",
+      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
+      (_2, me) => {
+        me.senses.set("darkvision", range);
+      }
+    );
+  }
+  function nonCombatFeature(name, text) {
+    return new SimpleFeature(name, text, () => {
+    });
+  }
+  function notImplementedFeature(name, text) {
+    return new SimpleFeature(name, text, (_2, me) => {
+      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+    });
+  }
+
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply) {
+      this.who = who;
+      this.source = source;
+      this.apply = apply;
+    }
+  };
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+    }
+    apply(g2) {
+      return __async(this, null, function* () {
+        var _a, _b;
+        const choice = yield new Promise(
+          (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+        );
+        if (choice)
+          yield (_a = this.yes) == null ? void 0 : _a.call(this);
+        else
+          yield (_b = this.no) == null ? void 0 : _b.call(this);
+      });
+    }
+  };
+
   // src/utils/dice.ts
   var _dd = (count, size, damage) => ({
     type: "dice",
@@ -2429,22 +2529,12 @@
       this.quantity = quantity;
     }
   };
-  var Mace = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "mace", "simple", "melee", _dd(1, 6, "bludgeoning"));
-    }
-  };
   var Quarterstaff = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "quarterstaff", "simple", "melee", _dd(1, 6, "bludgeoning"), [
         "versatile"
       ]);
       this.iconUrl = quarterstaff_default;
-    }
-  };
-  var Sickle = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "sickle", "simple", "melee", _dd(1, 4, "slashing"), ["light"]);
     }
   };
   var Spear = class extends AbstractWeapon {
@@ -2477,36 +2567,6 @@
       );
       this.ammunitionTag = "crossbow";
       this.iconUrl = light_crossbow_default;
-    }
-  };
-  var Dart = class extends AbstractWeapon {
-    constructor(g2, quantity) {
-      super(
-        g2,
-        "dart",
-        "simple",
-        "ranged",
-        _dd(1, 4, "piercing"),
-        ["finesse", "thrown"],
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Sling = class extends AbstractWeapon {
-    constructor(g2) {
-      super(
-        g2,
-        "sling",
-        "simple",
-        "ranged",
-        _dd(1, 4, "bludgeoning"),
-        ["ammunition"],
-        30,
-        120
-      );
-      this.ammunitionTag = "sling";
     }
   };
   var Longsword = class extends AbstractWeapon {
@@ -2546,21 +2606,6 @@
       this.iconUrl = trident_default;
     }
   };
-  var HeavyCrossbow = class extends AbstractWeapon {
-    constructor(g2) {
-      super(
-        g2,
-        "heavy crossbow",
-        "martial",
-        "ranged",
-        _dd(1, 10, "piercing"),
-        ["ammunition", "heavy", "loading", "two-handed"],
-        100,
-        400
-      );
-      this.ammunitionTag = "crossbow";
-    }
-  };
 
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
@@ -2579,199 +2624,129 @@
     }
   };
 
-  // src/monsters/Badger_token.png
-  var Badger_token_default = "./Badger_token-53MEBA7R.png";
+  // src/monsters/fiendishParty/Birnotec_token.png
+  var Birnotec_token_default = "./Birnotec_token-JGKE3FD4.png";
 
-  // src/features/SimpleFeature.ts
-  var SimpleFeature = class {
-    constructor(name, text, setup) {
-      this.name = name;
-      this.text = text;
-      this.setup = setup;
-    }
-  };
-
-  // src/features/common.ts
-  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
-    return new SimpleFeature(name, text, (g2, me) => {
-      var _a;
-      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
-      const spells = entries.filter((entry) => entry.level <= casterLevel);
-      for (const { resource, spell } of spells) {
-        if (resource)
-          me.initResource(resource);
-        if (addAsList) {
-          me.preparedSpells.add(spell);
-          method.addCastableSpell(spell, me);
-        } else
-          spellImplementationWarning(spell, me);
-      }
-      me.spellcastingMethods.add(method);
-      if (!addAsList)
-        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me)
-            for (const { spell } of spells)
-              actions.push(new CastSpell(g2, me, method, spell));
-        });
-    });
-  }
-  function darkvisionFeature(range = 60) {
-    return new SimpleFeature(
-      "Darkvision",
-      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
-      (_2, me) => {
-        me.senses.set("darkvision", range);
-      }
-    );
-  }
-  function nonCombatFeature(name, text) {
-    return new SimpleFeature(name, text, () => {
-    });
-  }
-  function notImplementedFeature(name, text) {
-    return new SimpleFeature(name, text, (_2, me) => {
-      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
-    });
-  }
-
-  // src/monsters/common.ts
-  var KeenSmell = new SimpleFeature(
-    "Keen Smell",
-    `This has advantage on Wisdom (Perception) checks that rely on smell.`,
-    (g2, me) => {
-      g2.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && tags.has("smell"))
-          diceType.add("advantage", KeenSmell);
-      });
-    }
-  );
-  var PackTactics = notImplementedFeature(
-    "Pack Tactics",
-    `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`
-  );
-  function makeMultiattack(text, canStillAttack) {
-    return new SimpleFeature("Multiattack", text, (g2, me) => {
-      g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.actor === me && action.isAttack && canStillAttack(me, action))
-          error.ignore(OneAttackPerTurnRule);
-      });
-    });
-  }
-  function isMeleeAttackAction(action) {
-    if (!action.isAttack)
-      return false;
-    if (!(action instanceof WeaponAttack))
-      return false;
-    return action.weapon.rangeCategory === "melee";
-  }
-
-  // src/monsters/Badger.ts
-  var Bite = class extends AbstractWeapon {
+  // src/monsters/fiendishParty/Birnotec.ts
+  var EldritchBurst = class extends AbstractWeapon {
     constructor(g2) {
-      super(g2, "bite", "natural", "melee", {
-        type: "flat",
-        amount: 1,
-        damageType: "piercing"
-      });
-      this.hands = 0;
-      this.forceAbilityScore = "dex";
-    }
-  };
-  var Badger = class extends Monster {
-    constructor(g2) {
-      super(g2, "badger", 0, "beast", "tiny", Badger_token_default);
-      this.hp = this.hpMax = 3;
-      this.movement.set("speed", 20);
-      this.movement.set("burrow", 5);
-      this.setAbilityScores(4, 11, 12, 2, 12, 5);
-      this.senses.set("darkvision", 30);
-      this.pb = 2;
-      this.addFeature(KeenSmell);
-      this.naturalWeapons.add(new Bite(g2));
-    }
-  };
-
-  // src/items/icons/bolt.svg
-  var bolt_default = "./bolt-RV5OQWXW.svg";
-
-  // src/items/ammunition.ts
-  var AbstractAmmo = class extends AbstractItem {
-    constructor(g2, name, ammunitionTag, quantity) {
-      super(g2, "ammo", name);
-      this.ammunitionTag = ammunitionTag;
-      this.quantity = quantity;
-    }
-  };
-  var CrossbowBolt = class extends AbstractAmmo {
-    constructor(g2, quantity) {
-      super(g2, "crossbow bolt", "crossbow", quantity);
-      this.iconUrl = bolt_default;
-    }
-  };
-  var SlingBullet = class extends AbstractAmmo {
-    constructor(g2, quantity) {
-      super(g2, "sling bullet", "sling", quantity);
-    }
-  };
-
-  // src/items/armor.ts
-  var AbstractArmor = class extends AbstractItem {
-    constructor(g2, name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
-      super(g2, "armor", name);
-      this.category = category;
-      this.ac = ac;
-      this.stealthDisadvantage = stealthDisadvantage;
-      this.minimumStrength = minimumStrength;
-    }
-  };
-  var LeatherArmor = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "leather armor", "light", 11);
-    }
-  };
-  var HideArmor = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "hide armor", "medium", 12);
-    }
-  };
-  var SplintArmor = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "splint armor", "heavy", 17, true, 15);
-    }
-  };
-  var Shield = class extends AbstractArmor {
-    constructor(g2) {
-      super(g2, "shield", "shield", 2);
-      this.hands = 1;
-    }
-  };
-
-  // src/monsters/Thug_token.png
-  var Thug_token_default = "./Thug_token-IXRM6PKF.png";
-
-  // src/monsters/Thug.ts
-  var Thug = class extends Monster {
-    constructor(g2) {
-      super(g2, "thug", 0.5, "humanoid", "medium", Thug_token_default);
-      this.don(new LeatherArmor(g2), true);
-      this.hp = this.hpMax = 32;
-      this.movement.set("speed", 30);
-      this.setAbilityScores(15, 11, 14, 10, 10, 11);
-      this.skills.set("Intimidation", 1);
-      this.languages.add("Common");
-      this.pb = 2;
-      this.addFeature(PackTactics);
-      this.addFeature(
-        makeMultiattack("The thug makes two melee attacks.", (me, action) => {
-          if (me.attacksSoFar.size !== 1)
-            return false;
-          const [previous] = me.attacksSoFar;
-          return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
-        })
+      super(
+        g2,
+        "Eldritch Burst",
+        "natural",
+        "ranged",
+        _dd(2, 10, "force"),
+        void 0,
+        120,
+        120
       );
-      this.don(new Mace(g2), true);
-      this.don(new HeavyCrossbow(g2), true);
-      this.inventory.add(new CrossbowBolt(g2, Infinity));
+      this.forceAbilityScore = "cha";
+      g2.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
+        if (action instanceof WeaponAttack && action.weapon === this)
+          interrupt.add(
+            new EvaluateLater(action.actor, this, () => __async(this, null, function* () {
+              const { actor: attacker } = action;
+              const { target } = config;
+              const damage = yield g2.rollDamage(1, {
+                size: 10,
+                damageType: "force",
+                source: this,
+                attacker,
+                weapon: this
+              });
+              for (const other of g2.getInside({
+                type: "within",
+                target,
+                position: g2.getState(target).position,
+                radius: 5
+              })) {
+                if (target === other)
+                  continue;
+                const save = yield g2.savingThrow(
+                  15,
+                  { attacker, who: other, ability: "dex", tags: /* @__PURE__ */ new Set() },
+                  { fail: "normal", save: "zero" }
+                );
+                yield g2.damage(
+                  this,
+                  "force",
+                  { attacker, target: other, weapon: this },
+                  [["force", damage]],
+                  save.damageResponse
+                );
+              }
+            }))
+          );
+      });
+    }
+  };
+  var ArmorOfAgathys = notImplementedFeature(
+    "Armor of Agathys",
+    `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`
+  );
+  var AntimagicProdigy = notImplementedFeature(
+    "Antimagic Prodigy",
+    `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana save or lose the spell.`
+  );
+  var HellishRebuke = new SimpleFeature(
+    "Hellish Rebuke",
+    `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
+    (g2, me) => {
+      g2.events.on(
+        "CombatantDamaged",
+        ({ detail: { who, attacker, interrupt } }) => {
+          if (who === me && me.time.has("reaction"))
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                HellishRebuke,
+                "Hellish Rebuke",
+                `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
+                () => __async(void 0, null, function* () {
+                  me.time.delete("reaction");
+                  const damage = yield g2.rollDamage(2, {
+                    source: HellishRebuke,
+                    size: 10,
+                    attacker: me,
+                    target: attacker,
+                    damageType: "fire"
+                  });
+                  const save = yield g2.savingThrow(15, {
+                    who: attacker,
+                    attacker: me,
+                    ability: "dex",
+                    tags: /* @__PURE__ */ new Set()
+                  });
+                  yield g2.damage(
+                    HellishRebuke,
+                    "fire",
+                    { attacker: me, target: attacker },
+                    [["fire", damage]],
+                    save.damageResponse
+                  );
+                })
+              )
+            );
+        }
+      );
+    }
+  );
+  var Birnotec = class extends Monster {
+    constructor(g2) {
+      super(g2, "Birnotec", 5, "humanoid", "medium", Birnotec_token_default);
+      this.diesAtZero = false;
+      this.hp = this.hpMax = 35;
+      this.movement.set("speed", 30);
+      this.setAbilityScores(6, 15, 8, 12, 13, 20);
+      this.pb = 3;
+      this.saveProficiencies.add("wis");
+      this.saveProficiencies.add("cha");
+      this.skills.set("Arcana", 1);
+      this.skills.set("Nature", 1);
+      this.addFeature(ArmorOfAgathys);
+      this.naturalWeapons.add(new EldritchBurst(g2));
+      this.addFeature(AntimagicProdigy);
+      this.addFeature(HellishRebuke);
     }
   };
 
@@ -2789,37 +2764,6 @@
         return;
       }
       this.apply(g2, who, config);
-    }
-  };
-
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
-    }
-    apply(g2) {
-      return __async(this, null, function* () {
-        var _a, _b;
-        const choice = yield new Promise(
-          (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-        );
-        if (choice)
-          yield (_a = this.yes) == null ? void 0 : _a.call(this);
-        else
-          yield (_b = this.no) == null ? void 0 : _b.call(this);
-      });
     }
   };
 
@@ -3515,6 +3459,56 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   );
 
+  // src/items/icons/bolt.svg
+  var bolt_default = "./bolt-RV5OQWXW.svg";
+
+  // src/items/ammunition.ts
+  var AbstractAmmo = class extends AbstractItem {
+    constructor(g2, name, ammunitionTag, quantity) {
+      super(g2, "ammo", name);
+      this.ammunitionTag = ammunitionTag;
+      this.quantity = quantity;
+    }
+  };
+  var CrossbowBolt = class extends AbstractAmmo {
+    constructor(g2, quantity) {
+      super(g2, "crossbow bolt", "crossbow", quantity);
+      this.iconUrl = bolt_default;
+    }
+  };
+
+  // src/items/armor.ts
+  var AbstractArmor = class extends AbstractItem {
+    constructor(g2, name, category, ac, stealthDisadvantage = false, minimumStrength = 0) {
+      super(g2, "armor", name);
+      this.category = category;
+      this.ac = ac;
+      this.stealthDisadvantage = stealthDisadvantage;
+      this.minimumStrength = minimumStrength;
+    }
+  };
+  var LeatherArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "leather armor", "light", 11);
+    }
+  };
+  var HideArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "hide armor", "medium", 12);
+    }
+  };
+  var SplintArmor = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "splint armor", "heavy", 17, true, 15);
+    }
+  };
+  var Shield = class extends AbstractArmor {
+    constructor(g2) {
+      super(g2, "shield", "shield", 2);
+      this.hands = 1;
+    }
+  };
+
   // src/items/wondrous.ts
   var AbstractWondrous = class extends AbstractItem {
     constructor(g2, name, hands = 0) {
@@ -3863,7 +3857,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         g2.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me) {
             for (const spell of me.preparedSpells) {
-              if (this.canCast(spell, who))
+              if (spell.time !== "reaction" && this.canCast(spell, who))
                 actions.push(new CastSpell(g2, me, this, spell));
             }
           }
@@ -4927,15 +4921,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
   var EnlargeReduce_default = EnlargeReduce;
-
-  // src/interruptions/EvaluateLater.ts
-  var EvaluateLater = class {
-    constructor(who, source, apply) {
-      this.who = who;
-      this.source = source;
-      this.apply = apply;
-    }
-  };
 
   // src/utils/time.ts
   var TURNS_PER_MINUTE = 10;
@@ -7641,279 +7626,6 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
-  // src/classes/monk/index.ts
-  var UnarmoredDefense2 = new SimpleFeature(
-    "Unarmored Defense",
-    `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
-    (g2, me) => {
-      g2.events.on("GetACMethods", ({ detail: { who, methods } }) => {
-        if (who === me && !me.armor && !me.shield)
-          methods.push({
-            name: "Unarmored Defense",
-            ac: 10 + me.dex.modifier + me.wis.modifier,
-            uses: /* @__PURE__ */ new Set()
-          });
-      });
-    }
-  );
-  function getMartialArtsDie(level) {
-    if (level < 5)
-      return 4;
-    if (level < 11)
-      return 6;
-    if (level < 17)
-      return 8;
-    return 10;
-  }
-  function isMonkWeapon(weapon) {
-    if (weapon.weaponType === "unarmed strike")
-      return true;
-    if (weapon.weaponType === "shortsword")
-      return true;
-    return weapon.category === "simple" && weapon.rangeCategory === "melee" && !weapon.properties.has("two-handed") && !weapon.properties.has("heavy");
-  }
-  function isMonkWeaponAttack(action) {
-    return action instanceof WeaponAttack && isMonkWeapon(action.weapon);
-  }
-  function canUpgradeDamage(damage, size) {
-    const avg = getDiceAverage(1, size);
-    if (damage.type === "flat")
-      return avg > damage.amount;
-    return size > getDiceAverage(damage.amount.count, damage.amount.size);
-  }
-  var MonkWeaponWrapper = class extends AbstractWeapon {
-    constructor(g2, weapon, size) {
-      super(
-        g2,
-        weapon.name,
-        weapon.category,
-        weapon.rangeCategory,
-        _dd(1, size, weapon.damage.damageType),
-        weapon.properties,
-        weapon.shortRange,
-        weapon.longRange
-      );
-      this.weapon = weapon;
-    }
-  };
-  var MartialArts = new SimpleFeature(
-    "Martial Arts",
-    `Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
-
-You gain the following benefits while you are unarmed or wielding only monk weapons and you aren't wearing armor or wielding a shield.
-
-- You can use Dexterity instead of Strength for the attack and damage rolls of your unarmed strikes and monk weapons.
-- You can roll a d4 in place of the normal damage of your unarmed strike or monk weapon. This die changes as you gain monk levels, as shown in the Martial Arts column of the Monk table.
-- When you use the Attack action with an unarmed strike or a monk weapon on your turn, you can make one unarmed strike as a bonus action. For example, if you take the Attack action and attack with a quarterstaff, you can also make an unarmed strike as a bonus action, assuming you haven't already taken a bonus action this turn.
-
-Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
-    (g2, me) => {
-      var _a;
-      console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
-      const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
-      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who !== me)
-          return;
-        for (const wa of actions.filter(isMonkWeaponAttack)) {
-          if (me.dex.score > me.str.score)
-            wa.ability = "dex";
-          if (canUpgradeDamage(wa.weapon.damage, diceSize))
-            wa.weapon = new MonkWeaponWrapper(g2, wa.weapon, diceSize);
-        }
-      });
-    }
-  );
-  var Monk = {
-    name: "Monk",
-    hitDieSize: 8,
-    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple"]),
-    weaponProficiencies: /* @__PURE__ */ new Set(["shortsword"]),
-    saveProficiencies: /* @__PURE__ */ new Set(["str", "dex"]),
-    skillChoices: 2,
-    skillProficiencies: /* @__PURE__ */ new Set([
-      "Acrobatics",
-      "Athletics",
-      "History",
-      "Insight",
-      "Religion",
-      "Stealth"
-    ]),
-    features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense2, MartialArts]]])
-  };
-  var monk_default = Monk;
-
-  // src/spells/level1/FogCloud.ts
-  var FogCloud = scalingSpell({
-    status: "incomplete",
-    name: "Fog Cloud",
-    level: 1,
-    school: "Conjuration",
-    concentration: true,
-    v: true,
-    s: true,
-    lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
-    getAffectedArea: (g2, caster, { point, slot }) => point && [{ type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point }],
-    getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
-    getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, _method, { point, slot }) {
-        const radius = 20 * slot;
-        const area = new ActiveEffectArea(
-          "Fog Cloud",
-          { type: "sphere", centre: point, radius },
-          /* @__PURE__ */ new Set(["heavily obscured"])
-        );
-        g2.addEffectArea(area);
-        yield caster.concentrateOn({
-          spell: FogCloud,
-          duration: hours(1),
-          onSpellEnd: () => __async(this, null, function* () {
-            return g2.removeEffectArea(area);
-          })
-        });
-      });
-    }
-  });
-  var FogCloud_default = FogCloud;
-
-  // src/spells/level2/GustOfWind.ts
-  var GustOfWind = simpleSpell({
-    name: "Gust of Wind",
-    level: 2,
-    school: "Evocation",
-    concentration: true,
-    v: true,
-    s: true,
-    m: "a legume seed",
-    lists: ["Druid", "Sorcerer", "Wizard"],
-    getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
-    getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point }) {
-      });
-    }
-  });
-  var GustOfWind_default = GustOfWind;
-
-  // src/spells/level3/WallOfWater.ts
-  var shapeChoices2 = [
-    { label: "line", value: "line" },
-    { label: "ring", value: "ring" }
-  ];
-  var WallOfWater = simpleSpell({
-    name: "Wall of Water",
-    level: 3,
-    school: "Evocation",
-    concentration: true,
-    v: true,
-    s: true,
-    m: "a drop of water",
-    lists: ["Druid", "Sorcerer", "Wizard"],
-    getConfig: (g2) => ({
-      point: new PointResolver(g2, 60),
-      shape: new ChoiceResolver(g2, shapeChoices2)
-    }),
-    getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
-      });
-    }
-  });
-  var WallOfWater_default = WallOfWater;
-
-  // src/races/Triton.ts
-  var Amphibious = notImplementedFeature(
-    "Amphibious",
-    `You can breathe air and water.`
-  );
-  var FogCloudResource = new LongRestResource(
-    "Control Air and Water: Fog Cloud",
-    1
-  );
-  var GustOfWindResource = new LongRestResource(
-    "Control Air and Water: Gust of Wind",
-    1
-  );
-  var WallOfWaterResource = new LongRestResource(
-    "Control Air and Water: Wall of Water",
-    1
-  );
-  var ControlAirAndWaterSpells = [
-    { level: 1, spell: FogCloud_default, resource: FogCloudResource },
-    { level: 3, spell: GustOfWind_default, resource: GustOfWindResource },
-    { level: 5, spell: WallOfWater_default, resource: WallOfWaterResource }
-  ];
-  var ControlAirAndWaterMethod = new InnateSpellcasting(
-    "Control Air and Water",
-    "cha",
-    (spell) => {
-      if (spell === FogCloud_default)
-        return FogCloudResource;
-      if (spell === GustOfWind_default)
-        return GustOfWindResource;
-      if (spell === WallOfWater_default)
-        return WallOfWaterResource;
-    }
-  );
-  var ControlAirAndWater = bonusSpellsFeature(
-    "Control Air and Water",
-    `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can\u2019t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
-    "level",
-    ControlAirAndWaterMethod,
-    ControlAirAndWaterSpells
-  );
-  var Darkvision2 = darkvisionFeature();
-  var EmissaryOfTheSea = nonCombatFeature(
-    "Emissary of the Sea",
-    `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
-  );
-  var GuardiansOfTheDepths = resistanceFeature(
-    "Guardians of the Depths",
-    `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
-    ["cold"]
-  );
-  var Triton = {
-    name: "Triton",
-    size: "medium",
-    abilities: /* @__PURE__ */ new Map([
-      ["str", 1],
-      ["con", 1],
-      ["cha", 1]
-    ]),
-    movement: /* @__PURE__ */ new Map([
-      ["speed", 30],
-      ["swim", 30]
-    ]),
-    languages: /* @__PURE__ */ new Set(["Common", "Primordial"]),
-    features: /* @__PURE__ */ new Set([
-      Amphibious,
-      ControlAirAndWater,
-      Darkvision2,
-      EmissaryOfTheSea,
-      GuardiansOfTheDepths
-    ])
-  };
-  var Triton_default = Triton;
-
-  // src/pcs/wizards/Tethilssethanar_token.png
-  var Tethilssethanar_token_default = "./Tethilssethanar_token-7GNDRUAR.png";
-
-  // src/pcs/wizards/Tethilssethanar.ts
-  var Tethilssethanar = class extends PC {
-    constructor(g2) {
-      super(g2, "Tethilssethanar", Tethilssethanar_token_default);
-      this.setAbilityScores(9, 14, 13, 8, 15, 13);
-      this.setRace(Triton_default);
-      this.addClassLevel(monk_default);
-      this.skills.set("Athletics", 1);
-      this.skills.set("Insight", 1);
-      this.don(new Dart(g2, 10));
-      this.don(new Sickle(g2));
-      this.inventory.add(new Sling(g2));
-      this.inventory.add(new SlingBullet(g2, 40));
-    }
-  };
-
   // src/ui/App.tsx
   var import_hooks15 = __toESM(require_hooks());
 
@@ -9432,22 +9144,18 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       {
         g,
         onMount: () => {
-          const thug = new Thug(g);
-          const badger = new Badger(g);
-          const hunk = new Tethilssethanar(g);
           const aura = new Aura(g);
           const beldalynn = new Beldalynn(g);
           const galilea = new Galilea(g);
           const salgar = new Salgar(g);
           const hagrond = new Hagrond(g);
-          g.place(thug, 0, 0);
-          g.place(badger, 10, 0);
-          g.place(hunk, 10, 5);
+          const birnotec = new Birnotec(g);
           g.place(aura, 20, 20);
           g.place(beldalynn, 10, 30);
           g.place(galilea, 5, 0);
           g.place(salgar, 15, 30);
           g.place(hagrond, 0, 5);
+          g.place(birnotec, 15, 0);
           g.start();
         }
       }

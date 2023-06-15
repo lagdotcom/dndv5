@@ -1,3 +1,4 @@
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import Combatant from "../types/Combatant";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
@@ -7,6 +8,7 @@ export interface CombatantDamagedDetail {
   attacker: Combatant;
   total: number;
   breakdown: Map<DamageType, DamageBreakdown>;
+  interrupt: InterruptionCollector;
 }
 
 export default class CombatantDamagedEvent extends CustomEvent<CombatantDamagedDetail> {
