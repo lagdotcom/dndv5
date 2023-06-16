@@ -42,15 +42,21 @@ export default abstract class AbstractAction<T extends object = Empty>
     return this.damage;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getTime(config: Partial<T>) {
+    return this.time;
+  }
+
   check(config: Partial<T>, ec: ErrorCollector) {
-    if (this.time && !this.actor.time.has(this.time))
-      ec.add(`No ${this.time} left`, this);
+    const time = this.getTime(config);
+    if (time && !this.actor.time.has(time)) ec.add(`No ${time} left`, this);
 
     return ec;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async apply(config: T) {
-    if (this.time) this.actor.time.delete(this.time);
+    const time = this.getTime(config);
+    if (time) this.actor.time.delete(time);
   }
 }

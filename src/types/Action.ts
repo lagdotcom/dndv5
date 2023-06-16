@@ -16,7 +16,6 @@ export default interface Action<T extends object = object> extends Source {
   actor: Combatant;
   icon?: ActionIcon;
   subIcon?: ActionIcon;
-  time?: ActionTime;
   isAttack?: boolean;
   isSpell?: boolean;
 
@@ -25,4 +24,5 @@ export default interface Action<T extends object = object> extends Source {
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape[] | undefined;
   getConfig(config: Partial<T>): ActionConfig<T>;
   getDamage(config: Partial<T>): DamageAmount[] | undefined;
+  getTime(config: Partial<T>): ActionTime | undefined;
 }

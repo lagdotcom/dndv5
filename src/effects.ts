@@ -6,6 +6,12 @@ import Combatant from "./types/Combatant";
 import { distance } from "./utils/units";
 
 export const Dead = new Effect("Dead", "turnStart", undefined, true);
+export const UsedAttackAction = new Effect(
+  "Used Attack Action",
+  "turnStart",
+  undefined,
+  true
+);
 
 class DropProneAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {

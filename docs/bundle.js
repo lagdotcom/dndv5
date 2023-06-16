@@ -345,16 +345,22 @@
     getDamage(config) {
       return this.damage;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTime(config) {
+      return this.time;
+    }
     check(config, ec) {
-      if (this.time && !this.actor.time.has(this.time))
-        ec.add(`No ${this.time} left`, this);
+      const time = this.getTime(config);
+      if (time && !this.actor.time.has(time))
+        ec.add(`No ${time} left`, this);
       return ec;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     apply(config) {
       return __async(this, null, function* () {
-        if (this.time)
-          this.actor.time.delete(this.time);
+        const time = this.getTime(config);
+        if (time)
+          this.actor.time.delete(time);
       });
     }
   };
@@ -437,81 +443,6 @@
     if (item == null ? void 0 : item.iconUrl)
       return { url: item.iconUrl, colour: ItemRarityColours[item.rarity] };
   }
-
-  // src/utils/dnd.ts
-  function getAbilityModifier(ability) {
-    return Math.floor((ability - 10) / 2);
-  }
-  function getDiceAverage(count, size) {
-    return (size + 1) / 2 * count;
-  }
-  function getProficiencyBonusByLevel(level) {
-    return Math.ceil(level / 4) + 1;
-  }
-  function getSaveDC(who, ability) {
-    return 8 + who.pb + who[ability].modifier;
-  }
-
-  // src/AbilityScore.ts
-  var AbilityScore = class {
-    constructor(baseScore = 10, baseMaximum = 20) {
-      this.baseScore = baseScore;
-      this.baseMaximum = baseMaximum;
-    }
-    get score() {
-      return Math.min(this.baseScore, this.maximum);
-    }
-    set score(value) {
-      this.baseScore = value;
-    }
-    get maximum() {
-      return this.baseMaximum;
-    }
-    set maximum(value) {
-      this.baseMaximum = value;
-    }
-    get modifier() {
-      return getAbilityModifier(this.score);
-    }
-    setMaximum(value) {
-      this.baseMaximum = Math.max(this.baseMaximum, value);
-    }
-    setScore(value) {
-      this.baseScore = value;
-    }
-  };
-
-  // src/collectors/ConditionCollector.ts
-  var ConditionCollector = class extends SetCollector {
-  };
-
-  // src/events/EffectAddedEvent.ts
-  var EffectAddedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectAdded", { detail });
-    }
-  };
-
-  // src/events/EffectRemovedEvent.ts
-  var EffectRemovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectRemoved", { detail });
-    }
-  };
-
-  // src/events/GetConditionsEvent.ts
-  var GetConditionsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetConditions", { detail });
-    }
-  };
-
-  // src/events/GetSpeedEvent.ts
-  var GetSpeedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetSpeed", { detail });
-    }
-  };
 
   // src/Polygon.ts
   var Polygon = class {
@@ -779,6 +710,194 @@
     return enumerateMapSquares(minX, minY, maxX, maxY);
   }
 
+  // src/utils/units.ts
+  var categoryUnits = {
+    tiny: 1,
+    small: 1,
+    medium: 1,
+    large: 2,
+    huge: 3,
+    gargantuan: 4
+  };
+  function convertSizeToUnit(size) {
+    return categoryUnits[size] * MapSquareSize;
+  }
+  function getDistanceBetween(posA, sizeA, posB, sizeB) {
+    const dx = Math.abs(posA.x - posB.x);
+    const dy = Math.abs(posA.y - posB.y);
+    return Math.max(dx, dy);
+  }
+  function distance(g2, a, b) {
+    const as = g2.getState(a);
+    const bs = g2.getState(b);
+    return getDistanceBetween(
+      as.position,
+      a.sizeInUnits,
+      bs.position,
+      b.sizeInUnits
+    );
+  }
+  function distanceTo(g2, who, to) {
+    const s = g2.getState(who);
+    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
+  }
+  function getSquares(who, position) {
+    return new PointSet(
+      enumerateMapSquares(
+        position.x,
+        position.y,
+        position.x + who.sizeInUnits,
+        position.y + who.sizeInUnits
+      )
+    );
+  }
+
+  // src/effects.ts
+  var Dead = new Effect("Dead", "turnStart", void 0, true);
+  var UsedAttackAction = new Effect(
+    "Used Attack Action",
+    "turnStart",
+    void 0,
+    true
+  );
+  var DropProneAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Drop Prone", "implemented", {});
+    }
+    check(config, ec) {
+      if (this.actor.conditions.has("Prone"))
+        ec.add("already prone", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(DropProneAction.prototype, this, "apply").call(this, {});
+        this.actor.addEffect(Prone, { duration: Infinity });
+      });
+    }
+  };
+  var StandUpAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Stand Up", "implemented", {});
+    }
+    check(config, ec) {
+      if (!this.actor.conditions.has("Prone"))
+        ec.add("not prone", this);
+      const speed = this.actor.speed;
+      if (speed <= 0)
+        ec.add("cannot move", this);
+      else if (this.actor.movedSoFar > speed / 2)
+        ec.add("not enough movement", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(StandUpAction.prototype, this, "apply").call(this, {});
+        const speed = this.actor.speed;
+        this.actor.movedSoFar += speed / 2;
+        this.actor.removeEffect(Prone);
+      });
+    }
+  };
+  var Prone = new Effect("Prone", "turnEnd", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(Prone))
+        conditions.add("Prone", Prone);
+    });
+    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+      actions.push(
+        who.conditions.has("Prone") ? new StandUpAction(g2, who) : new DropProneAction(g2, who)
+      );
+    });
+    g2.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Prone"))
+        multiplier.add("double", Prone);
+    });
+    g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+      if (who.conditions.has("Prone"))
+        diceType.add("disadvantage", Prone);
+      if (target.conditions.has("Prone")) {
+        const d = distance(g2, who, target);
+        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
+      }
+    });
+  });
+
+  // src/utils/dnd.ts
+  function getAbilityModifier(ability) {
+    return Math.floor((ability - 10) / 2);
+  }
+  function getDiceAverage(count, size) {
+    return (size + 1) / 2 * count;
+  }
+  function getProficiencyBonusByLevel(level) {
+    return Math.ceil(level / 4) + 1;
+  }
+  function getSaveDC(who, ability) {
+    return 8 + who.pb + who[ability].modifier;
+  }
+
+  // src/AbilityScore.ts
+  var AbilityScore = class {
+    constructor(baseScore = 10, baseMaximum = 20) {
+      this.baseScore = baseScore;
+      this.baseMaximum = baseMaximum;
+    }
+    get score() {
+      return Math.min(this.baseScore, this.maximum);
+    }
+    set score(value) {
+      this.baseScore = value;
+    }
+    get maximum() {
+      return this.baseMaximum;
+    }
+    set maximum(value) {
+      this.baseMaximum = value;
+    }
+    get modifier() {
+      return getAbilityModifier(this.score);
+    }
+    setMaximum(value) {
+      this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+    setScore(value) {
+      this.baseScore = value;
+    }
+  };
+
+  // src/collectors/ConditionCollector.ts
+  var ConditionCollector = class extends SetCollector {
+  };
+
+  // src/events/EffectAddedEvent.ts
+  var EffectAddedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectAdded", { detail });
+    }
+  };
+
+  // src/events/EffectRemovedEvent.ts
+  var EffectRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectRemoved", { detail });
+    }
+  };
+
+  // src/events/GetConditionsEvent.ts
+  var GetConditionsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetConditions", { detail });
+    }
+  };
+
+  // src/events/GetSpeedEvent.ts
+  var GetSpeedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSpeed", { detail });
+    }
+  };
+
   // src/events/SpellCastEvent.ts
   var SpellCastEvent = class extends CustomEvent {
     constructor(detail) {
@@ -815,6 +934,9 @@
       var _a;
       const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
       return this.method.getResourceForSpell(this.spell, level, this.actor);
+    }
+    getTime() {
+      return this.time;
     }
     check(config, ec) {
       if (!this.actor.time.has(this.spell.time))
@@ -1043,48 +1165,6 @@
     for (const enchantment of enchantments)
       item.addEnchantment(enchantment);
     return item;
-  }
-
-  // src/utils/units.ts
-  var categoryUnits = {
-    tiny: 1,
-    small: 1,
-    medium: 1,
-    large: 2,
-    huge: 3,
-    gargantuan: 4
-  };
-  function convertSizeToUnit(size) {
-    return categoryUnits[size] * MapSquareSize;
-  }
-  function getDistanceBetween(posA, sizeA, posB, sizeB) {
-    const dx = Math.abs(posA.x - posB.x);
-    const dy = Math.abs(posA.y - posB.y);
-    return Math.max(dx, dy);
-  }
-  function distance(g2, a, b) {
-    const as = g2.getState(a);
-    const bs = g2.getState(b);
-    return getDistanceBetween(
-      as.position,
-      a.sizeInUnits,
-      bs.position,
-      b.sizeInUnits
-    );
-  }
-  function distanceTo(g2, who, to) {
-    const s = g2.getState(who);
-    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
-  }
-  function getSquares(who, position) {
-    return new PointSet(
-      enumerateMapSquares(
-        position.x,
-        position.y,
-        position.x + who.sizeInUnits,
-        position.y + who.sizeInUnits
-      )
-    );
   }
 
   // src/AbstractCombatant.ts
@@ -1440,10 +1520,17 @@
     getDamage() {
       return [this.weapon.damage];
     }
+    getTime() {
+      if (this.actor.hasEffect(UsedAttackAction))
+        return void 0;
+      return "action";
+    }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
+        __superGet(WeaponAttack.prototype, this, "apply").call(this, { target });
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
         attacker.attacksSoFar.add(this);
+        attacker.addEffect(UsedAttackAction, { duration: 1 });
         const tags = /* @__PURE__ */ new Set();
         tags.add(
           distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee"
@@ -1685,71 +1772,6 @@
         rule.setup(g2);
     }
   };
-
-  // src/effects.ts
-  var Dead = new Effect("Dead", "turnStart", void 0, true);
-  var DropProneAction = class extends AbstractAction {
-    constructor(g2, actor) {
-      super(g2, actor, "Drop Prone", "implemented", {});
-    }
-    check(config, ec) {
-      if (this.actor.conditions.has("Prone"))
-        ec.add("already prone", this);
-      return super.check(config, ec);
-    }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(DropProneAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(Prone, { duration: Infinity });
-      });
-    }
-  };
-  var StandUpAction = class extends AbstractAction {
-    constructor(g2, actor) {
-      super(g2, actor, "Stand Up", "implemented", {});
-    }
-    check(config, ec) {
-      if (!this.actor.conditions.has("Prone"))
-        ec.add("not prone", this);
-      const speed = this.actor.speed;
-      if (speed <= 0)
-        ec.add("cannot move", this);
-      else if (this.actor.movedSoFar > speed / 2)
-        ec.add("not enough movement", this);
-      return super.check(config, ec);
-    }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(StandUpAction.prototype, this, "apply").call(this, {});
-        const speed = this.actor.speed;
-        this.actor.movedSoFar += speed / 2;
-        this.actor.removeEffect(Prone);
-      });
-    }
-  };
-  var Prone = new Effect("Prone", "turnEnd", (g2) => {
-    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-      if (who.hasEffect(Prone))
-        conditions.add("Prone", Prone);
-    });
-    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-      actions.push(
-        who.conditions.has("Prone") ? new StandUpAction(g2, who) : new DropProneAction(g2, who)
-      );
-    });
-    g2.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
-      if (who.conditions.has("Prone"))
-        multiplier.add("double", Prone);
-    });
-    g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-      if (who.conditions.has("Prone"))
-        diceType.add("disadvantage", Prone);
-      if (target.conditions.has("Prone")) {
-        const d = distance(g2, who, target);
-        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
-      }
-    });
-  });
 
   // src/events/AfterActionEvent.ts
   var AfterActionEvent = class extends CustomEvent {

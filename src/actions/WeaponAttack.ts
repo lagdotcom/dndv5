@@ -2,6 +2,7 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import { getItemIcon } from "../colours";
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
+import { UsedAttackAction } from "../effects";
 import Engine from "../Engine";
 import TargetResolver from "../resolvers/TargetResolver";
 import AbilityName from "../types/AbilityName";
@@ -43,9 +44,19 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
     return [this.weapon.damage];
   }
 
+  getTime() {
+    // if we already used Attack, costs nothing
+    if (this.actor.hasEffect(UsedAttackAction)) return undefined;
+
+    return "action";
+  }
+
   async apply({ target }: HasTarget) {
+    super.apply({ target });
+
     const { ability, ammo, weapon, actor: attacker, g } = this;
     attacker.attacksSoFar.add(this);
+    attacker.addEffect(UsedAttackAction, { duration: 1 });
 
     const tags = new Set<AttackTag>();
     tags.add(
