@@ -1,10 +1,10 @@
 import AbstractAction from "../../actions/AbstractAction";
-import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasPoints } from "../../configs";
 import Engine from "../../Engine";
 import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
+import Resource from "../../types/Resource";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
@@ -17,11 +17,12 @@ async function fireMeteors(
   g: Engine,
   attacker: Combatant,
   method: SpellcastingMethod,
-  { points }: HasPoints
+  { points }: HasPoints,
+  spendMeteors = true
 ) {
-  // TODO Sculpt Spells
-  attacker.spendResource(MeteorResource, points.length);
+  if (spendMeteors) attacker.spendResource(MeteorResource, points.length);
 
+  // TODO Sculpt Spells
   const damage = await g.rollDamage(2, {
     source: MelfsMinuteMeteors,
     attacker,
@@ -75,9 +76,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
           120
         ),
       },
-      "bonus action",
-      undefined,
-      [_dd(2, 6, "fire")]
+      { time: "bonus action", damage: [_dd(2, 6, "fire")] }
     );
   }
 
@@ -88,15 +87,13 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
       );
   }
 
-  check({ points }: Partial<HasPoints>, ec: ErrorCollector) {
-    if (!this.actor.hasResource(MeteorResource, points?.length ?? 1))
-      ec.add(`Not enough meteors left`, this);
-
-    return super.check({ points }, ec);
+  getResources({ points }: Partial<HasPoints>): Map<Resource, number> {
+    return new Map([[MeteorResource, points?.length ?? 1]]);
   }
 
   async apply(config: HasPoints) {
-    return fireMeteors(this.g, this.actor, this.method, config);
+    super.apply(config);
+    return fireMeteors(this.g, this.actor, this.method, config, false);
   }
 }
 

@@ -11,7 +11,7 @@ class CloakHoodAction extends AbstractAction {
       cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
       "incomplete",
       {},
-      "action"
+      { time: "action" }
     );
   }
 

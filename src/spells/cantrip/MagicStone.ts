@@ -1,5 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
-import ErrorCollector from "../../collectors/ErrorCollector";
+import AbstractAttackAction from "../../actions/AbstractAttackAction";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
@@ -12,7 +11,7 @@ import { simpleSpell } from "../common";
 
 const MagicStoneResource = new TemporaryResource("Magic Stone", 3);
 
-class MagicStoneAction extends AbstractAction<HasTarget> {
+class MagicStoneAction extends AbstractAttackAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -25,28 +24,18 @@ class MagicStoneAction extends AbstractAction<HasTarget> {
       "Throw Magic Stone",
       "incomplete",
       { target: new TargetResolver(g, 60) },
-      undefined,
-      undefined,
-      [_dd(1, 6, "bludgeoning")]
+      {
+        damage: [_dd(1, 6, "bludgeoning")],
+        resources: [[MagicStoneResource, 1]],
+      }
     );
-
-    this.isAttack = true;
-  }
-
-  check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
-    if (!this.actor.hasResource(MagicStoneResource))
-      ec.add("no magic stones left", MagicStoneAction);
-
-    return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {
     super.apply({ target });
     const { g, actor, method } = this;
 
-    actor.spendResource(MagicStoneResource);
     if (actor.getResource(MagicStoneResource) < 1) this.unsubscribe();
-    actor.attacksSoFar.add(this);
 
     const { attack, critical, hit } = await g.attack({
       who: actor,

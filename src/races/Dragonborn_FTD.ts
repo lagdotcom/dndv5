@@ -1,6 +1,5 @@
-import AbstractAction from "../actions/AbstractAction";
+import AbstractAttackAction from "../actions/AbstractAttackAction";
 import { aimCone } from "../aim";
-import ErrorCollector from "../collectors/ErrorCollector";
 import { HasPoint } from "../configs";
 import Effect from "../Effect";
 import Engine from "../Engine";
@@ -31,7 +30,7 @@ const MetallicBreathWeaponResource = new LongRestResource(
   1
 );
 
-class BreathWeaponAction extends AbstractAction<HasPoint> {
+class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -44,12 +43,11 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
       "Breath Weapon",
       "incomplete",
       { point: new PointResolver(g, 15) },
-      undefined,
-      undefined,
-      [_dd(damageDice, 10, damageType)]
+      {
+        damage: [_dd(damageDice, 10, damageType)],
+        resources: [[BreathWeaponResource, 1]],
+      }
     );
-
-    this.isAttack = true;
   }
 
   private getArea(point: Point) {
@@ -58,25 +56,13 @@ class BreathWeaponAction extends AbstractAction<HasPoint> {
     return aimCone(position, size, point, 15);
   }
 
-  getAffectedArea({
-    point,
-  }: Partial<HasPoint>): SpecifiedEffectShape[] | undefined {
+  getAffectedArea({ point }: Partial<HasPoint>) {
     if (point) return [this.getArea(point)];
   }
 
-  check(config: never, ec: ErrorCollector) {
-    if (!this.actor.hasResource(BreathWeaponResource))
-      ec.add("No breath weapons left", this);
-
-    return super.check(config, ec);
-  }
-
   async apply({ point }: HasPoint) {
-    const { actor: attacker, g, damageDice, damageType } = this;
-
     super.apply({ point });
-    attacker.spendResource(BreathWeaponResource);
-    attacker.attacksSoFar.add(this);
+    const { actor: attacker, g, damageDice, damageType } = this;
 
     const damage = await g.rollDamage(damageDice, {
       source: this,
@@ -112,16 +98,21 @@ function getBreathWeaponDamageDice(level: number) {
   return 4;
 }
 
-class MetallicBreathAction extends AbstractAction<HasPoint> {
+class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
   constructor(
     g: Engine,
     actor: Combatant,
     name: string,
     status: ImplementationStatus = "missing"
   ) {
-    super(g, actor, name, status, {
-      point: new PointResolver(g, 15),
-    });
+    super(
+      g,
+      actor,
+      name,
+      status,
+      { point: new PointResolver(g, 15) },
+      { resources: [[MetallicBreathWeaponResource, 1]] }
+    );
   }
 
   getArea(point: Point) {
@@ -134,18 +125,6 @@ class MetallicBreathAction extends AbstractAction<HasPoint> {
     point,
   }: Partial<HasPoint>): SpecifiedEffectShape[] | undefined {
     if (point) return [this.getArea(point)];
-  }
-
-  check(config: Partial<HasPoint>, ec: ErrorCollector): ErrorCollector {
-    if (!this.actor.hasResource(MetallicBreathWeaponResource))
-      ec.add("no metallic breath weapon left", this);
-
-    return super.check(config, ec);
-  }
-
-  async apply(config: HasPoint) {
-    super.apply(config);
-    this.actor.spendResource(MetallicBreathWeaponResource);
   }
 }
 

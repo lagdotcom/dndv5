@@ -1,5 +1,4 @@
 import AbstractAction from "../actions/AbstractAction";
-import ErrorCollector from "../collectors/ErrorCollector";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
 import { BoundedMove } from "../movement";
@@ -19,21 +18,13 @@ class HissAction extends AbstractAction<HasTarget> {
       "Hiss (Boon of Vassetri)",
       "implemented",
       { target: new TargetResolver(g, 5) },
-      "bonus action"
+      { time: "bonus action", resources: [[HissResource, 1]] }
     );
-  }
-
-  check(config: Partial<HasTarget>, ec: ErrorCollector) {
-    if (!this.actor.hasResource(HissResource)) ec.add("out of hisses", this);
-
-    return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {
     super.apply({ target });
-
     const { g, actor } = this;
-    actor.spendResource(HissResource);
 
     if (target.time.has("reaction")) {
       const dc = getSaveDC(actor, "cha");

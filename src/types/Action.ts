@@ -5,6 +5,7 @@ import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
 import ImplementationStatus from "./ImplementationStatus";
 import Resolver from "./Resolver";
+import Resource from "./Resource";
 import Source from "./Source";
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
@@ -24,5 +25,6 @@ export default interface Action<T extends object = object> extends Source {
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape[] | undefined;
   getConfig(config: Partial<T>): ActionConfig<T>;
   getDamage(config: Partial<T>): DamageAmount[] | undefined;
+  getResources(config: Partial<T>): Map<Resource, number>;
   getTime(config: Partial<T>): ActionTime | undefined;
 }

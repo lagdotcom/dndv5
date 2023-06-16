@@ -38,14 +38,11 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
             .map((value) => ({ label: value.name, value }))
         ),
       },
-      "action"
+      { time: "action", resources: [[ChannelDivinityResource, 1]] }
     );
   }
 
   check(config: never, ec: ErrorCollector) {
-    if (!this.actor.hasResource(ChannelDivinityResource))
-      ec.add("no Channel Divinity left", this);
-
     if (this.actor.hasEffect(SacredWeaponEffect))
       ec.add("already active", this);
 
@@ -54,7 +51,6 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
 
   async apply({ weapon }: HasWeapon) {
     super.apply({ weapon });
-    this.actor.spendResource(ChannelDivinityResource);
     this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
 
     // TODO The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that.

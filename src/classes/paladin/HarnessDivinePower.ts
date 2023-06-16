@@ -44,14 +44,17 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
             })
         ),
       },
-      "bonus action"
+      {
+        time: "bonus action",
+        resources: [
+          [ChannelDivinityResource, 1],
+          [HarnessDivinePowerResource, 1],
+        ],
+      }
     );
   }
 
   check({ slot }: Partial<Scales>, ec: ErrorCollector): ErrorCollector {
-    if (!this.actor.hasResource(HarnessDivinePowerResource))
-      ec.add("no Harness Divine Power left", this);
-
     if (slot) {
       const resource = SpellSlotResources[slot];
 
@@ -67,7 +70,6 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
   async apply({ slot }: Scales) {
     super.apply({ slot });
 
-    this.actor.spendResource(ChannelDivinityResource);
     this.actor.giveResource(SpellSlotResources[slot], 1);
   }
 }

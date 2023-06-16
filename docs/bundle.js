@@ -323,15 +323,16 @@
 
   // src/actions/AbstractAction.ts
   var AbstractAction = class {
-    constructor(g2, actor, name, status, config, time, area, damage) {
+    constructor(g2, actor, name, status, config, { area, damage, resources, time } = {}) {
       this.g = g2;
       this.actor = actor;
       this.name = name;
       this.status = status;
       this.config = config;
-      this.time = time;
       this.area = area;
       this.damage = damage;
+      this.resources = new Map(resources);
+      this.time = time;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getAffectedArea(config) {
@@ -346,6 +347,10 @@
       return this.damage;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getResources(config) {
+      return this.resources;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getTime(config) {
       return this.time;
     }
@@ -353,6 +358,9 @@
       const time = this.getTime(config);
       if (time && !this.actor.time.has(time))
         ec.add(`No ${time} left`, this);
+      for (const [resource, cost] of this.getResources(config))
+        if (!this.actor.hasResource(resource, cost))
+          ec.add(`Not enough ${resource.name} left`, this);
       return ec;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -361,6 +369,8 @@
         const time = this.getTime(config);
         if (time)
           this.actor.time.delete(time);
+        for (const [resource, cost] of this.getResources(config))
+          this.actor.spendResource(resource, cost);
       });
     }
   };
@@ -374,7 +384,7 @@
   });
   var DashAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Dash", "implemented", {}, "action");
+      super(g2, actor, "Dash", "implemented", {}, { time: "action" });
     }
     check(config, ec) {
       if (this.actor.speed <= 0)
@@ -394,7 +404,7 @@
   });
   var DisengageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Disengage", "missing", {}, "action");
+      super(g2, actor, "Disengage", "missing", {}, { time: "action" });
     }
     apply() {
       return __async(this, null, function* () {
@@ -420,7 +430,7 @@
   });
   var DodgeAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Dodge", "incomplete", {}, "action");
+      super(g2, actor, "Dodge", "incomplete", {}, { time: "action" });
     }
     apply() {
       return __async(this, null, function* () {
@@ -443,6 +453,81 @@
     if (item == null ? void 0 : item.iconUrl)
       return { url: item.iconUrl, colour: ItemRarityColours[item.rarity] };
   }
+
+  // src/utils/dnd.ts
+  function getAbilityModifier(ability) {
+    return Math.floor((ability - 10) / 2);
+  }
+  function getDiceAverage(count, size) {
+    return (size + 1) / 2 * count;
+  }
+  function getProficiencyBonusByLevel(level) {
+    return Math.ceil(level / 4) + 1;
+  }
+  function getSaveDC(who, ability) {
+    return 8 + who.pb + who[ability].modifier;
+  }
+
+  // src/AbilityScore.ts
+  var AbilityScore = class {
+    constructor(baseScore = 10, baseMaximum = 20) {
+      this.baseScore = baseScore;
+      this.baseMaximum = baseMaximum;
+    }
+    get score() {
+      return Math.min(this.baseScore, this.maximum);
+    }
+    set score(value) {
+      this.baseScore = value;
+    }
+    get maximum() {
+      return this.baseMaximum;
+    }
+    set maximum(value) {
+      this.baseMaximum = value;
+    }
+    get modifier() {
+      return getAbilityModifier(this.score);
+    }
+    setMaximum(value) {
+      this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+    setScore(value) {
+      this.baseScore = value;
+    }
+  };
+
+  // src/collectors/ConditionCollector.ts
+  var ConditionCollector = class extends SetCollector {
+  };
+
+  // src/events/EffectAddedEvent.ts
+  var EffectAddedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectAdded", { detail });
+    }
+  };
+
+  // src/events/EffectRemovedEvent.ts
+  var EffectRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectRemoved", { detail });
+    }
+  };
+
+  // src/events/GetConditionsEvent.ts
+  var GetConditionsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetConditions", { detail });
+    }
+  };
+
+  // src/events/GetSpeedEvent.ts
+  var GetSpeedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSpeed", { detail });
+    }
+  };
 
   // src/Polygon.ts
   var Polygon = class {
@@ -710,194 +795,6 @@
     return enumerateMapSquares(minX, minY, maxX, maxY);
   }
 
-  // src/utils/units.ts
-  var categoryUnits = {
-    tiny: 1,
-    small: 1,
-    medium: 1,
-    large: 2,
-    huge: 3,
-    gargantuan: 4
-  };
-  function convertSizeToUnit(size) {
-    return categoryUnits[size] * MapSquareSize;
-  }
-  function getDistanceBetween(posA, sizeA, posB, sizeB) {
-    const dx = Math.abs(posA.x - posB.x);
-    const dy = Math.abs(posA.y - posB.y);
-    return Math.max(dx, dy);
-  }
-  function distance(g2, a, b) {
-    const as = g2.getState(a);
-    const bs = g2.getState(b);
-    return getDistanceBetween(
-      as.position,
-      a.sizeInUnits,
-      bs.position,
-      b.sizeInUnits
-    );
-  }
-  function distanceTo(g2, who, to) {
-    const s = g2.getState(who);
-    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
-  }
-  function getSquares(who, position) {
-    return new PointSet(
-      enumerateMapSquares(
-        position.x,
-        position.y,
-        position.x + who.sizeInUnits,
-        position.y + who.sizeInUnits
-      )
-    );
-  }
-
-  // src/effects.ts
-  var Dead = new Effect("Dead", "turnStart", void 0, true);
-  var UsedAttackAction = new Effect(
-    "Used Attack Action",
-    "turnStart",
-    void 0,
-    true
-  );
-  var DropProneAction = class extends AbstractAction {
-    constructor(g2, actor) {
-      super(g2, actor, "Drop Prone", "implemented", {});
-    }
-    check(config, ec) {
-      if (this.actor.conditions.has("Prone"))
-        ec.add("already prone", this);
-      return super.check(config, ec);
-    }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(DropProneAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(Prone, { duration: Infinity });
-      });
-    }
-  };
-  var StandUpAction = class extends AbstractAction {
-    constructor(g2, actor) {
-      super(g2, actor, "Stand Up", "implemented", {});
-    }
-    check(config, ec) {
-      if (!this.actor.conditions.has("Prone"))
-        ec.add("not prone", this);
-      const speed = this.actor.speed;
-      if (speed <= 0)
-        ec.add("cannot move", this);
-      else if (this.actor.movedSoFar > speed / 2)
-        ec.add("not enough movement", this);
-      return super.check(config, ec);
-    }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(StandUpAction.prototype, this, "apply").call(this, {});
-        const speed = this.actor.speed;
-        this.actor.movedSoFar += speed / 2;
-        this.actor.removeEffect(Prone);
-      });
-    }
-  };
-  var Prone = new Effect("Prone", "turnEnd", (g2) => {
-    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-      if (who.hasEffect(Prone))
-        conditions.add("Prone", Prone);
-    });
-    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-      actions.push(
-        who.conditions.has("Prone") ? new StandUpAction(g2, who) : new DropProneAction(g2, who)
-      );
-    });
-    g2.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
-      if (who.conditions.has("Prone"))
-        multiplier.add("double", Prone);
-    });
-    g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-      if (who.conditions.has("Prone"))
-        diceType.add("disadvantage", Prone);
-      if (target.conditions.has("Prone")) {
-        const d = distance(g2, who, target);
-        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
-      }
-    });
-  });
-
-  // src/utils/dnd.ts
-  function getAbilityModifier(ability) {
-    return Math.floor((ability - 10) / 2);
-  }
-  function getDiceAverage(count, size) {
-    return (size + 1) / 2 * count;
-  }
-  function getProficiencyBonusByLevel(level) {
-    return Math.ceil(level / 4) + 1;
-  }
-  function getSaveDC(who, ability) {
-    return 8 + who.pb + who[ability].modifier;
-  }
-
-  // src/AbilityScore.ts
-  var AbilityScore = class {
-    constructor(baseScore = 10, baseMaximum = 20) {
-      this.baseScore = baseScore;
-      this.baseMaximum = baseMaximum;
-    }
-    get score() {
-      return Math.min(this.baseScore, this.maximum);
-    }
-    set score(value) {
-      this.baseScore = value;
-    }
-    get maximum() {
-      return this.baseMaximum;
-    }
-    set maximum(value) {
-      this.baseMaximum = value;
-    }
-    get modifier() {
-      return getAbilityModifier(this.score);
-    }
-    setMaximum(value) {
-      this.baseMaximum = Math.max(this.baseMaximum, value);
-    }
-    setScore(value) {
-      this.baseScore = value;
-    }
-  };
-
-  // src/collectors/ConditionCollector.ts
-  var ConditionCollector = class extends SetCollector {
-  };
-
-  // src/events/EffectAddedEvent.ts
-  var EffectAddedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectAdded", { detail });
-    }
-  };
-
-  // src/events/EffectRemovedEvent.ts
-  var EffectRemovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectRemoved", { detail });
-    }
-  };
-
-  // src/events/GetConditionsEvent.ts
-  var GetConditionsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetConditions", { detail });
-    }
-  };
-
-  // src/events/GetSpeedEvent.ts
-  var GetSpeedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetSpeed", { detail });
-    }
-  };
-
   // src/events/SpellCastEvent.ts
   var SpellCastEvent = class extends CustomEvent {
     constructor(detail) {
@@ -930,10 +827,15 @@
     getDamage(config) {
       return this.spell.getDamage(this.g, this.actor, config);
     }
-    getResource(config) {
+    getResources(config) {
       var _a;
       const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
-      return this.method.getResourceForSpell(this.spell, level, this.actor);
+      const resource = this.method.getResourceForSpell(
+        this.spell,
+        level,
+        this.actor
+      );
+      return new Map(resource ? [[resource, 1]] : void 0);
     }
     getTime() {
       return this.time;
@@ -941,18 +843,17 @@
     check(config, ec) {
       if (!this.actor.time.has(this.spell.time))
         ec.add(`No ${this.spell.time} left`, this);
-      const resource = this.getResource(config);
-      if (resource && !this.actor.hasResource(resource))
-        ec.add(`No ${resource.name} left`, this.method);
+      for (const [resource, amount] of this.getResources(config))
+        if (!this.actor.hasResource(resource, amount))
+          ec.add(`Not enough ${resource.name} left`, this.method);
       return this.spell.check(this.g, config, ec);
     }
     apply(config) {
       return __async(this, null, function* () {
         const { actor, g: g2, method, spell } = this;
         actor.time.delete(spell.time);
-        const resource = this.getResource(config);
-        if (resource)
-          actor.spendResource(resource, 1);
+        for (const [resource, amount] of this.getResources(config))
+          actor.spendResource(resource, amount);
         const sc = yield g2.resolve(
           new SpellCastEvent({
             who: actor,
@@ -1165,6 +1066,48 @@
     for (const enchantment of enchantments)
       item.addEnchantment(enchantment);
     return item;
+  }
+
+  // src/utils/units.ts
+  var categoryUnits = {
+    tiny: 1,
+    small: 1,
+    medium: 1,
+    large: 2,
+    huge: 3,
+    gargantuan: 4
+  };
+  function convertSizeToUnit(size) {
+    return categoryUnits[size] * MapSquareSize;
+  }
+  function getDistanceBetween(posA, sizeA, posB, sizeB) {
+    const dx = Math.abs(posA.x - posB.x);
+    const dy = Math.abs(posA.y - posB.y);
+    return Math.max(dx, dy);
+  }
+  function distance(g2, a, b) {
+    const as = g2.getState(a);
+    const bs = g2.getState(b);
+    return getDistanceBetween(
+      as.position,
+      a.sizeInUnits,
+      bs.position,
+      b.sizeInUnits
+    );
+  }
+  function distanceTo(g2, who, to) {
+    const s = g2.getState(who);
+    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
+  }
+  function getSquares(who, position) {
+    return new PointSet(
+      enumerateMapSquares(
+        position.x,
+        position.y,
+        position.x + who.sizeInUnits,
+        position.y + who.sizeInUnits
+      )
+    );
   }
 
   // src/AbstractCombatant.ts
@@ -1497,8 +1440,99 @@
     }
   };
 
+  // src/effects.ts
+  var Dead = new Effect("Dead", "turnStart", void 0, true);
+  var UsedAttackAction = new Effect(
+    "Used Attack Action",
+    "turnStart",
+    void 0,
+    true
+  );
+  var DropProneAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Drop Prone", "implemented", {});
+    }
+    check(config, ec) {
+      if (this.actor.conditions.has("Prone"))
+        ec.add("already prone", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(DropProneAction.prototype, this, "apply").call(this, {});
+        this.actor.addEffect(Prone, { duration: Infinity });
+      });
+    }
+  };
+  var StandUpAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Stand Up", "implemented", {});
+    }
+    check(config, ec) {
+      if (!this.actor.conditions.has("Prone"))
+        ec.add("not prone", this);
+      const speed = this.actor.speed;
+      if (speed <= 0)
+        ec.add("cannot move", this);
+      else if (this.actor.movedSoFar > speed / 2)
+        ec.add("not enough movement", this);
+      return super.check(config, ec);
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(StandUpAction.prototype, this, "apply").call(this, {});
+        const speed = this.actor.speed;
+        this.actor.movedSoFar += speed / 2;
+        this.actor.removeEffect(Prone);
+      });
+    }
+  };
+  var Prone = new Effect("Prone", "turnEnd", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(Prone))
+        conditions.add("Prone", Prone);
+    });
+    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+      actions.push(
+        who.conditions.has("Prone") ? new StandUpAction(g2, who) : new DropProneAction(g2, who)
+      );
+    });
+    g2.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Prone"))
+        multiplier.add("double", Prone);
+    });
+    g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+      if (who.conditions.has("Prone"))
+        diceType.add("disadvantage", Prone);
+      if (target.conditions.has("Prone")) {
+        const d = distance(g2, who, target);
+        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
+      }
+    });
+  });
+
+  // src/actions/AbstractAttackAction.ts
+  var AbstractAttackAction = class extends AbstractAction {
+    constructor(g2, actor, name, status, config, options = {}) {
+      super(g2, actor, name, status, config, options);
+      this.isAttack = true;
+    }
+    getTime() {
+      if (this.actor.hasEffect(UsedAttackAction))
+        return void 0;
+      return "action";
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        __superGet(AbstractAttackAction.prototype, this, "apply").call(this, config);
+        this.actor.attacksSoFar.add(this);
+        this.actor.addEffect(UsedAttackAction, { duration: 1 });
+      });
+    }
+  };
+
   // src/actions/WeaponAttack.ts
-  var WeaponAttack = class extends AbstractAction {
+  var WeaponAttack = class extends AbstractAttackAction {
     constructor(g2, actor, weapon, ammo) {
       super(
         g2,
@@ -1510,27 +1544,16 @@
       this.weapon = weapon;
       this.ammo = ammo;
       this.ability = getWeaponAbility(actor, weapon);
-      this.isAttack = true;
       this.icon = getItemIcon(weapon);
       this.subIcon = getItemIcon(ammo);
     }
-    check(config, ec) {
-      return super.check(config, ec);
-    }
     getDamage() {
       return [this.weapon.damage];
-    }
-    getTime() {
-      if (this.actor.hasEffect(UsedAttackAction))
-        return void 0;
-      return "action";
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         __superGet(WeaponAttack.prototype, this, "apply").call(this, { target });
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
-        attacker.attacksSoFar.add(this);
-        attacker.addEffect(UsedAttackAction, { duration: 1 });
         const tags = /* @__PURE__ */ new Set();
         tags.add(
           distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee"
@@ -2423,15 +2446,6 @@
     });
   }
 
-  // src/interruptions/EvaluateLater.ts
-  var EvaluateLater = class {
-    constructor(who, source, apply) {
-      this.who = who;
-      this.source = source;
-      this.apply = apply;
-    }
-  };
-
   // src/events/YesNoChoiceEvent.ts
   var YesNoChoiceEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2463,172 +2477,6 @@
     }
   };
 
-  // src/utils/dice.ts
-  var _dd = (count, size, damage) => ({
-    type: "dice",
-    amount: { count, size },
-    damageType: damage
-  });
-  function getDefaultHPRoll(level, hitDieSize) {
-    if (level === 1)
-      return hitDieSize;
-    return Math.ceil(getDiceAverage(1, hitDieSize));
-  }
-
-  // src/items/AbstractItem.ts
-  var AbstractItem = class {
-    constructor(g2, itemType, name, hands = 0) {
-      this.g = g2;
-      this.itemType = itemType;
-      this.name = name;
-      this.hands = hands;
-      this.enchantments = /* @__PURE__ */ new Set();
-      this.rarity = "Common";
-    }
-    addEnchantment(e) {
-      this.enchantments.add(e);
-      e.setup(this.g, this);
-    }
-  };
-
-  // src/items/icons/light-crossbow.svg
-  var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
-
-  // src/items/icons/longsword.svg
-  var longsword_default = "./longsword-B4PZKYLG.svg";
-
-  // src/items/icons/quarterstaff.svg
-  var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
-
-  // src/items/icons/spear.svg
-  var spear_default = "./spear-JE22DTMJ.svg";
-
-  // src/items/icons/trident.svg
-  var trident_default = "./trident-XL6WP2YY.svg";
-
-  // src/items/weapons.ts
-  var AbstractWeapon = class extends AbstractItem {
-    constructor(g2, name, category, rangeCategory, damage, properties = [], shortRange, longRange) {
-      super(g2, "weapon", name, 1);
-      this.g = g2;
-      this.category = category;
-      this.rangeCategory = rangeCategory;
-      this.damage = damage;
-      this.shortRange = shortRange;
-      this.longRange = longRange;
-      this.weaponType = name;
-      this.properties = new Set(properties);
-      this.quantity = 1;
-    }
-  };
-  var Dagger = class extends AbstractWeapon {
-    constructor(g2, quantity) {
-      super(
-        g2,
-        "dagger",
-        "simple",
-        "melee",
-        _dd(1, 4, "piercing"),
-        ["finesse", "light", "thrown"],
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Handaxe = class extends AbstractWeapon {
-    constructor(g2, quantity) {
-      super(
-        g2,
-        "handaxe",
-        "simple",
-        "melee",
-        _dd(1, 6, "slashing"),
-        ["light", "thrown"],
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Quarterstaff = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "quarterstaff", "simple", "melee", _dd(1, 6, "bludgeoning"), [
-        "versatile"
-      ]);
-      this.iconUrl = quarterstaff_default;
-    }
-  };
-  var Spear = class extends AbstractWeapon {
-    constructor(g2, quantity) {
-      super(
-        g2,
-        "spear",
-        "simple",
-        "melee",
-        _dd(1, 6, "piercing"),
-        ["thrown", "versatile"],
-        20,
-        60
-      );
-      this.quantity = quantity;
-      this.iconUrl = spear_default;
-    }
-  };
-  var LightCrossbow = class extends AbstractWeapon {
-    constructor(g2) {
-      super(
-        g2,
-        "light crossbow",
-        "simple",
-        "ranged",
-        _dd(1, 8, "piercing"),
-        ["ammunition", "loading", "two-handed"],
-        80,
-        320
-      );
-      this.ammunitionTag = "crossbow";
-      this.iconUrl = light_crossbow_default;
-    }
-  };
-  var Longsword = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "longsword", "martial", "melee", _dd(1, 8, "slashing"), [
-        "versatile"
-      ]);
-      this.iconUrl = longsword_default;
-    }
-  };
-  var Rapier = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "rapier", "martial", "melee", _dd(1, 8, "piercing"), ["finesse"]);
-    }
-  };
-  var Shortsword = class extends AbstractWeapon {
-    constructor(g2) {
-      super(g2, "shortsword", "martial", "melee", _dd(1, 6, "piercing"), [
-        "finesse",
-        "light"
-      ]);
-    }
-  };
-  var Trident = class extends AbstractWeapon {
-    constructor(g2, quantity) {
-      super(
-        g2,
-        "trident",
-        "martial",
-        "melee",
-        _dd(1, 6, "piercing"),
-        ["thrown", "versatile"],
-        20,
-        60
-      );
-      this.quantity = quantity;
-      this.iconUrl = trident_default;
-    }
-  };
-
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
     constructor(g2, name, cr, type, size, img) {
@@ -2646,62 +2494,209 @@
     }
   };
 
+  // src/spells/InnateSpellcasting.ts
+  var InnateSpellcasting = class {
+    constructor(name, ability, getResourceForSpell, icon) {
+      this.name = name;
+      this.ability = ability;
+      this.getResourceForSpell = getResourceForSpell;
+      this.icon = icon;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    addCastableSpell() {
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell) {
+      return spell.level;
+    }
+  };
+
+  // src/spells/SpellAttack.ts
+  var SpellAttack = class {
+    constructor(g2, caster, spell, method, type, config) {
+      this.g = g2;
+      this.caster = caster;
+      this.spell = spell;
+      this.method = method;
+      this.type = type;
+      this.config = config;
+    }
+    attack(target) {
+      return __async(this, null, function* () {
+        const { caster: who, method, spell, type } = this;
+        this.attackResult = yield this.g.attack({
+          who,
+          target,
+          ability: method.ability,
+          tags: /* @__PURE__ */ new Set([type, "spell", "magical"]),
+          spell,
+          method
+        });
+        return this.attackResult;
+      });
+    }
+    getDamage(target) {
+      return __async(this, null, function* () {
+        if (!this.attackResult)
+          throw new Error("Run .attack() first");
+        const { critical } = this.attackResult;
+        const { g: g2, caster: attacker, config, method, spell } = this;
+        const damage = spell.getDamage(g2, attacker, config);
+        if (damage) {
+          const amounts = [];
+          let first = true;
+          for (const { type, amount, damageType } of damage) {
+            if (first) {
+              this.baseDamageType = damageType;
+              first = false;
+            }
+            if (type === "dice") {
+              const { count, size } = amount;
+              const roll = yield g2.rollDamage(
+                count,
+                {
+                  source: spell,
+                  size,
+                  damageType,
+                  attacker,
+                  target,
+                  spell,
+                  method
+                },
+                critical
+              );
+              amounts.push([damageType, roll]);
+            } else
+              amounts.push([damageType, amount]);
+          }
+          return amounts;
+        }
+      });
+    }
+    damage(target, initialiser) {
+      return __async(this, null, function* () {
+        if (!this.attackResult)
+          throw new Error("Run .attack() first");
+        const { attack, critical, hit } = this.attackResult;
+        if (!hit)
+          return;
+        const { g: g2, baseDamageType, caster: attacker, method, spell } = this;
+        if (!baseDamageType)
+          throw new Error("Run .getDamage() first");
+        const damageResult = yield g2.damage(
+          spell,
+          baseDamageType,
+          { attack, attacker, target, critical, spell, method },
+          initialiser
+        );
+        return damageResult;
+      });
+    }
+  };
+
+  // src/utils/dice.ts
+  var _dd = (count, size, damage) => ({
+    type: "dice",
+    amount: { count, size },
+    damageType: damage
+  });
+  function getDefaultHPRoll(level, hitDieSize) {
+    if (level === 1)
+      return hitDieSize;
+    return Math.ceil(getDiceAverage(1, hitDieSize));
+  }
+
   // src/monsters/fiendishParty/Birnotec_token.png
   var Birnotec_token_default = "./Birnotec_token-JGKE3FD4.png";
 
   // src/monsters/fiendishParty/Birnotec.ts
-  var EldritchBurst = class extends AbstractWeapon {
-    constructor(g2) {
-      super(
-        g2,
-        "Eldritch Burst",
-        "natural",
-        "ranged",
-        _dd(2, 10, "force"),
-        void 0,
-        120,
-        120
-      );
-      this.forceAbilityScore = "cha";
-      g2.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
-        if (action instanceof WeaponAttack && action.weapon === this)
-          interrupt.add(
-            new EvaluateLater(action.actor, this, () => __async(this, null, function* () {
-              const { actor: attacker } = action;
-              const { target } = config;
-              const damage = yield g2.rollDamage(1, {
-                size: 10,
-                damageType: "force",
-                source: this,
-                attacker,
-                weapon: this
-              });
-              for (const other of g2.getInside({
-                type: "within",
-                target,
-                position: g2.getState(target).position,
-                radius: 5
-              })) {
-                if (target === other)
-                  continue;
-                const save = yield g2.savingThrow(
-                  15,
-                  { attacker, who: other, ability: "dex", tags: /* @__PURE__ */ new Set() },
-                  { fail: "normal", save: "zero" }
-                );
-                yield g2.damage(
-                  this,
-                  "force",
-                  { attacker, target: other, weapon: this },
-                  [["force", damage]],
-                  save.damageResponse
-                );
-              }
-            }))
+  function getArea(g2, target) {
+    return {
+      type: "within",
+      radius: 5,
+      target,
+      position: g2.getState(target).position
+    };
+  }
+  var EldritchBurstSpell = simpleSpell({
+    status: "implemented",
+    name: "Eldritch Burst",
+    level: 0,
+    school: "Evocation",
+    lists: ["Warlock"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 120) }),
+    getAffectedArea: (g2, caster, { target }) => target && [getArea(g2, target)],
+    getDamage: () => [_dd(2, 10, "force")],
+    getTargets: (g2, caster, { target }) => [target],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+        const rsa = new SpellAttack(
+          g2,
+          caster,
+          EldritchBurstSpell,
+          BirnotecSpellcasting,
+          "ranged",
+          { target }
+        );
+        const attack = yield rsa.attack(target);
+        if (attack.outcome === "cancelled")
+          return;
+        if (attack.hit) {
+          const damage2 = yield rsa.getDamage(target);
+          yield rsa.damage(target, damage2);
+        }
+        const damage = yield g2.rollDamage(
+          1,
+          { size: 10, source: this, attacker: caster, damageType: "force" },
+          attack.critical
+        );
+        for (const other of g2.getInside(getArea(g2, target))) {
+          if (other === target)
+            continue;
+          const save = yield g2.savingThrow(
+            15,
+            {
+              attacker: caster,
+              who: other,
+              ability: "dex",
+              spell: EldritchBurstSpell,
+              method,
+              tags: /* @__PURE__ */ new Set()
+            },
+            { fail: "normal", save: "zero" }
+          );
+          yield g2.damage(
+            this,
+            "force",
+            { attacker: caster, target: other, spell: EldritchBurstSpell, method },
+            [["force", damage]],
+            save.damageResponse
+          );
+        }
+      });
+    }
+  });
+  var BirnotecSpellcasting = new InnateSpellcasting(
+    "Spellcasting",
+    "cha",
+    () => void 0
+  );
+  var EldritchBurst = new SimpleFeature(
+    "Eldritch Burst",
+    `Ranged Spell Attack: +8 to hit, range 120 ft., one target. Hit: 11 (2d10) force damage. All other creatures within 5 ft. must make a DC 15 Dexterity save or take 5 (1d10) force damage.`,
+    (g2, me) => {
+      me.spellcastingMethods.add(BirnotecSpellcasting);
+      me.preparedSpells.add(EldritchBurstSpell);
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new CastSpell(g2, me, BirnotecSpellcasting, EldritchBurstSpell)
           );
       });
     }
-  };
+  );
   var ArmorOfAgathys = notImplementedFeature(
     "Armor of Agathys",
     `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`
@@ -2766,7 +2761,7 @@
       this.skills.set("Arcana", 1);
       this.skills.set("Nature", 1);
       this.addFeature(ArmorOfAgathys);
-      this.naturalWeapons.add(new EldritchBurst(g2));
+      this.addFeature(EldritchBurst);
       this.addFeature(AntimagicProdigy);
       this.addFeature(HellishRebuke);
     }
@@ -2922,7 +2917,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   });
   var SteadyAimAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Steady Aim", "implemented", {}, "bonus action");
+      super(g2, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
     }
     check(config, ec) {
       if (this.actor.movedSoFar)
@@ -3429,19 +3424,13 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         "Hiss (Boon of Vassetri)",
         "implemented",
         { target: new TargetResolver(g2, 5) },
-        "bonus action"
+        { time: "bonus action", resources: [[HissResource, 1]] }
       );
-    }
-    check(config, ec) {
-      if (!this.actor.hasResource(HissResource))
-        ec.add("out of hisses", this);
-      return super.check(config, ec);
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         __superGet(HissAction.prototype, this, "apply").call(this, { target });
         const { g: g2, actor } = this;
-        actor.spendResource(HissResource);
         if (target.time.has("reaction")) {
           const dc = getSaveDC(actor, "cha");
           const save = yield g2.savingThrow(dc, {
@@ -3480,6 +3469,22 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       });
     }
   );
+
+  // src/items/AbstractItem.ts
+  var AbstractItem = class {
+    constructor(g2, itemType, name, hands = 0) {
+      this.g = g2;
+      this.itemType = itemType;
+      this.name = name;
+      this.hands = hands;
+      this.enchantments = /* @__PURE__ */ new Set();
+      this.rarity = "Common";
+    }
+    addEnchantment(e) {
+      this.enchantments.add(e);
+      e.setup(this.g, this);
+    }
+  };
 
   // src/items/icons/bolt.svg
   var bolt_default = "./bolt-RV5OQWXW.svg";
@@ -3528,6 +3533,144 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     constructor(g2) {
       super(g2, "shield", "shield", 2);
       this.hands = 1;
+    }
+  };
+
+  // src/items/icons/light-crossbow.svg
+  var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
+
+  // src/items/icons/longsword.svg
+  var longsword_default = "./longsword-B4PZKYLG.svg";
+
+  // src/items/icons/quarterstaff.svg
+  var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
+
+  // src/items/icons/spear.svg
+  var spear_default = "./spear-JE22DTMJ.svg";
+
+  // src/items/icons/trident.svg
+  var trident_default = "./trident-XL6WP2YY.svg";
+
+  // src/items/weapons.ts
+  var AbstractWeapon = class extends AbstractItem {
+    constructor(g2, name, category, rangeCategory, damage, properties = [], shortRange, longRange) {
+      super(g2, "weapon", name, 1);
+      this.g = g2;
+      this.category = category;
+      this.rangeCategory = rangeCategory;
+      this.damage = damage;
+      this.shortRange = shortRange;
+      this.longRange = longRange;
+      this.weaponType = name;
+      this.properties = new Set(properties);
+      this.quantity = 1;
+    }
+  };
+  var Dagger = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "dagger",
+        "simple",
+        "melee",
+        _dd(1, 4, "piercing"),
+        ["finesse", "light", "thrown"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Handaxe = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "handaxe",
+        "simple",
+        "melee",
+        _dd(1, 6, "slashing"),
+        ["light", "thrown"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Quarterstaff = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "quarterstaff", "simple", "melee", _dd(1, 6, "bludgeoning"), [
+        "versatile"
+      ]);
+      this.iconUrl = quarterstaff_default;
+    }
+  };
+  var Spear = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "spear",
+        "simple",
+        "melee",
+        _dd(1, 6, "piercing"),
+        ["thrown", "versatile"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+      this.iconUrl = spear_default;
+    }
+  };
+  var LightCrossbow = class extends AbstractWeapon {
+    constructor(g2) {
+      super(
+        g2,
+        "light crossbow",
+        "simple",
+        "ranged",
+        _dd(1, 8, "piercing"),
+        ["ammunition", "loading", "two-handed"],
+        80,
+        320
+      );
+      this.ammunitionTag = "crossbow";
+      this.iconUrl = light_crossbow_default;
+    }
+  };
+  var Longsword = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "longsword", "martial", "melee", _dd(1, 8, "slashing"), [
+        "versatile"
+      ]);
+      this.iconUrl = longsword_default;
+    }
+  };
+  var Rapier = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "rapier", "martial", "melee", _dd(1, 8, "piercing"), ["finesse"]);
+    }
+  };
+  var Shortsword = class extends AbstractWeapon {
+    constructor(g2) {
+      super(g2, "shortsword", "martial", "melee", _dd(1, 6, "piercing"), [
+        "finesse",
+        "light"
+      ]);
+    }
+  };
+  var Trident = class extends AbstractWeapon {
+    constructor(g2, quantity) {
+      super(
+        g2,
+        "trident",
+        "martial",
+        "melee",
+        _dd(1, 6, "piercing"),
+        ["thrown", "versatile"],
+        20,
+        60
+      );
+      this.quantity = quantity;
+      this.iconUrl = trident_default;
     }
   };
 
@@ -3679,25 +3822,6 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
     addSubclass(sub) {
       this.subclasses.set(sub.className, sub);
-    }
-  };
-
-  // src/spells/InnateSpellcasting.ts
-  var InnateSpellcasting = class {
-    constructor(name, ability, getResourceForSpell, icon) {
-      this.name = name;
-      this.ability = ability;
-      this.getResourceForSpell = getResourceForSpell;
-      this.icon = icon;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    addCastableSpell() {
-    }
-    getMinSlot(spell) {
-      return spell.level;
-    }
-    getMaxSlot(spell) {
-      return spell.level;
     }
   };
 
@@ -4233,7 +4357,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Metallic Breath Weapon",
     1
   );
-  var BreathWeaponAction = class extends AbstractAction {
+  var BreathWeaponAction = class extends AbstractAttackAction {
     constructor(g2, actor, damageType, damageDice) {
       super(
         g2,
@@ -4241,36 +4365,27 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "Breath Weapon",
         "incomplete",
         { point: new PointResolver(g2, 15) },
-        void 0,
-        void 0,
-        [_dd(damageDice, 10, damageType)]
+        {
+          damage: [_dd(damageDice, 10, damageType)],
+          resources: [[BreathWeaponResource, 1]]
+        }
       );
       this.damageType = damageType;
       this.damageDice = damageDice;
-      this.isAttack = true;
     }
     getArea(point) {
       const position = this.g.getState(this.actor).position;
       const size = this.actor.sizeInUnits;
       return aimCone(position, size, point, 15);
     }
-    getAffectedArea({
-      point
-    }) {
+    getAffectedArea({ point }) {
       if (point)
         return [this.getArea(point)];
     }
-    check(config, ec) {
-      if (!this.actor.hasResource(BreathWeaponResource))
-        ec.add("No breath weapons left", this);
-      return super.check(config, ec);
-    }
     apply(_0) {
       return __async(this, arguments, function* ({ point }) {
-        const { actor: attacker, g: g2, damageDice, damageType } = this;
         __superGet(BreathWeaponAction.prototype, this, "apply").call(this, { point });
-        attacker.spendResource(BreathWeaponResource);
-        attacker.attacksSoFar.add(this);
+        const { actor: attacker, g: g2, damageDice, damageType } = this;
         const damage = yield g2.rollDamage(damageDice, {
           source: this,
           attacker,
@@ -4305,11 +4420,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return 3;
     return 4;
   }
-  var MetallicBreathAction = class extends AbstractAction {
+  var MetallicBreathAction = class extends AbstractAttackAction {
     constructor(g2, actor, name, status = "missing") {
-      super(g2, actor, name, status, {
-        point: new PointResolver(g2, 15)
-      });
+      super(
+        g2,
+        actor,
+        name,
+        status,
+        { point: new PointResolver(g2, 15) },
+        { resources: [[MetallicBreathWeaponResource, 1]] }
+      );
     }
     getArea(point) {
       const position = this.g.getState(this.actor).position;
@@ -4321,17 +4441,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }) {
       if (point)
         return [this.getArea(point)];
-    }
-    check(config, ec) {
-      if (!this.actor.hasResource(MetallicBreathWeaponResource))
-        ec.add("no metallic breath weapon left", this);
-      return super.check(config, ec);
-    }
-    apply(config) {
-      return __async(this, null, function* () {
-        __superGet(MetallicBreathAction.prototype, this, "apply").call(this, config);
-        this.actor.spendResource(MetallicBreathWeaponResource);
-      });
     }
   };
   var EnervatingBreathEffect = new Effect(
@@ -4564,89 +4673,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var AcidSplash_default = AcidSplash;
 
-  // src/spells/SpellAttack.ts
-  var SpellAttack = class {
-    constructor(g2, caster, spell, method, type, config) {
-      this.g = g2;
-      this.caster = caster;
-      this.spell = spell;
-      this.method = method;
-      this.type = type;
-      this.config = config;
-    }
-    attack(target) {
-      return __async(this, null, function* () {
-        const { caster: who, method, spell, type } = this;
-        this.attackResult = yield this.g.attack({
-          who,
-          target,
-          ability: method.ability,
-          tags: /* @__PURE__ */ new Set([type, "spell", "magical"]),
-          spell,
-          method
-        });
-        return this.attackResult;
-      });
-    }
-    getDamage(target) {
-      return __async(this, null, function* () {
-        if (!this.attackResult)
-          throw new Error("Run .attack() first");
-        const { critical } = this.attackResult;
-        const { g: g2, caster: attacker, config, method, spell } = this;
-        const damage = spell.getDamage(g2, attacker, config);
-        if (damage) {
-          const amounts = [];
-          let first = true;
-          for (const { type, amount, damageType } of damage) {
-            if (first) {
-              this.baseDamageType = damageType;
-              first = false;
-            }
-            if (type === "dice") {
-              const { count, size } = amount;
-              const roll = yield g2.rollDamage(
-                count,
-                {
-                  source: spell,
-                  size,
-                  damageType,
-                  attacker,
-                  target,
-                  spell,
-                  method
-                },
-                critical
-              );
-              amounts.push([damageType, roll]);
-            } else
-              amounts.push([damageType, amount]);
-          }
-          return amounts;
-        }
-      });
-    }
-    damage(target, initialiser) {
-      return __async(this, null, function* () {
-        if (!this.attackResult)
-          throw new Error("Run .attack() first");
-        const { attack, critical, hit } = this.attackResult;
-        if (!hit)
-          return;
-        const { g: g2, baseDamageType, caster: attacker, method, spell } = this;
-        if (!baseDamageType)
-          throw new Error("Run .getDamage() first");
-        const damageResult = yield g2.damage(
-          spell,
-          baseDamageType,
-          { attack, attacker, target, critical, spell, method },
-          initialiser
-        );
-        return damageResult;
-      });
-    }
-  };
-
   // src/spells/cantrip/FireBolt.ts
   var FireBolt = simpleSpell({
     status: "implemented",
@@ -4775,7 +4801,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var RayOfFrost_default = RayOfFrost;
 
   // src/spells/level1/IceKnife.ts
-  var getArea = (g2, target) => ({
+  var getArea2 = (g2, target) => ({
     type: "within",
     target,
     position: g2.getState(target).position,
@@ -4790,12 +4816,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a drop of water or piece of ice",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
-    getAffectedArea: (g2, caster, { target }) => target && [getArea(g2, target)],
+    getAffectedArea: (g2, caster, { target }) => target && [getArea2(g2, target)],
     getDamage: (g2, caster, { slot }) => [
       _dd(1, 10, "piercing"),
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
-    getTargets: (g2, caster, { target }) => g2.getInside(getArea(g2, target)),
+    getTargets: (g2, caster, { target }) => g2.getInside(getArea2(g2, target)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
         const { attack, hit, critical } = yield g2.attack({
@@ -4836,7 +4862,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType: "cold"
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const victim of g2.getInside(getArea(g2, target))) {
+        for (const victim of g2.getInside(getArea2(g2, target))) {
           const save = yield g2.savingThrow(
             dc,
             {
@@ -4943,6 +4969,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
   var EnlargeReduce_default = EnlargeReduce;
+
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply) {
+      this.who = who;
+      this.source = source;
+      this.apply = apply;
+    }
+  };
 
   // src/utils/time.ts
   var TURNS_PER_MINUTE = 10;
@@ -5064,8 +5099,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/spells/level2/MelfsMinuteMeteors.ts
   var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
   function fireMeteors(_0, _1, _2, _3) {
-    return __async(this, arguments, function* (g2, attacker, method, { points }) {
-      attacker.spendResource(MeteorResource, points.length);
+    return __async(this, arguments, function* (g2, attacker, method, { points }, spendMeteors = true) {
+      if (spendMeteors)
+        attacker.spendResource(MeteorResource, points.length);
       const damage = yield g2.rollDamage(2, {
         source: MelfsMinuteMeteors,
         attacker,
@@ -5116,9 +5152,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             120
           )
         },
-        "bonus action",
-        void 0,
-        [_dd(2, 6, "fire")]
+        { time: "bonus action", damage: [_dd(2, 6, "fire")] }
       );
       this.method = method;
     }
@@ -5128,15 +5162,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           (centre) => ({ type: "sphere", centre, radius: 5 })
         );
     }
-    check({ points }, ec) {
+    getResources({ points }) {
       var _a;
-      if (!this.actor.hasResource(MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1))
-        ec.add(`Not enough meteors left`, this);
-      return super.check({ points }, ec);
+      return /* @__PURE__ */ new Map([[MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
     }
     apply(config) {
       return __async(this, null, function* () {
-        return fireMeteors(this.g, this.actor, this.method, config);
+        __superGet(FireMeteorsAction.prototype, this, "apply").call(this, config);
+        return fireMeteors(this.g, this.actor, this.method, config, false);
       });
     }
   };
@@ -5197,7 +5230,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
 
   // src/spells/level3/Fireball.ts
-  var getArea2 = (centre) => ({
+  var getArea3 = (centre) => ({
     type: "sphere",
     centre,
     radius: 20
@@ -5212,9 +5245,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     m: "a tiny ball of bat guano and sulfur",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
-    getAffectedArea: (g2, caster, { point }) => point && [getArea2(point)],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea3(point)],
     getDamage: (g2, caster, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea2(point)),
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea3(point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
         const damage = yield g2.rollDamage(5 + slot, {
@@ -5226,7 +5259,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside(getArea2(point))) {
+        for (const target of g2.getInside(getArea3(point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "dex",
@@ -5436,12 +5469,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             })
           )
         },
-        "bonus action"
+        {
+          time: "bonus action",
+          resources: [
+            [ChannelDivinityResource, 1],
+            [HarnessDivinePowerResource, 1]
+          ]
+        }
       );
     }
     check({ slot }, ec) {
-      if (!this.actor.hasResource(HarnessDivinePowerResource))
-        ec.add("no Harness Divine Power left", this);
       if (slot) {
         const resource = SpellSlotResources[slot];
         if (this.actor.getResource(resource) === this.actor.getResourceMax(resource))
@@ -5452,7 +5489,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     apply(_0) {
       return __async(this, arguments, function* ({ slot }) {
         __superGet(HarnessDivinePowerAction.prototype, this, "apply").call(this, { slot });
-        this.actor.spendResource(ChannelDivinityResource);
         this.actor.giveResource(SpellSlotResources[slot], 1);
       });
     }
@@ -5815,12 +5851,10 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
             actor.weapons.filter((weapon) => weapon.category !== "natural").map((value) => ({ label: value.name, value }))
           )
         },
-        "action"
+        { time: "action", resources: [[ChannelDivinityResource, 1]] }
       );
     }
     check(config, ec) {
-      if (!this.actor.hasResource(ChannelDivinityResource))
-        ec.add("no Channel Divinity left", this);
       if (this.actor.hasEffect(SacredWeaponEffect))
         ec.add("already active", this);
       return ec;
@@ -5828,7 +5862,6 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     apply(_0) {
       return __async(this, arguments, function* ({ weapon }) {
         __superGet(SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
-        this.actor.spendResource(ChannelDivinityResource);
         this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
       });
     }
@@ -6142,7 +6175,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var RageResource = new LongRestResource("Rage", 2);
   var EndRageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "End Rage", "implemented", {}, "bonus action");
+      super(g2, actor, "End Rage", "implemented", {}, { time: "bonus action" });
     }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
@@ -6198,17 +6231,18 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var RageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Rage", "incomplete", {}, "bonus action");
-    }
-    check(config, ec) {
-      if (!this.actor.hasResource(RageResource))
-        ec.add("No rages left", this);
-      return super.check(config, ec);
+      super(
+        g2,
+        actor,
+        "Rage",
+        "incomplete",
+        {},
+        { time: "bonus action", resources: [[RageResource, 1]] }
+      );
     }
     apply() {
       return __async(this, null, function* () {
         __superGet(RageAction.prototype, this, "apply").call(this, {});
-        this.actor.spendResource(RageResource);
         this.actor.addEffect(RageEffect, { duration: minutes(1) });
         yield this.actor.endConcentration();
       });
@@ -6881,7 +6915,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var SpikeGrowth_default = SpikeGrowth;
 
   // src/spells/level3/LightningBolt.ts
-  function getArea3(g2, actor, point) {
+  function getArea4(g2, actor, point) {
     const position = g2.getState(actor).position;
     const size = actor.sizeInUnits;
     return aimLine(position, size, point, 100, 5);
@@ -6897,8 +6931,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
     getDamage: (g2, caster, { slot }) => [_dd((slot != null ? slot : 3) + 5, 6, "lightning")],
-    getAffectedArea: (g2, caster, { point }) => point && [getArea3(g2, caster, point)],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea3(g2, caster, point)),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea4(g2, caster, point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea4(g2, caster, point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(5 + slot, {
@@ -6910,7 +6944,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside(getArea3(g2, attacker, point))) {
+        for (const target of g2.getInside(getArea4(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "dex",
@@ -7049,7 +7083,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var FreedomOfMovement_default = FreedomOfMovement;
 
   // src/spells/level4/IceStorm.ts
-  var getArea4 = (centre) => ({
+  var getArea5 = (centre) => ({
     type: "cylinder",
     centre,
     radius: 20,
@@ -7064,8 +7098,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
-    getAffectedArea: (g2, caster, { point }) => point && [getArea4(point)],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea4(point)),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea5(point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea5(point)),
     getDamage: (g2, caster, { slot }) => [
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
@@ -7139,7 +7173,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var CommuneWithNature_default = CommuneWithNature;
 
   // src/spells/level5/ConeOfCold.ts
-  var getArea5 = (g2, caster, target) => ({
+  var getArea6 = (g2, caster, target) => ({
     type: "cone",
     radius: 60,
     centre: g2.getState(caster).position,
@@ -7156,8 +7190,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     getDamage: (g2, caster, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
-    getAffectedArea: (g2, caster, { point }) => point && [getArea5(g2, caster, point)],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea5(g2, caster, point)),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea6(g2, caster, point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea6(g2, caster, point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(3 + slot, {
@@ -7169,7 +7203,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside(getArea5(g2, attacker, point))) {
+        for (const target of g2.getInside(getArea6(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "con",
@@ -7399,7 +7433,7 @@ The creature is aware of this effect before it makes its attack against you.`
         cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
         "incomplete",
         {},
-        "action"
+        { time: "action" }
       );
       this.cloak = cloak;
     }
@@ -7500,7 +7534,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/spells/cantrip/MagicStone.ts
   var MagicStoneResource = new TemporaryResource("Magic Stone", 3);
-  var MagicStoneAction = class extends AbstractAction {
+  var MagicStoneAction = class extends AbstractAttackAction {
     constructor(g2, actor, method, unsubscribe) {
       super(
         g2,
@@ -7508,27 +7542,20 @@ The creature is aware of this effect before it makes its attack against you.`
         "Throw Magic Stone",
         "incomplete",
         { target: new TargetResolver(g2, 60) },
-        void 0,
-        void 0,
-        [_dd(1, 6, "bludgeoning")]
+        {
+          damage: [_dd(1, 6, "bludgeoning")],
+          resources: [[MagicStoneResource, 1]]
+        }
       );
       this.method = method;
       this.unsubscribe = unsubscribe;
-      this.isAttack = true;
-    }
-    check(config, ec) {
-      if (!this.actor.hasResource(MagicStoneResource))
-        ec.add("no magic stones left", MagicStoneAction);
-      return super.check(config, ec);
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         __superGet(MagicStoneAction.prototype, this, "apply").call(this, { target });
         const { g: g2, actor, method } = this;
-        actor.spendResource(MagicStoneResource);
         if (actor.getResource(MagicStoneResource) < 1)
           this.unsubscribe();
-        actor.attacksSoFar.add(this);
         const { attack, critical, hit } = yield g2.attack({
           who: actor,
           tags: /* @__PURE__ */ new Set(["ranged", "spell", "magical"]),

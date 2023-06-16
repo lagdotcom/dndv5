@@ -31,7 +31,7 @@ const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
 
 class SteadyAimAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Steady Aim", "implemented", {}, "bonus action");
+    super(g, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
   }
 
   check(config: never, ec: ErrorCollector) {

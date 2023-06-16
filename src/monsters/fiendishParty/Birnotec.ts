@@ -1,70 +1,111 @@
-import WeaponAttack from "../../actions/WeaponAttack";
+import CastSpell from "../../actions/CastSpell";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
-import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
-import { AbstractWeapon } from "../../items/weapons";
 import Monster from "../../Monster";
+import TargetResolver from "../../resolvers/TargetResolver";
+import { simpleSpell } from "../../spells/common";
+import InnateSpellcasting from "../../spells/InnateSpellcasting";
+import SpellAttack from "../../spells/SpellAttack";
+import Combatant from "../../types/Combatant";
+import { SpecifiedWithin } from "../../types/EffectArea";
 import { _dd } from "../../utils/dice";
 import tokenUrl from "./Birnotec_token.png";
 
-class EldritchBurst extends AbstractWeapon {
-  constructor(g: Engine) {
-    super(
+function getArea(g: Engine, target: Combatant): SpecifiedWithin {
+  return {
+    type: "within",
+    radius: 5,
+    target,
+    position: g.getState(target).position,
+  };
+}
+
+const EldritchBurstSpell = simpleSpell<HasTarget>({
+  status: "implemented",
+  name: "Eldritch Burst",
+  level: 0,
+  school: "Evocation",
+  lists: ["Warlock"],
+
+  getConfig: (g) => ({ target: new TargetResolver(g, 120) }),
+  getAffectedArea: (g, caster, { target }) => target && [getArea(g, target)],
+  getDamage: () => [_dd(2, 10, "force")],
+  getTargets: (g, caster, { target }) => [target],
+
+  async apply(g, caster, method, { target }) {
+    const rsa = new SpellAttack(
       g,
-      "Eldritch Burst",
-      "natural",
+      caster,
+      EldritchBurstSpell,
+      BirnotecSpellcasting,
       "ranged",
-      _dd(2, 10, "force"),
-      undefined,
-      120,
-      120
+      { target }
     );
-    this.forceAbilityScore = "cha";
 
-    g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
-      if (action instanceof WeaponAttack && action.weapon === this)
-        interrupt.add(
-          new EvaluateLater(action.actor, this, async () => {
-            const { actor: attacker } = action;
-            const { target } = config as HasTarget;
+    const attack = await rsa.attack(target);
+    if (attack.outcome === "cancelled") return;
 
-            const damage = await g.rollDamage(1, {
-              size: 10,
-              damageType: "force",
-              source: this,
-              attacker,
-              weapon: this,
-            });
+    if (attack.hit) {
+      const damage = await rsa.getDamage(target);
+      await rsa.damage(target, damage);
+    }
 
-            for (const other of g.getInside({
-              type: "within",
-              target,
-              position: g.getState(target).position,
-              radius: 5,
-            })) {
-              if (target === other) continue;
+    const damage = await g.rollDamage(
+      1,
+      { size: 10, source: this, attacker: caster, damageType: "force" },
+      attack.critical
+    );
 
-              const save = await g.savingThrow(
-                15,
-                { attacker, who: other, ability: "dex", tags: new Set() },
-                { fail: "normal", save: "zero" }
-              );
-              await g.damage(
-                this,
-                "force",
-                { attacker, target: other, weapon: this },
-                [["force", damage]],
-                save.damageResponse
-              );
-            }
-          })
+    for (const other of g.getInside(getArea(g, target))) {
+      if (other === target) continue;
+
+      const save = await g.savingThrow(
+        15,
+        {
+          attacker: caster,
+          who: other,
+          ability: "dex",
+          spell: EldritchBurstSpell,
+          method,
+          tags: new Set(),
+        },
+        { fail: "normal", save: "zero" }
+      );
+      await g.damage(
+        this,
+        "force",
+        { attacker: caster, target: other, spell: EldritchBurstSpell, method },
+        [["force", damage]],
+        save.damageResponse
+      );
+    }
+  },
+});
+
+const BirnotecSpellcasting = new InnateSpellcasting(
+  "Spellcasting",
+  "cha",
+  () => undefined
+);
+
+const EldritchBurst = new SimpleFeature(
+  "Eldritch Burst",
+  `Ranged Spell Attack: +8 to hit, range 120 ft., one target. Hit: 11 (2d10) force damage. All other creatures within 5 ft. must make a DC 15 Dexterity save or take 5 (1d10) force damage.`,
+  (g, me) => {
+    me.spellcastingMethods.add(BirnotecSpellcasting);
+    me.preparedSpells.add(EldritchBurstSpell);
+
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me)
+        actions.push(
+          new CastSpell(g, me, BirnotecSpellcasting, EldritchBurstSpell)
         );
     });
   }
-}
+);
 
 // TODO [TEMPORARYHP]
 const ArmorOfAgathys = notImplementedFeature(
@@ -141,9 +182,7 @@ export default class Birnotec extends Monster {
 
     // TODO immune to poison damage, poisoned status
     this.addFeature(ArmorOfAgathys);
-
-    this.naturalWeapons.add(new EldritchBurst(g));
-
+    this.addFeature(EldritchBurst);
     this.addFeature(AntimagicProdigy);
     this.addFeature(HellishRebuke);
   }

@@ -45,12 +45,17 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.getDamage(this.g, this.actor, config);
   }
 
-  getResource(config: Partial<T>) {
+  getResources(config: Partial<T>) {
     const level = this.spell.scaling
       ? (config as unknown as Scales).slot ?? this.spell.level
       : this.spell.level;
+    const resource = this.method.getResourceForSpell(
+      this.spell,
+      level,
+      this.actor
+    );
 
-    return this.method.getResourceForSpell(this.spell, level, this.actor);
+    return new Map(resource ? [[resource, 1]] : undefined);
   }
 
   getTime() {
@@ -61,9 +66,9 @@ export default class CastSpell<T extends object> implements Action<T> {
     if (!this.actor.time.has(this.spell.time))
       ec.add(`No ${this.spell.time} left`, this);
 
-    const resource = this.getResource(config);
-    if (resource && !this.actor.hasResource(resource))
-      ec.add(`No ${resource.name} left`, this.method);
+    for (const [resource, amount] of this.getResources(config))
+      if (!this.actor.hasResource(resource, amount))
+        ec.add(`Not enough ${resource.name} left`, this.method);
 
     return this.spell.check(this.g, config, ec);
   }
@@ -72,8 +77,8 @@ export default class CastSpell<T extends object> implements Action<T> {
     const { actor, g, method, spell } = this;
     actor.time.delete(spell.time);
 
-    const resource = this.getResource(config);
-    if (resource) actor.spendResource(resource, 1);
+    for (const [resource, amount] of this.getResources(config))
+      actor.spendResource(resource, amount);
 
     const sc = await g.resolve(
       new SpellCastEvent({

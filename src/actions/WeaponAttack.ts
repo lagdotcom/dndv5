@@ -1,8 +1,6 @@
-import ErrorCollector from "../collectors/ErrorCollector";
 import { getItemIcon } from "../colours";
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
-import { UsedAttackAction } from "../effects";
 import Engine from "../Engine";
 import TargetResolver from "../resolvers/TargetResolver";
 import AbilityName from "../types/AbilityName";
@@ -11,9 +9,9 @@ import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { distance } from "../utils/units";
-import AbstractAction from "./AbstractAction";
+import AbstractAttackAction from "./AbstractAttackAction";
 
-export default class WeaponAttack extends AbstractAction<HasTarget> {
+export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   ability: AbilityName;
 
   constructor(
@@ -30,33 +28,17 @@ export default class WeaponAttack extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, getWeaponRange(actor, weapon)) }
     );
     this.ability = getWeaponAbility(actor, weapon);
-
-    this.isAttack = true;
     this.icon = getItemIcon(weapon);
     this.subIcon = getItemIcon(ammo);
-  }
-
-  check(config: Partial<HasTarget>, ec: ErrorCollector): ErrorCollector {
-    return super.check(config, ec);
   }
 
   getDamage() {
     return [this.weapon.damage];
   }
 
-  getTime() {
-    // if we already used Attack, costs nothing
-    if (this.actor.hasEffect(UsedAttackAction)) return undefined;
-
-    return "action";
-  }
-
   async apply({ target }: HasTarget) {
     super.apply({ target });
-
     const { ability, ammo, weapon, actor: attacker, g } = this;
-    attacker.attacksSoFar.add(this);
-    attacker.addEffect(UsedAttackAction, { duration: 1 });
 
     const tags = new Set<AttackTag>();
     tags.add(
