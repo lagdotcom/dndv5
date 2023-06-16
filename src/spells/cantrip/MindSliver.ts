@@ -59,7 +59,7 @@ const MindSliver = simpleSpell<HasTarget>({
       save.damageResponse
     );
 
-    if (!save.result) {
+    if (save.outcome === "fail") {
       let endCounter = 2;
       const removeTurnTracker = g.events.on(
         "TurnEnded",

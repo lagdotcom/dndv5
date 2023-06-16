@@ -1,3 +1,4 @@
+import AbilityCheckEvent from "./AbilityCheckEvent";
 import AfterActionEvent from "./AfterActionEvent";
 import AreaPlacedEvent from "./AreaPlacedEvent";
 import AreaRemovedEvent from "./AreaRemovedEvent";
@@ -25,12 +26,14 @@ import GetMoveCostEvent from "./GetMoveCostEvent";
 import GetSpeedEvent from "./GetSpeedEvent";
 import ListChoiceEvent from "./ListChoiceEvent";
 import MultiListChoiceEvent from "./MultiListChoiceEvent";
+import SaveEvent from "./SaveEvent";
 import SpellCastEvent from "./SpellCastEvent";
 import TurnEndedEvent from "./TurnEndedEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
 import YesNoChoiceEvent from "./YesNoChoiceEvent";
 
 export type EventTypes = {
+  AbilityCheck: AbilityCheckEvent;
   AfterAction: AfterActionEvent;
   AreaPlaced: AreaPlacedEvent;
   AreaRemoved: AreaRemovedEvent;
@@ -58,6 +61,7 @@ export type EventTypes = {
   GetSpeed: GetSpeedEvent;
   ListChoice: ListChoiceEvent;
   MultiListChoice: MultiListChoiceEvent;
+  Save: SaveEvent;
   SpellCast: SpellCastEvent;
   TurnEnded: TurnEndedEvent;
   TurnStarted: TurnStartedEvent;

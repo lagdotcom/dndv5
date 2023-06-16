@@ -15,6 +15,12 @@ export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
     bonus.add(who[ability].modifier, AbilityScoreRule);
   });
+  g.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
+    bonus.add(who[ability].modifier, AbilityScoreRule);
+  });
+  g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
+    bonus.add(who[ability].modifier, AbilityScoreRule);
+  });
 
   g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
     if (ability) bonus.add(attacker[ability].modifier, AbilityScoreRule);
@@ -145,7 +151,10 @@ export const ProficiencyRule = new DndRule("Proficiency", (g) => {
     const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
     bonus.add(who.pb * mul, ProficiencyRule);
   });
-
+  g.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
+    const mul = who.getProficiencyMultiplier(skill);
+    bonus.add(who.pb * mul, ProficiencyRule);
+  });
   g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
     const mul = who.getProficiencyMultiplier(ability);
     bonus.add(who.pb * mul, ProficiencyRule);

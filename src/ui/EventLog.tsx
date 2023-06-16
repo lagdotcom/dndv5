@@ -2,16 +2,18 @@ import { ComponentChildren, VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
+import { AbilityCheckEventDetail } from "../events/AbilityCheckEvent";
 import { AttackEventDetail } from "../events/AttackEvent";
 import { CombatantDamagedDetail } from "../events/CombatantDamagedEvent";
 import { CombatantDiedDetail } from "../events/CombatantDiedEvent";
 import { DiceRolledDetail } from "../events/DiceRolledEvent";
 import { EffectAddedDetail } from "../events/EffectAddedEvent";
 import { EffectRemovedDetail } from "../events/EffectRemovedEvent";
+import { SaveEventDetail } from "../events/SaveEvent";
 import { SpellCastDetail } from "../events/SpellCastEvent";
 import DamageBreakdown from "../types/DamageBreakdown";
 import DamageType from "../types/DamageType";
-import { InitiativeRoll, SavingThrow } from "../types/RollType";
+import { InitiativeRoll } from "../types/RollType";
 import { describeAbility } from "../utils/text";
 import CombatantRef from "./CombatantRef";
 import common from "./common.module.scss";
@@ -38,6 +40,7 @@ function AttackMessage({
   pre: { who, target, weapon, ammo, spell },
   roll,
   total,
+  ac,
 }: AttackEventDetail) {
   return (
     <LogMessage
@@ -45,7 +48,7 @@ function AttackMessage({
         roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""
       }${weapon ? ` with ${weapon.name}` : ""}${
         spell ? ` with ${spell.name}` : ""
-      }${ammo ? `, firing ${ammo.name}` : ""} (${total}).`}
+      }${ammo ? `, firing ${ammo.name}` : ""} (${total}). (AC ${ac})`}
     >
       <CombatantRef who={who} />
       attacks&nbsp;
@@ -54,7 +57,7 @@ function AttackMessage({
       {weapon && ` with ${weapon.name}`}
       {spell && ` with ${spell.name}`}
       {ammo && `, firing ${ammo.name}`}
-      &nbsp;({total}).
+      &nbsp;({total}). (AC {ac})
     </LogMessage>
   );
 }
@@ -127,9 +130,25 @@ function EffectRemovedMessage({ who, effect }: EffectRemovedDetail) {
   );
 }
 
-type Roll<T> = Omit<DiceRolledDetail, "type"> & { type: T };
+function AbilityCheckMessage({ roll, total, dc }: AbilityCheckEventDetail) {
+  return (
+    <LogMessage
+      message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
+        roll.type.ability
+      )} (${roll.type.skill}) ability check. (DC ${dc})`}
+    >
+      <CombatantRef who={roll.type.who} /> rolls a {total} on a{" "}
+      {describeAbility(roll.type.ability)} ({roll.type.skill}) ability check.
+      (DC {dc})
+    </LogMessage>
+  );
+}
 
-function InitiativeMessage({ diceType, type, value }: Roll<InitiativeRoll>) {
+function InitiativeMessage({
+  diceType,
+  type,
+  value,
+}: DiceRolledDetail<InitiativeRoll>) {
   return (
     <LogMessage
       message={`${type.who.name} rolls a ${value} for initiative${
@@ -142,15 +161,15 @@ function InitiativeMessage({ diceType, type, value }: Roll<InitiativeRoll>) {
   );
 }
 
-function SaveMessage({ type, value }: Roll<SavingThrow>) {
+function SaveMessage({ roll, total, dc }: SaveEventDetail) {
   return (
     <LogMessage
-      message={`${type.who.name} rolls a ${value} on a ${describeAbility(
-        type.ability
-      )} saving throw.`}
+      message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
+        roll.type.ability
+      )} saving throw. (DC ${dc})`}
     >
-      <CombatantRef who={type.who} /> rolls a {value} on a{" "}
-      {describeAbility(type.ability)} saving throw.
+      <CombatantRef who={roll.type.who} /> rolls a {total} on a{" "}
+      {describeAbility(roll.type.ability)} saving throw. (DC {dc})
     </LogMessage>
   );
 }
@@ -191,10 +210,18 @@ export default function EventLog({ g }: { g: Engine }) {
     );
     g.events.on("DiceRolled", ({ detail }) => {
       if (detail.type.type === "initiative")
-        addMessage(<InitiativeMessage {...(detail as Roll<InitiativeRoll>)} />);
-      else if (detail.type.type === "save")
-        addMessage(<SaveMessage {...(detail as Roll<SavingThrow>)} />);
+        addMessage(
+          <InitiativeMessage
+            {...(detail as DiceRolledDetail<InitiativeRoll>)}
+          />
+        );
     });
+    g.events.on("AbilityCheck", ({ detail }) =>
+      addMessage(<AbilityCheckMessage {...detail} />)
+    );
+    g.events.on("Save", ({ detail }) =>
+      addMessage(<SaveMessage {...detail} />)
+    );
   }, [addMessage, g]);
 
   return (

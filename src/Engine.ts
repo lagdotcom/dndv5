@@ -14,6 +14,7 @@ import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
 import { Dead } from "./effects";
+import AbilityCheckEvent from "./events/AbilityCheckEvent";
 import AfterActionEvent from "./events/AfterActionEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
@@ -21,6 +22,7 @@ import AttackEvent, { AttackEventDetail } from "./events/AttackEvent";
 import BeforeAttackEvent, {
   BeforeAttackDetail,
 } from "./events/BeforeAttackEvent";
+import BeforeCheckEvent from "./events/BeforeCheckEvent";
 import BeforeMoveEvent from "./events/BeforeMoveEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import StartBoundedMoveEvent from "./events/BoundedMoveEvent";
@@ -39,6 +41,7 @@ import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import GetMoveCostEvent from "./events/GetMoveCostEvent";
+import SaveEvent from "./events/SaveEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import { MapSquareSize } from "./MapSquare";
@@ -53,7 +56,11 @@ import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
 import MoveDirection from "./types/MoveDirection";
 import MoveHandler from "./types/MoveHandler";
 import MovementType from "./types/MovementType";
-import RollType, { DamageRoll, SavingThrow } from "./types/RollType";
+import RollType, {
+  AbilityCheck,
+  DamageRoll,
+  SavingThrow,
+} from "./types/RollType";
 import SaveDamageResponse from "./types/SaveDamageResponse";
 import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
@@ -137,21 +144,24 @@ export default class Engine {
 
   async savingThrow(
     dc: number,
-    e: Omit<SavingThrow, "type">,
+    e: Omit<SavingThrow, "dc" | "type">,
     { save, fail }: { save: SaveDamageResponse; fail: SaveDamageResponse } = {
       save: "half",
       fail: "normal",
     }
   ) {
     const successResponse = new SuccessResponseCollector();
+    const bonus = new BonusCollector();
+    const diceType = new DiceTypeCollector();
     const saveDamageResponse = new SaveDamageResponseCollector(save);
     const failDamageResponse = new SaveDamageResponseCollector(fail);
 
     const pre = this.fire(
       new BeforeSaveEvent({
         ...e,
-        bonus: new BonusCollector(),
-        diceType: new DiceTypeCollector(),
+        dc,
+        bonus,
+        diceType,
         successResponse,
         saveDamageResponse,
         failDamageResponse,
@@ -159,28 +169,66 @@ export default class Engine {
     );
 
     let forced = false;
-    let result = false;
+    let success = false;
+    const roll = await this.roll({ type: "save", ...e }, diceType.result);
+    const total = roll.value + bonus.result;
     if (successResponse.result !== "normal") {
-      result = successResponse.result === "succeed";
+      success = successResponse.result === "success";
       forced = true;
     } else {
-      const roll = await this.roll(
-        { type: "save", ...e },
-        pre.detail.diceType.result
-      );
-      result = roll.value >= dc;
+      success = total >= dc;
     }
 
+    const outcome = success ? ("success" as const) : ("fail" as const);
+    this.fire(
+      new SaveEvent({ pre: pre.detail, roll, dc, outcome, total, forced })
+    );
+
     return {
-      result: result ? ("succeed" as const) : ("fail" as const),
+      outcome,
       forced,
-      damageResponse: result
+      damageResponse: success
         ? saveDamageResponse.result
         : failDamageResponse.result,
     };
   }
 
-  async roll(type: RollType, diceType: DiceType = "normal") {
+  async abilityCheck(dc: number, e: Omit<AbilityCheck, "dc" | "type">) {
+    const successResponse = new SuccessResponseCollector();
+    const bonus = new BonusCollector();
+    const diceType = new DiceTypeCollector();
+
+    const pre = this.fire(
+      new BeforeCheckEvent({ ...e, dc, bonus, diceType, successResponse })
+    );
+
+    let forced = false;
+    let success = false;
+    const roll = await this.roll({ type: "check", ...e }, diceType.result);
+    const total = roll.value + bonus.result;
+    if (successResponse.result !== "normal") {
+      success = successResponse.result === "success";
+      forced = true;
+    } else {
+      success = total >= dc;
+    }
+
+    const outcome = success ? ("success" as const) : ("fail" as const);
+    this.fire(
+      new AbilityCheckEvent({
+        pre: pre.detail,
+        roll,
+        dc,
+        outcome,
+        total,
+        forced,
+      })
+    );
+
+    return { outcome, forced };
+  }
+
+  async roll<T extends RollType>(type: T, diceType: DiceType = "normal") {
     const roll = this.dice.roll(type, diceType);
 
     // TODO can a roll be cancelled?
@@ -371,7 +419,13 @@ export default class Engine {
       return { outcome: "cancelled", hit: false } as const;
 
     const roll = await this.roll(
-      { type: "attack", who: e.who, target: e.target, ability: e.ability },
+      {
+        type: "attack",
+        who: e.who,
+        target: e.target,
+        ac: e.target.ac,
+        ability: e.ability,
+      },
       pre.detail.diceType.result
     );
 
@@ -382,6 +436,7 @@ export default class Engine {
         pre: pre.detail,
         roll,
         total,
+        ac: e.target.ac,
         outcome:
           roll.value === 1
             ? "miss"
@@ -390,6 +445,7 @@ export default class Engine {
             : total >= e.target.ac
             ? "hit"
             : "miss",
+        forced: false, // TODO
       })
     );
     const { outcome } = attack.detail;

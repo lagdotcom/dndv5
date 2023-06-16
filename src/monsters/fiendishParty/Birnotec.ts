@@ -113,10 +113,39 @@ const ArmorOfAgathys = notImplementedFeature(
   `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`
 );
 
-// TODO [CANCELCAST]
-const AntimagicProdigy = notImplementedFeature(
+const AntimagicProdigy = new SimpleFeature(
   "Antimagic Prodigy",
-  `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana save or lose the spell.`
+  `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
+  (g, me) => {
+    g.events.on("SpellCast", (e) => {
+      const { who, interrupt } = e.detail;
+
+      if (who !== me && me.time.has("reaction"))
+        interrupt.add(
+          new YesNoChoice(
+            me,
+            AntimagicProdigy,
+            "Antimagic Prodigy",
+            `Use ${me.name}'s reaction to attempt to counter the spell?`,
+            async () => {
+              me.time.delete("reaction");
+
+              const save = await g.abilityCheck(15, {
+                who,
+                attacker: me,
+                skill: "Arcana",
+                ability: "int",
+                tags: new Set(["counterspell"]),
+              });
+
+              // TODO [MESSAGES]
+
+              if (save.outcome === "fail") e.preventDefault();
+            }
+          )
+        );
+    });
+  }
 );
 
 const HellishRebuke = new SimpleFeature(

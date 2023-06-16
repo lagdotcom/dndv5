@@ -223,8 +223,8 @@
   // src/collectors/SuccessResponseCollector.ts
   var SuccessResponseCollector = class extends AbstractSumCollector {
     getSum(values) {
-      if (values.includes("succeed"))
-        return "succeed";
+      if (values.includes("success"))
+        return "success";
       if (values.includes("fail"))
         return "fail";
       return "normal";
@@ -1644,6 +1644,12 @@
     g2.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
       bonus.add(who[ability].modifier, AbilityScoreRule);
     });
+    g2.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
+      bonus.add(who[ability].modifier, AbilityScoreRule);
+    });
+    g2.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
+      bonus.add(who[ability].modifier, AbilityScoreRule);
+    });
     g2.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
       if (ability)
         bonus.add(attacker[ability].modifier, AbilityScoreRule);
@@ -1753,6 +1759,10 @@
       const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
       bonus.add(who.pb * mul, ProficiencyRule);
     });
+    g2.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
+      const mul = who.getProficiencyMultiplier(skill);
+      bonus.add(who.pb * mul, ProficiencyRule);
+    });
     g2.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
       const mul = who.getProficiencyMultiplier(ability);
       bonus.add(who.pb * mul, ProficiencyRule);
@@ -1796,6 +1806,13 @@
     }
   };
 
+  // src/events/AbilityCheckEvent.ts
+  var AbilityCheckEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AbilityCheck", { detail });
+    }
+  };
+
   // src/events/AfterActionEvent.ts
   var AfterActionEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1818,7 +1835,7 @@
   };
 
   // src/events/AttackEvent.ts
-  var AttackEventEvent = class extends CustomEvent {
+  var AttackEvent = class extends CustomEvent {
     constructor(detail) {
       super("Attack", { detail });
     }
@@ -1828,6 +1845,13 @@
   var BeforeAttackEvent = class extends CustomEvent {
     constructor(detail) {
       super("BeforeAttack", { detail });
+    }
+  };
+
+  // src/events/BeforeCheckEvent.ts
+  var BeforeCheckEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeCheck", { detail });
     }
   };
 
@@ -1964,6 +1988,13 @@
     }
   };
 
+  // src/events/SaveEvent.ts
+  var SaveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Save", { detail });
+    }
+  };
+
   // src/events/TurnEndedEvent.ts
   var TurnEndedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2075,34 +2106,71 @@
         fail: "normal"
       }) {
         const successResponse = new SuccessResponseCollector();
+        const bonus = new BonusCollector();
+        const diceType = new DiceTypeCollector();
         const saveDamageResponse = new SaveDamageResponseCollector(save);
         const failDamageResponse = new SaveDamageResponseCollector(fail);
         const pre = this.fire(
           new BeforeSaveEvent(__spreadProps(__spreadValues({}, e), {
-            bonus: new BonusCollector(),
-            diceType: new DiceTypeCollector(),
+            dc,
+            bonus,
+            diceType,
             successResponse,
             saveDamageResponse,
             failDamageResponse
           }))
         );
         let forced = false;
-        let result = false;
+        let success = false;
+        const roll = yield this.roll(__spreadValues({ type: "save" }, e), diceType.result);
+        const total = roll.value + bonus.result;
         if (successResponse.result !== "normal") {
-          result = successResponse.result === "succeed";
+          success = successResponse.result === "success";
           forced = true;
         } else {
-          const roll = yield this.roll(
-            __spreadValues({ type: "save" }, e),
-            pre.detail.diceType.result
-          );
-          result = roll.value >= dc;
+          success = total >= dc;
         }
+        const outcome = success ? "success" : "fail";
+        this.fire(
+          new SaveEvent({ pre: pre.detail, roll, dc, outcome, total, forced })
+        );
         return {
-          result: result ? "succeed" : "fail",
+          outcome,
           forced,
-          damageResponse: result ? saveDamageResponse.result : failDamageResponse.result
+          damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
         };
+      });
+    }
+    abilityCheck(dc, e) {
+      return __async(this, null, function* () {
+        const successResponse = new SuccessResponseCollector();
+        const bonus = new BonusCollector();
+        const diceType = new DiceTypeCollector();
+        const pre = this.fire(
+          new BeforeCheckEvent(__spreadProps(__spreadValues({}, e), { dc, bonus, diceType, successResponse }))
+        );
+        let forced = false;
+        let success = false;
+        const roll = yield this.roll(__spreadValues({ type: "check" }, e), diceType.result);
+        const total = roll.value + bonus.result;
+        if (successResponse.result !== "normal") {
+          success = successResponse.result === "success";
+          forced = true;
+        } else {
+          success = total >= dc;
+        }
+        const outcome = success ? "success" : "fail";
+        this.fire(
+          new AbilityCheckEvent({
+            pre: pre.detail,
+            roll,
+            dc,
+            outcome,
+            total,
+            forced
+          })
+        );
+        return { outcome, forced };
       });
     }
     roll(type, diceType = "normal") {
@@ -2266,16 +2334,25 @@
         if (pre.defaultPrevented)
           return { outcome: "cancelled", hit: false };
         const roll = yield this.roll(
-          { type: "attack", who: e.who, target: e.target, ability: e.ability },
+          {
+            type: "attack",
+            who: e.who,
+            target: e.target,
+            ac: e.target.ac,
+            ability: e.ability
+          },
           pre.detail.diceType.result
         );
         const total = roll.value + pre.detail.bonus.result;
         const attack = this.fire(
-          new AttackEventEvent({
+          new AttackEvent({
             pre: pre.detail,
             roll,
             total,
-            outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= e.target.ac ? "hit" : "miss"
+            ac: e.target.ac,
+            outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= e.target.ac ? "hit" : "miss",
+            forced: false
+            // TODO
           })
         );
         const { outcome } = attack.detail;
@@ -2701,9 +2778,35 @@
     "Armor of Agathys",
     `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`
   );
-  var AntimagicProdigy = notImplementedFeature(
+  var AntimagicProdigy = new SimpleFeature(
     "Antimagic Prodigy",
-    `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana save or lose the spell.`
+    `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
+    (g2, me) => {
+      g2.events.on("SpellCast", (e) => {
+        const { who, interrupt } = e.detail;
+        if (who !== me && me.time.has("reaction"))
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              AntimagicProdigy,
+              "Antimagic Prodigy",
+              `Use ${me.name}'s reaction to attempt to counter the spell?`,
+              () => __async(void 0, null, function* () {
+                me.time.delete("reaction");
+                const save = yield g2.abilityCheck(15, {
+                  who,
+                  attacker: me,
+                  skill: "Arcana",
+                  ability: "int",
+                  tags: /* @__PURE__ */ new Set(["counterspell"])
+                });
+                if (save.outcome === "fail")
+                  e.preventDefault();
+              })
+            )
+          );
+      });
+    }
   );
   var HellishRebuke = new SimpleFeature(
     "Hellish Rebuke",
@@ -3439,7 +3542,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
             ability: "wis",
             tags: /* @__PURE__ */ new Set(["frightened", "forced movement"])
           });
-          if (save.result === "fail") {
+          if (save.outcome === "fail") {
             target.time.delete("reaction");
             yield g2.applyBoundedMove(
               target,
@@ -4191,7 +4294,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
                         }
                       }) => {
                         if (attacker === me && who2 === target && saveSpell === spell) {
-                          successResponse.add("succeed", SculptSpells);
+                          successResponse.add("success", SculptSpells);
                           saveDamageResponse.add("zero", SculptSpells);
                           unsubscribe();
                         }
@@ -4749,7 +4852,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           [["psychic", damage]],
           save.damageResponse
         );
-        if (!save.result) {
+        if (save.outcome === "fail") {
           let endCounter = 2;
           const removeTurnTracker = g2.events.on(
             "TurnEnded",
@@ -5003,7 +5106,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               spell: HoldPerson,
               tags: /* @__PURE__ */ new Set(["Paralyzed"])
             });
-            if (save.result) {
+            if (save.outcome === "success") {
               who.removeEffect(HoldPersonEffect);
               config.affected.delete(who);
             }
@@ -5042,7 +5145,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             spell: HoldPerson,
             tags: /* @__PURE__ */ new Set(["Paralyzed"])
           });
-          if (!save.result) {
+          if (save.outcome === "fail") {
             target.addEffect(HoldPersonEffect, {
               affected,
               caster,
@@ -8640,12 +8743,13 @@ The creature is aware of this effect before it makes its attack against you.`
   function AttackMessage({
     pre: { who, target, weapon, ammo, spell },
     roll,
-    total
+    total,
+    ac
   }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${who.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${spell ? ` with ${spell.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}).`,
+        message: `${who.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${spell ? ` with ${spell.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}). (AC ${ac})`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who }),
           "attacks\xA0",
@@ -8656,7 +8760,9 @@ The creature is aware of this effect before it makes its attack against you.`
           ammo && `, firing ${ammo.name}`,
           "\xA0(",
           total,
-          ")."
+          "). (AC ",
+          ac,
+          ")"
         ]
       }
     );
@@ -8717,7 +8823,34 @@ The creature is aware of this effect before it makes its attack against you.`
       "."
     ] });
   }
-  function InitiativeMessage({ diceType, type, value }) {
+  function AbilityCheckMessage({ roll, total, dc }) {
+    return /* @__PURE__ */ o(
+      LogMessage,
+      {
+        message: `${roll.type.who.name} rolls a ${total} on a ${describeAbility(
+          roll.type.ability
+        )} (${roll.type.skill}) ability check. (DC ${dc})`,
+        children: [
+          /* @__PURE__ */ o(CombatantRef, { who: roll.type.who }),
+          " rolls a ",
+          total,
+          " on a",
+          " ",
+          describeAbility(roll.type.ability),
+          " (",
+          roll.type.skill,
+          ") ability check. (DC ",
+          dc,
+          ")"
+        ]
+      }
+    );
+  }
+  function InitiativeMessage({
+    diceType,
+    type,
+    value
+  }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
@@ -8733,21 +8866,23 @@ The creature is aware of this effect before it makes its attack against you.`
       }
     );
   }
-  function SaveMessage({ type, value }) {
+  function SaveMessage({ roll, total, dc }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${type.who.name} rolls a ${value} on a ${describeAbility(
-          type.ability
-        )} saving throw.`,
+        message: `${roll.type.who.name} rolls a ${total} on a ${describeAbility(
+          roll.type.ability
+        )} saving throw. (DC ${dc})`,
         children: [
-          /* @__PURE__ */ o(CombatantRef, { who: type.who }),
+          /* @__PURE__ */ o(CombatantRef, { who: roll.type.who }),
           " rolls a ",
-          value,
+          total,
           " on a",
           " ",
-          describeAbility(type.ability),
-          " saving throw."
+          describeAbility(roll.type.ability),
+          " saving throw. (DC ",
+          dc,
+          ")"
         ]
       }
     );
@@ -8792,10 +8927,21 @@ The creature is aware of this effect before it makes its attack against you.`
       );
       g2.events.on("DiceRolled", ({ detail }) => {
         if (detail.type.type === "initiative")
-          addMessage(/* @__PURE__ */ o(InitiativeMessage, __spreadValues({}, detail)));
-        else if (detail.type.type === "save")
-          addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)));
+          addMessage(
+            /* @__PURE__ */ o(
+              InitiativeMessage,
+              __spreadValues({}, detail)
+            )
+          );
       });
+      g2.events.on(
+        "AbilityCheck",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(AbilityCheckMessage, __spreadValues({}, detail)))
+      );
+      g2.events.on(
+        "Save",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)))
+      );
     }, [addMessage, g2]);
     return /* @__PURE__ */ o("div", { className: EventLog_module_default.container, children: [
       /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages }),

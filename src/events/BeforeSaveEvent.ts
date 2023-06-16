@@ -11,6 +11,7 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 export interface BeforeSaveDetail {
   attacker: Combatant;
   who: Combatant;
+  dc: number;
   ability: AbilityName;
   diceType: DiceTypeCollector;
   bonus: BonusCollector;

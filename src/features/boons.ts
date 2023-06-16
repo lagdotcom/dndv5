@@ -34,7 +34,7 @@ class HissAction extends AbstractAction<HasTarget> {
         ability: "wis",
         tags: new Set(["frightened", "forced movement"]),
       });
-      if (save.result === "fail") {
+      if (save.outcome === "fail") {
         target.time.delete("reaction");
         await g.applyBoundedMove(
           target,

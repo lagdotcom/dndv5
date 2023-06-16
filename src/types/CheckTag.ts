@@ -1,2 +1,2 @@
-export const CheckTags = ["smell"] as const;
+export const CheckTags = ["counterspell", "smell"] as const;
 export type CheckTag = (typeof CheckTags)[number];

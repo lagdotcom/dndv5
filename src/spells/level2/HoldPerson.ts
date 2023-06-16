@@ -32,7 +32,7 @@ const HoldPersonEffect = new Effect<{
             tags: new Set(["Paralyzed"]),
           });
 
-          if (save.result) {
+          if (save.outcome === "success") {
             who.removeEffect(HoldPersonEffect);
             config.affected.delete(who);
             // TODO [CONCENTRATION] stop concentrating if affected is empty
@@ -79,7 +79,7 @@ const HoldPerson = scalingSpell<HasTargets>({
         tags: new Set(["Paralyzed"]),
       });
 
-      if (!save.result) {
+      if (save.outcome === "fail") {
         target.addEffect(HoldPersonEffect, {
           affected,
           caster,

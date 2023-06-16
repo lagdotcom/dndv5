@@ -49,7 +49,7 @@ const SculptSpells = new SimpleFeature(
                         who === target &&
                         saveSpell === spell
                       ) {
-                        successResponse.add("succeed", SculptSpells);
+                        successResponse.add("success", SculptSpells);
                         saveDamageResponse.add("zero", SculptSpells);
                         unsubscribe();
                       }

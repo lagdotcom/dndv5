@@ -53,7 +53,7 @@ class StandUpAction extends AbstractAction {
     const speed = this.actor.speed;
     this.actor.movedSoFar += speed / 2;
 
-    // TODO [MESSAGE] report this somehow
+    // TODO [MESSAGES] report this somehow
     this.actor.removeEffect(Prone);
   }
 }

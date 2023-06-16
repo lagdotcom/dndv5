@@ -1,4 +1,5 @@
 import AbilityName from "./AbilityName";
+import { CheckTag } from "./CheckTag";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
 import { WeaponItem } from "./Item";
@@ -11,8 +12,10 @@ import SpellcastingMethod from "./SpellcastingMethod";
 export type AbilityCheck = {
   type: "check";
   who: Combatant;
+  attacker?: Combatant;
   ability: AbilityName;
   skill: SkillName;
+  tags: Set<CheckTag>;
 };
 export type AttackRoll = {
   type: "attack";
