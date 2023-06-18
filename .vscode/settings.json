@@ -3,9 +3,9 @@
     "**/node_modules": true,
     "docs/bundle.*": true
   },
+  "cSpell.dictionaries": ["en_us"],
   "cSpell.words": [
     "Archdruid",
-    "armor",
     "attunements",
     "Barkskin",
     "Beldalynn",

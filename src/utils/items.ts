@@ -24,9 +24,7 @@ export function getWeaponAbility(
   const { str, dex } = who;
 
   // TODO should really be a choice
-  if (weapon.properties.has("finesse")) {
-    if (dex.score >= str.score) return "dex";
-  }
+  if (weapon.properties.has("finesse") && dex.score >= str.score) return "dex";
 
   if (weapon.rangeCategory === "ranged") return "dex";
 

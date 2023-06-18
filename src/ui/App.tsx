@@ -16,6 +16,7 @@ import EventLog from "./EventLog";
 import ListChoiceDialog from "./ListChoiceDialog";
 import Menu, { MenuItem } from "./Menu";
 import MultiListChoiceDialog from "./MultiListChoiceDialog";
+import { getAllIcons } from "./utils/icons";
 import {
   actionAreas,
   activeCombatant,
@@ -102,19 +103,7 @@ export default function App({ g, onMount }: Props) {
 
     onMount?.(g);
 
-    // pre-fetch icons
-    for (const [who] of g.combatants) {
-      for (const item of who.inventory)
-        if (item.iconUrl) cache.get(item.iconUrl);
-      for (const item of who.equipment)
-        if (item.iconUrl) cache.get(item.iconUrl);
-      for (const item of who.knownSpells)
-        if (item.icon) cache.get(item.icon.url);
-      for (const item of who.preparedSpells)
-        if (item.icon) cache.get(item.icon.url);
-      for (const item of who.spellcastingMethods)
-        if (item.icon) cache.get(item.icon.url);
-    }
+    for (const iconUrl of getAllIcons(g)) cache.get(iconUrl);
   }, [cache, g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
 
   const onExecuteAction = useCallback(

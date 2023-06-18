@@ -80,13 +80,11 @@ export default class SpellAttack<T extends object> {
     const { g, baseDamageType, caster: attacker, method, spell } = this;
     if (!baseDamageType) throw new Error("Run .getDamage() first");
 
-    const damageResult = await g.damage(
+    return g.damage(
       spell,
       baseDamageType,
       { attack, attacker, target, critical, spell, method },
       initialiser
     );
-
-    return damageResult;
   }
 }

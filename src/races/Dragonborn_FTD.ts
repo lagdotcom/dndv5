@@ -30,6 +30,12 @@ const MetallicBreathWeaponResource = new LongRestResource(
   1
 );
 
+function getBreathArea(g: Engine, me: Combatant, point: Point) {
+  const position = g.getState(me).position;
+  const size = me.sizeInUnits;
+  return aimCone(position, size, point, 15);
+}
+
 class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
   constructor(
     g: Engine,
@@ -50,14 +56,8 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     );
   }
 
-  private getArea(point: Point) {
-    const position = this.g.getState(this.actor).position;
-    const size = this.actor.sizeInUnits;
-    return aimCone(position, size, point, 15);
-  }
-
   getAffectedArea({ point }: Partial<HasPoint>) {
-    if (point) return [this.getArea(point)];
+    if (point) return [getBreathArea(this.g, this.actor, point)];
   }
 
   async apply({ point }: HasPoint) {
@@ -72,7 +72,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     });
     const dc = 8 + attacker.con.modifier + attacker.pb;
 
-    for (const target of g.getInside(this.getArea(point))) {
+    for (const target of g.getInside(getBreathArea(g, attacker, point))) {
       const save = await g.savingThrow(dc, {
         attacker,
         who: target,
@@ -115,16 +115,10 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
     );
   }
 
-  getArea(point: Point) {
-    const position = this.g.getState(this.actor).position;
-    const size = this.actor.sizeInUnits;
-    return aimCone(position, size, point, 15);
-  }
-
   getAffectedArea({
     point,
   }: Partial<HasPoint>): SpecifiedEffectShape[] | undefined {
-    if (point) return [this.getArea(point)];
+    if (point) return [getBreathArea(this.g, this.actor, point)];
   }
 }
 
@@ -149,7 +143,7 @@ class EnervatingBreathAction extends MetallicBreathAction {
     const { g, actor } = this;
     const dc = getSaveDC(actor, "con");
 
-    for (const target of g.getInside(this.getArea(config.point))) {
+    for (const target of g.getInside(getBreathArea(g, actor, config.point))) {
       const save = await g.savingThrow(dc, {
         attacker: actor,
         ability: "con",

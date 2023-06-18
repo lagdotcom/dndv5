@@ -16,6 +16,7 @@ module.exports = {
     "react",
     "react-hooks",
     "simple-import-sort",
+    "sonarjs",
   ],
   extends: [
     "eslint:recommended",
@@ -27,6 +28,7 @@ module.exports = {
     "plugin:react/recommended",
     "plugin:react/jsx-runtime",
     "plugin:react-hooks/recommended",
+    "plugin:sonarjs/recommended",
   ],
   rules: {
     "prettier/prettier": ["error", { endOfLine: "crlf" }],

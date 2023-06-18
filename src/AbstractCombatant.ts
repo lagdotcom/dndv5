@@ -10,7 +10,7 @@ import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import { MapSquareSize } from "./MapSquare";
 import { spellImplementationWarning } from "./spells/common";
-import AbilityName, { AbilityNames } from "./types/AbilityName";
+import AbilityName from "./types/AbilityName";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantScore from "./types/CombatantScore";
@@ -38,8 +38,8 @@ import SkillName from "./types/SkillName";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
+import { getProficiencyType } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
-import { isA } from "./utils/types";
 import { convertSizeToUnit } from "./utils/units";
 
 const defaultHandsAmount: Record<CreatureType, number> = {
@@ -310,21 +310,23 @@ export default abstract class AbstractCombatant implements Combatant {
   }
 
   getProficiencyMultiplier(thing: Item | AbilityName | SkillName): number {
-    if (typeof thing === "string") {
-      if (isA(thing, AbilityNames))
-        return this.saveProficiencies.has(thing) ? 1 : 0;
-      return this.skills.get(thing) ?? 0;
-    }
+    const prof = getProficiencyType(thing);
 
-    if (thing.itemType === "weapon") {
-      if (thing.category === "natural") return 1;
-      if (this.weaponProficiencies.has(thing.weaponType)) return 1;
-      if (this.weaponCategoryProficiencies.has(thing.category)) return 1;
-      return 0;
-    }
+    switch (prof?.type) {
+      case "ability":
+        return this.saveProficiencies.has(prof.ability) ? 1 : 0;
 
-    if (thing.itemType === "armor")
-      if (this.armorProficiencies.has(thing.category)) return 1;
+      case "armor":
+        return this.armorProficiencies.has(prof.category) ? 1 : 0;
+
+      case "skill":
+        return this.skills.get(prof.skill) ?? 0;
+
+      case "weapon":
+        if (prof.category === "natural") return 1;
+        if (this.weaponCategoryProficiencies.has(prof.category)) return 1;
+        if (this.weaponProficiencies.has(prof.weapon)) return 1;
+    }
 
     return 0;
   }
@@ -422,9 +424,8 @@ export default abstract class AbstractCombatant implements Combatant {
 
   tickEffects(durationTimer: EffectDurationTimer) {
     for (const [effect, config] of this.effects) {
-      if (effect.durationTimer === durationTimer) {
-        if (--config.duration < 1) this.removeEffect(effect);
-      }
+      if (effect.durationTimer === durationTimer && --config.duration < 1)
+        this.removeEffect(effect);
     }
   }
 

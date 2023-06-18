@@ -454,6 +454,36 @@
       return { url: item.iconUrl, colour: ItemRarityColours[item.rarity] };
   }
 
+  // src/types/AbilityName.ts
+  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
+
+  // src/utils/types.ts
+  function isDefined(value) {
+    return typeof value !== "undefined";
+  }
+  function isA(value, enumeration) {
+    return enumeration.includes(value);
+  }
+  function isCombatantArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const who of value)
+      if (!(who instanceof AbstractCombatant))
+        return false;
+    return true;
+  }
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  function isPointArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const point of value)
+      if (!isPoint(point))
+        return false;
+    return true;
+  }
+
   // src/utils/dnd.ts
   function getAbilityModifier(ability) {
     return Math.floor((ability - 10) / 2);
@@ -463,6 +493,21 @@
   }
   function getProficiencyBonusByLevel(level) {
     return Math.ceil(level / 4) + 1;
+  }
+  function getProficiencyType(thing) {
+    if (typeof thing === "string") {
+      if (isA(thing, AbilityNames))
+        return { type: "ability", ability: thing };
+      return { type: "skill", skill: thing };
+    }
+    if (thing.itemType === "weapon")
+      return {
+        type: "weapon",
+        category: thing.category,
+        weapon: thing.weaponType
+      };
+    if (thing.itemType === "armor")
+      return { type: "armor", category: thing.category };
   }
   function getSaveDC(who, ability) {
     return 8 + who.pb + who[ability].modifier;
@@ -1007,36 +1052,6 @@
       console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
   }
 
-  // src/types/AbilityName.ts
-  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
-
-  // src/utils/types.ts
-  function isDefined(value) {
-    return typeof value !== "undefined";
-  }
-  function isA(value, enumeration) {
-    return enumeration.includes(value);
-  }
-  function isCombatantArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const who of value)
-      if (!(who instanceof AbstractCombatant))
-        return false;
-    return true;
-  }
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
-  }
-  function isPointArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const point of value)
-      if (!isPoint(point))
-        return false;
-    return true;
-  }
-
   // src/utils/items.ts
   var isSuitOfArmor = (item) => item.itemType === "armor" && item.category !== "shield";
   var isShield = (item) => item.itemType === "armor" && item.category === "shield";
@@ -1044,10 +1059,8 @@
     if (weapon.forceAbilityScore)
       return weapon.forceAbilityScore;
     const { str, dex } = who;
-    if (weapon.properties.has("finesse")) {
-      if (dex.score >= str.score)
-        return "dex";
-    }
+    if (weapon.properties.has("finesse") && dex.score >= str.score)
+      return "dex";
     if (weapon.rangeCategory === "ranged")
       return "dex";
     return "str";
@@ -1291,23 +1304,21 @@
     }
     getProficiencyMultiplier(thing) {
       var _a;
-      if (typeof thing === "string") {
-        if (isA(thing, AbilityNames))
-          return this.saveProficiencies.has(thing) ? 1 : 0;
-        return (_a = this.skills.get(thing)) != null ? _a : 0;
-      }
-      if (thing.itemType === "weapon") {
-        if (thing.category === "natural")
-          return 1;
-        if (this.weaponProficiencies.has(thing.weaponType))
-          return 1;
-        if (this.weaponCategoryProficiencies.has(thing.category))
-          return 1;
-        return 0;
-      }
-      if (thing.itemType === "armor") {
-        if (this.armorProficiencies.has(thing.category))
-          return 1;
+      const prof = getProficiencyType(thing);
+      switch (prof == null ? void 0 : prof.type) {
+        case "ability":
+          return this.saveProficiencies.has(prof.ability) ? 1 : 0;
+        case "armor":
+          return this.armorProficiencies.has(prof.category) ? 1 : 0;
+        case "skill":
+          return (_a = this.skills.get(prof.skill)) != null ? _a : 0;
+        case "weapon":
+          if (prof.category === "natural")
+            return 1;
+          if (this.weaponCategoryProficiencies.has(prof.category))
+            return 1;
+          if (this.weaponProficiencies.has(prof.weapon))
+            return 1;
       }
       return 0;
     }
@@ -1393,10 +1404,8 @@
     }
     tickEffects(durationTimer) {
       for (const [effect, config] of this.effects) {
-        if (effect.durationTimer === durationTimer) {
-          if (--config.duration < 1)
-            this.removeEffect(effect);
-        }
+        if (effect.durationTimer === durationTimer && --config.duration < 1)
+          this.removeEffect(effect);
       }
     }
     addKnownSpells(...spells) {
@@ -2662,13 +2671,12 @@
         const { g: g2, baseDamageType, caster: attacker, method, spell } = this;
         if (!baseDamageType)
           throw new Error("Run .getDamage() first");
-        const damageResult = yield g2.damage(
+        return g2.damage(
           spell,
           baseDamageType,
           { attack, attacker, target, critical, spell, method },
           initialiser
         );
-        return damageResult;
       });
     }
   };
@@ -2907,13 +2915,12 @@ If your DM allows the use of feats, you may instead take a feat.`,
     );
   }
   function makeExtraAttack(name, text, extra = 1) {
-    const feature = new SimpleFeature(name, text, (g2, me) => {
+    return new SimpleFeature(name, text, (g2, me) => {
       g2.events.on("CheckAction", ({ detail: { action, error } }) => {
         if (action.isAttack && action.actor === me && action.actor.attacksSoFar.size <= extra)
           error.ignore(OneAttackPerTurnRule);
       });
     });
-    return feature;
   }
 
   // src/classes/rogue/SneakAttack.ts
@@ -4460,6 +4467,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Metallic Breath Weapon",
     1
   );
+  function getBreathArea(g2, me, point) {
+    const position = g2.getState(me).position;
+    const size = me.sizeInUnits;
+    return aimCone(position, size, point, 15);
+  }
   var BreathWeaponAction = class _BreathWeaponAction extends AbstractAttackAction {
     constructor(g2, actor, damageType, damageDice) {
       super(
@@ -4476,14 +4488,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.damageType = damageType;
       this.damageDice = damageDice;
     }
-    getArea(point) {
-      const position = this.g.getState(this.actor).position;
-      const size = this.actor.sizeInUnits;
-      return aimCone(position, size, point, 15);
-    }
     getAffectedArea({ point }) {
       if (point)
-        return [this.getArea(point)];
+        return [getBreathArea(this.g, this.actor, point)];
     }
     apply(_0) {
       return __async(this, arguments, function* ({ point }) {
@@ -4496,7 +4503,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType
         });
         const dc = 8 + attacker.con.modifier + attacker.pb;
-        for (const target of g2.getInside(this.getArea(point))) {
+        for (const target of g2.getInside(getBreathArea(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             who: target,
@@ -4534,16 +4541,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { resources: [[MetallicBreathWeaponResource, 1]] }
       );
     }
-    getArea(point) {
-      const position = this.g.getState(this.actor).position;
-      const size = this.actor.sizeInUnits;
-      return aimCone(position, size, point, 15);
-    }
     getAffectedArea({
       point
     }) {
       if (point)
-        return [this.getArea(point)];
+        return [getBreathArea(this.g, this.actor, point)];
     }
   };
   var EnervatingBreathEffect = new Effect(
@@ -4565,7 +4567,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         __superGet(_EnervatingBreathAction.prototype, this, "apply").call(this, config);
         const { g: g2, actor } = this;
         const dc = getSaveDC(actor, "con");
-        for (const target of g2.getInside(this.getArea(config.point))) {
+        for (const target of g2.getInside(getBreathArea(g2, actor, config.point))) {
           const save = yield g2.savingThrow(dc, {
             attacker: actor,
             ability: "con",
@@ -9072,6 +9074,29 @@ The creature is aware of this effect before it makes its attack against you.`
     ] });
   }
 
+  // src/ui/utils/icons.ts
+  function getAllIcons(g2) {
+    const icons = /* @__PURE__ */ new Set();
+    for (const [who] of g2.combatants) {
+      for (const item of who.inventory)
+        if (item.iconUrl)
+          icons.add(item.iconUrl);
+      for (const item of who.equipment)
+        if (item.iconUrl)
+          icons.add(item.iconUrl);
+      for (const item of who.knownSpells)
+        if (item.icon)
+          icons.add(item.icon.url);
+      for (const item of who.preparedSpells)
+        if (item.icon)
+          icons.add(item.icon.url);
+      for (const item of who.spellcastingMethods)
+        if (item.icon)
+          icons.add(item.icon.url);
+    }
+    return icons;
+  }
+
   // src/ui/utils/types.ts
   function getUnitData(who, state) {
     const { position } = state;
@@ -9156,23 +9181,8 @@ The creature is aware of this effect before it makes its attack against you.`
         movingCombatantId.value = e.detail.who.id;
       });
       onMount == null ? void 0 : onMount(g2);
-      for (const [who] of g2.combatants) {
-        for (const item of who.inventory)
-          if (item.iconUrl)
-            cache2.get(item.iconUrl);
-        for (const item of who.equipment)
-          if (item.iconUrl)
-            cache2.get(item.iconUrl);
-        for (const item of who.knownSpells)
-          if (item.icon)
-            cache2.get(item.icon.url);
-        for (const item of who.preparedSpells)
-          if (item.icon)
-            cache2.get(item.icon.url);
-        for (const item of who.spellcastingMethods)
-          if (item.icon)
-            cache2.get(item.icon.url);
-      }
+      for (const iconUrl of getAllIcons(g2))
+        cache2.get(iconUrl);
     }, [cache2, g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
     const onExecuteAction = (0, import_hooks15.useCallback)(
       (action2, config) => {

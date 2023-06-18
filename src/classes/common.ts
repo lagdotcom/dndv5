@@ -31,7 +31,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
 }
 
 export function makeExtraAttack(name: string, text: string, extra = 1) {
-  const feature = new SimpleFeature(name, text, (g, me) => {
+  return new SimpleFeature(name, text, (g, me) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
       if (
         action.isAttack &&
@@ -41,5 +41,4 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
         error.ignore(OneAttackPerTurnRule);
     });
   });
-  return feature;
 }
