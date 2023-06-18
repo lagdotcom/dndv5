@@ -382,7 +382,7 @@
         multiplier.add("double", DashEffect);
     });
   });
-  var DashAction = class extends AbstractAction {
+  var DashAction = class _DashAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Dash", "implemented", {}, { time: "action" });
     }
@@ -393,7 +393,7 @@
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(DashAction.prototype, this, "apply").call(this, {});
+        __superGet(_DashAction.prototype, this, "apply").call(this, {});
         this.actor.addEffect(DashEffect, { duration: 1 });
       });
     }
@@ -402,13 +402,13 @@
   // src/actions/DisengageAction.ts
   var DisengageEffect = new Effect("Disengage", "turnEnd", () => {
   });
-  var DisengageAction = class extends AbstractAction {
+  var DisengageAction = class _DisengageAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Disengage", "missing", {}, { time: "action" });
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(DisengageAction.prototype, this, "apply").call(this, {});
+        __superGet(_DisengageAction.prototype, this, "apply").call(this, {});
         this.actor.addEffect(DisengageEffect, { duration: 1 });
       });
     }
@@ -428,13 +428,13 @@
         diceType.add("advantage", DodgeEffect);
     });
   });
-  var DodgeAction = class extends AbstractAction {
+  var DodgeAction = class _DodgeAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Dodge", "incomplete", {}, { time: "action" });
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(DodgeAction.prototype, this, "apply").call(this, {});
+        __superGet(_DodgeAction.prototype, this, "apply").call(this, {});
         this.actor.addEffect(DodgeEffect, { duration: 1 });
       });
     }
@@ -1448,7 +1448,7 @@
     void 0,
     true
   );
-  var DropProneAction = class extends AbstractAction {
+  var DropProneAction = class _DropProneAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Drop Prone", "implemented", {});
     }
@@ -1459,12 +1459,12 @@
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(DropProneAction.prototype, this, "apply").call(this, {});
+        __superGet(_DropProneAction.prototype, this, "apply").call(this, {});
         this.actor.addEffect(Prone, { duration: Infinity });
       });
     }
   };
-  var StandUpAction = class extends AbstractAction {
+  var StandUpAction = class _StandUpAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Stand Up", "implemented", {});
     }
@@ -1480,7 +1480,7 @@
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(StandUpAction.prototype, this, "apply").call(this, {});
+        __superGet(_StandUpAction.prototype, this, "apply").call(this, {});
         const speed = this.actor.speed;
         this.actor.movedSoFar += speed / 2;
         this.actor.removeEffect(Prone);
@@ -1512,7 +1512,7 @@
   });
 
   // src/actions/AbstractAttackAction.ts
-  var AbstractAttackAction = class extends AbstractAction {
+  var AbstractAttackAction = class _AbstractAttackAction extends AbstractAction {
     constructor(g2, actor, name, status, config, options = {}) {
       super(g2, actor, name, status, config, options);
       this.isAttack = true;
@@ -1524,7 +1524,7 @@
     }
     apply(config) {
       return __async(this, null, function* () {
-        __superGet(AbstractAttackAction.prototype, this, "apply").call(this, config);
+        __superGet(_AbstractAttackAction.prototype, this, "apply").call(this, config);
         this.actor.attacksSoFar.add(this);
         this.actor.addEffect(UsedAttackAction, { duration: 1 });
       });
@@ -1532,7 +1532,7 @@
   };
 
   // src/actions/WeaponAttack.ts
-  var WeaponAttack = class extends AbstractAttackAction {
+  var WeaponAttack = class _WeaponAttack extends AbstractAttackAction {
     constructor(g2, actor, weapon, ammo) {
       super(
         g2,
@@ -1552,7 +1552,7 @@
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
-        __superGet(WeaponAttack.prototype, this, "apply").call(this, { target });
+        __superGet(_WeaponAttack.prototype, this, "apply").call(this, { target });
         const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
         const tags = /* @__PURE__ */ new Set();
         tags.add(
@@ -3018,7 +3018,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         pre.who.removeEffect(SteadyAimAdvantageEffect);
     });
   });
-  var SteadyAimAction = class extends AbstractAction {
+  var SteadyAimAction = class _SteadyAimAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
     }
@@ -3029,7 +3029,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(SteadyAimAction.prototype, this, "apply").call(this, {});
+        __superGet(_SteadyAimAction.prototype, this, "apply").call(this, {});
         this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
         this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
       });
@@ -3519,7 +3519,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/features/boons.ts
   var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
-  var HissAction = class extends AbstractAction {
+  var HissAction = class _HissAction extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -3532,7 +3532,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
-        __superGet(HissAction.prototype, this, "apply").call(this, { target });
+        __superGet(_HissAction.prototype, this, "apply").call(this, { target });
         const { g: g2, actor } = this;
         if (target.time.has("reaction")) {
           const dc = getSaveDC(actor, "cha");
@@ -4460,7 +4460,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Metallic Breath Weapon",
     1
   );
-  var BreathWeaponAction = class extends AbstractAttackAction {
+  var BreathWeaponAction = class _BreathWeaponAction extends AbstractAttackAction {
     constructor(g2, actor, damageType, damageDice) {
       super(
         g2,
@@ -4487,7 +4487,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
     apply(_0) {
       return __async(this, arguments, function* ({ point }) {
-        __superGet(BreathWeaponAction.prototype, this, "apply").call(this, { point });
+        __superGet(_BreathWeaponAction.prototype, this, "apply").call(this, { point });
         const { actor: attacker, g: g2, damageDice, damageType } = this;
         const damage = yield g2.rollDamage(damageDice, {
           source: this,
@@ -4556,13 +4556,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       });
     }
   );
-  var EnervatingBreathAction = class extends MetallicBreathAction {
+  var EnervatingBreathAction = class _EnervatingBreathAction extends MetallicBreathAction {
     constructor(g2, actor) {
       super(g2, actor, "Enervating Breath", "implemented");
     }
     apply(config) {
       return __async(this, null, function* () {
-        __superGet(EnervatingBreathAction.prototype, this, "apply").call(this, config);
+        __superGet(_EnervatingBreathAction.prototype, this, "apply").call(this, config);
         const { g: g2, actor } = this;
         const dc = getSaveDC(actor, "con");
         for (const target of g2.getInside(this.getArea(config.point))) {
@@ -4578,13 +4578,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       });
     }
   };
-  var RepulsionBreathAction = class extends MetallicBreathAction {
+  var RepulsionBreathAction = class _RepulsionBreathAction extends MetallicBreathAction {
     constructor(g2, actor) {
       super(g2, actor, "Repulsion Breath", "incomplete");
     }
     apply(config) {
       return __async(this, null, function* () {
-        __superGet(RepulsionBreathAction.prototype, this, "apply").call(this, config);
+        __superGet(_RepulsionBreathAction.prototype, this, "apply").call(this, config);
         const { g: g2, actor } = this;
         const dc = getSaveDC(actor, "con");
         for (const target of g2.getInside(this.getArea(config.point))) {
@@ -5239,7 +5239,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }
     });
   }
-  var FireMeteorsAction = class extends AbstractAction {
+  var FireMeteorsAction = class _FireMeteorsAction extends AbstractAction {
     constructor(g2, actor, method) {
       var _a;
       super(
@@ -5271,7 +5271,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
     apply(config) {
       return __async(this, null, function* () {
-        __superGet(FireMeteorsAction.prototype, this, "apply").call(this, config);
+        __superGet(_FireMeteorsAction.prototype, this, "apply").call(this, config);
         return fireMeteors(this.g, this.actor, this.method, config, false);
       });
     }
@@ -5550,7 +5550,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Harness Divine Power",
     1
   );
-  var HarnessDivinePowerAction = class extends AbstractAction {
+  var HarnessDivinePowerAction = class _HarnessDivinePowerAction extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -5591,7 +5591,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
     apply(_0) {
       return __async(this, arguments, function* ({ slot }) {
-        __superGet(HarnessDivinePowerAction.prototype, this, "apply").call(this, { slot });
+        __superGet(_HarnessDivinePowerAction.prototype, this, "apply").call(this, { slot });
         this.actor.giveResource(SpellSlotResources[slot], 1);
       });
     }
@@ -5941,7 +5941,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       });
     }
   );
-  var SacredWeaponAction = class extends AbstractAction {
+  var SacredWeaponAction = class _SacredWeaponAction extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -5964,7 +5964,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }
     apply(_0) {
       return __async(this, arguments, function* ({ weapon }) {
-        __superGet(SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
+        __superGet(_SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
         this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
       });
     }
@@ -6276,7 +6276,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     return 4;
   }
   var RageResource = new LongRestResource("Rage", 2);
-  var EndRageAction = class extends AbstractAction {
+  var EndRageAction = class _EndRageAction extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "End Rage", "implemented", {}, { time: "bonus action" });
     }
@@ -6287,7 +6287,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(EndRageAction.prototype, this, "apply").call(this, {});
+        __superGet(_EndRageAction.prototype, this, "apply").call(this, {});
         this.actor.removeEffect(RageEffect);
       });
     }
@@ -6332,7 +6332,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
         actions.push(new EndRageAction(g2, who));
     });
   });
-  var RageAction = class extends AbstractAction {
+  var RageAction = class _RageAction extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -6345,7 +6345,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(RageAction.prototype, this, "apply").call(this, {});
+        __superGet(_RageAction.prototype, this, "apply").call(this, {});
         this.actor.addEffect(RageEffect, { duration: minutes(1) });
         yield this.actor.endConcentration();
       });
@@ -7528,7 +7528,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var silvered_default = silvered;
 
   // src/items/CloakOfElvenkind.ts
-  var CloakHoodAction = class extends AbstractAction {
+  var CloakHoodAction = class _CloakHoodAction extends AbstractAction {
     constructor(g2, actor, cloak) {
       super(
         g2,
@@ -7542,7 +7542,7 @@ The creature is aware of this effect before it makes its attack against you.`
     }
     apply() {
       return __async(this, null, function* () {
-        __superGet(CloakHoodAction.prototype, this, "apply").call(this, {});
+        __superGet(_CloakHoodAction.prototype, this, "apply").call(this, {});
         this.cloak.hoodUp = !this.cloak.hoodUp;
       });
     }
@@ -7637,7 +7637,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/spells/cantrip/MagicStone.ts
   var MagicStoneResource = new TemporaryResource("Magic Stone", 3);
-  var MagicStoneAction = class extends AbstractAttackAction {
+  var MagicStoneAction = class _MagicStoneAction extends AbstractAttackAction {
     constructor(g2, actor, method, unsubscribe) {
       super(
         g2,
@@ -7655,7 +7655,7 @@ The creature is aware of this effect before it makes its attack against you.`
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
-        __superGet(MagicStoneAction.prototype, this, "apply").call(this, { target });
+        __superGet(_MagicStoneAction.prototype, this, "apply").call(this, { target });
         const { g: g2, actor, method } = this;
         if (actor.getResource(MagicStoneResource) < 1)
           this.unsubscribe();
