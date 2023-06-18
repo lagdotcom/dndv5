@@ -321,7 +321,7 @@ export default function ChooseActionConfigPanel<T extends object>({
   const elements = useMemo(
     () =>
       Object.entries(action.getConfig(config)).map(([key, resolver]) => {
-        const props = {
+        const subProps = {
           key,
           action,
           field: key,
@@ -333,21 +333,21 @@ export default function ChooseActionConfigPanel<T extends object>({
         };
 
         if (resolver instanceof TargetResolver)
-          return <ChooseTarget {...props} />;
+          return <ChooseTarget {...subProps} />;
         else if (resolver instanceof MultiTargetResolver)
-          return <ChooseTargets {...props} />;
+          return <ChooseTargets {...subProps} />;
         else if (resolver instanceof PointResolver)
-          return <ChoosePoint {...props} />;
+          return <ChoosePoint {...subProps} />;
         else if (resolver instanceof MultiPointResolver)
-          return <ChoosePoints {...props} />;
+          return <ChoosePoints {...subProps} />;
         else if (resolver instanceof SlotResolver)
-          return <ChooseSlot {...props} />;
+          return <ChooseSlot {...subProps} />;
         else if (resolver instanceof ChoiceResolver)
-          return <ChooseText {...props} />;
+          return <ChooseText {...subProps} />;
         else
           return (
             <div>
-              (no frontend for resolver type [{props.resolver.type}] yet)
+              (no frontend for resolver type [{subProps.resolver.type}] yet)
             </div>
           );
       }),

@@ -8633,7 +8633,7 @@ The creature is aware of this effect before it makes its attack against you.`
     }, [g2, action, config, onExecute]);
     const elements = (0, import_hooks7.useMemo)(
       () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
-        const props = {
+        const subProps = {
           key,
           action,
           field: key,
@@ -8644,21 +8644,21 @@ The creature is aware of this effect before it makes its attack against you.`
           value: config[key]
         };
         if (resolver instanceof TargetResolver)
-          return /* @__PURE__ */ o(ChooseTarget, __spreadValues({}, props));
+          return /* @__PURE__ */ o(ChooseTarget, __spreadValues({}, subProps));
         else if (resolver instanceof MultiTargetResolver)
-          return /* @__PURE__ */ o(ChooseTargets, __spreadValues({}, props));
+          return /* @__PURE__ */ o(ChooseTargets, __spreadValues({}, subProps));
         else if (resolver instanceof PointResolver)
-          return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, props));
+          return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, subProps));
         else if (resolver instanceof MultiPointResolver)
-          return /* @__PURE__ */ o(ChoosePoints, __spreadValues({}, props));
+          return /* @__PURE__ */ o(ChoosePoints, __spreadValues({}, subProps));
         else if (resolver instanceof SlotResolver)
-          return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, props));
+          return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, subProps));
         else if (resolver instanceof ChoiceResolver)
-          return /* @__PURE__ */ o(ChooseText, __spreadValues({}, props));
+          return /* @__PURE__ */ o(ChooseText, __spreadValues({}, subProps));
         else
           return /* @__PURE__ */ o("div", { children: [
             "(no frontend for resolver type [",
-            props.resolver.type,
+            subProps.resolver.type,
             "] yet)"
           ] });
       }),
@@ -8997,7 +8997,7 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [resolve]
     );
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label })) });
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label }, label)) });
   }
 
   // src/ui/Menu.module.scss
@@ -9065,7 +9065,8 @@ The creature is aware of this effect before it makes its attack against you.`
           disabled,
           onClick: () => toggle(value),
           children: label
-        }
+        },
+        label
       )),
       /* @__PURE__ */ o("button", { disabled: invalidSelection, onClick: decide, children: "OK" })
     ] });

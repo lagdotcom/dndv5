@@ -28,6 +28,7 @@ export default function MultiListChoiceDialog<T>({
       </div>
       {interruption.items.map(({ label, value, disabled }) => (
         <button
+          key={label}
           className={classnames({
             [buttonStyles.active]: list.includes(value),
           })}
