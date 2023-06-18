@@ -10,6 +10,7 @@ module.exports = {
   plugins: [
     "@typescript-eslint",
     "jest",
+    "jest-dom",
     "jsx-a11y",
     "prettier",
     "promise",
@@ -22,6 +23,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:jest/recommended",
+    "plugin:jest-dom/recommended",
     "plugin:jsx-a11y/recommended",
     "plugin:prettier/recommended",
     "plugin:promise/recommended",

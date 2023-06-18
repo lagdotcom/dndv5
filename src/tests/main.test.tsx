@@ -109,7 +109,7 @@ it("supports Fog Cloud", async () => {
     logMsg(
       "thug attacks Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7). (AC 14)"
     )
-  ).toBeInTheDocument();
+  ).toBeVisible();
   await user.click(btn("End Turn"));
 
   // attacking into a heavily obscured area also counts as being blinded, so they cancel out
@@ -118,7 +118,7 @@ it("supports Fog Cloud", async () => {
   await user.click(menuitem("dart"));
   expect(
     logMsg("Tethilssethanar attacks thug with dart (9). (AC 11)")
-  ).toBeInTheDocument();
+  ).toBeVisible();
 });
 
 it("supports a typical Aura attack", async () => {

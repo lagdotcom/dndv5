@@ -166,7 +166,9 @@ class RepulsionBreathAction extends MetallicBreathAction {
     const { g, actor } = this;
     const dc = getSaveDC(actor, "con");
 
-    for (const target of g.getInside(this.getArea(config.point))) {
+    for (const target of g.getInside(
+      getBreathArea(this.g, actor, config.point)
+    )) {
       const save = await g.savingThrow(dc, {
         attacker: actor,
         ability: "str",

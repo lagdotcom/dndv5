@@ -4589,7 +4589,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         __superGet(_RepulsionBreathAction.prototype, this, "apply").call(this, config);
         const { g: g2, actor } = this;
         const dc = getSaveDC(actor, "con");
-        for (const target of g2.getInside(this.getArea(config.point))) {
+        for (const target of g2.getInside(
+          getBreathArea(this.g, actor, config.point)
+        )) {
           const save = yield g2.savingThrow(dc, {
             attacker: actor,
             ability: "str",
