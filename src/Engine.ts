@@ -270,7 +270,7 @@ export default class Engine {
     }
 
     this.activeCombatant = who;
-    who.attacksSoFar.clear();
+    who.attacksSoFar = [];
     who.movedSoFar = 0;
     await this.resolve(
       new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
@@ -319,6 +319,8 @@ export default class Engine {
     );
 
     state.position = position;
+    const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+
     await this.resolve(
       new CombatantMovedEvent({
         who,
@@ -331,9 +333,7 @@ export default class Engine {
       })
     );
 
-    const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
     if (handlerDone) return { type: "unbind" as const };
-
     return { type: "ok" as const };
   }
 
@@ -589,3 +589,5 @@ export default class Engine {
     );
   }
 }
+
+export type EngineMoveResult = Awaited<ReturnType<Engine["move"]>>;

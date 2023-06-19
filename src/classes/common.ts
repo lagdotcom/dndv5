@@ -36,7 +36,7 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
       if (
         action.isAttack &&
         action.actor === me &&
-        action.actor.attacksSoFar.size <= extra
+        action.actor.attacksSoFar.length <= extra
       )
         error.ignore(OneAttackPerTurnRule);
     });

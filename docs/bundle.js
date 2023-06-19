@@ -1199,7 +1199,7 @@
       this.time = /* @__PURE__ */ new Set();
       this.attunements = /* @__PURE__ */ new Set();
       this.movedSoFar = 0;
-      this.attacksSoFar = /* @__PURE__ */ new Set();
+      this.attacksSoFar = [];
       this.effects = /* @__PURE__ */ new Map();
       this.knownSpells = /* @__PURE__ */ new Set();
       this.preparedSpells = /* @__PURE__ */ new Set();
@@ -1534,7 +1534,7 @@
     apply(config) {
       return __async(this, null, function* () {
         __superGet(_AbstractAttackAction.prototype, this, "apply").call(this, config);
-        this.actor.attacksSoFar.add(this);
+        this.actor.attacksSoFar.push(this);
         this.actor.addEffect(UsedAttackAction, { duration: 1 });
       });
     }
@@ -1759,7 +1759,7 @@
   });
   var OneAttackPerTurnRule = new DndRule("Attacks per turn", (g2) => {
     g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.isAttack && action.actor.attacksSoFar.size)
+      if (action.isAttack && action.actor.attacksSoFar.length)
         error.add("No attacks left", OneAttackPerTurnRule);
     });
   });
@@ -2217,7 +2217,7 @@
           }
         }
         this.activeCombatant = who;
-        who.attacksSoFar.clear();
+        who.attacksSoFar = [];
         who.movedSoFar = 0;
         yield this.resolve(
           new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
@@ -2261,6 +2261,7 @@
           })
         );
         state.position = position;
+        const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
         yield this.resolve(
           new CombatantMovedEvent({
             who,
@@ -2272,7 +2273,6 @@
             interrupt: new InterruptionCollector()
           })
         );
-        const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
         if (handlerDone)
           return { type: "unbind" };
         return { type: "ok" };
@@ -2917,7 +2917,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
   function makeExtraAttack(name, text, extra = 1) {
     return new SimpleFeature(name, text, (g2, me) => {
       g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.isAttack && action.actor === me && action.actor.attacksSoFar.size <= extra)
+        if (action.isAttack && action.actor === me && action.actor.attacksSoFar.length <= extra)
           error.ignore(OneAttackPerTurnRule);
       });
     });
@@ -9110,7 +9110,7 @@ The creature is aware of this effect before it makes its attack against you.`
       name,
       img,
       sizeInUnits,
-      attacksSoFar: attacksSoFar.size,
+      attacksSoFar: attacksSoFar.length,
       movedSoFar,
       speed
     };

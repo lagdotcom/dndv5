@@ -100,7 +100,7 @@ export default abstract class AbstractCombatant implements Combatant {
   time: Set<"action" | "bonus action" | "reaction">;
   attunements: Set<Item>;
   movedSoFar: number;
-  attacksSoFar: Set<Action>;
+  attacksSoFar: Action[];
   effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
@@ -187,7 +187,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.time = new Set();
     this.attunements = new Set();
     this.movedSoFar = 0;
-    this.attacksSoFar = new Set();
+    this.attacksSoFar = [];
     this.effects = new Map();
     this.knownSpells = new Set();
     this.preparedSpells = new Set();

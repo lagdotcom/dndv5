@@ -26,7 +26,7 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     name,
     img,
     sizeInUnits,
-    attacksSoFar: attacksSoFar.size,
+    attacksSoFar: attacksSoFar.length,
     movedSoFar,
     speed,
   };

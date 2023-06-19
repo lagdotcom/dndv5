@@ -20,7 +20,7 @@ export default class Thug extends Monster {
     this.addFeature(PackTactics);
     this.addFeature(
       makeMultiattack("The thug makes two melee attacks.", (me, action) => {
-        if (me.attacksSoFar.size !== 1) return false;
+        if (me.attacksSoFar.length !== 1) return false;
         const [previous] = me.attacksSoFar;
         return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
       })

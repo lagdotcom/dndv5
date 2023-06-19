@@ -31,7 +31,7 @@ export default class AbstractAttackAction<
   async apply(config: T) {
     super.apply(config);
 
-    this.actor.attacksSoFar.add(this);
+    this.actor.attacksSoFar.push(this);
     this.actor.addEffect(UsedAttackAction, { duration: 1 });
   }
 }
