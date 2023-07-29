@@ -8,7 +8,10 @@ export class ArrowCatchingShield extends Shield {
     this.attunement = true;
     this.rarity = "Rare";
 
-    // TODO [GETAC] You gain a +2 bonus to AC against ranged attacks while you wield this shield. This bonus is in addition to the shield's normal bonus to AC.
+    g.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
+      if (who.equipment.has(this) && pre?.tags.has("ranged"))
+        bonus.add(2, this);
+    });
 
     // TODO In addition, whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.
   }

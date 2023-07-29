@@ -11,6 +11,7 @@ import ConfiguredFeature from "./features/ConfiguredFeature";
 import { MapSquareSize } from "./MapSquare";
 import { spellImplementationWarning } from "./spells/common";
 import AbilityName from "./types/AbilityName";
+import ACMethod from "./types/ACMethod";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantScore from "./types/CombatantScore";
@@ -38,7 +39,7 @@ import SkillName from "./types/SkillName";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
-import { getProficiencyType } from "./utils/dnd";
+import { getNaturalArmourMethod, getProficiencyType } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
 import { convertSizeToUnit } from "./utils/units";
 
@@ -73,6 +74,7 @@ export default abstract class AbstractCombatant implements Combatant {
   hp: number;
   hpMax: number;
   pb: number;
+  naturalAC: number;
 
   str: CombatantScore;
   dex: CombatantScore;
@@ -129,6 +131,7 @@ export default abstract class AbstractCombatant implements Combatant {
       intScore = 10,
       strScore = 10,
       wisScore = 10,
+      naturalAC = 10,
     }: {
       diesAtZero?: boolean;
       hands?: number;
@@ -147,6 +150,7 @@ export default abstract class AbstractCombatant implements Combatant {
       intScore?: number;
       strScore?: number;
       wisScore?: number;
+      naturalAC?: number;
     }
   ) {
     this.id = g.nextId();
@@ -194,10 +198,19 @@ export default abstract class AbstractCombatant implements Combatant {
     this.toolProficiencies = new Map();
     this.resourcesMax = new Map();
     this.spellcastingMethods = new Set();
+    this.naturalAC = naturalAC;
   }
 
-  get ac(): number {
-    return this.g.getAC(this);
+  get baseACMethod(): ACMethod {
+    return getNaturalArmourMethod(this, this.naturalAC);
+  }
+
+  get acMethod(): ACMethod {
+    return this.g.getBestACMethod(this);
+  }
+
+  get baseAC(): number {
+    return this.acMethod.ac;
   }
 
   get sizeInUnits() {

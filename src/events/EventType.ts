@@ -17,6 +17,7 @@ import DiceRolledEvent from "./DiceRolledEvent";
 import EffectAddedEvent from "./EffectAddedEvent";
 import EffectRemovedEvent from "./EffectRemovedEvent";
 import GatherDamageEvent from "./GatherDamageEvent";
+import GetACEvent from "./GetACEvent";
 import GetACMethodsEvent from "./GetACMethodsEvent";
 import GetActionsEvent from "./GetActionsEvent";
 import GetConditionsEvent from "./GetConditionsEvent";
@@ -52,6 +53,7 @@ export type EventTypes = {
   EffectAdded: EffectAddedEvent;
   EffectRemoved: EffectRemovedEvent;
   GatherDamage: GatherDamageEvent;
+  GetAC: GetACEvent;
   GetACMethods: GetACMethodsEvent;
   GetActions: GetActionsEvent;
   GetConditions: GetConditionsEvent;

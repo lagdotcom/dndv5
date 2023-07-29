@@ -512,6 +512,15 @@
   function getSaveDC(who, ability) {
     return 8 + who.pb + who[ability].modifier;
   }
+  var getNaturalArmourMethod = (who, naturalAC) => {
+    const uses = /* @__PURE__ */ new Set();
+    let ac = naturalAC + who.dex.modifier;
+    if (who.shield) {
+      uses.add(who.shield);
+      ac += who.shield.ac;
+    }
+    return { name: "natural armor", ac, uses };
+  };
 
   // src/AbilityScore.ts
   var AbilityScore = class {
@@ -1158,7 +1167,8 @@
       dexScore = 10,
       intScore = 10,
       strScore = 10,
-      wisScore = 10
+      wisScore = 10,
+      naturalAC = 10
     }) {
       this.g = g2;
       this.name = name;
@@ -1206,9 +1216,16 @@
       this.toolProficiencies = /* @__PURE__ */ new Map();
       this.resourcesMax = /* @__PURE__ */ new Map();
       this.spellcastingMethods = /* @__PURE__ */ new Set();
+      this.naturalAC = naturalAC;
     }
-    get ac() {
-      return this.g.getAC(this);
+    get baseACMethod() {
+      return getNaturalArmourMethod(this, this.naturalAC);
+    }
+    get acMethod() {
+      return this.g.getBestACMethod(this);
+    }
+    get baseAC() {
+      return this.acMethod.ac;
     }
     get sizeInUnits() {
       return convertSizeToUnit(this.size);
@@ -1962,6 +1979,13 @@
     }
   };
 
+  // src/events/GetACEvent.ts
+  var GetACEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetAC", { detail });
+    }
+  };
+
   // src/events/GetACMethodsEvent.ts
   var GetACMethodsEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2342,12 +2366,13 @@
         );
         if (pre.defaultPrevented)
           return { outcome: "cancelled", hit: false };
+        const ac = yield this.getAC(e.target, pre.detail);
         const roll = yield this.roll(
           {
             type: "attack",
             who: e.who,
             target: e.target,
-            ac: e.target.ac,
+            ac,
             ability: e.ability
           },
           pre.detail.diceType.result
@@ -2358,8 +2383,8 @@
             pre: pre.detail,
             roll,
             total,
-            ac: e.target.ac,
-            outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= e.target.ac ? "hit" : "miss",
+            ac,
+            outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= ac ? "hit" : "miss",
             forced: false
             // TODO
           })
@@ -2421,13 +2446,31 @@
     getActions(who, target) {
       return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
     }
-    getAC(who) {
+    getBestACMethod(who) {
       return this.fire(
-        new GetACMethodsEvent({ who, methods: [] })
+        new GetACMethodsEvent({
+          who,
+          methods: [who.baseACMethod]
+        })
       ).detail.methods.reduce(
-        (best, method) => method.ac > best ? method.ac : best,
-        0
+        (best, method) => method.ac > best.ac ? method : best,
+        who.baseACMethod
       );
+    }
+    getAC(who, pre) {
+      return __async(this, null, function* () {
+        const method = this.getBestACMethod(who);
+        const e = yield this.resolve(
+          new GetACEvent({
+            who,
+            method,
+            bonus: new BonusCollector(),
+            interrupt: new InterruptionCollector(),
+            pre
+          })
+        );
+        return method.ac + e.detail.bonus.result;
+      });
     }
     fire(e) {
       if (e.interrupt)
@@ -6205,6 +6248,40 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var DivineFavor_default = DivineFavor;
 
+  // src/spells/level1/ShieldOfFaith.ts
+  var ShieldOfFaithEffect = new Effect("Shield of Faith", "turnStart", (g2) => {
+    g2.events.on("GetAC", ({ detail: { who, bonus } }) => {
+      if (who.hasEffect(ShieldOfFaithEffect))
+        bonus.add(2, ShieldOfFaith);
+    });
+  });
+  var ShieldOfFaith = simpleSpell({
+    status: "implemented",
+    name: "Shield of Faith",
+    level: 1,
+    school: "Abjuration",
+    time: "bonus action",
+    v: true,
+    s: true,
+    m: "a small parchment with a bit of holy text written on it",
+    lists: ["Cleric", "Paladin"],
+    getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
+    getTargets: (g2, caster, { target }) => [target],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { target }) {
+        target.addEffect(ShieldOfFaithEffect, { duration: minutes(10) });
+        caster.concentrateOn({
+          spell: ShieldOfFaith,
+          duration: minutes(10),
+          onSpellEnd: () => __async(this, null, function* () {
+            return target.removeEffect(ShieldOfFaithEffect);
+          })
+        });
+      });
+    }
+  });
+  var ShieldOfFaith_default = ShieldOfFaith;
+
   // src/pcs/davies/Galilea_token.png
   var Galilea_token_default = "./Galilea_token-D4XX5FIV.png";
 
@@ -6243,8 +6320,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.inventory.add(new CrossbowBolt(g2, 20));
       this.addPreparedSpells(
         Bless_default,
-        DivineFavor_default
-        // TODO ShieldOfFaith,
+        DivineFavor_default,
+        ShieldOfFaith_default
         // TODO Aid,
         // TODO MagicWeapon
       );
@@ -7581,6 +7658,10 @@ The creature is aware of this effect before it makes its attack against you.`
       this.name = "Arrow-Catching Shield";
       this.attunement = true;
       this.rarity = "Rare";
+      g2.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
+        if (who.equipment.has(this) && (pre == null ? void 0 : pre.tags.has("ranged")))
+          bonus.add(2, this);
+      });
     }
   };
 

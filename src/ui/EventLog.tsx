@@ -2,8 +2,8 @@ import { ComponentChildren, VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
-import { AbilityCheckEventDetail } from "../events/AbilityCheckEvent";
-import { AttackEventDetail } from "../events/AttackEvent";
+import { AbilityCheckDetail } from "../events/AbilityCheckEvent";
+import { AttackDetail } from "../events/AttackEvent";
 import { CombatantDamagedDetail } from "../events/CombatantDamagedEvent";
 import { CombatantDiedDetail } from "../events/CombatantDiedEvent";
 import { DiceRolledDetail } from "../events/DiceRolledEvent";
@@ -41,7 +41,7 @@ function AttackMessage({
   roll,
   total,
   ac,
-}: AttackEventDetail) {
+}: AttackDetail) {
   return (
     <LogMessage
       message={`${who.name} attacks ${target.name}${
@@ -79,7 +79,7 @@ function CastMessage({ level, spell, who }: SpellCastDetail) {
 
 function getDamageEntryText([type, entry]: [
   type: DamageType,
-  entry: DamageBreakdown
+  entry: DamageBreakdown,
 ]) {
   return `${entry.amount} ${type}${
     entry.response !== "normal" ? ` ${entry.response}` : ""
@@ -130,7 +130,7 @@ function EffectRemovedMessage({ who, effect }: EffectRemovedDetail) {
   );
 }
 
-function AbilityCheckMessage({ roll, total, dc }: AbilityCheckEventDetail) {
+function AbilityCheckMessage({ roll, total, dc }: AbilityCheckDetail) {
   return (
     <LogMessage
       message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
@@ -178,8 +178,8 @@ export default function EventLog({ g }: { g: Engine }) {
   const ref = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<VNode[]>([]);
 
-  const { fire } = useTimeout(() =>
-    ref.current?.scrollIntoView?.({ behavior: "smooth" })
+  const { fire } = useTimeout(
+    () => ref.current?.scrollIntoView?.({ behavior: "smooth" })
   );
 
   const addMessage = useCallback((el: VNode) => {

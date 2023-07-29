@@ -7,7 +7,7 @@ import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
-import { AttackEventDetail } from "./AttackEvent";
+import { AttackDetail } from "./AttackEvent";
 
 export interface GatherDamageDetail {
   attacker: Combatant;
@@ -20,7 +20,7 @@ export interface GatherDamageDetail {
   map: DamageMap;
   bonus: BonusCollector;
   critical: boolean;
-  attack?: AttackEventDetail;
+  attack?: AttackDetail;
   interrupt: InterruptionCollector;
   multiplier: MultiplierCollector;
 }

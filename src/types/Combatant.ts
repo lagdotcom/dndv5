@@ -1,4 +1,5 @@
 import AbilityName from "./AbilityName";
+import ACMethod from "./ACMethod";
 import Action from "./Action";
 import ActionTime from "./ActionTime";
 import CombatantScore from "./CombatantScore";
@@ -40,7 +41,8 @@ export default interface Combatant extends Source {
   level: number;
   hp: number;
   hpMax: number;
-  ac: number;
+  baseACMethod: ACMethod;
+  baseAC: number;
   pb: number;
 
   str: CombatantScore;

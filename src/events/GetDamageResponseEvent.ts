@@ -1,11 +1,11 @@
 import DamageResponseCollector from "../collectors/DamageResponseCollector";
 import Combatant from "../types/Combatant";
 import DamageType from "../types/DamageType";
-import { AttackEventDetail } from "./AttackEvent";
+import { AttackDetail } from "./AttackEvent";
 
 export interface GetDamageResponseDetail {
   who: Combatant;
-  attack?: AttackEventDetail;
+  attack?: AttackDetail;
   damageType: DamageType;
   response: DamageResponseCollector;
 }

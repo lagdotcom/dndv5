@@ -18,7 +18,7 @@ import AbilityCheckEvent from "./events/AbilityCheckEvent";
 import AfterActionEvent from "./events/AfterActionEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
-import AttackEvent, { AttackEventDetail } from "./events/AttackEvent";
+import AttackEvent, { AttackDetail } from "./events/AttackEvent";
 import BeforeAttackEvent, {
   BeforeAttackDetail,
 } from "./events/BeforeAttackEvent";
@@ -36,6 +36,7 @@ import Dispatcher from "./events/Dispatcher";
 import GatherDamageEvent, {
   GatherDamageDetail,
 } from "./events/GatherDamageEvent";
+import GetACEvent from "./events/GetACEvent";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
@@ -78,7 +79,10 @@ export default class Engine {
   initiativePosition: number;
   rules: DndRules;
 
-  constructor(public dice = new DiceBag(), public events = new Dispatcher()) {
+  constructor(
+    public dice = new DiceBag(),
+    public events = new Dispatcher()
+  ) {
     this.combatants = new Map();
     this.effects = new Set();
     this.id = 0;
@@ -346,7 +350,7 @@ export default class Engine {
       target,
     }: {
       source: Source;
-      attack?: AttackEventDetail;
+      attack?: AttackDetail;
       attacker: Combatant;
       target: Combatant;
       multiplier?: number;
@@ -418,12 +422,14 @@ export default class Engine {
     if (pre.defaultPrevented)
       return { outcome: "cancelled", hit: false } as const;
 
+    const ac = await this.getAC(e.target, pre.detail);
+
     const roll = await this.roll(
       {
         type: "attack",
         who: e.who,
         target: e.target,
-        ac: e.target.ac,
+        ac,
         ability: e.ability,
       },
       pre.detail.diceType.result
@@ -436,13 +442,13 @@ export default class Engine {
         pre: pre.detail,
         roll,
         total,
-        ac: e.target.ac,
+        ac,
         outcome:
           roll.value === 1
             ? "miss"
             : roll.value === 20
             ? "critical"
-            : total >= e.target.ac
+            : total >= ac
             ? "hit"
             : "miss",
         forced: false, // TODO
@@ -519,13 +525,32 @@ export default class Engine {
       .actions;
   }
 
-  getAC(who: Combatant) {
+  getBestACMethod(who: Combatant) {
     return this.fire(
-      new GetACMethodsEvent({ who, methods: [] })
+      new GetACMethodsEvent({
+        who,
+        methods: [who.baseACMethod],
+      })
     ).detail.methods.reduce(
-      (best, method) => (method.ac > best ? method.ac : best),
-      0
+      (best, method) => (method.ac > best.ac ? method : best),
+      who.baseACMethod
     );
+  }
+
+  async getAC(who: Combatant, pre?: BeforeAttackDetail) {
+    const method = this.getBestACMethod(who);
+
+    const e = await this.resolve(
+      new GetACEvent({
+        who,
+        method,
+        bonus: new BonusCollector(),
+        interrupt: new InterruptionCollector(),
+        pre,
+      })
+    );
+
+    return method.ac + e.detail.bonus.result;
   }
 
   fire<T>(e: CustomEvent<T>) {

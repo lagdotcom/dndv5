@@ -2,7 +2,7 @@ import { AttackRoll } from "../types/RollType";
 import { BeforeAttackDetail } from "./BeforeAttackEvent";
 import { DiceRolledDetail } from "./DiceRolledEvent";
 
-export interface AttackEventDetail {
+export interface AttackDetail {
   pre: BeforeAttackDetail;
   roll: DiceRolledDetail<AttackRoll>;
   total: number;
@@ -11,8 +11,8 @@ export interface AttackEventDetail {
   forced: boolean;
 }
 
-export default class AttackEvent extends CustomEvent<AttackEventDetail> {
-  constructor(detail: AttackEventDetail) {
+export default class AttackEvent extends CustomEvent<AttackDetail> {
+  constructor(detail: AttackDetail) {
     super("Attack", { detail });
   }
 }

@@ -1,4 +1,5 @@
 import AbilityName, { AbilityNames } from "../types/AbilityName";
+import ACMethod from "../types/ACMethod";
 import Combatant from "../types/Combatant";
 import Item from "../types/Item";
 import SkillName from "../types/SkillName";
@@ -37,3 +38,18 @@ export function getProficiencyType(thing: Item | AbilityName | SkillName) {
 export function getSaveDC(who: Combatant, ability: AbilityName) {
   return 8 + who.pb + who[ability].modifier;
 }
+
+export const getNaturalArmourMethod = (
+  who: Combatant,
+  naturalAC: number
+): ACMethod => {
+  const uses = new Set<Item>();
+  let ac = naturalAC + who.dex.modifier;
+
+  if (who.shield) {
+    uses.add(who.shield);
+    ac += who.shield.ac;
+  }
+
+  return { name: "natural armor", ac, uses };
+};
