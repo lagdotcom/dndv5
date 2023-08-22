@@ -28,10 +28,10 @@ export const FightingStyleProtection = new SimpleFeature(
               async () => {
                 me.time.delete("reaction");
                 diceType.add("disadvantage", FightingStyleProtection);
-              }
-            )
+              },
+            ),
           );
-      }
+      },
     );
-  }
+  },
 );

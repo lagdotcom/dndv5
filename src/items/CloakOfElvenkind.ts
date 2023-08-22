@@ -4,14 +4,18 @@ import Combatant from "../types/Combatant";
 import { AbstractWondrous } from "./wondrous";
 
 class CloakHoodAction extends AbstractAction {
-  constructor(g: Engine, actor: Combatant, public cloak: CloakOfElvenkind) {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    public cloak: CloakOfElvenkind,
+  ) {
     super(
       g,
       actor,
       cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
       "incomplete",
       {},
-      { time: "action" }
+      { time: "action" },
     );
   }
 
@@ -23,7 +27,10 @@ class CloakHoodAction extends AbstractAction {
 }
 
 export default class CloakOfElvenkind extends AbstractWondrous {
-  constructor(g: Engine, public hoodUp = true) {
+  constructor(
+    g: Engine,
+    public hoodUp = true,
+  ) {
     super(g, "Cloak of Elvenkind");
     this.attunement = true;
     this.rarity = "Uncommon";
@@ -42,7 +49,7 @@ export default class CloakOfElvenkind extends AbstractWondrous {
 
         if (skill === "Stealth" && cloaked(who))
           diceType.add("advantage", this);
-      }
+      },
     );
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

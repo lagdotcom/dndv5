@@ -13,7 +13,7 @@ export default abstract class AbstractItem<T extends ItemType> {
     public g: Engine,
     public itemType: T,
     public name: string,
-    public hands = 0
+    public hands = 0,
   ) {
     this.enchantments = new Set();
     this.rarity = "Common";

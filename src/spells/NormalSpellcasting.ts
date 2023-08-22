@@ -63,7 +63,7 @@ export const getSpellSlotResourceName = (level: number) =>
   `Spell Slot (${level})` as const;
 
 export const SpellSlotResources = enumerate(0, 9).map(
-  (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+  (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0),
 );
 
 export function getMaxSpellSlotAvailable(who: Combatant) {
@@ -91,7 +91,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     public strength: SpellcastingStrength,
     public className: PCClassName,
     public list: SpellList,
-    public icon?: ActionIcon
+    public icon?: ActionIcon,
   ) {
     this.entries = new Map();
 
@@ -116,7 +116,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     const entry = this.entries.get(who);
     if (!entry)
       throw new Error(
-        `${who.name} has not initialised their ${this.name} spellcasting method.`
+        `${who.name} has not initialised their ${this.name} spellcasting method.`,
       );
     return entry;
   }

@@ -10,7 +10,7 @@ export default class Effect<T = object> implements EffectType<T> {
     public name: string,
     public durationTimer: EffectDurationTimer,
     setup?: (g: Engine) => void,
-    public quiet = false
+    public quiet = false,
   ) {
     if (setup) this.rule = new DndRule(name, setup);
   }

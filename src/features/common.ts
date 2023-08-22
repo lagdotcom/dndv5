@@ -18,7 +18,7 @@ export function bonusSpellsFeature(
   levelType: PCClassName | "level",
   method: SpellcastingMethod,
   entries: BonusSpellEntry[],
-  addAsList?: SpellList
+  addAsList?: SpellList,
 ) {
   return new SimpleFeature(name, text, (g, me) => {
     const casterLevel =
@@ -50,7 +50,7 @@ export function darkvisionFeature(range = 60) {
     `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can’t discern color in darkness, only shades of gray.`,
     (_, me) => {
       me.senses.set("darkvision", range);
-    }
+    },
   );
 }
 

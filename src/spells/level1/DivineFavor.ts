@@ -20,12 +20,12 @@ const DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g) => {
                   attacker,
                   damageType: "radiant",
                 },
-                critical
-              )
+                critical,
+              ),
             );
-          })
+          }),
         );
-    }
+    },
   );
 });
 

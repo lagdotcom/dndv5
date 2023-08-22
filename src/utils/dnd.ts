@@ -41,7 +41,7 @@ export function getSaveDC(who: Combatant, ability: AbilityName) {
 
 export const getNaturalArmourMethod = (
   who: Combatant,
-  naturalAC: number
+  naturalAC: number,
 ): ACMethod => {
   const uses = new Set<Item>();
   let ac = naturalAC + who.dex.modifier;

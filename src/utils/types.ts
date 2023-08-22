@@ -8,7 +8,7 @@ export function isDefined<T>(value?: T): value is T {
 
 export function isA<T extends string>(
   value: string,
-  enumeration: readonly T[]
+  enumeration: readonly T[],
 ): value is T {
   return enumeration.includes(value as T);
 }

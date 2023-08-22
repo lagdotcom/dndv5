@@ -12,17 +12,17 @@ export const KeenSmell = new SimpleFeature(
     g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
       if (who === me && tags.has("smell")) diceType.add("advantage", KeenSmell);
     });
-  }
+  },
 );
 
 export const PackTactics = notImplementedFeature(
   "Pack Tactics",
-  `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`
+  `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`,
 );
 
 export function makeMultiattack(
   text: string,
-  canStillAttack: (me: Combatant, action: Action) => boolean
+  canStillAttack: (me: Combatant, action: Action) => boolean,
 ) {
   return new SimpleFeature("Multiattack", text, (g, me) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {

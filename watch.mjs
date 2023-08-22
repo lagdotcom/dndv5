@@ -14,7 +14,7 @@ const ctx = await context(
 );
 await ctx.watch();
 
-const serve = await ctx.serve({ servedir: "docs", port: 8080 });
+const serve = await ctx.serve({ servedir: "docs", port: 3000 });
 console.log(
   `Serving: http://${serve.host === "0.0.0.0" ? "localhost" : serve.host}:${
     serve.port

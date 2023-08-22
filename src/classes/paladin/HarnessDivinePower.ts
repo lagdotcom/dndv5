@@ -15,7 +15,7 @@ import { ChannelDivinityResource } from "./common";
 
 const HarnessDivinePowerResource = new LongRestResource(
   "Harness Divine Power",
-  1
+  1,
 );
 
 class HarnessDivinePowerAction extends AbstractAction<Scales> {
@@ -30,7 +30,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
           g,
           enumerate(1, 9)
             .filter((slot) =>
-              actor.resources.has(getSpellSlotResourceName(slot))
+              actor.resources.has(getSpellSlotResourceName(slot)),
             )
             .map((value) => {
               const resource = SpellSlotResources[value];
@@ -41,7 +41,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
                 disabled:
                   actor.getResourceMax(resource) <= actor.getResource(resource),
               };
-            })
+            }),
         ),
       },
       {
@@ -50,7 +50,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
           [ChannelDivinityResource, 1],
           [HarnessDivinePowerResource, 1],
         ],
-      }
+      },
     );
   }
 
@@ -86,12 +86,12 @@ const HarnessDivinePower = new SimpleFeature(
   (g, me) => {
     me.initResource(
       HarnessDivinePowerResource,
-      getHarnessCount(me.classLevels.get("Paladin") ?? 3)
+      getHarnessCount(me.classLevels.get("Paladin") ?? 3),
     );
 
     g.events.on("GetActions", ({ detail: { actions, who } }) => {
       if (who === me) actions.push(new HarnessDivinePowerAction(g, me));
     });
-  }
+  },
 );
 export default HarnessDivinePower;

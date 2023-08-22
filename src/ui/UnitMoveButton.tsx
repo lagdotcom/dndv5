@@ -38,7 +38,7 @@ interface Props {
 export default function UnitMoveButton({ disabled, onClick, type }: Props) {
   const { className, iconUrl, label } = useMemo(
     () => buttonTypes[type],
-    [type]
+    [type],
   );
 
   const clicked = useCallback(
@@ -46,7 +46,7 @@ export default function UnitMoveButton({ disabled, onClick, type }: Props) {
       e.stopPropagation();
       onClick(type);
     },
-    [type, onClick]
+    [type, onClick],
   );
 
   return (

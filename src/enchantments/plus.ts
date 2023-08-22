@@ -4,7 +4,7 @@ import { ItemRarity } from "../types/Item";
 
 const weaponPlus = (
   value: number,
-  rarity: ItemRarity
+  rarity: ItemRarity,
 ): Enchantment<"weapon" | "ammo"> => ({
   name: `+${value} bonus`,
   setup(g: Engine, item) {
@@ -28,7 +28,7 @@ export const weaponPlus3 = weaponPlus(3, "Very Rare");
 
 const armorPlus = (
   value: number,
-  rarity: ItemRarity
+  rarity: ItemRarity,
 ): Enchantment<"armor"> => ({
   name: `+${value} bonus`,
   setup(g: Engine, item) {

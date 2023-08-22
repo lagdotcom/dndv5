@@ -25,13 +25,13 @@ export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
         from,
         who.sizeInUnits,
         otherPos,
-        other.sizeInUnits
+        other.sizeInUnits,
       );
       const newDistance = getDistanceBetween(
         to,
         who.sizeInUnits,
         otherPos,
-        other.sizeInUnits
+        other.sizeInUnits,
       );
 
       if (newDistance < oldDistance)
@@ -60,7 +60,7 @@ export class BoundedMove implements MoveHandler {
       cannotApproach = [],
       mustUseAll = false,
       provokesOpportunityAttacks = true,
-    }: Partial<BoundedMoveConfig> = {}
+    }: Partial<BoundedMoveConfig> = {},
   ) {
     this.name = source.name;
     this.used = 0;

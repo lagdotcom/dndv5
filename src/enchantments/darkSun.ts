@@ -22,12 +22,12 @@ const darkSun: Enchantment<"weapon"> = {
                 await g.rollDamage(
                   1,
                   { source: darkSun, size: 10, attacker, damageType },
-                  critical
-                )
+                  critical,
+                ),
               );
-            })
+            }),
           );
-      }
+      },
     );
   },
 };

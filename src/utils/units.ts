@@ -22,7 +22,7 @@ export function getDistanceBetween(
   posA: Point,
   sizeA: number,
   posB: Point,
-  sizeB: number
+  sizeB: number,
 ) {
   // TODO [SIZE] unit sizes
   const dx = Math.abs(posA.x - posB.x);
@@ -38,7 +38,7 @@ export function distance(g: Engine, a: Combatant, b: Combatant) {
     as.position,
     a.sizeInUnits,
     bs.position,
-    b.sizeInUnits
+    b.sizeInUnits,
   );
 }
 
@@ -54,7 +54,7 @@ export function getSquares(who: Combatant, position: Point) {
       position.x,
       position.y,
       position.x + who.sizeInUnits,
-      position.y + who.sizeInUnits
-    )
+      position.y + who.sizeInUnits,
+    ),
   );
 }

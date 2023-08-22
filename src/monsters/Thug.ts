@@ -23,7 +23,7 @@ export default class Thug extends Monster {
         if (me.attacksSoFar.length !== 1) return false;
         const [previous] = me.attacksSoFar;
         return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
-      })
+      }),
     );
 
     this.don(new Mace(g), true);

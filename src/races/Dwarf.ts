@@ -8,7 +8,7 @@ const Darkvision = darkvisionFeature();
 
 const DwarvenResilience = poisonResistance(
   "Dwarven Resilience",
-  `You have advantage on saving throws against poison, and you have resistance against poison damage.`
+  `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
 );
 
 const DwarvenCombatTraining = new SimpleFeature(
@@ -17,7 +17,7 @@ const DwarvenCombatTraining = new SimpleFeature(
   (g, me) => {
     for (const weapon of ["battleaxe", "handaxe", "light hammer", "warhammer"])
       me.weaponProficiencies.add(weapon);
-  }
+  },
 );
 
 type DwarfTool = "smith's tools" | "brewer's supplies" | "mason's tools";
@@ -26,12 +26,12 @@ export const ToolProficiency = new ConfiguredFeature<DwarfTool>(
   `You gain proficiency with the artisan's tools of your choice: Smith's tools, brewer's supplies, or mason's tools.`,
   (g, me, tool) => {
     me.toolProficiencies.set(tool, 1);
-  }
+  },
 );
 
 const Stonecunning = nonCombatFeature(
   "Stonecunning",
-  `Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus.`
+  `Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus.`,
 );
 
 const Dwarf: PCRace = {
@@ -55,7 +55,7 @@ const DwarvenArmorTraining = new SimpleFeature(
   (g, me) => {
     me.armorProficiencies.add("light");
     me.armorProficiencies.add("medium");
-  }
+  },
 );
 
 export const MountainDwarf: PCRace = {

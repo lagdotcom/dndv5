@@ -6,7 +6,11 @@ export class AbstractWondrous
   extends AbstractItem<"wondrous">
   implements WondrousItem
 {
-  constructor(g: Engine, name: string, public hands = 0) {
+  constructor(
+    g: Engine,
+    name: string,
+    public hands = 0,
+  ) {
     super(g, "wondrous", name);
   }
 }
@@ -46,7 +50,7 @@ export class BootsOfTheWinterlands extends AbstractWondrous {
           damageType === "cold"
         )
           response.add("resist", this);
-      }
+      },
     );
 
     // TODO [TERRAIN] You ignore difficult terrain created by ice or snow.
@@ -111,7 +115,10 @@ export const FigurineTypes = [
 ] as const;
 export type FigurineType = (typeof FigurineTypes)[number];
 export class FigurineOfWondrousPower extends AbstractWondrous {
-  constructor(g: Engine, public type: FigurineType) {
+  constructor(
+    g: Engine,
+    public type: FigurineType,
+  ) {
     super(g, `Figurine of Wondrous Power, ${type}`, 0);
 
     /* TODO [SUMMONING] If you use an action to speak the command word and throw the figurine to a point on the ground within 60 feet of you, the figurine becomes a living creature. If the space where the creature would appear is occupied by other creatures or objects, or if there isn't enough space for the creature, the figurine doesn't become a creature.

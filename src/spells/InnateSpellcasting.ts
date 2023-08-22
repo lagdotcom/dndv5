@@ -10,9 +10,9 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     public ability: AbilityName,
     public getResourceForSpell: (
       spell: Spell,
-      level: number
+      level: number,
     ) => Resource | undefined,
-    public icon?: ActionIcon
+    public icon?: ActionIcon,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function

@@ -27,7 +27,7 @@ const DivineSense = notImplementedFeature(
   "Divine Sense",
   `The presence of strong evil registers on your senses like a noxious odor, and powerful good rings like heavenly music in your ears. As an action, you can open your awareness to detect such forces. Until the end of your next turn, you know the location of any celestial, fiend, or undead within 60 feet of you that is not behind total cover. You know the type (celestial, fiend, or undead) of any being whose presence you sense, but not its identity (the vampire Count Strahd von Zarovich, for instance). Within the same radius, you also detect the presence of any place or object that has been consecrated or desecrated, as with the hallow spell.
 
-You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`
+You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`,
 );
 
 // TODO [EFFECTREMOVAL] [CONDITIONREMOVAL]
@@ -39,7 +39,7 @@ As an action, you can touch a creature and draw power from the pool to restore a
 
 Alternatively, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.
 
-This feature has no effect on undead and constructs.`
+This feature has no effect on undead and constructs.`,
 );
 
 export const DivineSmite = new SimpleFeature(
@@ -76,15 +76,15 @@ export const DivineSmite = new SimpleFeature(
                 const damage = await g.rollDamage(
                   count + extra,
                   { source: DivineSmite, attacker, size: 8 },
-                  critical
+                  critical,
                 );
                 map.add("radiant", damage);
-              }
-            )
+              },
+            ),
           );
-      }
+      },
     );
-  }
+  },
 );
 
 export const PaladinFightingStyle = new ConfiguredFeature<Feature>(
@@ -92,13 +92,13 @@ export const PaladinFightingStyle = new ConfiguredFeature<Feature>(
   `At 2nd level, you adopt a particular style of fighting as your specialty. You can't take the same Fighting Style option more than once, even if you get to choose again.`,
   (g, me, style) => {
     me.addFeature(style);
-  }
+  },
 );
 
 // TODO [CANCELEFFECT]
 const DivineHealth = notImplementedFeature(
   "Divine Health",
-  `By 3rd level, the divine magic flowing through you makes you immune to disease.`
+  `By 3rd level, the divine magic flowing through you makes you immune to disease.`,
 );
 
 const ChannelDivinity = new SimpleFeature(
@@ -108,17 +108,17 @@ When you use your Channel Divinity, you choose which option to use. You must the
 Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
   (g, me) => {
     me.initResource(ChannelDivinityResource);
-  }
+  },
 );
 
 const MartialVersatility = nonCombatFeature(
   "Martial Versatility",
-  `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace a fighting style you know with another fighting style available to paladins. This replacement represents a shift of focus in your martial practice.`
+  `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace a fighting style you know with another fighting style available to paladins. This replacement represents a shift of focus in your martial practice.`,
 );
 
 const ExtraAttack = makeExtraAttack(
   "Extra Attack",
-  `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
+  `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`,
 );
 
 const AuraOfProtection = new SimpleFeature(
@@ -137,7 +137,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       area = new ActiveEffectArea(
         `Paladin Aura (${me.name})`,
         { type: "within", radius, target: me, position },
-        new Set(["holy"])
+        new Set(["holy"]),
       );
       g.addEffectArea(area);
     };
@@ -158,7 +158,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
     // TODO [CONDITIONREACT] remove aura when unconscious
 
     updateAura(g.getState(me).position);
-  }
+  },
 );
 
 // TODO [CANCELCONDITION]
@@ -166,7 +166,7 @@ const AuraOfCourage = notImplementedFeature(
   "Aura of Courage",
   `Starting at 10th level, you and friendly creatures within 10 feet of you can't be frightened while you are conscious.
 
-At 18th level, the range of this aura increases to 30 feet.`
+At 18th level, the range of this aura increases to 30 feet.`,
 );
 
 const ImprovedDivineSmite = new SimpleFeature(
@@ -192,14 +192,14 @@ const ImprovedDivineSmite = new SimpleFeature(
                   size: 8,
                   damageType: "radiant",
                 },
-                critical
+                critical,
               );
               map.add("radiant", amount);
-            })
+            }),
           );
-      }
+      },
     );
-  }
+  },
 );
 
 // TODO [DISPEL]
@@ -207,7 +207,7 @@ const CleansingTouch = notImplementedFeature(
   "Cleansing Touch",
   `Beginning at 14th level, you can use your action to end one spell on yourself or on one willing creature that you touch.
 
-You can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain expended uses when you finish a long rest.`
+You can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain expended uses when you finish a long rest.`,
 );
 
 export const ASI4 = makeASI("Paladin", 4);

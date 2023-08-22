@@ -9,7 +9,10 @@ import { getDefaultHPRoll } from "./utils/dice";
 import { getProficiencyBonusByLevel } from "./utils/dnd";
 
 export class UnarmedStrike extends AbstractWeapon {
-  constructor(g: Engine, public owner: PC) {
+  constructor(
+    g: Engine,
+    public owner: PC,
+  ) {
     super(g, "unarmed strike", "natural", "melee", {
       type: "flat",
       amount: 1,

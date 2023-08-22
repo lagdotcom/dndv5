@@ -20,7 +20,7 @@ const SacredWeaponEffect = new Effect<HasWeapon>(
         tags.add("magical");
       }
     });
-  }
+  },
 );
 
 class SacredWeaponAction extends AbstractAction<HasWeapon> {
@@ -35,10 +35,10 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
           g,
           actor.weapons
             .filter((weapon) => weapon.category !== "natural")
-            .map((value) => ({ label: value.name, value }))
+            .map((value) => ({ label: value.name, value })),
         ),
       },
-      { time: "action", resources: [[ChannelDivinityResource, 1]] }
+      { time: "action", resources: [[ChannelDivinityResource, 1]] },
     );
   }
 
@@ -68,6 +68,6 @@ You can end this effect on your turn as part of any other action. If you are no 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) actions.push(new SacredWeaponAction(g, me));
     });
-  }
+  },
 );
 export default SacredWeapon;

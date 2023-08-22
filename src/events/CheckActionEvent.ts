@@ -8,7 +8,7 @@ export interface CheckActionDetail<T extends object> {
 }
 
 export default class CheckActionEvent<
-  T extends object = object
+  T extends object = object,
 > extends CustomEvent<CheckActionDetail<T>> {
   constructor(detail: CheckActionDetail<T>) {
     super("CheckAction", { detail });

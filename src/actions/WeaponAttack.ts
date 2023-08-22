@@ -18,14 +18,14 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     g: Engine,
     actor: Combatant,
     public weapon: WeaponItem,
-    public ammo?: AmmoItem
+    public ammo?: AmmoItem,
   ) {
     super(
       g,
       actor,
       ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
       weapon.properties.has("thrown") ? "incomplete" : "implemented",
-      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) }
+      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) },
     );
     this.ability = getWeaponAbility(actor, weapon);
     this.icon = getItemIcon(weapon);
@@ -42,7 +42,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
 
     const tags = new Set<AttackTag>();
     tags.add(
-      distance(g, attacker, target) > attacker.reach ? "ranged" : "melee"
+      distance(g, attacker, target) > attacker.reach ? "ranged" : "melee",
     );
     if (weapon.category !== "natural") tags.add("weapon");
     if (weapon.magical || ammo?.magical) tags.add("magical");
@@ -77,7 +77,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
             ability,
             weapon,
           },
-          critical
+          critical,
         );
         baseDamage.push([damage.damageType, amount]);
       } else baseDamage.push([damage.damageType, damage.amount]);
@@ -86,7 +86,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
         weapon,
         weapon.damage.damageType,
         { attack, attacker, target, ability, weapon, ammo, critical },
-        baseDamage
+        baseDamage,
       );
     }
   }

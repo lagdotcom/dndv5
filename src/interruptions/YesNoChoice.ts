@@ -11,12 +11,12 @@ export default class YesNoChoice implements Interruption {
     public title: string,
     public text: string,
     public yes?: () => Promise<void>,
-    public no?: () => Promise<void>
+    public no?: () => Promise<void>,
   ) {}
 
   async apply(g: Engine) {
     const choice = await new Promise<boolean>((resolve) =>
-      g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      g.fire(new YesNoChoiceEvent({ interruption: this, resolve })),
     );
     if (choice) await this.yes?.();
     else await this.no?.();

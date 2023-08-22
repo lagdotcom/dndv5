@@ -151,7 +151,7 @@ export default abstract class AbstractCombatant implements Combatant {
       strScore?: number;
       wisScore?: number;
       naturalAC?: number;
-    }
+    },
   ) {
     this.id = g.nextId();
     this.diesAtZero = diesAtZero;
@@ -253,7 +253,7 @@ export default abstract class AbstractCombatant implements Combatant {
       new GetConditionsEvent({
         who: this,
         conditions: new ConditionCollector(),
-      })
+      }),
     ).detail.conditions.result;
   }
 
@@ -266,7 +266,7 @@ export default abstract class AbstractCombatant implements Combatant {
         who: this,
         bonus,
         multiplier: new MultiplierCollector(),
-      })
+      }),
     );
 
     return bonus.result * e.detail.multiplier.result;
@@ -275,7 +275,7 @@ export default abstract class AbstractCombatant implements Combatant {
   addFeature(feature: Feature) {
     if (this.features.get(feature.name)) {
       console.warn(
-        `${this.name} already has a feature named ${feature.name}, skipping.`
+        `${this.name} already has a feature named ${feature.name}, skipping.`,
       );
       return false;
     }
@@ -290,7 +290,7 @@ export default abstract class AbstractCombatant implements Combatant {
     con: number,
     int: number,
     wis: number,
-    cha: number
+    cha: number,
   ) {
     this.str.setScore(str);
     this.dex.setScore(dex);
@@ -353,7 +353,7 @@ export default abstract class AbstractCombatant implements Combatant {
     const old = this.resources.get(resource.name) ?? 0;
     this.resources.set(
       resource.name,
-      Math.min(old + amount, this.getResourceMax(resource))
+      Math.min(old + amount, this.getResourceMax(resource)),
     );
   }
 

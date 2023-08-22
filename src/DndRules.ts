@@ -92,7 +92,7 @@ export const DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
 
 export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) =>
-    who.tickEffects("turnStart")
+    who.tickEffects("turnStart"),
   );
 
   g.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
@@ -107,7 +107,7 @@ export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
         distance(g, who, target) > weapon.shortRange
       )
         diceType.add("disadvantage", LongRangeAttacksRule);
-    }
+    },
   );
 });
 

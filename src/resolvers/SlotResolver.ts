@@ -10,7 +10,10 @@ export default class SlotResolver implements Resolver<number> {
   name: string;
   type: "SpellSlot";
 
-  constructor(public spell: Spell, public method: SpellcastingMethod) {
+  constructor(
+    public spell: Spell,
+    public method: SpellcastingMethod,
+  ) {
     this.name = "spell slot";
     this.type = "SpellSlot";
   }

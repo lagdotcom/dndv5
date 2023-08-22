@@ -14,7 +14,7 @@ const SteadyAimNoMoveEffect = new Effect(
         multiplier.add("zero", SteadyAimNoMoveEffect);
     });
   },
-  true
+  true,
 );
 
 const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
@@ -55,6 +55,6 @@ const SteadyAim = new SimpleFeature(
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) actions.push(new SteadyAimAction(g, me));
     });
-  }
+  },
 );
 export default SteadyAim;

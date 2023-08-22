@@ -18,17 +18,17 @@ const Genasi: PCRace = {
 // TODO [TERRAIN] [CHOKING]
 const UnendingBreath = notImplementedFeature(
   "Unending Breath",
-  `You can hold your breath indefinitely while you’re not incapacitated.`
+  `You can hold your breath indefinitely while you’re not incapacitated.`,
 );
 
 const MingleWithTheWindResource = new LongRestResource(
   "Mingle with the Wind",
-  1
+  1,
 );
 const MingleWithTheWindMethod = new InnateSpellcasting(
   "Mingle with the Wind",
   "con",
-  () => MingleWithTheWindResource
+  () => MingleWithTheWindResource,
 );
 
 const MingleWithTheWind = new SimpleFeature(
@@ -42,7 +42,7 @@ const MingleWithTheWind = new SimpleFeature(
       if (who === me)
         actions.push(new CastSpell(g, me, MingleWithTheWindMethod, Levitate));
     });
-  }
+  },
 );
 
 export const AirGenasi: PCRace = {

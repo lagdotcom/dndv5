@@ -12,7 +12,7 @@ export default function useTimeout(handler: () => void, ms = undefined) {
           handler();
         }, ms);
       }),
-    [handler, ms]
+    [handler, ms],
   );
 
   const cancel = useCallback(
@@ -21,7 +21,7 @@ export default function useTimeout(handler: () => void, ms = undefined) {
         if (old) clearTimeout(old);
         return undefined;
       }),
-    []
+    [],
   );
 
   useEffect(() => cancel, [cancel]);

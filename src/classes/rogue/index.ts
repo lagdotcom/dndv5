@@ -27,14 +27,14 @@ export const Expertise = new ConfiguredFeature<ExpertiseEntry[]>(
         else console.warn(`Expertise in ${entry} without existing proficiency`);
       }
     }
-  }
+  },
 );
 
 const ThievesCant = nonCombatFeature(
   "Thieves' Cant",
   `During your rogue training you learned thieves' cant, a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. Only another creature that knows thieves' cant understands such messages. It takes four times longer to convey such a message than it does to speak the same idea plainly.
 
-In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`
+In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`,
 );
 
 const CunningAction = new SimpleFeature(
@@ -55,7 +55,7 @@ const CunningAction = new SimpleFeature(
         actions.push(...cunning);
       }
     });
-  }
+  },
 );
 
 const UncannyDodge = new SimpleFeature(
@@ -76,12 +76,12 @@ const UncannyDodge = new SimpleFeature(
               async () => {
                 me.time.delete("reaction");
                 multiplier.add("half", UncannyDodge);
-              }
-            )
+              },
+            ),
           );
-      }
+      },
     );
-  }
+  },
 );
 
 const Evasion = new SimpleFeature(
@@ -101,33 +101,33 @@ const Evasion = new SimpleFeature(
           failDamageResponse.add("half", Evasion);
           saveDamageResponse.add("zero", Evasion);
         }
-      }
+      },
     );
-  }
+  },
 );
 
 // TODO
 const ReliableTalent = notImplementedFeature(
   "Reliable Talent",
-  `By 11th level, you have refined your chosen skills until they approach perfection. Whenever you make an ability check that lets you add your proficiency bonus, you can treat a d20 roll of 9 or lower as a 10.`
+  `By 11th level, you have refined your chosen skills until they approach perfection. Whenever you make an ability check that lets you add your proficiency bonus, you can treat a d20 roll of 9 or lower as a 10.`,
 );
 
 // TODO [SIGHT]
 const Blindsense = notImplementedFeature(
   "Blindsense",
-  `Starting at 14th level, if you are able to hear, you are aware of the location of any hidden or invisible creature within 10 feet of you.`
+  `Starting at 14th level, if you are able to hear, you are aware of the location of any hidden or invisible creature within 10 feet of you.`,
 );
 
 const SlipperyMind = new SimpleFeature(
   "Slippery Mind",
   `By 15th level, you have acquired greater mental strength. You gain proficiency in Wisdom saving throws.`,
-  (g, me) => me.saveProficiencies.add("wis")
+  (g, me) => me.saveProficiencies.add("wis"),
 );
 
 // TODO
 const Elusive = notImplementedFeature(
   "Elusive",
-  `Beginning at 18th level, you are so evasive that attackers rarely gain the upper hand against you. No attack roll has advantage against you while you aren't incapacitated.`
+  `Beginning at 18th level, you are so evasive that attackers rarely gain the upper hand against you. No attack roll has advantage against you while you aren't incapacitated.`,
 );
 
 // TODO
@@ -135,7 +135,7 @@ const StrokeOfLuck = notImplementedFeature(
   "Stroke of Luck",
   `At 20th level, you have an uncanny knack for succeeding when you need to. If your attack misses a target within range, you can turn the miss into a hit. Alternatively, if you fail an ability check, you can treat the d20 roll as a 20.
 
-Once you use this feature, you can't use it again until you finish a short or long rest.`
+Once you use this feature, you can't use it again until you finish a short or long rest.`,
 );
 
 export const ASI4 = makeASI("Rogue", 4);

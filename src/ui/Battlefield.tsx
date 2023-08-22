@@ -35,7 +35,7 @@ export default function Battlefield({
 
   const onClick = useCallback(
     (e: MouseEvent) => onClickBattlefield(convertCoordinate(e), e),
-    [convertCoordinate, onClickBattlefield]
+    [convertCoordinate, onClickBattlefield],
   );
 
   return (

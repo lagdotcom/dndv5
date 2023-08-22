@@ -8,7 +8,7 @@ export interface AfterActionDetail<T extends object> {
 }
 
 export default class AfterActionEvent<
-  T extends object = object
+  T extends object = object,
 > extends CustomEvent<AfterActionDetail<T>> {
   constructor(detail: AfterActionDetail<T>) {
     super("AfterAction", { detail });

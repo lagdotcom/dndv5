@@ -9,7 +9,7 @@ const ArcaneRecovery = nonCombatFeature(
 
 For example, if you're a 4th-level wizard, you can recover up to two levels worth of spell slots.
 
-You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
+You can recover either a 2nd-level spell slot or two 1st-level spell slots.`,
 );
 
 export const WizardSpellcasting = new NormalSpellcasting(
@@ -18,12 +18,12 @@ export const WizardSpellcasting = new NormalSpellcasting(
   "int",
   "full",
   "Wizard",
-  "Wizard"
+  "Wizard",
 );
 
 const CantripFormulas = nonCombatFeature(
   "Cantrip Formulas",
-  `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`
+  `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`,
 );
 
 // TODO
@@ -31,7 +31,7 @@ const SpellMastery = notImplementedFeature(
   "Spell Mastery",
   `At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.
 
-By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`
+By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`,
 );
 
 // TODO
@@ -39,7 +39,7 @@ const SignatureSpells = notImplementedFeature(
   "Signature Spells",
   `When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.
 
-If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
+If you want to cast either spell at a higher level, you must expend a spell slot as normal.`,
 );
 
 export const ASI4 = makeASI("Wizard", 4);

@@ -12,7 +12,7 @@ export function poisonResistance(name: string, text: string) {
       ({ detail: { who, damageType, response } }) => {
         if (who === me && damageType === "poison")
           response.add("resist", feature);
-      }
+      },
     );
   });
 
@@ -22,7 +22,7 @@ export function poisonResistance(name: string, text: string) {
 export function resistanceFeature(
   name: string,
   text: string,
-  types: DamageType[]
+  types: DamageType[],
 ) {
   const feature = new SimpleFeature(name, text, (g, me) => {
     g.events.on(
@@ -30,7 +30,7 @@ export function resistanceFeature(
       ({ detail: { who, damageType, response: result } }) => {
         if (who === me && types.includes(damageType))
           result.add("resist", feature);
-      }
+      },
     );
   });
 

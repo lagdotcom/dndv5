@@ -21,7 +21,7 @@ const UnarmoredDefense = new SimpleFeature(
           uses: new Set(),
         });
     });
-  }
+  },
 );
 
 function getMartialArtsDie(level: number) {
@@ -54,7 +54,11 @@ function canUpgradeDamage(damage: DamageAmount, size: number) {
 }
 
 class MonkWeaponWrapper extends AbstractWeapon {
-  constructor(g: Engine, public weapon: WeaponItem, size: number) {
+  constructor(
+    g: Engine,
+    public weapon: WeaponItem,
+    size: number,
+  ) {
     super(
       g,
       weapon.name,
@@ -63,7 +67,7 @@ class MonkWeaponWrapper extends AbstractWeapon {
       _dd(1, size, weapon.damage.damageType),
       weapon.properties,
       weapon.shortRange,
-      weapon.longRange
+      weapon.longRange,
     );
   }
 }
@@ -95,7 +99,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
           wa.weapon = new MonkWeaponWrapper(g, wa.weapon, diceSize);
       }
     });
-  }
+  },
 );
 
 const Monk: PCClass = {

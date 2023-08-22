@@ -27,7 +27,7 @@ type Ancestry = "Brass" | "Bronze" | "Copper" | "Gold" | "Silver";
 const BreathWeaponResource = new LongRestResource("Breath Weapon", 2);
 const MetallicBreathWeaponResource = new LongRestResource(
   "Metallic Breath Weapon",
-  1
+  1,
 );
 
 function getBreathArea(g: Engine, me: Combatant, point: Point) {
@@ -41,7 +41,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     g: Engine,
     actor: Combatant,
     public damageType: DamageType,
-    public damageDice: number
+    public damageDice: number,
   ) {
     super(
       g,
@@ -52,7 +52,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       {
         damage: [_dd(damageDice, 10, damageType)],
         resources: [[BreathWeaponResource, 1]],
-      }
+      },
     );
   }
 
@@ -85,7 +85,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
         damageType,
         { attacker, target },
         [[damageType, damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   }
@@ -103,7 +103,7 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
     g: Engine,
     actor: Combatant,
     name: string,
-    status: ImplementationStatus = "missing"
+    status: ImplementationStatus = "missing",
   ) {
     super(
       g,
@@ -111,7 +111,7 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
       name,
       status,
       { point: new PointResolver(g, 15) },
-      { resources: [[MetallicBreathWeaponResource, 1]] }
+      { resources: [[MetallicBreathWeaponResource, 1]] },
     );
   }
 
@@ -130,7 +130,7 @@ const EnervatingBreathEffect = new Effect(
       if (who.hasEffect(EnervatingBreathEffect))
         conditions.add("Incapacitated", EnervatingBreathEffect);
     });
-  }
+  },
 );
 
 class EnervatingBreathAction extends MetallicBreathAction {
@@ -167,7 +167,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
     const dc = getSaveDC(actor, "con");
 
     for (const target of g.getInside(
-      getBreathArea(this.g, actor, config.point)
+      getBreathArea(this.g, actor, config.point),
     )) {
       const save = await g.savingThrow(dc, {
         attacker: actor,
@@ -200,17 +200,17 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
               g,
               me,
               dt,
-              getBreathWeaponDamageDice(me.level)
-            )
+              getBreathWeaponDamageDice(me.level),
+            ),
           );
       });
-    }
+    },
   );
 
   const draconicResistance = resistanceFeature(
     "Draconic Resistance",
     `You have resistance to the damage type associated with your Metallic Ancestry.`,
-    [dt]
+    [dt],
   );
 
   const metallicBreathWeapon = new SimpleFeature(
@@ -225,7 +225,7 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
     (g, me) => {
       if (me.level < 5) return;
       console.warn(
-        `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`
+        `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`,
       );
 
       me.initResource(MetallicBreathWeaponResource);
@@ -235,7 +235,7 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
           actions.push(new RepulsionBreathAction(g, me));
         }
       });
-    }
+    },
   );
 
   return {

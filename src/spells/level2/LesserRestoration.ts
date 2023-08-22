@@ -32,7 +32,7 @@ const LesserRestoration = simpleSpell<HasCondition & HasTarget>({
           label: value,
           value,
           disabled: !conditions.has(value),
-        }))
+        })),
       ),
     };
   },

@@ -14,7 +14,7 @@ export default class MultiPointResolver implements Resolver<Point[]> {
     public g: Engine,
     public minimum: number,
     public maximum: number,
-    public maxRange: number
+    public maxRange: number,
   ) {
     this.type = "Points";
   }

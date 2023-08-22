@@ -29,7 +29,7 @@ const UnarmoredDefense = new SimpleFeature(
         methods.push({ name: "Unarmored Defense", ac, uses });
       }
     });
-  }
+  },
 );
 
 const dangerSenseConditions = new Set<ConditionName>([
@@ -50,7 +50,7 @@ const DangerSense = new SimpleFeature(
       )
         diceType.add("advantage", DangerSense);
     });
-  }
+  },
 );
 
 export const PrimalKnowledge = new ConfiguredFeature<SkillName[]>(
@@ -58,12 +58,12 @@ export const PrimalKnowledge = new ConfiguredFeature<SkillName[]>(
   `When you reach 3rd level and again at 10th level, you gain proficiency in one skill of your choice from the list of skills available to barbarians at 1st level.`,
   (g, me, skills) => {
     for (const skill of skills) me.skills.set(skill, 1);
-  }
+  },
 );
 
 const ExtraAttack = makeExtraAttack(
   "Extra Attack",
-  `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
+  `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`,
 );
 
 const FastMovement = new SimpleFeature(
@@ -74,7 +74,7 @@ const FastMovement = new SimpleFeature(
       if (who === me && me.armor?.category !== "heavy")
         bonus.add(10, FastMovement);
     });
-  }
+  },
 );
 
 const FeralInstinct = new SimpleFeature(
@@ -88,7 +88,7 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
     });
 
     // TODO [SURPRISE] Additionally, if you are surprised at the beginning of combat and aren't incapacitated, you can act normally on your first turn, but only if you enter your rage before doing anything else on that turn.
-  }
+  },
 );
 
 const InstinctivePounce = new SimpleFeature(
@@ -101,12 +101,12 @@ const InstinctivePounce = new SimpleFeature(
           new EvaluateLater(me, InstinctivePounce, async () =>
             g.applyBoundedMove(
               me,
-              new BoundedMove(InstinctivePounce, me.speed / 2)
-            )
-          )
+              new BoundedMove(InstinctivePounce, me.speed / 2),
+            ),
+          ),
         );
     });
-  }
+  },
 );
 
 // TODO
@@ -114,7 +114,7 @@ const BrutalCritical = notImplementedFeature(
   "Brutal Critical",
   `Beginning at 9th level, you can roll one additional weapon damage die when determining the extra damage for a critical hit with a melee attack.
 
-This increases to two additional dice at 13th level and three additional dice at 17th level.`
+This increases to two additional dice at 13th level and three additional dice at 17th level.`,
 );
 
 // TODO [DAMAGEINTERRUPT]
@@ -122,19 +122,19 @@ const RelentlessRage = notImplementedFeature(
   "Relentless Rage",
   `Starting at 11th level, your rage can keep you fighting despite grievous wounds. If you drop to 0 hit points while you're raging and don't die outright, you can make a DC 10 Constitution saving throw. If you succeed, you drop to 1 hit point instead.
 
-Each time you use this feature after the first, the DC increases by 5. When you finish a short or long rest, the DC resets to 10.`
+Each time you use this feature after the first, the DC increases by 5. When you finish a short or long rest, the DC resets to 10.`,
 );
 
 // TODO [CONDITIONREACTION]
 const PersistentRage = notImplementedFeature(
   "Persistent Rage",
-  `Beginning at 15th level, your rage is so fierce that it ends early only if you fall unconscious or if you choose to end it.`
+  `Beginning at 15th level, your rage is so fierce that it ends early only if you fall unconscious or if you choose to end it.`,
 );
 
 // TODO
 const IndomitableMight = notImplementedFeature(
   "Indomitable Might",
-  `Beginning at 18th level, if your total for a Strength check is less than your Strength score, you can use that score in place of the total.`
+  `Beginning at 18th level, if your total for a Strength check is less than your Strength score, you can use that score in place of the total.`,
 );
 
 const PrimalChampion = new SimpleFeature(
@@ -145,7 +145,7 @@ const PrimalChampion = new SimpleFeature(
     me.con.setMaximum(24);
     me.str.score += 4;
     me.con.score += 4;
-  }
+  },
 );
 
 export const ASI4 = makeASI("Barbarian", 4);

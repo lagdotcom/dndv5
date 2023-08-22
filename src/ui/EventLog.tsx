@@ -134,7 +134,7 @@ function AbilityCheckMessage({ roll, total, dc }: AbilityCheckDetail) {
   return (
     <LogMessage
       message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
-        roll.type.ability
+        roll.type.ability,
       )} (${roll.type.skill}) ability check. (DC ${dc})`}
     >
       <CombatantRef who={roll.type.who} /> rolls a {total} on a{" "}
@@ -165,7 +165,7 @@ function SaveMessage({ roll, total, dc }: SaveEventDetail) {
   return (
     <LogMessage
       message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
-        roll.type.ability
+        roll.type.ability,
       )} saving throw. (DC ${dc})`}
     >
       <CombatantRef who={roll.type.who} /> rolls a {total} on a{" "}
@@ -179,7 +179,7 @@ export default function EventLog({ g }: { g: Engine }) {
   const [messages, setMessages] = useState<VNode[]>([]);
 
   const { fire } = useTimeout(
-    () => ref.current?.scrollIntoView?.({ behavior: "smooth" })
+    () => ref.current?.scrollIntoView?.({ behavior: "smooth" }),
   );
 
   const addMessage = useCallback((el: VNode) => {
@@ -190,13 +190,13 @@ export default function EventLog({ g }: { g: Engine }) {
 
   useEffect(() => {
     g.events.on("Attack", ({ detail }) =>
-      addMessage(<AttackMessage {...detail} />)
+      addMessage(<AttackMessage {...detail} />),
     );
     g.events.on("CombatantDamaged", ({ detail }) =>
-      addMessage(<DamageMessage {...detail} />)
+      addMessage(<DamageMessage {...detail} />),
     );
     g.events.on("CombatantDied", ({ detail }) =>
-      addMessage(<DeathMessage {...detail} />)
+      addMessage(<DeathMessage {...detail} />),
     );
     g.events.on("EffectAdded", ({ detail }) => {
       if (!detail.effect.quiet) addMessage(<EffectAddedMessage {...detail} />);
@@ -206,21 +206,21 @@ export default function EventLog({ g }: { g: Engine }) {
         addMessage(<EffectRemovedMessage {...detail} />);
     });
     g.events.on("SpellCast", ({ detail }) =>
-      addMessage(<CastMessage {...detail} />)
+      addMessage(<CastMessage {...detail} />),
     );
     g.events.on("DiceRolled", ({ detail }) => {
       if (detail.type.type === "initiative")
         addMessage(
           <InitiativeMessage
             {...(detail as DiceRolledDetail<InitiativeRoll>)}
-          />
+          />,
         );
     });
     g.events.on("AbilityCheck", ({ detail }) =>
-      addMessage(<AbilityCheckMessage {...detail} />)
+      addMessage(<AbilityCheckMessage {...detail} />),
     );
     g.events.on("Save", ({ detail }) =>
-      addMessage(<SaveMessage {...detail} />)
+      addMessage(<SaveMessage {...detail} />),
     );
   }, [addMessage, g]);
 

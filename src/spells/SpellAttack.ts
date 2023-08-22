@@ -15,7 +15,7 @@ export default class SpellAttack<T extends object> {
     public spell: Spell<T>,
     public method: SpellcastingMethod,
     public type: "melee" | "ranged",
-    public config: T
+    public config: T,
   ) {}
 
   async attack(target: Combatant) {
@@ -63,7 +63,7 @@ export default class SpellAttack<T extends object> {
               spell,
               method,
             },
-            critical
+            critical,
           );
           amounts.push([damageType, roll]);
         } else amounts.push([damageType, amount]);
@@ -84,7 +84,7 @@ export default class SpellAttack<T extends object> {
       spell,
       baseDamageType,
       { attack, attacker, target, critical, spell, method },
-      initialiser
+      initialiser,
     );
   }
 }

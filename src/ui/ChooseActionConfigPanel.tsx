@@ -42,7 +42,7 @@ function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
       onChange(field, who);
       wantsCombatant.value = undefined;
     },
-    [field, onChange]
+    [field, onChange],
   );
 
   const onClick = useCallback(() => {
@@ -77,7 +77,7 @@ function ChooseTargets({
         onChange(field, (value ?? []).concat(who));
       wantsCombatant.value = undefined;
     },
-    [field, onChange, value]
+    [field, onChange, value],
   );
 
   const onClick = useCallback(() => {
@@ -89,9 +89,9 @@ function ChooseTargets({
     (who: Combatant) =>
       onChange(
         field,
-        (value ?? []).filter((x) => x !== who)
+        (value ?? []).filter((x) => x !== who),
       ),
-    [field, onChange, value]
+    [field, onChange, value],
   );
 
   return (
@@ -131,7 +131,7 @@ function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
       onChange(field, p);
       wantsPoint.value = undefined;
     },
-    [field, onChange]
+    [field, onChange],
   );
 
   const onClick = useCallback(() => {
@@ -164,7 +164,7 @@ function ChoosePoints({
       if (p) onChange(field, (value ?? []).concat(p));
       wantsPoint.value = undefined;
     },
-    [field, onChange, value]
+    [field, onChange, value],
   );
 
   const onClick = useCallback(() => {
@@ -175,9 +175,9 @@ function ChoosePoints({
     (p: Point) =>
       onChange(
         field,
-        (value ?? []).filter((x) => x !== p)
+        (value ?? []).filter((x) => x !== p),
       ),
-    [field, onChange, value]
+    [field, onChange, value],
   );
 
   return (
@@ -225,7 +225,7 @@ function ChooseSlot({
       <div>
         {enumerate(
           resolver.getMinimum(action.actor),
-          resolver.getMaximum(action.actor)
+          resolver.getMaximum(action.actor),
         ).map((slot) => (
           <button
             key={slot}
@@ -269,7 +269,7 @@ function ChooseText<T>({
 
 function getInitialConfig<T extends object>(
   action: Action<T>,
-  initial?: Partial<T>
+  initial?: Partial<T>,
 ): Partial<T> {
   const config: Partial<T> = { ...initial };
 
@@ -299,7 +299,7 @@ export default function ChooseActionConfigPanel<T extends object>({
   const patchConfig = useCallback(
     (key: string, value: unknown) =>
       setConfig((old) => ({ ...old, [key]: value })),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -309,7 +309,7 @@ export default function ChooseActionConfigPanel<T extends object>({
 
   const errors = useMemo(
     () => getConfigErrors(g, action, config).messages,
-    [g, action, config]
+    [g, action, config],
   );
   const disabled = useMemo(() => errors.length > 0, [errors]);
   const damage = useMemo(() => action.getDamage(config), [action, config]);
@@ -351,7 +351,7 @@ export default function ChooseActionConfigPanel<T extends object>({
             </div>
           );
       }),
-    [action, config, patchConfig]
+    [action, config, patchConfig],
   );
 
   const statusWarning =
@@ -385,8 +385,8 @@ export default function ChooseActionConfigPanel<T extends object>({
                   (dmg.type === "flat"
                     ? dmg.amount
                     : getDiceAverage(dmg.amount.count, dmg.amount.size)),
-                0
-              )
+                0,
+              ),
             )}
             )
           </div>

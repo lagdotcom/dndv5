@@ -27,13 +27,13 @@ const Skirmisher = new SimpleFeature(
                 me,
                 new BoundedMove(Skirmisher, me.speed / 2, {
                   provokesOpportunityAttacks: false,
-                })
+                }),
               );
-            }
-          )
+            },
+          ),
         );
     });
-  }
+  },
 );
 
 const Survivalist = new SimpleFeature(
@@ -42,13 +42,13 @@ const Survivalist = new SimpleFeature(
   (g, me) => {
     me.skills.set("Nature", 2);
     me.skills.set("Survival", 2);
-  }
+  },
 );
 
 // TODO [TERRAIN]
 const SuperiorMobility = notImplementedFeature(
   "Superior Mobility",
-  `At 9th level, your walking speed increases by 10 feet. If you have a climbing or swimming speed, this increase applies to that speed as well.`
+  `At 9th level, your walking speed increases by 10 feet. If you have a climbing or swimming speed, this increase applies to that speed as well.`,
 );
 
 // TODO
@@ -56,13 +56,13 @@ const AmbushMaster = notImplementedFeature(
   "Ambush Master",
   `Starting at 13th level, you excel at leading ambushes and acting first in a fight.
 
-You have advantage on initiative rolls. In addition, the first creature you hit during the first round of a combat becomes easier for you and others to strike; attack rolls against that target have advantage until the start of your next turn.`
+You have advantage on initiative rolls. In addition, the first creature you hit during the first round of a combat becomes easier for you and others to strike; attack rolls against that target have advantage until the start of your next turn.`,
 );
 
 // TODO
 const SuddenStrike = notImplementedFeature(
   "Sudden Strike",
-  `Starting at 17th level, you can strike with deadly speed. If you take the Attack action on your turn, you can make one additional attack as a bonus action. This attack can benefit from your Sneak Attack even if you have already used it this turn, but you can't use your Sneak Attack against the same target more than once in a turn.`
+  `Starting at 17th level, you can strike with deadly speed. If you take the Attack action on your turn, you can make one additional attack as a bonus action. This attack can benefit from your Sneak Attack even if you have already used it this turn, but you can't use your Sneak Attack against the same target more than once in a turn.`,
 );
 
 const Scout: PCSubclass = {

@@ -17,7 +17,7 @@ export const isShield = (item: Item): item is ArmorItem =>
 
 export function getWeaponAbility(
   who: Combatant,
-  weapon: WeaponItem
+  weapon: WeaponItem,
 ): AbilityName {
   if (weapon.forceAbilityScore) return weapon.forceAbilityScore;
 
@@ -40,7 +40,7 @@ export function getWeaponRange(who: Combatant, weapon: WeaponItem) {
 
 export function getValidAmmunition(who: Combatant, weapon: WeaponItem) {
   return who.ammunition.filter(
-    (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
+    (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0,
   );
 }
 

@@ -14,13 +14,13 @@ import { UnitData } from "./types";
 export type Listener<T> = (point?: T) => void;
 
 export const actionAreas = signal<SpecifiedEffectShape[] | undefined>(
-  undefined
+  undefined,
 );
 
 export const activeCombatantId = signal<number>(NaN);
 
 export const activeCombatant = computed(() =>
-  allCombatants.value.find((u) => u.id === activeCombatantId.value)
+  allCombatants.value.find((u) => u.id === activeCombatantId.value),
 );
 
 export const allActions = signal<Action[]>([]);
@@ -32,7 +32,7 @@ export const allEffects = signal<EffectArea[]>([]);
 export const chooseFromList = signal<ListChoiceEvent | undefined>(undefined);
 
 export const chooseManyFromList = signal<MultiListChoiceEvent | undefined>(
-  undefined
+  undefined,
 );
 
 export const chooseYesNo = signal<YesNoChoiceEvent | undefined>(undefined);
@@ -44,13 +44,13 @@ export const moveHandler = signal<MoveHandler | undefined>(undefined);
 export const movingCombatantId = signal<number>(NaN);
 
 export const movingCombatant = computed(() =>
-  allCombatants.value.find((u) => u.id === movingCombatantId.value)
+  allCombatants.value.find((u) => u.id === movingCombatantId.value),
 );
 
 export const scale = signal(20);
 
 export const wantsCombatant = signal<Listener<Combatant> | undefined>(
-  undefined
+  undefined,
 );
 
 export const wantsPoint = signal<Listener<Point> | undefined>(undefined);

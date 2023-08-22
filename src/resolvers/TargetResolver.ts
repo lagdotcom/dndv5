@@ -12,7 +12,7 @@ export default class TargetResolver implements Resolver<Combatant> {
   constructor(
     public g: Engine,
     public maxRange: number,
-    public allowSelf = false
+    public allowSelf = false,
   ) {
     this.type = "Combatant";
   }

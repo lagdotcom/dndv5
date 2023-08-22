@@ -52,28 +52,28 @@ export default interface Spell<T extends object = object> extends Source {
     g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
-    config: T
+    config: T,
   ): Promise<void>;
   check(
     g: Engine,
     config: Partial<T>,
-    collector: ErrorCollector
+    collector: ErrorCollector,
   ): ErrorCollector;
   getAffectedArea(
     g: Engine,
     caster: Combatant,
-    config: Partial<T>
+    config: Partial<T>,
   ): SpecifiedEffectShape[] | undefined;
   getConfig(
     g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
-    config: Partial<T>
+    config: Partial<T>,
   ): ActionConfig<T>;
   getDamage(
     g: Engine,
     caster: Combatant,
-    config: Partial<T>
+    config: Partial<T>,
   ): DamageAmount[] | undefined;
   getLevel(config: T): number;
   getTargets(g: Engine, caster: Combatant, config: T): Combatant[];

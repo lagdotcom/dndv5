@@ -5,7 +5,7 @@ import { poisonResistance } from "./common";
 
 const Lucky = notImplementedFeature(
   "Lucky",
-  `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`
+  `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`,
 );
 
 const Brave = new SimpleFeature(
@@ -16,12 +16,12 @@ const Brave = new SimpleFeature(
       if (who === me && tags.has("frightened"))
         diceType.add("advantage", Brave);
     });
-  }
+  },
 );
 
 const HalflingNimbleness = notImplementedFeature(
   "Halfling Nimbleness",
-  `You can move through the space of any creature that is of a size larger than yours.`
+  `You can move through the space of any creature that is of a size larger than yours.`,
 );
 
 const Halfling: PCRace = {
@@ -35,7 +35,7 @@ const Halfling: PCRace = {
 
 const StoutResilience = poisonResistance(
   "Stout Resilience",
-  `You have advantage on saving throws against poison, and you have resistance against poison damage.`
+  `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
 );
 
 export const StoutHalfling: PCRace = {

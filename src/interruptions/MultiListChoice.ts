@@ -14,12 +14,12 @@ export default class MultiListChoice<T = unknown> implements Interruption {
     public items: PickChoice<T>[],
     public minimum: number,
     public maximum: number = items.length,
-    public chosen: (choice: T[]) => Promise<void>
+    public chosen: (choice: T[]) => Promise<void>,
   ) {}
 
   async apply(g: Engine) {
     const choice = await new Promise<T[]>((resolve) =>
-      g.fire(new MultiListChoiceEvent<T>({ interruption: this, resolve }))
+      g.fire(new MultiListChoiceEvent<T>({ interruption: this, resolve })),
     );
     return this.chosen(choice);
   }

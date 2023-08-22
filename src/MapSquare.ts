@@ -7,7 +7,10 @@ export const MapSquareSize = 5;
 const HalfSquare = MapSquareSize / 2;
 
 export default class MapSquare extends Polygon {
-  constructor(public x: number, public y: number) {
+  constructor(
+    public x: number,
+    public y: number,
+  ) {
     super([
       { x, y },
       { x: x + MapSquareSize, y },
@@ -29,7 +32,7 @@ export function* enumerateMapSquares(
   minX: number,
   minY: number,
   maxX: number,
-  maxY: number
+  maxY: number,
 ) {
   for (let y = minY; y < maxY; y += MapSquareSize)
     for (let x = minX; x < maxX; x += MapSquareSize) yield new MapSquare(x, y);
@@ -47,7 +50,7 @@ export function getAllMapSquaresContainingPolygon(poly: Polygon) {
 
 export function getAllMapSquaresContainingCircle(
   centre: Point,
-  radius: number
+  radius: number,
 ) {
   const minX = round(centre.x - radius, MapSquareSize);
   const minY = round(centre.y - radius, MapSquareSize);

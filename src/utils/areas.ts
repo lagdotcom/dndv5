@@ -50,7 +50,7 @@ export function getTilesWithinCircle(centre: Point, radius: number) {
 export function getRectangleAsPolygon(
   { x, y }: Point,
   width: number,
-  height: number
+  height: number,
 ): Point[] {
   return [
     { x: x, y: y },
@@ -63,7 +63,7 @@ export function getRectangleAsPolygon(
 export function getTilesWithinRectangle(
   topLeft: Point,
   width: number,
-  height: number
+  height: number,
 ) {
   return resolvePolygon(getRectangleAsPolygon(topLeft, width, height));
 }
@@ -72,7 +72,7 @@ export function getLineAsPolygon(
   { x: sx, y: sy }: Point,
   { x: tx, y: ty }: Point,
   width: number,
-  length: number
+  length: number,
 ): Point[] {
   const dir = Math.atan2(ty - sy, tx - sx);
   const off = dir - Math.PI / 2;
@@ -104,7 +104,7 @@ export function getTilesWithinLine(
   start: Point,
   end: Point,
   width: number,
-  length: number
+  length: number,
 ) {
   return resolvePolygon(getLineAsPolygon(start, end, width, length));
 }
@@ -112,7 +112,7 @@ export function getTilesWithinLine(
 export function getConeAsPolygon(
   { x: sx, y: sy }: Point,
   { x: tx, y: ty }: Point,
-  radius: number
+  radius: number,
 ): Point[] {
   const dir = Math.atan2(ty - sy, tx - sx);
   const off = dir - Math.PI / 2;
@@ -160,7 +160,7 @@ export function resolveArea(area: SpecifiedEffectShape) {
         area.start,
         area.target,
         area.width,
-        area.length
+        area.length,
       );
   }
 }

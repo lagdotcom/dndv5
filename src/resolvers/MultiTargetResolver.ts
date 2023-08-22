@@ -15,7 +15,7 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
     public minimum: number,
     public maximum: number,
     public maxRange: number,
-    public allowSelf = false
+    public allowSelf = false,
   ) {
     this.type = "Combatants";
   }

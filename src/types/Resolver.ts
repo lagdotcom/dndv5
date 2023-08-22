@@ -6,7 +6,7 @@ type Resolver<T> = {
   check(
     value: T | unknown,
     action: Action,
-    collector: ErrorCollector
+    collector: ErrorCollector,
   ): ErrorCollector;
 };
 export default Resolver;

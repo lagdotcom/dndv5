@@ -5,7 +5,7 @@ import Resolver from "../types/Resolver";
 export function getConfigErrors<T extends object>(
   g: Engine,
   action: Action<T>,
-  config: Partial<T>
+  config: Partial<T>,
 ) {
   const ec = g.check(action, config);
   action.check(config, ec);
@@ -21,7 +21,7 @@ export function getConfigErrors<T extends object>(
 export function checkConfig<T extends object>(
   g: Engine,
   action: Action<T>,
-  config: Partial<T>
+  config: Partial<T>,
 ): config is T {
   return getConfigErrors(g, action, config).result;
 }

@@ -13,7 +13,7 @@ export default function ListChoiceDialog<T>({
       chooseFromList.value = undefined;
       resolve(value);
     },
-    [resolve]
+    [resolve],
   );
 
   return (

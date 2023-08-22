@@ -55,7 +55,7 @@ const Fireball = scalingSpell<HasPoint>({
         "fire",
         { attacker, spell: Fireball, method, target },
         [["fire", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   },

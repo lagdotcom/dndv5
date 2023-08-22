@@ -55,14 +55,14 @@ const IceKnife = scalingSpell<HasTarget>({
           method,
           damageType: "piercing",
         },
-        critical
+        critical,
       );
 
       await g.damage(
         IceKnife,
         "piercing",
         { attack, attacker, target, spell: IceKnife, method, critical },
-        [["piercing", damage]]
+        [["piercing", damage]],
       );
     }
 
@@ -87,14 +87,14 @@ const IceKnife = scalingSpell<HasTarget>({
           who: victim,
           tags: new Set(),
         },
-        { fail: "normal", save: "zero" }
+        { fail: "normal", save: "zero" },
       );
       await g.damage(
         IceKnife,
         "cold",
         { attacker, target: victim, spell: IceKnife, method },
         [["cold", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   },

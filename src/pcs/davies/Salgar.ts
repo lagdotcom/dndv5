@@ -60,7 +60,7 @@ export default class Salgar extends PC {
       // TODO HealingWord,
       // TODO SpeakWithAnimals,
 
-      LesserRestoration
+      LesserRestoration,
       // TODO LocateObject,
       // TODO Moonbeam,
 

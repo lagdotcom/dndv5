@@ -14,7 +14,7 @@ const TurnTheUnholy = notImplementedFeature(
   "Channel Divinity: Turn the Unholy",
   `As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.
 
-A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
+A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
 );
 
 // TODO
@@ -22,13 +22,13 @@ const AuraOfDevotion = notImplementedFeature(
   "Aura of Devotion",
   `Starting at 7th level, you and friendly creatures within 10 feet of you can't be charmed while you are conscious.
 
-At 18th level, the range of this aura increases to 30 feet.`
+At 18th level, the range of this aura increases to 30 feet.`,
 );
 
 // TODO
 const PurityOfSpirit = notImplementedFeature(
   "Purity of Spirit",
-  `Beginning at 15th level, you are always under the effects of a protection from evil and good spell.`
+  `Beginning at 15th level, you are always under the effects of a protection from evil and good spell.`,
 );
 
 // TODO
@@ -42,7 +42,7 @@ In addition, for the duration, you have advantage on saving throws against spell
 
 Once you use this feature, you can't use it again until you finish a long rest.
 
-`
+`,
 );
 
 const OathSpells = bonusSpellsFeature(
@@ -62,7 +62,7 @@ const OathSpells = bonusSpellsFeature(
     // TODO { level: 17, spell: Commune },
     // TODO { level: 17, spell: FlameStrike },
   ],
-  "Paladin"
+  "Paladin",
 );
 
 const Devotion: PCSubclass = {

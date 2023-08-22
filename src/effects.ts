@@ -10,7 +10,7 @@ export const UsedAttackAction = new Effect(
   "Used Attack Action",
   "turnStart",
   undefined,
-  true
+  true,
 );
 
 class DropProneAction extends AbstractAction {
@@ -67,7 +67,7 @@ export const Prone = new Effect("Prone", "turnEnd", (g) => {
     actions.push(
       who.conditions.has("Prone")
         ? new StandUpAction(g, who)
-        : new DropProneAction(g, who)
+        : new DropProneAction(g, who),
     );
   });
 

@@ -58,7 +58,7 @@ const LightningBolt = scalingSpell<HasPoint>({
         "lightning",
         { attacker, spell: LightningBolt, method, target },
         [["lightning", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   },

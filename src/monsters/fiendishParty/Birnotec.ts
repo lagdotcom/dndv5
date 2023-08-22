@@ -42,7 +42,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
       EldritchBurstSpell,
       BirnotecSpellcasting,
       "ranged",
-      { target }
+      { target },
     );
 
     const attack = await rsa.attack(target);
@@ -56,7 +56,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
     const damage = await g.rollDamage(
       1,
       { size: 10, source: this, attacker: caster, damageType: "force" },
-      attack.critical
+      attack.critical,
     );
 
     for (const other of g.getInside(getArea(g, target))) {
@@ -72,14 +72,14 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
           method,
           tags: new Set(),
         },
-        { fail: "normal", save: "zero" }
+        { fail: "normal", save: "zero" },
       );
       await g.damage(
         this,
         "force",
         { attacker: caster, target: other, spell: EldritchBurstSpell, method },
         [["force", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   },
@@ -88,7 +88,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
 const BirnotecSpellcasting = new InnateSpellcasting(
   "Spellcasting",
   "cha",
-  () => undefined
+  () => undefined,
 );
 
 const EldritchBurst = new SimpleFeature(
@@ -101,16 +101,16 @@ const EldritchBurst = new SimpleFeature(
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me)
         actions.push(
-          new CastSpell(g, me, BirnotecSpellcasting, EldritchBurstSpell)
+          new CastSpell(g, me, BirnotecSpellcasting, EldritchBurstSpell),
         );
     });
-  }
+  },
 );
 
 // TODO [TEMPORARYHP]
 const ArmorOfAgathys = notImplementedFeature(
   "Armor of Agathys",
-  `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`
+  `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`,
 );
 
 const AntimagicProdigy = new SimpleFeature(
@@ -141,11 +141,11 @@ const AntimagicProdigy = new SimpleFeature(
               // TODO [MESSAGES]
 
               if (save.outcome === "fail") e.preventDefault();
-            }
-          )
+            },
+          ),
         );
     });
-  }
+  },
 );
 
 const HellishRebuke = new SimpleFeature(
@@ -185,14 +185,14 @@ const HellishRebuke = new SimpleFeature(
                   "fire",
                   { attacker: me, target: attacker },
                   [["fire", damage]],
-                  save.damageResponse
+                  save.damageResponse,
                 );
-              }
-            )
+              },
+            ),
           );
-      }
+      },
     );
-  }
+  },
 );
 
 export default class Birnotec extends Monster {

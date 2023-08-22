@@ -21,7 +21,7 @@ export default class ErrorCollector {
 
   get valid() {
     return Array.from(this.errors).filter(
-      (entry) => !this.ignored.has(entry.source)
+      (entry) => !this.ignored.has(entry.source),
     );
   }
 

@@ -5,7 +5,7 @@ import { getDiceAverage } from "./dnd";
 export const _dd = (
   count: number,
   size: number,
-  damage: DamageType
+  damage: DamageType,
 ): DamageAmount => ({
   type: "dice",
   amount: { count, size },

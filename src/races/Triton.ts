@@ -15,20 +15,20 @@ import { resistanceFeature } from "./common";
 // TODO [TERRAIN] [CHOKING]
 const Amphibious = notImplementedFeature(
   "Amphibious",
-  `You can breathe air and water.`
+  `You can breathe air and water.`,
 );
 
 const FogCloudResource = new LongRestResource(
   "Control Air and Water: Fog Cloud",
-  1
+  1,
 );
 const GustOfWindResource = new LongRestResource(
   "Control Air and Water: Gust of Wind",
-  1
+  1,
 );
 const WallOfWaterResource = new LongRestResource(
   "Control Air and Water: Wall of Water",
-  1
+  1,
 );
 
 const ControlAirAndWaterSpells = [
@@ -44,7 +44,7 @@ const ControlAirAndWaterMethod = new InnateSpellcasting(
     if (spell === FogCloud) return FogCloudResource;
     if (spell === GustOfWind) return GustOfWindResource;
     if (spell === WallOfWater) return WallOfWaterResource;
-  }
+  },
 );
 
 const ControlAirAndWater = bonusSpellsFeature(
@@ -52,20 +52,20 @@ const ControlAirAndWater = bonusSpellsFeature(
   `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can’t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
   "level",
   ControlAirAndWaterMethod,
-  ControlAirAndWaterSpells
+  ControlAirAndWaterSpells,
 );
 
 const Darkvision = darkvisionFeature();
 
 const EmissaryOfTheSea = nonCombatFeature(
   "Emissary of the Sea",
-  `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
+  `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`,
 );
 
 const GuardiansOfTheDepths = resistanceFeature(
   "Guardians of the Depths",
   `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
-  ["cold"]
+  ["cold"],
 );
 
 const Triton: PCRace = {

@@ -29,7 +29,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
     const area = new ActiveEffectArea(
       "Spike Growth",
       { type: "sphere", centre: point, radius: 20 },
-      new Set(["difficult terrain", "plants"])
+      new Set(["difficult terrain", "plants"]),
     );
     g.addEffectArea(area);
     const spiky = resolveArea(area.shape);
@@ -54,11 +54,11 @@ const SpikeGrowth = simpleSpell<HasPoint>({
                 SpikeGrowth,
                 "piercing",
                 { attacker, target: who, spell: SpikeGrowth, method },
-                [["piercing", amount]]
+                [["piercing", amount]],
               );
-            })
+            }),
           );
-      }
+      },
     );
 
     attacker.concentrateOn({

@@ -26,10 +26,11 @@ const ProtectionEffect = new Effect(
       )
         diceType.add("disadvantage", ProtectionEffect);
     });
-  }
+  },
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
+  status: "incomplete",
   name: "Protection from Evil and Good",
   level: 1,
   school: "Abjuration",

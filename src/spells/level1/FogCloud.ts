@@ -28,7 +28,7 @@ const FogCloud = scalingSpell<HasPoint>({
     const area = new ActiveEffectArea(
       "Fog Cloud",
       { type: "sphere", centre: point, radius },
-      new Set(["heavily obscured"])
+      new Set(["heavily obscured"]),
     );
     g.addEffectArea(area);
 

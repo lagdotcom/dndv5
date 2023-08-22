@@ -18,7 +18,7 @@ async function fireMeteors(
   attacker: Combatant,
   method: SpellcastingMethod,
   { points }: HasPoints,
-  spendMeteors = true
+  spendMeteors = true,
 ) {
   if (spendMeteors) attacker.spendResource(MeteorResource, points.length);
 
@@ -53,7 +53,7 @@ async function fireMeteors(
         "fire",
         { attacker, target, spell: MelfsMinuteMeteors, method },
         [["fire", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   }
@@ -62,7 +62,11 @@ async function fireMeteors(
 }
 
 class FireMeteorsAction extends AbstractAction<HasPoints> {
-  constructor(g: Engine, actor: Combatant, public method: SpellcastingMethod) {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    public method: SpellcastingMethod,
+  ) {
     super(
       g,
       actor,
@@ -73,17 +77,17 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
           g,
           1,
           Math.min(2, actor.resources.get(MeteorResource.name) ?? 2),
-          120
+          120,
         ),
       },
-      { time: "bonus action", damage: [_dd(2, 6, "fire")] }
+      { time: "bonus action", damage: [_dd(2, 6, "fire")] },
     );
   }
 
   getAffectedArea({ points }: Partial<HasPoints>) {
     if (points)
       return points.map(
-        (centre) => ({ type: "sphere", centre, radius: 5 } as const)
+        (centre) => ({ type: "sphere", centre, radius: 5 }) as const,
       );
   }
 
@@ -116,7 +120,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
     points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
   getTargets: (g, caster, { points }) =>
     points.flatMap((centre) =>
-      g.getInside({ type: "sphere", centre, radius: 5 })
+      g.getInside({ type: "sphere", centre, radius: 5 }),
     ),
 
   getDamage: () => [_dd(2, 6, "fire")],
@@ -134,7 +138,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
       ({ detail: { who, actions } }) => {
         if (who === attacker && meteorActionEnabled)
           actions.push(new FireMeteorsAction(g, attacker, method));
-      }
+      },
     );
 
     const removeTurnListener = g.events.on(
@@ -144,7 +148,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
           meteorActionEnabled = true;
           removeTurnListener();
         }
-      }
+      },
     );
 
     await attacker.concentrateOn({

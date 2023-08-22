@@ -8,7 +8,7 @@ export class AbstractAmmo extends AbstractItem<"ammo"> implements AmmoItem {
     g: Engine,
     name: string,
     public ammunitionTag: AmmunitionTag,
-    public quantity: number
+    public quantity: number,
   ) {
     super(g, "ammo", name);
   }

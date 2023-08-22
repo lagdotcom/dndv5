@@ -11,7 +11,7 @@ import { scalingSpell } from "../common";
 const getArea = (
   g: Engine,
   caster: Combatant,
-  target: Point
+  target: Point,
 ): SpecifiedCone => ({
   type: "cone",
   radius: 60,
@@ -61,7 +61,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
         "cold",
         { attacker, spell: ConeOfCold, method, target },
         [["cold", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
 
       // TODO A creature killed by this spell becomes a frozen statue until it thaws.

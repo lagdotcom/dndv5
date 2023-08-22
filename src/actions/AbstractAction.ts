@@ -34,7 +34,7 @@ export default abstract class AbstractAction<T extends object = Empty>
     public name: string,
     public status: ImplementationStatus,
     public config: ActionConfig<T>,
-    { area, damage, resources, time }: AbstractActionOptions = {}
+    { area, damage, resources, time }: AbstractActionOptions = {},
   ) {
     this.area = area;
     this.damage = damage;

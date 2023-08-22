@@ -15,6 +15,6 @@ export default interface SpellcastingMethod extends Source {
   getResourceForSpell(
     spell: Spell,
     level: number,
-    caster: Combatant
+    caster: Combatant,
   ): Resource | undefined;
 }

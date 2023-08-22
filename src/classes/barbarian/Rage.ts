@@ -69,9 +69,9 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
       )
         bonus.add(
           getRageBonus(attacker.classLevels.get("Barbarian") ?? 0),
-          RageEffect
+          RageEffect,
         );
-    }
+    },
   );
 
   // You have resistance to bludgeoning, piercing, and slashing damage.
@@ -80,7 +80,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
     ({ detail: { who, damageType, response } }) => {
       if (isRaging(who) && MundaneDamageTypes.includes(damageType))
         response.add("resist", RageEffect);
-    }
+    },
   );
 
   // If you are able to cast spells, you can't cast them or concentrate on them while raging.
@@ -104,7 +104,7 @@ class RageAction extends AbstractAction {
       "Rage",
       "incomplete",
       {},
-      { time: "bonus action", resources: [[RageResource, 1]] }
+      { time: "bonus action", resources: [[RageResource, 1]] },
     );
   }
 
@@ -133,13 +133,13 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   (g, me) => {
     me.initResource(
       RageResource,
-      getRageCount(me.classLevels.get("Barbarian") ?? 0)
+      getRageCount(me.classLevels.get("Barbarian") ?? 0),
     );
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me && !me.hasEffect(RageEffect))
         actions.push(new RageAction(g, who));
     });
-  }
+  },
 );
 export default Rage;

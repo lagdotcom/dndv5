@@ -34,7 +34,7 @@ export function aimCone(
   position: Point,
   size: number,
   aim: Point,
-  radius: number
+  radius: number,
 ): SpecifiedEffectShape {
   const offset = getAimOffset(position, aim);
 
@@ -51,7 +51,7 @@ export function aimLine(
   size: number,
   aim: Point,
   length: number,
-  width: number
+  width: number,
 ): SpecifiedEffectShape {
   const offset = getAimOffset(position, aim);
 

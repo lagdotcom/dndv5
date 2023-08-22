@@ -112,7 +112,7 @@ export const scalingSpell = <T extends object>({
     g: Engine,
     actor: Combatant,
     method: SpellcastingMethod,
-    config: Partial<T & Scales>
+    config: Partial<T & Scales>,
   ) => ActionConfig<T>;
 }): Spell<T & Scales> => ({
   status,

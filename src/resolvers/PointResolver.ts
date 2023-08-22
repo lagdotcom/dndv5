@@ -9,7 +9,10 @@ import { distanceTo } from "../utils/units";
 export default class PointResolver implements Resolver<Point> {
   type: "Point";
 
-  constructor(public g: Engine, public maxRange: number) {
+  constructor(
+    public g: Engine,
+    public maxRange: number,
+  ) {
     this.type = "Point";
   }
 

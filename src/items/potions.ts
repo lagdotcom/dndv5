@@ -20,7 +20,10 @@ const GiantStats: Record<GiantType, { str: number; rarity: ItemRarity }> = {
   Storm: { str: 29, rarity: "Legendary" },
 };
 export class PotionOfGiantStrength extends AbstractWondrous {
-  constructor(g: Engine, public type: GiantType) {
+  constructor(
+    g: Engine,
+    public type: GiantType,
+  ) {
     super(g, `Potion of ${type} Giant Strength`, 0);
     this.rarity = GiantStats[type].rarity;
 

@@ -7,7 +7,10 @@ import Resolver from "../types/Resolver";
 export default class ChoiceResolver<T> implements Resolver<T> {
   type: "Choice";
 
-  constructor(public g: Engine, public entries: PickChoice<T>[]) {
+  constructor(
+    public g: Engine,
+    public entries: PickChoice<T>[],
+  ) {
     this.type = "Choice";
   }
 

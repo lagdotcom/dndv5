@@ -7,6 +7,6 @@ export default class EvaluateLater implements Interruption {
   constructor(
     public who: Combatant,
     public source: Source,
-    public apply: (g: Engine) => Promise<void>
+    public apply: (g: Engine) => Promise<void>,
   ) {}
 }

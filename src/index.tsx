@@ -37,5 +37,5 @@ render(
       }}
     />
   </SVGCacheContext.Provider>,
-  document.body
+  document.body,
 );

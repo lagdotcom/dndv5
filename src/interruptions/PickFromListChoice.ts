@@ -17,12 +17,12 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     public title: string,
     public text: string,
     public items: PickChoice<T>[],
-    public chosen: (choice: T) => Promise<void>
+    public chosen: (choice: T) => Promise<void>,
   ) {}
 
   async apply(g: Engine) {
     const choice = await new Promise<T>((resolve) =>
-      g.fire(new ListChoiceEvent<T>({ interruption: this, resolve }))
+      g.fire(new ListChoiceEvent<T>({ interruption: this, resolve })),
     );
     return this.chosen(choice);
   }

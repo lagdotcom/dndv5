@@ -15,7 +15,7 @@ const StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
         MundaneDamageTypes.includes(damageType)
       )
         response.add("resist", StoneskinEffect);
-    }
+    },
   );
 });
 

@@ -37,7 +37,7 @@ type BattleEntry = [
   constructor: new (g: Engine) => Combatant,
   x: number,
   y: number,
-  initiative: number
+  initiative: number,
 ];
 
 const cache = {
@@ -52,7 +52,7 @@ async function setupBattleTest(...entries: BattleEntry[]) {
   render(
     <SVGCacheContext.Provider value={cache}>
       <App g={g} />
-    </SVGCacheContext.Provider>
+    </SVGCacheContext.Provider>,
   );
 
   const combatants = entries.map(([constructor, x, y, initiative]) => {
@@ -107,8 +107,8 @@ it("supports Fog Cloud", async () => {
   await user.click(menuitem("heavy crossbow (crossbow bolt)"));
   expect(
     logMsg(
-      "thug attacks Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7). (AC 14)"
-    )
+      "thug attacks Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7). (AC 14)",
+    ),
   ).toBeVisible();
   await user.click(btn("End Turn"));
 
@@ -117,7 +117,7 @@ it("supports Fog Cloud", async () => {
   g.dice.force(5, { type: "attack", who: pc });
   await user.click(menuitem("dart"));
   expect(
-    logMsg("Tethilssethanar attacks thug with dart (9). (AC 11)")
+    logMsg("Tethilssethanar attacks thug with dart (9). (AC 11)"),
   ).toBeVisible();
 });
 
@@ -129,7 +129,7 @@ it("supports a typical Aura attack", async () => {
   } = await setupBattleTest(
     [Aura, 10, 10, 20],
     [Tethilssethanar, 5, 0, 2],
-    [Thug, 0, 0, 1]
+    [Thug, 0, 0, 1],
   );
 
   await user.click(token("thug"));
@@ -159,7 +159,7 @@ it("supports a typical Beldalynn attack", async () => {
   } = await setupBattleTest(
     [Beldalynn, 0, 0, 20],
     [Thug, 25, 0, 1],
-    [Tethilssethanar, 20, 0, 2]
+    [Tethilssethanar, 20, 0, 2],
   );
 
   await user.click(btn("Melf's Minute Meteors (Wizard)"));
@@ -177,7 +177,7 @@ it("supports a typical Beldalynn attack", async () => {
 
   expect(logMsg("thug takes 12 damage. (12 fire)")).toBeVisible();
   expect(
-    queryLogMsg("Tethilssethanar takes 12 damage. (12 fire)")
+    queryLogMsg("Tethilssethanar takes 12 damage. (12 fire)"),
   ).not.toBeInTheDocument();
 });
 

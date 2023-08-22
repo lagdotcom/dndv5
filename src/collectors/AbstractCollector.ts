@@ -44,7 +44,7 @@ abstract class AbstractCollector<T> {
           !(
             this.ignoredSources.has(entry.source) ||
             this.ignoredValues.has(entry.value)
-          )
+          ),
       )
       .map((entry) => entry.value);
   }

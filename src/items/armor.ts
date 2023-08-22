@@ -12,7 +12,7 @@ export abstract class AbstractArmor
     public category: ArmorCategory,
     public ac: number,
     public stealthDisadvantage = false,
-    public minimumStrength = 0
+    public minimumStrength = 0,
   ) {
     super(g, "armor", name);
   }

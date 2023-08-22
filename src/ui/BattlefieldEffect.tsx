@@ -93,7 +93,7 @@ function AffectedSquare({ point }: AffectedSquareProps) {
       width: scale.value * MapSquareSize,
       height: scale.value * MapSquareSize,
     }),
-    [point]
+    [point],
   );
 
   return <div className={styles.square} style={style} />;

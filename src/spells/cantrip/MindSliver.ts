@@ -49,14 +49,14 @@ const MindSliver = simpleSpell<HasTarget>({
         method,
         tags: new Set(),
       },
-      { fail: "normal", save: "zero" }
+      { fail: "normal", save: "zero" },
     );
     await g.damage(
       MindSliver,
       "psychic",
       { attacker, target, spell: MindSliver, method },
       [["psychic", damage]],
-      save.damageResponse
+      save.damageResponse,
     );
 
     if (save.outcome === "fail") {
@@ -68,7 +68,7 @@ const MindSliver = simpleSpell<HasTarget>({
             removeTurnTracker();
             target.removeEffect(MindSliverEffect);
           }
-        }
+        },
       );
       target.addEffect(MindSliverEffect, { duration: 2 });
     }

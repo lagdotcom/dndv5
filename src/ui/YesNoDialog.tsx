@@ -13,7 +13,7 @@ export default function YesNoDialog({
       chooseYesNo.value = undefined;
       resolve(value);
     },
-    [resolve]
+    [resolve],
   );
 
   const onYes = useCallback(() => decide(true), [decide]);

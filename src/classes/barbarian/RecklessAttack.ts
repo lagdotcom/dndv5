@@ -12,7 +12,7 @@ const RecklessAttackResource = new TurnResource("Reckless Attack", 1);
 function canBeReckless(
   who: Combatant,
   tags: Set<AttackTag>,
-  ability: AbilityName
+  ability: AbilityName,
 ) {
   return (
     who.hasEffect(RecklessAttackEffect) &&
@@ -30,7 +30,7 @@ const RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g) => {
 
       if (target.hasEffect(RecklessAttackEffect))
         diceType.add("advantage", RecklessAttackEffect);
-    }
+    },
   );
 });
 
@@ -57,11 +57,11 @@ export const RecklessAttack = new SimpleFeature(
                 // need this because the Effect handler happens first
                 if (canBeReckless(who, tags, ability))
                   diceType.add("advantage", RecklessAttackEffect);
-              }
-            )
+              },
+            ),
           );
         }
-      }
+      },
     );
-  }
+  },
 );

@@ -2,7 +2,10 @@ import CombatantScore from "./types/CombatantScore";
 import { getAbilityModifier } from "./utils/dnd";
 
 export default class AbilityScore implements CombatantScore {
-  constructor(private baseScore = 10, private baseMaximum = 20) {}
+  constructor(
+    private baseScore = 10,
+    private baseMaximum = 20,
+  ) {}
 
   get score() {
     return Math.min(this.baseScore, this.maximum);

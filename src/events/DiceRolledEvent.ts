@@ -12,7 +12,7 @@ export interface DiceRolledDetail<T extends RollType> {
 }
 
 export default class DiceRolledEvent<
-  T extends RollType = RollType
+  T extends RollType = RollType,
 > extends CustomEvent<DiceRolledDetail<T>> {
   constructor(detail: DiceRolledDetail<T>) {
     super("DiceRolled", { detail });

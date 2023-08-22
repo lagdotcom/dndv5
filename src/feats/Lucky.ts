@@ -12,7 +12,7 @@ function addLuckyOpportunity(
   who: Combatant,
   message: string,
   interrupt: InterruptionCollector,
-  callback: (roll: number) => void
+  callback: (roll: number) => void,
 ) {
   interrupt.add(
     new YesNoChoice(who, Lucky, "Lucky", message, async () => {
@@ -20,7 +20,7 @@ function addLuckyOpportunity(
 
       const nr = await g.roll({ type: "luck", who });
       callback(nr.value);
-    })
+    }),
   );
 }
 
@@ -54,7 +54,7 @@ const Lucky = new SimpleFeature(
               detail.otherValues.push(value);
               detail.value = roll;
             } else detail.otherValues.push(roll);
-          }
+          },
         );
 
       // TODO If more than one creature spends a luck point to influence the outcome of a roll, the points cancel each other out; no additional dice are rolled.
@@ -73,9 +73,9 @@ const Lucky = new SimpleFeature(
               detail.otherValues.push(value);
               detail.value = roll;
             } else detail.otherValues.push(roll);
-          }
+          },
         );
     });
-  }
+  },
 );
 export default Lucky;

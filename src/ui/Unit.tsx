@@ -29,12 +29,12 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
 
   const clicked = useCallback(
     (e: MouseEvent) => onClick(u.who, e),
-    [onClick, u]
+    [onClick, u],
   );
 
   const moved = useCallback(
     (dir: MoveDirection) => onMove(u.who, dir),
-    [onMove, u]
+    [onMove, u],
   );
 
   return (

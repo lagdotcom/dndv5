@@ -16,7 +16,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
     g: Engine,
     actor: Combatant,
     public method: SpellcastingMethod,
-    public unsubscribe: Unsubscribe
+    public unsubscribe: Unsubscribe,
   ) {
     super(
       g,
@@ -27,7 +27,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
       {
         damage: [_dd(1, 6, "bludgeoning")],
         resources: [[MagicStoneResource, 1]],
-      }
+      },
     );
   }
 
@@ -59,7 +59,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
           spell: MagicStone,
           method,
         },
-        critical
+        critical,
       );
 
       await g.damage(
@@ -74,7 +74,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
           spell: MagicStone,
           method,
         },
-        [["bludgeoning", amount]]
+        [["bludgeoning", amount]],
       );
     }
   }
@@ -103,7 +103,7 @@ const MagicStone = simpleSpell({
       ({ detail: { who, actions } }) => {
         if (who === caster && who.hasResource(MagicStoneResource))
           actions.push(new MagicStoneAction(g, who, method, unsubscribe));
-      }
+      },
     );
   },
 });

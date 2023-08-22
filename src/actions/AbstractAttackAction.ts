@@ -7,7 +7,7 @@ import ImplementationStatus from "../types/ImplementationStatus";
 import AbstractAction, { AbstractActionOptions } from "./AbstractAction";
 
 export default class AbstractAttackAction<
-  T extends object = Empty
+  T extends object = Empty,
 > extends AbstractAction<T> {
   constructor(
     g: Engine,
@@ -15,7 +15,7 @@ export default class AbstractAttackAction<
     name: string,
     status: ImplementationStatus,
     config: ActionConfig<T>,
-    options: AbstractActionOptions = {}
+    options: AbstractActionOptions = {},
   ) {
     super(g, actor, name, status, config, options);
     this.isAttack = true;

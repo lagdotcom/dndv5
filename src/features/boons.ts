@@ -18,7 +18,7 @@ class HissAction extends AbstractAction<HasTarget> {
       "Hiss (Boon of Vassetri)",
       "implemented",
       { target: new TargetResolver(g, 5) },
-      { time: "bonus action", resources: [[HissResource, 1]] }
+      { time: "bonus action", resources: [[HissResource, 1]] },
     );
   }
 
@@ -42,7 +42,7 @@ class HissAction extends AbstractAction<HasTarget> {
             cannotApproach: [actor],
             mustUseAll: true,
             provokesOpportunityAttacks: false,
-          })
+          }),
         );
       }
     }
@@ -64,5 +64,5 @@ export const BoonOfVassetri = new SimpleFeature(
     });
 
     // TODO add Speak with Animals
-  }
+  },
 );

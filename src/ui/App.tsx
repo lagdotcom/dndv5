@@ -61,7 +61,7 @@ export default function App({ g, onMount }: Props) {
   });
   const hideActionMenu = useCallback(
     () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
-    []
+    [],
   );
 
   const refreshUnits = useCallback(() => {
@@ -116,7 +116,7 @@ export default function App({ g, onMount }: Props) {
         return;
       });
     },
-    [g, refreshUnits]
+    [g, refreshUnits],
   );
 
   const onClickAction = useCallback(
@@ -130,7 +130,7 @@ export default function App({ g, onMount }: Props) {
         onExecuteAction(action, config);
       } else console.warn(config, "does not match", action.getConfig(config));
     },
-    [g, hideActionMenu, onExecuteAction, target]
+    [g, hideActionMenu, onExecuteAction, target],
   );
 
   const onClickBattlefield = useCallback(
@@ -144,7 +144,7 @@ export default function App({ g, onMount }: Props) {
       hideActionMenu();
       actionAreas.value = undefined;
     },
-    [hideActionMenu]
+    [hideActionMenu],
   );
 
   const onClickCombatant = useCallback(
@@ -190,7 +190,7 @@ export default function App({ g, onMount }: Props) {
         setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
       }
     },
-    [g]
+    [g],
   );
 
   const onFinishBoundedMove = useCallback(() => {
@@ -215,7 +215,7 @@ export default function App({ g, onMount }: Props) {
         });
       }
     },
-    [g, hideActionMenu, onFinishBoundedMove]
+    [g, hideActionMenu, onFinishBoundedMove],
   );
 
   const onPass = useCallback(() => {
@@ -234,7 +234,7 @@ export default function App({ g, onMount }: Props) {
       hideActionMenu();
       setAction(action);
     },
-    [hideActionMenu]
+    [hideActionMenu],
   );
 
   return (

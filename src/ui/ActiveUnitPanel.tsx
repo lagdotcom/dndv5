@@ -35,7 +35,7 @@ export default function ActiveUnitPanel({
             <button key={action.name} onClick={() => onChooseAction(action)}>
               {action.name}
             </button>
-          )
+          ),
         )}
       </Labelled>
     </aside>

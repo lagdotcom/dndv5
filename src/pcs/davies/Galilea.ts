@@ -59,7 +59,7 @@ export default class Galilea extends PC {
     this.addPreparedSpells(
       Bless,
       DivineFavor,
-      ShieldOfFaith
+      ShieldOfFaith,
 
       // TODO Aid,
       // TODO MagicWeapon

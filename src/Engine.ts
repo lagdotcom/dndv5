@@ -81,7 +81,7 @@ export default class Engine {
 
   constructor(
     public dice = new DiceBag(),
-    public events = new Dispatcher()
+    public events = new Dispatcher(),
   ) {
     this.combatants = new Map();
     this.effects = new Set();
@@ -109,7 +109,7 @@ export default class Engine {
 
     this.initiativeOrder = orderedKeys(
       this.combatants,
-      ([, a], [, b]) => b.initiative - a.initiative
+      ([, a], [, b]) => b.initiative - a.initiative,
     );
     await this.nextTurn();
   }
@@ -117,7 +117,7 @@ export default class Engine {
   async rollDamage(
     count: number,
     e: Omit<DamageRoll, "type">,
-    critical = false
+    critical = false,
   ) {
     let total = 0;
 
@@ -136,12 +136,12 @@ export default class Engine {
         bonus: new BonusCollector(),
         diceType: new DiceTypeCollector(),
         interrupt: new InterruptionCollector(),
-      })
+      }),
     );
 
     const roll = await this.roll(
       { type: "initiative", who },
-      gi.detail.diceType.result
+      gi.detail.diceType.result,
     );
     return roll.value + gi.detail.bonus.result;
   }
@@ -152,7 +152,7 @@ export default class Engine {
     { save, fail }: { save: SaveDamageResponse; fail: SaveDamageResponse } = {
       save: "half",
       fail: "normal",
-    }
+    },
   ) {
     const successResponse = new SuccessResponseCollector();
     const bonus = new BonusCollector();
@@ -169,7 +169,7 @@ export default class Engine {
         successResponse,
         saveDamageResponse,
         failDamageResponse,
-      })
+      }),
     );
 
     let forced = false;
@@ -185,7 +185,7 @@ export default class Engine {
 
     const outcome = success ? ("success" as const) : ("fail" as const);
     this.fire(
-      new SaveEvent({ pre: pre.detail, roll, dc, outcome, total, forced })
+      new SaveEvent({ pre: pre.detail, roll, dc, outcome, total, forced }),
     );
 
     return {
@@ -203,7 +203,7 @@ export default class Engine {
     const diceType = new DiceTypeCollector();
 
     const pre = this.fire(
-      new BeforeCheckEvent({ ...e, dc, bonus, diceType, successResponse })
+      new BeforeCheckEvent({ ...e, dc, bonus, diceType, successResponse }),
     );
 
     let forced = false;
@@ -226,7 +226,7 @@ export default class Engine {
         outcome,
         total,
         forced,
-      })
+      }),
     );
 
     return { outcome, forced };
@@ -243,7 +243,7 @@ export default class Engine {
           diceType,
           ...roll,
           interrupt: new InterruptionCollector(),
-        })
+        }),
       )
     ).detail;
   }
@@ -254,7 +254,7 @@ export default class Engine {
         new TurnEndedEvent({
           who: this.activeCombatant,
           interrupt: new InterruptionCollector(),
-        })
+        }),
       );
 
     let who = this.initiativeOrder[this.initiativePosition];
@@ -277,7 +277,7 @@ export default class Engine {
     who.attacksSoFar = [];
     who.movedSoFar = 0;
     await this.resolve(
-      new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
+      new TurnStartedEvent({ who, interrupt: new InterruptionCollector() }),
     );
   }
 
@@ -285,7 +285,7 @@ export default class Engine {
     who: Combatant,
     direction: MoveDirection,
     handler: MoveHandler,
-    type: MovementType = "speed"
+    type: MovementType = "speed",
   ) {
     const state = this.combatants.get(who);
     if (!state) return { type: "invalid" as const };
@@ -304,7 +304,7 @@ export default class Engine {
         type,
         error,
         interrupt: new InterruptionCollector(),
-      })
+      }),
     );
     if (pre.defaultPrevented) return { type: "prevented" as const };
     if (!error.result) return { type: "error" as const, error };
@@ -319,7 +319,7 @@ export default class Engine {
         handler,
         type,
         multiplier,
-      })
+      }),
     );
 
     state.position = position;
@@ -334,7 +334,7 @@ export default class Engine {
         handler,
         type,
         interrupt: new InterruptionCollector(),
-      })
+      }),
     );
 
     if (handlerDone) return { type: "unbind" as const };
@@ -354,7 +354,7 @@ export default class Engine {
       attacker: Combatant;
       target: Combatant;
       multiplier?: number;
-    }
+    },
   ) {
     let total = 0;
 
@@ -368,7 +368,7 @@ export default class Engine {
           who: target,
           damageType,
           response: collector,
-        })
+        }),
       );
 
       const response = collector.result;
@@ -394,7 +394,7 @@ export default class Engine {
         total,
         breakdown,
         interrupt: new InterruptionCollector(),
-      })
+      }),
     );
 
     if (target.hp <= 0) {
@@ -409,7 +409,7 @@ export default class Engine {
   }
 
   async attack(
-    e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt">
+    e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt">,
   ) {
     const pre = await this.resolve(
       new BeforeAttackEvent({
@@ -417,7 +417,7 @@ export default class Engine {
         diceType: new DiceTypeCollector(),
         bonus: new BonusCollector(),
         interrupt: new InterruptionCollector(),
-      })
+      }),
     );
     if (pre.defaultPrevented)
       return { outcome: "cancelled", hit: false } as const;
@@ -432,7 +432,7 @@ export default class Engine {
         ac,
         ability: e.ability,
       },
-      pre.detail.diceType.result
+      pre.detail.diceType.result,
     );
 
     const total = roll.value + pre.detail.bonus.result;
@@ -452,7 +452,7 @@ export default class Engine {
             ? "hit"
             : "miss",
         forced: false, // TODO
-      })
+      }),
     );
     const { outcome } = attack.detail;
     return {
@@ -471,7 +471,7 @@ export default class Engine {
       "critical"
     >,
     damageInitialiser: DamageInitialiser = [],
-    startingMultiplier?: MultiplierType
+    startingMultiplier?: MultiplierType,
   ) {
     // just skip it lol
     if (startingMultiplier === "zero") return;
@@ -489,7 +489,7 @@ export default class Engine {
         bonus: new BonusCollector(),
         interrupt: new InterruptionCollector(),
         multiplier,
-      })
+      }),
     );
 
     map.add(damageType, gather.detail.bonus.result);
@@ -516,7 +516,7 @@ export default class Engine {
         action,
         config,
         interrupt: new InterruptionCollector(),
-      })
+      }),
     );
   }
 
@@ -530,10 +530,10 @@ export default class Engine {
       new GetACMethodsEvent({
         who,
         methods: [who.baseACMethod],
-      })
+      }),
     ).detail.methods.reduce(
       (best, method) => (method.ac > best.ac ? method : best),
-      who.baseACMethod
+      who.baseACMethod,
     );
   }
 
@@ -547,7 +547,7 @@ export default class Engine {
         bonus: new BonusCollector(),
         interrupt: new InterruptionCollector(),
         pre,
-      })
+      }),
     );
 
     return method.ac + e.detail.bonus.result;
@@ -557,7 +557,7 @@ export default class Engine {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((e as any).interrupt)
       throw new Error(
-        `Use Engine.resolve() on an interruptible event type: ${e.type}`
+        `Use Engine.resolve() on an interruptible event type: ${e.type}`,
       );
 
     this.events.fire(e);
@@ -565,7 +565,7 @@ export default class Engine {
   }
 
   async resolve<T extends { interrupt: InterruptionCollector }>(
-    e: CustomEvent<T>
+    e: CustomEvent<T>,
   ): Promise<CustomEvent<T>> {
     this.events.fire(e);
 
@@ -610,7 +610,7 @@ export default class Engine {
 
   async applyBoundedMove(who: Combatant, handler: MoveHandler) {
     return new Promise<void>((resolve) =>
-      this.fire(new StartBoundedMoveEvent({ who, handler, resolve }))
+      this.fire(new StartBoundedMoveEvent({ who, handler, resolve })),
     );
   }
 }

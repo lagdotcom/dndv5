@@ -6,9 +6,9 @@ export default function useList<T>(initialValue: T[] = []) {
   const toggle = useCallback(
     (item: T) =>
       setList((old) =>
-        old.includes(item) ? old.filter((x) => x !== item) : old.concat(item)
+        old.includes(item) ? old.filter((x) => x !== item) : old.concat(item),
       ),
-    []
+    [],
   );
 
   return { list, setList, toggle };

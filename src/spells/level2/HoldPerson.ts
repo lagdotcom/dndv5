@@ -37,7 +37,7 @@ const HoldPersonEffect = new Effect<{
             config.affected.delete(who);
             // TODO [CONCENTRATION] stop concentrating if affected is empty
           }
-        })
+        }),
       );
     }
   });

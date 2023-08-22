@@ -34,7 +34,7 @@ export abstract class AbstractWeapon
     public damage: DamageAmount,
     properties: Iterable<WeaponProperty> = [],
     public shortRange?: number,
-    public longRange?: number
+    public longRange?: number,
   ) {
     super(g, "weapon", name, 1);
 
@@ -60,7 +60,7 @@ export class Dagger extends AbstractWeapon {
       _dd(1, 4, "piercing"),
       ["finesse", "light", "thrown"],
       20,
-      60
+      60,
     );
     this.quantity = quantity;
   }
@@ -84,7 +84,7 @@ export class Handaxe extends AbstractWeapon {
       _dd(1, 6, "slashing"),
       ["light", "thrown"],
       20,
-      60
+      60,
     );
     this.quantity = quantity;
   }
@@ -100,7 +100,7 @@ export class Javelin extends AbstractWeapon {
       _dd(1, 6, "piercing"),
       ["thrown"],
       30,
-      120
+      120,
     );
     this.quantity = quantity;
   }
@@ -116,7 +116,7 @@ export class LightHammer extends AbstractWeapon {
       _dd(1, 4, "bludgeoning"),
       ["light", "thrown"],
       20,
-      60
+      60,
     );
     this.quantity = quantity;
   }
@@ -153,7 +153,7 @@ export class Spear extends AbstractWeapon {
       _dd(1, 6, "piercing"),
       ["thrown", "versatile"],
       20,
-      60
+      60,
     );
     this.quantity = quantity;
     this.iconUrl = spearUrl;
@@ -170,7 +170,7 @@ export class LightCrossbow extends AbstractWeapon {
       _dd(1, 8, "piercing"),
       ["ammunition", "loading", "two-handed"],
       80,
-      320
+      320,
     );
     this.ammunitionTag = "crossbow";
     this.iconUrl = lightCrossbowUrl;
@@ -187,7 +187,7 @@ export class Dart extends AbstractWeapon {
       _dd(1, 4, "piercing"),
       ["finesse", "thrown"],
       20,
-      60
+      60,
     );
     this.quantity = quantity;
   }
@@ -203,7 +203,7 @@ export class Shortbow extends AbstractWeapon {
       _dd(1, 6, "piercing"),
       ["ammunition", "two-handed"],
       80,
-      320
+      320,
     );
     this.ammunitionTag = "bow";
   }
@@ -219,7 +219,7 @@ export class Sling extends AbstractWeapon {
       _dd(1, 4, "bludgeoning"),
       ["ammunition"],
       30,
-      120
+      120,
     );
     this.ammunitionTag = "sling";
   }
@@ -352,7 +352,7 @@ export class Trident extends AbstractWeapon {
       _dd(1, 6, "piercing"),
       ["thrown", "versatile"],
       20,
-      60
+      60,
     );
     this.quantity = quantity;
     this.iconUrl = tridentUrl;
@@ -392,7 +392,7 @@ export class Blowgun extends AbstractWeapon {
       { type: "flat", amount: 1, damageType: "piercing" },
       ["ammunition", "loading"],
       25,
-      100
+      100,
     );
     this.ammunitionTag = "blowgun";
   }
@@ -408,7 +408,7 @@ export class HandCrossbow extends AbstractWeapon {
       _dd(1, 6, "piercing"),
       ["ammunition", "light", "loading"],
       30,
-      120
+      120,
     );
     this.ammunitionTag = "crossbow";
   }
@@ -424,7 +424,7 @@ export class HeavyCrossbow extends AbstractWeapon {
       _dd(1, 10, "piercing"),
       ["ammunition", "heavy", "loading", "two-handed"],
       100,
-      400
+      400,
     );
     this.ammunitionTag = "crossbow";
   }
@@ -440,7 +440,7 @@ export class Longbow extends AbstractWeapon {
       _dd(1, 8, "piercing"),
       ["ammunition", "heavy", "two-handed"],
       150,
-      600
+      600,
     );
     this.ammunitionTag = "bow";
   }
@@ -456,7 +456,7 @@ export class Net extends AbstractWeapon {
       { type: "flat", amount: 0, damageType: "bludgeoning" },
       ["thrown"],
       5,
-      15
+      15,
     );
     this.quantity = quantity;
 

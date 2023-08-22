@@ -11,7 +11,7 @@ export default class Monster extends AbstractCombatant {
     public cr: number,
     type: CreatureType,
     size: SizeCategory,
-    img: string
+    img: string,
   ) {
     super(g, name, { type, size, img, side: 1 });
   }

@@ -82,7 +82,7 @@ export default class Beldalynn extends PC {
       IntellectFortress,
       // TODO LeomundsTinyHut,
 
-      WallOfFire
+      WallOfFire,
     );
   }
 }

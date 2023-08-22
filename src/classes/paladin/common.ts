@@ -7,12 +7,12 @@ export const PaladinSpellcasting = new NormalSpellcasting(
   "cha",
   "half",
   "Paladin",
-  "Paladin"
+  "Paladin",
 );
 
 export const ChannelDivinityResource = new ShortRestResource(
   "Channel Divinity",
-  1
+  1,
 );
 
 export function getPaladinAuraRadius(level: number) {

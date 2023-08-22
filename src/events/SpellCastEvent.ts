@@ -13,7 +13,7 @@ export interface SpellCastDetail<T extends object = object> {
 }
 
 export default class SpellCastEvent<
-  T extends object = object
+  T extends object = object,
 > extends CustomEvent<SpellCastDetail<T>> {
   constructor(detail: SpellCastDetail<T>) {
     super("SpellCast", { detail });

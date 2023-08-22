@@ -5881,6 +5881,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
+    status: "incomplete",
     name: "Protection from Evil and Good",
     level: 1,
     school: "Abjuration",

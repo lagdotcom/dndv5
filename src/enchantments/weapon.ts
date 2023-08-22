@@ -70,11 +70,11 @@ export const chaoticBurst: Enchantment<"weapon"> = {
                 "Chaotic Burst",
                 "Choose the damage type:",
                 [a, b].map(getOptionFromRoll),
-                async (type) => addBurst(type)
-              )
+                async (type) => addBurst(type),
+              ),
             );
         }
-      }
+      },
     );
   },
 };
