@@ -70,6 +70,7 @@ export default interface Combatant extends Source {
   attunements: Set<Item>;
   movedSoFar: number;
   attacksSoFar: Action[];
+  effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
   speed: number;
   saveProficiencies: Set<AbilityName>;
   knownSpells: Set<Spell>;

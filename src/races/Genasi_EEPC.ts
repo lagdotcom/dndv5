@@ -5,6 +5,7 @@ import { LongRestResource } from "../resources";
 import { spellImplementationWarning } from "../spells/common";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
 import Levitate from "../spells/level2/Levitate";
+import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 
 const Genasi: PCRace = {
@@ -12,7 +13,7 @@ const Genasi: PCRace = {
   size: "medium",
   abilities: new Map([["con", 2]]),
   movement: new Map([["speed", 30]]),
-  languages: new Set(["Common", "Primordial"]),
+  languages: laSet("Common", "Primordial"),
 };
 
 // TODO [TERRAIN] [CHOKING]

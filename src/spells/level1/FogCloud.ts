@@ -1,6 +1,7 @@
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { arSet } from "../../types/EffectArea";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -28,7 +29,7 @@ const FogCloud = scalingSpell<HasPoint>({
     const area = new ActiveEffectArea(
       "Fog Cloud",
       { type: "sphere", centre: point, radius },
-      new Set(["heavily obscured"]),
+      arSet("heavily obscured"),
     );
     g.addEffectArea(area);
 

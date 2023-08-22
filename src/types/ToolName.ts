@@ -12,3 +12,4 @@ export const ToolNames = [
 ] as const;
 type ToolName = (typeof ToolNames)[number];
 export default ToolName;
+export const toSet = (...items: ToolName[]) => new Set(items);

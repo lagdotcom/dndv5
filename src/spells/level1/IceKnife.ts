@@ -1,8 +1,10 @@
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
@@ -36,7 +38,7 @@ const IceKnife = scalingSpell<HasTarget>({
   async apply(g, attacker, method, { slot, target }) {
     const { attack, hit, critical } = await g.attack({
       who: attacker,
-      tags: new Set(["ranged", "spell", "magical"]),
+      tags: atSet("ranged", "spell", "magical"),
       target,
       ability: method.ability,
       spell: IceKnife,
@@ -85,7 +87,7 @@ const IceKnife = scalingSpell<HasTarget>({
           spell: IceKnife,
           method,
           who: victim,
-          tags: new Set(),
+          tags: svSet(),
         },
         { fail: "normal", save: "zero" },
       );

@@ -4,6 +4,7 @@ import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { TemporaryResource } from "../../resources";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
@@ -39,7 +40,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
 
     const { attack, critical, hit } = await g.attack({
       who: actor,
-      tags: new Set(["ranged", "spell", "magical"]),
+      tags: atSet("ranged", "spell", "magical"),
       target,
       ability: method.ability,
       spell: MagicStone,

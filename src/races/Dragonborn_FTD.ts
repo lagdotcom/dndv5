@@ -7,11 +7,13 @@ import SimpleFeature from "../features/SimpleFeature";
 import PointResolver from "../resolvers/PointResolver";
 import { LongRestResource } from "../resources";
 import Combatant from "../types/Combatant";
+import { coSet } from "../types/ConditionName";
 import DamageType from "../types/DamageType";
 import { SpecifiedEffectShape } from "../types/EffectArea";
 import ImplementationStatus from "../types/ImplementationStatus";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
+import { svSet } from "../types/SaveTag";
 import { _dd } from "../utils/dice";
 import { getSaveDC } from "../utils/dnd";
 import { resistanceFeature } from "./common";
@@ -77,7 +79,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
         attacker,
         who: target,
         ability: "dex",
-        tags: new Set(),
+        tags: svSet(),
       });
 
       await g.damage(
@@ -148,10 +150,14 @@ class EnervatingBreathAction extends MetallicBreathAction {
         attacker: actor,
         ability: "con",
         who: target,
-        tags: new Set(["Incapacitated"]),
+        tags: coSet("Incapacitated"),
       });
 
-      if (!save) target.addEffect(EnervatingBreathEffect, { duration: 2 });
+      if (!save)
+        target.addEffect(EnervatingBreathEffect, {
+          conditions: coSet("Incapacitated"),
+          duration: 2,
+        });
     }
   }
 }
@@ -173,7 +179,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
         attacker: actor,
         ability: "str",
         who: target,
-        tags: new Set(["Prone"]),
+        tags: coSet("Prone"),
       });
 
       if (!save) {

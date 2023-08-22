@@ -1,5 +1,6 @@
 import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
+import { atSet } from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import DamageType from "../types/DamageType";
 import Spell from "../types/Spell";
@@ -25,7 +26,7 @@ export default class SpellAttack<T extends object> {
       who,
       target,
       ability: method.ability,
-      tags: new Set([type, "spell", "magical"]),
+      tags: atSet(type, "spell", "magical"),
       spell,
       method,
     });

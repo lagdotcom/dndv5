@@ -312,10 +312,11 @@
 
   // src/Effect.ts
   var Effect = class {
-    constructor(name, durationTimer, setup, quiet = false) {
+    constructor(name, durationTimer, setup, quiet = false, tags = []) {
       this.name = name;
       this.durationTimer = durationTimer;
       this.quiet = quiet;
+      this.tags = new Set(tags);
       if (setup)
         this.rule = new DndRule(name, setup);
     }
@@ -456,6 +457,7 @@
 
   // src/types/AbilityName.ts
   var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
+  var abSet = (...items) => new Set(items);
 
   // src/utils/types.ts
   function isDefined(value) {
@@ -1466,8 +1468,24 @@
     }
   };
 
+  // src/types/ConditionName.ts
+  var coSet = (...items) => new Set(items);
+
   // src/effects.ts
-  var Dead = new Effect("Dead", "turnStart", void 0, true);
+  var Dead = new Effect(
+    "Dead",
+    "turnStart",
+    (g2) => {
+      g2.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+        if (who.hasEffect(Dead)) {
+          conditions.add("Incapacitated", Dead);
+          conditions.add("Prone", Dead);
+          conditions.add("Unconscious", Dead);
+        }
+      });
+    },
+    true
+  );
   var UsedAttackAction = new Effect(
     "Used Attack Action",
     "turnStart",
@@ -1486,7 +1504,10 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(_DropProneAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(Prone, { duration: Infinity });
+        this.actor.addEffect(Prone, {
+          conditions: coSet("Prone"),
+          duration: Infinity
+        });
       });
     }
   };
@@ -1923,6 +1944,13 @@
     }
   };
 
+  // src/events/CombatantHealedEvent.ts
+  var CombatantHealedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantHealed", { detail });
+    }
+  };
+
   // src/events/CombatantMovedEvent.ts
   var CombatantMovedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1976,6 +2004,13 @@
   var GatherDamageEvent = class extends CustomEvent {
     constructor(detail) {
       super("GatherDamage", { detail });
+    }
+  };
+
+  // src/events/GatherHealEvent.ts
+  var GatherHealEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GatherHeal", { detail });
     }
   };
 
@@ -2521,6 +2556,38 @@
         );
       });
     }
+    heal(source, amount, e, startingMultiplier) {
+      return __async(this, null, function* () {
+        const bonus = new BonusCollector();
+        bonus.add(amount, source);
+        const multiplier = new MultiplierCollector();
+        if (typeof startingMultiplier !== "undefined")
+          multiplier.add(startingMultiplier, source);
+        const gather = yield this.resolve(
+          new GatherHealEvent(__spreadProps(__spreadValues({}, e), {
+            bonus,
+            multiplier,
+            interrupt: new InterruptionCollector()
+          }))
+        );
+        const total = bonus.result * multiplier.result;
+        return this.applyHeal(gather.detail.target, total, gather.detail.actor);
+      });
+    }
+    applyHeal(who, fullAmount, actor) {
+      return __async(this, null, function* () {
+        const amount = Math.min(fullAmount, who.hpMax - who.hp);
+        return this.resolve(
+          new CombatantHealedEvent({
+            who,
+            actor,
+            amount,
+            fullAmount,
+            interrupt: new InterruptionCollector()
+          })
+        );
+      });
+    }
   };
 
   // src/features/SimpleFeature.ts
@@ -2642,6 +2709,9 @@
     }
   };
 
+  // src/types/AttackTag.ts
+  var atSet = (...items) => new Set(items);
+
   // src/spells/SpellAttack.ts
   var SpellAttack = class {
     constructor(g2, caster, spell, method, type, config) {
@@ -2659,7 +2729,7 @@
           who,
           target,
           ability: method.ability,
-          tags: /* @__PURE__ */ new Set([type, "spell", "magical"]),
+          tags: atSet(type, "spell", "magical"),
           spell,
           method
         });
@@ -2723,6 +2793,12 @@
       });
     }
   };
+
+  // src/types/CheckTag.ts
+  var chSet = (...items) => new Set(items);
+
+  // src/types/SaveTag.ts
+  var svSet = (...items) => new Set(items);
 
   // src/utils/dice.ts
   var _dd = (count, size, damage) => ({
@@ -2791,7 +2867,7 @@
               ability: "dex",
               spell: EldritchBurstSpell,
               method,
-              tags: /* @__PURE__ */ new Set()
+              tags: svSet()
             },
             { fail: "normal", save: "zero" }
           );
@@ -2849,7 +2925,7 @@
                   attacker: me,
                   skill: "Arcana",
                   ability: "int",
-                  tags: /* @__PURE__ */ new Set(["counterspell"])
+                  tags: chSet("counterspell")
                 });
                 if (save.outcome === "fail")
                   e.preventDefault();
@@ -2886,7 +2962,7 @@
                     who: attacker,
                     attacker: me,
                     ability: "dex",
-                    tags: /* @__PURE__ */ new Set()
+                    tags: svSet()
                   });
                   yield g2.damage(
                     HellishRebuke,
@@ -2937,6 +3013,16 @@
       this.apply(g2, who, config);
     }
   };
+
+  // src/types/Item.ts
+  var wcSet = (...items) => new Set(items);
+  var acSet = (...items) => new Set(items);
+
+  // src/types/SkillName.ts
+  var skSet = (...items) => new Set(items);
+
+  // src/types/ToolName.ts
+  var toSet = (...items) => new Set(items);
 
   // src/classes/common.ts
   function asiSetup(g2, me, config) {
@@ -3215,18 +3301,18 @@ Once you use this feature, you can't use it again until you finish a short or lo
   var Rogue = {
     name: "Rogue",
     hitDieSize: 8,
-    armorProficiencies: /* @__PURE__ */ new Set(["light"]),
-    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple"]),
+    armorProficiencies: acSet("light"),
+    weaponCategoryProficiencies: wcSet("simple"),
     weaponProficiencies: /* @__PURE__ */ new Set([
       "hand crossbow",
       "longsword",
       "rapier",
       "shortsword"
     ]),
-    toolProficiencies: /* @__PURE__ */ new Set(["thieves' tools"]),
-    saveProficiencies: /* @__PURE__ */ new Set(["dex", "int"]),
+    toolProficiencies: toSet("thieves' tools"),
+    saveProficiencies: abSet("dex", "int"),
     skillChoices: 4,
-    skillProficiencies: /* @__PURE__ */ new Set([
+    skillProficiencies: skSet(
       "Acrobatics",
       "Athletics",
       "Deception",
@@ -3238,7 +3324,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
       "Persuasion",
       "Sleight of Hand",
       "Stealth"
-    ]),
+    ),
     features: /* @__PURE__ */ new Map([
       [1, [Expertise, SneakAttack_default, ThievesCant]],
       [2, [CunningAction]],
@@ -3590,7 +3676,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
             who: target,
             attacker: actor,
             ability: "wis",
-            tags: /* @__PURE__ */ new Set(["frightened", "forced movement"])
+            tags: svSet("frightened", "forced movement")
           });
           if (save.outcome === "fail") {
             target.time.delete("reaction");
@@ -3997,13 +4083,16 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   });
   var Levitate_default = Levitate;
 
+  // src/types/LanguageName.ts
+  var laSet = (...items) => new Set(items);
+
   // src/races/Genasi_EEPC.ts
   var Genasi = {
     name: "Genasi",
     size: "medium",
     abilities: /* @__PURE__ */ new Map([["con", 2]]),
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
-    languages: /* @__PURE__ */ new Set(["Common", "Primordial"])
+    languages: laSet("Common", "Primordial")
   };
   var UnendingBreath = notImplementedFeature(
     "Unending Breath",
@@ -4252,16 +4341,16 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       "quarterstaff",
       "light crossbow"
     ]),
-    saveProficiencies: /* @__PURE__ */ new Set(["int", "wis"]),
+    saveProficiencies: abSet("int", "wis"),
     skillChoices: 2,
-    skillProficiencies: /* @__PURE__ */ new Set([
+    skillProficiencies: skSet(
       "Arcana",
       "History",
       "Insight",
       "Investigation",
       "Medicine",
       "Religion"
-    ]),
+    ),
     features: /* @__PURE__ */ new Map([
       [1, [ArcaneRecovery, WizardSpellcasting.feature]],
       [3, [CantripFormulas]],
@@ -4551,7 +4640,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             attacker,
             who: target,
             ability: "dex",
-            tags: /* @__PURE__ */ new Set()
+            tags: svSet()
           });
           yield g2.damage(
             this,
@@ -4615,10 +4704,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             attacker: actor,
             ability: "con",
             who: target,
-            tags: /* @__PURE__ */ new Set(["Incapacitated"])
+            tags: coSet("Incapacitated")
           });
           if (!save)
-            target.addEffect(EnervatingBreathEffect, { duration: 2 });
+            target.addEffect(EnervatingBreathEffect, {
+              conditions: coSet("Incapacitated"),
+              duration: 2
+            });
         }
       });
     }
@@ -4639,7 +4731,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             attacker: actor,
             ability: "str",
             who: target,
-            tags: /* @__PURE__ */ new Set(["Prone"])
+            tags: coSet("Prone")
           });
           if (!save) {
           }
@@ -4806,7 +4898,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               ability: "dex",
               spell: AcidSplash,
               method,
-              tags: /* @__PURE__ */ new Set()
+              tags: svSet()
             },
             { fail: "normal", save: "zero" }
           );
@@ -4888,7 +4980,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             ability: "int",
             spell: MindSliver,
             method,
-            tags: /* @__PURE__ */ new Set()
+            tags: svSet()
           },
           { fail: "normal", save: "zero" }
         );
@@ -4976,7 +5068,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
         const { attack, hit, critical } = yield g2.attack({
           who: attacker,
-          tags: /* @__PURE__ */ new Set(["ranged", "spell", "magical"]),
+          tags: atSet("ranged", "spell", "magical"),
           target,
           ability: method.ability,
           spell: IceKnife,
@@ -5021,7 +5113,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               spell: IceKnife,
               method,
               who: victim,
-              tags: /* @__PURE__ */ new Set()
+              tags: svSet()
             },
             { fail: "normal", save: "zero" }
           );
@@ -5084,10 +5176,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.type = "Choice";
     }
     get name() {
+      if (this.entries.length === 0)
+        return "empty";
       return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
     }
     check(value, action, ec) {
-      if (!value)
+      if (this.entries.length === 0)
+        ec.add("No valid choices", this);
+      else if (!value)
         ec.add("No choice made", this);
       else if (!this.entries.find((e) => e.value === value))
         ec.add("Invalid choice", this);
@@ -5151,7 +5247,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               attacker: config.caster,
               ability: "wis",
               spell: HoldPerson,
-              tags: /* @__PURE__ */ new Set(["Paralyzed"])
+              tags: svSet("Paralyzed")
             });
             if (save.outcome === "success") {
               who.removeEffect(HoldPersonEffect);
@@ -5190,14 +5286,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             attacker: caster,
             ability: "wis",
             spell: HoldPerson,
-            tags: /* @__PURE__ */ new Set(["Paralyzed"])
+            tags: coSet("Paralyzed")
           });
           if (save.outcome === "fail") {
             target.addEffect(HoldPersonEffect, {
               affected,
               caster,
               method,
-              duration
+              duration,
+              conditions: coSet("Paralyzed")
             });
             affected.add(target);
           }
@@ -5273,7 +5370,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             spell: MelfsMinuteMeteors,
             method,
             who: target,
-            tags: /* @__PURE__ */ new Set()
+            tags: svSet()
           });
           yield g2.damage(
             MelfsMinuteMeteors,
@@ -5416,7 +5513,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             spell: Fireball,
             method,
             who: target,
-            tags: /* @__PURE__ */ new Set()
+            tags: svSet()
           });
           yield g2.damage(
             Fireball,
@@ -5573,6 +5670,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/types/EffectArea.ts
+  var arSet = (...items) => new Set(items);
+
   // src/classes/paladin/common.ts
   var PaladinSpellcasting = new NormalSpellcasting(
     "Paladin",
@@ -5667,14 +5767,81 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   );
   var HarnessDivinePower_default = HarnessDivinePower;
 
-  // src/classes/paladin/index.ts
-  var DivineSense = notImplementedFeature(
-    "Divine Sense",
-    `The presence of strong evil registers on your senses like a noxious odor, and powerful good rings like heavenly music in your ears. As an action, you can open your awareness to detect such forces. Until the end of your next turn, you know the location of any celestial, fiend, or undead within 60 feet of you that is not behind total cover. You know the type (celestial, fiend, or undead) of any being whose presence you sense, but not its identity (the vampire Count Strahd von Zarovich, for instance). Within the same radius, you also detect the presence of any place or object that has been consecrated or desecrated, as with the hallow spell.
+  // src/resolvers/NumberRangeResolver.ts
+  var NumberRangeResolver = class {
+    constructor(g2, rangeName, min, max) {
+      this.g = g2;
+      this.rangeName = rangeName;
+      this.min = min;
+      this.max = max;
+      this.type = "NumberRange";
+    }
+    get name() {
+      const range = this.max === Infinity ? `${this.min}+` : `${this.min}-${this.max}`;
+      return `${this.rangeName} ${range}`;
+    }
+    check(value, action, ec) {
+      if (this.min > this.max)
+        ec.add("Invalid range", this);
+      if (typeof value !== "number")
+        ec.add("No choice", this);
+      else {
+        if (value < this.min)
+          ec.add("Too low", this);
+        if (value > this.max)
+          ec.add("Too high", this);
+      }
+      return ec;
+    }
+  };
 
-You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`
-  );
-  var LayOnHands = notImplementedFeature(
+  // src/classes/paladin/LayOnHands.ts
+  var LayOnHandsResource = new LongRestResource("Lay on Hands", 5);
+  var LayOnHandsHealAction = class _LayOnHandsHealAction extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Lay on Hands (Heal)",
+        "incomplete",
+        {
+          cost: new NumberRangeResolver(g2, "Spend", 1, Infinity),
+          target: new TargetResolver(g2, 5, true)
+        },
+        { time: "action" }
+      );
+    }
+    getConfig({ target }) {
+      const resourceMax = this.actor.getResource(LayOnHandsResource);
+      const healMax = target ? target.hpMax - target.hp : Infinity;
+      return {
+        cost: new NumberRangeResolver(
+          this.g,
+          "Spend",
+          1,
+          Math.min(resourceMax, healMax)
+        ),
+        target: new TargetResolver(this.g, 5, true)
+      };
+    }
+    getResources({ cost }) {
+      const resources = /* @__PURE__ */ new Map();
+      if (typeof cost === "number")
+        resources.set(LayOnHandsResource, cost);
+      return resources;
+    }
+    apply(config) {
+      return __async(this, null, function* () {
+        yield __superGet(_LayOnHandsHealAction.prototype, this, "apply").call(this, config);
+        yield this.g.heal(this, config.cost, {
+          action: this,
+          target: config.target,
+          actor: this.actor
+        });
+      });
+    }
+  };
+  var LayOnHands = new SimpleFeature(
     "Lay on Hands",
     `Your blessed touch can heal wounds. You have a pool of healing power that replenishes when you take a long rest. With that pool, you can restore a total number of hit points equal to your paladin level \xD7 5.
 
@@ -5682,7 +5849,26 @@ As an action, you can touch a creature and draw power from the pool to restore a
 
 Alternatively, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.
 
-This feature has no effect on undead and constructs.`
+This feature has no effect on undead and constructs.`,
+    (g2, me) => {
+      var _a;
+      console.warn(`[Feature Not Complete] Lay on Hands (on ${me.name})`);
+      const max = ((_a = me.classLevels.get("Paladin")) != null ? _a : 1) * 5;
+      me.initResource(LayOnHandsResource, max, max);
+      g2.events.on("GetActions", ({ detail: { actions, who } }) => {
+        if (who === me)
+          actions.push(new LayOnHandsHealAction(g2, me));
+      });
+    }
+  );
+  var LayOnHands_default = LayOnHands;
+
+  // src/classes/paladin/index.ts
+  var DivineSense = notImplementedFeature(
+    "Divine Sense",
+    `The presence of strong evil registers on your senses like a noxious odor, and powerful good rings like heavenly music in your ears. As an action, you can open your awareness to detect such forces. Until the end of your next turn, you know the location of any celestial, fiend, or undead within 60 feet of you that is not behind total cover. You know the type (celestial, fiend, or undead) of any being whose presence you sense, but not its identity (the vampire Count Strahd von Zarovich, for instance). Within the same radius, you also detect the presence of any place or object that has been consecrated or desecrated, as with the hallow spell.
+
+You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`
   );
   var DivineSmite = new SimpleFeature(
     "Divine Smite",
@@ -5768,7 +5954,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
         area = new ActiveEffectArea(
           `Paladin Aura (${me.name})`,
           { type: "within", radius, target: me, position },
-          /* @__PURE__ */ new Set(["holy"])
+          arSet("holy")
         );
         g2.addEffectArea(area);
       };
@@ -5831,20 +6017,20 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var Paladin = {
     name: "Paladin",
     hitDieSize: 10,
-    armorProficiencies: /* @__PURE__ */ new Set(["light", "medium", "heavy", "shield"]),
-    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple", "martial"]),
-    saveProficiencies: /* @__PURE__ */ new Set(["wis", "cha"]),
+    armorProficiencies: acSet("light", "medium", "heavy", "shield"),
+    weaponCategoryProficiencies: wcSet("simple", "martial"),
+    saveProficiencies: abSet("wis", "cha"),
     skillChoices: 2,
-    skillProficiencies: /* @__PURE__ */ new Set([
+    skillProficiencies: skSet(
       "Athletics",
       "Insight",
       "Intimidation",
       "Medicine",
       "Persuasion",
       "Religion"
-    ]),
+    ),
     features: /* @__PURE__ */ new Map([
-      [1, [DivineSense, LayOnHands]],
+      [1, [DivineSense, LayOnHands_default]],
       [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],
       [3, [DivineHealth, ChannelDivinity, HarnessDivinePower_default]],
       [4, [ASI43, MartialVersatility]],
@@ -5935,13 +6121,14 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var Sanctuary_default = Sanctuary;
 
   // src/spells/level2/LesserRestoration.ts
-  var validConditions = [
+  var validConditions = /* @__PURE__ */ new Set([
     "Blinded",
     "Deafened",
     "Paralyzed",
     "Poisoned"
-  ];
+  ]);
   var LesserRestoration = simpleSpell({
+    status: "implemented",
     name: "Lesser Restoration",
     level: 2,
     school: "Abjuration",
@@ -5949,27 +6136,32 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     s: true,
     lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
     getConfig: (g2, caster, method, { target }) => {
-      const conditions = target ? target.conditions : new Set(validConditions);
+      const effectTypes = [];
+      if (target)
+        for (const [type, config] of target.effects) {
+          if (type.tags.has("disease") || config.conditions && intersects(config.conditions, validConditions))
+            effectTypes.push(type);
+        }
       return {
         target: new TargetResolver(g2, caster.reach, true),
-        condition: new ChoiceResolver(
+        effect: new ChoiceResolver(
           g2,
-          validConditions.map((value) => ({
-            label: value,
-            value,
-            disabled: !conditions.has(value)
+          effectTypes.map((value) => ({
+            label: value.name,
+            value
           }))
         )
       };
     },
     getTargets: (g2, caster, { target }) => [target],
-    check(g2, { condition, target }, ec) {
-      if (target && condition && !target.conditions.has(condition))
-        ec.add("target does not have condition", LesserRestoration);
+    check(g2, { effect, target }, ec) {
+      if (target && effect && !target.hasEffect(effect))
+        ec.add("target does not have chosen effect", LesserRestoration);
       return ec;
     },
     apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target, condition }) {
+      return __async(this, arguments, function* (g2, caster, method, { target, effect }) {
+        target.removeEffect(effect);
       });
     }
   });
@@ -6140,7 +6332,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       ["cha", 1]
     ]),
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
-    languages: /* @__PURE__ */ new Set(["Common"])
+    languages: laSet("Common")
   };
   var Human_default = Human;
 
@@ -6634,18 +6826,18 @@ Each time you use this feature after the first, the DC increases by 5. When you 
   var Barbarian = {
     name: "Barbarian",
     hitDieSize: 12,
-    armorProficiencies: /* @__PURE__ */ new Set(["light", "medium", "shield"]),
-    weaponCategoryProficiencies: /* @__PURE__ */ new Set(["simple", "martial"]),
-    saveProficiencies: /* @__PURE__ */ new Set(["str", "con"]),
+    armorProficiencies: acSet("light", "medium", "shield"),
+    weaponCategoryProficiencies: wcSet("simple", "martial"),
+    saveProficiencies: abSet("str", "con"),
     skillChoices: 2,
-    skillProficiencies: /* @__PURE__ */ new Set([
+    skillProficiencies: skSet(
       "Animal Handling",
       "Athletics",
       "Intimidation",
       "Nature",
       "Perception",
       "Survival"
-    ]),
+    ),
     features: /* @__PURE__ */ new Map([
       [1, [Rage_default, UnarmoredDefense]],
       [2, [DangerSense, RecklessAttack]],
@@ -6789,7 +6981,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     size: "small",
     movement: /* @__PURE__ */ new Map([["speed", 25]]),
     features: /* @__PURE__ */ new Set([Lucky2, Brave, HalflingNimbleness]),
-    languages: /* @__PURE__ */ new Set(["Common", "Halfling"])
+    languages: laSet("Common", "Halfling")
   };
   var StoutResilience = poisonResistance(
     "Stout Resilience",
@@ -6885,7 +7077,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     name: "Druid",
     hitDieSize: 8,
     // TODO druids will not wear armor or use shields made of metal
-    armorProficiencies: /* @__PURE__ */ new Set(["light", "medium", "shield"]),
+    armorProficiencies: acSet("light", "medium", "shield"),
     weaponProficiencies: /* @__PURE__ */ new Set([
       "club",
       "dagger",
@@ -6898,10 +7090,10 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       "sling",
       "spear"
     ]),
-    toolProficiencies: /* @__PURE__ */ new Set(["herbalism kit"]),
-    saveProficiencies: /* @__PURE__ */ new Set(["int", "wis"]),
+    toolProficiencies: toSet("herbalism kit"),
+    saveProficiencies: abSet("int", "wis"),
     skillChoices: 2,
-    skillProficiencies: /* @__PURE__ */ new Set([
+    skillProficiencies: skSet(
       "Arcana",
       "Animal Handling",
       "Insight",
@@ -6910,7 +7102,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       "Perception",
       "Religion",
       "Survival"
-    ]),
+    ),
     features: /* @__PURE__ */ new Map([
       [1, [Druidic, DruidSpellcasting.feature]],
       [2, [WildShape, WildCompanion]],
@@ -7054,7 +7246,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         const area = new ActiveEffectArea(
           "Spike Growth",
           { type: "sphere", centre: point, radius: 20 },
-          /* @__PURE__ */ new Set(["difficult terrain", "plants"])
+          arSet("difficult terrain", "plants")
         );
         g2.addEffectArea(area);
         const spiky = resolveArea(area.shape);
@@ -7136,7 +7328,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
             spell: LightningBolt,
             method,
             who: target,
-            tags: /* @__PURE__ */ new Set()
+            tags: svSet()
           });
           yield g2.damage(
             LightningBolt,
@@ -7395,7 +7587,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
             spell: ConeOfCold,
             method,
             who: target,
-            tags: /* @__PURE__ */ new Set()
+            tags: svSet()
           });
           yield g2.damage(
             ConeOfCold,
@@ -7703,7 +7895,7 @@ The creature is aware of this effect before it makes its attack against you.`
       ToolProficiency,
       Stonecunning
     ]),
-    languages: /* @__PURE__ */ new Set(["Common", "Dwarvish"])
+    languages: laSet("Common", "Dwarvish")
   };
   var DwarvenArmorTraining = new SimpleFeature(
     "Dwarven Armor Training",
@@ -7747,7 +7939,7 @@ The creature is aware of this effect before it makes its attack against you.`
           this.unsubscribe();
         const { attack, critical, hit } = yield g2.attack({
           who: actor,
-          tags: /* @__PURE__ */ new Set(["ranged", "spell", "magical"]),
+          tags: atSet("ranged", "spell", "magical"),
           target,
           ability: method.ability,
           spell: MagicStone,
@@ -8666,17 +8858,27 @@ The creature is aware of this effect before it makes its attack against you.`
     value,
     onChange
   }) {
+    const [label, setLabel] = (0, import_hooks7.useState)("NONE");
+    const choose = (e) => () => {
+      if (e.value === value) {
+        onChange(field, void 0);
+        setLabel("NONE");
+        return;
+      }
+      onChange(field, e.value);
+      setLabel(e.label);
+    };
     return /* @__PURE__ */ o("div", { children: [
       /* @__PURE__ */ o("div", { children: [
         "Choice: ",
-        value != null ? value : "NONE"
+        label
       ] }),
       /* @__PURE__ */ o("div", { children: resolver.entries.map((e) => /* @__PURE__ */ o(
         "button",
         {
           className: classnames({ [button_module_default.active]: value === e.value }),
           "aria-pressed": value === e.value,
-          onClick: () => onChange(field, e.value),
+          onClick: choose(e),
           disabled: e.disabled,
           children: e.label
         },
@@ -8684,11 +8886,37 @@ The creature is aware of this effect before it makes its attack against you.`
       )) })
     ] });
   }
+  function ChooseNumber({
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        resolver.rangeName,
+        " Choice: ",
+        value != null ? value : "NONE"
+      ] }),
+      /* @__PURE__ */ o("div", { children: /* @__PURE__ */ o(
+        "input",
+        {
+          type: "range",
+          min: resolver.min,
+          max: resolver.max,
+          value,
+          onChange: (e) => onChange(field, e.currentTarget.valueAsNumber)
+        }
+      ) })
+    ] });
+  }
   function getInitialConfig(action, initial) {
     const config = __spreadValues({}, initial);
     for (const [key, resolver] of Object.entries(action.getConfig(config))) {
       if (resolver instanceof SlotResolver && !config[key])
         config[key] = resolver.getMinimum(action.actor);
+      else if (resolver instanceof NumberRangeResolver && !config[key])
+        config[key] = resolver.min;
     }
     return config;
   }
@@ -8741,6 +8969,8 @@ The creature is aware of this effect before it makes its attack against you.`
           return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, subProps));
         else if (resolver instanceof ChoiceResolver)
           return /* @__PURE__ */ o(ChooseText, __spreadValues({}, subProps));
+        else if (resolver instanceof NumberRangeResolver)
+          return /* @__PURE__ */ o(ChooseNumber, __spreadValues({}, subProps));
         else
           return /* @__PURE__ */ o("div", { children: [
             "(no frontend for resolver type [",
@@ -8973,6 +9203,14 @@ The creature is aware of this effect before it makes its attack against you.`
       }
     );
   }
+  function HealedMessage({ who, amount }) {
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} heals for ${amount}.`, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      " heals for ",
+      amount,
+      "."
+    ] });
+  }
   function EventLog({ g: g2 }) {
     const ref = (0, import_hooks9.useRef)(null);
     const [messages, setMessages] = (0, import_hooks9.useState)([]);
@@ -8994,6 +9232,10 @@ The creature is aware of this effect before it makes its attack against you.`
       g2.events.on(
         "CombatantDamaged",
         ({ detail }) => addMessage(/* @__PURE__ */ o(DamageMessage, __spreadValues({}, detail)))
+      );
+      g2.events.on(
+        "CombatantHealed",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(HealedMessage, __spreadValues({}, detail)))
       );
       g2.events.on(
         "CombatantDied",

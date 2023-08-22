@@ -2,10 +2,12 @@ import WeaponAttack from "../../actions/WeaponAttack";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { AbstractWeapon } from "../../items/weapons";
+import { abSet } from "../../types/AbilityName";
 import Action from "../../types/Action";
 import DamageAmount from "../../types/DamageAmount";
-import { WeaponItem } from "../../types/Item";
+import { wcSet, WeaponItem } from "../../types/Item";
 import PCClass from "../../types/PCClass";
+import { skSet } from "../../types/SkillName";
 import { _dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
 
@@ -105,18 +107,18 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 const Monk: PCClass = {
   name: "Monk",
   hitDieSize: 8,
-  weaponCategoryProficiencies: new Set(["simple"]),
+  weaponCategoryProficiencies: wcSet("simple"),
   weaponProficiencies: new Set(["shortsword"]),
-  saveProficiencies: new Set(["str", "dex"]),
+  saveProficiencies: abSet("str", "dex"),
   skillChoices: 2,
-  skillProficiencies: new Set([
+  skillProficiencies: skSet(
     "Acrobatics",
     "Athletics",
     "History",
     "Insight",
     "Religion",
     "Stealth",
-  ]),
+  ),
 
   features: new Map([[1, [UnarmoredDefense, MartialArts]]]),
 };

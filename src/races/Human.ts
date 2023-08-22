@@ -1,3 +1,4 @@
+import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 
 const Human: PCRace = {
@@ -12,6 +13,6 @@ const Human: PCRace = {
     ["cha", 1],
   ]),
   movement: new Map([["speed", 30]]),
-  languages: new Set(["Common"]),
+  languages: laSet("Common"),
 };
 export default Human;

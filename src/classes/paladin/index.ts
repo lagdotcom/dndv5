@@ -8,9 +8,13 @@ import {
   getMaxSpellSlotAvailable,
   SpellSlotResources,
 } from "../../spells/NormalSpellcasting";
+import { abSet } from "../../types/AbilityName";
+import { arSet } from "../../types/EffectArea";
 import Feature from "../../types/Feature";
+import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import Point from "../../types/Point";
+import { skSet } from "../../types/SkillName";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { hasAll } from "../../utils/set";
 import { distance } from "../../utils/units";
@@ -21,6 +25,7 @@ import {
   PaladinSpellcasting,
 } from "./common";
 import HarnessDivinePower from "./HarnessDivinePower";
+import LayOnHands from "./LayOnHands";
 
 // TODO [SIGHT]
 const DivineSense = notImplementedFeature(
@@ -28,18 +33,6 @@ const DivineSense = notImplementedFeature(
   `The presence of strong evil registers on your senses like a noxious odor, and powerful good rings like heavenly music in your ears. As an action, you can open your awareness to detect such forces. Until the end of your next turn, you know the location of any celestial, fiend, or undead within 60 feet of you that is not behind total cover. You know the type (celestial, fiend, or undead) of any being whose presence you sense, but not its identity (the vampire Count Strahd von Zarovich, for instance). Within the same radius, you also detect the presence of any place or object that has been consecrated or desecrated, as with the hallow spell.
 
 You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`,
-);
-
-// TODO [EFFECTREMOVAL] [CONDITIONREMOVAL]
-const LayOnHands = notImplementedFeature(
-  "Lay on Hands",
-  `Your blessed touch can heal wounds. You have a pool of healing power that replenishes when you take a long rest. With that pool, you can restore a total number of hit points equal to your paladin level × 5.
-
-As an action, you can touch a creature and draw power from the pool to restore a number of hit points to that creature, up to the maximum amount remaining in your pool.
-
-Alternatively, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.
-
-This feature has no effect on undead and constructs.`,
 );
 
 export const DivineSmite = new SimpleFeature(
@@ -137,7 +130,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       area = new ActiveEffectArea(
         `Paladin Aura (${me.name})`,
         { type: "within", radius, target: me, position },
-        new Set(["holy"]),
+        arSet("holy"),
       );
       g.addEffectArea(area);
     };
@@ -219,18 +212,18 @@ export const ASI19 = makeASI("Paladin", 19);
 const Paladin: PCClass = {
   name: "Paladin",
   hitDieSize: 10,
-  armorProficiencies: new Set(["light", "medium", "heavy", "shield"]),
-  weaponCategoryProficiencies: new Set(["simple", "martial"]),
-  saveProficiencies: new Set(["wis", "cha"]),
+  armorProficiencies: acSet("light", "medium", "heavy", "shield"),
+  weaponCategoryProficiencies: wcSet("simple", "martial"),
+  saveProficiencies: abSet("wis", "cha"),
   skillChoices: 2,
-  skillProficiencies: new Set([
+  skillProficiencies: skSet(
     "Athletics",
     "Insight",
     "Intimidation",
     "Medicine",
     "Persuasion",
     "Religion",
-  ]),
+  ),
   features: new Map([
     [1, [DivineSense, LayOnHands]],
     [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],

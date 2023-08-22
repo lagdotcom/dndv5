@@ -9,6 +9,7 @@ import InnateSpellcasting from "../spells/InnateSpellcasting";
 import FogCloud from "../spells/level1/FogCloud";
 import GustOfWind from "../spells/level2/GustOfWind";
 import WallOfWater from "../spells/level3/WallOfWater";
+import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import { resistanceFeature } from "./common";
 
@@ -80,7 +81,7 @@ const Triton: PCRace = {
     ["speed", 30],
     ["swim", 30],
   ]),
-  languages: new Set(["Common", "Primordial"]),
+  languages: laSet("Common", "Primordial"),
   features: new Set([
     Amphibious,
     ControlAirAndWater,

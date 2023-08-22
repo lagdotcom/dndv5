@@ -16,3 +16,4 @@ export const ConditionNames = [
 ] as const;
 type ConditionName = (typeof ConditionNames)[number];
 export default ConditionName;
+export const coSet = (...items: ConditionName[]) => new Set(items);

@@ -1,6 +1,7 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { getCantripDice, simpleSpell } from "../common";
@@ -47,7 +48,7 @@ const MindSliver = simpleSpell<HasTarget>({
         ability: "int",
         spell: MindSliver,
         method,
-        tags: new Set(),
+        tags: svSet(),
       },
       { fail: "normal", save: "zero" },
     );

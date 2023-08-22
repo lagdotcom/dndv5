@@ -16,6 +16,7 @@ export const AreaTags = [
   "plants",
 ] as const;
 export type AreaTag = (typeof AreaTags)[number];
+export const arSet = (...items: AreaTag[]) => new Set(items);
 
 export type SpecifiedCone = ConeShape & { centre: Point; target: Point };
 export type SpecifiedCylinder = CylinderShape & { centre: Point };

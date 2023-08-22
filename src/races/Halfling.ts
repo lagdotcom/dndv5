@@ -1,5 +1,6 @@
 import { notImplementedFeature } from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
+import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import { poisonResistance } from "./common";
 
@@ -30,7 +31,7 @@ const Halfling: PCRace = {
   size: "small",
   movement: new Map([["speed", 25]]),
   features: new Set([Lucky, Brave, HalflingNimbleness]),
-  languages: new Set(["Common", "Halfling"]),
+  languages: laSet("Common", "Halfling"),
 };
 
 const StoutResilience = poisonResistance(

@@ -2,6 +2,7 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
+import { arSet } from "../../types/EffectArea";
 import { resolveArea } from "../../utils/areas";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
@@ -29,7 +30,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
     const area = new ActiveEffectArea(
       "Spike Growth",
       { type: "sphere", centre: point, radius: 20 },
-      new Set(["difficult terrain", "plants"]),
+      arSet("difficult terrain", "plants"),
     );
     g.addEffectArea(area);
     const spiky = resolveArea(area.shape);

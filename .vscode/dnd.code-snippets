@@ -22,7 +22,8 @@
     "prefix": "enumtype",
     "body": [
       "export const $1s = [$0] as const;",
-      "export type $1 = (typeof $1s)[number];"
+      "export type $1 = (typeof $1s)[number];",
+      "export const $1Set = (...items: $1[]) => new Set(items);"
     ]
   },
 

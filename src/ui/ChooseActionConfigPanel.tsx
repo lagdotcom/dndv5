@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import Engine from "../Engine";
+import { PickChoice } from "../interruptions/PickFromListChoice";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import MultiPointResolver from "../resolvers/MultiPointResolver";
 import MultiTargetResolver from "../resolvers/MultiTargetResolver";
+import NumberRangeResolver from "../resolvers/NumberRangeResolver";
 import PointResolver from "../resolvers/PointResolver";
 import SlotResolver from "../resolvers/SlotResolver";
 import TargetResolver from "../resolvers/TargetResolver";
@@ -247,21 +249,58 @@ function ChooseText<T>({
   value,
   onChange,
 }: ChooserProps<T, ChoiceResolver<T>>) {
+  const [label, setLabel] = useState("NONE");
+
+  const choose = (e: PickChoice<T>) => () => {
+    if (e.value === value) {
+      onChange(field, undefined);
+      setLabel("NONE");
+      return;
+    }
+
+    onChange(field, e.value);
+    setLabel(e.label);
+  };
+
   return (
     <div>
-      <div>Choice: {value ?? "NONE"}</div>
+      <div>Choice: {label}</div>
       <div>
         {resolver.entries.map((e) => (
           <button
             key={e.label}
             className={classnames({ [buttonStyles.active]: value === e.value })}
             aria-pressed={value === e.value}
-            onClick={() => onChange(field, e.value)}
+            onClick={choose(e)}
             disabled={e.disabled}
           >
             {e.label}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ChooseNumber({
+  field,
+  resolver,
+  value,
+  onChange,
+}: ChooserProps<number, NumberRangeResolver>) {
+  return (
+    <div>
+      <div>
+        {resolver.rangeName} Choice: {value ?? "NONE"}
+      </div>
+      <div>
+        <input
+          type="range"
+          min={resolver.min}
+          max={resolver.max}
+          value={value}
+          onChange={(e) => onChange(field, e.currentTarget.valueAsNumber)}
+        />
       </div>
     </div>
   );
@@ -276,6 +315,8 @@ function getInitialConfig<T extends object>(
   for (const [key, resolver] of Object.entries(action.getConfig(config))) {
     if (resolver instanceof SlotResolver && !config[key as keyof T])
       (config[key as keyof T] as number) = resolver.getMinimum(action.actor);
+    else if (resolver instanceof NumberRangeResolver && !config[key as keyof T])
+      (config[key as keyof T] as number) = resolver.min;
   }
 
   return config;
@@ -344,6 +385,8 @@ export default function ChooseActionConfigPanel<T extends object>({
           return <ChooseSlot {...subProps} />;
         else if (resolver instanceof ChoiceResolver)
           return <ChooseText {...subProps} />;
+        else if (resolver instanceof NumberRangeResolver)
+          return <ChooseNumber {...subProps} />;
         else
           return (
             <div>

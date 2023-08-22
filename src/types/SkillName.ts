@@ -20,3 +20,4 @@ export const SkillNames = [
 ] as const;
 type SkillName = (typeof SkillNames)[number];
 export default SkillName;
+export const skSet = (...items: SkillName[]) => new Set(items);

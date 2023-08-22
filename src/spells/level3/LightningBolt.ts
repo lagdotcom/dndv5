@@ -4,6 +4,7 @@ import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
@@ -50,7 +51,7 @@ const LightningBolt = scalingSpell<HasPoint>({
         spell: LightningBolt,
         method,
         who: target,
-        tags: new Set(),
+        tags: svSet(),
       });
 
       await g.damage(

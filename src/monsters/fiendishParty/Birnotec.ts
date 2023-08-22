@@ -9,8 +9,10 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../../spells/common";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import SpellAttack from "../../spells/SpellAttack";
+import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import tokenUrl from "./Birnotec_token.png";
 
@@ -70,7 +72,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
           ability: "dex",
           spell: EldritchBurstSpell,
           method,
-          tags: new Set(),
+          tags: svSet(),
         },
         { fail: "normal", save: "zero" },
       );
@@ -135,7 +137,7 @@ const AntimagicProdigy = new SimpleFeature(
                 attacker: me,
                 skill: "Arcana",
                 ability: "int",
-                tags: new Set(["counterspell"]),
+                tags: chSet("counterspell"),
               });
 
               // TODO [MESSAGES]
@@ -177,7 +179,7 @@ const HellishRebuke = new SimpleFeature(
                   who: attacker,
                   attacker: me,
                   ability: "dex",
-                  tags: new Set(),
+                  tags: svSet(),
                 });
 
                 await g.damage(

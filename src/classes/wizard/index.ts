@@ -1,6 +1,8 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
+import { abSet } from "../../types/AbilityName";
 import PCClass from "../../types/PCClass";
+import { skSet } from "../../types/SkillName";
 import { makeASI } from "../common";
 
 const ArcaneRecovery = nonCombatFeature(
@@ -58,16 +60,16 @@ const Wizard: PCClass = {
     "quarterstaff",
     "light crossbow",
   ]),
-  saveProficiencies: new Set(["int", "wis"]),
+  saveProficiencies: abSet("int", "wis"),
   skillChoices: 2,
-  skillProficiencies: new Set([
+  skillProficiencies: skSet(
     "Arcana",
     "History",
     "Insight",
     "Investigation",
     "Medicine",
     "Religion",
-  ]),
+  ),
   features: new Map([
     [1, [ArcaneRecovery, WizardSpellcasting.feature]],
     [3, [CantripFormulas]],

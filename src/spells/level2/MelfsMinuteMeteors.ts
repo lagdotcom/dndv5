@@ -5,6 +5,7 @@ import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Resource from "../../types/Resource";
+import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
@@ -45,7 +46,7 @@ async function fireMeteors(
         spell: MelfsMinuteMeteors,
         method,
         who: target,
-        tags: new Set(),
+        tags: svSet(),
       });
 
       await g.damage(

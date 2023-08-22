@@ -3,10 +3,11 @@ import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { BoundedMove } from "../../movement";
+import { abSet } from "../../types/AbilityName";
 import ConditionName from "../../types/ConditionName";
-import Item from "../../types/Item";
+import Item, { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import SkillName from "../../types/SkillName";
+import SkillName, { skSet } from "../../types/SkillName";
 import { intersects } from "../../utils/set";
 import { makeASI, makeExtraAttack } from "../common";
 import Rage from "./Rage";
@@ -157,18 +158,18 @@ export const ASI19 = makeASI("Barbarian", 19);
 const Barbarian: PCClass = {
   name: "Barbarian",
   hitDieSize: 12,
-  armorProficiencies: new Set(["light", "medium", "shield"]),
-  weaponCategoryProficiencies: new Set(["simple", "martial"]),
-  saveProficiencies: new Set(["str", "con"]),
+  armorProficiencies: acSet("light", "medium", "shield"),
+  weaponCategoryProficiencies: wcSet("simple", "martial"),
+  saveProficiencies: abSet("str", "con"),
   skillChoices: 2,
-  skillProficiencies: new Set([
+  skillProficiencies: skSet(
     "Animal Handling",
     "Athletics",
     "Intimidation",
     "Nature",
     "Perception",
     "Survival",
-  ]),
+  ),
   features: new Map([
     [1, [Rage, UnarmoredDefense]],
     [2, [DangerSense, RecklessAttack]],

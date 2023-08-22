@@ -4,8 +4,11 @@ import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
+import { abSet } from "../../types/AbilityName";
+import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import SkillName from "../../types/SkillName";
+import SkillName, { skSet } from "../../types/SkillName";
+import { toSet } from "../../types/ToolName";
 import { makeASI } from "../common";
 import SneakAttack from "./SneakAttack";
 import SteadyAim from "./SteadyAim";
@@ -148,18 +151,18 @@ export const ASI19 = makeASI("Rogue", 19);
 const Rogue: PCClass = {
   name: "Rogue",
   hitDieSize: 8,
-  armorProficiencies: new Set(["light"]),
-  weaponCategoryProficiencies: new Set(["simple"]),
+  armorProficiencies: acSet("light"),
+  weaponCategoryProficiencies: wcSet("simple"),
   weaponProficiencies: new Set([
     "hand crossbow",
     "longsword",
     "rapier",
     "shortsword",
   ]),
-  toolProficiencies: new Set(["thieves' tools"]),
-  saveProficiencies: new Set(["dex", "int"]),
+  toolProficiencies: toSet("thieves' tools"),
+  saveProficiencies: abSet("dex", "int"),
   skillChoices: 4,
-  skillProficiencies: new Set([
+  skillProficiencies: skSet(
     "Acrobatics",
     "Athletics",
     "Deception",
@@ -171,7 +174,7 @@ const Rogue: PCClass = {
     "Persuasion",
     "Sleight of Hand",
     "Stealth",
-  ]),
+  ),
   features: new Map([
     [1, [Expertise, SneakAttack, ThievesCant]],
     [2, [CunningAction]],

@@ -1,5 +1,6 @@
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { isCombatantArray } from "../../utils/types";
@@ -50,7 +51,7 @@ const AcidSplash = simpleSpell<HasTargets>({
           ability: "dex",
           spell: AcidSplash,
           method,
-          tags: new Set(),
+          tags: svSet(),
         },
         { fail: "normal", save: "zero" },
       );

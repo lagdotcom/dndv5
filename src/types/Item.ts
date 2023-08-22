@@ -23,6 +23,7 @@ export interface BaseItem extends Source {
 
 export const WeaponCategories = ["natural", "simple", "martial"] as const;
 export type WeaponCategory = (typeof WeaponCategories)[number];
+export const wcSet = (...items: WeaponCategory[]) => new Set(items);
 
 export const WeaponRangeCategories = ["melee", "ranged"] as const;
 export type WeaponRangeCategory = (typeof WeaponRangeCategories)[number];
@@ -69,6 +70,7 @@ export interface AmmoItem extends BaseItem {
 
 export const ArmorCategories = ["light", "medium", "heavy", "shield"] as const;
 export type ArmorCategory = (typeof ArmorCategories)[number];
+export const acSet = (...items: ArmorCategory[]) => new Set(items);
 
 export interface ArmorItem extends BaseItem {
   itemType: "armor";

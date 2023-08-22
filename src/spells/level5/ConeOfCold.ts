@@ -4,6 +4,7 @@ import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedCone } from "../../types/EffectArea";
 import Point from "../../types/Point";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
@@ -53,7 +54,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
         spell: ConeOfCold,
         method,
         who: target,
-        tags: new Set(),
+        tags: svSet(),
       });
 
       await g.damage(

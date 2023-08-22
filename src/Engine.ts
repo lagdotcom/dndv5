@@ -29,6 +29,7 @@ import StartBoundedMoveEvent from "./events/BoundedMoveEvent";
 import CheckActionEvent from "./events/CheckActionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
+import CombatantHealedEvent from "./events/CombatantHealedEvent";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import CombatantPlacedEvent from "./events/CombatantPlacedEvent";
 import DiceRolledEvent from "./events/DiceRolledEvent";
@@ -36,6 +37,7 @@ import Dispatcher from "./events/Dispatcher";
 import GatherDamageEvent, {
   GatherDamageDetail,
 } from "./events/GatherDamageEvent";
+import GatherHealEvent, { GatherHealDetail } from "./events/GatherHealEvent";
 import GetACEvent from "./events/GetACEvent";
 import GetACMethodsEvent from "./events/GetACMethodsEvent";
 import GetActionsEvent from "./events/GetActionsEvent";
@@ -611,6 +613,46 @@ export default class Engine {
   async applyBoundedMove(who: Combatant, handler: MoveHandler) {
     return new Promise<void>((resolve) =>
       this.fire(new StartBoundedMoveEvent({ who, handler, resolve })),
+    );
+  }
+
+  async heal(
+    source: Source,
+    amount: number,
+    e: Omit<GatherHealDetail, "bonus" | "interrupt" | "multiplier">,
+    startingMultiplier?: MultiplierType,
+  ) {
+    const bonus = new BonusCollector();
+    bonus.add(amount, source);
+
+    const multiplier = new MultiplierCollector();
+    if (typeof startingMultiplier !== "undefined")
+      multiplier.add(startingMultiplier, source);
+
+    const gather = await this.resolve(
+      new GatherHealEvent({
+        ...e,
+        bonus,
+        multiplier,
+        interrupt: new InterruptionCollector(),
+      }),
+    );
+
+    const total = bonus.result * multiplier.result;
+    return this.applyHeal(gather.detail.target, total, gather.detail.actor);
+  }
+
+  async applyHeal(who: Combatant, fullAmount: number, actor: Combatant) {
+    const amount = Math.min(fullAmount, who.hpMax - who.hp);
+
+    return this.resolve(
+      new CombatantHealedEvent({
+        who,
+        actor,
+        amount,
+        fullAmount,
+        interrupt: new InterruptionCollector(),
+      }),
     );
   }
 }

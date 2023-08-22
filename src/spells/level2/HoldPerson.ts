@@ -3,6 +3,8 @@ import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
+import { coSet } from "../../types/ConditionName";
+import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { getSaveDC } from "../../utils/dnd";
 import { minutes } from "../../utils/time";
@@ -29,7 +31,7 @@ const HoldPersonEffect = new Effect<{
             attacker: config.caster,
             ability: "wis",
             spell: HoldPerson,
-            tags: new Set(["Paralyzed"]),
+            tags: svSet("Paralyzed"),
           });
 
           if (save.outcome === "success") {
@@ -76,7 +78,7 @@ const HoldPerson = scalingSpell<HasTargets>({
         attacker: caster,
         ability: "wis",
         spell: HoldPerson,
-        tags: new Set(["Paralyzed"]),
+        tags: coSet("Paralyzed"),
       });
 
       if (save.outcome === "fail") {
@@ -85,6 +87,7 @@ const HoldPerson = scalingSpell<HasTargets>({
           caster,
           method,
           duration,
+          conditions: coSet("Paralyzed"),
         });
         affected.add(target);
       }

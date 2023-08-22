@@ -2,6 +2,7 @@ import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
+import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
@@ -47,7 +48,7 @@ const Fireball = scalingSpell<HasPoint>({
         spell: Fireball,
         method,
         who: target,
-        tags: new Set(),
+        tags: svSet(),
       });
 
       await g.damage(

@@ -3,9 +3,23 @@ import ErrorCollector from "./collectors/ErrorCollector";
 import Effect from "./Effect";
 import Engine from "./Engine";
 import Combatant from "./types/Combatant";
+import { coSet } from "./types/ConditionName";
 import { distance } from "./utils/units";
 
-export const Dead = new Effect("Dead", "turnStart", undefined, true);
+export const Dead = new Effect(
+  "Dead",
+  "turnStart",
+  (g) => {
+    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+      if (who.hasEffect(Dead)) {
+        conditions.add("Incapacitated", Dead);
+        conditions.add("Prone", Dead);
+        conditions.add("Unconscious", Dead);
+      }
+    });
+  },
+  true,
+);
 export const UsedAttackAction = new Effect(
   "Used Attack Action",
   "turnStart",
@@ -27,7 +41,10 @@ class DropProneAction extends AbstractAction {
   async apply() {
     super.apply({});
 
-    this.actor.addEffect(Prone, { duration: Infinity });
+    this.actor.addEffect(Prone, {
+      conditions: coSet("Prone"),
+      duration: Infinity,
+    });
   }
 }
 

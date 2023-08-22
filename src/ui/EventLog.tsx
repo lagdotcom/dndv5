@@ -6,6 +6,7 @@ import { AbilityCheckDetail } from "../events/AbilityCheckEvent";
 import { AttackDetail } from "../events/AttackEvent";
 import { CombatantDamagedDetail } from "../events/CombatantDamagedEvent";
 import { CombatantDiedDetail } from "../events/CombatantDiedEvent";
+import { CombatantHealedDetail } from "../events/CombatantHealedEvent";
 import { DiceRolledDetail } from "../events/DiceRolledEvent";
 import { EffectAddedDetail } from "../events/EffectAddedEvent";
 import { EffectRemovedDetail } from "../events/EffectRemovedEvent";
@@ -174,6 +175,14 @@ function SaveMessage({ roll, total, dc }: SaveEventDetail) {
   );
 }
 
+function HealedMessage({ who, amount }: CombatantHealedDetail) {
+  return (
+    <LogMessage message={`${who.name} heals for ${amount}.`}>
+      <CombatantRef who={who} /> heals for {amount}.
+    </LogMessage>
+  );
+}
+
 export default function EventLog({ g }: { g: Engine }) {
   const ref = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<VNode[]>([]);
@@ -194,6 +203,9 @@ export default function EventLog({ g }: { g: Engine }) {
     );
     g.events.on("CombatantDamaged", ({ detail }) =>
       addMessage(<DamageMessage {...detail} />),
+    );
+    g.events.on("CombatantHealed", ({ detail }) =>
+      addMessage(<HealedMessage {...detail} />),
     );
     g.events.on("CombatantDied", ({ detail }) =>
       addMessage(<DeathMessage {...detail} />),

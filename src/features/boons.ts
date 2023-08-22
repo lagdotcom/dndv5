@@ -5,6 +5,7 @@ import { BoundedMove } from "../movement";
 import TargetResolver from "../resolvers/TargetResolver";
 import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
+import { svSet } from "../types/SaveTag";
 import { getSaveDC } from "../utils/dnd";
 import SimpleFeature from "./SimpleFeature";
 
@@ -32,7 +33,7 @@ class HissAction extends AbstractAction<HasTarget> {
         who: target,
         attacker: actor,
         ability: "wis",
-        tags: new Set(["frightened", "forced movement"]),
+        tags: svSet("frightened", "forced movement"),
       });
       if (save.outcome === "fail") {
         target.time.delete("reaction");

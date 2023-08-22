@@ -1,6 +1,7 @@
 import { darkvisionFeature, nonCombatFeature } from "../features/common";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
+import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import { poisonResistance } from "./common";
 
@@ -46,7 +47,7 @@ const Dwarf: PCRace = {
     ToolProficiency,
     Stonecunning,
   ]),
-  languages: new Set(["Common", "Dwarvish"]),
+  languages: laSet("Common", "Dwarvish"),
 };
 
 const DwarvenArmorTraining = new SimpleFeature(

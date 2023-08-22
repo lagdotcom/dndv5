@@ -1,6 +1,10 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
+import { abSet } from "../../types/AbilityName";
+import { acSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
+import { skSet } from "../../types/SkillName";
+import { toSet } from "../../types/ToolName";
 import { makeASI } from "../common";
 
 const Druidic = nonCombatFeature(
@@ -63,7 +67,7 @@ const Druid: PCClass = {
   name: "Druid",
   hitDieSize: 8,
   // TODO druids will not wear armor or use shields made of metal
-  armorProficiencies: new Set(["light", "medium", "shield"]),
+  armorProficiencies: acSet("light", "medium", "shield"),
   weaponProficiencies: new Set([
     "club",
     "dagger",
@@ -76,10 +80,10 @@ const Druid: PCClass = {
     "sling",
     "spear",
   ]),
-  toolProficiencies: new Set(["herbalism kit"]),
-  saveProficiencies: new Set(["int", "wis"]),
+  toolProficiencies: toSet("herbalism kit"),
+  saveProficiencies: abSet("int", "wis"),
   skillChoices: 2,
-  skillProficiencies: new Set([
+  skillProficiencies: skSet(
     "Arcana",
     "Animal Handling",
     "Insight",
@@ -88,7 +92,7 @@ const Druid: PCClass = {
     "Perception",
     "Religion",
     "Survival",
-  ]),
+  ),
   features: new Map([
     [1, [Druidic, DruidSpellcasting.feature]],
     [2, [WildShape, WildCompanion]],

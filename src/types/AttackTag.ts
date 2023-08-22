@@ -8,3 +8,4 @@ export const AttackTags = [
 ] as const;
 type AttackTag = (typeof AttackTags)[number];
 export default AttackTag;
+export const atSet = (...items: AttackTag[]) => new Set(items);
