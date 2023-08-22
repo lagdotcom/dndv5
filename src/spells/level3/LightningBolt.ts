@@ -26,7 +26,9 @@ const LightningBolt = scalingSpell<HasPoint>({
   lists: ["Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 100) }),
-  getDamage: (g, caster, { slot }) => [_dd((slot ?? 3) + 5, 6, "lightning")],
+  getDamage: (g, caster, method, { slot }) => [
+    _dd((slot ?? 3) + 5, 6, "lightning"),
+  ],
   getAffectedArea: (g, caster, { point }) =>
     point && [getArea(g, caster, point)],
   getTargets: (g, caster, { point }) => g.getInside(getArea(g, caster, point)),

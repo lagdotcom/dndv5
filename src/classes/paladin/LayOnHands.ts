@@ -18,28 +18,27 @@ class LayOnHandsHealAction extends AbstractAction<HasCost & HasTarget> {
       g,
       actor,
       "Lay on Hands (Heal)",
-      "incomplete",
+      "implemented",
       {
         cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
-        target: new TargetResolver(g, 5, true),
+        target: new TargetResolver(g, actor.reach, true),
       },
       { time: "action" },
     );
   }
 
-  getConfig({ target }: Partial<HasCost & HasTarget>) {
+  getConfig() {
     const resourceMax = this.actor.getResource(LayOnHandsResource);
-    const healMax = target ? target.hpMax - target.hp : Infinity;
 
     return {
-      cost: new NumberRangeResolver(
-        this.g,
-        "Spend",
-        1,
-        Math.min(resourceMax, healMax),
-      ),
-      target: new TargetResolver(this.g, 5, true),
+      cost: new NumberRangeResolver(this.g, "Spend", 1, resourceMax),
+      target: new TargetResolver(this.g, this.actor.reach, true),
     };
+  }
+
+  getHeal({ cost }: Partial<HasCost & HasTarget>) {
+    if (typeof cost === "number")
+      return [{ type: "flat" as const, amount: cost }];
   }
 
   getResources({ cost }: Partial<HasCost & HasTarget>) {

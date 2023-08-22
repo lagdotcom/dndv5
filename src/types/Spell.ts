@@ -2,6 +2,7 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import { ActionConfig, ActionIcon } from "./Action";
 import ActionTime from "./ActionTime";
+import Amount from "./Amount";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
@@ -73,8 +74,15 @@ export default interface Spell<T extends object = object> extends Source {
   getDamage(
     g: Engine,
     caster: Combatant,
+    method: SpellcastingMethod,
     config: Partial<T>,
   ): DamageAmount[] | undefined;
+  getHeal(
+    g: Engine,
+    caster: Combatant,
+    method: SpellcastingMethod,
+    config: Partial<T>,
+  ): Amount[] | undefined;
   getLevel(config: T): number;
   getTargets(g: Engine, caster: Combatant, config: T): Combatant[];
 }

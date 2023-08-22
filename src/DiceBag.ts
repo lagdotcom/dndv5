@@ -17,13 +17,18 @@ function matches(rt: RollType, m: MatchRollType) {
 function sizeOfDice(rt: RollType) {
   switch (rt.type) {
     case "damage":
+    case "heal":
       return rt.size;
 
     case "bane":
     case "bless":
       return 4;
 
-    default:
+    case "attack":
+    case "check":
+    case "initiative":
+    case "luck":
+    case "save":
       return 20;
   }
 }

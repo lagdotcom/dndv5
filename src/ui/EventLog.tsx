@@ -175,10 +175,14 @@ function SaveMessage({ roll, total, dc }: SaveEventDetail) {
   );
 }
 
-function HealedMessage({ who, amount }: CombatantHealedDetail) {
+function HealedMessage({ who, amount, fullAmount }: CombatantHealedDetail) {
+  const over = fullAmount - amount;
+  const wasted = over > 0 ? ` (${over} wasted)` : undefined;
+
   return (
-    <LogMessage message={`${who.name} heals for ${amount}.`}>
-      <CombatantRef who={who} /> heals for {amount}.
+    <LogMessage message={`${who.name} heals for ${amount}${wasted}.`}>
+      <CombatantRef who={who} /> heals for {amount}
+      {wasted}.
     </LogMessage>
   );
 }

@@ -25,7 +25,7 @@ const Fireball = scalingSpell<HasPoint>({
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
   getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
-  getDamage: (g, caster, { slot }) => [_dd(5 + (slot ?? 3), 6, "fire")],
+  getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot ?? 3), 6, "fire")],
   getTargets: (g, caster, { point }) => g.getInside(getArea(point)),
 
   async apply(g, attacker, method, { point, slot }) {

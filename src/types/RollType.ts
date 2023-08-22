@@ -39,6 +39,15 @@ export type DamageRoll = {
   spell?: Spell;
   method?: SpellcastingMethod;
 };
+export type HealRoll = {
+  type: "heal";
+  source: Source;
+  actor: Combatant;
+  target?: Combatant;
+  size: number;
+  spell?: Spell;
+  method?: SpellcastingMethod;
+};
 export type InitiativeRoll = { type: "initiative"; who: Combatant };
 export type LuckRoll = { type: "luck"; who: Combatant };
 export type SavingThrow = {
@@ -56,6 +65,7 @@ type RollType =
   | AttackRoll
   | BlessRoll
   | DamageRoll
+  | HealRoll
   | InitiativeRoll
   | LuckRoll
   | SavingThrow;

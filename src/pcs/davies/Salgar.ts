@@ -10,6 +10,7 @@ import { BootsOfTheWinterlands } from "../../items/wondrous";
 import PC from "../../PC";
 import { MountainDwarf, ToolProficiency } from "../../races/Dwarf";
 import MagicStone from "../../spells/cantrip/MagicStone";
+import HealingWord from "../../spells/level1/HealingWord";
 import LesserRestoration from "../../spells/level2/LesserRestoration";
 import { enchant } from "../../utils/items";
 import tokenUrl from "./Salgar_token.png";
@@ -57,7 +58,7 @@ export default class Salgar extends PC {
 
       // TODO DetectMagic,
       // TODO EarthTremor,
-      // TODO HealingWord,
+      HealingWord,
       // TODO SpeakWithAnimals,
 
       LesserRestoration,

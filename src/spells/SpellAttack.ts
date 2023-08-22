@@ -39,7 +39,7 @@ export default class SpellAttack<T extends object> {
     const { critical } = this.attackResult;
     const { g, caster: attacker, config, method, spell } = this;
 
-    const damage = spell.getDamage(g, attacker, config);
+    const damage = spell.getDamage(g, attacker, method, config);
 
     if (damage) {
       const amounts: DamageInitialiser = [];

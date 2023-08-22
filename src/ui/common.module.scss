@@ -6,6 +6,14 @@
   }
 }
 
+.healList {
+  display: inline;
+
+  span + span::before {
+    content: " + ";
+  }
+}
+
 .panel {
   border: 2px solid black;
   background-color: white;

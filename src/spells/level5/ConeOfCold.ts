@@ -31,7 +31,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
   lists: ["Sorcerer", "Wizard"],
 
   getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-  getDamage: (g, caster, { slot }) => [_dd(3 + (slot ?? 5), 8, "cold")],
+  getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot ?? 5), 8, "cold")],
   getAffectedArea: (g, caster, { point }) =>
     point && [getArea(g, caster, point)],
   getTargets: (g, caster, { point }) => g.getInside(getArea(g, caster, point)),

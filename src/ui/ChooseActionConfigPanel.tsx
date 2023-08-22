@@ -10,7 +10,9 @@ import PointResolver from "../resolvers/PointResolver";
 import SlotResolver from "../resolvers/SlotResolver";
 import TargetResolver from "../resolvers/TargetResolver";
 import Action from "../types/Action";
+import Amount from "../types/Amount";
 import Combatant from "../types/Combatant";
+import DamageType from "../types/DamageType";
 import Point from "../types/Point";
 import Resolver from "../types/Resolver";
 import { checkConfig, getConfigErrors } from "../utils/config";
@@ -322,6 +324,24 @@ function getInitialConfig<T extends object>(
   return config;
 }
 
+function AmountElement({ a, type }: { a: Amount; type?: DamageType }) {
+  return (
+    <span>
+      {a.type === "flat" ? a.amount : `${a.amount.count}d${a.amount.size}`}
+      {type && " " + type}
+    </span>
+  );
+}
+
+function amountReducer(total: number, a: Amount) {
+  return (
+    total +
+    (a.type === "flat"
+      ? a.amount
+      : getDiceAverage(a.amount.count, a.amount.size))
+  );
+}
+
 interface Props<T extends object> {
   g: Engine;
   action: Action<T>;
@@ -354,6 +374,7 @@ export default function ChooseActionConfigPanel<T extends object>({
   );
   const disabled = useMemo(() => errors.length > 0, [errors]);
   const damage = useMemo(() => action.getDamage(config), [action, config]);
+  const heal = useMemo(() => action.getHeal(config), [action, config]);
 
   const execute = useCallback(() => {
     if (checkConfig(g, action, config)) onExecute(action, config);
@@ -412,26 +433,21 @@ export default function ChooseActionConfigPanel<T extends object>({
         <div>
           Damage:{" "}
           <div className={commonStyles.damageList}>
-            {damage.map((dmg, i) => (
-              <span key={i}>
-                {dmg.type === "flat"
-                  ? dmg.amount
-                  : `${dmg.amount.count}d${dmg.amount.size}`}{" "}
-                {dmg.damageType}
-              </span>
+            {damage.map((a, i) => (
+              <AmountElement key={i} a={a} type={a.damageType} />
             ))}{" "}
-            (
-            {Math.ceil(
-              damage.reduce(
-                (total, dmg) =>
-                  total +
-                  (dmg.type === "flat"
-                    ? dmg.amount
-                    : getDiceAverage(dmg.amount.count, dmg.amount.size)),
-                0,
-              ),
-            )}
-            )
+            ({Math.ceil(damage.reduce(amountReducer, 0))})
+          </div>
+        </div>
+      )}
+      {heal && (
+        <div>
+          Heal:{" "}
+          <div className={commonStyles.healList}>
+            {heal.map((a, i) => (
+              <AmountElement key={i} a={a} />
+            ))}{" "}
+            ({Math.ceil(heal.reduce(amountReducer, 0))})
           </div>
         </div>
       )}

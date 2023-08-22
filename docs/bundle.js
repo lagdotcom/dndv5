@@ -260,11 +260,16 @@
   function sizeOfDice(rt) {
     switch (rt.type) {
       case "damage":
+      case "heal":
         return rt.size;
       case "bane":
       case "bless":
         return 4;
-      default:
+      case "attack":
+      case "check":
+      case "initiative":
+      case "luck":
+      case "save":
         return 20;
     }
   }
@@ -324,7 +329,7 @@
 
   // src/actions/AbstractAction.ts
   var AbstractAction = class {
-    constructor(g2, actor, name, status, config, { area, damage, resources, time } = {}) {
+    constructor(g2, actor, name, status, config, { area, damage, heal, resources, time } = {}) {
       this.g = g2;
       this.actor = actor;
       this.name = name;
@@ -332,6 +337,7 @@
       this.config = config;
       this.area = area;
       this.damage = damage;
+      this.heal = heal;
       this.resources = new Map(resources);
       this.time = time;
     }
@@ -346,6 +352,10 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getDamage(config) {
       return this.damage;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getHeal(config) {
+      return this.heal;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getResources(config) {
@@ -881,7 +891,10 @@
       return this.spell.getAffectedArea(this.g, this.actor, config);
     }
     getDamage(config) {
-      return this.spell.getDamage(this.g, this.actor, config);
+      return this.spell.getDamage(this.g, this.actor, this.method, config);
+    }
+    getHeal(config) {
+      return this.spell.getHeal(this.g, this.actor, this.method, config);
     }
     getResources(config) {
       var _a;
@@ -983,6 +996,7 @@
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
+    getHeal = () => void 0,
     getTargets,
     status = "missing"
   }) => ({
@@ -1004,6 +1018,7 @@
     getAffectedArea,
     getConfig,
     getDamage,
+    getHeal,
     getLevel() {
       return level;
     },
@@ -1026,6 +1041,7 @@
     getAffectedArea = () => void 0,
     getConfig,
     getDamage = () => void 0,
+    getHeal = () => void 0,
     getTargets,
     status = "missing"
   }) => ({
@@ -1051,6 +1067,7 @@
       });
     },
     getDamage,
+    getHeal,
     getLevel({ slot }) {
       return slot;
     },
@@ -2556,6 +2573,16 @@
         );
       });
     }
+    rollHeal(count, e, critical = false) {
+      return __async(this, null, function* () {
+        let total = 0;
+        for (let i = 0; i < count * (critical ? 2 : 1); i++) {
+          const roll = yield this.roll(__spreadProps(__spreadValues({}, e), { type: "heal" }));
+          total += roll.value;
+        }
+        return total;
+      });
+    }
     heal(source, amount, e, startingMultiplier) {
       return __async(this, null, function* () {
         const bonus = new BonusCollector();
@@ -2742,7 +2769,7 @@
           throw new Error("Run .attack() first");
         const { critical } = this.attackResult;
         const { g: g2, caster: attacker, config, method, spell } = this;
-        const damage = spell.getDamage(g2, attacker, config);
+        const damage = spell.getDamage(g2, attacker, method, config);
         if (damage) {
           const amounts = [];
           let first = true;
@@ -5493,7 +5520,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea3(point)],
-    getDamage: (g2, caster, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
+    getDamage: (g2, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea3(point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
@@ -5600,7 +5627,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       shape: new ChoiceResolver(g2, shapeChoices)
     }),
     getTargets: () => [],
-    getDamage: (g2, caster, { slot }) => [_dd((slot != null ? slot : 4) + 1, 8, "fire")],
+    getDamage: (g2, caster, method, { slot }) => [_dd((slot != null ? slot : 4) + 1, 8, "fire")],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
       });
@@ -5803,26 +5830,24 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         g2,
         actor,
         "Lay on Hands (Heal)",
-        "incomplete",
+        "implemented",
         {
           cost: new NumberRangeResolver(g2, "Spend", 1, Infinity),
-          target: new TargetResolver(g2, 5, true)
+          target: new TargetResolver(g2, actor.reach, true)
         },
         { time: "action" }
       );
     }
-    getConfig({ target }) {
+    getConfig() {
       const resourceMax = this.actor.getResource(LayOnHandsResource);
-      const healMax = target ? target.hpMax - target.hp : Infinity;
       return {
-        cost: new NumberRangeResolver(
-          this.g,
-          "Spend",
-          1,
-          Math.min(resourceMax, healMax)
-        ),
-        target: new TargetResolver(this.g, 5, true)
+        cost: new NumberRangeResolver(this.g, "Spend", 1, resourceMax),
+        target: new TargetResolver(this.g, this.actor.reach, true)
       };
+    }
+    getHeal({ cost }) {
+      if (typeof cost === "number")
+        return [{ type: "flat", amount: cost }];
     }
     getResources({ cost }) {
       const resources = /* @__PURE__ */ new Map();
@@ -7307,7 +7332,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a bit of fur and a rod of amber, crystal, or glass",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
-    getDamage: (g2, caster, { slot }) => [_dd((slot != null ? slot : 3) + 5, 6, "lightning")],
+    getDamage: (g2, caster, method, { slot }) => [
+      _dd((slot != null ? slot : 3) + 5, 6, "lightning")
+    ],
     getAffectedArea: (g2, caster, { point }) => point && [getArea4(g2, caster, point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea4(g2, caster, point)),
     apply(_0, _1, _2, _3) {
@@ -7477,7 +7504,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea5(point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea5(point)),
-    getDamage: (g2, caster, { slot }) => [
+    getDamage: (g2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
     ],
@@ -7566,7 +7593,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a small crystal or glass cone",
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
-    getDamage: (g2, caster, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
+    getDamage: (g2, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g2, caster, { point }) => point && [getArea6(g2, caster, point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea6(g2, caster, point)),
     apply(_0, _1, _2, _3) {
@@ -8004,6 +8031,49 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var MagicStone_default = MagicStone;
 
+  // src/spells/level1/HealingWord.ts
+  var HealingWord = scalingSpell({
+    status: "incomplete",
+    name: "Healing Word",
+    level: 1,
+    school: "Evocation",
+    time: "bonus action",
+    v: true,
+    lists: ["Bard", "Cleric", "Druid"],
+    getConfig: (g2) => ({
+      target: new TargetResolver(g2, 60, true)
+    }),
+    getHeal: (g2, caster, method, { slot }) => {
+      const modifier = caster[method.ability].modifier;
+      const count = slot != null ? slot : 1;
+      return [
+        { type: "dice", amount: { count, size: 4 } },
+        { type: "flat", amount: modifier }
+      ];
+    },
+    getTargets: (g2, caster, { target }) => [target],
+    // TODO This spell has no effect on undead or constructs.
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, actor, method, { slot, target }) {
+        const modifier = actor[method.ability].modifier;
+        const rolled = yield g2.rollHeal(slot, {
+          source: HealingWord,
+          actor,
+          target,
+          spell: HealingWord,
+          method,
+          size: 4
+        });
+        yield g2.heal(HealingWord, rolled + modifier, {
+          actor,
+          spell: HealingWord,
+          target
+        });
+      });
+    }
+  });
+  var HealingWord_default = HealingWord;
+
   // src/pcs/davies/Salgar_token.png
   var Salgar_token_default = "./Salgar_token-WLUJXZFZ.png";
 
@@ -8044,7 +8114,7 @@ The creature is aware of this effect before it makes its attack against you.`
         // TODO MoldEarth,
         // TODO DetectMagic,
         // TODO EarthTremor,
-        // TODO HealingWord,
+        HealingWord_default,
         // TODO SpeakWithAnimals,
         LesserRestoration_default
         // TODO LocateObject,
@@ -8075,8 +8145,9 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/common.module.scss
   var common_module_default = {
-    "damageList": "_damageList_275hw_1",
-    "panel": "_panel_275hw_8"
+    "damageList": "_damageList_f4xy4_1",
+    "healList": "_healList_f4xy4_8",
+    "panel": "_panel_f4xy4_15"
   };
 
   // src/ui/IconButton.module.scss
@@ -8314,7 +8385,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/App.module.scss
   var App_module_default = {
-    "sidePanel": "_sidePanel_175hi_5"
+    "sidePanel": "_sidePanel_czif9_5"
   };
 
   // src/ui/Battlefield.tsx
@@ -8920,6 +8991,15 @@ The creature is aware of this effect before it makes its attack against you.`
     }
     return config;
   }
+  function AmountElement({ a, type }) {
+    return /* @__PURE__ */ o("span", { children: [
+      a.type === "flat" ? a.amount : `${a.amount.count}d${a.amount.size}`,
+      type && " " + type
+    ] });
+  }
+  function amountReducer(total, a) {
+    return total + (a.type === "flat" ? a.amount : getDiceAverage(a.amount.count, a.amount.size));
+  }
   function ChooseActionConfigPanel({
     g: g2,
     action,
@@ -8941,6 +9021,7 @@ The creature is aware of this effect before it makes its attack against you.`
     );
     const disabled = (0, import_hooks7.useMemo)(() => errors.length > 0, [errors]);
     const damage = (0, import_hooks7.useMemo)(() => action.getDamage(config), [action, config]);
+    const heal = (0, import_hooks7.useMemo)(() => action.getHeal(config), [action, config]);
     const execute = (0, import_hooks7.useCallback)(() => {
       if (checkConfig(g2, action, config))
         onExecute(action, config);
@@ -8988,19 +9069,21 @@ The creature is aware of this effect before it makes its attack against you.`
         "Damage:",
         " ",
         /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: [
-          damage.map((dmg, i) => /* @__PURE__ */ o("span", { children: [
-            dmg.type === "flat" ? dmg.amount : `${dmg.amount.count}d${dmg.amount.size}`,
-            " ",
-            dmg.damageType
-          ] }, i)),
+          damage.map((a, i) => /* @__PURE__ */ o(AmountElement, { a, type: a.damageType }, i)),
           " ",
           "(",
-          Math.ceil(
-            damage.reduce(
-              (total, dmg) => total + (dmg.type === "flat" ? dmg.amount : getDiceAverage(dmg.amount.count, dmg.amount.size)),
-              0
-            )
-          ),
+          Math.ceil(damage.reduce(amountReducer, 0)),
+          ")"
+        ] })
+      ] }),
+      heal && /* @__PURE__ */ o("div", { children: [
+        "Heal:",
+        " ",
+        /* @__PURE__ */ o("div", { className: common_module_default.healList, children: [
+          heal.map((a, i) => /* @__PURE__ */ o(AmountElement, { a }, i)),
+          " ",
+          "(",
+          Math.ceil(heal.reduce(amountReducer, 0)),
           ")"
         ] })
       ] }),
@@ -9203,11 +9286,14 @@ The creature is aware of this effect before it makes its attack against you.`
       }
     );
   }
-  function HealedMessage({ who, amount }) {
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} heals for ${amount}.`, children: [
+  function HealedMessage({ who, amount, fullAmount }) {
+    const over = fullAmount - amount;
+    const wasted = over > 0 ? ` (${over} wasted)` : void 0;
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} heals for ${amount}${wasted}.`, children: [
       /* @__PURE__ */ o(CombatantRef, { who }),
       " heals for ",
       amount,
+      wasted,
       "."
     ] });
   }

@@ -42,7 +42,11 @@ export default class CastSpell<T extends object> implements Action<T> {
   }
 
   getDamage(config: Partial<T>) {
-    return this.spell.getDamage(this.g, this.actor, config);
+    return this.spell.getDamage(this.g, this.actor, this.method, config);
+  }
+
+  getHeal(config: Partial<T>) {
+    return this.spell.getHeal(this.g, this.actor, this.method, config);
   }
 
   getResources(config: Partial<T>) {

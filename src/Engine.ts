@@ -62,6 +62,7 @@ import MovementType from "./types/MovementType";
 import RollType, {
   AbilityCheck,
   DamageRoll,
+  HealRoll,
   SavingThrow,
 } from "./types/RollType";
 import SaveDamageResponse from "./types/SaveDamageResponse";
@@ -614,6 +615,17 @@ export default class Engine {
     return new Promise<void>((resolve) =>
       this.fire(new StartBoundedMoveEvent({ who, handler, resolve })),
     );
+  }
+
+  async rollHeal(count: number, e: Omit<HealRoll, "type">, critical = false) {
+    let total = 0;
+
+    for (let i = 0; i < count * (critical ? 2 : 1); i++) {
+      const roll = await this.roll({ ...e, type: "heal" });
+      total += roll.value;
+    }
+
+    return total;
   }
 
   async heal(

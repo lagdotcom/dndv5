@@ -33,6 +33,7 @@ export const simpleSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
+  getHeal = () => undefined,
   getTargets,
   status = "missing",
 }: Omit<
@@ -47,6 +48,7 @@ export const simpleSpell = <T extends object>({
     | "check"
     | "getAffectedArea"
     | "getDamage"
+    | "getHeal"
   >,
   "getLevel" | "scaling"
 >): Spell<T> => ({
@@ -68,6 +70,7 @@ export const simpleSpell = <T extends object>({
   getAffectedArea,
   getConfig,
   getDamage,
+  getHeal,
   getLevel() {
     return level;
   },
@@ -91,6 +94,7 @@ export const scalingSpell = <T extends object>({
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
+  getHeal = () => undefined,
   getTargets,
   status = "missing",
 }: Omit<
@@ -105,6 +109,7 @@ export const scalingSpell = <T extends object>({
     | "check"
     | "getAffectedArea"
     | "getDamage"
+    | "getHeal"
   >,
   "getConfig" | "getLevel" | "scaling"
 > & {
@@ -138,6 +143,7 @@ export const scalingSpell = <T extends object>({
     };
   },
   getDamage,
+  getHeal,
   getLevel({ slot }) {
     return slot;
   },
