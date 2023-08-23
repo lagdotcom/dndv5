@@ -1,4 +1,5 @@
 export const LanguageNames = [
+  "Abyssal",
   "Common",
   "Draconic",
   "Dwarvish",
@@ -6,6 +7,7 @@ export const LanguageNames = [
   "Giant",
   "Halfling",
   "Infernal",
+  "Orc",
   "Primordial",
   "Sylvan",
 ] as const;

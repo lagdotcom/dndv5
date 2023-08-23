@@ -14,15 +14,10 @@ const HealingWord = scalingSpell<HasTarget>({
   getConfig: (g) => ({
     target: new TargetResolver(g, 60, true),
   }),
-  getHeal: (g, caster, method, { slot }) => {
-    const modifier = caster[method.ability].modifier;
-    const count = slot ?? 1;
-
-    return [
-      { type: "dice", amount: { count, size: 4 } },
-      { type: "flat", amount: modifier },
-    ];
-  },
+  getHeal: (g, caster, method, { slot }) => [
+    { type: "dice", amount: { count: slot ?? 1, size: 4 } },
+    { type: "flat", amount: caster[method.ability].modifier },
+  ],
   getTargets: (g, caster, { target }) => [target],
 
   // TODO This spell has no effect on undead or constructs.

@@ -360,6 +360,7 @@ export default class Engine {
     },
   ) {
     let total = 0;
+    let heal = 0;
 
     const breakdown = new Map<DamageType, DamageBreakdown>();
 
@@ -376,17 +377,25 @@ export default class Engine {
 
       const response = collector.result;
       if (response === "immune") continue;
-      // TODO [ABSORB]
 
-      let multiplier = baseMultiplier;
-      if (response === "resist") multiplier *= 0.5;
-      else if (response === "vulnerable") multiplier *= 2;
+      let amount = raw;
+      if (response === "absorb") {
+        heal += raw;
+      } else {
+        let multiplier = baseMultiplier;
+        if (response === "resist") multiplier *= 0.5;
+        else if (response === "vulnerable") multiplier *= 2;
 
-      const amount = Math.ceil(raw * multiplier);
+        amount = Math.ceil(raw * multiplier);
+        total += amount;
+      }
+
       breakdown.set(damageType, { response, raw, amount });
-      total += amount;
     }
 
+    if (heal > total) return this.applyHeal(target, heal - total, target);
+
+    total -= heal;
     if (total < 1) return;
 
     target.hp -= total;

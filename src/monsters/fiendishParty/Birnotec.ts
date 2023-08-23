@@ -122,7 +122,7 @@ const AntimagicProdigy = new SimpleFeature(
     g.events.on("SpellCast", (e) => {
       const { who, interrupt } = e.detail;
 
-      if (who !== me && me.time.has("reaction"))
+      if (me.time.has("reaction") && who.side !== me.side)
         interrupt.add(
           new YesNoChoice(
             me,
@@ -210,11 +210,16 @@ export default class Birnotec extends Monster {
     this.saveProficiencies.add("cha");
     this.skills.set("Arcana", 1);
     this.skills.set("Nature", 1);
-
     // TODO immune to poison damage, poisoned status
+    this.languages.add("Abyssal");
+    this.languages.add("Common");
+
     this.addFeature(ArmorOfAgathys);
     this.addFeature(EldritchBurst);
     this.addFeature(AntimagicProdigy);
     this.addFeature(HellishRebuke);
+
+    // TODO
+    // this.addEffect(ArmorOfAgathysEffect, { duration: Infinity, amount: 15 });
   }
 }
