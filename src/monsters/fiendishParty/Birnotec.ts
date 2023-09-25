@@ -210,7 +210,8 @@ export default class Birnotec extends Monster {
     this.saveProficiencies.add("cha");
     this.skills.set("Arcana", 1);
     this.skills.set("Nature", 1);
-    // TODO immune to poison damage, poisoned status
+    this.damageResponses.set("poison", "immune");
+    // TODO immune to poisoned status
     this.languages.add("Abyssal");
     this.languages.add("Common");
 

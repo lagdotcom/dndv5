@@ -62,7 +62,8 @@ export default class Yulash extends Monster {
     this.saveProficiencies.add("cha");
     this.skills.set("Deception", 1);
     this.skills.set("Perception", 1);
-    // TODO immunities: poison + poisoned
+    this.damageResponses.set("poison", "immune");
+    // TODO immunities: poisoned
     this.languages.add("Abyssal");
     this.languages.add("Common");
 

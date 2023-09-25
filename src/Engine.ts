@@ -366,6 +366,10 @@ export default class Engine {
 
     for (const [damageType, raw] of damage) {
       const collector = new DamageResponseCollector();
+
+      const innateResponse = target.damageResponses.get(damageType);
+      if (innateResponse) collector.add(innateResponse, target);
+
       this.fire(
         new GetDamageResponseEvent({
           attack,

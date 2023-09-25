@@ -1236,6 +1236,7 @@
       this.resourcesMax = /* @__PURE__ */ new Map();
       this.spellcastingMethods = /* @__PURE__ */ new Set();
       this.naturalAC = naturalAC;
+      this.damageResponses = /* @__PURE__ */ new Map();
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -1638,7 +1639,9 @@
       weapon
     }) {
       const tags = /* @__PURE__ */ new Set();
-      tags.add(distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee");
+      tags.add(
+        distance(g2, attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
+      );
       if (weapon.category !== "natural")
         tags.add("weapon");
       if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
@@ -2392,6 +2395,9 @@
         const breakdown = /* @__PURE__ */ new Map();
         for (const [damageType, raw] of damage) {
           const collector = new DamageResponseCollector();
+          const innateResponse = target.damageResponses.get(damageType);
+          if (innateResponse)
+            collector.add(innateResponse, target);
           this.fire(
             new GetDamageResponseEvent({
               attack,
@@ -3052,6 +3058,7 @@
       this.saveProficiencies.add("cha");
       this.skills.set("Arcana", 1);
       this.skills.set("Nature", 1);
+      this.damageResponses.set("poison", "immune");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.addFeature(ArmorOfAgathys);
@@ -3340,6 +3347,13 @@
     }
   };
 
+  // src/types/DamageType.ts
+  var MundaneDamageTypes = [
+    "bludgeoning",
+    "piercing",
+    "slashing"
+  ];
+
   // src/monsters/common.ts
   var KeenSmell = new SimpleFeature(
     "Keen Smell",
@@ -3400,6 +3414,19 @@
     "Wreathed in Shadow",
     "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit."
   );
+  var SmoulderingRage = new SimpleFeature(
+    "Smouldering Rage",
+    "Kay resists bludgeoning, piercing, and slashing damage from nonmagical attacks.",
+    (g2, me) => {
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who === me && MundaneDamageTypes.includes(damageType))
+            response.add("resist", SmoulderingRage);
+        }
+      );
+    }
+  );
   var Kay = class extends Monster {
     constructor(g2) {
       super(g2, "Kay of the Abyss", 6, "humanoid", "medium", Kay_token_default);
@@ -3424,6 +3451,7 @@
         )
       );
       this.addFeature(Evasion_default);
+      this.addFeature(SmoulderingRage);
       this.don(new StuddedLeatherArmor(g2), true);
       this.don(new Longbow(g2), true);
       this.don(new Spear(g2, 1), true);
@@ -3650,6 +3678,8 @@
       this.saveProficiencies.add("cha");
       this.skills.set("Insight", 1);
       this.skills.set("Persuasion", 1);
+      this.damageResponses.set("fire", "resist");
+      this.damageResponses.set("poison", "resist");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.addFeature(FiendishMantle);
@@ -3746,6 +3776,7 @@
       this.saveProficiencies.add("cha");
       this.skills.set("Deception", 1);
       this.skills.set("Perception", 1);
+      this.damageResponses.set("poison", "immune");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.addFeature(Cheer);
@@ -3786,6 +3817,8 @@
       this.saveProficiencies.add("con");
       this.skills.set("Acrobatics", 1);
       this.skills.set("Intimidation", 1);
+      this.damageResponses.set("fire", "resist");
+      this.damageResponses.set("poison", "resist");
       this.languages.add("Abyssal");
       this.addFeature(LustForBattle);
       this.addFeature(
@@ -5582,7 +5615,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getAffectedArea: (g2, caster, { target }) => target && [getArea2(g2, target)],
-    getDamage: (g2, caster, { slot }) => [
+    getDamage: (g2, caster, method, { slot }) => [
       _dd(1, 10, "piercing"),
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
@@ -7006,13 +7039,6 @@ Once you use this feature, you can't use it again until you finish a long rest.
       );
     }
   };
-
-  // src/types/DamageType.ts
-  var MundaneDamageTypes = [
-    "bludgeoning",
-    "piercing",
-    "slashing"
-  ];
 
   // src/classes/barbarian/Rage.ts
   function getRageCount(level) {

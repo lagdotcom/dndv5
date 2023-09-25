@@ -6,6 +6,8 @@ import CombatantScore from "./CombatantScore";
 import Concentration from "./Concentration";
 import ConditionName from "./ConditionName";
 import CreatureType from "./CreatureType";
+import DamageResponse from "./DamageResponse";
+import DamageType from "./DamageType";
 import EffectType, { EffectConfig, EffectDurationTimer } from "./EffectType";
 import Feature from "./Feature";
 import Item, {
@@ -77,6 +79,7 @@ export default interface Combatant extends Source {
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
   spellcastingMethods: Set<SpellcastingMethod>;
+  damageResponses: Map<DamageType, DamageResponse>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

@@ -37,7 +37,8 @@ export default class Zafron extends Monster {
     this.saveProficiencies.add("con");
     this.skills.set("Acrobatics", 1);
     this.skills.set("Intimidation", 1);
-    // TODO resistances: fire, poison
+    this.damageResponses.set("fire", "resist");
+    this.damageResponses.set("poison", "resist");
     // TODO immunities: poisoned
     this.languages.add("Abyssal");
 

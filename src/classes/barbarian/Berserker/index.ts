@@ -77,6 +77,7 @@ const Frenzy = new SimpleFeature(
             `Should ${me.name} enter a Frenzy?`,
             async () => {
               // TODO Frenzy ends whenever Rage does
+              // TODO [EXHAUSTION]
               me.addEffect(FrenzyEffect, { duration: minutes(1) });
             },
           ),

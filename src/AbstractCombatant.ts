@@ -18,6 +18,8 @@ import CombatantScore from "./types/CombatantScore";
 import Concentration from "./types/Concentration";
 import ConditionName from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
+import DamageResponse from "./types/DamageResponse";
+import DamageType from "./types/DamageType";
 import EffectType, {
   EffectConfig,
   EffectDurationTimer,
@@ -109,6 +111,7 @@ export default abstract class AbstractCombatant implements Combatant {
   toolProficiencies: Map<ToolName, number>;
   resourcesMax: Map<string, number>;
   spellcastingMethods: Set<SpellcastingMethod>;
+  damageResponses: Map<DamageType, DamageResponse>;
 
   constructor(
     public g: Engine,
@@ -199,6 +202,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.resourcesMax = new Map();
     this.spellcastingMethods = new Set();
     this.naturalAC = naturalAC;
+    this.damageResponses = new Map();
   }
 
   get baseACMethod(): ACMethod {

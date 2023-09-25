@@ -7,6 +7,7 @@ import { Arrow } from "../../items/ammunition";
 import { StuddedLeatherArmor } from "../../items/armor";
 import { Longbow, Spear } from "../../items/weapons";
 import Monster from "../../Monster";
+import { MundaneDamageTypes } from "../../types/DamageType";
 import { makeMultiattack } from "../common";
 import tokenUrl from "./Kay_token.png";
 
@@ -45,6 +46,20 @@ const WreathedInShadow = notImplementedFeature(
   "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
 );
 
+const SmoulderingRage = new SimpleFeature(
+  "Smouldering Rage",
+  "Kay resists bludgeoning, piercing, and slashing damage from nonmagical attacks.",
+  (g, me) => {
+    g.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, response } }) => {
+        if (who === me && MundaneDamageTypes.includes(damageType))
+          response.add("resist", SmoulderingRage);
+      },
+    );
+  },
+);
+
 export default class Kay extends Monster {
   constructor(g: Engine) {
     super(g, "Kay of the Abyss", 6, "humanoid", "medium", tokenUrl);
@@ -58,7 +73,6 @@ export default class Kay extends Monster {
     this.saveProficiencies.add("dex");
     this.skills.set("Athletics", 1);
     this.skills.set("Stealth", 2);
-    // TODO resistances: bludgeoning, piercing, and slashing from nonmagical attacks
     // TODO immunities: frightened
     this.languages.add("Abyssal");
     this.languages.add("Common");
@@ -73,6 +87,7 @@ export default class Kay extends Monster {
       ),
     );
     this.addFeature(Evasion);
+    this.addFeature(SmoulderingRage);
 
     this.don(new StuddedLeatherArmor(g), true);
     this.don(new Longbow(g), true);
