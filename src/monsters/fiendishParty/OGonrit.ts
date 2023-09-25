@@ -1,17 +1,22 @@
+import AbstractAction from "../../actions/AbstractAction";
+import { HasTarget } from "../../configs";
+import Effect from "../../Effect";
 import Engine from "../../Engine";
-import {
-  bonusSpellsFeature,
-  notImplementedFeature,
-} from "../../features/common";
+import { bonusSpellsFeature } from "../../features/common";
 import { FightingStyleProtection } from "../../features/fightingStyles";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { Shield, SplintArmor } from "../../items/armor";
 import { Mace } from "../../items/weapons";
 import Monster from "../../Monster";
+import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import GuidingBolt from "../../spells/level1/GuidingBolt";
 import MassHealingWord from "../../spells/level3/MassHealingWord";
+import AbilityName from "../../types/AbilityName";
+import Combatant from "../../types/Combatant";
+import { svSet } from "../../types/SaveTag";
+import { getSaveDC } from "../../utils/dnd";
 import { distance } from "../../utils/units";
 import tokenUrl from "./OGonrit_token.png";
 
@@ -48,10 +53,52 @@ const FiendishMantle = new SimpleFeature(
   },
 );
 
-// TODO
-const ShieldBash = notImplementedFeature(
+const ShieldBashEffect = new Effect("Shield Bash", "turnEnd", (g) => {
+  g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+    if (who.hasEffect(ShieldBashEffect))
+      conditions.add("Stunned", ShieldBashEffect);
+  });
+});
+
+class ShieldBashAction extends AbstractAction<HasTarget> {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private ability: AbilityName,
+  ) {
+    super(
+      g,
+      actor,
+      "Shield Bash",
+      "implemented",
+      { target: new TargetResolver(g, actor.reach) },
+      { time: "action" },
+    );
+  }
+
+  async apply({ target }: HasTarget) {
+    super.apply({ target });
+
+    const dc = getSaveDC(this.actor, this.ability);
+    const { outcome } = await this.g.savingThrow(dc, {
+      ability: "con",
+      attacker: this.actor,
+      tags: svSet("Stunned"),
+      who: target,
+    });
+
+    if (outcome === "fail") target.addEffect(ShieldBashEffect, { duration: 1 });
+  }
+}
+
+const ShieldBash = new SimpleFeature(
   "Shield Bash",
   "One enemy within 5 ft. must succeed on a DC 15 Constitution save or be stunned until the end of their next turn.",
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new ShieldBashAction(g, me, "wis"));
+    });
+  },
 );
 
 const SpellcastingMethod = new InnateSpellcasting(

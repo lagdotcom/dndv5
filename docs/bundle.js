@@ -3667,9 +3667,48 @@
       );
     }
   );
-  var ShieldBash = notImplementedFeature(
+  var ShieldBashEffect = new Effect("Shield Bash", "turnEnd", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(ShieldBashEffect))
+        conditions.add("Stunned", ShieldBashEffect);
+    });
+  });
+  var ShieldBashAction = class _ShieldBashAction extends AbstractAction {
+    constructor(g2, actor, ability) {
+      super(
+        g2,
+        actor,
+        "Shield Bash",
+        "implemented",
+        { target: new TargetResolver(g2, actor.reach) },
+        { time: "action" }
+      );
+      this.ability = ability;
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ target }) {
+        __superGet(_ShieldBashAction.prototype, this, "apply").call(this, { target });
+        const dc = getSaveDC(this.actor, this.ability);
+        const { outcome } = yield this.g.savingThrow(dc, {
+          ability: "con",
+          attacker: this.actor,
+          tags: svSet("Stunned"),
+          who: target
+        });
+        if (outcome === "fail")
+          target.addEffect(ShieldBashEffect, { duration: 1 });
+      });
+    }
+  };
+  var ShieldBash = new SimpleFeature(
     "Shield Bash",
-    "One enemy within 5 ft. must succeed on a DC 15 Constitution save or be stunned until the end of their next turn."
+    "One enemy within 5 ft. must succeed on a DC 15 Constitution save or be stunned until the end of their next turn.",
+    (g2, me) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new ShieldBashAction(g2, me, "wis"));
+      });
+    }
   );
   var SpellcastingMethod = new InnateSpellcasting(
     "Spellcasting",
