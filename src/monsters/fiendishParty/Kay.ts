@@ -1,6 +1,6 @@
 import Evasion from "../../classes/rogue/Evasion";
+import Effect from "../../Effect";
 import Engine from "../../Engine";
-import { notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { Arrow } from "../../items/ammunition";
@@ -40,10 +40,34 @@ const ScreamingInside = new SimpleFeature(
   },
 );
 
-// TODO
-const WreathedInShadow = notImplementedFeature(
+const WreathedInShadowEffect = new Effect(
+  "Wreathed in Shadow",
+  "turnStart",
+  (g) => {
+    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+      if (target.hasEffect(WreathedInShadowEffect))
+        diceType.add("disadvantage", WreathedInShadowEffect);
+    });
+
+    g.events.on("CombatantDamaged", ({ detail: { who, total } }) => {
+      if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
+        who.removeEffect(WreathedInShadowEffect);
+    });
+  },
+);
+
+const WreathedInShadow = new SimpleFeature(
   "Wreathed in Shadow",
   "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
+  (g, me) => {
+    // TODO Only a DC 22 Perception check can reveal his identity.
+    me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+
+    g.events.on("TurnStarted", ({ detail: { who } }) => {
+      if (who === me && !who.hasEffect(WreathedInShadowEffect))
+        who.addEffect(WreathedInShadowEffect, { duration: Infinity });
+    });
+  },
 );
 
 const SmoulderingRage = new SimpleFeature(

@@ -3410,9 +3410,30 @@
       );
     }
   );
-  var WreathedInShadow = notImplementedFeature(
+  var WreathedInShadowEffect = new Effect(
     "Wreathed in Shadow",
-    "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit."
+    "turnStart",
+    (g2) => {
+      g2.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+        if (target.hasEffect(WreathedInShadowEffect))
+          diceType.add("disadvantage", WreathedInShadowEffect);
+      });
+      g2.events.on("CombatantDamaged", ({ detail: { who, total } }) => {
+        if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
+          who.removeEffect(WreathedInShadowEffect);
+      });
+    }
+  );
+  var WreathedInShadow = new SimpleFeature(
+    "Wreathed in Shadow",
+    "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
+    (g2, me) => {
+      me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+      g2.events.on("TurnStarted", ({ detail: { who } }) => {
+        if (who === me && !who.hasEffect(WreathedInShadowEffect))
+          who.addEffect(WreathedInShadowEffect, { duration: Infinity });
+      });
+    }
   );
   var SmoulderingRage = new SimpleFeature(
     "Smouldering Rage",
