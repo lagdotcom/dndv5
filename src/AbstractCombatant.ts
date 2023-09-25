@@ -1,10 +1,12 @@
 import AbilityScore from "./AbilityScore";
 import BonusCollector from "./collectors/BonusCollector";
 import ConditionCollector from "./collectors/ConditionCollector";
+import InterruptionCollector from "./collectors/InterruptionCollector";
 import MultiplierCollector from "./collectors/MultiplierCollector";
 import Engine from "./Engine";
 import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
+import ExhaustionEvent from "./events/ExhaustionEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
@@ -43,6 +45,7 @@ import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
 import { getNaturalArmourMethod, getProficiencyType } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
+import { clamp } from "./utils/numbers";
 import { convertSizeToUnit } from "./utils/units";
 
 const defaultHandsAmount: Record<CreatureType, number> = {
@@ -112,6 +115,7 @@ export default abstract class AbstractCombatant implements Combatant {
   resourcesMax: Map<string, number>;
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
+  exhaustion: number;
 
   constructor(
     public g: Engine,
@@ -203,6 +207,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.spellcastingMethods = new Set();
     this.naturalAC = naturalAC;
     this.damageResponses = new Map();
+    this.exhaustion = 0;
   }
 
   get baseACMethod(): ACMethod {
@@ -417,9 +422,19 @@ export default abstract class AbstractCombatant implements Combatant {
       spellImplementationWarning(spell, this);
   }
 
-  addEffect<T>(effect: EffectType<T>, config: EffectConfig<T>) {
+  async addEffect<T>(
+    effect: EffectType<T>,
+    config: EffectConfig<T>,
+  ): Promise<EffectAddedEvent<T>> {
     this.effects.set(effect, config);
-    this.g.fire(new EffectAddedEvent({ who: this, effect, config }));
+    return await this.g.resolve(
+      new EffectAddedEvent({
+        who: this,
+        effect,
+        config,
+        interrupt: new InterruptionCollector(),
+      }),
+    );
   }
 
   getEffectConfig<T>(effect: EffectType<T>) {
@@ -430,19 +445,28 @@ export default abstract class AbstractCombatant implements Combatant {
     return this.effects.has(effect);
   }
 
-  removeEffect<T>(effect: EffectType<T>) {
+  async removeEffect<T>(
+    effect: EffectType<T>,
+  ): Promise<EffectRemovedEvent<T> | undefined> {
     const config = this.getEffectConfig(effect);
 
     if (config) {
       this.effects.delete(effect);
-      this.g.fire(new EffectRemovedEvent({ who: this, effect, config }));
+      return await this.g.resolve(
+        new EffectRemovedEvent({
+          who: this,
+          effect,
+          config,
+          interrupt: new InterruptionCollector(),
+        }),
+      );
     }
   }
 
-  tickEffects(durationTimer: EffectDurationTimer) {
+  async tickEffects(durationTimer: EffectDurationTimer) {
     for (const [effect, config] of this.effects) {
       if (effect.durationTimer === durationTimer && --config.duration < 1)
-        this.removeEffect(effect);
+        await this.removeEffect(effect);
     }
   }
 
@@ -455,5 +479,22 @@ export default abstract class AbstractCombatant implements Combatant {
       this.knownSpells.add(spell);
       this.preparedSpells.add(spell);
     }
+  }
+
+  async changeExhaustion(delta: number): Promise<number> {
+    const old = this.exhaustion;
+    const value = clamp(this.exhaustion + delta, 0, 6);
+
+    const e = new ExhaustionEvent({
+      who: this,
+      old,
+      delta,
+      value,
+      interrupt: new InterruptionCollector(),
+    });
+    await this.g.resolve(e);
+
+    if (!e.defaultPrevented) this.exhaustion = value;
+    return this.exhaustion;
   }
 }

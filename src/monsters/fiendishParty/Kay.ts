@@ -49,9 +49,13 @@ const WreathedInShadowEffect = new Effect(
         diceType.add("disadvantage", WreathedInShadowEffect);
     });
 
-    g.events.on("CombatantDamaged", ({ detail: { who, total } }) => {
+    g.events.on("CombatantDamaged", ({ detail: { who, total, interrupt } }) => {
       if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
-        who.removeEffect(WreathedInShadowEffect);
+        interrupt.add(
+          new EvaluateLater(who, WreathedInShadowEffect, async () => {
+            await who.removeEffect(WreathedInShadowEffect);
+          }),
+        );
     });
   },
 );
@@ -61,11 +65,15 @@ const WreathedInShadow = new SimpleFeature(
   "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
   (g, me) => {
     // TODO Only a DC 22 Perception check can reveal his identity.
-    me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+    void me.addEffect(WreathedInShadowEffect, { duration: Infinity });
 
-    g.events.on("TurnStarted", ({ detail: { who } }) => {
+    g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
       if (who === me && !who.hasEffect(WreathedInShadowEffect))
-        who.addEffect(WreathedInShadowEffect, { duration: Infinity });
+        interrupt.add(
+          new EvaluateLater(who, WreathedInShadow, async () => {
+            await who.addEffect(WreathedInShadowEffect, { duration: Infinity });
+          }),
+        );
     });
   },
 );

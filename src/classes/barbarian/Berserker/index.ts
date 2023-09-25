@@ -6,6 +6,7 @@ import Effect from "../../../Effect";
 import Engine from "../../../Engine";
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
+import EvaluateLater from "../../../interruptions/EvaluateLater";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
 import TargetResolver from "../../../resolvers/TargetResolver";
 import AbilityName from "../../../types/AbilityName";
@@ -61,6 +62,17 @@ const FrenzyEffect = new Effect("Frenzy", "turnEnd", (g) => {
       }
     }
   });
+
+  g.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
+    if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
+      interrupt.add(
+        new EvaluateLater(who, FrenzyEffect, async () => {
+          await who.removeEffect(FrenzyEffect);
+          await who.changeExhaustion(1);
+        }),
+      );
+    }
+  });
 });
 
 const Frenzy = new SimpleFeature(
@@ -76,9 +88,7 @@ const Frenzy = new SimpleFeature(
             "Frenzy",
             `Should ${me.name} enter a Frenzy?`,
             async () => {
-              // TODO Frenzy ends whenever Rage does
-              // TODO [EXHAUSTION]
-              me.addEffect(FrenzyEffect, { duration: minutes(1) });
+              await me.addEffect(FrenzyEffect, { duration: minutes(1) });
             },
           ),
         );

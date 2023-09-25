@@ -41,7 +41,7 @@ class DropProneAction extends AbstractAction {
   async apply() {
     super.apply({});
 
-    this.actor.addEffect(Prone, {
+    await this.actor.addEffect(Prone, {
       conditions: coSet("Prone"),
       duration: Infinity,
     });
@@ -71,7 +71,7 @@ class StandUpAction extends AbstractAction {
     this.actor.movedSoFar += speed / 2;
 
     // TODO [MESSAGES] report this somehow
-    this.actor.removeEffect(Prone);
+    await this.actor.removeEffect(Prone);
   }
 }
 

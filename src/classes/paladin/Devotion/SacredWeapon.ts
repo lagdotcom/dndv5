@@ -51,7 +51,10 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
 
   async apply({ weapon }: HasWeapon) {
     super.apply({ weapon });
-    this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
+    await this.actor.addEffect(SacredWeaponEffect, {
+      duration: minutes(1),
+      weapon,
+    });
 
     // TODO The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that.
     // TODO You can end this effect on your turn as part of any other action.

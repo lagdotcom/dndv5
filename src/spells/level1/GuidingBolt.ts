@@ -1,15 +1,20 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
 const GuidingBoltEffect = new Effect("Guiding Bolt", "turnEnd", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+  g.events.on("BeforeAttack", ({ detail: { target, diceType, interrupt } }) => {
     if (target.hasEffect(GuidingBoltEffect)) {
       diceType.add("advantage", GuidingBoltEffect);
-      target.removeEffect(GuidingBoltEffect);
+      interrupt.add(
+        new EvaluateLater(target, GuidingBoltEffect, async () => {
+          await target.removeEffect(GuidingBoltEffect);
+        }),
+      );
     }
   });
 });
@@ -39,7 +44,7 @@ const GuidingBolt = scalingSpell<HasTarget>({
       const damage = await rsa.getDamage(target);
       await rsa.damage(target, damage);
 
-      target.addEffect(GuidingBoltEffect, { duration: 2 });
+      await target.addEffect(GuidingBoltEffect, { duration: 2 });
     }
   },
 });

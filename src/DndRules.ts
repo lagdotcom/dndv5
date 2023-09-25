@@ -98,6 +98,27 @@ export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
 });
 
+export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
+  g.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
+    if (who.exhaustion >= 1) diceType.add("disadvantage", ExhaustionRule);
+  });
+
+  g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+    if (who.exhaustion >= 2) multiplier.add("half", ExhaustionRule);
+    if (who.exhaustion >= 5) multiplier.add("zero", ExhaustionRule);
+  });
+
+  g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+    if (who.exhaustion >= 3) diceType.add("disadvantage", ExhaustionRule);
+  });
+  g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+    if (who.exhaustion >= 3) diceType.add("disadvantage", ExhaustionRule);
+  });
+
+  // TODO [GETMAXHP] exhaustion 4: half max hp
+  // TODO [DEATH] exhaustion 6: death
+});
+
 export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
   g.events.on(
     "BeforeAttack",

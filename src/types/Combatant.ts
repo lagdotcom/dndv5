@@ -1,3 +1,5 @@
+import EffectAddedEvent from "../events/EffectAddedEvent";
+import EffectRemovedEvent from "../events/EffectRemovedEvent";
 import AbilityName from "./AbilityName";
 import ACMethod from "./ACMethod";
 import Action from "./Action";
@@ -70,16 +72,17 @@ export default interface Combatant extends Source {
   time: Set<ActionTime>;
   conditions: Set<ConditionName>;
   attunements: Set<Item>;
-  movedSoFar: number;
+  readonly movedSoFar: number;
   attacksSoFar: Action[];
   effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
-  speed: number;
+  readonly speed: number;
   saveProficiencies: Set<AbilityName>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, number>;
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
+  readonly exhaustion: number;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;
@@ -100,9 +103,15 @@ export default interface Combatant extends Source {
   endConcentration(): Promise<void>;
   concentrateOn(entry: Concentration): Promise<void>;
   finalise(): void;
-  addEffect<T>(effect: EffectType<T>, config: EffectConfig<T>): void;
+  addEffect<T>(
+    effect: EffectType<T>,
+    config: EffectConfig<T>,
+  ): Promise<EffectAddedEvent<T>>;
   getEffectConfig<T>(effect: EffectType<T>): EffectConfig<T> | undefined;
   hasEffect<T>(effect: EffectType<T>): boolean;
-  removeEffect<T>(effect: EffectType<T>): void;
+  removeEffect<T>(
+    effect: EffectType<T>,
+  ): Promise<EffectRemovedEvent<T> | undefined>;
   tickEffects(durationTimer: EffectDurationTimer): void;
+  changeExhaustion(delta: number): Promise<number>;
 }

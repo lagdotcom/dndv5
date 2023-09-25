@@ -1,5 +1,6 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
@@ -7,12 +8,16 @@ import { getSaveDC } from "../../utils/dnd";
 import { getCantripDice, simpleSpell } from "../common";
 
 const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
-  g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+  g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
     if (who.hasEffect(MindSliverEffect)) {
-      who.removeEffect(MindSliverEffect);
-
       const { value } = g.dice.roll({ type: "bane", who });
       bonus.add(-value, MindSliver);
+
+      interrupt.add(
+        new EvaluateLater(who, MindSliverEffect, async () => {
+          who.removeEffect(MindSliverEffect);
+        }),
+      );
     }
   });
 });
@@ -64,14 +69,18 @@ const MindSliver = simpleSpell<HasTarget>({
       let endCounter = 2;
       const removeTurnTracker = g.events.on(
         "TurnEnded",
-        ({ detail: { who } }) => {
+        ({ detail: { who, interrupt } }) => {
           if (who === attacker && endCounter-- <= 0) {
             removeTurnTracker();
-            target.removeEffect(MindSliverEffect);
+            interrupt.add(
+              new EvaluateLater(who, MindSliver, async () => {
+                await target.removeEffect(MindSliverEffect);
+              }),
+            );
           }
         },
       );
-      target.addEffect(MindSliverEffect, { duration: 2 });
+      await target.addEffect(MindSliverEffect, { duration: 2 });
     }
   },
 });

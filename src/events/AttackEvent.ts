@@ -1,3 +1,4 @@
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import { AttackRoll } from "../types/RollType";
 import { BeforeAttackDetail } from "./BeforeAttackEvent";
 import { DiceRolledDetail } from "./DiceRolledEvent";
@@ -9,6 +10,7 @@ export interface AttackDetail {
   ac: number;
   outcome: "critical" | "hit" | "miss";
   forced: boolean;
+  interrupt: InterruptionCollector;
 }
 
 export default class AttackEvent extends CustomEvent<AttackDetail> {

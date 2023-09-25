@@ -45,14 +45,14 @@ const IntellectFortress = scalingSpell<HasTargets>({
     const duration = hours(1);
 
     for (const target of targets)
-      target.addEffect(IntellectFortressEffect, { duration });
+      await target.addEffect(IntellectFortressEffect, { duration });
 
     caster.concentrateOn({
       spell: IntellectFortress,
       duration,
       async onSpellEnd() {
         for (const target of targets)
-          target.removeEffect(IntellectFortressEffect);
+          await target.removeEffect(IntellectFortressEffect);
       },
     });
   },

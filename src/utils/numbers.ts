@@ -32,3 +32,7 @@ export function ordinal(n: number) {
       return `${n}th`;
   }
 }
+
+export function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(n, min));
+}

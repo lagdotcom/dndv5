@@ -405,7 +405,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(_DashAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(DashEffect, { duration: 1 });
+        yield this.actor.addEffect(DashEffect, { duration: 1 });
       });
     }
   };
@@ -420,7 +420,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(_DisengageAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(DisengageEffect, { duration: 1 });
+        yield this.actor.addEffect(DisengageEffect, { duration: 1 });
       });
     }
   };
@@ -446,7 +446,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(_DodgeAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(DodgeEffect, { duration: 1 });
+        yield this.actor.addEffect(DodgeEffect, { duration: 1 });
       });
     }
   };
@@ -578,6 +578,13 @@
   var EffectRemovedEvent = class extends CustomEvent {
     constructor(detail) {
       super("EffectRemoved", { detail });
+    }
+  };
+
+  // src/events/ExhaustionEvent.ts
+  var ExhaustionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Exhaustion", { detail });
     }
   };
 
@@ -817,6 +824,9 @@
       default:
         return `${n}th`;
     }
+  }
+  function clamp(n, min, max) {
+    return Math.min(max, Math.max(n, min));
   }
 
   // src/MapSquare.ts
@@ -1237,6 +1247,7 @@
       this.spellcastingMethods = /* @__PURE__ */ new Set();
       this.naturalAC = naturalAC;
       this.damageResponses = /* @__PURE__ */ new Map();
+      this.exhaustion = 0;
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -1423,8 +1434,17 @@
         spellImplementationWarning(spell, this);
     }
     addEffect(effect, config) {
-      this.effects.set(effect, config);
-      this.g.fire(new EffectAddedEvent({ who: this, effect, config }));
+      return __async(this, null, function* () {
+        this.effects.set(effect, config);
+        return yield this.g.resolve(
+          new EffectAddedEvent({
+            who: this,
+            effect,
+            config,
+            interrupt: new InterruptionCollector()
+          })
+        );
+      });
     }
     getEffectConfig(effect) {
       return this.effects.get(effect);
@@ -1433,17 +1453,28 @@
       return this.effects.has(effect);
     }
     removeEffect(effect) {
-      const config = this.getEffectConfig(effect);
-      if (config) {
-        this.effects.delete(effect);
-        this.g.fire(new EffectRemovedEvent({ who: this, effect, config }));
-      }
+      return __async(this, null, function* () {
+        const config = this.getEffectConfig(effect);
+        if (config) {
+          this.effects.delete(effect);
+          return yield this.g.resolve(
+            new EffectRemovedEvent({
+              who: this,
+              effect,
+              config,
+              interrupt: new InterruptionCollector()
+            })
+          );
+        }
+      });
     }
     tickEffects(durationTimer) {
-      for (const [effect, config] of this.effects) {
-        if (effect.durationTimer === durationTimer && --config.duration < 1)
-          this.removeEffect(effect);
-      }
+      return __async(this, null, function* () {
+        for (const [effect, config] of this.effects) {
+          if (effect.durationTimer === durationTimer && --config.duration < 1)
+            yield this.removeEffect(effect);
+        }
+      });
     }
     addKnownSpells(...spells) {
       for (const spell of spells)
@@ -1454,6 +1485,23 @@
         this.knownSpells.add(spell);
         this.preparedSpells.add(spell);
       }
+    }
+    changeExhaustion(delta) {
+      return __async(this, null, function* () {
+        const old = this.exhaustion;
+        const value = clamp(this.exhaustion + delta, 0, 6);
+        const e = new ExhaustionEvent({
+          who: this,
+          old,
+          delta,
+          value,
+          interrupt: new InterruptionCollector()
+        });
+        yield this.g.resolve(e);
+        if (!e.defaultPrevented)
+          this.exhaustion = value;
+        return this.exhaustion;
+      });
     }
   };
 
@@ -1522,7 +1570,7 @@
     apply() {
       return __async(this, null, function* () {
         __superGet(_DropProneAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(Prone, {
+        yield this.actor.addEffect(Prone, {
           conditions: coSet("Prone"),
           duration: Infinity
         });
@@ -1548,7 +1596,7 @@
         __superGet(_StandUpAction.prototype, this, "apply").call(this, {});
         const speed = this.actor.speed;
         this.actor.movedSoFar += speed / 2;
-        this.actor.removeEffect(Prone);
+        yield this.actor.removeEffect(Prone);
       });
     }
   };
@@ -1591,7 +1639,7 @@
       return __async(this, null, function* () {
         __superGet(_AbstractAttackAction.prototype, this, "apply").call(this, config);
         this.actor.attacksSoFar.push(this);
-        this.actor.addEffect(UsedAttackAction, { duration: 1 });
+        yield this.actor.addEffect(UsedAttackAction, { duration: 1 });
       });
     }
   };
@@ -1807,6 +1855,26 @@
       ({ detail: { who } }) => who.tickEffects("turnStart")
     );
     g2.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
+  });
+  var ExhaustionRule = new DndRule("Exhaustion", (g2) => {
+    g2.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
+      if (who.exhaustion >= 1)
+        diceType.add("disadvantage", ExhaustionRule);
+    });
+    g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.exhaustion >= 2)
+        multiplier.add("half", ExhaustionRule);
+      if (who.exhaustion >= 5)
+        multiplier.add("zero", ExhaustionRule);
+    });
+    g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+      if (who.exhaustion >= 3)
+        diceType.add("disadvantage", ExhaustionRule);
+    });
+    g2.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+      if (who.exhaustion >= 3)
+        diceType.add("disadvantage", ExhaustionRule);
+    });
   });
   var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g2) => {
     g2.events.on(
@@ -2224,14 +2292,15 @@
         const diceType = new DiceTypeCollector();
         const saveDamageResponse = new SaveDamageResponseCollector(save);
         const failDamageResponse = new SaveDamageResponseCollector(fail);
-        const pre = this.fire(
+        const pre = yield this.resolve(
           new BeforeSaveEvent(__spreadProps(__spreadValues({}, e), {
             dc,
             bonus,
             diceType,
             successResponse,
             saveDamageResponse,
-            failDamageResponse
+            failDamageResponse,
+            interrupt: new InterruptionCollector()
           }))
         );
         let forced = false;
@@ -2441,7 +2510,7 @@
         if (target.hp <= 0) {
           if (target.diesAtZero) {
             this.combatants.delete(target);
-            target.addEffect(Dead, { duration: Infinity });
+            yield target.addEffect(Dead, { duration: Infinity });
             this.fire(new CombatantDiedEvent({ who: target, attacker }));
           } else {
           }
@@ -2471,15 +2540,16 @@
           pre.detail.diceType.result
         );
         const total = roll.value + pre.detail.bonus.result;
-        const attack = this.fire(
+        const attack = yield this.resolve(
           new AttackEvent({
             pre: pre.detail,
             roll,
             total,
             ac,
             outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= ac ? "hit" : "miss",
-            forced: false
+            forced: false,
             // TODO
+            interrupt: new InterruptionCollector()
           })
         );
         const { outcome } = attack.detail;
@@ -3418,9 +3488,13 @@
         if (target.hasEffect(WreathedInShadowEffect))
           diceType.add("disadvantage", WreathedInShadowEffect);
       });
-      g2.events.on("CombatantDamaged", ({ detail: { who, total } }) => {
+      g2.events.on("CombatantDamaged", ({ detail: { who, total, interrupt } }) => {
         if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
-          who.removeEffect(WreathedInShadowEffect);
+          interrupt.add(
+            new EvaluateLater(who, WreathedInShadowEffect, () => __async(void 0, null, function* () {
+              yield who.removeEffect(WreathedInShadowEffect);
+            }))
+          );
       });
     }
   );
@@ -3428,10 +3502,14 @@
     "Wreathed in Shadow",
     "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
     (g2, me) => {
-      me.addEffect(WreathedInShadowEffect, { duration: Infinity });
-      g2.events.on("TurnStarted", ({ detail: { who } }) => {
+      void me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+      g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
         if (who === me && !who.hasEffect(WreathedInShadowEffect))
-          who.addEffect(WreathedInShadowEffect, { duration: Infinity });
+          interrupt.add(
+            new EvaluateLater(who, WreathedInShadow, () => __async(void 0, null, function* () {
+              yield who.addEffect(WreathedInShadowEffect, { duration: Infinity });
+            }))
+          );
       });
     }
   );
@@ -3508,10 +3586,14 @@
 
   // src/spells/level1/GuidingBolt.ts
   var GuidingBoltEffect = new Effect("Guiding Bolt", "turnEnd", (g2) => {
-    g2.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+    g2.events.on("BeforeAttack", ({ detail: { target, diceType, interrupt } }) => {
       if (target.hasEffect(GuidingBoltEffect)) {
         diceType.add("advantage", GuidingBoltEffect);
-        target.removeEffect(GuidingBoltEffect);
+        interrupt.add(
+          new EvaluateLater(target, GuidingBoltEffect, () => __async(void 0, null, function* () {
+            yield target.removeEffect(GuidingBoltEffect);
+          }))
+        );
       }
     });
   });
@@ -3537,7 +3619,7 @@
         if ((yield rsa.attack(target)).hit) {
           const damage = yield rsa.getDamage(target);
           yield rsa.damage(target, damage);
-          target.addEffect(GuidingBoltEffect, { duration: 2 });
+          yield target.addEffect(GuidingBoltEffect, { duration: 2 });
         }
       });
     }
@@ -3696,7 +3778,10 @@
           who: target
         });
         if (outcome === "fail")
-          target.addEffect(ShieldBashEffect, { duration: 1 });
+          yield target.addEffect(ShieldBashEffect, {
+            conditions: coSet("Stunned"),
+            duration: 1
+          });
       });
     }
   };
@@ -4046,9 +4131,13 @@ The amount of the extra damage increases as you gain levels in this class, as sh
       if (who.hasEffect(SteadyAimAdvantageEffect))
         diceType.add("advantage", SteadyAimAdvantageEffect);
     });
-    g2.events.on("Attack", ({ detail: { pre } }) => {
+    g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
       if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
-        pre.who.removeEffect(SteadyAimAdvantageEffect);
+        interrupt.add(
+          new EvaluateLater(pre.who, SteadyAimAdvantageEffect, () => __async(void 0, null, function* () {
+            yield pre.who.removeEffect(SteadyAimAdvantageEffect);
+          }))
+        );
     });
   });
   var SteadyAimAction = class _SteadyAimAction extends AbstractAction {
@@ -4063,8 +4152,8 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     apply() {
       return __async(this, null, function* () {
         __superGet(_SteadyAimAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
-        this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
+        yield this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
+        yield this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
       });
     }
   };
@@ -5383,7 +5472,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             tags: coSet("Incapacitated")
           });
           if (!save)
-            target.addEffect(EnervatingBreathEffect, {
+            yield target.addEffect(EnervatingBreathEffect, {
               conditions: coSet("Incapacitated"),
               duration: 2
             });
@@ -5559,11 +5648,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/cantrip/MindSliver.ts
   var MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g2) => {
-    g2.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+    g2.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
       if (who.hasEffect(MindSliverEffect)) {
-        who.removeEffect(MindSliverEffect);
         const { value } = g2.dice.roll({ type: "bane", who });
         bonus.add(-value, MindSliver);
+        interrupt.add(
+          new EvaluateLater(who, MindSliverEffect, () => __async(void 0, null, function* () {
+            who.removeEffect(MindSliverEffect);
+          }))
+        );
       }
     });
   });
@@ -5611,14 +5704,18 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           let endCounter = 2;
           const removeTurnTracker = g2.events.on(
             "TurnEnded",
-            ({ detail: { who } }) => {
+            ({ detail: { who, interrupt } }) => {
               if (who === attacker && endCounter-- <= 0) {
                 removeTurnTracker();
-                target.removeEffect(MindSliverEffect);
+                interrupt.add(
+                  new EvaluateLater(who, MindSliver, () => __async(this, null, function* () {
+                    yield target.removeEffect(MindSliverEffect);
+                  }))
+                );
               }
             }
           );
-          target.addEffect(MindSliverEffect, { duration: 2 });
+          yield target.addEffect(MindSliverEffect, { duration: 2 });
         }
       });
     }
@@ -5651,7 +5748,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if ((yield rsa.attack(target)).hit) {
           const damage = yield rsa.getDamage(target);
           yield rsa.damage(target, damage);
-          target.addEffect(RayOfFrostEffect, { duration: 2 });
+          yield target.addEffect(RayOfFrostEffect, { duration: 2 });
         }
       });
     }
@@ -5857,7 +5954,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               tags: svSet("Paralyzed")
             });
             if (save.outcome === "success") {
-              who.removeEffect(HoldPersonEffect);
+              yield who.removeEffect(HoldPersonEffect);
               config.affected.delete(who);
             }
           }))
@@ -5896,7 +5993,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             tags: coSet("Paralyzed")
           });
           if (save.outcome === "fail") {
-            target.addEffect(HoldPersonEffect, {
+            yield target.addEffect(HoldPersonEffect, {
               affected,
               caster,
               method,
@@ -5912,7 +6009,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           onSpellEnd() {
             return __async(this, null, function* () {
               for (const target of affected)
-                target.removeEffect(HoldPersonEffect);
+                yield target.removeEffect(HoldPersonEffect);
             });
           }
         });
@@ -6171,14 +6268,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
         const duration = hours(1);
         for (const target of targets)
-          target.addEffect(IntellectFortressEffect, { duration });
+          yield target.addEffect(IntellectFortressEffect, { duration });
         caster.concentrateOn({
           spell: IntellectFortress,
           duration,
           onSpellEnd() {
             return __async(this, null, function* () {
               for (const target of targets)
-                target.removeEffect(IntellectFortressEffect);
+                yield target.removeEffect(IntellectFortressEffect);
             });
           }
         });
@@ -6688,13 +6785,13 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = minutes(10);
-        target.addEffect(ProtectionEffect, { duration });
+        yield target.addEffect(ProtectionEffect, { duration });
         yield caster.concentrateOn({
           spell: ProtectionFromEvilAndGood,
           duration,
           onSpellEnd() {
             return __async(this, null, function* () {
-              target.removeEffect(ProtectionEffect);
+              yield target.removeEffect(ProtectionEffect);
             });
           }
         });
@@ -6719,7 +6816,11 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        target.addEffect(SanctuaryEffect, { caster, method, duration: minutes(1) });
+        yield target.addEffect(SanctuaryEffect, {
+          caster,
+          method,
+          duration: minutes(1)
+        });
       });
     }
   });
@@ -6766,7 +6867,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     },
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target, effect }) {
-        target.removeEffect(effect);
+        yield target.removeEffect(effect);
       });
     }
   });
@@ -6810,7 +6911,10 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     apply(_0) {
       return __async(this, arguments, function* ({ weapon }) {
         __superGet(_SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
-        this.actor.addEffect(SacredWeaponEffect, { duration: minutes(1), weapon });
+        yield this.actor.addEffect(SacredWeaponEffect, {
+          duration: minutes(1),
+          weapon
+        });
       });
     }
   };
@@ -6950,13 +7054,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
         const duration = minutes(1);
         for (const target of targets)
-          target.addEffect(BlessEffect, { duration });
+          yield target.addEffect(BlessEffect, { duration });
         yield caster.concentrateOn({
           spell: Bless,
           duration,
           onSpellEnd: () => __async(this, null, function* () {
             for (const target of targets)
-              target.removeEffect(BlessEffect);
+              yield target.removeEffect(BlessEffect);
           })
         });
       });
@@ -7005,13 +7109,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
     apply(g2, caster) {
       return __async(this, null, function* () {
         const duration = minutes(1);
-        caster.addEffect(DivineFavorEffect, { duration });
+        yield caster.addEffect(DivineFavorEffect, { duration });
         yield caster.concentrateOn({
           spell: DivineFavor,
           duration,
           onSpellEnd() {
             return __async(this, null, function* () {
-              caster.removeEffect(DivineFavorEffect);
+              yield caster.removeEffect(DivineFavorEffect);
             });
           }
         });
@@ -7041,12 +7145,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        target.addEffect(ShieldOfFaithEffect, { duration: minutes(10) });
+        yield target.addEffect(ShieldOfFaithEffect, { duration: minutes(10) });
         caster.concentrateOn({
           spell: ShieldOfFaith,
           duration: minutes(10),
           onSpellEnd: () => __async(this, null, function* () {
-            return target.removeEffect(ShieldOfFaithEffect);
+            yield target.removeEffect(ShieldOfFaithEffect);
           })
         });
       });
@@ -7134,7 +7238,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     apply() {
       return __async(this, null, function* () {
         __superGet(_EndRageAction.prototype, this, "apply").call(this, {});
-        this.actor.removeEffect(RageEffect);
+        yield this.actor.removeEffect(RageEffect);
       });
     }
   };
@@ -7142,6 +7246,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
     var _a;
     return who.hasEffect(RageEffect) && ((_a = who.armor) == null ? void 0 : _a.category) !== "heavy";
   }
+  var DidAttackTag = new Effect("(Attacked)", "turnStart", void 0, true);
+  var TookDamageTag = new Effect("(Damaged)", "turnEnd", void 0, true);
   var RageEffect = new Effect("Rage", "turnStart", (g2) => {
     g2.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
       if (isRaging(who) && ability === "str")
@@ -7173,6 +7279,47 @@ Once you use this feature, you can't use it again until you finish a long rest.
       if (action.actor.hasEffect(RageEffect) && action.isSpell)
         error.add("cannot cast spells", RageEffect);
     });
+    g2.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
+      if (isRaging(who) && who.conditions.has("Unconscious"))
+        interrupt.add(
+          new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
+            yield who.removeEffect(RageEffect);
+          }))
+        );
+    });
+    g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+      if (isRaging(pre.who) && pre.who.side !== pre.target.side)
+        interrupt.add(
+          new EvaluateLater(pre.who, RageEffect, () => __async(void 0, null, function* () {
+            yield pre.who.addEffect(DidAttackTag, { duration: Infinity });
+          }))
+        );
+    });
+    g2.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+      if (isRaging(who))
+        interrupt.add(
+          new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
+            yield who.addEffect(TookDamageTag, { duration: Infinity });
+          }))
+        );
+    });
+    g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+      if (isRaging(who)) {
+        if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
+          interrupt.add(
+            new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
+              yield who.removeEffect(RageEffect);
+            }))
+          );
+        else
+          interrupt.add(
+            new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
+              yield who.removeEffect(DidAttackTag);
+              yield who.removeEffect(TookDamageTag);
+            }))
+          );
+      }
+    });
     g2.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who.hasEffect(RageEffect))
         actions.push(new EndRageAction(g2, who));
@@ -7192,7 +7339,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     apply() {
       return __async(this, null, function* () {
         __superGet(_RageAction.prototype, this, "apply").call(this, {});
-        this.actor.addEffect(RageEffect, { duration: minutes(1) });
+        yield this.actor.addEffect(RageEffect, { duration: minutes(1) });
         yield this.actor.endConcentration();
       });
     }
@@ -7259,7 +7406,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
                 "Reckless Attack",
                 `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
                 () => __async(void 0, null, function* () {
-                  me.addEffect(RecklessAttackEffect, { duration: 1 });
+                  yield me.addEffect(RecklessAttackEffect, { duration: 1 });
                   if (canBeReckless(who, tags, ability))
                     diceType.add("advantage", RecklessAttackEffect);
                 })
@@ -7471,6 +7618,16 @@ Each time you use this feature after the first, the DC increases by 5. When you 
         }
       }
     });
+    g2.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
+      if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
+        interrupt.add(
+          new EvaluateLater(who, FrenzyEffect, () => __async(void 0, null, function* () {
+            yield who.removeEffect(FrenzyEffect);
+            yield who.changeExhaustion(1);
+          }))
+        );
+      }
+    });
   });
   var Frenzy = new SimpleFeature(
     "Frenzy",
@@ -7485,7 +7642,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
               "Frenzy",
               `Should ${me.name} enter a Frenzy?`,
               () => __async(void 0, null, function* () {
-                me.addEffect(FrenzyEffect, { duration: minutes(1) });
+                yield me.addEffect(FrenzyEffect, { duration: minutes(1) });
               })
             )
           );
@@ -7766,13 +7923,13 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     apply(g2, caster) {
       return __async(this, null, function* () {
         const duration = minutes(1);
-        caster.addEffect(BlurEffect, { duration });
+        yield caster.addEffect(BlurEffect, { duration });
         yield caster.concentrateOn({
           spell: Blur,
           duration,
           onSpellEnd() {
             return __async(this, null, function* () {
-              caster.removeEffect(BlurEffect);
+              yield caster.removeEffect(BlurEffect);
             });
           }
         });
@@ -8146,13 +8303,13 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = hours(1);
-        target.addEffect(StoneskinEffect, { duration });
+        yield target.addEffect(StoneskinEffect, { duration });
         yield caster.concentrateOn({
           spell: Stoneskin,
           duration,
           onSpellEnd() {
             return __async(this, null, function* () {
-              target.removeEffect(StoneskinEffect);
+              yield target.removeEffect(StoneskinEffect);
             });
           }
         });
@@ -9858,6 +10015,15 @@ The creature is aware of this effect before it makes its attack against you.`
       "."
     ] });
   }
+  function ExhaustionMessage({ who, value }) {
+    const amount = value ? `${value}` : "no";
+    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} now has ${amount} exhaustion.`, children: [
+      /* @__PURE__ */ o(CombatantRef, { who }),
+      " now has ",
+      amount,
+      " exhaustion."
+    ] });
+  }
   function EventLog({ g: g2 }) {
     const ref = (0, import_hooks9.useRef)(null);
     const [messages, setMessages] = (0, import_hooks9.useState)([]);
@@ -9916,6 +10082,10 @@ The creature is aware of this effect before it makes its attack against you.`
       g2.events.on(
         "Save",
         ({ detail }) => addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)))
+      );
+      g2.events.on(
+        "Exhaustion",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(ExhaustionMessage, __spreadValues({}, detail)))
       );
     }, [addMessage, g2]);
     return /* @__PURE__ */ o("div", { className: EventLog_module_default.container, children: [

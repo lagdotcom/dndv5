@@ -35,7 +35,7 @@ const HoldPersonEffect = new Effect<{
           });
 
           if (save.outcome === "success") {
-            who.removeEffect(HoldPersonEffect);
+            await who.removeEffect(HoldPersonEffect);
             config.affected.delete(who);
             // TODO [CONCENTRATION] stop concentrating if affected is empty
           }
@@ -82,7 +82,7 @@ const HoldPerson = scalingSpell<HasTargets>({
       });
 
       if (save.outcome === "fail") {
-        target.addEffect(HoldPersonEffect, {
+        await target.addEffect(HoldPersonEffect, {
           affected,
           caster,
           method,
@@ -97,7 +97,8 @@ const HoldPerson = scalingSpell<HasTargets>({
       spell: HoldPerson,
       duration,
       async onSpellEnd() {
-        for (const target of affected) target.removeEffect(HoldPersonEffect);
+        for (const target of affected)
+          await target.removeEffect(HoldPersonEffect);
       },
     });
   },

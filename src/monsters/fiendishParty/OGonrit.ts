@@ -15,6 +15,7 @@ import GuidingBolt from "../../spells/level1/GuidingBolt";
 import MassHealingWord from "../../spells/level3/MassHealingWord";
 import AbilityName from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
+import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { distance } from "../../utils/units";
@@ -87,7 +88,11 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       who: target,
     });
 
-    if (outcome === "fail") target.addEffect(ShieldBashEffect, { duration: 1 });
+    if (outcome === "fail")
+      await target.addEffect(ShieldBashEffect, {
+        conditions: coSet("Stunned"),
+        duration: 1,
+      });
   }
 }
 

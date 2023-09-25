@@ -129,8 +129,8 @@ export async function doStandardAttack(
       },
       baseDamage,
     );
-    return { type: "hit", attack: e, damage: e2 };
+    return { type: "hit", attack: e, damage: e2 } as const;
   }
 
-  return { type: "miss", attack: e };
+  return { type: "miss", attack: e } as const;
 }

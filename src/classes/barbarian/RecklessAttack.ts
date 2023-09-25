@@ -52,7 +52,7 @@ export const RecklessAttack = new SimpleFeature(
               "Reckless Attack",
               `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
               async () => {
-                me.addEffect(RecklessAttackEffect, { duration: 1 });
+                await me.addEffect(RecklessAttackEffect, { duration: 1 });
 
                 // need this because the Effect handler happens first
                 if (canBeReckless(who, tags, ability))

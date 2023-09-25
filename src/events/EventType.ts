@@ -17,6 +17,7 @@ import CombatantPlacedEvent from "./CombatantPlacedEvent";
 import DiceRolledEvent from "./DiceRolledEvent";
 import EffectAddedEvent from "./EffectAddedEvent";
 import EffectRemovedEvent from "./EffectRemovedEvent";
+import ExhaustionEvent from "./ExhaustionEvent";
 import GatherDamageEvent from "./GatherDamageEvent";
 import GatherHealEvent from "./GatherHealEvent";
 import GetACEvent from "./GetACEvent";
@@ -55,6 +56,7 @@ export type EventTypes = {
   DiceRolled: DiceRolledEvent;
   EffectAdded: EffectAddedEvent;
   EffectRemoved: EffectRemovedEvent;
+  Exhaustion: ExhaustionEvent;
   GatherDamage: GatherDamageEvent;
   GatherHeal: GatherHealEvent;
   GetAC: GetACEvent;

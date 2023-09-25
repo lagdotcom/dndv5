@@ -1,5 +1,6 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import SaveDamageResponseCollector from "../collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import AbilityName from "../types/AbilityName";
@@ -21,6 +22,7 @@ export interface BeforeSaveDetail {
   spell?: Spell;
   method?: SpellcastingMethod;
   tags: Set<SaveTag>;
+  interrupt: InterruptionCollector;
 }
 
 export default class BeforeSaveEvent extends CustomEvent<BeforeSaveDetail> {

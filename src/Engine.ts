@@ -163,7 +163,7 @@ export default class Engine {
     const saveDamageResponse = new SaveDamageResponseCollector(save);
     const failDamageResponse = new SaveDamageResponseCollector(fail);
 
-    const pre = this.fire(
+    const pre = await this.resolve(
       new BeforeSaveEvent({
         ...e,
         dc,
@@ -172,6 +172,7 @@ export default class Engine {
         successResponse,
         saveDamageResponse,
         failDamageResponse,
+        interrupt: new InterruptionCollector(),
       }),
     );
 
@@ -416,7 +417,7 @@ export default class Engine {
     if (target.hp <= 0) {
       if (target.diesAtZero) {
         this.combatants.delete(target);
-        target.addEffect(Dead, { duration: Infinity });
+        await target.addEffect(Dead, { duration: Infinity });
         this.fire(new CombatantDiedEvent({ who: target, attacker }));
       } else {
         // TODO [DYING]
@@ -453,7 +454,7 @@ export default class Engine {
 
     const total = roll.value + pre.detail.bonus.result;
 
-    const attack = this.fire(
+    const attack = await this.resolve(
       new AttackEvent({
         pre: pre.detail,
         roll,
@@ -468,6 +469,7 @@ export default class Engine {
             ? "hit"
             : "miss",
         forced: false, // TODO
+        interrupt: new InterruptionCollector(),
       }),
     );
     const { outcome } = attack.detail;

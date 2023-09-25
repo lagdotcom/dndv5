@@ -3,6 +3,7 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import Combatant from "../../types/Combatant";
 
 const SteadyAimNoMoveEffect = new Effect(
@@ -23,9 +24,13 @@ const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
       diceType.add("advantage", SteadyAimAdvantageEffect);
   });
 
-  g.events.on("Attack", ({ detail: { pre } }) => {
+  g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
     if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
-      pre.who.removeEffect(SteadyAimAdvantageEffect);
+      interrupt.add(
+        new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
+          await pre.who.removeEffect(SteadyAimAdvantageEffect);
+        }),
+      );
   });
 });
 
@@ -43,8 +48,8 @@ class SteadyAimAction extends AbstractAction {
   async apply() {
     super.apply({});
 
-    this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
-    this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
+    await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
+    await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
   }
 }
 

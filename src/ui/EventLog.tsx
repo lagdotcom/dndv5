@@ -10,6 +10,7 @@ import { CombatantHealedDetail } from "../events/CombatantHealedEvent";
 import { DiceRolledDetail } from "../events/DiceRolledEvent";
 import { EffectAddedDetail } from "../events/EffectAddedEvent";
 import { EffectRemovedDetail } from "../events/EffectRemovedEvent";
+import { ExhaustionDetail } from "../events/ExhaustionEvent";
 import { SaveEventDetail } from "../events/SaveEvent";
 import { SpellCastDetail } from "../events/SpellCastEvent";
 import DamageBreakdown from "../types/DamageBreakdown";
@@ -187,6 +188,16 @@ function HealedMessage({ who, amount, fullAmount }: CombatantHealedDetail) {
   );
 }
 
+function ExhaustionMessage({ who, value }: ExhaustionDetail) {
+  const amount = value ? `${value}` : "no";
+
+  return (
+    <LogMessage message={`${who.name} now has ${amount} exhaustion.`}>
+      <CombatantRef who={who} /> now has {amount} exhaustion.
+    </LogMessage>
+  );
+}
+
 export default function EventLog({ g }: { g: Engine }) {
   const ref = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<VNode[]>([]);
@@ -237,6 +248,9 @@ export default function EventLog({ g }: { g: Engine }) {
     );
     g.events.on("Save", ({ detail }) =>
       addMessage(<SaveMessage {...detail} />),
+    );
+    g.events.on("Exhaustion", ({ detail }) =>
+      addMessage(<ExhaustionMessage {...detail} />),
     );
   }, [addMessage, g]);
 

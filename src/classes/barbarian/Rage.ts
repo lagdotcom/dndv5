@@ -3,6 +3,7 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
@@ -39,13 +40,16 @@ class EndRageAction extends AbstractAction {
 
   async apply() {
     super.apply({});
-    this.actor.removeEffect(RageEffect);
+    await this.actor.removeEffect(RageEffect);
   }
 }
 
 function isRaging(who: Combatant) {
   return who.hasEffect(RageEffect) && who.armor?.category !== "heavy";
 }
+
+const DidAttackTag = new Effect("(Attacked)", "turnStart", undefined, true);
+const TookDamageTag = new Effect("(Damaged)", "turnEnd", undefined, true);
 
 export const RageEffect = new Effect("Rage", "turnStart", (g) => {
   // You have advantage on Strength checks and Strength saving throws.
@@ -89,7 +93,50 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
       error.add("cannot cast spells", RageEffect);
   });
 
-  // TODO [CONDITIONREACTION] It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
+  // It ends early if you are knocked unconscious
+  g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
+    if (isRaging(who) && who.conditions.has("Unconscious"))
+      interrupt.add(
+        new EvaluateLater(who, RageEffect, async () => {
+          await who.removeEffect(RageEffect);
+        }),
+      );
+  });
+
+  // ...or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
+  g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+    if (isRaging(pre.who) && pre.who.side !== pre.target.side)
+      interrupt.add(
+        new EvaluateLater(pre.who, RageEffect, async () => {
+          await pre.who.addEffect(DidAttackTag, { duration: Infinity });
+        }),
+      );
+  });
+  g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+    if (isRaging(who))
+      interrupt.add(
+        new EvaluateLater(who, RageEffect, async () => {
+          await who.addEffect(TookDamageTag, { duration: Infinity });
+        }),
+      );
+  });
+  g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+    if (isRaging(who)) {
+      if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
+        interrupt.add(
+          new EvaluateLater(who, RageEffect, async () => {
+            await who.removeEffect(RageEffect);
+          }),
+        );
+      else
+        interrupt.add(
+          new EvaluateLater(who, RageEffect, async () => {
+            await who.removeEffect(DidAttackTag);
+            await who.removeEffect(TookDamageTag);
+          }),
+        );
+    }
+  });
 
   g.events.on("GetActions", ({ detail: { who, actions } }) => {
     if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
@@ -110,7 +157,7 @@ export class RageAction extends AbstractAction {
 
   async apply() {
     super.apply({});
-    this.actor.addEffect(RageEffect, { duration: minutes(1) });
+    await this.actor.addEffect(RageEffect, { duration: minutes(1) });
     await this.actor.endConcentration();
   }
 }

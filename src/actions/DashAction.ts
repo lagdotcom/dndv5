@@ -22,6 +22,6 @@ export default class DashAction extends AbstractAction {
 
   async apply(): Promise<void> {
     super.apply({});
-    this.actor.addEffect(DashEffect, { duration: 1 });
+    await this.actor.addEffect(DashEffect, { duration: 1 });
   }
 }

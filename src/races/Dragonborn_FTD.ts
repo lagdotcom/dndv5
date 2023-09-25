@@ -154,7 +154,7 @@ class EnervatingBreathAction extends MetallicBreathAction {
       });
 
       if (!save)
-        target.addEffect(EnervatingBreathEffect, {
+        await target.addEffect(EnervatingBreathEffect, {
           conditions: coSet("Incapacitated"),
           duration: 2,
         });
