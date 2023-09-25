@@ -5,6 +5,7 @@ import AreaRemovedEvent from "./AreaRemovedEvent";
 import AttackEvent from "./AttackEvent";
 import BeforeAttackEvent from "./BeforeAttackEvent";
 import BeforeCheckEvent from "./BeforeCheckEvent";
+import BeforeEffectEvent from "./BeforeEffectEvent";
 import BeforeMoveEvent from "./BeforeMoveEvent";
 import BeforeSaveEvent from "./BeforeSaveEvent";
 import BoundedMoveEvent from "./BoundedMoveEvent";
@@ -44,6 +45,7 @@ export type EventTypes = {
   Attack: AttackEvent;
   BeforeAttack: BeforeAttackEvent;
   BeforeCheck: BeforeCheckEvent;
+  BeforeEffect: BeforeEffectEvent;
   BeforeMove: BeforeMoveEvent;
   BeforeSave: BeforeSaveEvent;
   BoundedMove: BoundedMoveEvent;

@@ -42,7 +42,7 @@ const Bless = scalingSpell<HasTargets>({
   async apply(g, caster, method, { targets }) {
     const duration = minutes(1);
     for (const target of targets)
-      await target.addEffect(BlessEffect, { duration });
+      await target.addEffect(BlessEffect, { duration }, caster);
 
     await caster.concentrateOn({
       spell: Bless,

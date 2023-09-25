@@ -107,7 +107,14 @@ const MindlessRage = new SimpleFeature(
       }
     });
 
-    // TODO [CANCELEFFECT] can't be charmed or frightened while raging
+    g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
+      if (
+        who.hasEffect(RageEffect) &&
+        (config.conditions?.has("Charmed") ||
+          config.conditions?.has("Frightened"))
+      )
+        success.add("fail", MindlessRage);
+    });
   },
 );
 

@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
@@ -92,10 +93,11 @@ export default class CastSpell<T extends object> implements Action<T> {
         level: spell.getLevel(config),
         targets: new Set(spell.getTargets(g, actor, config)),
         interrupt: new InterruptionCollector(),
+        success: new SuccessResponseCollector(),
       }),
     );
     // TODO [MESSAGES] report this somehow
-    if (sc.defaultPrevented) return;
+    if (sc.detail.success.result === "fail") return;
 
     // TODO use sc.detail.targets ?
     return spell.apply(g, actor, method, config);

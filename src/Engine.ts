@@ -149,9 +149,9 @@ export default class Engine {
     return roll.value + gi.detail.bonus.result;
   }
 
-  async savingThrow(
+  async savingThrow<T = object>(
     dc: number,
-    e: Omit<SavingThrow, "dc" | "type">,
+    e: Omit<SavingThrow<T>, "dc" | "type">,
     { save, fail }: { save: SaveDamageResponse; fail: SaveDamageResponse } = {
       save: "half",
       fail: "normal",
@@ -308,9 +308,11 @@ export default class Engine {
         type,
         error,
         interrupt: new InterruptionCollector(),
+        success: new SuccessResponseCollector(),
       }),
     );
-    if (pre.defaultPrevented) return { type: "prevented" as const };
+    if (pre.detail.success.result === "fail")
+      return { type: "prevented" as const };
     if (!error.result) return { type: "error" as const, error };
 
     const multiplier = new MultiplierCollector();
@@ -426,7 +428,7 @@ export default class Engine {
   }
 
   async attack(
-    e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt">,
+    e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt" | "success">,
   ) {
     const pre = await this.resolve(
       new BeforeAttackEvent({
@@ -434,9 +436,10 @@ export default class Engine {
         diceType: new DiceTypeCollector(),
         bonus: new BonusCollector(),
         interrupt: new InterruptionCollector(),
+        success: new SuccessResponseCollector(),
       }),
     );
-    if (pre.defaultPrevented)
+    if (pre.detail.success.result === "fail")
       return { outcome: "cancelled", hit: false } as const;
 
     const ac = await this.getAC(e.target, pre.detail);

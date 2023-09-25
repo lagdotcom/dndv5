@@ -9,6 +9,7 @@
     "watch": "node watch.mjs",
     "analyse": "node analyse.mjs",
     "lint": "eslint src",
+    "syntax": "tsc --noEmit",
     "test": "jest"
   },
   "author": "Lag.Com <lagdotcom@gmail.com>",

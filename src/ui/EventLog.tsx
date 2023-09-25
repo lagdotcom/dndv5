@@ -207,7 +207,7 @@ export default function EventLog({ g }: { g: Engine }) {
   );
 
   const addMessage = useCallback((el: VNode) => {
-    setMessages((old) => old.concat(el).slice(0, 50));
+    setMessages((old) => old.concat(el).slice(-50));
     fire();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

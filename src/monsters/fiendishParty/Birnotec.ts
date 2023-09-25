@@ -119,9 +119,7 @@ const AntimagicProdigy = new SimpleFeature(
   "Antimagic Prodigy",
   `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
   (g, me) => {
-    g.events.on("SpellCast", (e) => {
-      const { who, interrupt } = e.detail;
-
+    g.events.on("SpellCast", ({ detail: { who, interrupt, success } }) => {
       if (me.time.has("reaction") && who.side !== me.side)
         interrupt.add(
           new YesNoChoice(
@@ -141,8 +139,8 @@ const AntimagicProdigy = new SimpleFeature(
               });
 
               // TODO [MESSAGES]
-
-              if (save.outcome === "fail") e.preventDefault();
+              if (save.outcome === "fail")
+                success.add("fail", AntimagicProdigy);
             },
           ),
         );

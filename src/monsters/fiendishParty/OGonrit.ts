@@ -80,19 +80,20 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
   async apply({ target }: HasTarget) {
     super.apply({ target });
 
-    const dc = getSaveDC(this.actor, this.ability);
-    const { outcome } = await this.g.savingThrow(dc, {
+    const { g, actor, ability } = this;
+    const dc = getSaveDC(actor, ability);
+    const config = { conditions: coSet("Stunned"), duration: 1 };
+    const { outcome } = await g.savingThrow(dc, {
       ability: "con",
-      attacker: this.actor,
-      tags: svSet("Stunned"),
+      attacker: actor,
+      effect: ShieldBashEffect,
+      config,
       who: target,
+      tags: svSet(),
     });
 
     if (outcome === "fail")
-      await target.addEffect(ShieldBashEffect, {
-        conditions: coSet("Stunned"),
-        duration: 1,
-      });
+      await target.addEffect(ShieldBashEffect, config, actor);
   }
 }
 

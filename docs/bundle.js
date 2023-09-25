@@ -567,6 +567,13 @@
   var ConditionCollector = class extends SetCollector {
   };
 
+  // src/events/BeforeEffectEvent.ts
+  var BeforeEffectEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeEffect", { detail });
+    }
+  };
+
   // src/events/EffectAddedEvent.ts
   var EffectAddedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -940,10 +947,11 @@
             method,
             level: spell.getLevel(config),
             targets: new Set(spell.getTargets(g2, actor, config)),
-            interrupt: new InterruptionCollector()
+            interrupt: new InterruptionCollector(),
+            success: new SuccessResponseCollector()
           })
         );
-        if (sc.defaultPrevented)
+        if (sc.detail.success.result === "fail")
           return;
         return spell.apply(g2, actor, method, config);
       });
@@ -1433,10 +1441,22 @@
       for (const spell of this.preparedSpells)
         spellImplementationWarning(spell, this);
     }
-    addEffect(effect, config) {
+    addEffect(effect, config, attacker) {
       return __async(this, null, function* () {
+        const e = yield this.g.resolve(
+          new BeforeEffectEvent({
+            who: this,
+            effect,
+            config,
+            attacker,
+            interrupt: new InterruptionCollector(),
+            success: new SuccessResponseCollector()
+          })
+        );
+        if (e.detail.success.result === "fail")
+          return false;
         this.effects.set(effect, config);
-        return yield this.g.resolve(
+        yield this.g.resolve(
           new EffectAddedEvent({
             who: this,
             effect,
@@ -1444,6 +1464,7 @@
             interrupt: new InterruptionCollector()
           })
         );
+        return true;
       });
     }
     getEffectConfig(effect) {
@@ -1457,7 +1478,7 @@
         const config = this.getEffectConfig(effect);
         if (config) {
           this.effects.delete(effect);
-          return yield this.g.resolve(
+          yield this.g.resolve(
             new EffectRemovedEvent({
               who: this,
               effect,
@@ -1465,7 +1486,9 @@
               interrupt: new InterruptionCollector()
             })
           );
+          return true;
         }
+        return false;
       });
     }
     tickEffects(durationTimer) {
@@ -1495,10 +1518,11 @@
           old,
           delta,
           value,
-          interrupt: new InterruptionCollector()
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
         });
         yield this.g.resolve(e);
-        if (!e.defaultPrevented)
+        if (e.detail.success.result !== "fail")
           this.exhaustion = value;
         return this.exhaustion;
       });
@@ -2415,10 +2439,11 @@
             handler,
             type,
             error,
-            interrupt: new InterruptionCollector()
+            interrupt: new InterruptionCollector(),
+            success: new SuccessResponseCollector()
           })
         );
-        if (pre.defaultPrevented)
+        if (pre.detail.success.result === "fail")
           return { type: "prevented" };
         if (!error.result)
           return { type: "error", error };
@@ -2523,10 +2548,11 @@
           new BeforeAttackEvent(__spreadProps(__spreadValues({}, e), {
             diceType: new DiceTypeCollector(),
             bonus: new BonusCollector(),
-            interrupt: new InterruptionCollector()
+            interrupt: new InterruptionCollector(),
+            success: new SuccessResponseCollector()
           }))
         );
-        if (pre.defaultPrevented)
+        if (pre.detail.success.result === "fail")
           return { outcome: "cancelled", hit: false };
         const ac = yield this.getAC(e.target, pre.detail);
         const roll = yield this.roll(
@@ -3047,8 +3073,7 @@
     "Antimagic Prodigy",
     `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
     (g2, me) => {
-      g2.events.on("SpellCast", (e) => {
-        const { who, interrupt } = e.detail;
+      g2.events.on("SpellCast", ({ detail: { who, interrupt, success } }) => {
         if (me.time.has("reaction") && who.side !== me.side)
           interrupt.add(
             new YesNoChoice(
@@ -3066,7 +3091,7 @@
                   tags: chSet("counterspell")
                 });
                 if (save.outcome === "fail")
-                  e.preventDefault();
+                  success.add("fail", AntimagicProdigy);
               })
             )
           );
@@ -3619,7 +3644,7 @@
         if ((yield rsa.attack(target)).hit) {
           const damage = yield rsa.getDamage(target);
           yield rsa.damage(target, damage);
-          yield target.addEffect(GuidingBoltEffect, { duration: 2 });
+          yield target.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
         }
       });
     }
@@ -3770,18 +3795,19 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         __superGet(_ShieldBashAction.prototype, this, "apply").call(this, { target });
-        const dc = getSaveDC(this.actor, this.ability);
-        const { outcome } = yield this.g.savingThrow(dc, {
+        const { g: g2, actor, ability } = this;
+        const dc = getSaveDC(actor, ability);
+        const config = { conditions: coSet("Stunned"), duration: 1 };
+        const { outcome } = yield g2.savingThrow(dc, {
           ability: "con",
-          attacker: this.actor,
-          tags: svSet("Stunned"),
-          who: target
+          attacker: actor,
+          effect: ShieldBashEffect,
+          config,
+          who: target,
+          tags: svSet()
         });
         if (outcome === "fail")
-          yield target.addEffect(ShieldBashEffect, {
-            conditions: coSet("Stunned"),
-            duration: 1
-          });
+          yield target.addEffect(ShieldBashEffect, config, actor);
       });
     }
   };
@@ -5459,23 +5485,23 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     constructor(g2, actor) {
       super(g2, actor, "Enervating Breath", "implemented");
     }
-    apply(config) {
-      return __async(this, null, function* () {
-        __superGet(_EnervatingBreathAction.prototype, this, "apply").call(this, config);
+    apply(_0) {
+      return __async(this, arguments, function* ({ point }) {
+        __superGet(_EnervatingBreathAction.prototype, this, "apply").call(this, { point });
         const { g: g2, actor } = this;
         const dc = getSaveDC(actor, "con");
-        for (const target of g2.getInside(getBreathArea(g2, actor, config.point))) {
+        const config = { conditions: coSet("Incapacitated"), duration: 2 };
+        for (const target of g2.getInside(getBreathArea(g2, actor, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker: actor,
             ability: "con",
             who: target,
-            tags: coSet("Incapacitated")
+            effect: EnervatingBreathEffect,
+            config,
+            tags: svSet()
           });
           if (!save)
-            yield target.addEffect(EnervatingBreathEffect, {
-              conditions: coSet("Incapacitated"),
-              duration: 2
-            });
+            yield target.addEffect(EnervatingBreathEffect, config, actor);
         }
       });
     }
@@ -5496,9 +5522,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             attacker: actor,
             ability: "str",
             who: target,
-            tags: coSet("Prone")
+            effect: Prone,
+            tags: svSet()
           });
           if (!save) {
+            yield target.addEffect(Prone, { duration: Infinity });
           }
         }
       });
@@ -5715,7 +5743,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               }
             }
           );
-          yield target.addEffect(MindSliverEffect, { duration: 2 });
+          yield target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
         }
       });
     }
@@ -5748,7 +5776,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if ((yield rsa.attack(target)).hit) {
           const damage = yield rsa.getDamage(target);
           yield rsa.damage(target, damage);
-          yield target.addEffect(RayOfFrostEffect, { duration: 2 });
+          yield target.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
         }
       });
     }
@@ -5951,7 +5979,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               attacker: config.caster,
               ability: "wis",
               spell: HoldPerson,
-              tags: svSet("Paralyzed")
+              effect: HoldPersonEffect,
+              config,
+              tags: svSet()
             });
             if (save.outcome === "success") {
               yield who.removeEffect(HoldPersonEffect);
@@ -5984,35 +6014,38 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         const dc = getSaveDC(caster, method.ability);
         const affected = /* @__PURE__ */ new Set();
         const duration = minutes(1);
+        const conditions = coSet("Paralyzed");
         for (const target of targets) {
+          const config = {
+            affected,
+            caster,
+            method,
+            duration,
+            conditions
+          };
           const save = yield g2.savingThrow(dc, {
             who: target,
             attacker: caster,
             ability: "wis",
             spell: HoldPerson,
-            tags: coSet("Paralyzed")
+            effect: HoldPersonEffect,
+            config,
+            tags: svSet()
           });
-          if (save.outcome === "fail") {
-            yield target.addEffect(HoldPersonEffect, {
-              affected,
-              caster,
-              method,
-              duration,
-              conditions: coSet("Paralyzed")
-            });
+          if (save.outcome === "fail" && (yield target.addEffect(HoldPersonEffect, config)))
             affected.add(target);
-          }
         }
-        yield caster.concentrateOn({
-          spell: HoldPerson,
-          duration,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              for (const target of affected)
-                yield target.removeEffect(HoldPersonEffect);
-            });
-          }
-        });
+        if (affected.size > 0)
+          yield caster.concentrateOn({
+            spell: HoldPerson,
+            duration,
+            onSpellEnd() {
+              return __async(this, null, function* () {
+                for (const target of affected)
+                  yield target.removeEffect(HoldPersonEffect);
+              });
+            }
+          });
       });
     }
   });
@@ -6268,7 +6301,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
         const duration = hours(1);
         for (const target of targets)
-          yield target.addEffect(IntellectFortressEffect, { duration });
+          yield target.addEffect(IntellectFortressEffect, { duration }, caster);
         caster.concentrateOn({
           spell: IntellectFortress,
           duration,
@@ -6620,9 +6653,15 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
       me.addFeature(style);
     }
   );
-  var DivineHealth = notImplementedFeature(
+  var DivineHealth = new SimpleFeature(
     "Divine Health",
-    `By 3rd level, the divine magic flowing through you makes you immune to disease.`
+    `By 3rd level, the divine magic flowing through you makes you immune to disease.`,
+    (g2, me) => {
+      g2.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
+        if (who === me && effect.tags.has("disease"))
+          success.add("fail", DivineHealth);
+      });
+    }
   );
   var ChannelDivinity = new SimpleFeature(
     "Channel Divinity",
@@ -6665,17 +6704,36 @@ At 18th level, the range of this aura increases to 30 feet.`,
           bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
       });
       g2.events.on("CombatantMoved", ({ detail: { who, position } }) => {
-        if (who === me)
+        if (who === me && !me.conditions.has("Unconscious"))
           updateAura(position);
+      });
+      g2.events.on("EffectAdded", ({ detail: { who } }) => {
+        if (who === me && me.conditions.has("Unconscious") && area) {
+          g2.removeEffectArea(area);
+          area = void 0;
+        }
+      });
+      g2.events.on("EffectRemoved", ({ detail: { who } }) => {
+        if (who === me && !me.conditions.has("Unconscious"))
+          updateAura(g2.getState(me).position);
       });
       updateAura(g2.getState(me).position);
     }
   );
-  var AuraOfCourage = notImplementedFeature(
+  var AuraOfCourage = new SimpleFeature(
     "Aura of Courage",
     `Starting at 10th level, you and friendly creatures within 10 feet of you can't be frightened while you are conscious.
 
-At 18th level, the range of this aura increases to 30 feet.`
+At 18th level, the range of this aura increases to 30 feet.`,
+    (g2, me) => {
+      var _a;
+      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 10);
+      g2.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
+        var _a2;
+        if (!me.conditions.has("Unconscious") && ((_a2 = config.conditions) == null ? void 0 : _a2.has("Frightened")) && who.side === me.side && distance(g2, who, me) <= radius)
+          success.add("fail", AuraOfCourage);
+      });
+    }
   );
   var ImprovedDivineSmite = new SimpleFeature(
     "Improved Divine Smite",
@@ -6749,27 +6807,49 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   };
   var paladin_default = Paladin;
 
+  // src/types/CreatureType.ts
+  var ctSet = (...items) => new Set(items);
+
   // src/spells/level1/ProtectionFromEvilAndGood.ts
-  var affectedTypes = [
+  var affectedTypes = ctSet(
     "aberration",
     "celestial",
     "elemental",
     "fey",
     "fiend",
     "undead"
-  ];
+  );
+  var isAffected = (attacker) => attacker && affectedTypes.has(attacker.type);
+  var isValidEffect = (effect, config) => {
+    var _a, _b;
+    return (effect == null ? void 0 : effect.tags.has("possession")) || ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")) || ((_b = config == null ? void 0 : config.conditions) == null ? void 0 : _b.has("Frightened"));
+  };
   var ProtectionEffect = new Effect(
     "Protection from Evil and Good",
     "turnStart",
     (g2) => {
       g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-        if (affectedTypes.includes(target.type) && who.hasEffect(ProtectionEffect))
+        if (who.hasEffect(ProtectionEffect) && isAffected(target))
           diceType.add("disadvantage", ProtectionEffect);
       });
+      g2.events.on(
+        "BeforeEffect",
+        ({ detail: { who, attacker, effect, config, success } }) => {
+          if (who.hasEffect(ProtectionEffect) && isAffected(attacker) && isValidEffect(effect, config))
+            success.add("fail", ProtectionEffect);
+        }
+      );
+      g2.events.on(
+        "BeforeSave",
+        ({ detail: { who, attacker, effect, config, diceType } }) => {
+          if (who.hasEffect(ProtectionEffect) && isAffected(attacker) && isValidEffect(effect, config))
+            diceType.add("advantage", ProtectionEffect);
+        }
+      );
     }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
-    status: "incomplete",
+    status: "implemented",
     name: "Protection from Evil and Good",
     level: 1,
     school: "Abjuration",
@@ -6785,7 +6865,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = minutes(10);
-        yield target.addEffect(ProtectionEffect, { duration });
+        yield target.addEffect(ProtectionEffect, { duration }, caster);
         yield caster.concentrateOn({
           spell: ProtectionFromEvilAndGood,
           duration,
@@ -6816,11 +6896,11 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        yield target.addEffect(SanctuaryEffect, {
-          caster,
-          method,
-          duration: minutes(1)
-        });
+        yield target.addEffect(
+          SanctuaryEffect,
+          { caster, method, duration: minutes(1) },
+          caster
+        );
       });
     }
   });
@@ -7054,7 +7134,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
         const duration = minutes(1);
         for (const target of targets)
-          yield target.addEffect(BlessEffect, { duration });
+          yield target.addEffect(BlessEffect, { duration }, caster);
         yield caster.concentrateOn({
           spell: Bless,
           duration,
@@ -7109,7 +7189,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     apply(g2, caster) {
       return __async(this, null, function* () {
         const duration = minutes(1);
-        yield caster.addEffect(DivineFavorEffect, { duration });
+        yield caster.addEffect(DivineFavorEffect, { duration }, caster);
         yield caster.concentrateOn({
           spell: DivineFavor,
           duration,
@@ -7145,7 +7225,11 @@ Once you use this feature, you can't use it again until you finish a long rest.
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
-        yield target.addEffect(ShieldOfFaithEffect, { duration: minutes(10) });
+        yield target.addEffect(
+          ShieldOfFaithEffect,
+          { duration: minutes(10) },
+          caster
+        );
         caster.concentrateOn({
           spell: ShieldOfFaith,
           duration: minutes(10),
@@ -7339,8 +7423,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
     apply() {
       return __async(this, null, function* () {
         __superGet(_RageAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(RageEffect, { duration: minutes(1) });
-        yield this.actor.endConcentration();
+        if (yield this.actor.addEffect(RageEffect, { duration: minutes(1) }))
+          yield this.actor.endConcentration();
       });
     }
   };
@@ -7659,6 +7743,11 @@ Each time you use this feature after the first, the DC increases by 5. When you 
           conditions.ignoreValue("Frightened");
         }
       });
+      g2.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
+        var _a, _b;
+        if (who.hasEffect(RageEffect) && (((_a = config.conditions) == null ? void 0 : _a.has("Charmed")) || ((_b = config.conditions) == null ? void 0 : _b.has("Frightened"))))
+          success.add("fail", MindlessRage);
+      });
     }
   );
   var IntimidatingPresence = notImplementedFeature(
@@ -7923,7 +8012,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     apply(g2, caster) {
       return __async(this, null, function* () {
         const duration = minutes(1);
-        yield caster.addEffect(BlurEffect, { duration });
+        yield caster.addEffect(BlurEffect, { duration }, caster);
         yield caster.concentrateOn({
           spell: Blur,
           duration,
@@ -8303,7 +8392,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { target }) {
         const duration = hours(1);
-        yield target.addEffect(StoneskinEffect, { duration });
+        yield target.addEffect(StoneskinEffect, { duration }, caster);
         yield caster.concentrateOn({
           spell: Stoneskin,
           duration,
@@ -10034,7 +10123,7 @@ The creature is aware of this effect before it makes its attack against you.`
       }
     );
     const addMessage = (0, import_hooks9.useCallback)((el) => {
-      setMessages((old) => old.concat(el).slice(0, 50));
+      setMessages((old) => old.concat(el).slice(-50));
       fire();
     }, []);
     (0, import_hooks9.useEffect)(() => {

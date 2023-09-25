@@ -2,6 +2,7 @@ import AbstractAttackAction from "../actions/AbstractAttackAction";
 import { aimCone } from "../aim";
 import { HasPoint } from "../configs";
 import Effect from "../Effect";
+import { Prone } from "../effects";
 import Engine from "../Engine";
 import SimpleFeature from "../features/SimpleFeature";
 import PointResolver from "../resolvers/PointResolver";
@@ -140,24 +141,24 @@ class EnervatingBreathAction extends MetallicBreathAction {
     super(g, actor, "Enervating Breath", "implemented");
   }
 
-  async apply(config: HasPoint) {
-    super.apply(config);
+  async apply({ point }: HasPoint) {
+    super.apply({ point });
+
     const { g, actor } = this;
     const dc = getSaveDC(actor, "con");
+    const config = { conditions: coSet("Incapacitated"), duration: 2 };
 
-    for (const target of g.getInside(getBreathArea(g, actor, config.point))) {
+    for (const target of g.getInside(getBreathArea(g, actor, point))) {
       const save = await g.savingThrow(dc, {
         attacker: actor,
         ability: "con",
         who: target,
-        tags: coSet("Incapacitated"),
+        effect: EnervatingBreathEffect,
+        config,
+        tags: svSet(),
       });
 
-      if (!save)
-        await target.addEffect(EnervatingBreathEffect, {
-          conditions: coSet("Incapacitated"),
-          duration: 2,
-        });
+      if (!save) await target.addEffect(EnervatingBreathEffect, config, actor);
     }
   }
 }
@@ -179,12 +180,14 @@ class RepulsionBreathAction extends MetallicBreathAction {
         attacker: actor,
         ability: "str",
         who: target,
-        tags: coSet("Prone"),
+        effect: Prone,
+        tags: svSet(),
       });
 
       if (!save) {
         // TODO [FORCEMOVE] pushed 20 feet away from you
-        // TODO [PRONE] knocked prone
+
+        await target.addEffect(Prone, { duration: Infinity });
       }
     }
   }

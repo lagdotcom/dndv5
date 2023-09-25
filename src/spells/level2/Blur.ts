@@ -23,7 +23,7 @@ const Blur = simpleSpell({
 
   async apply(g, caster) {
     const duration = minutes(1);
-    await caster.addEffect(BlurEffect, { duration });
+    await caster.addEffect(BlurEffect, { duration }, caster);
 
     await caster.concentrateOn({
       spell: Blur,

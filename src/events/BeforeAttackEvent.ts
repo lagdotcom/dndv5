@@ -1,6 +1,7 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import AbilityName from "../types/AbilityName";
 import AttackTag from "../types/AttackTag";
 import Combatant from "../types/Combatant";
@@ -20,6 +21,7 @@ export interface BeforeAttackDetail {
   diceType: DiceTypeCollector;
   bonus: BonusCollector;
   interrupt: InterruptionCollector;
+  success: SuccessResponseCollector;
 }
 
 export default class BeforeAttackEvent extends CustomEvent<BeforeAttackDetail> {

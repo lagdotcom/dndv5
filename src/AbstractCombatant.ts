@@ -3,7 +3,9 @@ import BonusCollector from "./collectors/BonusCollector";
 import ConditionCollector from "./collectors/ConditionCollector";
 import InterruptionCollector from "./collectors/InterruptionCollector";
 import MultiplierCollector from "./collectors/MultiplierCollector";
+import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import Engine from "./Engine";
+import BeforeEffectEvent from "./events/BeforeEffectEvent";
 import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import ExhaustionEvent from "./events/ExhaustionEvent";
@@ -425,9 +427,22 @@ export default abstract class AbstractCombatant implements Combatant {
   async addEffect<T>(
     effect: EffectType<T>,
     config: EffectConfig<T>,
-  ): Promise<EffectAddedEvent<T>> {
+    attacker?: Combatant,
+  ): Promise<boolean> {
+    const e = await this.g.resolve(
+      new BeforeEffectEvent({
+        who: this,
+        effect,
+        config,
+        attacker,
+        interrupt: new InterruptionCollector(),
+        success: new SuccessResponseCollector(),
+      }),
+    );
+    if (e.detail.success.result === "fail") return false;
+
     this.effects.set(effect, config);
-    return await this.g.resolve(
+    await this.g.resolve(
       new EffectAddedEvent({
         who: this,
         effect,
@@ -435,6 +450,8 @@ export default abstract class AbstractCombatant implements Combatant {
         interrupt: new InterruptionCollector(),
       }),
     );
+
+    return true;
   }
 
   getEffectConfig<T>(effect: EffectType<T>) {
@@ -445,14 +462,12 @@ export default abstract class AbstractCombatant implements Combatant {
     return this.effects.has(effect);
   }
 
-  async removeEffect<T>(
-    effect: EffectType<T>,
-  ): Promise<EffectRemovedEvent<T> | undefined> {
+  async removeEffect<T>(effect: EffectType<T>): Promise<boolean> {
     const config = this.getEffectConfig(effect);
 
     if (config) {
       this.effects.delete(effect);
-      return await this.g.resolve(
+      await this.g.resolve(
         new EffectRemovedEvent({
           who: this,
           effect,
@@ -460,7 +475,10 @@ export default abstract class AbstractCombatant implements Combatant {
           interrupt: new InterruptionCollector(),
         }),
       );
+      return true;
     }
+
+    return false;
   }
 
   async tickEffects(durationTimer: EffectDurationTimer) {
@@ -491,10 +509,11 @@ export default abstract class AbstractCombatant implements Combatant {
       delta,
       value,
       interrupt: new InterruptionCollector(),
+      success: new SuccessResponseCollector(),
     });
     await this.g.resolve(e);
 
-    if (!e.defaultPrevented) this.exhaustion = value;
+    if (e.detail.success.result !== "fail") this.exhaustion = value;
     return this.exhaustion;
   }
 }

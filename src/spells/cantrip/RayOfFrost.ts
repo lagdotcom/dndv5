@@ -34,7 +34,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
       const damage = await rsa.getDamage(target);
       await rsa.damage(target, damage);
 
-      await target.addEffect(RayOfFrostEffect, { duration: 2 });
+      await target.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
     }
   },
 });

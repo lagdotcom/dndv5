@@ -31,7 +31,9 @@ const HoldPersonEffect = new Effect<{
             attacker: config.caster,
             ability: "wis",
             spell: HoldPerson,
-            tags: svSet("Paralyzed"),
+            effect: HoldPersonEffect,
+            config,
+            tags: svSet(),
           });
 
           if (save.outcome === "success") {
@@ -71,36 +73,43 @@ const HoldPerson = scalingSpell<HasTargets>({
     const dc = getSaveDC(caster, method.ability);
     const affected = new Set<Combatant>();
     const duration = minutes(1);
+    const conditions = coSet("Paralyzed");
 
     for (const target of targets) {
+      const config = {
+        affected,
+        caster,
+        method,
+        duration,
+        conditions,
+      };
+
       const save = await g.savingThrow(dc, {
         who: target,
         attacker: caster,
         ability: "wis",
         spell: HoldPerson,
-        tags: coSet("Paralyzed"),
+        effect: HoldPersonEffect,
+        config,
+        tags: svSet(),
       });
 
-      if (save.outcome === "fail") {
-        await target.addEffect(HoldPersonEffect, {
-          affected,
-          caster,
-          method,
-          duration,
-          conditions: coSet("Paralyzed"),
-        });
+      if (
+        save.outcome === "fail" &&
+        (await target.addEffect(HoldPersonEffect, config))
+      )
         affected.add(target);
-      }
     }
 
-    await caster.concentrateOn({
-      spell: HoldPerson,
-      duration,
-      async onSpellEnd() {
-        for (const target of affected)
-          await target.removeEffect(HoldPersonEffect);
-      },
-    });
+    if (affected.size > 0)
+      await caster.concentrateOn({
+        spell: HoldPerson,
+        duration,
+        async onSpellEnd() {
+          for (const target of affected)
+            await target.removeEffect(HoldPersonEffect);
+        },
+      });
   },
 });
 export default HoldPerson;

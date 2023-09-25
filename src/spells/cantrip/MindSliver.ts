@@ -80,7 +80,7 @@ const MindSliver = simpleSpell<HasTarget>({
           }
         },
       );
-      await target.addEffect(MindSliverEffect, { duration: 2 });
+      await target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
     }
   },
 });

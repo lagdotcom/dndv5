@@ -37,7 +37,7 @@ const Stoneskin = simpleSpell<HasTarget>({
 
   async apply(g, caster, method, { target }) {
     const duration = hours(1);
-    await target.addEffect(StoneskinEffect, { duration });
+    await target.addEffect(StoneskinEffect, { duration }, caster);
 
     await caster.concentrateOn({
       spell: Stoneskin,

@@ -29,11 +29,11 @@ const Sanctuary = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
-    await target.addEffect(SanctuaryEffect, {
+    await target.addEffect(
+      SanctuaryEffect,
+      { caster, method, duration: minutes(1) },
       caster,
-      method,
-      duration: minutes(1),
-    });
+    );
   },
 });
 export default Sanctuary;

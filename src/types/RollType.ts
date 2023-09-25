@@ -1,7 +1,9 @@
+import Effect from "../Effect";
 import AbilityName from "./AbilityName";
 import { CheckTag } from "./CheckTag";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
+import { EffectConfig } from "./EffectType";
 import { WeaponItem } from "./Item";
 import SaveTag from "./SaveTag";
 import SkillName from "./SkillName";
@@ -50,13 +52,15 @@ export type HealRoll = {
 };
 export type InitiativeRoll = { type: "initiative"; who: Combatant };
 export type LuckRoll = { type: "luck"; who: Combatant };
-export type SavingThrow = {
+export type SavingThrow<T = unknown> = {
   type: "save";
   who: Combatant;
   attacker: Combatant;
   ability: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
+  effect?: Effect<T>;
+  config?: EffectConfig<T>;
   tags: Set<SaveTag>;
 };
 

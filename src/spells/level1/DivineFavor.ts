@@ -45,7 +45,7 @@ const DivineFavor = simpleSpell({
 
   async apply(g, caster) {
     const duration = minutes(1);
-    await caster.addEffect(DivineFavorEffect, { duration });
+    await caster.addEffect(DivineFavorEffect, { duration }, caster);
 
     await caster.concentrateOn({
       spell: DivineFavor,

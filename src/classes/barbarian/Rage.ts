@@ -157,8 +157,8 @@ export class RageAction extends AbstractAction {
 
   async apply() {
     super.apply({});
-    await this.actor.addEffect(RageEffect, { duration: minutes(1) });
-    await this.actor.endConcentration();
+    if (await this.actor.addEffect(RageEffect, { duration: minutes(1) }))
+      await this.actor.endConcentration();
   }
 }
 

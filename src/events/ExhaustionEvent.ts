@@ -1,4 +1,5 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import Combatant from "../types/Combatant";
 
 export interface ExhaustionDetail {
@@ -7,6 +8,7 @@ export interface ExhaustionDetail {
   delta: number;
   value: number;
   interrupt: InterruptionCollector;
+  success: SuccessResponseCollector;
 }
 
 export default class ExhaustionEvent extends CustomEvent<ExhaustionDetail> {

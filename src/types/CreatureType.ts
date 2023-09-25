@@ -16,3 +16,4 @@ export const CreatureTypes = [
 ] as const;
 type CreatureType = (typeof CreatureTypes)[number];
 export default CreatureType;
+export const ctSet = (...items: CreatureType[]) => new Set(items);

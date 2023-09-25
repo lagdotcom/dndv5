@@ -88,10 +88,15 @@ export const PaladinFightingStyle = new ConfiguredFeature<Feature>(
   },
 );
 
-// TODO [CANCELEFFECT]
-const DivineHealth = notImplementedFeature(
+const DivineHealth = new SimpleFeature(
   "Divine Health",
   `By 3rd level, the divine magic flowing through you makes you immune to disease.`,
+  (g, me) => {
+    g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
+      if (who === me && effect.tags.has("disease"))
+        success.add("fail", DivineHealth);
+    });
+  },
 );
 
 const ChannelDivinity = new SimpleFeature(
@@ -145,21 +150,42 @@ At 18th level, the range of this aura increases to 30 feet.`,
     });
 
     g.events.on("CombatantMoved", ({ detail: { who, position } }) => {
-      if (who === me) updateAura(position);
+      if (who === me && !me.conditions.has("Unconscious")) updateAura(position);
     });
 
-    // TODO [CONDITIONREACT] remove aura when unconscious
+    g.events.on("EffectAdded", ({ detail: { who } }) => {
+      if (who === me && me.conditions.has("Unconscious") && area) {
+        g.removeEffectArea(area);
+        area = undefined;
+      }
+    });
+    g.events.on("EffectRemoved", ({ detail: { who } }) => {
+      if (who === me && !me.conditions.has("Unconscious"))
+        updateAura(g.getState(me).position);
+    });
 
     updateAura(g.getState(me).position);
   },
 );
 
-// TODO [CANCELCONDITION]
-const AuraOfCourage = notImplementedFeature(
+const AuraOfCourage = new SimpleFeature(
   "Aura of Courage",
   `Starting at 10th level, you and friendly creatures within 10 feet of you can't be frightened while you are conscious.
 
 At 18th level, the range of this aura increases to 30 feet.`,
+  (g, me) => {
+    const radius = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 10);
+
+    g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
+      if (
+        !me.conditions.has("Unconscious") &&
+        config.conditions?.has("Frightened") &&
+        who.side === me.side &&
+        distance(g, who, me) <= radius
+      )
+        success.add("fail", AuraOfCourage);
+    });
+  },
 );
 
 const ImprovedDivineSmite = new SimpleFeature(

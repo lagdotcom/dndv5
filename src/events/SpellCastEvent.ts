@@ -1,4 +1,5 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import Combatant from "../types/Combatant";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
@@ -10,6 +11,7 @@ export interface SpellCastDetail<T extends object = object> {
   level: number;
   targets: Set<Combatant>;
   interrupt: InterruptionCollector;
+  success: SuccessResponseCollector;
 }
 
 export default class SpellCastEvent<

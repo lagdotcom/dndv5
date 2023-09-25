@@ -1,36 +1,65 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
-import CreatureType from "../../types/CreatureType";
+import Combatant from "../../types/Combatant";
+import { ctSet } from "../../types/CreatureType";
+import { EffectConfig } from "../../types/EffectType";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-const affectedTypes: CreatureType[] = [
+const affectedTypes = ctSet(
   "aberration",
   "celestial",
   "elemental",
   "fey",
   "fiend",
   "undead",
-];
+);
+const isAffected = (attacker?: Combatant) =>
+  attacker && affectedTypes.has(attacker.type);
 
-// TODO [CANCELEFFECT] [CANCELCONDITION] The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.
+const isValidEffect = (effect?: Effect, config?: EffectConfig) =>
+  effect?.tags.has("possession") ||
+  config?.conditions?.has("Charmed") ||
+  config?.conditions?.has("Frightened");
+
 const ProtectionEffect = new Effect(
   "Protection from Evil and Good",
   "turnStart",
   (g) => {
     g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-      if (
-        affectedTypes.includes(target.type) &&
-        who.hasEffect(ProtectionEffect)
-      )
+      if (who.hasEffect(ProtectionEffect) && isAffected(target))
         diceType.add("disadvantage", ProtectionEffect);
     });
+
+    g.events.on(
+      "BeforeEffect",
+      ({ detail: { who, attacker, effect, config, success } }) => {
+        if (
+          who.hasEffect(ProtectionEffect) &&
+          isAffected(attacker) &&
+          isValidEffect(effect, config)
+        )
+          success.add("fail", ProtectionEffect);
+      },
+    );
+
+    g.events.on(
+      "BeforeSave",
+      ({ detail: { who, attacker, effect, config, diceType } }) => {
+        if (
+          who.hasEffect(ProtectionEffect) &&
+          isAffected(attacker) &&
+          isValidEffect(effect, config)
+        )
+          diceType.add("advantage", ProtectionEffect);
+      },
+    );
   },
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
-  status: "incomplete",
+  status: "implemented",
   name: "Protection from Evil and Good",
   level: 1,
   school: "Abjuration",
@@ -47,7 +76,7 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
 
   async apply(g, caster, method, { target }) {
     const duration = minutes(10);
-    await target.addEffect(ProtectionEffect, { duration });
+    await target.addEffect(ProtectionEffect, { duration }, caster);
 
     await caster.concentrateOn({
       spell: ProtectionFromEvilAndGood,
