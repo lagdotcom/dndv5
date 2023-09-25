@@ -3420,8 +3420,8 @@
     (g2, me) => {
       g2.events.on(
         "GetDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (who === me && MundaneDamageTypes.includes(damageType))
+        ({ detail: { who, damageType, attack, response } }) => {
+          if (who === me && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && MundaneDamageTypes.includes(damageType))
             response.add("resist", SmoulderingRage);
         }
       );

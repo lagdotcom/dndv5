@@ -52,8 +52,12 @@ const SmoulderingRage = new SimpleFeature(
   (g, me) => {
     g.events.on(
       "GetDamageResponse",
-      ({ detail: { who, damageType, response } }) => {
-        if (who === me && MundaneDamageTypes.includes(damageType))
+      ({ detail: { who, damageType, attack, response } }) => {
+        if (
+          who === me &&
+          !attack?.pre.tags.has("magical") &&
+          MundaneDamageTypes.includes(damageType)
+        )
           response.add("resist", SmoulderingRage);
       },
     );
