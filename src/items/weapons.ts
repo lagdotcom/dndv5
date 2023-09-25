@@ -42,6 +42,10 @@ export abstract class AbstractWeapon
     this.properties = new Set(properties);
     this.quantity = 1;
   }
+
+  get reach() {
+    return this.properties.has("reach") ? 5 : 0;
+  }
 }
 
 export class Club extends AbstractWeapon {

@@ -7,6 +7,7 @@ import AbilityName from "../types/AbilityName";
 import AttackTag from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
+import Source from "../types/Source";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { distance } from "../utils/units";
 import AbstractAttackAction from "./AbstractAttackAction";
@@ -38,56 +39,98 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
 
   async apply({ target }: HasTarget) {
     super.apply({ target });
-    const { ability, ammo, weapon, actor: attacker, g } = this;
 
-    const tags = new Set<AttackTag>();
-    tags.add(
-      distance(g, attacker, target) > attacker.reach ? "ranged" : "melee",
-    );
-    if (weapon.category !== "natural") tags.add("weapon");
-    if (weapon.magical || ammo?.magical) tags.add("magical");
-
-    const { attack, critical, hit } = await g.attack({
-      who: attacker,
-      tags,
+    await doStandardAttack(this.g, {
+      ability: this.ability,
+      ammo: this.ammo,
+      attacker: this.actor,
+      source: this,
       target,
-      ability,
-      weapon,
-      ammo,
+      weapon: this.weapon,
     });
-
-    if (hit) {
-      // TODO [SPAWNITEMS] throwing
-
-      if (ammo) ammo.quantity--;
-
-      const { damage } = weapon;
-      const baseDamage: DamageInitialiser = [];
-
-      if (damage.type === "dice") {
-        const { count, size } = damage.amount;
-        const amount = await g.rollDamage(
-          count,
-          {
-            source: this,
-            size,
-            damageType: damage.damageType,
-            attacker,
-            target,
-            ability,
-            weapon,
-          },
-          critical,
-        );
-        baseDamage.push([damage.damageType, amount]);
-      } else baseDamage.push([damage.damageType, damage.amount]);
-
-      await g.damage(
-        weapon,
-        weapon.damage.damageType,
-        { attack, attacker, target, ability, weapon, ammo, critical },
-        baseDamage,
-      );
-    }
   }
+}
+
+export async function doStandardAttack(
+  g: Engine,
+  {
+    ability,
+    ammo,
+    attacker,
+    source,
+    target,
+    weapon,
+  }: {
+    ability: AbilityName;
+    ammo?: AmmoItem;
+    attacker: Combatant;
+    source: Source;
+    target: Combatant;
+    weapon: WeaponItem;
+  },
+) {
+  const tags = new Set<AttackTag>();
+  // TODO this should probably be a choice
+  tags.add(
+    distance(g, attacker, target) > attacker.reach + weapon.reach
+      ? "ranged"
+      : "melee",
+  );
+
+  if (weapon.category !== "natural") tags.add("weapon");
+  if (weapon.magical || ammo?.magical) tags.add("magical");
+
+  const e = await g.attack({
+    who: attacker,
+    tags,
+    target,
+    ability,
+    weapon,
+    ammo,
+  });
+
+  if (e.hit) {
+    // TODO [SPAWNITEMS] throwing
+
+    if (ammo) ammo.quantity--;
+
+    const { damage } = weapon;
+    const baseDamage: DamageInitialiser = [];
+
+    if (damage.type === "dice") {
+      const { count, size } = damage.amount;
+      const amount = await g.rollDamage(
+        count,
+        {
+          source,
+          size,
+          damageType: damage.damageType,
+          attacker,
+          target,
+          ability,
+          weapon,
+        },
+        e.critical,
+      );
+      baseDamage.push([damage.damageType, amount]);
+    } else baseDamage.push([damage.damageType, damage.amount]);
+
+    const e2 = await g.damage(
+      weapon,
+      weapon.damage.damageType,
+      {
+        attack: e.attack,
+        attacker,
+        target,
+        ability,
+        weapon,
+        ammo,
+        critical: e.critical,
+      },
+      baseDamage,
+    );
+    return { type: "hit", attack: e, damage: e2 };
+  }
+
+  return { type: "miss", attack: e };
 }

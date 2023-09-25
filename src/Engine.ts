@@ -505,7 +505,7 @@ export default class Engine {
     );
 
     map.add(damageType, gather.detail.bonus.result);
-    await this.applyDamage(map, {
+    return this.applyDamage(map, {
       source,
       attack: e.attack,
       attacker: e.attacker,

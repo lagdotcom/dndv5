@@ -96,7 +96,7 @@ export const RageEffect = new Effect("Rage", "turnStart", (g) => {
   });
 });
 
-class RageAction extends AbstractAction {
+export class RageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,

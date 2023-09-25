@@ -1096,7 +1096,7 @@
   function getWeaponRange(who, weapon) {
     if (isDefined(weapon.longRange))
       return weapon.longRange;
-    return who.reach;
+    return who.reach + weapon.reach;
   }
   function getValidAmmunition(who, weapon) {
     return who.ammunition.filter(
@@ -1617,56 +1617,82 @@
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
         __superGet(_WeaponAttack.prototype, this, "apply").call(this, { target });
-        const { ability, ammo, weapon, actor: attacker, g: g2 } = this;
-        const tags = /* @__PURE__ */ new Set();
-        tags.add(
-          distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee"
-        );
-        if (weapon.category !== "natural")
-          tags.add("weapon");
-        if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
-          tags.add("magical");
-        const { attack, critical, hit } = yield g2.attack({
-          who: attacker,
-          tags,
+        yield doStandardAttack(this.g, {
+          ability: this.ability,
+          ammo: this.ammo,
+          attacker: this.actor,
+          source: this,
           target,
-          ability,
-          weapon,
-          ammo
+          weapon: this.weapon
         });
-        if (hit) {
-          if (ammo)
-            ammo.quantity--;
-          const { damage } = weapon;
-          const baseDamage = [];
-          if (damage.type === "dice") {
-            const { count, size } = damage.amount;
-            const amount = yield g2.rollDamage(
-              count,
-              {
-                source: this,
-                size,
-                damageType: damage.damageType,
-                attacker,
-                target,
-                ability,
-                weapon
-              },
-              critical
-            );
-            baseDamage.push([damage.damageType, amount]);
-          } else
-            baseDamage.push([damage.damageType, damage.amount]);
-          yield g2.damage(
-            weapon,
-            weapon.damage.damageType,
-            { attack, attacker, target, ability, weapon, ammo, critical },
-            baseDamage
-          );
-        }
       });
     }
   };
+  function doStandardAttack(_0, _1) {
+    return __async(this, arguments, function* (g2, {
+      ability,
+      ammo,
+      attacker,
+      source,
+      target,
+      weapon
+    }) {
+      const tags = /* @__PURE__ */ new Set();
+      tags.add(distance(g2, attacker, target) > attacker.reach ? "ranged" : "melee");
+      if (weapon.category !== "natural")
+        tags.add("weapon");
+      if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
+        tags.add("magical");
+      const e = yield g2.attack({
+        who: attacker,
+        tags,
+        target,
+        ability,
+        weapon,
+        ammo
+      });
+      if (e.hit) {
+        if (ammo)
+          ammo.quantity--;
+        const { damage } = weapon;
+        const baseDamage = [];
+        if (damage.type === "dice") {
+          const { count, size } = damage.amount;
+          const amount = yield g2.rollDamage(
+            count,
+            {
+              source,
+              size,
+              damageType: damage.damageType,
+              attacker,
+              target,
+              ability,
+              weapon
+            },
+            e.critical
+          );
+          baseDamage.push([damage.damageType, amount]);
+        } else
+          baseDamage.push([damage.damageType, damage.amount]);
+        const e2 = yield g2.damage(
+          weapon,
+          weapon.damage.damageType,
+          {
+            attack: e.attack,
+            attacker,
+            target,
+            ability,
+            weapon,
+            ammo,
+            critical: e.critical
+          },
+          baseDamage
+        );
+        return { type: "hit", attack: e, damage: e2 };
+      }
+      return { type: "miss", attack: e };
+    });
+  }
 
   // src/resources.ts
   var ResourceRegistry = /* @__PURE__ */ new Map();
@@ -2478,7 +2504,7 @@
           }))
         );
         map.add(damageType, gather.detail.bonus.result);
-        yield this.applyDamage(map, {
+        return this.applyDamage(map, {
           source,
           attack: e.attack,
           attacker: e.attacker,
@@ -3173,6 +3199,9 @@
       this.weaponType = name;
       this.properties = new Set(properties);
       this.quantity = 1;
+    }
+    get reach() {
+      return this.properties.has("reach") ? 5 : 0;
     }
   };
   var Dagger = class extends AbstractWeapon {
@@ -7229,7 +7258,7 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
     `As part of the bonus action you take to enter your rage, you can move up to half your speed.`,
     (g2, me) => {
       g2.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
-        if (action.name === "Rage" && action.actor === me)
+        if (action instanceof RageAction && action.actor === me)
           interrupt.add(
             new EvaluateLater(
               me,
@@ -7315,10 +7344,67 @@ Each time you use this feature after the first, the DC increases by 5. When you 
   };
   var barbarian_default = Barbarian;
 
+  // src/classes/barbarian/Berserker/icons/frenzy.svg
+  var frenzy_default = "./frenzy-XYJEPIJ4.svg";
+
   // src/classes/barbarian/Berserker/index.ts
-  var Frenzy = notImplementedFeature(
+  var FrenzyAttack = class _FrenzyAttack extends AbstractAction {
+    constructor(g2, actor, weapon) {
+      super(
+        g2,
+        actor,
+        `${weapon.name} (Frenzy)`,
+        "implemented",
+        { target: new TargetResolver(g2, actor.reach + weapon.reach) },
+        { damage: [weapon.damage], time: "bonus action" }
+      );
+      this.weapon = weapon;
+      this.ability = getWeaponAbility(actor, weapon);
+      this.icon = getItemIcon(weapon);
+      this.subIcon = { url: frenzy_default };
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ target }) {
+        __superGet(_FrenzyAttack.prototype, this, "apply").call(this, { target });
+        yield doStandardAttack(this.g, {
+          ability: this.ability,
+          attacker: this.actor,
+          source: this,
+          target,
+          weapon: this.weapon
+        });
+      });
+    }
+  };
+  var FrenzyEffect = new Effect("Frenzy", "turnEnd", (g2) => {
+    g2.events.on("GetActions", ({ detail: { who, target, actions } }) => {
+      if (who.hasEffect(FrenzyEffect) && who !== target) {
+        for (const weapon of who.weapons) {
+          if (weapon.rangeCategory === "melee")
+            actions.push(new FrenzyAttack(g2, who, weapon));
+        }
+      }
+    });
+  });
+  var Frenzy = new SimpleFeature(
     "Frenzy",
-    `Starting when you choose this path at 3rd level, you can go into a frenzy when you rage. If you do so, for the duration of your rage you can make a single melee weapon attack as a bonus action on each of your turns after this one. When your rage ends, you suffer one level of exhaustion.`
+    `Starting when you choose this path at 3rd level, you can go into a frenzy when you rage. If you do so, for the duration of your rage you can make a single melee weapon attack as a bonus action on each of your turns after this one. When your rage ends, you suffer one level of exhaustion.`,
+    (g2, me) => {
+      g2.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
+        if (action instanceof RageAction && action.actor === me)
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              Frenzy,
+              "Frenzy",
+              `Should ${me.name} enter a Frenzy?`,
+              () => __async(void 0, null, function* () {
+                me.addEffect(FrenzyEffect, { duration: minutes(1) });
+              })
+            )
+          );
+      });
+    }
   );
   var MindlessRage = new SimpleFeature(
     "Mindless Rage",

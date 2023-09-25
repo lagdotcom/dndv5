@@ -35,7 +35,7 @@ export function getWeaponAbility(
 
 export function getWeaponRange(who: Combatant, weapon: WeaponItem) {
   if (isDefined(weapon.longRange)) return weapon.longRange;
-  return who.reach;
+  return who.reach + weapon.reach;
 }
 
 export function getValidAmmunition(who: Combatant, weapon: WeaponItem) {

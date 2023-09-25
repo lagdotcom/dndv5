@@ -29,7 +29,7 @@ const IceKnife = scalingSpell<HasTarget>({
 
   getAffectedArea: (g, caster, { target }) => target && [getArea(g, target)],
 
-  getDamage: (g, caster, { slot }) => [
+  getDamage: (g, caster, method, { slot }) => [
     _dd(1, 10, "piercing"),
     _dd(1 + (slot ?? 1), 6, "cold"),
   ],

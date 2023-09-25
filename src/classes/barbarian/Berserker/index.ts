@@ -1,12 +1,88 @@
+import AbstractAction from "../../../actions/AbstractAction";
+import { doStandardAttack } from "../../../actions/WeaponAttack";
+import { getItemIcon } from "../../../colours";
+import { HasTarget } from "../../../configs";
+import Effect from "../../../Effect";
+import Engine from "../../../Engine";
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
+import YesNoChoice from "../../../interruptions/YesNoChoice";
+import TargetResolver from "../../../resolvers/TargetResolver";
+import AbilityName from "../../../types/AbilityName";
+import Combatant from "../../../types/Combatant";
+import { WeaponItem } from "../../../types/Item";
 import PCSubclass from "../../../types/PCSubclass";
-import { RageEffect } from "../Rage";
+import { getWeaponAbility } from "../../../utils/items";
+import { minutes } from "../../../utils/time";
+import { RageAction, RageEffect } from "../Rage";
+import frenzyUrl from "./icons/frenzy.svg";
 
-// TODO [EXHAUSTION]
-const Frenzy = notImplementedFeature(
+class FrenzyAttack extends AbstractAction<HasTarget> {
+  ability: AbilityName;
+
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    public weapon: WeaponItem,
+  ) {
+    super(
+      g,
+      actor,
+      `${weapon.name} (Frenzy)`,
+      "implemented",
+      { target: new TargetResolver(g, actor.reach + weapon.reach) },
+      { damage: [weapon.damage], time: "bonus action" },
+    );
+
+    this.ability = getWeaponAbility(actor, weapon);
+    this.icon = getItemIcon(weapon);
+    this.subIcon = { url: frenzyUrl };
+  }
+
+  async apply({ target }: HasTarget) {
+    super.apply({ target });
+
+    await doStandardAttack(this.g, {
+      ability: this.ability,
+      attacker: this.actor,
+      source: this,
+      target,
+      weapon: this.weapon,
+    });
+  }
+}
+
+const FrenzyEffect = new Effect("Frenzy", "turnEnd", (g) => {
+  g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
+    if (who.hasEffect(FrenzyEffect) && who !== target) {
+      for (const weapon of who.weapons) {
+        if (weapon.rangeCategory === "melee")
+          actions.push(new FrenzyAttack(g, who, weapon));
+      }
+    }
+  });
+});
+
+const Frenzy = new SimpleFeature(
   "Frenzy",
   `Starting when you choose this path at 3rd level, you can go into a frenzy when you rage. If you do so, for the duration of your rage you can make a single melee weapon attack as a bonus action on each of your turns after this one. When your rage ends, you suffer one level of exhaustion.`,
+  (g, me) => {
+    g.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
+      if (action instanceof RageAction && action.actor === me)
+        interrupt.add(
+          new YesNoChoice(
+            me,
+            Frenzy,
+            "Frenzy",
+            `Should ${me.name} enter a Frenzy?`,
+            async () => {
+              // TODO Frenzy ends whenever Rage does
+              me.addEffect(FrenzyEffect, { duration: minutes(1) });
+            },
+          ),
+        );
+    });
+  },
 );
 
 const MindlessRage = new SimpleFeature(

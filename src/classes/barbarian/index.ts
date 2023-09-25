@@ -10,7 +10,7 @@ import PCClass from "../../types/PCClass";
 import SkillName, { skSet } from "../../types/SkillName";
 import { intersects } from "../../utils/set";
 import { makeASI, makeExtraAttack } from "../common";
-import Rage from "./Rage";
+import Rage, { RageAction } from "./Rage";
 import { RecklessAttack } from "./RecklessAttack";
 
 const UnarmoredDefense = new SimpleFeature(
@@ -97,7 +97,7 @@ const InstinctivePounce = new SimpleFeature(
   `As part of the bonus action you take to enter your rage, you can move up to half your speed.`,
   (g, me) => {
     g.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
-      if (action.name === "Rage" && action.actor === me)
+      if (action instanceof RageAction && action.actor === me)
         interrupt.add(
           new EvaluateLater(me, InstinctivePounce, async () =>
             g.applyBoundedMove(
