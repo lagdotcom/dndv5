@@ -2747,10 +2747,12 @@
       this.effects.delete(area);
       this.fire(new AreaRemovedEvent({ area }));
     }
-    getInside(area) {
+    getInside(area, ignore = []) {
       const points = resolveArea(area);
       const inside = [];
       for (const [combatant, state] of this.combatants) {
+        if (ignore.includes(combatant))
+          continue;
         const squares = new PointSet(getSquares(combatant, state.position));
         if (points.overlaps(squares))
           inside.push(combatant);
@@ -9086,6 +9088,67 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var MagicStone_default = MagicStone;
 
+  // src/spells/level1/EarthTremor.ts
+  var getArea7 = (g2, caster) => ({
+    type: "within",
+    radius: 10,
+    target: caster,
+    position: g2.getState(caster).position
+  });
+  var EarthTremor = scalingSpell({
+    name: "Earth Tremor",
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Bard", "Druid", "Sorcerer", "Wizard"],
+    getConfig: () => ({}),
+    getAffectedArea: (g2, caster) => [getArea7(g2, caster)],
+    getDamage: (g2, caster, method, { slot }) => [
+      _dd(slot != null ? slot : 1, 6, "bludgeoning")
+    ],
+    getTargets: () => [],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { slot }) {
+        const damage = yield g2.rollDamage(slot, {
+          source: EarthTremor,
+          size: 6,
+          spell: EarthTremor,
+          method,
+          damageType: "bludgeoning",
+          attacker
+        });
+        const dc = getSaveDC(attacker, method.ability);
+        const area = getArea7(g2, attacker);
+        for (const target of g2.getInside(area, [attacker])) {
+          const save = yield g2.savingThrow(
+            dc,
+            {
+              attacker,
+              ability: "dex",
+              spell: EarthTremor,
+              method,
+              who: target,
+              tags: svSet()
+            },
+            { fail: "normal", save: "zero" }
+          );
+          if (save.damageResponse !== "zero") {
+            yield g2.damage(
+              EarthTremor,
+              "bludgeoning",
+              { attacker, spell: EarthTremor, method, target },
+              [["bludgeoning", damage]],
+              save.damageResponse
+            );
+            yield target.addEffect(Prone, { duration: Infinity }, attacker);
+          }
+        }
+      });
+    }
+  });
+  var EarthTremor_default = EarthTremor;
+
   // src/pcs/davies/Salgar_token.png
   var Salgar_token_default = "./Salgar_token-WLUJXZFZ.png";
 
@@ -9125,7 +9188,7 @@ The creature is aware of this effect before it makes its attack against you.`
         // TODO Mending,
         // TODO MoldEarth,
         // TODO DetectMagic,
-        // TODO EarthTremor,
+        EarthTremor_default,
         HealingWord_default,
         // TODO SpeakWithAnimals,
         LesserRestoration_default

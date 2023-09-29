@@ -634,11 +634,12 @@ export default class Engine {
     this.fire(new AreaRemovedEvent({ area }));
   }
 
-  getInside(area: SpecifiedEffectShape) {
+  getInside(area: SpecifiedEffectShape, ignore: Combatant[] = []) {
     const points = resolveArea(area);
     const inside: Combatant[] = [];
 
     for (const [combatant, state] of this.combatants) {
+      if (ignore.includes(combatant)) continue;
       const squares = new PointSet(getSquares(combatant, state.position));
 
       if (points.overlaps(squares)) inside.push(combatant);
