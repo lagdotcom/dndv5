@@ -121,6 +121,7 @@ export default abstract class AbstractCombatant implements Combatant {
   exhaustion: number;
   temporaryHP: number;
   temporaryHPSource?: Source;
+  conditionImmunities: Set<ConditionName>;
 
   constructor(
     public g: Engine,
@@ -214,6 +215,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.damageResponses = new Map();
     this.exhaustion = 0;
     this.temporaryHP = 0;
+    this.conditionImmunities = new Set();
   }
 
   get baseACMethod(): ACMethod {
@@ -264,12 +266,12 @@ export default abstract class AbstractCombatant implements Combatant {
   }
 
   get conditions(): Set<ConditionName> {
-    return this.g.fire(
-      new GetConditionsEvent({
-        who: this,
-        conditions: new ConditionCollector(),
-      }),
-    ).detail.conditions.result;
+    const conditions = new ConditionCollector();
+    for (const condition of this.conditionImmunities)
+      conditions.ignoreValue(condition);
+
+    this.g.fire(new GetConditionsEvent({ who: this, conditions }));
+    return conditions.result;
   }
 
   get speed(): number {

@@ -139,7 +139,7 @@ export default class OGonrit extends Monster {
     this.skills.set("Persuasion", 1);
     this.damageResponses.set("fire", "resist");
     this.damageResponses.set("poison", "resist");
-    // TODO immunities: poisoned
+    this.conditionImmunities.add("Poisoned");
     this.languages.add("Abyssal");
     this.languages.add("Common");
 

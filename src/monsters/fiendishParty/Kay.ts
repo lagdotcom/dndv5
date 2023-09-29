@@ -116,7 +116,7 @@ export default class Kay extends Monster {
     this.saveProficiencies.add("dex");
     this.skills.set("Athletics", 1);
     this.skills.set("Stealth", 2);
-    // TODO immunities: frightened
+    this.conditionImmunities.add("Frightened");
     this.languages.add("Abyssal");
     this.languages.add("Common");
     this.languages.add("Orc");

@@ -55,7 +55,7 @@ export default class Zafron extends Monster {
     this.skills.set("Intimidation", 1);
     this.damageResponses.set("fire", "resist");
     this.damageResponses.set("poison", "resist");
-    // TODO immunities: poisoned
+    this.conditionImmunities.add("Poisoned");
     this.languages.add("Abyssal");
 
     const axe = new Greataxe(g);

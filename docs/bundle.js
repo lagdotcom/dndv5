@@ -1257,6 +1257,7 @@
       this.damageResponses = /* @__PURE__ */ new Map();
       this.exhaustion = 0;
       this.temporaryHP = 0;
+      this.conditionImmunities = /* @__PURE__ */ new Set();
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -1304,12 +1305,11 @@
       return ammo;
     }
     get conditions() {
-      return this.g.fire(
-        new GetConditionsEvent({
-          who: this,
-          conditions: new ConditionCollector()
-        })
-      ).detail.conditions.result;
+      const conditions = new ConditionCollector();
+      for (const condition of this.conditionImmunities)
+        conditions.ignoreValue(condition);
+      this.g.fire(new GetConditionsEvent({ who: this, conditions }));
+      return conditions.result;
     }
     get speed() {
       var _a;
@@ -3234,6 +3234,7 @@
       this.skills.set("Arcana", 1);
       this.skills.set("Nature", 1);
       this.damageResponses.set("poison", "immune");
+      this.conditionImmunities.add("Poisoned");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.addFeature(ArmorOfAgathys2);
@@ -3682,6 +3683,7 @@
       this.saveProficiencies.add("dex");
       this.skills.set("Athletics", 1);
       this.skills.set("Stealth", 2);
+      this.conditionImmunities.add("Frightened");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.languages.add("Orc");
@@ -3970,6 +3972,7 @@
       this.skills.set("Persuasion", 1);
       this.damageResponses.set("fire", "resist");
       this.damageResponses.set("poison", "resist");
+      this.conditionImmunities.add("Poisoned");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.addFeature(FiendishMantle);
@@ -4067,6 +4070,7 @@
       this.skills.set("Deception", 1);
       this.skills.set("Perception", 1);
       this.damageResponses.set("poison", "immune");
+      this.conditionImmunities.add("Poisoned");
       this.languages.add("Abyssal");
       this.languages.add("Common");
       this.addFeature(Cheer);
@@ -4139,6 +4143,7 @@
       this.skills.set("Intimidation", 1);
       this.damageResponses.set("fire", "resist");
       this.damageResponses.set("poison", "resist");
+      this.conditionImmunities.add("Poisoned");
       this.languages.add("Abyssal");
       const axe = new Greataxe(g2);
       this.addFeature(LustForBattle);
