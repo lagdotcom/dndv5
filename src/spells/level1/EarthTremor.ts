@@ -16,6 +16,7 @@ const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
 });
 
 const EarthTremor = scalingSpell({
+  status: "incomplete",
   name: "Earth Tremor",
   level: 1,
   school: "Evocation",

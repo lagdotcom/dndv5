@@ -35,6 +35,7 @@ import {
 } from "./utils/state";
 import { SVGCacheContext } from "./utils/SVGCache";
 import { getUnitData, UnitData } from "./utils/types";
+import UIResponse from "./utils/UIResponse";
 import YesNoDialog from "./YesNoDialog";
 
 interface Props {
@@ -84,13 +85,17 @@ export default function App({ g, onMount }: Props) {
     g.events.on("AreaPlaced", refreshAreas);
     g.events.on("AreaRemoved", refreshAreas);
 
-    g.events.on("TurnStarted", ({ detail: { who } }) => {
-      activeCombatantId.value = who.id;
-      moveHandler.value = getDefaultMovement(who);
-      movingCombatantId.value = who.id;
-      hideActionMenu();
+    g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+      interrupt.add(
+        new UIResponse(who, async () => {
+          activeCombatantId.value = who.id;
+          moveHandler.value = getDefaultMovement(who);
+          movingCombatantId.value = who.id;
+          hideActionMenu();
 
-      allActions.value = g.getActions(who);
+          allActions.value = g.getActions(who);
+        }),
+      );
     });
 
     g.events.on("ListChoice", (e) => (chooseFromList.value = e));

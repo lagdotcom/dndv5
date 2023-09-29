@@ -7,6 +7,7 @@ import MultiPointResolver from "../resolvers/MultiPointResolver";
 import MultiTargetResolver from "../resolvers/MultiTargetResolver";
 import NumberRangeResolver from "../resolvers/NumberRangeResolver";
 import PointResolver from "../resolvers/PointResolver";
+import PointToPointResolver from "../resolvers/PointToPointResolver";
 import SlotResolver from "../resolvers/SlotResolver";
 import TargetResolver from "../resolvers/TargetResolver";
 import Action from "../types/Action";
@@ -398,7 +399,10 @@ export default function ChooseActionConfigPanel<T extends object>({
           return <ChooseTarget {...subProps} />;
         else if (resolver instanceof MultiTargetResolver)
           return <ChooseTargets {...subProps} />;
-        else if (resolver instanceof PointResolver)
+        else if (
+          resolver instanceof PointResolver ||
+          resolver instanceof PointToPointResolver
+        )
           return <ChoosePoint {...subProps} />;
         else if (resolver instanceof MultiPointResolver)
           return <ChoosePoints {...subProps} />;

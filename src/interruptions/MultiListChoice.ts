@@ -15,6 +15,7 @@ export default class MultiListChoice<T = unknown> implements Interruption {
     public minimum: number,
     public maximum: number = items.length,
     public chosen: (choice: T[]) => Promise<void>,
+    public priority: number = 10,
   ) {}
 
   async apply(g: Engine) {

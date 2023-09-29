@@ -13,6 +13,7 @@ import MagicStone from "../../spells/cantrip/MagicStone";
 import EarthTremor from "../../spells/level1/EarthTremor";
 import HealingWord from "../../spells/level1/HealingWord";
 import LesserRestoration from "../../spells/level2/LesserRestoration";
+import Moonbeam from "../../spells/level2/Moonbeam";
 import EruptingEarth from "../../spells/level3/EruptingEarth";
 import GuardianOfNature from "../../spells/level4/GuardianOfNature";
 import { enchant } from "../../utils/items";
@@ -66,7 +67,7 @@ export default class Salgar extends PC {
 
       LesserRestoration,
       // TODO LocateObject,
-      // TODO Moonbeam,
+      Moonbeam,
 
       EruptingEarth,
 

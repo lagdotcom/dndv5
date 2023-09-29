@@ -1,9 +1,12 @@
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { ctSet } from "../../types/CreatureType";
 import { scalingSpell } from "../common";
 
+const cannotHeal = ctSet("undead", "construct");
+
 const HealingWord = scalingSpell<HasTarget>({
-  status: "incomplete",
+  status: "implemented",
   name: "Healing Word",
   level: 1,
   school: "Evocation",
@@ -20,9 +23,15 @@ const HealingWord = scalingSpell<HasTarget>({
   ],
   getTargets: (g, caster, { target }) => [target],
 
-  // TODO This spell has no effect on undead or constructs.
+  check(g, { target }, ec) {
+    if (target && cannotHeal.has(target.type))
+      ec.add(`Cannot heal a ${target.type}`, HealingWord);
+    return ec;
+  },
 
   async apply(g, actor, method, { slot, target }) {
+    if (cannotHeal.has(target.type)) return;
+
     const modifier = actor[method.ability].modifier;
     const rolled = await g.rollHeal(slot, {
       source: HealingWord,

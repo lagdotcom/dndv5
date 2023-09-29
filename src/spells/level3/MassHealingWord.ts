@@ -1,9 +1,12 @@
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { ctSet } from "../../types/CreatureType";
 import { scalingSpell } from "../common";
 
+const cannotHeal = ctSet("undead", "construct");
+
 const MassHealingWord = scalingSpell<HasTargets>({
-  status: "incomplete",
+  status: "implemented",
   name: "Mass Healing Word",
   level: 3,
   school: "Evocation",
@@ -20,7 +23,18 @@ const MassHealingWord = scalingSpell<HasTargets>({
   ],
   getTargets: (g, caster, { targets }) => targets,
 
-  // TODO This spell has no effect on undead or constructs.
+  check(g, { targets }, ec) {
+    if (targets) {
+      for (const target of targets)
+        if (cannotHeal.has(target.type))
+          ec.add(
+            `Cannot heal ${target.name}, they are a ${target.type}`,
+            MassHealingWord,
+          );
+    }
+
+    return ec;
+  },
 
   async apply(g, actor, method, { slot, targets }) {
     const amount =
@@ -30,7 +44,11 @@ const MassHealingWord = scalingSpell<HasTargets>({
         size: 4,
       })) + actor[method.ability].modifier;
 
-    for (const target of targets) await g.applyHeal(target, amount, actor);
+    for (const target of targets) {
+      if (cannotHeal.has(target.type)) continue;
+
+      await g.applyHeal(target, amount, actor);
+    }
   },
 });
 export default MassHealingWord;

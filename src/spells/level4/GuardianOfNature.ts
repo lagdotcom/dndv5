@@ -83,6 +83,7 @@ const GreatTreeEffect = new Effect(
 );
 
 const GuardianOfNature = simpleSpell<{ form: Form }>({
+  status: "incomplete",
   name: "Guardian of Nature",
   level: 4,
   school: "Transmutation",

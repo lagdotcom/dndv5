@@ -16,6 +16,7 @@ const getArea = (g: Engine, centre: Point): SpecifiedCube => ({
 });
 
 const EruptingEarth = scalingSpell<HasPoint>({
+  status: "incomplete",
   name: "Erupting Earth",
   level: 3,
   school: "Evocation",

@@ -18,6 +18,7 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     public text: string,
     public items: PickChoice<T>[],
     public chosen: (choice: T) => Promise<void>,
+    public priority: number = 10,
   ) {}
 
   async apply(g: Engine) {

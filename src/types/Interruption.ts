@@ -6,4 +6,5 @@ export default interface Interruption {
   who: Combatant;
   source: Source;
   apply(g: Engine): Promise<unknown>;
+  priority: number;
 }

@@ -12,6 +12,7 @@ import Source from "./Source";
 
 export const AreaTags = [
   "difficult terrain",
+  "dim light",
   "heavily obscured",
   "holy",
   "plants",

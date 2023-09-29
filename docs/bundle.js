@@ -186,7 +186,19 @@
   };
 
   // src/collectors/InterruptionCollector.ts
-  var InterruptionCollector = class extends Set {
+  var InterruptionCollector = class {
+    constructor() {
+      this.set = /* @__PURE__ */ new Set();
+    }
+    add(interrupt) {
+      this.set.add(interrupt);
+    }
+    *[Symbol.iterator]() {
+      const interruptions = [...this.set];
+      interruptions.sort((a, b) => b.priority - a.priority);
+      for (const i of interruptions)
+        yield i;
+    }
   };
 
   // src/collectors/MultiplierCollector.ts
@@ -2239,13 +2251,14 @@
 
   // src/interruptions/YesNoChoice.ts
   var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no) {
+    constructor(who, source, title, text, yes, no, priority2 = 10) {
       this.who = who;
       this.source = source;
       this.title = title;
       this.text = text;
       this.yes = yes;
       this.no = no;
+      this.priority = priority2;
     }
     apply(g2) {
       return __async(this, null, function* () {
@@ -2848,10 +2861,11 @@
 
   // src/interruptions/EvaluateLater.ts
   var EvaluateLater = class {
-    constructor(who, source, apply) {
+    constructor(who, source, apply, priority2 = 5) {
       this.who = who;
       this.source = source;
       this.apply = apply;
+      this.priority = priority2;
     }
   };
 
@@ -3841,9 +3855,13 @@
     }
   };
 
+  // src/types/CreatureType.ts
+  var ctSet = (...items) => new Set(items);
+
   // src/spells/level3/MassHealingWord.ts
+  var cannotHeal = ctSet("undead", "construct");
   var MassHealingWord = scalingSpell({
-    status: "incomplete",
+    status: "implemented",
     name: "Mass Healing Word",
     level: 3,
     school: "Evocation",
@@ -3858,7 +3876,17 @@
       { type: "flat", amount: caster[method.ability].modifier }
     ],
     getTargets: (g2, caster, { targets }) => targets,
-    // TODO This spell has no effect on undead or constructs.
+    check(g2, { targets }, ec) {
+      if (targets) {
+        for (const target of targets)
+          if (cannotHeal.has(target.type))
+            ec.add(
+              `Cannot heal ${target.name}, they are a ${target.type}`,
+              MassHealingWord
+            );
+      }
+      return ec;
+    },
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, actor, method, { slot, targets }) {
         const amount = (yield g2.rollHeal(slot - 2, {
@@ -3866,8 +3894,11 @@
           actor,
           size: 4
         })) + actor[method.ability].modifier;
-        for (const target of targets)
+        for (const target of targets) {
+          if (cannotHeal.has(target.type))
+            continue;
           yield g2.applyHeal(target, amount, actor);
+        }
       });
     }
   });
@@ -3995,8 +4026,9 @@
   };
 
   // src/spells/level1/HealingWord.ts
+  var cannotHeal2 = ctSet("undead", "construct");
   var HealingWord = scalingSpell({
-    status: "incomplete",
+    status: "implemented",
     name: "Healing Word",
     level: 1,
     school: "Evocation",
@@ -4011,9 +4043,15 @@
       { type: "flat", amount: caster[method.ability].modifier }
     ],
     getTargets: (g2, caster, { target }) => [target],
-    // TODO This spell has no effect on undead or constructs.
+    check(g2, { target }, ec) {
+      if (target && cannotHeal2.has(target.type))
+        ec.add(`Cannot heal a ${target.type}`, HealingWord);
+      return ec;
+    },
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, actor, method, { slot, target }) {
+        if (cannotHeal2.has(target.type))
+          return;
         const modifier = actor[method.ability].modifier;
         const rolled = yield g2.rollHeal(slot, {
           source: HealingWord,
@@ -4685,13 +4723,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/interruptions/PickFromListChoice.ts
   var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen) {
+    constructor(who, source, title, text, items, chosen, priority2 = 10) {
       this.who = who;
       this.source = source;
       this.title = title;
       this.text = text;
       this.items = items;
       this.chosen = chosen;
+      this.priority = priority2;
     }
     apply(g2) {
       return __async(this, null, function* () {
@@ -5353,7 +5392,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
 
   // src/interruptions/MultiListChoice.ts
   var MultiListChoice = class {
-    constructor(who, source, title, text, items, minimum, maximum = items.length, chosen) {
+    constructor(who, source, title, text, items, minimum, maximum = items.length, chosen, priority2 = 10) {
       this.who = who;
       this.source = source;
       this.title = title;
@@ -5362,6 +5401,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.minimum = minimum;
       this.maximum = maximum;
       this.chosen = chosen;
+      this.priority = priority2;
     }
     apply(g2) {
       return __async(this, null, function* () {
@@ -6989,9 +7029,6 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     ])
   };
   var paladin_default = Paladin;
-
-  // src/types/CreatureType.ts
-  var ctSet = (...items) => new Set(items);
 
   // src/spells/level1/ProtectionFromEvilAndGood.ts
   var affectedTypes = ctSet(
@@ -9102,6 +9139,7 @@ The creature is aware of this effect before it makes its attack against you.`
     position: g2.getState(caster).position
   });
   var EarthTremor = scalingSpell({
+    status: "incomplete",
     name: "Earth Tremor",
     level: 1,
     school: "Evocation",
@@ -9161,13 +9199,183 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var EarthTremor_default = EarthTremor;
 
+  // src/resolvers/PointToPointResolver.ts
+  var PointToPointResolver = class {
+    constructor(g2, startPoint, maxRange) {
+      this.g = g2;
+      this.startPoint = startPoint;
+      this.maxRange = maxRange;
+      this.type = "Point";
+    }
+    get name() {
+      if (this.maxRange === Infinity)
+        return "any point";
+      return `point within ${this.maxRange}' of start point`;
+    }
+    check(value, action, ec) {
+      if (!isPoint(value))
+        ec.add("No target", this);
+      else {
+        if (getDistanceBetween(this.startPoint, 1, value, 1) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/level2/Moonbeam.ts
+  var getArea8 = (centre) => ({
+    type: "cylinder",
+    centre,
+    height: 40,
+    radius: 5
+  });
+  var MoveMoonbeamAction = class _MoveMoonbeamAction extends AbstractAction {
+    constructor(g2, controller) {
+      super(
+        g2,
+        controller.caster,
+        "Move Moonbeam",
+        "implemented",
+        { point: new PointToPointResolver(g2, controller.centre, 60) },
+        { time: "action" }
+      );
+      this.controller = controller;
+    }
+    getAffectedArea({ point }) {
+      if (point)
+        return [getArea8(point)];
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ point }) {
+        __superGet(_MoveMoonbeamAction.prototype, this, "apply").call(this, { point });
+        yield this.controller.move(point);
+      });
+    }
+  };
+  var MoonbeamController = class {
+    constructor(g2, caster, method, centre, slot) {
+      this.g = g2;
+      this.caster = caster;
+      this.method = method;
+      this.centre = centre;
+      this.slot = slot;
+      this.onSpellEnd = () => __async(this, null, function* () {
+        this.g.removeEffectArea(this.area);
+        for (const cleanup of this.subscriptions)
+          cleanup();
+      });
+      this.shape = getArea8(centre);
+      this.area = new ActiveEffectArea(
+        "Moonbeam",
+        this.shape,
+        arSet("dim light")
+      );
+      g2.addEffectArea(this.area);
+      this.hasBeenATurn = false;
+      this.hurtThisTurn = /* @__PURE__ */ new Set();
+      this.subscriptions = [];
+      this.subscriptions.push(
+        g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+          this.hurtThisTurn.clear();
+          if (who === this.caster)
+            this.hasBeenATurn = true;
+          if (g2.getInside(this.shape).includes(who))
+            interrupt.add(this.getDamager(who));
+        })
+      );
+      this.subscriptions.push(
+        g2.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
+          if (g2.getInside(this.shape).includes(who))
+            interrupt.add(this.getDamager(who));
+        })
+      );
+      this.subscriptions.push(
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === this.caster && this.hasBeenATurn)
+            actions.push(new MoveMoonbeamAction(g2, this));
+        })
+      );
+    }
+    getDamager(target) {
+      return new EvaluateLater(target, Moonbeam, () => __async(this, null, function* () {
+        if (this.hurtThisTurn.has(target))
+          return;
+        this.hurtThisTurn.add(target);
+        const damage = yield this.g.rollDamage(this.slot, {
+          attacker: this.caster,
+          damageType: "radiant",
+          method: this.method,
+          size: 10,
+          source: Moonbeam,
+          spell: Moonbeam,
+          target
+        });
+        const dc = getSaveDC(this.caster, this.method.ability);
+        const result = yield this.g.savingThrow(dc, {
+          ability: "con",
+          attacker: this.caster,
+          method: this.method,
+          spell: Moonbeam,
+          who: target,
+          tags: svSet()
+        });
+        yield this.g.damage(
+          Moonbeam,
+          "radiant",
+          {
+            attacker: this.caster,
+            method: this.method,
+            spell: Moonbeam,
+            target
+          },
+          [["radiant", damage]],
+          result.damageResponse
+        );
+      }));
+    }
+    move(centre) {
+      this.g.removeEffectArea(this.area);
+      this.centre = centre;
+      this.shape.centre = centre;
+      this.g.addEffectArea(this.area);
+    }
+  };
+  var Moonbeam = scalingSpell({
+    status: "incomplete",
+    name: "Moonbeam",
+    level: 2,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
+    lists: ["Druid"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea8(point)],
+    getDamage: (g2, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
+    getTargets: () => [],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point, slot }) {
+        const controller = new MoonbeamController(g2, caster, method, point, slot);
+        caster.concentrateOn({
+          duration: minutes(1),
+          spell: Moonbeam,
+          onSpellEnd: controller.onSpellEnd
+        });
+      });
+    }
+  });
+  var Moonbeam_default = Moonbeam;
+
   // src/spells/level3/EruptingEarth.ts
-  var getArea8 = (g2, centre) => ({
+  var getArea9 = (g2, centre) => ({
     type: "cube",
     length: 20,
     centre
   });
   var EruptingEarth = scalingSpell({
+    status: "incomplete",
     name: "Erupting Earth",
     level: 3,
     school: "Evocation",
@@ -9176,7 +9384,7 @@ The creature is aware of this effect before it makes its attack against you.`
     m: "a piece of obsidian",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
-    getAffectedArea: (g2, caster, { point }) => point && [getArea8(g2, point)],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea9(g2, point)],
     getDamage: (g2, caster, method, { slot }) => [
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
@@ -9192,7 +9400,7 @@ The creature is aware of this effect before it makes its attack against you.`
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        const shape = getArea8(g2, point);
+        const shape = getArea9(g2, point);
         for (const target of g2.getInside(shape)) {
           const save = yield g2.savingThrow(dc, {
             attacker,
@@ -9281,6 +9489,7 @@ The creature is aware of this effect before it makes its attack against you.`
     { tags: ["shapechange"] }
   );
   var GuardianOfNature = simpleSpell({
+    status: "incomplete",
     name: "Guardian of Nature",
     level: 4,
     school: "Transmutation",
@@ -9357,7 +9566,7 @@ The creature is aware of this effect before it makes its attack against you.`
         // TODO SpeakWithAnimals,
         LesserRestoration_default,
         // TODO LocateObject,
-        // TODO Moonbeam,
+        Moonbeam_default,
         EruptingEarth_default,
         // TODO CharmMonster,
         GuardianOfNature_default
@@ -9653,6 +9862,8 @@ The creature is aware of this effect before it makes its attack against you.`
       return "yellow";
     if (tags.has("plants"))
       return "green";
+    if (tags.has("dim light"))
+      return "skyblue";
   }
   function Sphere({
     shape,
@@ -10292,7 +10503,7 @@ The creature is aware of this effect before it makes its attack against you.`
           return /* @__PURE__ */ o(ChooseTarget, __spreadValues({}, subProps));
         else if (resolver instanceof MultiTargetResolver)
           return /* @__PURE__ */ o(ChooseTargets, __spreadValues({}, subProps));
-        else if (resolver instanceof PointResolver)
+        else if (resolver instanceof PointResolver || resolver instanceof PointToPointResolver)
           return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, subProps));
         else if (resolver instanceof MultiPointResolver)
           return /* @__PURE__ */ o(ChoosePoints, __spreadValues({}, subProps));
@@ -10816,6 +11027,17 @@ The creature is aware of this effect before it makes its attack against you.`
     };
   }
 
+  // src/ui/utils/UIResponse.ts
+  var UISource = { name: "UI" };
+  var UIResponse = class {
+    constructor(who, apply) {
+      this.who = who;
+      this.apply = apply;
+      this.source = UISource;
+      this.priority = 0;
+    }
+  };
+
   // src/ui/YesNoDialog.tsx
   var import_hooks14 = __toESM(require_hooks());
   function YesNoDialog({
@@ -10869,12 +11091,16 @@ The creature is aware of this effect before it makes its attack against you.`
       g2.events.on("EffectRemoved", refreshUnits);
       g2.events.on("AreaPlaced", refreshAreas);
       g2.events.on("AreaRemoved", refreshAreas);
-      g2.events.on("TurnStarted", ({ detail: { who } }) => {
-        activeCombatantId.value = who.id;
-        moveHandler.value = getDefaultMovement(who);
-        movingCombatantId.value = who.id;
-        hideActionMenu();
-        allActions.value = g2.getActions(who);
+      g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+        interrupt.add(
+          new UIResponse(who, () => __async(this, null, function* () {
+            activeCombatantId.value = who.id;
+            moveHandler.value = getDefaultMovement(who);
+            movingCombatantId.value = who.id;
+            hideActionMenu();
+            allActions.value = g2.getActions(who);
+          }))
+        );
       });
       g2.events.on("ListChoice", (e) => chooseFromList.value = e);
       g2.events.on("MultiListChoice", (e) => chooseManyFromList.value = e);
