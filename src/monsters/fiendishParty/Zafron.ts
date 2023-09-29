@@ -18,7 +18,7 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
       ({ detail: { attack, attacker, interrupt } }) => {
         if (attacker === me && attack?.pre.weapon === weapon)
           interrupt.add(
-            new EvaluateLater(me, LustForBattle, async (g) => {
+            new EvaluateLater(me, LustForBattle, async () => {
               // TODO [MESSAGE]
               await g.giveTemporaryHP(me, 5, LustForBattle);
             }),

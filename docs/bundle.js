@@ -4109,8 +4109,8 @@
         ({ detail: { attack, attacker, interrupt } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.weapon) === weapon)
             interrupt.add(
-              new EvaluateLater(me, LustForBattle, (g3) => __async(void 0, null, function* () {
-                yield g3.giveTemporaryHP(me, 5, LustForBattle);
+              new EvaluateLater(me, LustForBattle, () => __async(void 0, null, function* () {
+                yield g2.giveTemporaryHP(me, 5, LustForBattle);
               }))
             );
         }
@@ -7961,16 +7961,36 @@ If the creature succeeds on its saving throw, you can't use this feature on that
   };
 
   // src/races/Halfling.ts
-  var Lucky2 = notImplementedFeature(
+  var Lucky2 = new SimpleFeature(
     "Lucky",
-    `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`
+    `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`,
+    (g2, me) => {
+      g2.events.on("DiceRolled", ({ detail }) => {
+        const { otherValues, type: t, value, interrupt } = detail;
+        if ((t.type === "attack" || t.type === "check" || t.type === "save") && t.who === me && value === 1)
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              Lucky2,
+              "Lucky",
+              `${me.name} rolled a 1 on a ${t.type} check. Reroll it?`,
+              () => __async(void 0, null, function* () {
+                const newRoll = g2.dice.roll(t).value;
+                otherValues.push(value);
+                detail.value = newRoll;
+              })
+            )
+          );
+      });
+    }
   );
   var Brave = new SimpleFeature(
     "Brave",
     `You have advantage on saving throws against being frightened.`,
     (g2, me) => {
-      g2.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && tags.has("frightened"))
+      g2.events.on("BeforeSave", ({ detail: { who, tags, config, diceType } }) => {
+        var _a;
+        if (who === me && (tags.has("frightened") || ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Frightened"))))
           diceType.add("advantage", Brave);
       });
     }
