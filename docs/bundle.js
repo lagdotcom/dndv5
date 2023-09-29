@@ -4036,9 +4036,48 @@
     "Discord",
     "One enemy within 30 ft. must make a DC 15 Charisma save or use its reaction to make one melee attack against an ally in range."
   );
-  var Irritation = notImplementedFeature(
+  var IrritationAction = class _IrritationAction extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Irritation",
+        "implemented",
+        { target: new TargetResolver(g2, 30) },
+        { time: "action" }
+      );
+    }
+    check({ target }, ec) {
+      super.check({ target }, ec);
+      if (target && target.concentratingOn.size < 1)
+        ec.add("Target is not concentrating", this);
+      return ec;
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ target }) {
+        __superGet(_IrritationAction.prototype, this, "apply").call(this, { target });
+        const { g: g2, actor } = this;
+        const dc = getSaveDC(actor, "cha");
+        const result = yield g2.savingThrow(dc, {
+          ability: "con",
+          attacker: actor,
+          tags: svSet("concentration"),
+          who: target
+        });
+        if (result.outcome === "fail")
+          yield target.endConcentration();
+      });
+    }
+  };
+  var Irritation = new SimpleFeature(
     "Irritation",
-    "One enemy within 30ft. must make a DC 15 Constitution check or lose concentration."
+    "One enemy within 30ft. must make a DC 15 Constitution check or lose concentration.",
+    (g2, me) => {
+      g2.events.on("GetActions", ({ detail: { actions, who } }) => {
+        if (who === me)
+          actions.push(new IrritationAction(g2, who));
+      });
+    }
   );
   var SpellcastingMethod2 = new InnateSpellcasting(
     "Spellcasting",

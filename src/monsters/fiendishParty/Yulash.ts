@@ -1,13 +1,21 @@
+import AbstractAction from "../../actions/AbstractAction";
+import ErrorCollector from "../../collectors/ErrorCollector";
+import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import {
   bonusSpellsFeature,
   notImplementedFeature,
 } from "../../features/common";
+import SimpleFeature from "../../features/SimpleFeature";
 import { LeatherArmor } from "../../items/armor";
 import { Rapier } from "../../items/weapons";
 import Monster from "../../Monster";
+import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import HealingWord from "../../spells/level1/HealingWord";
+import Combatant from "../../types/Combatant";
+import { svSet } from "../../types/SaveTag";
+import { getSaveDC } from "../../utils/dnd";
 // import MistyStepSpell from "../../spells/level2/MistyStep";
 import tokenUrl from "./Yulash_token.png";
 
@@ -23,10 +31,50 @@ const Discord = notImplementedFeature(
   "One enemy within 30 ft. must make a DC 15 Charisma save or use its reaction to make one melee attack against an ally in range.",
 );
 
-// TODO
-const Irritation = notImplementedFeature(
+class IrritationAction extends AbstractAction<HasTarget> {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Irritation",
+      "implemented",
+      { target: new TargetResolver(g, 30) },
+      { time: "action" },
+    );
+  }
+
+  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
+    super.check({ target }, ec);
+
+    if (target && target.concentratingOn.size < 1)
+      ec.add("Target is not concentrating", this);
+
+    return ec;
+  }
+
+  async apply({ target }: HasTarget) {
+    super.apply({ target });
+
+    const { g, actor } = this;
+    const dc = getSaveDC(actor, "cha");
+    const result = await g.savingThrow(dc, {
+      ability: "con",
+      attacker: actor,
+      tags: svSet("concentration"),
+      who: target,
+    });
+
+    if (result.outcome === "fail") await target.endConcentration();
+  }
+}
+const Irritation = new SimpleFeature(
   "Irritation",
   "One enemy within 30ft. must make a DC 15 Constitution check or lose concentration.",
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { actions, who } }) => {
+      if (who === me) actions.push(new IrritationAction(g, who));
+    });
+  },
 );
 
 const SpellcastingMethod = new InnateSpellcasting(

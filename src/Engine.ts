@@ -441,6 +441,8 @@ export default class Engine {
         // TODO [DYING]
       }
     }
+
+    // TODO concentration check
   }
 
   async attack(
