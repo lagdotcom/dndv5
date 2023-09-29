@@ -16,6 +16,8 @@ import Human from "../../races/Human";
 import Bless from "../../spells/level1/Bless";
 import DivineFavor from "../../spells/level1/DivineFavor";
 import ShieldOfFaith from "../../spells/level1/ShieldOfFaith";
+import Aid from "../../spells/level2/Aid";
+import MagicWeapon from "../../spells/level2/MagicWeapon";
 import tokenUrl from "./Galilea_token.png";
 
 export default class Galilea extends PC {
@@ -61,8 +63,8 @@ export default class Galilea extends PC {
       DivineFavor,
       ShieldOfFaith,
 
-      // TODO Aid,
-      // TODO MagicWeapon
+      Aid,
+      MagicWeapon,
     );
   }
 }

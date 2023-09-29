@@ -972,6 +972,8 @@
         );
         if (sc.detail.success.result === "fail")
           return;
+        if (spell.concentration)
+          yield actor.endConcentration();
         return spell.apply(g2, actor, method, config);
       });
     }
@@ -1582,6 +1584,15 @@
   var coSet = (...items) => new Set(items);
 
   // src/effects.ts
+  var Dying = new Effect("Dying", "turnStart", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+      if (who.hasEffect(Dying)) {
+        conditions.add("Incapacitated", Dying);
+        conditions.add("Prone", Dying);
+        conditions.add("Unconscious", Dying);
+      }
+    });
+  });
   var Dead = new Effect(
     "Dead",
     "turnStart",
@@ -2275,6 +2286,9 @@
     }
   };
 
+  // src/types/SaveTag.ts
+  var svSet = (...items) => new Set(items);
+
   // src/utils/map.ts
   function orderedKeys(map, comparator) {
     const entries = [];
@@ -2606,12 +2620,26 @@
           })
         );
         if (target.hp <= 0) {
+          yield target.endConcentration();
           if (target.diesAtZero) {
             this.combatants.delete(target);
             yield target.addEffect(Dead, { duration: Infinity });
             this.fire(new CombatantDiedEvent({ who: target, attacker }));
-          } else {
+          } else if (!target.hasEffect(Dying)) {
+            yield target.addEffect(Dying, { duration: Infinity });
           }
+          return;
+        }
+        if (target.concentratingOn.size) {
+          const dc = Math.max(10, Math.floor(total / 2));
+          const result = yield this.savingThrow(dc, {
+            attacker,
+            who: target,
+            ability: "con",
+            tags: svSet("concentration")
+          });
+          if (result.outcome === "fail")
+            yield target.endConcentration();
         }
       });
     }
@@ -3052,9 +3080,6 @@
 
   // src/types/CheckTag.ts
   var chSet = (...items) => new Set(items);
-
-  // src/types/SaveTag.ts
-  var svSet = (...items) => new Set(items);
 
   // src/utils/dice.ts
   var _dd = (count, size, damage) => ({
@@ -4682,20 +4707,21 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var Scout_default = Scout;
 
   // src/enchantments/plus.ts
+  function getWeaponPlusHandler(item, value, source) {
+    return ({ detail: { weapon, ammo, bonus } }) => {
+      if (weapon === item || ammo === item)
+        bonus.add(value, source);
+    };
+  }
   var weaponPlus = (value, rarity) => ({
     name: `+${value} bonus`,
     setup(g2, item) {
       item.name = `${item.name} +${value}`;
       item.magical = true;
       item.rarity = rarity;
-      g2.events.on("BeforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
-        if (weapon === item || ammo === item)
-          bonus.add(value, this);
-      });
-      g2.events.on("GatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
-        if (weapon === item || ammo === item)
-          bonus.add(value, this);
-      });
+      const handler = getWeaponPlusHandler(item, value, this);
+      g2.events.on("BeforeAttack", handler);
+      g2.events.on("GatherDamage", handler);
     }
   });
   var weaponPlus1 = weaponPlus(1, "Uncommon");
@@ -6209,6 +6235,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             if (save.outcome === "success") {
               yield who.removeEffect(HoldPersonEffect);
               config.affected.delete(who);
+              if (config.affected.size < 1)
+                yield config.caster.endConcentration();
             }
           }))
         );
@@ -7173,6 +7201,29 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   });
   var LesserRestoration_default = LesserRestoration;
 
+  // src/spells/level2/ZoneOfTruth.ts
+  var getArea4 = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 15
+  });
+  var ZoneOfTruth = simpleSpell({
+    name: "Zone of Truth",
+    level: 2,
+    school: "Enchantment",
+    v: true,
+    s: true,
+    lists: ["Bard", "Cleric", "Paladin"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea4(point)],
+    getTargets: () => [],
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var ZoneOfTruth_default = ZoneOfTruth;
+
   // src/classes/paladin/Devotion/SacredWeapon.ts
   var SacredWeaponEffect = new Effect(
     "Sacred Weapon",
@@ -7269,8 +7320,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
     [
       { level: 3, spell: ProtectionFromEvilAndGood_default },
       { level: 3, spell: Sanctuary_default },
-      { level: 5, spell: LesserRestoration_default }
-      // TODO { level: 5, spell: ZoneOfTruth },
+      { level: 5, spell: LesserRestoration_default },
+      { level: 5, spell: ZoneOfTruth_default }
       // TODO { level: 9, spell: BeaconOfHope },
       // TODO { level: 9, spell: DispelMagic },
       // TODO { level: 13, spell: FreedomOfMovement },
@@ -7462,6 +7513,85 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var ShieldOfFaith_default = ShieldOfFaith;
 
+  // src/spells/level2/Aid.ts
+  var Aid = scalingSpell({
+    name: "Aid",
+    level: 2,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    m: "a tiny strip of white cloth",
+    lists: ["Artificer", "Cleric", "Paladin"],
+    getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 3, 30, true) }),
+    getTargets: (g2, caster, { targets }) => targets,
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { slot, targets }) {
+      });
+    }
+  });
+  var Aid_default = Aid;
+
+  // src/spells/level2/MagicWeapon.ts
+  function slotToBonus(slot) {
+    if (slot >= 6)
+      return 3;
+    if (slot >= 4)
+      return 2;
+    return 1;
+  }
+  var MagicWeaponController = class {
+    constructor(g2, caster, slot, item, bonus = slotToBonus(slot)) {
+      this.g = g2;
+      this.caster = caster;
+      this.slot = slot;
+      this.item = item;
+      this.bonus = bonus;
+      this.onSpellEnd = () => __async(this, null, function* () {
+        this.item.magical = false;
+        this.item.name = this.oldName;
+        for (const cleanup of this.subscriptions)
+          cleanup();
+      });
+      const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
+      this.subscriptions = [
+        g2.events.on("BeforeAttack", handler),
+        g2.events.on("GatherDamage", handler)
+      ];
+      this.oldName = item.name;
+      item.magical = true;
+      item.name = `${item.name} (Magic Weapon +${bonus})`;
+    }
+  };
+  var MagicWeapon = scalingSpell({
+    status: "implemented",
+    name: "Magic Weapon",
+    level: 2,
+    school: "Transmutation",
+    concentration: true,
+    time: "bonus action",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Paladin", "Wizard"],
+    getConfig: (g2, caster) => ({
+      item: new ChoiceResolver(
+        g2,
+        caster.weapons.filter((w) => !w.magical && w.category !== "natural").map((value) => ({ label: value.name, value }))
+      )
+    }),
+    getTargets: (g2, caster) => [caster],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { slot, item }) {
+        const controller = new MagicWeaponController(g2, caster, slot, item);
+        caster.concentrateOn({
+          duration: hours(1),
+          spell: MagicWeapon,
+          onSpellEnd: controller.onSpellEnd
+        });
+      });
+    }
+  });
+  var MagicWeapon_default = MagicWeapon;
+
   // src/pcs/davies/Galilea_token.png
   var Galilea_token_default = "./Galilea_token-D4XX5FIV.png";
 
@@ -7501,9 +7631,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.addPreparedSpells(
         Bless_default,
         DivineFavor_default,
-        ShieldOfFaith_default
-        // TODO Aid,
-        // TODO MagicWeapon
+        ShieldOfFaith_default,
+        Aid_default,
+        MagicWeapon_default
       );
     }
   };
@@ -8417,7 +8547,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var SpikeGrowth_default = SpikeGrowth;
 
   // src/spells/level3/LightningBolt.ts
-  function getArea4(g2, actor, point) {
+  function getArea5(g2, actor, point) {
     const position = g2.getState(actor).position;
     const size = actor.sizeInUnits;
     return aimLine(position, size, point, 100, 5);
@@ -8435,8 +8565,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getDamage: (g2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
     ],
-    getAffectedArea: (g2, caster, { point }) => point && [getArea4(g2, caster, point)],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea4(g2, caster, point)),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea5(g2, caster, point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea5(g2, caster, point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(5 + slot, {
@@ -8448,7 +8578,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside(getArea4(g2, attacker, point))) {
+        for (const target of g2.getInside(getArea5(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "dex",
@@ -8469,6 +8599,24 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }
   });
   var LightningBolt_default = LightningBolt;
+
+  // src/spells/level3/MeldIntoStone.ts
+  var MeldIntoStone = simpleSpell({
+    name: "Meld into Stone",
+    level: 3,
+    ritual: true,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    lists: ["Cleric", "Druid"],
+    getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var MeldIntoStone_default = MeldIntoStone;
 
   // src/spells/level3/SleetStorm.ts
   var SleetStorm = simpleSpell({
@@ -8587,7 +8735,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var FreedomOfMovement_default = FreedomOfMovement;
 
   // src/spells/level4/IceStorm.ts
-  var getArea5 = (centre) => ({
+  var getArea6 = (centre) => ({
     type: "cylinder",
     centre,
     radius: 20,
@@ -8602,8 +8750,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
-    getAffectedArea: (g2, caster, { point }) => point && [getArea5(point)],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea5(point)),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea6(point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea6(point)),
     getDamage: (g2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
@@ -8614,6 +8762,24 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }
   });
   var IceStorm_default = IceStorm;
+
+  // src/spells/level4/StoneShape.ts
+  var StoneShape = simpleSpell({
+    name: "Stone Shape",
+    level: 4,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    m: "soft clay, which must be worked into roughly the desired shape of the stone object",
+    lists: ["Artificer", "Cleric", "Druid", "Wizard"],
+    getConfig: () => ({}),
+    getTargets: () => [],
+    apply(g2, caster, method, config) {
+      return __async(this, null, function* () {
+      });
+    }
+  });
+  var StoneShape_default = StoneShape;
 
   // src/spells/level4/Stoneskin.ts
   var StoneskinEffect = new Effect("Stoneskin", "turnStart", (g2) => {
@@ -8677,7 +8843,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var CommuneWithNature_default = CommuneWithNature;
 
   // src/spells/level5/ConeOfCold.ts
-  var getArea6 = (g2, caster, target) => ({
+  var getArea7 = (g2, caster, target) => ({
     type: "cone",
     radius: 60,
     centre: g2.getState(caster).position,
@@ -8694,8 +8860,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     getDamage: (g2, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
-    getAffectedArea: (g2, caster, { point }) => point && [getArea6(g2, caster, point)],
-    getTargets: (g2, caster, { point }) => g2.getInside(getArea6(g2, caster, point)),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea7(g2, caster, point)],
+    getTargets: (g2, caster, { point }) => g2.getInside(getArea7(g2, caster, point)),
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
         const damage = yield g2.rollDamage(3 + slot, {
@@ -8707,7 +8873,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        for (const target of g2.getInside(getArea6(g2, attacker, point))) {
+        for (const target of g2.getInside(getArea7(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
             ability: "con",
@@ -8837,8 +9003,8 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 3, spell: SpiderClimb_default },
       { level: 3, spell: SpikeGrowth_default },
       { level: 5, spell: LightningBolt_default },
-      // { level: 5, spell: MeldIntoStone },
-      // { level: 7, spell: StoneShape },
+      { level: 5, spell: MeldIntoStone_default },
+      { level: 7, spell: StoneShape_default },
       { level: 7, spell: Stoneskin_default }
       // { level: 9, spell: Passwall },
       // { level: 9, spell: WallOfStone },
@@ -9132,7 +9298,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var MagicStone_default = MagicStone;
 
   // src/spells/level1/EarthTremor.ts
-  var getArea7 = (g2, caster) => ({
+  var getArea8 = (g2, caster) => ({
     type: "within",
     radius: 10,
     target: caster,
@@ -9147,7 +9313,7 @@ The creature is aware of this effect before it makes its attack against you.`
     s: true,
     lists: ["Bard", "Druid", "Sorcerer", "Wizard"],
     getConfig: () => ({}),
-    getAffectedArea: (g2, caster) => [getArea7(g2, caster)],
+    getAffectedArea: (g2, caster) => [getArea8(g2, caster)],
     getDamage: (g2, caster, method, { slot }) => [
       _dd(slot != null ? slot : 1, 6, "bludgeoning")
     ],
@@ -9163,7 +9329,7 @@ The creature is aware of this effect before it makes its attack against you.`
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        const shape = getArea7(g2, attacker);
+        const shape = getArea8(g2, attacker);
         for (const target of g2.getInside(shape, [attacker])) {
           const save = yield g2.savingThrow(
             dc,
@@ -9224,7 +9390,7 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/spells/level2/Moonbeam.ts
-  var getArea8 = (centre) => ({
+  var getArea9 = (centre) => ({
     type: "cylinder",
     centre,
     height: 40,
@@ -9244,7 +9410,7 @@ The creature is aware of this effect before it makes its attack against you.`
     }
     getAffectedArea({ point }) {
       if (point)
-        return [getArea8(point)];
+        return [getArea9(point)];
     }
     apply(_0) {
       return __async(this, arguments, function* ({ point }) {
@@ -9265,7 +9431,7 @@ The creature is aware of this effect before it makes its attack against you.`
         for (const cleanup of this.subscriptions)
           cleanup();
       });
-      this.shape = getArea8(centre);
+      this.shape = getArea9(centre);
       this.area = new ActiveEffectArea(
         "Moonbeam",
         this.shape,
@@ -9352,7 +9518,7 @@ The creature is aware of this effect before it makes its attack against you.`
     m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
     lists: ["Druid"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
-    getAffectedArea: (g2, caster, { point }) => point && [getArea8(point)],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea9(point)],
     getDamage: (g2, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
     getTargets: () => [],
     apply(_0, _1, _2, _3) {
@@ -9369,7 +9535,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var Moonbeam_default = Moonbeam;
 
   // src/spells/level3/EruptingEarth.ts
-  var getArea9 = (g2, centre) => ({
+  var getArea10 = (g2, centre) => ({
     type: "cube",
     length: 20,
     centre
@@ -9384,7 +9550,7 @@ The creature is aware of this effect before it makes its attack against you.`
     m: "a piece of obsidian",
     lists: ["Druid", "Sorcerer", "Wizard"],
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
-    getAffectedArea: (g2, caster, { point }) => point && [getArea9(g2, point)],
+    getAffectedArea: (g2, caster, { point }) => point && [getArea10(g2, point)],
     getDamage: (g2, caster, method, { slot }) => [
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
@@ -9400,7 +9566,7 @@ The creature is aware of this effect before it makes its attack against you.`
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        const shape = getArea9(g2, point);
+        const shape = getArea10(g2, point);
         for (const target of g2.getInside(shape)) {
           const save = yield g2.savingThrow(dc, {
             attacker,

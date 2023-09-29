@@ -99,6 +99,10 @@ export default class CastSpell<T extends object> implements Action<T> {
     // TODO [MESSAGES] report this somehow
     if (sc.detail.success.result === "fail") return;
 
+    // TODO should this be done here?
+    // TODO also could have the ability to concentrate on multiple spells
+    if (spell.concentration) await actor.endConcentration();
+
     // TODO use sc.detail.targets ?
     return spell.apply(g, actor, method, config);
   }

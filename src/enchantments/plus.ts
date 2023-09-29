@@ -1,6 +1,18 @@
 import Engine from "../Engine";
+import { EventListener } from "../events/Dispatcher";
 import Enchantment from "../types/Enchantment";
-import { ItemRarity } from "../types/Item";
+import { AmmoItem, ItemRarity, WeaponItem } from "../types/Item";
+import Source from "../types/Source";
+
+export function getWeaponPlusHandler(
+  item: WeaponItem | AmmoItem,
+  value: number,
+  source: Source,
+): EventListener<"BeforeAttack" | "GatherDamage"> {
+  return ({ detail: { weapon, ammo, bonus } }) => {
+    if (weapon === item || ammo === item) bonus.add(value, source);
+  };
+}
 
 const weaponPlus = (
   value: number,
@@ -12,13 +24,9 @@ const weaponPlus = (
     item.magical = true;
     item.rarity = rarity;
 
-    g.events.on("BeforeAttack", ({ detail: { weapon, ammo, bonus } }) => {
-      if (weapon === item || ammo === item) bonus.add(value, this);
-    });
-
-    g.events.on("GatherDamage", ({ detail: { weapon, ammo, bonus } }) => {
-      if (weapon === item || ammo === item) bonus.add(value, this);
-    });
+    const handler = getWeaponPlusHandler(item, value, this);
+    g.events.on("BeforeAttack", handler);
+    g.events.on("GatherDamage", handler);
   },
 });
 

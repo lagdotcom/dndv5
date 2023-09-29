@@ -13,7 +13,7 @@ import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
-import { Dead } from "./effects";
+import { Dead, Dying } from "./effects";
 import AbilityCheckEvent from "./events/AbilityCheckEvent";
 import AfterActionEvent from "./events/AfterActionEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
@@ -68,6 +68,7 @@ import RollType, {
   SavingThrow,
 } from "./types/RollType";
 import SaveDamageResponse from "./types/SaveDamageResponse";
+import { svSet } from "./types/SaveTag";
 import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
 import { orderedKeys } from "./utils/map";
@@ -433,16 +434,31 @@ export default class Engine {
     );
 
     if (target.hp <= 0) {
+      // TODO check massive damage
+      await target.endConcentration();
+
       if (target.diesAtZero) {
         this.combatants.delete(target);
         await target.addEffect(Dead, { duration: Infinity });
         this.fire(new CombatantDiedEvent({ who: target, attacker }));
-      } else {
-        // TODO [DYING]
+      } else if (!target.hasEffect(Dying)) {
+        await target.addEffect(Dying, { duration: Infinity });
       }
+
+      return;
     }
 
-    // TODO concentration check
+    if (target.concentratingOn.size) {
+      const dc = Math.max(10, Math.floor(total / 2));
+      const result = await this.savingThrow(dc, {
+        attacker,
+        who: target,
+        ability: "con",
+        tags: svSet("concentration"),
+      });
+
+      if (result.outcome === "fail") await target.endConcentration();
+    }
   }
 
   async attack(
@@ -693,6 +709,8 @@ export default class Engine {
 
   async applyHeal(who: Combatant, fullAmount: number, actor: Combatant) {
     const amount = Math.min(fullAmount, who.hpMax - who.hp);
+
+    // TODO reset death saves
 
     return this.resolve(
       new CombatantHealedEvent({

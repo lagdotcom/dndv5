@@ -6,6 +6,18 @@ import Combatant from "./types/Combatant";
 import { coSet } from "./types/ConditionName";
 import { distance } from "./utils/units";
 
+export const Dying = new Effect("Dying", "turnStart", (g) => {
+  g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+    if (who.hasEffect(Dying)) {
+      conditions.add("Incapacitated", Dying);
+      conditions.add("Prone", Dying);
+      conditions.add("Unconscious", Dying);
+    }
+  });
+
+  // TODO death saves etc.
+});
+
 export const Dead = new Effect(
   "Dead",
   "turnStart",
@@ -20,6 +32,7 @@ export const Dead = new Effect(
   },
   { quiet: true },
 );
+
 export const UsedAttackAction = new Effect(
   "Used Attack Action",
   "turnStart",

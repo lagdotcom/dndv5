@@ -38,8 +38,10 @@ const HoldPersonEffect = new Effect<{
 
           if (save.outcome === "success") {
             await who.removeEffect(HoldPersonEffect);
+
             config.affected.delete(who);
-            // TODO [CONCENTRATION] stop concentrating if affected is empty
+            if (config.affected.size < 1)
+              await config.caster.endConcentration();
           }
         }),
       );

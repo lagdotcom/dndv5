@@ -13,6 +13,7 @@ import Silence from "../../../spells/level2/Silence";
 import SpiderClimb from "../../../spells/level2/SpiderClimb";
 import SpikeGrowth from "../../../spells/level2/SpikeGrowth";
 import LightningBolt from "../../../spells/level3/LightningBolt";
+import MeldIntoStone from "../../../spells/level3/MeldIntoStone";
 import SleetStorm from "../../../spells/level3/SleetStorm";
 import Slow from "../../../spells/level3/Slow";
 import WaterBreathing from "../../../spells/level3/WaterBreathing";
@@ -20,6 +21,7 @@ import WaterWalk from "../../../spells/level3/WaterWalk";
 import ControlWater from "../../../spells/level4/ControlWater";
 import FreedomOfMovement from "../../../spells/level4/FreedomOfMovement";
 import IceStorm from "../../../spells/level4/IceStorm";
+import StoneShape from "../../../spells/level4/StoneShape";
 import Stoneskin from "../../../spells/level4/Stoneskin";
 import CommuneWithNature from "../../../spells/level5/CommuneWithNature";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
@@ -109,8 +111,8 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     { level: 3, spell: SpiderClimb },
     { level: 3, spell: SpikeGrowth },
     { level: 5, spell: LightningBolt },
-    // { level: 5, spell: MeldIntoStone },
-    // { level: 7, spell: StoneShape },
+    { level: 5, spell: MeldIntoStone },
+    { level: 7, spell: StoneShape },
     { level: 7, spell: Stoneskin },
     // { level: 9, spell: Passwall },
     // { level: 9, spell: WallOfStone },
