@@ -1,13 +1,14 @@
 import CastSpell from "../../actions/CastSpell";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
-import { notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import Monster from "../../Monster";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../../spells/common";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
+import ArmorOfAgathysSpell from "../../spells/level1/ArmorOfAgathys";
 import SpellAttack from "../../spells/SpellAttack";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
@@ -109,10 +110,20 @@ const EldritchBurst = new SimpleFeature(
   },
 );
 
-// TODO [TEMPORARYHP]
-const ArmorOfAgathys = notImplementedFeature(
+const ArmorOfAgathys = new SimpleFeature(
   "Armor of Agathys",
   `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`,
+  (g, me) => {
+    g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
+      interrupt.add(
+        new EvaluateLater(me, ArmorOfAgathys, async () => {
+          await ArmorOfAgathysSpell.apply(g, me, BirnotecSpellcasting, {
+            slot: 3,
+          });
+        }),
+      );
+    });
+  },
 );
 
 const AntimagicProdigy = new SimpleFeature(
@@ -217,8 +228,5 @@ export default class Birnotec extends Monster {
     this.addFeature(EldritchBurst);
     this.addFeature(AntimagicProdigy);
     this.addFeature(HellishRebuke);
-
-    // TODO
-    // this.addEffect(ArmorOfAgathysEffect, { duration: Infinity, amount: 15 });
   }
 }

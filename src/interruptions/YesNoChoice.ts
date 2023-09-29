@@ -20,5 +20,6 @@ export default class YesNoChoice implements Interruption {
     );
     if (choice) await this.yes?.();
     else await this.no?.();
+    return choice;
   }
 }

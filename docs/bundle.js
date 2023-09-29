@@ -1256,6 +1256,7 @@
       this.naturalAC = naturalAC;
       this.damageResponses = /* @__PURE__ */ new Map();
       this.exhaustion = 0;
+      this.temporaryHP = 0;
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -2026,6 +2027,13 @@
     }
   };
 
+  // src/events/BattleStartedEvent.ts
+  var BattleStartedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BattleStarted", { detail });
+    }
+  };
+
   // src/events/BeforeAttackEvent.ts
   var BeforeAttackEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2215,6 +2223,38 @@
     }
   };
 
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+    }
+    apply(g2) {
+      return __async(this, null, function* () {
+        var _a, _b;
+        const choice = yield new Promise(
+          (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+        );
+        if (choice)
+          yield (_a = this.yes) == null ? void 0 : _a.call(this);
+        else
+          yield (_b = this.no) == null ? void 0 : _b.call(this);
+        return choice;
+      });
+    }
+  };
+
   // src/utils/map.ts
   function orderedKeys(map, comparator) {
     const entries = [];
@@ -2275,6 +2315,9 @@
         this.initiativeOrder = orderedKeys(
           this.combatants,
           ([, a], [, b]) => b.initiative - a.initiative
+        );
+        yield this.resolve(
+          new BattleStartedEvent({ interrupt: new InterruptionCollector() })
         );
         yield this.nextTurn();
       });
@@ -2522,12 +2565,22 @@
         total -= heal;
         if (total < 1)
           return;
-        target.hp -= total;
+        const takenByTemporaryHP = Math.min(total, target.temporaryHP);
+        target.temporaryHP -= takenByTemporaryHP;
+        const afterTemporaryHP = total - takenByTemporaryHP;
+        target.hp -= afterTemporaryHP;
+        const temporaryHPSource = target.temporaryHPSource;
+        if (target.temporaryHP <= 0)
+          target.temporaryHPSource = void 0;
         yield this.resolve(
           new CombatantDamagedEvent({
             who: target,
+            attack,
             attacker,
             total,
+            takenByTemporaryHP,
+            afterTemporaryHP,
+            temporaryHPSource,
             breakdown,
             interrupt: new InterruptionCollector()
           })
@@ -2752,6 +2805,27 @@
         );
       });
     }
+    giveTemporaryHP(who, count, source) {
+      return __async(this, null, function* () {
+        var _a;
+        if (who.temporaryHP > 0)
+          return new YesNoChoice(
+            who,
+            source,
+            `Replace Temporary HP?`,
+            `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
+            () => __async(this, null, function* () {
+              return this.setTemporaryHP(who, count, source);
+            })
+          ).apply(this);
+        this.setTemporaryHP(who, count, source);
+        return true;
+      });
+    }
+    setTemporaryHP(who, count, source) {
+      who.temporaryHP = count;
+      who.temporaryHPSource = source;
+    }
   };
 
   // src/features/SimpleFeature.ts
@@ -2763,77 +2837,12 @@
     }
   };
 
-  // src/features/common.ts
-  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
-    return new SimpleFeature(name, text, (g2, me) => {
-      var _a;
-      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
-      const spells = entries.filter((entry) => entry.level <= casterLevel);
-      for (const { resource, spell } of spells) {
-        if (resource)
-          me.initResource(resource);
-        if (addAsList) {
-          me.preparedSpells.add(spell);
-          method.addCastableSpell(spell, me);
-        } else
-          spellImplementationWarning(spell, me);
-      }
-      me.spellcastingMethods.add(method);
-      if (!addAsList)
-        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me)
-            for (const { spell } of spells)
-              actions.push(new CastSpell(g2, me, method, spell));
-        });
-    });
-  }
-  function darkvisionFeature(range = 60) {
-    return new SimpleFeature(
-      "Darkvision",
-      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
-      (_2, me) => {
-        me.senses.set("darkvision", range);
-      }
-    );
-  }
-  function nonCombatFeature(name, text) {
-    return new SimpleFeature(name, text, () => {
-    });
-  }
-  function notImplementedFeature(name, text) {
-    return new SimpleFeature(name, text, (_2, me) => {
-      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
-    });
-  }
-
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no) {
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply) {
       this.who = who;
       this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
-    }
-    apply(g2) {
-      return __async(this, null, function* () {
-        var _a, _b;
-        const choice = yield new Promise(
-          (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-        );
-        if (choice)
-          yield (_a = this.yes) == null ? void 0 : _a.call(this);
-        else
-          yield (_b = this.no) == null ? void 0 : _b.call(this);
-      });
+      this.apply = apply;
     }
   };
 
@@ -2872,6 +2881,66 @@
       return spell.level;
     }
   };
+
+  // src/utils/time.ts
+  var TURNS_PER_MINUTE = 10;
+  var minutes = (n) => n * TURNS_PER_MINUTE;
+  var hours = (n) => minutes(n * 60);
+
+  // src/spells/level1/ArmorOfAgathys.ts
+  var ArmorOfAgathysEffect = new Effect(
+    "Armor of Agathys",
+    "turnStart",
+    (g2) => {
+      g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+        const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
+        if (config && pre.target.temporaryHPSource === ArmorOfAgathysEffect && pre.tags.has("melee"))
+          interrupt.add(
+            new EvaluateLater(pre.who, ArmorOfAgathysEffect, () => __async(void 0, null, function* () {
+              yield g2.damage(
+                ArmorOfAgathysEffect,
+                "cold",
+                { attacker: pre.target, target: pre.who },
+                [["cold", config.count]]
+              );
+            }))
+          );
+      });
+      g2.events.on(
+        "CombatantDamaged",
+        ({ detail: { who, temporaryHPSource, interrupt } }) => {
+          if (temporaryHPSource === ArmorOfAgathysEffect && who.temporaryHP <= 0)
+            interrupt.add(
+              new EvaluateLater(who, ArmorOfAgathysEffect, () => __async(void 0, null, function* () {
+                yield who.removeEffect(ArmorOfAgathysEffect);
+              }))
+            );
+        }
+      );
+    }
+  );
+  var ArmorOfAgathys = scalingSpell({
+    status: "implemented",
+    name: "Armor of Agathys",
+    level: 1,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    m: "a cup of water",
+    lists: ["Warlock"],
+    getConfig: () => ({}),
+    getTargets: (g2, caster) => [caster],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { slot }) {
+        const count = slot * 5;
+        if (yield g2.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
+          const duration = hours(1);
+          yield caster.addEffect(ArmorOfAgathysEffect, { count, duration }, caster);
+        }
+      });
+    }
+  });
+  var ArmorOfAgathys_default = ArmorOfAgathys;
 
   // src/types/AttackTag.ts
   var atSet = (...items) => new Set(items);
@@ -3065,9 +3134,20 @@
       });
     }
   );
-  var ArmorOfAgathys = notImplementedFeature(
+  var ArmorOfAgathys2 = new SimpleFeature(
     "Armor of Agathys",
-    `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`
+    `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`,
+    (g2, me) => {
+      g2.events.on("BattleStarted", ({ detail: { interrupt } }) => {
+        interrupt.add(
+          new EvaluateLater(me, ArmorOfAgathys2, () => __async(void 0, null, function* () {
+            yield ArmorOfAgathys_default.apply(g2, me, BirnotecSpellcasting, {
+              slot: 3
+            });
+          }))
+        );
+      });
+    }
   );
   var AntimagicProdigy = new SimpleFeature(
     "Antimagic Prodigy",
@@ -3156,7 +3236,7 @@
       this.damageResponses.set("poison", "immune");
       this.languages.add("Abyssal");
       this.languages.add("Common");
-      this.addFeature(ArmorOfAgathys);
+      this.addFeature(ArmorOfAgathys2);
       this.addFeature(EldritchBurst);
       this.addFeature(AntimagicProdigy);
       this.addFeature(HellishRebuke);
@@ -3182,15 +3262,6 @@
     }
   );
   var Evasion_default = Evasion;
-
-  // src/interruptions/EvaluateLater.ts
-  var EvaluateLater = class {
-    constructor(who, source, apply) {
-      this.who = who;
-      this.source = source;
-      this.apply = apply;
-    }
-  };
 
   // src/items/AbstractItem.ts
   var AbstractItem = class {
@@ -3449,6 +3520,49 @@
     "slashing"
   ];
 
+  // src/features/common.ts
+  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
+    return new SimpleFeature(name, text, (g2, me) => {
+      var _a;
+      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
+      const spells = entries.filter((entry) => entry.level <= casterLevel);
+      for (const { resource, spell } of spells) {
+        if (resource)
+          me.initResource(resource);
+        if (addAsList) {
+          me.preparedSpells.add(spell);
+          method.addCastableSpell(spell, me);
+        } else
+          spellImplementationWarning(spell, me);
+      }
+      me.spellcastingMethods.add(method);
+      if (!addAsList)
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            for (const { spell } of spells)
+              actions.push(new CastSpell(g2, me, method, spell));
+        });
+    });
+  }
+  function darkvisionFeature(range = 60) {
+    return new SimpleFeature(
+      "Darkvision",
+      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
+      (_2, me) => {
+        me.senses.set("darkvision", range);
+      }
+    );
+  }
+  function nonCombatFeature(name, text) {
+    return new SimpleFeature(name, text, () => {
+    });
+  }
+  function notImplementedFeature(name, text) {
+    return new SimpleFeature(name, text, (_2, me) => {
+      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+    });
+  }
+
   // src/monsters/common.ts
   var KeenSmell = new SimpleFeature(
     "Keen Smell",
@@ -3477,6 +3591,8 @@
   var Kay_token_default = "./Kay_token-LUSXSSD5.png";
 
   // src/monsters/fiendishParty/Kay.ts
+  var hiddenName = "Shrouded Figure";
+  var realName = "Kay of the Abyss";
   var ScreamingInside = new SimpleFeature(
     "Screaming Inside",
     "Kay does an extra 4 (1d6) psychic damage when he hits with a weapon attack.",
@@ -3518,6 +3634,7 @@
           interrupt.add(
             new EvaluateLater(who, WreathedInShadowEffect, () => __async(void 0, null, function* () {
               yield who.removeEffect(WreathedInShadowEffect);
+              who.name = realName;
             }))
           );
       });
@@ -3527,14 +3644,16 @@
     "Wreathed in Shadow",
     "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
     (g2, me) => {
-      void me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+      const wreathe = new EvaluateLater(me, WreathedInShadow, () => __async(void 0, null, function* () {
+        yield me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+        me.name = hiddenName;
+      }));
+      g2.events.on("BattleStarted", ({ detail: { interrupt } }) => {
+        interrupt.add(wreathe);
+      });
       g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
         if (who === me && !who.hasEffect(WreathedInShadowEffect))
-          interrupt.add(
-            new EvaluateLater(who, WreathedInShadow, () => __async(void 0, null, function* () {
-              yield who.addEffect(WreathedInShadowEffect, { duration: Infinity });
-            }))
-          );
+          interrupt.add(wreathe);
       });
     }
   );
@@ -3553,7 +3672,7 @@
   );
   var Kay = class extends Monster {
     constructor(g2) {
-      super(g2, "Kay of the Abyss", 6, "humanoid", "medium", Kay_token_default);
+      super(g2, hiddenName, 6, "humanoid", "medium", Kay_token_default);
       this.diesAtZero = false;
       this.hp = this.hpMax = 75;
       this.movement.set("speed", 30);
@@ -3960,13 +4079,43 @@
     }
   };
 
+  // src/features/ConfiguredFeature.ts
+  var ConfiguredFeature = class {
+    constructor(name, text, apply) {
+      this.name = name;
+      this.text = text;
+      this.apply = apply;
+    }
+    setup(g2, who) {
+      const config = who.getConfig(this.name);
+      if (typeof config === "undefined") {
+        console.error(`${who.name} has no config for ${this.name}`);
+        return;
+      }
+      this.apply(g2, who, config);
+    }
+  };
+
   // src/monsters/fiendishParty/Zafron_token.png
   var Zafron_token_default = "./Zafron_token-HS5HC4BR.png";
 
   // src/monsters/fiendishParty/Zafron.ts
-  var LustForBattle = notImplementedFeature(
+  var LustForBattle = new ConfiguredFeature(
     "Lust for Battle",
-    "When Zafron hits with his Greataxe, he gains 5 temporary hit points."
+    "When Zafron hits with his Greataxe, he gains 5 temporary hit points.",
+    (g2, me, weapon) => {
+      g2.events.on(
+        "CombatantDamaged",
+        ({ detail: { attack, attacker, interrupt } }) => {
+          if (attacker === me && (attack == null ? void 0 : attack.pre.weapon) === weapon)
+            interrupt.add(
+              new EvaluateLater(me, LustForBattle, (g3) => __async(void 0, null, function* () {
+                yield g3.giveTemporaryHP(me, 5, LustForBattle);
+              }))
+            );
+        }
+      );
+    }
   );
   var BullRush = notImplementedFeature(
     "Bull Rush",
@@ -3991,7 +4140,9 @@
       this.damageResponses.set("fire", "resist");
       this.damageResponses.set("poison", "resist");
       this.languages.add("Abyssal");
+      const axe = new Greataxe(g2);
       this.addFeature(LustForBattle);
+      this.setConfig(LustForBattle, axe);
       this.addFeature(
         makeMultiattack(
           "Zafron attacks twice with his Greataxe.",
@@ -4001,24 +4152,7 @@
       this.addFeature(BullRush);
       this.addFeature(SurvivalReflex);
       this.don(new ScaleMailArmor(g2), true);
-      this.don(new Greataxe(g2), true);
-    }
-  };
-
-  // src/features/ConfiguredFeature.ts
-  var ConfiguredFeature = class {
-    constructor(name, text, apply) {
-      this.name = name;
-      this.text = text;
-      this.apply = apply;
-    }
-    setup(g2, who) {
-      const config = who.getConfig(this.name);
-      if (typeof config === "undefined") {
-        console.warn(`${who.name} has no config for ${this.name}`);
-        return;
-      }
-      this.apply(g2, who, config);
+      this.don(axe, true);
     }
   };
 
@@ -5956,11 +6090,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
   var EnlargeReduce_default = EnlargeReduce;
-
-  // src/utils/time.ts
-  var TURNS_PER_MINUTE = 10;
-  var minutes = (n) => n * TURNS_PER_MINUTE;
-  var hours = (n) => minutes(n * 60);
 
   // src/spells/level2/HoldPerson.ts
   var HoldPersonEffect = new Effect("Hold Person", "turnStart", (g2) => {
@@ -10332,7 +10461,18 @@ The creature is aware of this effect before it makes its attack against you.`
   // src/ui/utils/types.ts
   function getUnitData(who, state) {
     const { position } = state;
-    const { id, name, img, sizeInUnits, attacksSoFar, movedSoFar, speed } = who;
+    const {
+      id,
+      name,
+      img,
+      sizeInUnits,
+      attacksSoFar,
+      movedSoFar,
+      speed,
+      hp,
+      hpMax,
+      temporaryHP
+    } = who;
     return {
       who,
       position,
@@ -10342,7 +10482,10 @@ The creature is aware of this effect before it makes its attack against you.`
       sizeInUnits,
       attacksSoFar: attacksSoFar.length,
       movedSoFar,
-      speed
+      speed,
+      hp,
+      hpMax,
+      temporaryHP
     };
   }
 
@@ -10422,8 +10565,9 @@ The creature is aware of this effect before it makes its attack against you.`
         actionAreas.value = void 0;
         void g2.act(action2, config).then(() => {
           refreshUnits();
-          allActions.value = g2.getActions(action2.actor);
-          return;
+          const actions = g2.getActions(action2.actor);
+          allActions.value = actions;
+          return actions;
         });
       },
       [g2, refreshUnits]

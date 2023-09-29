@@ -11,6 +11,9 @@ import { MundaneDamageTypes } from "../../types/DamageType";
 import { makeMultiattack } from "../common";
 import tokenUrl from "./Kay_token.png";
 
+const hiddenName = "Shrouded Figure";
+const realName = "Kay of the Abyss";
+
 const ScreamingInside = new SimpleFeature(
   "Screaming Inside",
   "Kay does an extra 4 (1d6) psychic damage when he hits with a weapon attack.",
@@ -54,6 +57,7 @@ const WreathedInShadowEffect = new Effect(
         interrupt.add(
           new EvaluateLater(who, WreathedInShadowEffect, async () => {
             await who.removeEffect(WreathedInShadowEffect);
+            who.name = realName;
           }),
         );
     });
@@ -65,15 +69,18 @@ const WreathedInShadow = new SimpleFeature(
   "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
   (g, me) => {
     // TODO Only a DC 22 Perception check can reveal his identity.
-    void me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+    const wreathe = new EvaluateLater(me, WreathedInShadow, async () => {
+      await me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+      me.name = hiddenName;
+    });
+
+    g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
+      interrupt.add(wreathe);
+    });
 
     g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
       if (who === me && !who.hasEffect(WreathedInShadowEffect))
-        interrupt.add(
-          new EvaluateLater(who, WreathedInShadow, async () => {
-            await who.addEffect(WreathedInShadowEffect, { duration: Infinity });
-          }),
-        );
+        interrupt.add(wreathe);
     });
   },
 );
@@ -98,7 +105,7 @@ const SmoulderingRage = new SimpleFeature(
 
 export default class Kay extends Monster {
   constructor(g: Engine) {
-    super(g, "Kay of the Abyss", 6, "humanoid", "medium", tokenUrl);
+    super(g, hiddenName, 6, "humanoid", "medium", tokenUrl);
     this.diesAtZero = false;
     this.hp = this.hpMax = 75;
     this.movement.set("speed", 30);

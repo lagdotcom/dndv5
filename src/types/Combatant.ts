@@ -81,6 +81,8 @@ export default interface Combatant extends Source {
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
   readonly exhaustion: number;
+  temporaryHP: number;
+  temporaryHPSource?: Source;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

@@ -19,6 +19,7 @@ import AfterActionEvent from "./events/AfterActionEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
 import AttackEvent, { AttackDetail } from "./events/AttackEvent";
+import BattleStartedEvent from "./events/BattleStartedEvent";
 import BeforeAttackEvent, {
   BeforeAttackDetail,
 } from "./events/BeforeAttackEvent";
@@ -47,6 +48,7 @@ import GetMoveCostEvent from "./events/GetMoveCostEvent";
 import SaveEvent from "./events/SaveEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
+import YesNoChoice from "./interruptions/YesNoChoice";
 import { MapSquareSize } from "./MapSquare";
 import PointSet from "./PointSet";
 import Action from "./types/Action";
@@ -113,6 +115,10 @@ export default class Engine {
     this.initiativeOrder = orderedKeys(
       this.combatants,
       ([, a], [, b]) => b.initiative - a.initiative,
+    );
+
+    await this.resolve(
+      new BattleStartedEvent({ interrupt: new InterruptionCollector() }),
     );
     await this.nextTurn();
   }
@@ -405,12 +411,22 @@ export default class Engine {
     total -= heal;
     if (total < 1) return;
 
-    target.hp -= total;
+    const takenByTemporaryHP = Math.min(total, target.temporaryHP);
+    target.temporaryHP -= takenByTemporaryHP;
+    const afterTemporaryHP = total - takenByTemporaryHP;
+    target.hp -= afterTemporaryHP;
+    const temporaryHPSource = target.temporaryHPSource;
+    if (target.temporaryHP <= 0) target.temporaryHPSource = undefined;
+
     await this.resolve(
       new CombatantDamagedEvent({
         who: target,
+        attack,
         attacker,
         total,
+        takenByTemporaryHP,
+        afterTemporaryHP,
+        temporaryHPSource,
         breakdown,
         interrupt: new InterruptionCollector(),
       }),
@@ -684,6 +700,26 @@ export default class Engine {
         interrupt: new InterruptionCollector(),
       }),
     );
+  }
+
+  async giveTemporaryHP(who: Combatant, count: number, source: Source) {
+    // TODO skip this dialog if it's obvious (same source, more hp?)
+    if (who.temporaryHP > 0)
+      return new YesNoChoice(
+        who,
+        source,
+        `Replace Temporary HP?`,
+        `${who.name} already has ${who.temporaryHP} temporary HP from ${who.temporaryHPSource?.name}. Replace with ${count} temporary HP from ${source.name}?`,
+        async () => this.setTemporaryHP(who, count, source),
+      ).apply(this);
+
+    this.setTemporaryHP(who, count, source);
+    return true;
+  }
+
+  private setTemporaryHP(who: Combatant, count: number, source?: Source) {
+    who.temporaryHP = count;
+    who.temporaryHPSource = source;
   }
 }
 

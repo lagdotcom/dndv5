@@ -13,11 +13,26 @@ export interface UnitData {
   attacksSoFar: number;
   movedSoFar: number;
   speed: number;
+
+  hp: number;
+  hpMax: number;
+  temporaryHP: number;
 }
 
 export function getUnitData(who: Combatant, state: CombatantState): UnitData {
   const { position } = state;
-  const { id, name, img, sizeInUnits, attacksSoFar, movedSoFar, speed } = who;
+  const {
+    id,
+    name,
+    img,
+    sizeInUnits,
+    attacksSoFar,
+    movedSoFar,
+    speed,
+    hp,
+    hpMax,
+    temporaryHP,
+  } = who;
 
   return {
     who,
@@ -29,5 +44,8 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     attacksSoFar: attacksSoFar.length,
     movedSoFar,
     speed,
+    hp,
+    hpMax,
+    temporaryHP,
   };
 }

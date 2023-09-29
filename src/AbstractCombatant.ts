@@ -42,6 +42,7 @@ import Resource from "./types/Resource";
 import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
 import SkillName from "./types/SkillName";
+import Source from "./types/Source";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
@@ -118,6 +119,8 @@ export default abstract class AbstractCombatant implements Combatant {
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
   exhaustion: number;
+  temporaryHP: number;
+  temporaryHPSource?: Source;
 
   constructor(
     public g: Engine,
@@ -210,6 +213,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.naturalAC = naturalAC;
     this.damageResponses = new Map();
     this.exhaustion = 0;
+    this.temporaryHP = 0;
   }
 
   get baseACMethod(): ACMethod {

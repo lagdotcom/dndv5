@@ -3,6 +3,7 @@ import AfterActionEvent from "./AfterActionEvent";
 import AreaPlacedEvent from "./AreaPlacedEvent";
 import AreaRemovedEvent from "./AreaRemovedEvent";
 import AttackEvent from "./AttackEvent";
+import BattleStartedEvent from "./BattleStartedEvent";
 import BeforeAttackEvent from "./BeforeAttackEvent";
 import BeforeCheckEvent from "./BeforeCheckEvent";
 import BeforeEffectEvent from "./BeforeEffectEvent";
@@ -43,6 +44,7 @@ export type EventTypes = {
   AreaPlaced: AreaPlacedEvent;
   AreaRemoved: AreaRemovedEvent;
   Attack: AttackEvent;
+  BattleStarted: BattleStartedEvent;
   BeforeAttack: BeforeAttackEvent;
   BeforeCheck: BeforeCheckEvent;
   BeforeEffect: BeforeEffectEvent;

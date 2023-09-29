@@ -112,8 +112,9 @@ export default function App({ g, onMount }: Props) {
       actionAreas.value = undefined;
       void g.act(action, config).then(() => {
         refreshUnits();
-        allActions.value = g.getActions(action.actor);
-        return;
+        const actions = g.getActions(action.actor);
+        allActions.value = actions;
+        return actions;
       });
     },
     [g, refreshUnits],

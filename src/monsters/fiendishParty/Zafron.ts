@@ -1,15 +1,31 @@
 import Engine from "../../Engine";
 import { notImplementedFeature } from "../../features/common";
+import ConfiguredFeature from "../../features/ConfiguredFeature";
+import EvaluateLater from "../../interruptions/EvaluateLater";
 import { ScaleMailArmor } from "../../items/armor";
 import { Greataxe } from "../../items/weapons";
 import Monster from "../../Monster";
+import { WeaponItem } from "../../types/Item";
 import { makeMultiattack } from "../common";
 import tokenUrl from "./Zafron_token.png";
 
-// TODO [TEMPORARYHP]
-const LustForBattle = notImplementedFeature(
+const LustForBattle = new ConfiguredFeature<WeaponItem>(
   "Lust for Battle",
   "When Zafron hits with his Greataxe, he gains 5 temporary hit points.",
+  (g, me, weapon) => {
+    g.events.on(
+      "CombatantDamaged",
+      ({ detail: { attack, attacker, interrupt } }) => {
+        if (attacker === me && attack?.pre.weapon === weapon)
+          interrupt.add(
+            new EvaluateLater(me, LustForBattle, async (g) => {
+              // TODO [MESSAGE]
+              await g.giveTemporaryHP(me, 5, LustForBattle);
+            }),
+          );
+      },
+    );
+  },
 );
 
 // TODO
@@ -42,7 +58,10 @@ export default class Zafron extends Monster {
     // TODO immunities: poisoned
     this.languages.add("Abyssal");
 
+    const axe = new Greataxe(g);
     this.addFeature(LustForBattle);
+    this.setConfig(LustForBattle, axe);
+
     this.addFeature(
       makeMultiattack(
         "Zafron attacks twice with his Greataxe.",
@@ -53,6 +72,6 @@ export default class Zafron extends Monster {
     this.addFeature(SurvivalReflex);
 
     this.don(new ScaleMailArmor(g), true);
-    this.don(new Greataxe(g), true);
+    this.don(axe, true);
   }
 }
