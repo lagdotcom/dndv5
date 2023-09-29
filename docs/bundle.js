@@ -9221,6 +9221,98 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var EruptingEarth_default = EruptingEarth;
 
+  // src/spells/level4/GuardianOfNature.ts
+  var PrimalBeast = "Primal Beast";
+  var GreatTree = "Great Tree";
+  var FormChoices = [
+    { label: PrimalBeast, value: PrimalBeast },
+    { label: GreatTree, value: GreatTree }
+  ];
+  var PrimalBeastEffect = new Effect(
+    PrimalBeast,
+    "turnStart",
+    (g2) => {
+      g2.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
+        if (who.hasEffect(PrimalBeastEffect))
+          bonus.add(10, PrimalBeastEffect);
+      });
+      g2.events.on("BeforeAttack", ({ detail: { who, ability, diceType } }) => {
+        if (who.hasEffect(PrimalBeastEffect) && ability === "str")
+          diceType.add("advantage", PrimalBeastEffect);
+      });
+      g2.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
+          if (attacker.hasEffect(PrimalBeastEffect) && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
+            interrupt.add(
+              new EvaluateLater(attacker, PrimalBeastEffect, () => __async(void 0, null, function* () {
+                const amount = yield g2.rollDamage(
+                  1,
+                  {
+                    source: PrimalBeastEffect,
+                    attacker,
+                    target,
+                    size: 6,
+                    damageType: "force"
+                  },
+                  critical
+                );
+                map.add("radiant", amount);
+              }))
+            );
+        }
+      );
+    },
+    { tags: ["shapechange"] }
+  );
+  var GreatTreeEffect = new Effect(
+    GreatTree,
+    "turnStart",
+    (g2) => {
+      g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+        if (who.hasEffect(GreatTreeEffect) && ability === "con")
+          diceType.add("advantage", GreatTreeEffect);
+      });
+      g2.events.on("BeforeAttack", ({ detail: { who, ability, diceType } }) => {
+        if (who.hasEffect(GreatTreeEffect) && (ability === "dex" || ability === "wis"))
+          diceType.add("advantage", GreatTreeEffect);
+      });
+    },
+    { tags: ["shapechange"] }
+  );
+  var GuardianOfNature = simpleSpell({
+    name: "Guardian of Nature",
+    level: 4,
+    school: "Transmutation",
+    concentration: true,
+    time: "bonus action",
+    v: true,
+    lists: ["Druid", "Ranger"],
+    getConfig: (g2) => ({ form: new ChoiceResolver(g2, FormChoices) }),
+    getTargets: (g2, caster) => [caster],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { form }) {
+        const duration = minutes(1);
+        let effect = PrimalBeastEffect;
+        if (form === GreatTree) {
+          effect = GreatTreeEffect;
+          yield g2.giveTemporaryHP(caster, 10, GreatTreeEffect);
+        }
+        yield caster.addEffect(effect, { duration });
+        caster.concentrateOn({
+          duration,
+          spell: GuardianOfNature,
+          onSpellEnd() {
+            return __async(this, null, function* () {
+              yield caster.removeEffect(effect);
+            });
+          }
+        });
+      });
+    }
+  });
+  var GuardianOfNature_default = GuardianOfNature;
+
   // src/pcs/davies/Salgar_token.png
   var Salgar_token_default = "./Salgar_token-WLUJXZFZ.png";
 
@@ -9266,9 +9358,9 @@ The creature is aware of this effect before it makes its attack against you.`
         LesserRestoration_default,
         // TODO LocateObject,
         // TODO Moonbeam,
-        EruptingEarth_default
+        EruptingEarth_default,
         // TODO CharmMonster,
-        // TODO GuardianOfNature
+        GuardianOfNature_default
       );
     }
   };
