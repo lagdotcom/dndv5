@@ -790,6 +790,12 @@
         const size = area.target.sizeInUnits + area.radius * 2;
         return getTilesWithinRectangle({ x, y }, size, size);
       }
+      case "cube": {
+        const x = area.centre.x - area.length / 2;
+        const y = area.centre.y - area.length / 2;
+        const size = area.length;
+        return getTilesWithinRectangle({ x, y }, size, size);
+      }
       case "cone":
         return getTilesWithinCone(area.centre, area.target, area.radius);
       case "line":
@@ -9119,8 +9125,8 @@ The creature is aware of this effect before it makes its attack against you.`
           attacker
         });
         const dc = getSaveDC(attacker, method.ability);
-        const area = getArea7(g2, attacker);
-        for (const target of g2.getInside(area, [attacker])) {
+        const shape = getArea7(g2, attacker);
+        for (const target of g2.getInside(shape, [attacker])) {
           const save = yield g2.savingThrow(
             dc,
             {
@@ -9144,10 +9150,76 @@ The creature is aware of this effect before it makes its attack against you.`
             yield target.addEffect(Prone, { duration: Infinity }, attacker);
           }
         }
+        const area = new ActiveEffectArea(
+          "Earth Tremor",
+          shape,
+          arSet("difficult terrain")
+        );
+        g2.addEffectArea(area);
       });
     }
   });
   var EarthTremor_default = EarthTremor;
+
+  // src/spells/level3/EruptingEarth.ts
+  var getArea8 = (g2, centre) => ({
+    type: "cube",
+    length: 20,
+    centre
+  });
+  var EruptingEarth = scalingSpell({
+    name: "Erupting Earth",
+    level: 3,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a piece of obsidian",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
+    getAffectedArea: (g2, caster, { point }) => point && [getArea8(g2, point)],
+    getDamage: (g2, caster, method, { slot }) => [
+      _dd(slot != null ? slot : 3, 12, "bludgeoning")
+    ],
+    getTargets: () => [],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
+        const damage = yield g2.rollDamage(slot, {
+          source: EruptingEarth,
+          size: 12,
+          spell: EruptingEarth,
+          method,
+          damageType: "bludgeoning",
+          attacker
+        });
+        const dc = getSaveDC(attacker, method.ability);
+        const shape = getArea8(g2, point);
+        for (const target of g2.getInside(shape)) {
+          const save = yield g2.savingThrow(dc, {
+            attacker,
+            ability: "dex",
+            spell: EruptingEarth,
+            method,
+            who: target,
+            tags: svSet()
+          });
+          yield g2.damage(
+            EruptingEarth,
+            "bludgeoning",
+            { attacker, spell: EruptingEarth, method, target },
+            [["bludgeoning", damage]],
+            save.damageResponse
+          );
+        }
+        const area = new ActiveEffectArea(
+          "Erupting Earth",
+          shape,
+          arSet("difficult terrain")
+        );
+        g2.addEffectArea(area);
+      });
+    }
+  });
+  var EruptingEarth_default = EruptingEarth;
 
   // src/pcs/davies/Salgar_token.png
   var Salgar_token_default = "./Salgar_token-WLUJXZFZ.png";
@@ -9191,10 +9263,10 @@ The creature is aware of this effect before it makes its attack against you.`
         EarthTremor_default,
         HealingWord_default,
         // TODO SpeakWithAnimals,
-        LesserRestoration_default
+        LesserRestoration_default,
         // TODO LocateObject,
         // TODO Moonbeam,
-        // TODO EruptingEarth,
+        EruptingEarth_default
         // TODO CharmMonster,
         // TODO GuardianOfNature
       );

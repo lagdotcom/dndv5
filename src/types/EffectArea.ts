@@ -1,6 +1,7 @@
 import Combatant from "./Combatant";
 import {
   ConeShape,
+  CubeShape,
   CylinderShape,
   LineShape,
   SphereShape,
@@ -19,6 +20,7 @@ export type AreaTag = (typeof AreaTags)[number];
 export const arSet = (...items: AreaTag[]) => new Set(items);
 
 export type SpecifiedCone = ConeShape & { centre: Point; target: Point };
+export type SpecifiedCube = CubeShape & { centre: Point };
 export type SpecifiedCylinder = CylinderShape & { centre: Point };
 export type SpecifiedLine = LineShape & { start: Point; target: Point };
 export type SpecifiedSphere = SphereShape & { centre: Point };
@@ -28,6 +30,7 @@ export type SpecifiedWithin = WithinShape & {
 };
 export type SpecifiedEffectShape =
   | SpecifiedCone
+  | SpecifiedCube
   | SpecifiedCylinder
   | SpecifiedLine
   | SpecifiedSphere

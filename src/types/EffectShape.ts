@@ -1,4 +1,5 @@
 export type ConeShape = { type: "cone"; radius: number };
+export type CubeShape = { type: "cube"; length: number };
 export type CylinderShape = {
   type: "cylinder";
   radius: number;
@@ -10,6 +11,7 @@ export type WithinShape = { type: "within"; radius: number };
 
 type EffectShape =
   | ConeShape
+  | CubeShape
   | CylinderShape
   | LineShape
   | SphereShape

@@ -1,7 +1,8 @@
+import ActiveEffectArea from "../../ActiveEffectArea";
 import { Prone } from "../../effects";
 import Engine from "../../Engine";
 import Combatant from "../../types/Combatant";
-import { SpecifiedWithin } from "../../types/EffectArea";
+import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { getSaveDC } from "../../utils/dnd";
@@ -40,8 +41,8 @@ const EarthTremor = scalingSpell({
     });
     const dc = getSaveDC(attacker, method.ability);
 
-    const area = getArea(g, attacker);
-    for (const target of g.getInside(area, [attacker])) {
+    const shape = getArea(g, attacker);
+    for (const target of g.getInside(shape, [attacker])) {
       const save = await g.savingThrow(
         dc,
         {
@@ -68,6 +69,12 @@ const EarthTremor = scalingSpell({
     }
 
     // TODO [TERRAIN] If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
+    const area = new ActiveEffectArea(
+      "Earth Tremor",
+      shape,
+      arSet("difficult terrain"),
+    );
+    g.addEffectArea(area);
   },
 });
 export default EarthTremor;

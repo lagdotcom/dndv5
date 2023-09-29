@@ -152,6 +152,13 @@ export function resolveArea(area: SpecifiedEffectShape) {
       return getTilesWithinRectangle({ x, y }, size, size);
     }
 
+    case "cube": {
+      const x = area.centre.x - area.length / 2;
+      const y = area.centre.y - area.length / 2;
+      const size = area.length;
+      return getTilesWithinRectangle({ x, y }, size, size);
+    }
+
     case "cone":
       return getTilesWithinCone(area.centre, area.target, area.radius);
 
