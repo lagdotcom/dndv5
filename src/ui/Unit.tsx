@@ -3,6 +3,7 @@ import { useCallback } from "preact/hooks";
 import Combatant from "../types/Combatant";
 import MoveDirection from "../types/MoveDirection";
 import styles from "./Unit.module.scss";
+import UnitEffectIcon from "./UnitEffectIcon";
 import UnitMoveButton from "./UnitMoveButton";
 import { scale } from "./utils/state";
 import { UnitData } from "./utils/types";
@@ -79,6 +80,11 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
           />
         </>
       )}
+      <div className={styles.icons}>
+        {u.effects.map((effect, i) => (
+          <UnitEffectIcon key={i} effect={effect} />
+        ))}
+      </div>
     </div>
   );
 }

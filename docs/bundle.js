@@ -317,10 +317,11 @@
 
   // src/Effect.ts
   var Effect = class {
-    constructor(name, durationTimer, setup, quiet = false, tags = []) {
+    constructor(name, durationTimer, setup, { quiet = false, image, tags = [] } = {}) {
       this.name = name;
       this.durationTimer = durationTimer;
       this.quiet = quiet;
+      this.image = image;
       this.tags = new Set(tags);
       if (setup)
         this.rule = new DndRule(name, setup);
@@ -1575,13 +1576,13 @@
         }
       });
     },
-    true
+    { quiet: true }
   );
   var UsedAttackAction = new Effect(
     "Used Attack Action",
     "turnStart",
     void 0,
-    true
+    { quiet: true }
   );
   var DropProneAction = class _DropProneAction extends AbstractAction {
     constructor(g2, actor) {
@@ -4319,8 +4320,9 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   var SneakAttack_default = SneakAttack;
 
   // src/classes/rogue/SteadyAim.ts
+  var featureName = "Steady Aim";
   var SteadyAimNoMoveEffect = new Effect(
-    "Steady Aim",
+    featureName,
     "turnEnd",
     (g2) => {
       g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
@@ -4328,9 +4330,9 @@ The amount of the extra damage increases as you gain levels in this class, as sh
           multiplier.add("zero", SteadyAimNoMoveEffect);
       });
     },
-    true
+    { quiet: true }
   );
-  var SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g2) => {
+  var SteadyAimAdvantageEffect = new Effect(featureName, "turnEnd", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
       if (who.hasEffect(SteadyAimAdvantageEffect))
         diceType.add("advantage", SteadyAimAdvantageEffect);
@@ -4346,7 +4348,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   });
   var SteadyAimAction = class _SteadyAimAction extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
+      super(g2, actor, featureName, "implemented", {}, { time: "bonus action" });
     }
     check(config, ec) {
       if (this.actor.movedSoFar)
@@ -4362,7 +4364,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     }
   };
   var SteadyAim = new SimpleFeature(
-    "Steady Aim",
+    featureName,
     `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
     (g2, me) => {
       g2.events.on("GetActions", ({ detail: { who, actions } }) => {
@@ -5579,7 +5581,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         g2,
         actor,
         "Breath Weapon",
-        "incomplete",
+        "implemented",
         { point: new PointResolver(g2, 15) },
         {
           damage: [_dd(damageDice, 10, damageType)],
@@ -7503,8 +7505,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     var _a;
     return who.hasEffect(RageEffect) && ((_a = who.armor) == null ? void 0 : _a.category) !== "heavy";
   }
-  var DidAttackTag = new Effect("(Attacked)", "turnStart", void 0, true);
-  var TookDamageTag = new Effect("(Damaged)", "turnEnd", void 0, true);
+  var DidAttackTag = new Effect("(Attacked)", "turnStart", void 0, {
+    quiet: true
+  });
+  var TookDamageTag = new Effect("(Damaged)", "turnEnd", void 0, {
+    quiet: true
+  });
   var RageEffect = new Effect("Rage", "turnStart", (g2) => {
     g2.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
       if (isRaging(who) && ability === "str")
@@ -7631,11 +7637,12 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   var Rage_default = Rage;
 
   // src/classes/barbarian/RecklessAttack.ts
-  var RecklessAttackResource = new TurnResource("Reckless Attack", 1);
+  var featureName2 = "Reckless Attack";
+  var RecklessAttackResource = new TurnResource(featureName2, 1);
   function canBeReckless(who, tags, ability) {
     return who.hasEffect(RecklessAttackEffect) && hasAll(tags, ["melee", "weapon"]) && ability === "str";
   }
-  var RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g2) => {
+  var RecklessAttackEffect = new Effect(featureName2, "turnStart", (g2) => {
     g2.events.on(
       "BeforeAttack",
       ({ detail: { who, target, diceType, ability, tags } }) => {
@@ -7647,7 +7654,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
     );
   });
   var RecklessAttack = new SimpleFeature(
-    "Reckless Attack",
+    featureName2,
     `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`,
     (g2, me) => {
       me.initResource(RecklessAttackResource);
@@ -7660,7 +7667,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
               new YesNoChoice(
                 me,
                 RecklessAttack,
-                "Reckless Attack",
+                featureName2,
                 `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
                 () => __async(void 0, null, function* () {
                   yield me.addEffect(RecklessAttackEffect, { duration: 1 });
@@ -7866,26 +7873,31 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       });
     }
   };
-  var FrenzyEffect = new Effect("Frenzy", "turnEnd", (g2) => {
-    g2.events.on("GetActions", ({ detail: { who, target, actions } }) => {
-      if (who.hasEffect(FrenzyEffect) && who !== target) {
-        for (const weapon of who.weapons) {
-          if (weapon.rangeCategory === "melee")
-            actions.push(new FrenzyAttack(g2, who, weapon));
+  var FrenzyEffect = new Effect(
+    "Frenzy",
+    "turnEnd",
+    (g2) => {
+      g2.events.on("GetActions", ({ detail: { who, target, actions } }) => {
+        if (who.hasEffect(FrenzyEffect) && who !== target) {
+          for (const weapon of who.weapons) {
+            if (weapon.rangeCategory === "melee")
+              actions.push(new FrenzyAttack(g2, who, weapon));
+          }
         }
-      }
-    });
-    g2.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
-      if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
-        interrupt.add(
-          new EvaluateLater(who, FrenzyEffect, () => __async(void 0, null, function* () {
-            yield who.removeEffect(FrenzyEffect);
-            yield who.changeExhaustion(1);
-          }))
-        );
-      }
-    });
-  });
+      });
+      g2.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
+        if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
+          interrupt.add(
+            new EvaluateLater(who, FrenzyEffect, () => __async(void 0, null, function* () {
+              yield who.removeEffect(FrenzyEffect);
+              yield who.changeExhaustion(1);
+            }))
+          );
+        }
+      });
+    },
+    { image: frenzy_default }
+  );
   var Frenzy = new SimpleFeature(
     "Frenzy",
     `Starting when you choose this path at 3rd level, you can go into a frenzy when you rage. If you do so, for the duration of your rage you can make a single melee weapon attack as a bonus action on each of your turns after this one. When your rage ends, you suffer one level of exhaustion.`,
@@ -9494,9 +9506,19 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_ap8hd_1",
-    "token": "_token_ap8hd_11"
+    "main": "_main_120hg_1",
+    "token": "_token_120hg_11",
+    "icons": "_icons_120hg_17"
   };
+
+  // src/ui/icons/missing-icon.svg
+  var missing_icon_default = "./missing-icon-Y2QNJ6M4.svg";
+
+  // src/ui/UnitEffectIcon.tsx
+  function UnitEffectIcon({ effect }) {
+    var _a;
+    return /* @__PURE__ */ o("div", { title: effect.name, children: /* @__PURE__ */ o(SVGIcon, { src: (_a = effect.icon) != null ? _a : missing_icon_default, size: 25 }) });
+  }
 
   // src/ui/UnitMoveButton.tsx
   var import_hooks4 = __toESM(require_hooks());
@@ -9655,7 +9677,8 @@ The creature is aware of this effect before it makes its attack against you.`
                   type: "northeast"
                 }
               )
-            ] })
+            ] }),
+            /* @__PURE__ */ o("div", { className: Unit_module_default.icons, children: u.effects.map((effect, i) => /* @__PURE__ */ o(UnitEffectIcon, { effect }, i)) })
           ]
         }
       )
@@ -10535,8 +10558,19 @@ The creature is aware of this effect before it makes its attack against you.`
       speed,
       hp,
       hpMax,
-      temporaryHP
+      temporaryHP,
+      effects: effectsMap,
+      conditions: conditionsSet
     } = who;
+    const effects = [];
+    for (const [k, v] of effectsMap) {
+      if (k.quiet)
+        continue;
+      effects.push({ name: k.name, icon: k.image, duration: v.duration });
+    }
+    const conditions = [];
+    for (const condition of conditionsSet)
+      conditions.push(condition);
     return {
       who,
       position,
@@ -10549,7 +10583,9 @@ The creature is aware of this effect before it makes its attack against you.`
       speed,
       hp,
       hpMax,
-      temporaryHP
+      temporaryHP,
+      effects,
+      conditions
     };
   }
 
@@ -10602,6 +10638,8 @@ The creature is aware of this effect before it makes its attack against you.`
       g2.events.on("CombatantPlaced", refreshUnits);
       g2.events.on("CombatantMoved", refreshUnits);
       g2.events.on("CombatantDied", refreshUnits);
+      g2.events.on("EffectAdded", refreshUnits);
+      g2.events.on("EffectRemoved", refreshUnits);
       g2.events.on("AreaPlaced", refreshAreas);
       g2.events.on("AreaRemoved", refreshAreas);
       g2.events.on("TurnStarted", ({ detail: { who } }) => {

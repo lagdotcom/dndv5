@@ -14,4 +14,5 @@ export default interface EffectType<T = object> extends Source {
   quiet: boolean;
   example?: T;
   tags: Set<EffectTag>;
+  image?: string;
 }

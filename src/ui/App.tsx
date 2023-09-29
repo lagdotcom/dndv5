@@ -78,6 +78,8 @@ export default function App({ g, onMount }: Props) {
     g.events.on("CombatantPlaced", refreshUnits);
     g.events.on("CombatantMoved", refreshUnits);
     g.events.on("CombatantDied", refreshUnits);
+    g.events.on("EffectAdded", refreshUnits);
+    g.events.on("EffectRemoved", refreshUnits);
 
     g.events.on("AreaPlaced", refreshAreas);
     g.events.on("AreaRemoved", refreshAreas);

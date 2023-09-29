@@ -50,7 +50,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       g,
       actor,
       "Breath Weapon",
-      "incomplete",
+      "implemented",
       { point: new PointResolver(g, 15) },
       {
         damage: [_dd(damageDice, 10, damageType)],

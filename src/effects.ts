@@ -18,13 +18,13 @@ export const Dead = new Effect(
       }
     });
   },
-  true,
+  { quiet: true },
 );
 export const UsedAttackAction = new Effect(
   "Used Attack Action",
   "turnStart",
   undefined,
-  true,
+  { quiet: true },
 );
 
 class DropProneAction extends AbstractAction {

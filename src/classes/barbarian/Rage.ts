@@ -48,8 +48,12 @@ function isRaging(who: Combatant) {
   return who.hasEffect(RageEffect) && who.armor?.category !== "heavy";
 }
 
-const DidAttackTag = new Effect("(Attacked)", "turnStart", undefined, true);
-const TookDamageTag = new Effect("(Damaged)", "turnEnd", undefined, true);
+const DidAttackTag = new Effect("(Attacked)", "turnStart", undefined, {
+  quiet: true,
+});
+const TookDamageTag = new Effect("(Damaged)", "turnEnd", undefined, {
+  quiet: true,
+});
 
 export const RageEffect = new Effect("Rage", "turnStart", (g) => {
   // You have advantage on Strength checks and Strength saving throws.

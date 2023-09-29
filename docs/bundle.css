@@ -92,19 +92,26 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
-._main_ap8hd_1 {
+._main_120hg_1 {
   position: absolute;
   cursor: pointer;
   border-radius: 1000px;
   z-index: 20;
 }
-._main_ap8hd_1:hover {
+._main_120hg_1:hover {
   box-shadow: silver 0px 0px 4px 4px;
 }
-._token_ap8hd_11 {
+._token_120hg_11 {
   position: absolute;
   left: 0;
   top: 0;
+}
+._icons_120hg_17 {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  flex-flow: wrap-reverse;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/UnitMoveButton.module.scss */

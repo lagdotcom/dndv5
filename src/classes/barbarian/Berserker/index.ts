@@ -53,27 +53,32 @@ class FrenzyAttack extends AbstractAction<HasTarget> {
   }
 }
 
-const FrenzyEffect = new Effect("Frenzy", "turnEnd", (g) => {
-  g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
-    if (who.hasEffect(FrenzyEffect) && who !== target) {
-      for (const weapon of who.weapons) {
-        if (weapon.rangeCategory === "melee")
-          actions.push(new FrenzyAttack(g, who, weapon));
+const FrenzyEffect = new Effect(
+  "Frenzy",
+  "turnEnd",
+  (g) => {
+    g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
+      if (who.hasEffect(FrenzyEffect) && who !== target) {
+        for (const weapon of who.weapons) {
+          if (weapon.rangeCategory === "melee")
+            actions.push(new FrenzyAttack(g, who, weapon));
+        }
       }
-    }
-  });
+    });
 
-  g.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
-    if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
-      interrupt.add(
-        new EvaluateLater(who, FrenzyEffect, async () => {
-          await who.removeEffect(FrenzyEffect);
-          await who.changeExhaustion(1);
-        }),
-      );
-    }
-  });
-});
+    g.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
+      if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
+        interrupt.add(
+          new EvaluateLater(who, FrenzyEffect, async () => {
+            await who.removeEffect(FrenzyEffect);
+            await who.changeExhaustion(1);
+          }),
+        );
+      }
+    });
+  },
+  { image: frenzyUrl },
+);
 
 const Frenzy = new SimpleFeature(
   "Frenzy",

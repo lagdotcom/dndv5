@@ -7,7 +7,8 @@ import AttackTag from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { hasAll } from "../../utils/set";
 
-const RecklessAttackResource = new TurnResource("Reckless Attack", 1);
+const featureName = "Reckless Attack";
+const RecklessAttackResource = new TurnResource(featureName, 1);
 
 function canBeReckless(
   who: Combatant,
@@ -21,7 +22,7 @@ function canBeReckless(
   );
 }
 
-const RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g) => {
+const RecklessAttackEffect = new Effect(featureName, "turnStart", (g) => {
   g.events.on(
     "BeforeAttack",
     ({ detail: { who, target, diceType, ability, tags } }) => {
@@ -35,7 +36,7 @@ const RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g) => {
 });
 
 export const RecklessAttack = new SimpleFeature(
-  "Reckless Attack",
+  featureName,
   `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`,
   (g, me) => {
     me.initResource(RecklessAttackResource);
@@ -49,7 +50,7 @@ export const RecklessAttack = new SimpleFeature(
             new YesNoChoice(
               me,
               RecklessAttack,
-              "Reckless Attack",
+              featureName,
               `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
               async () => {
                 await me.addEffect(RecklessAttackEffect, { duration: 1 });
