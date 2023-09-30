@@ -57,7 +57,7 @@ const EarthTremor = scalingSpell({
           who: target,
           tags: svSet(),
         },
-        { fail: "normal", save: "zero" }
+        { fail: "normal", save: "zero" },
       );
 
       if (save.damageResponse !== "zero") {
@@ -66,7 +66,7 @@ const EarthTremor = scalingSpell({
           "bludgeoning",
           { attacker, spell: EarthTremor, method, target },
           [["bludgeoning", damage]],
-          save.damageResponse
+          save.damageResponse,
         );
         await target.addEffect(Prone, { duration: Infinity }, attacker);
       }
@@ -76,7 +76,7 @@ const EarthTremor = scalingSpell({
     const area = new ActiveEffectArea(
       "Earth Tremor",
       shape,
-      arSet("difficult terrain")
+      arSet("difficult terrain"),
     );
     g.addEffectArea(area);
   },

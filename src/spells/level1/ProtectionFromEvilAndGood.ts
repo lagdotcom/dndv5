@@ -13,7 +13,7 @@ const affectedTypes = ctSet(
   "elemental",
   "fey",
   "fiend",
-  "undead"
+  "undead",
 );
 const isAffected = (attacker?: Combatant) =>
   attacker && affectedTypes.has(attacker.type);
@@ -41,7 +41,7 @@ const ProtectionEffect = new Effect(
           isValidEffect(effect, config)
         )
           success.add("fail", ProtectionEffect);
-      }
+      },
     );
 
     g.events.on(
@@ -53,9 +53,9 @@ const ProtectionEffect = new Effect(
           isValidEffect(effect, config)
         )
           diceType.add("advantage", ProtectionEffect);
-      }
+      },
     );
-  }
+  },
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({

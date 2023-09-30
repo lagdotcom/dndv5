@@ -35,7 +35,7 @@ const Sanctuary = simpleSpell<HasTarget>({
     await target.addEffect(
       SanctuaryEffect,
       { caster, method, duration: minutes(1) },
-      caster
+      caster,
     );
   },
 });

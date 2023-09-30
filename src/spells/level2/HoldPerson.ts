@@ -43,7 +43,7 @@ const HoldPersonEffect = new Effect<{
             if (config.affected.size < 1)
               await config.caster.endConcentration();
           }
-        })
+        }),
       );
     }
   });

@@ -16,7 +16,7 @@ const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
       interrupt.add(
         new EvaluateLater(who, MindSliverEffect, async () => {
           who.removeEffect(MindSliverEffect);
-        })
+        }),
       );
     }
   });
@@ -58,14 +58,14 @@ const MindSliver = simpleSpell<HasTarget>({
         method,
         tags: svSet(),
       },
-      { fail: "normal", save: "zero" }
+      { fail: "normal", save: "zero" },
     );
     await g.damage(
       MindSliver,
       "psychic",
       { attacker, target, spell: MindSliver, method },
       [["psychic", damage]],
-      save.damageResponse
+      save.damageResponse,
     );
 
     if (save.outcome === "fail") {
@@ -78,10 +78,10 @@ const MindSliver = simpleSpell<HasTarget>({
             interrupt.add(
               new EvaluateLater(who, MindSliver, async () => {
                 await target.removeEffect(MindSliverEffect);
-              })
+              }),
             );
           }
-        }
+        },
       );
       await target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
     }

@@ -29,7 +29,7 @@ const ShieldOfFaith = simpleSpell<HasTarget>({
     await target.addEffect(
       ShieldOfFaithEffect,
       { duration: minutes(10) },
-      caster
+      caster,
     );
 
     caster.concentrateOn({

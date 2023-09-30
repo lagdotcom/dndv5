@@ -22,7 +22,7 @@ class MagicWeaponController {
     public caster: Combatant,
     public slot: number,
     public item: WeaponItem,
-    public bonus = slotToBonus(slot)
+    public bonus = slotToBonus(slot),
   ) {
     const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
     this.subscriptions = [
@@ -61,7 +61,7 @@ const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
       g,
       caster.weapons
         .filter((w) => !w.magical && w.category !== "natural")
-        .map((value) => ({ label: value.name, value }))
+        .map((value) => ({ label: value.name, value })),
     ),
   }),
   getTargets: (g, caster) => [caster],

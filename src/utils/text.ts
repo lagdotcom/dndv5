@@ -36,7 +36,7 @@ export function describePoint(p?: Point) {
 export function describeDice(amounts: Amount[]) {
   let average = 0;
   let flat = 0;
-  let dice = [];
+  const dice = [];
 
   for (const a of amounts) {
     if (a.type === "flat") {

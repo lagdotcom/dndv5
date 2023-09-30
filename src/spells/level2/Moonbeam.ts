@@ -26,7 +26,7 @@ const getArea = (centre: Point): SpecifiedCylinder => ({
 class MoveMoonbeamAction extends AbstractAction<HasPoint> {
   constructor(
     g: Engine,
-    public controller: MoonbeamController
+    public controller: MoonbeamController,
   ) {
     super(
       g,
@@ -37,7 +37,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
       {
         time: "action",
         description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
-      }
+      },
     );
   }
 
@@ -63,13 +63,13 @@ class MoonbeamController {
     public caster: Combatant,
     public method: SpellcastingMethod,
     public centre: Point,
-    public slot: number
+    public slot: number,
   ) {
     this.shape = getArea(centre);
     this.area = new ActiveEffectArea(
       "Moonbeam",
       this.shape,
-      arSet("dim light")
+      arSet("dim light"),
     );
     g.addEffectArea(this.area);
 
@@ -84,13 +84,13 @@ class MoonbeamController {
 
         if (g.getInside(this.shape).includes(who))
           interrupt.add(this.getDamager(who));
-      })
+      }),
     );
     this.subscriptions.push(
       g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
         if (g.getInside(this.shape).includes(who))
           interrupt.add(this.getDamager(who));
-      })
+      }),
     );
 
     /* On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction. */
@@ -98,7 +98,7 @@ class MoonbeamController {
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === this.caster && this.hasBeenATurn)
           actions.push(new MoveMoonbeamAction(g, this));
-      })
+      }),
     );
   }
 
@@ -138,7 +138,7 @@ class MoonbeamController {
           target: target,
         },
         [["radiant", damage]],
-        result.damageResponse
+        result.damageResponse,
       );
 
       // TODO If it fails, it also instantly reverts to its original form and can't assume a different form until it leaves the spell's light.

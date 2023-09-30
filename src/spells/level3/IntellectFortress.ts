@@ -16,14 +16,14 @@ const IntellectFortressEffect = new Effect(
       ({ detail: { who, damageType, response } }) => {
         if (who.hasEffect(IntellectFortressEffect) && damageType === "psychic")
           response.add("resist", IntellectFortressEffect);
-      }
+      },
     );
 
     g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (who.hasEffect(IntellectFortressEffect) && mental.has(ability))
         diceType.add("advantage", IntellectFortressEffect);
     });
-  }
+  },
 );
 
 const IntellectFortress = scalingSpell<HasTargets>({

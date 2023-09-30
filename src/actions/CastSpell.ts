@@ -21,7 +21,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     public g: Engine,
     public actor: Combatant,
     public method: SpellcastingMethod,
-    public spell: Spell<T>
+    public spell: Spell<T>,
   ) {
     this.name = `${spell.name} (${method.name})`;
     this.isSpell = true;
@@ -61,7 +61,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     const resource = this.method.getResourceForSpell(
       this.spell,
       level,
-      this.actor
+      this.actor,
     );
 
     return new Map(resource ? [[resource, 1]] : undefined);
@@ -98,7 +98,7 @@ export default class CastSpell<T extends object> implements Action<T> {
         targets: new Set(spell.getTargets(g, actor, config)),
         interrupt: new InterruptionCollector(),
         success: new SuccessResponseCollector(),
-      })
+      }),
     );
     // TODO [MESSAGES] report this somehow
     if (sc.detail.success.result === "fail") return;

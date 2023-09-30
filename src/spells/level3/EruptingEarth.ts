@@ -62,7 +62,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
         "bludgeoning",
         { attacker, spell: EruptingEarth, method, target },
         [["bludgeoning", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
 
@@ -70,7 +70,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
     const area = new ActiveEffectArea(
       "Erupting Earth",
       shape,
-      arSet("difficult terrain")
+      arSet("difficult terrain"),
     );
     g.addEffectArea(area);
   },

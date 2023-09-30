@@ -13,7 +13,7 @@ const GuidingBoltEffect = new Effect("Guiding Bolt", "turnEnd", (g) => {
       interrupt.add(
         new EvaluateLater(target, GuidingBoltEffect, async () => {
           await target.removeEffect(GuidingBoltEffect);
-        })
+        }),
       );
     }
   });

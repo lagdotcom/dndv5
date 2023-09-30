@@ -46,7 +46,7 @@ export default abstract class AbstractAction<T extends object = Empty>
       heal,
       resources,
       time,
-    }: AbstractActionOptions = {}
+    }: AbstractActionOptions = {},
   ) {
     this.area = area;
     this.damage = damage;

@@ -1661,7 +1661,7 @@
   function describeDice(amounts) {
     let average = 0;
     let flat = 0;
-    let dice = [];
+    const dice = [];
     for (const a of amounts) {
       if (a.type === "flat") {
         average += a.amount;

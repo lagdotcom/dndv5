@@ -20,14 +20,14 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     g: Engine,
     actor: Combatant,
     public weapon: WeaponItem,
-    public ammo?: AmmoItem
+    public ammo?: AmmoItem,
   ) {
     super(
       g,
       actor,
       ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
       weapon.properties.has("thrown") ? "incomplete" : "implemented",
-      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) }
+      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) },
     );
     this.ability = getWeaponAbility(actor, weapon);
     this.icon = getItemIcon(weapon);
@@ -58,9 +58,9 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     const damageType = weapon.damage.damageType;
 
     return `${rangeCategories.join(
-      " or "
+      " or ",
     )} Weapon Attack: ${bonus} to hit, ${ranges.join(
-      " or "
+      " or ",
     )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
   }
 
@@ -94,14 +94,14 @@ export async function doStandardAttack(
     source: Source;
     target: Combatant;
     weapon: WeaponItem;
-  }
+  },
 ) {
   const tags = new Set<AttackTag>();
   // TODO this should probably be a choice
   tags.add(
     distance(g, attacker, target) > attacker.reach + weapon.reach
       ? "ranged"
-      : "melee"
+      : "melee",
   );
 
   if (weapon.category !== "natural") tags.add("weapon");
@@ -137,7 +137,7 @@ export async function doStandardAttack(
           ability,
           weapon,
         },
-        e.critical
+        e.critical,
       );
       baseDamage.push([damage.damageType, amount]);
     } else baseDamage.push([damage.damageType, damage.amount]);
@@ -154,7 +154,7 @@ export async function doStandardAttack(
         ammo,
         critical: e.critical,
       },
-      baseDamage
+      baseDamage,
     );
     return { type: "hit", attack: e, damage: e2 } as const;
   }

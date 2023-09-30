@@ -16,10 +16,10 @@ function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
 
 const BlessEffect = new Effect("Bless", "turnEnd", (g) => {
   g.events.on("BeforeAttack", ({ detail: { bonus, who } }) =>
-    applyBless(g, who, bonus)
+    applyBless(g, who, bonus),
   );
   g.events.on("BeforeSave", ({ detail: { bonus, who } }) =>
-    applyBless(g, who, bonus)
+    applyBless(g, who, bonus),
   );
 });
 

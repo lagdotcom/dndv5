@@ -32,7 +32,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
         if (cannotHeal.has(target.type))
           ec.add(
             `Cannot heal ${target.name}, they are a ${target.type}`,
-            MassHealingWord
+            MassHealingWord,
           );
     }
 

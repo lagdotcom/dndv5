@@ -43,7 +43,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
         effectTypes.map((value) => ({
           label: value.name,
           value,
-        }))
+        })),
       ),
     };
   },

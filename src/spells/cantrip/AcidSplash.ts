@@ -56,7 +56,7 @@ const AcidSplash = simpleSpell<HasTargets>({
           method,
           tags: svSet(),
         },
-        { fail: "normal", save: "zero" }
+        { fail: "normal", save: "zero" },
       );
 
       await g.damage(
@@ -64,7 +64,7 @@ const AcidSplash = simpleSpell<HasTargets>({
         "acid",
         { attacker, target, spell: AcidSplash, method },
         [["acid", damage]],
-        save.damageResponse
+        save.damageResponse,
       );
     }
   },
