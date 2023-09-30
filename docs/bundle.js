@@ -553,119 +553,6 @@
     return true;
   }
 
-  // src/utils/dnd.ts
-  function getAbilityModifier(ability) {
-    return Math.floor((ability - 10) / 2);
-  }
-  function getDiceAverage(count, size) {
-    return (size + 1) / 2 * count;
-  }
-  function getProficiencyBonusByLevel(level) {
-    return Math.ceil(level / 4) + 1;
-  }
-  function getProficiencyType(thing) {
-    if (typeof thing === "string") {
-      if (isA(thing, AbilityNames))
-        return { type: "ability", ability: thing };
-      return { type: "skill", skill: thing };
-    }
-    if (thing.itemType === "weapon")
-      return {
-        type: "weapon",
-        category: thing.category,
-        weapon: thing.weaponType
-      };
-    if (thing.itemType === "armor")
-      return { type: "armor", category: thing.category };
-  }
-  function getSaveDC(who, ability) {
-    return 8 + who.pb + who[ability].modifier;
-  }
-  var getNaturalArmourMethod = (who, naturalAC) => {
-    const uses = /* @__PURE__ */ new Set();
-    let ac = naturalAC + who.dex.modifier;
-    if (who.shield) {
-      uses.add(who.shield);
-      ac += who.shield.ac;
-    }
-    return { name: "natural armor", ac, uses };
-  };
-
-  // src/AbilityScore.ts
-  var AbilityScore = class {
-    constructor(baseScore = 10, baseMaximum = 20) {
-      this.baseScore = baseScore;
-      this.baseMaximum = baseMaximum;
-    }
-    get score() {
-      return Math.min(this.baseScore, this.maximum);
-    }
-    set score(value) {
-      this.baseScore = value;
-    }
-    get maximum() {
-      return this.baseMaximum;
-    }
-    set maximum(value) {
-      this.baseMaximum = value;
-    }
-    get modifier() {
-      return getAbilityModifier(this.score);
-    }
-    setMaximum(value) {
-      this.baseMaximum = Math.max(this.baseMaximum, value);
-    }
-    setScore(value) {
-      this.baseScore = value;
-    }
-  };
-
-  // src/collectors/ConditionCollector.ts
-  var ConditionCollector = class extends SetCollector {
-  };
-
-  // src/events/BeforeEffectEvent.ts
-  var BeforeEffectEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeEffect", { detail });
-    }
-  };
-
-  // src/events/EffectAddedEvent.ts
-  var EffectAddedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectAdded", { detail });
-    }
-  };
-
-  // src/events/EffectRemovedEvent.ts
-  var EffectRemovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectRemoved", { detail });
-    }
-  };
-
-  // src/events/ExhaustionEvent.ts
-  var ExhaustionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Exhaustion", { detail });
-    }
-  };
-
-  // src/events/GetConditionsEvent.ts
-  var GetConditionsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetConditions", { detail });
-    }
-  };
-
-  // src/events/GetSpeedEvent.ts
-  var GetSpeedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetSpeed", { detail });
-    }
-  };
-
   // src/Polygon.ts
   var Polygon = class {
     constructor(points) {
@@ -941,6 +828,174 @@
     return enumerateMapSquares(minX, minY, maxX, maxY);
   }
 
+  // src/utils/units.ts
+  var categoryUnits = {
+    tiny: 1,
+    small: 1,
+    medium: 1,
+    large: 2,
+    huge: 3,
+    gargantuan: 4
+  };
+  function convertSizeToUnit(size) {
+    return categoryUnits[size] * MapSquareSize;
+  }
+  function getDistanceBetween(posA, sizeA, posB, sizeB) {
+    const dx = Math.abs(posA.x - posB.x);
+    const dy = Math.abs(posA.y - posB.y);
+    return Math.max(dx, dy);
+  }
+  function distance(g2, a, b) {
+    const as = g2.getState(a);
+    const bs = g2.getState(b);
+    return getDistanceBetween(
+      as.position,
+      a.sizeInUnits,
+      bs.position,
+      b.sizeInUnits
+    );
+  }
+  function distanceTo(g2, who, to) {
+    const s = g2.getState(who);
+    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
+  }
+  function getSquares(who, position) {
+    return new PointSet(
+      enumerateMapSquares(
+        position.x,
+        position.y,
+        position.x + who.sizeInUnits,
+        position.y + who.sizeInUnits
+      )
+    );
+  }
+
+  // src/utils/dnd.ts
+  function getAbilityModifier(ability) {
+    return Math.floor((ability - 10) / 2);
+  }
+  function getDiceAverage(count, size) {
+    return (size + 1) / 2 * count;
+  }
+  function getProficiencyBonusByLevel(level) {
+    return Math.ceil(level / 4) + 1;
+  }
+  function getProficiencyType(thing) {
+    if (typeof thing === "string") {
+      if (isA(thing, AbilityNames))
+        return { type: "ability", ability: thing };
+      return { type: "skill", skill: thing };
+    }
+    if (thing.itemType === "weapon")
+      return {
+        type: "weapon",
+        category: thing.category,
+        weapon: thing.weaponType
+      };
+    if (thing.itemType === "armor")
+      return { type: "armor", category: thing.category };
+  }
+  function getSaveDC(who, ability) {
+    return 8 + who.pb + who[ability].modifier;
+  }
+  var getNaturalArmourMethod = (who, naturalAC) => {
+    const uses = /* @__PURE__ */ new Set();
+    let ac = naturalAC + who.dex.modifier;
+    if (who.shield) {
+      uses.add(who.shield);
+      ac += who.shield.ac;
+    }
+    return { name: "natural armor", ac, uses };
+  };
+  function getFlanker(g2, attacker, target) {
+    for (const flanker of g2.combatants.keys()) {
+      if (flanker.side !== attacker.side)
+        continue;
+      if (flanker === attacker)
+        continue;
+      if (flanker.conditions.has("Incapacitated"))
+        continue;
+      if (distance(g2, flanker, target) > 5)
+        continue;
+      return flanker;
+    }
+  }
+
+  // src/AbilityScore.ts
+  var AbilityScore = class {
+    constructor(baseScore = 10, baseMaximum = 20) {
+      this.baseScore = baseScore;
+      this.baseMaximum = baseMaximum;
+    }
+    get score() {
+      return Math.min(this.baseScore, this.maximum);
+    }
+    set score(value) {
+      this.baseScore = value;
+    }
+    get maximum() {
+      return this.baseMaximum;
+    }
+    set maximum(value) {
+      this.baseMaximum = value;
+    }
+    get modifier() {
+      return getAbilityModifier(this.score);
+    }
+    setMaximum(value) {
+      this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+    setScore(value) {
+      this.baseScore = value;
+    }
+  };
+
+  // src/collectors/ConditionCollector.ts
+  var ConditionCollector = class extends SetCollector {
+  };
+
+  // src/events/BeforeEffectEvent.ts
+  var BeforeEffectEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeEffect", { detail });
+    }
+  };
+
+  // src/events/EffectAddedEvent.ts
+  var EffectAddedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectAdded", { detail });
+    }
+  };
+
+  // src/events/EffectRemovedEvent.ts
+  var EffectRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectRemoved", { detail });
+    }
+  };
+
+  // src/events/ExhaustionEvent.ts
+  var ExhaustionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Exhaustion", { detail });
+    }
+  };
+
+  // src/events/GetConditionsEvent.ts
+  var GetConditionsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetConditions", { detail });
+    }
+  };
+
+  // src/events/GetSpeedEvent.ts
+  var GetSpeedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSpeed", { detail });
+    }
+  };
+
   // src/events/SpellCastEvent.ts
   var SpellCastEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1197,48 +1252,6 @@
     for (const enchantment of enchantments)
       item.addEnchantment(enchantment);
     return item;
-  }
-
-  // src/utils/units.ts
-  var categoryUnits = {
-    tiny: 1,
-    small: 1,
-    medium: 1,
-    large: 2,
-    huge: 3,
-    gargantuan: 4
-  };
-  function convertSizeToUnit(size) {
-    return categoryUnits[size] * MapSquareSize;
-  }
-  function getDistanceBetween(posA, sizeA, posB, sizeB) {
-    const dx = Math.abs(posA.x - posB.x);
-    const dy = Math.abs(posA.y - posB.y);
-    return Math.max(dx, dy);
-  }
-  function distance(g2, a, b) {
-    const as = g2.getState(a);
-    const bs = g2.getState(b);
-    return getDistanceBetween(
-      as.position,
-      a.sizeInUnits,
-      bs.position,
-      b.sizeInUnits
-    );
-  }
-  function distanceTo(g2, who, to) {
-    const s = g2.getState(who);
-    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
-  }
-  function getSquares(who, position) {
-    return new PointSet(
-      enumerateMapSquares(
-        position.x,
-        position.y,
-        position.x + who.sizeInUnits,
-        position.y + who.sizeInUnits
-      )
-    );
   }
 
   // src/AbstractCombatant.ts
@@ -3693,49 +3706,6 @@
     "slashing"
   ];
 
-  // src/features/common.ts
-  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
-    return new SimpleFeature(name, text, (g2, me) => {
-      var _a;
-      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
-      const spells = entries.filter((entry) => entry.level <= casterLevel);
-      for (const { resource, spell } of spells) {
-        if (resource)
-          me.initResource(resource);
-        if (addAsList) {
-          me.preparedSpells.add(spell);
-          method.addCastableSpell(spell, me);
-        } else
-          spellImplementationWarning(spell, me);
-      }
-      me.spellcastingMethods.add(method);
-      if (!addAsList)
-        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me)
-            for (const { spell } of spells)
-              actions.push(new CastSpell(g2, me, method, spell));
-        });
-    });
-  }
-  function darkvisionFeature(range = 60) {
-    return new SimpleFeature(
-      "Darkvision",
-      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
-      (_2, me) => {
-        me.senses.set("darkvision", range);
-      }
-    );
-  }
-  function nonCombatFeature(name, text) {
-    return new SimpleFeature(name, text, () => {
-    });
-  }
-  function notImplementedFeature(name, text) {
-    return new SimpleFeature(name, text, (_2, me) => {
-      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
-    });
-  }
-
   // src/monsters/common.ts
   var KeenSmell = new SimpleFeature(
     "Keen Smell",
@@ -3747,9 +3717,15 @@
       });
     }
   );
-  var PackTactics = notImplementedFeature(
+  var PackTactics = new SimpleFeature(
     "Pack Tactics",
-    `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`
+    `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`,
+    (g2, me) => {
+      g2.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+        if (who === me && getFlanker(g2, me, target))
+          diceType.add("advantage", PackTactics);
+      });
+    }
   );
   function makeMultiattack(text, canStillAttack) {
     return new SimpleFeature("Multiattack", text, (g2, me) => {
@@ -3875,6 +3851,49 @@
       this.inventory.add(new Arrow(g2, Infinity));
     }
   };
+
+  // src/features/common.ts
+  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
+    return new SimpleFeature(name, text, (g2, me) => {
+      var _a;
+      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
+      const spells = entries.filter((entry) => entry.level <= casterLevel);
+      for (const { resource, spell } of spells) {
+        if (resource)
+          me.initResource(resource);
+        if (addAsList) {
+          me.preparedSpells.add(spell);
+          method.addCastableSpell(spell, me);
+        } else
+          spellImplementationWarning(spell, me);
+      }
+      me.spellcastingMethods.add(method);
+      if (!addAsList)
+        g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            for (const { spell } of spells)
+              actions.push(new CastSpell(g2, me, method, spell));
+        });
+    });
+  }
+  function darkvisionFeature(range = 60) {
+    return new SimpleFeature(
+      "Darkvision",
+      `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
+      (_2, me) => {
+        me.senses.set("darkvision", range);
+      }
+    );
+  }
+  function nonCombatFeature(name, text) {
+    return new SimpleFeature(name, text, () => {
+    });
+  }
+  function notImplementedFeature(name, text) {
+    return new SimpleFeature(name, text, (_2, me) => {
+      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+    });
+  }
 
   // src/features/fightingStyles.ts
   var FightingStyleProtection = new SimpleFeature(
@@ -4419,17 +4438,6 @@ If your DM allows the use of feats, you may instead take a feat.`,
   function getSneakAttackDice(level) {
     return Math.ceil(level / 2);
   }
-  function getFlanker(g2, target) {
-    for (const flanker of g2.combatants.keys()) {
-      if (flanker.side === target.side)
-        continue;
-      if (flanker.conditions.has("Incapacitated"))
-        continue;
-      if (distance(g2, flanker, target) > 5)
-        continue;
-      return flanker;
-    }
-  }
   var SneakAttackResource = new TurnResource("Sneak Attack", 1);
   var SneakAttack = new SimpleFeature(
     "Sneak Attack",
@@ -4458,9 +4466,9 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         }) => {
           if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
             const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
-            const hasAdvantage = attack.roll.diceType === "advantage";
-            const didNotHaveDisadvantage = !attack.pre.diceType.getValidEntries().includes("disadvantage");
-            if (isFinesseOrRangedWeapon && (hasAdvantage || getFlanker(g2, target) && didNotHaveDisadvantage)) {
+            const advantage = attack.roll.diceType === "advantage";
+            const noDisadvantage = !attack.pre.diceType.getValidEntries().includes("disadvantage");
+            if (isFinesseOrRangedWeapon && (advantage || getFlanker(g2, me, target) && noDisadvantage)) {
               interrupt.add(
                 new YesNoChoice(
                   attacker,
@@ -4496,9 +4504,8 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   var SneakAttack_default = SneakAttack;
 
   // src/classes/rogue/SteadyAim.ts
-  var featureName = "Steady Aim";
   var SteadyAimNoMoveEffect = new Effect(
-    featureName,
+    "Steady Aim",
     "turnEnd",
     (g2) => {
       g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
@@ -4508,7 +4515,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     },
     { quiet: true }
   );
-  var SteadyAimAdvantageEffect = new Effect(featureName, "turnEnd", (g2) => {
+  var SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
       if (who.hasEffect(SteadyAimAdvantageEffect))
         diceType.add("advantage", SteadyAimAdvantageEffect);
@@ -4524,7 +4531,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   });
   var SteadyAimAction = class _SteadyAimAction extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, featureName, "implemented", {}, { time: "bonus action" });
+      super(g2, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
     }
     check(config, ec) {
       if (this.actor.movedSoFar)
@@ -4540,7 +4547,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     }
   };
   var SteadyAim = new SimpleFeature(
-    featureName,
+    "Steady Aim",
     `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
     (g2, me) => {
       g2.events.on("GetActions", ({ detail: { who, actions } }) => {
@@ -8014,12 +8021,11 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   var Rage_default = Rage;
 
   // src/classes/barbarian/RecklessAttack.ts
-  var featureName2 = "Reckless Attack";
-  var RecklessAttackResource = new TurnResource(featureName2, 1);
+  var RecklessAttackResource = new TurnResource("Reckless Attack", 1);
   function canBeReckless(who, tags, ability) {
     return who.hasEffect(RecklessAttackEffect) && hasAll(tags, ["melee", "weapon"]) && ability === "str";
   }
-  var RecklessAttackEffect = new Effect(featureName2, "turnStart", (g2) => {
+  var RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g2) => {
     g2.events.on(
       "BeforeAttack",
       ({ detail: { who, target, diceType, ability, tags } }) => {
@@ -8031,7 +8037,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
     );
   });
   var RecklessAttack = new SimpleFeature(
-    featureName2,
+    "Reckless Attack",
     `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`,
     (g2, me) => {
       me.initResource(RecklessAttackResource);
@@ -8044,7 +8050,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
               new YesNoChoice(
                 me,
                 RecklessAttack,
-                featureName2,
+                "Reckless Attack",
                 `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
                 () => __async(void 0, null, function* () {
                   yield me.addEffect(RecklessAttackEffect, { duration: 1 });
@@ -10256,6 +10262,7 @@ The creature is aware of this effect before it makes its attack against you.`
     () => allCombatants.value.find((u) => u.id === movingCombatantId.value)
   );
   var scale = (0, import_signals.signal)(20);
+  var showSideHP = (0, import_signals.signal)([0]);
   var wantsCombatant = (0, import_signals.signal)(
     void 0
   );
@@ -10275,6 +10282,7 @@ The creature is aware of this effect before it makes its attack against you.`
     movingCombatantId,
     movingCombatant,
     scale,
+    showSideHP,
     wantsCombatant,
     wantsPoint
   };
@@ -10429,6 +10437,50 @@ The creature is aware of this effect before it makes its attack against you.`
   function UnitEffectIcon({ effect }) {
     var _a;
     return /* @__PURE__ */ o("div", { title: effect.name, children: /* @__PURE__ */ o(SVGIcon, { src: (_a = effect.icon) != null ? _a : missing_icon_default, size: 25 }) });
+  }
+
+  // src/ui/UnitHP.module.scss
+  var UnitHP_module_default = {
+    "hp": "_hp_qcojh_1",
+    "detailed": "_detailed_qcojh_13",
+    "detailedBar": "_detailedBar_qcojh_17",
+    "text": "_text_qcojh_27",
+    "ok": "_ok_qcojh_35",
+    "bloody": "_bloody_qcojh_39",
+    "down": "_down_qcojh_43"
+  };
+
+  // src/ui/UnitHP.tsx
+  function UnitDetailedHP({ u }) {
+    const width = `${u.hp * 100 / u.hpMax}%`;
+    return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.detailed), children: [
+      /* @__PURE__ */ o("span", { className: UnitHP_module_default.detailedBar, style: { width } }),
+      /* @__PURE__ */ o("span", { className: UnitHP_module_default.text, children: [
+        u.hp,
+        u.temporaryHP > 0 ? "+" : "",
+        " / ",
+        u.hpMax
+      ] })
+    ] });
+  }
+  var BriefData = {
+    OK: "ok",
+    Bloody: "bloody",
+    Down: "down"
+  };
+  function UnitBriefHP({ u }) {
+    const ratio = u.hp / u.hpMax;
+    const status = ratio >= 0.5 ? "OK" : ratio > 0 ? "Bloody" : "Down";
+    return /* @__PURE__ */ o(
+      "div",
+      {
+        className: classnames(UnitHP_module_default.hp, UnitHP_module_default.brief, UnitHP_module_default[BriefData[status]]),
+        children: /* @__PURE__ */ o("span", { className: UnitHP_module_default.text, children: [
+          status,
+          u.temporaryHP > 0 ? "+" : ""
+        ] })
+      }
+    );
   }
 
   // src/ui/UnitMoveButton.tsx
@@ -10589,6 +10641,7 @@ The creature is aware of this effect before it makes its attack against you.`
                 }
               )
             ] }),
+            showSideHP.value.includes(u.side) ? /* @__PURE__ */ o(UnitDetailedHP, { u }) : /* @__PURE__ */ o(UnitBriefHP, { u }),
             /* @__PURE__ */ o("div", { className: Unit_module_default.icons, children: u.effects.map((effect, i) => /* @__PURE__ */ o(UnitEffectIcon, { effect }, i)) })
           ]
         }
@@ -11473,6 +11526,7 @@ The creature is aware of this effect before it makes its attack against you.`
       attacksSoFar,
       movedSoFar,
       speed,
+      side,
       hp,
       hpMax,
       temporaryHP,
@@ -11498,6 +11552,7 @@ The creature is aware of this effect before it makes its attack against you.`
       attacksSoFar: attacksSoFar.length,
       movedSoFar,
       speed,
+      side,
       hp,
       hpMax,
       temporaryHP,

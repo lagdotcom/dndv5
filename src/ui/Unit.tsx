@@ -4,8 +4,9 @@ import Combatant from "../types/Combatant";
 import MoveDirection from "../types/MoveDirection";
 import styles from "./Unit.module.scss";
 import UnitEffectIcon from "./UnitEffectIcon";
+import { UnitBriefHP, UnitDetailedHP } from "./UnitHP";
 import UnitMoveButton from "./UnitMoveButton";
-import { scale } from "./utils/state";
+import { scale, showSideHP } from "./utils/state";
 import { UnitData } from "./utils/types";
 
 interface Props {
@@ -79,6 +80,11 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
             type="northeast"
           />
         </>
+      )}
+      {showSideHP.value.includes(u.side) ? (
+        <UnitDetailedHP u={u} />
+      ) : (
+        <UnitBriefHP u={u} />
       )}
       <div className={styles.icons}>
         {u.effects.map((effect, i) => (

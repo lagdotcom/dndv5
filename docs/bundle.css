@@ -114,6 +114,49 @@
   flex-flow: wrap-reverse;
 }
 
+/* esbuild-sass-plugin:css-chunk:src/ui/UnitHP.module.scss */
+._hp_qcojh_1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  text-align: center;
+  opacity: 0.8;
+  color: white;
+  height: 18px;
+}
+._detailed_qcojh_13 {
+  background-color: red;
+  z-index: 10;
+}
+._detailed_qcojh_13 ._detailedBar_qcojh_17 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: green;
+  display: block;
+  height: 18px;
+  z-index: 11;
+}
+._detailed_qcojh_13 ._text_qcojh_27 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 12;
+}
+._ok_qcojh_35 {
+  background-color: green;
+}
+._bloody_qcojh_39 {
+  background-color: red;
+}
+._down_qcojh_43 {
+  background-color: black;
+}
+
 /* esbuild-sass-plugin:css-chunk:src/ui/UnitMoveButton.module.scss */
 :root {
   --movebtn-size: 30px;

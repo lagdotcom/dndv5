@@ -1,0 +1,50 @@
+.hp {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  text-align: center;
+  opacity: 0.8;
+  color: white;
+  height: 18px;
+}
+
+.detailed {
+  background-color: red;
+  z-index: 10;
+
+  .detailedBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: green;
+    display: block;
+    height: 18px;
+    z-index: 11;
+  }
+
+  .text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 12;
+  }
+}
+
+.brief {
+}
+
+.ok {
+  background-color: green;
+}
+
+.bloody {
+  background-color: red;
+}
+
+.down {
+  background-color: black;
+}

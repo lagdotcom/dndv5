@@ -1,22 +1,10 @@
-import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { TurnResource } from "../../resources";
-import Combatant from "../../types/Combatant";
-import { distance } from "../../utils/units";
+import { getFlanker } from "../../utils/dnd";
 
 function getSneakAttackDice(level: number) {
   return Math.ceil(level / 2);
-}
-
-function getFlanker(g: Engine, target: Combatant) {
-  for (const flanker of g.combatants.keys()) {
-    if (flanker.side === target.side) continue;
-    if (flanker.conditions.has("Incapacitated")) continue;
-    if (distance(g, flanker, target) > 5) continue;
-
-    return flanker;
-  }
 }
 
 const SneakAttackResource = new TurnResource("Sneak Attack", 1);
@@ -55,14 +43,14 @@ The amount of the extra damage increases as you gain levels in this class, as sh
           const isFinesseOrRangedWeapon =
             weapon.properties.has("finesse") ||
             weapon.rangeCategory === "ranged";
-          const hasAdvantage = attack.roll.diceType === "advantage";
-          const didNotHaveDisadvantage = !attack.pre.diceType
+          const advantage = attack.roll.diceType === "advantage";
+          const noDisadvantage = !attack.pre.diceType
             .getValidEntries()
             .includes("disadvantage");
 
           if (
             isFinesseOrRangedWeapon &&
-            (hasAdvantage || (getFlanker(g, target) && didNotHaveDisadvantage))
+            (advantage || (getFlanker(g, me, target) && noDisadvantage))
           ) {
             interrupt.add(
               new YesNoChoice(

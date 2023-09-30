@@ -1,9 +1,9 @@
 import WeaponAttack from "../actions/WeaponAttack";
 import { OneAttackPerTurnRule } from "../DndRules";
-import { notImplementedFeature } from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import { getFlanker } from "../utils/dnd";
 
 export const KeenSmell = new SimpleFeature(
   "Keen Smell",
@@ -15,9 +15,15 @@ export const KeenSmell = new SimpleFeature(
   },
 );
 
-export const PackTactics = notImplementedFeature(
+export const PackTactics = new SimpleFeature(
   "Pack Tactics",
   `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`,
+  (g, me) => {
+    g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+      if (who === me && getFlanker(g, me, target))
+        diceType.add("advantage", PackTactics);
+    });
+  },
 );
 
 export function makeMultiattack(

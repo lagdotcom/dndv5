@@ -20,6 +20,7 @@ export interface UnitData {
   attacksSoFar: number;
   movedSoFar: number;
   speed: number;
+  side: number;
 
   hp: number;
   hpMax: number;
@@ -38,6 +39,7 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     attacksSoFar,
     movedSoFar,
     speed,
+    side,
     hp,
     hpMax,
     temporaryHP,
@@ -64,6 +66,7 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     attacksSoFar: attacksSoFar.length,
     movedSoFar,
     speed,
+    side,
     hp,
     hpMax,
     temporaryHP,

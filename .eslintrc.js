@@ -36,5 +36,6 @@ module.exports = {
     "prettier/prettier": ["error", { endOfLine: "crlf" }],
     "simple-import-sort/imports": "error",
     "simple-import-sort/exports": "error",
+    "sonarjs/no-duplicate-string": ["off"],
   },
 };

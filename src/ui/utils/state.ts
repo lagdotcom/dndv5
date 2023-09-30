@@ -49,6 +49,8 @@ export const movingCombatant = computed(() =>
 
 export const scale = signal(20);
 
+export const showSideHP = signal<number[]>([0]);
+
 export const wantsCombatant = signal<Listener<Combatant> | undefined>(
   undefined,
 );
@@ -71,6 +73,7 @@ export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
   movingCombatantId,
   movingCombatant,
   scale,
+  showSideHP,
   wantsCombatant,
   wantsPoint,
 };
