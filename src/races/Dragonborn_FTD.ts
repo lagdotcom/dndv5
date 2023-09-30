@@ -30,7 +30,7 @@ type Ancestry = "Brass" | "Bronze" | "Copper" | "Gold" | "Silver";
 const BreathWeaponResource = new LongRestResource("Breath Weapon", 2);
 const MetallicBreathWeaponResource = new LongRestResource(
   "Metallic Breath Weapon",
-  1,
+  1
 );
 
 function getBreathArea(g: Engine, me: Combatant, point: Point) {
@@ -44,7 +44,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     g: Engine,
     actor: Combatant,
     public damageType: DamageType,
-    public damageDice: number,
+    public damageDice: number
   ) {
     super(
       g,
@@ -55,7 +55,9 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       {
         damage: [_dd(damageDice, 10, damageType)],
         resources: [[BreathWeaponResource, 1]],
-      },
+        description: `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
+        You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`,
+      }
     );
   }
 
@@ -88,7 +90,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
         damageType,
         { attacker, target },
         [[damageType, damage]],
-        save.damageResponse,
+        save.damageResponse
       );
     }
   }
@@ -107,6 +109,7 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
     actor: Combatant,
     name: string,
     status: ImplementationStatus = "missing",
+    description: string
   ) {
     super(
       g,
@@ -114,7 +117,7 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
       name,
       status,
       { point: new PointResolver(g, 15) },
-      { resources: [[MetallicBreathWeaponResource, 1]] },
+      { resources: [[MetallicBreathWeaponResource, 1]], description }
     );
   }
 
@@ -133,12 +136,19 @@ const EnervatingBreathEffect = new Effect(
       if (who.hasEffect(EnervatingBreathEffect))
         conditions.add("Incapacitated", EnervatingBreathEffect);
     });
-  },
+  }
 );
 
 class EnervatingBreathAction extends MetallicBreathAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Enervating Breath", "implemented");
+    super(
+      g,
+      actor,
+      "Enervating Breath",
+      "implemented",
+      `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus.
+      Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.`
+    );
   }
 
   async apply({ point }: HasPoint) {
@@ -165,7 +175,14 @@ class EnervatingBreathAction extends MetallicBreathAction {
 
 class RepulsionBreathAction extends MetallicBreathAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Repulsion Breath", "incomplete");
+    super(
+      g,
+      actor,
+      "Repulsion Breath",
+      "incomplete",
+      `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus.
+      Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`
+    );
   }
 
   async apply(config: HasPoint) {
@@ -174,7 +191,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
     const dc = getSaveDC(actor, "con");
 
     for (const target of g.getInside(
-      getBreathArea(this.g, actor, config.point),
+      getBreathArea(this.g, actor, config.point)
     )) {
       const save = await g.savingThrow(dc, {
         attacker: actor,
@@ -209,17 +226,17 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
               g,
               me,
               dt,
-              getBreathWeaponDamageDice(me.level),
-            ),
+              getBreathWeaponDamageDice(me.level)
+            )
           );
       });
-    },
+    }
   );
 
   const draconicResistance = resistanceFeature(
     "Draconic Resistance",
     `You have resistance to the damage type associated with your Metallic Ancestry.`,
-    [dt],
+    [dt]
   );
 
   const metallicBreathWeapon = new SimpleFeature(
@@ -234,7 +251,7 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
     (g, me) => {
       if (me.level < 5) return;
       console.warn(
-        `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`,
+        `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`
       );
 
       me.initResource(MetallicBreathWeaponResource);
@@ -244,7 +261,7 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
           actions.push(new RepulsionBreathAction(g, me));
         }
       });
-    },
+    }
   );
 
   return {

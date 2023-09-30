@@ -23,6 +23,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
   v: true,
   s: true,
   lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+  description: `You touch a creature and can end either one disease or one condition afflicting it. The condition can be blinded, deafened, paralyzed, or poisoned.`,
 
   getConfig: (g, caster, method, { target }) => {
     const effectTypes: EffectType<unknown>[] = [];
@@ -42,7 +43,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
         effectTypes.map((value) => ({
           label: value.name,
           value,
-        })),
+        }))
       ),
     };
   },

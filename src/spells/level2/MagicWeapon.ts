@@ -22,7 +22,7 @@ class MagicWeaponController {
     public caster: Combatant,
     public slot: number,
     public item: WeaponItem,
-    public bonus = slotToBonus(slot),
+    public bonus = slotToBonus(slot)
   ) {
     const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
     this.subscriptions = [
@@ -52,13 +52,16 @@ const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
   v: true,
   s: true,
   lists: ["Artificer", "Paladin", "Wizard"],
+  description: `You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic weapon with a +1 bonus to attack rolls and damage rolls.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the bonus increases to +2. When you use a spell slot of 6th level or higher, the bonus increases to +3.`,
 
   getConfig: (g, caster) => ({
     item: new ChoiceResolver(
       g,
       caster.weapons
         .filter((w) => !w.magical && w.category !== "natural")
-        .map((value) => ({ label: value.name, value })),
+        .map((value) => ({ label: value.name, value }))
     ),
   }),
   getTargets: (g, caster) => [caster],

@@ -14,6 +14,7 @@ import Resource from "../types/Resource";
 export interface AbstractActionOptions {
   area?: SpecifiedEffectShape[];
   damage?: DamageAmount[];
+  description?: string;
   heal?: Amount[];
   resources?: [Resource, number][];
   time?: ActionTime;
@@ -27,6 +28,7 @@ export default abstract class AbstractAction<T extends object = Empty>
   isAttack?: boolean;
   area?: SpecifiedEffectShape[];
   damage?: DamageAmount[];
+  description?: string;
   heal?: Amount[];
   resources: Map<Resource, number>;
   time?: ActionTime;
@@ -37,10 +39,18 @@ export default abstract class AbstractAction<T extends object = Empty>
     public name: string,
     public status: ImplementationStatus,
     public config: ActionConfig<T>,
-    { area, damage, heal, resources, time }: AbstractActionOptions = {},
+    {
+      area,
+      damage,
+      description,
+      heal,
+      resources,
+      time,
+    }: AbstractActionOptions = {}
   ) {
     this.area = area;
     this.damage = damage;
+    this.description = description;
     this.heal = heal;
     this.resources = new Map(resources);
     this.time = time;
@@ -59,6 +69,11 @@ export default abstract class AbstractAction<T extends object = Empty>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getDamage(config: Partial<T>) {
     return this.damage;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getDescription(config: Partial<T>) {
+    return this.description;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

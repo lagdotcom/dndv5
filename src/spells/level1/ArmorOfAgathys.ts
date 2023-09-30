@@ -21,9 +21,9 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
               ArmorOfAgathysEffect,
               "cold",
               { attacker: pre.target, target: pre.who },
-              [["cold", config.count]],
+              [["cold", config.count]]
             );
-          }),
+          })
         );
     });
 
@@ -34,11 +34,11 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
           interrupt.add(
             new EvaluateLater(who, ArmorOfAgathysEffect, async () => {
               await who.removeEffect(ArmorOfAgathysEffect);
-            }),
+            })
           );
-      },
+      }
     );
-  },
+  }
 );
 
 /* A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
@@ -53,6 +53,9 @@ const ArmorOfAgathys = scalingSpell({
   s: true,
   m: "a cup of water",
   lists: ["Warlock"],
+  description: `A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
 
   getConfig: () => ({}),
   getTargets: (g, caster) => [caster],

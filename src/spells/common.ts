@@ -27,6 +27,7 @@ export const simpleSpell = <T extends object>({
   s = false,
   m,
   lists,
+  description,
   icon,
   apply,
   check = (_g, _config, ec) => ec,
@@ -45,6 +46,7 @@ export const simpleSpell = <T extends object>({
     | "time"
     | "v"
     | "s"
+    | "description"
     | "check"
     | "getAffectedArea"
     | "getDamage"
@@ -64,6 +66,7 @@ export const simpleSpell = <T extends object>({
   s,
   m,
   lists,
+  description,
   icon,
   apply,
   check,
@@ -89,6 +92,7 @@ export const scalingSpell = <T extends object>({
   m,
   lists,
   icon,
+  description,
   apply,
   check = (_g, _config, ec) => ec,
   getAffectedArea = () => undefined,
@@ -106,6 +110,7 @@ export const scalingSpell = <T extends object>({
     | "time"
     | "v"
     | "s"
+    | "description"
     | "check"
     | "getAffectedArea"
     | "getDamage"
@@ -117,7 +122,7 @@ export const scalingSpell = <T extends object>({
     g: Engine,
     actor: Combatant,
     method: SpellcastingMethod,
-    config: Partial<T & Scales>,
+    config: Partial<T & Scales>
   ) => ActionConfig<T>;
 }): Spell<T & Scales> => ({
   status,
@@ -132,6 +137,7 @@ export const scalingSpell = <T extends object>({
   s,
   m,
   lists,
+  description,
   icon,
   apply,
   check,

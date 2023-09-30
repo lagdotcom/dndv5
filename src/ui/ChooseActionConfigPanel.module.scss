@@ -7,3 +7,13 @@
     content: "WARNING: ";
   }
 }
+
+.description {
+  font-size: 0.8em;
+  max-height: 100px;
+  overflow-y: auto;
+
+  p {
+    margin: 0.5em 0;
+  }
+}

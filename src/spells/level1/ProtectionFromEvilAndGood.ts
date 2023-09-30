@@ -13,7 +13,7 @@ const affectedTypes = ctSet(
   "elemental",
   "fey",
   "fiend",
-  "undead",
+  "undead"
 );
 const isAffected = (attacker?: Combatant) =>
   attacker && affectedTypes.has(attacker.type);
@@ -41,7 +41,7 @@ const ProtectionEffect = new Effect(
           isValidEffect(effect, config)
         )
           success.add("fail", ProtectionEffect);
-      },
+      }
     );
 
     g.events.on(
@@ -53,9 +53,9 @@ const ProtectionEffect = new Effect(
           isValidEffect(effect, config)
         )
           diceType.add("advantage", ProtectionEffect);
-      },
+      }
     );
-  },
+  }
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
@@ -68,6 +68,9 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
   s: true,
   m: "holy water or powdered silver and iron, which the spell consumes",
   lists: ["Cleric", "Paladin", "Warlock", "Wizard"],
+  description: `Until the spell ends, one willing creature you touch is protected against certain types of creatures: aberrations, celestials, elementals, fey, fiends, and undead.
+
+  The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.`,
 
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, true),

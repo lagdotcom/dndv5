@@ -11,6 +11,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   s: true,
   m: "a drop of bitumen and a spider",
   lists: ["Artificer", "Sorcerer", "Warlock", "Wizard"],
+  description: `Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.`,
 
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, true),
@@ -18,7 +19,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
-    // TODO [TERRAIN] Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.
+    // TODO [TERRAIN]
   },
 });
 export default SpiderClimb;

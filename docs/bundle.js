@@ -342,7 +342,14 @@
 
   // src/actions/AbstractAction.ts
   var AbstractAction = class {
-    constructor(g2, actor, name, status, config, { area, damage, heal, resources, time } = {}) {
+    constructor(g2, actor, name, status, config, {
+      area,
+      damage,
+      description,
+      heal,
+      resources,
+      time
+    } = {}) {
       this.g = g2;
       this.actor = actor;
       this.name = name;
@@ -350,6 +357,7 @@
       this.config = config;
       this.area = area;
       this.damage = damage;
+      this.description = description;
       this.heal = heal;
       this.resources = new Map(resources);
       this.time = time;
@@ -365,6 +373,10 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getDamage(config) {
       return this.damage;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDescription(config) {
+      return this.description;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getHeal(config) {
@@ -408,7 +420,19 @@
   });
   var DashAction = class _DashAction extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Dash", "implemented", {}, { time: "action" });
+      super(
+        g2,
+        actor,
+        "Dash",
+        "implemented",
+        {},
+        {
+          time: "action",
+          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
+
+        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
+        }
+      );
     }
     check(config, ec) {
       if (this.actor.speed <= 0)
@@ -428,7 +452,17 @@
   });
   var DisengageAction = class _DisengageAction extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Disengage", "missing", {}, { time: "action" });
+      super(
+        g2,
+        actor,
+        "Disengage",
+        "missing",
+        {},
+        {
+          time: "action",
+          description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`
+        }
+      );
     }
     apply() {
       return __async(this, null, function* () {
@@ -454,7 +488,17 @@
   });
   var DodgeAction = class _DodgeAction extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Dodge", "incomplete", {}, { time: "action" });
+      super(
+        g2,
+        actor,
+        "Dodge",
+        "incomplete",
+        {},
+        {
+          time: "action",
+          description: `When you take the Dodge action, you focus entirely on avoiding attacks. Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage. You lose this benefit if you are incapacitated (as explained in the appendix) or if your speed drops to 0.`
+        }
+      );
     }
     apply() {
       return __async(this, null, function* () {
@@ -929,6 +973,9 @@
     getDamage(config) {
       return this.spell.getDamage(this.g, this.actor, this.method, config);
     }
+    getDescription() {
+      return this.spell.description;
+    }
     getHeal(config) {
       return this.spell.getHeal(this.g, this.actor, this.method, config);
     }
@@ -1029,12 +1076,13 @@
     s = false,
     m,
     lists,
+    description,
     icon,
     apply,
     check = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
     getConfig,
-    getDamage = () => void 0,
+    getDamage: getDamage2 = () => void 0,
     getHeal = () => void 0,
     getTargets,
     status = "missing"
@@ -1051,12 +1099,13 @@
     s,
     m,
     lists,
+    description,
     icon,
     apply,
     check,
     getAffectedArea,
     getConfig,
-    getDamage,
+    getDamage: getDamage2,
     getHeal,
     getLevel() {
       return level;
@@ -1075,11 +1124,12 @@
     m,
     lists,
     icon,
+    description,
     apply,
     check = (_g, _config, ec) => ec,
     getAffectedArea = () => void 0,
     getConfig,
-    getDamage = () => void 0,
+    getDamage: getDamage2 = () => void 0,
     getHeal = () => void 0,
     getTargets,
     status = "missing"
@@ -1096,6 +1146,7 @@
     s,
     m,
     lists,
+    description,
     icon,
     apply,
     check,
@@ -1105,7 +1156,7 @@
         slot: new SlotResolver(this, method)
       });
     },
-    getDamage,
+    getDamage: getDamage2,
     getHeal,
     getLevel({ slot }) {
       return slot;
@@ -1580,6 +1631,55 @@
     }
   };
 
+  // src/utils/text.ts
+  var niceAbilityName = {
+    str: "Strength",
+    dex: "Dexterity",
+    con: "Constitution",
+    int: "Intelligence",
+    wis: "Wisdom",
+    cha: "Charisma"
+  };
+  function describeAbility(ability) {
+    return niceAbilityName[ability];
+  }
+  function describeRange(min, max) {
+    if (min === 0) {
+      if (max === Infinity)
+        return "any number of";
+      return `up to ${max}`;
+    }
+    if (max === Infinity)
+      return `${min}+`;
+    if (min === max)
+      return min.toString();
+    return `${min}-${max}`;
+  }
+  function describePoint(p) {
+    return p ? `${p.x},${p.y}` : "NONE";
+  }
+  function describeDice(amounts) {
+    let average = 0;
+    let flat = 0;
+    let dice = [];
+    for (const a of amounts) {
+      if (a.type === "flat") {
+        average += a.amount;
+        flat += a.amount;
+      } else {
+        const { count, size } = a.amount;
+        average += getDiceAverage(count, size);
+        dice.push(`${count}d${size}`);
+      }
+    }
+    let list = dice.join(" + ");
+    if (flat < 0)
+      list += ` - ${-flat}`;
+    else if (flat > 0)
+      list += ` + ${flat}`;
+    return { average, list };
+  }
+
   // src/types/ConditionName.ts
   var coSet = (...items) => new Set(items);
 
@@ -1717,6 +1817,27 @@
     }
     getDamage() {
       return [this.weapon.damage];
+    }
+    getDescription() {
+      const { actor, weapon } = this;
+      const rangeCategories = [];
+      const ranges = [];
+      if (weapon.rangeCategory === "melee") {
+        rangeCategories.push("Melee");
+        ranges.push(`reach ${actor.reach + weapon.reach} ft.`);
+      }
+      if (weapon.rangeCategory === "ranged" || weapon.properties.has("thrown")) {
+        rangeCategories.push("Ranged");
+        ranges.push(`range ${weapon.shortRange}/${weapon.longRange} ft.`);
+      }
+      const bonus = "+?";
+      const { average, list } = describeDice([weapon.damage]);
+      const damageType = weapon.damage.damageType;
+      return `${rangeCategories.join(
+        " or "
+      )} Weapon Attack: ${bonus} to hit, ${ranges.join(
+        " or "
+      )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
     }
     apply(_0) {
       return __async(this, arguments, function* ({ target }) {
@@ -2979,6 +3100,9 @@
     s: true,
     m: "a cup of water",
     lists: ["Warlock"],
+    description: `A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(_0, _1, _2, _3) {
@@ -3799,6 +3923,9 @@
     v: true,
     s: true,
     lists: ["Cleric"],
+    description: `A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 120) }),
     getDamage: (_2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
@@ -3819,34 +3946,6 @@
     }
   });
   var GuidingBolt_default = GuidingBolt;
-
-  // src/utils/text.ts
-  var niceAbilityName = {
-    str: "Strength",
-    dex: "Dexterity",
-    con: "Constitution",
-    int: "Intelligence",
-    wis: "Wisdom",
-    cha: "Charisma"
-  };
-  function describeAbility(ability) {
-    return niceAbilityName[ability];
-  }
-  function describeRange(min, max) {
-    if (min === 0) {
-      if (max === Infinity)
-        return "any number of";
-      return `up to ${max}`;
-    }
-    if (max === Infinity)
-      return `${min}+`;
-    if (min === max)
-      return min.toString();
-    return `${min}-${max}`;
-  }
-  function describePoint(p) {
-    return p ? `${p.x},${p.y}` : "NONE";
-  }
 
   // src/resolvers/MultiTargetResolver.ts
   var MultiTargetResolver = class {
@@ -3893,6 +3992,9 @@
     time: "bonus action",
     v: true,
     lists: ["Bard", "Cleric"],
+    description: `As you call out words of restoration, up to six creatures of your choice that you can see within range regain hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the healing increases by 1d4 for each slot level above 3rd.`,
     getConfig: (g2) => ({
       targets: new MultiTargetResolver(g2, 1, 6, 60, true)
     }),
@@ -4060,6 +4162,9 @@
     time: "bonus action",
     v: true,
     lists: ["Bard", "Cleric", "Druid"],
+    description: `A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
     getConfig: (g2) => ({
       target: new TargetResolver(g2, 60, true)
     }),
@@ -5118,6 +5223,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     s: true,
     m: "either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `One creature or loose object of your choice that you can see within range rises vertically, up to 20 feet, and remains suspended there for the duration. The spell can levitate a target that weighs up to 500 pounds. An unwilling creature that succeeds on a Constitution saving throw is unaffected.
+
+  The target can move only by pushing or pulling against a fixed object or surface within reach (such as a wall or a ceiling), which allows it to move as if it were climbing. You can change the target's altitude by up to 20 feet in either direction on your turn. If you are the target, you can move up or down as part of your move. Otherwise, you can use your action to move the target, which must remain within the spell's range.
+
+  When the spell ends, the target floats gently to the ground if it is still aloft.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
@@ -5659,7 +5769,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { point: new PointResolver(g2, 15) },
         {
           damage: [_dd(damageDice, 10, damageType)],
-          resources: [[BreathWeaponResource, 1]]
+          resources: [[BreathWeaponResource, 1]],
+          description: `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
+        You can use your Breath Weapon a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`
         }
       );
       this.damageType = damageType;
@@ -5708,14 +5820,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return 4;
   }
   var MetallicBreathAction = class extends AbstractAttackAction {
-    constructor(g2, actor, name, status = "missing") {
+    constructor(g2, actor, name, status = "missing", description) {
       super(
         g2,
         actor,
         name,
         status,
         { point: new PointResolver(g2, 15) },
-        { resources: [[MetallicBreathWeaponResource, 1]] }
+        { resources: [[MetallicBreathWeaponResource, 1]], description }
       );
     }
     getAffectedArea({
@@ -5737,7 +5849,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   );
   var EnervatingBreathAction = class _EnervatingBreathAction extends MetallicBreathAction {
     constructor(g2, actor) {
-      super(g2, actor, "Enervating Breath", "implemented");
+      super(
+        g2,
+        actor,
+        "Enervating Breath",
+        "implemented",
+        `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus.
+      Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.`
+      );
     }
     apply(_0) {
       return __async(this, arguments, function* ({ point }) {
@@ -5762,7 +5881,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   };
   var RepulsionBreathAction = class _RepulsionBreathAction extends MetallicBreathAction {
     constructor(g2, actor) {
-      super(g2, actor, "Repulsion Breath", "incomplete");
+      super(
+        g2,
+        actor,
+        "Repulsion Breath",
+        "incomplete",
+        `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus.
+      Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`
+      );
     }
     apply(config) {
       return __async(this, null, function* () {
@@ -5854,6 +5980,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `You hurl a bubble of acid. Choose one creature you can see within range, or choose two creatures you can see within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.
+
+  This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 2, 60) }),
     getDamage: (g2, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g2, caster, { targets }) => targets,
@@ -5911,6 +6040,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
+
+  This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (g2, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g2, caster, { target }) => [target],
@@ -5949,6 +6081,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     school: "Enchantment",
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
+
+  This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g2, caster, { target }) => [target],
@@ -6019,6 +6154,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
+
+  The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g2, caster, { target }) => [target],
@@ -6052,6 +6190,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a drop of water or piece of ice",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 cold damage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getAffectedArea: (g2, caster, { target }) => target && [getArea2(g2, target)],
     getDamage: (g2, caster, method, { slot }) => [
@@ -6126,6 +6267,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var IceKnife_default = IceKnife;
 
   // src/spells/level1/MagicMissile.ts
+  var getDamage = (slot) => [
+    _dd(slot + 2, 4, "force"),
+    { type: "flat", amount: slot + 2, damageType: "force" }
+  ];
   var MagicMissile = scalingSpell({
     name: "Magic Missile",
     level: 1,
@@ -6133,12 +6278,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Sorcerer", "Wizard"],
+    description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
     getConfig: (g2, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 120)
     }),
+    getDamage: (g2, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
     getTargets: (g2, caster, { targets }) => targets,
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { slot, targets }) {
       });
     }
   });
@@ -6154,6 +6303,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Sorcerer", "Wizard"],
+    description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
@@ -6196,6 +6346,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a pinch of powdered iron",
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `You cause a creature or an object you can see within range to grow larger or smaller for the duration. Choose either a creature or an object that is neither worn nor carried. If the target is unwilling, it can make a Constitution saving throw. On a success, the spell has no effect.
+
+  If the target is a creature, everything it is wearing and carrying changes size with it. Any item dropped by an affected creature returns to normal size at once.
+
+  Enlarge. The target's size doubles in all dimensions, and its weight is multiplied by eight. This growth increases its size by one category\u2014from Medium to Large, for example. If there isn't enough room for the target to double its size, the creature or object attains the maximum possible size in the space available. Until the spell ends, the target also has advantage on Strength checks and Strength saving throws. The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
+  Reduce. The target's size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category\u2014from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage (this can't reduce the damage below 1).`,
     getConfig: (g2) => ({
       target: new TargetResolver(g2, 30, true),
       mode: new ChoiceResolver(g2, [
@@ -6253,6 +6409,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a small, straight piece of iron",
     lists: ["Bard", "Cleric", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    description: `Choose a humanoid that you can see within range. The target must succeed on a Wisdom saving throw or be paralyzed for the duration. At the end of each of its turns, the target can make another Wisdom saving throw. On a success, the spell ends on the target.
+
+  At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.`,
     getConfig: (g2, actor, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 2) - 1, 60)
     }),
@@ -6387,7 +6546,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             120
           )
         },
-        { time: "bonus action", damage: [_dd(2, 6, "fire")] }
+        {
+          time: "bonus action",
+          damage: [_dd(2, 6, "fire")],
+          description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`
+        }
       );
       this.method = method;
     }
@@ -6418,6 +6581,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "niter, sulfur, and pine tar formed into a bead",
     lists: ["Sorcerer", "Wizard"],
+    description: `You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell\u2014and as a bonus action on each of your turns thereafter\u2014you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.`,
     getConfig: (g2) => ({
       points: new MultiPointResolver(g2, 1, 2, 120)
     }),
@@ -6479,6 +6645,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a tiny ball of bat guano and sulfur",
     lists: ["Sorcerer", "Wizard"],
+    description: `A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.
+
+  The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea3(point)],
     getDamage: (g2, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
@@ -6517,7 +6688,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var Fireball_default = Fireball;
 
   // src/spells/level3/IntellectFortress.ts
-  var mental = ["int", "wis", "cha"];
+  var mental = abSet("int", "wis", "cha");
   var IntellectFortressEffect = new Effect(
     "Intellect Fortress",
     "turnStart",
@@ -6530,7 +6701,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       );
       g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-        if (who.hasEffect(IntellectFortressEffect) && mental.includes(ability))
+        if (who.hasEffect(IntellectFortressEffect) && mental.has(ability))
           diceType.add("advantage", IntellectFortressEffect);
       });
     }
@@ -6543,6 +6714,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     concentration: true,
     v: true,
     lists: ["Artificer", "Bard", "Sorcerer", "Warlock", "Wizard"],
+    description: `For the duration, you or one willing creature you can see within range has resistance to psychic damage, as well as advantage on Intelligence, Wisdom, and Charisma saving throws.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them.`,
     // TODO  The creatures must be within 30 feet of each other when you target them.
     getConfig: (g2, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 3) - 2, 30, true)
@@ -6582,6 +6756,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a small piece of phosphorus",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `You create a wall of fire on a solid surface within range. You can make the wall up to 60 feet long, 20 feet high, and 1 foot thick, or a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall is opaque and lasts for the duration.
+
+  When the wall appears, each creature within its area must make a Dexterity saving throw. On a failed save, a creature takes 5d8 fire damage, or half as much damage on a successful save.
+
+  One side of the wall, selected by you when you cast this spell, deals 5d8 fire damage to each creature that ends its turn within 10 feet of that side or inside the wall. A creature takes the same damage when it enters the wall for the first time on a turn or ends its turn there. The other side of the wall deals no damage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d8 for each slot level above 4th.`,
     // TODO choose dimensions of line wall
     getConfig: (g2) => ({
       point: new PointResolver(g2, 120),
@@ -7106,6 +7287,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     s: true,
     m: "holy water or powdered silver and iron, which the spell consumes",
     lists: ["Cleric", "Paladin", "Warlock", "Wizard"],
+    description: `Until the spell ends, one willing creature you touch is protected against certain types of creatures: aberrations, celestials, elementals, fey, fiends, and undead.
+
+  The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.`,
     getConfig: (g2, caster) => ({
       target: new TargetResolver(g2, caster.reach, true)
     }),
@@ -7140,6 +7324,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     s: true,
     m: "a small silver mirror",
     lists: ["Artificer", "Cleric"],
+    description: `You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball.
+
+  If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 30, true) }),
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
@@ -7169,6 +7356,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     v: true,
     s: true,
     lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+    description: `You touch a creature and can end either one disease or one condition afflicting it. The condition can be blinded, deafened, paralyzed, or poisoned.`,
     getConfig: (g2, caster, method, { target }) => {
       const effectTypes = [];
       if (target)
@@ -7214,6 +7402,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     v: true,
     s: true,
     lists: ["Bard", "Cleric", "Paladin"],
+    description: `You create a magical zone that guards against deception in a 15-foot-radius sphere centered on a point of your choice within range. Until the spell ends, a creature that enters the spell's area for the first time on a turn or starts its turn there must make a Charisma saving throw. On a failed save, a creature can't speak a deliberate lie while in the radius. You know whether each creature succeeds or fails on its saving throw.
+
+  An affected creature is aware of the spell and can thus avoid answering questions to which it would normally respond with a lie. Such creatures can be evasive in its answers as long as it remains within the boundaries of the truth.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea4(point)],
     getTargets: () => [],
@@ -7397,6 +7588,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
     s: true,
     m: "a sprinkling of holy water",
     lists: ["Cleric", "Paladin"],
+    description: `You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
     getConfig: (g2, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 30, true)
     }),
@@ -7455,6 +7649,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     v: true,
     s: true,
     lists: ["Paladin"],
+    description: `Your prayer empowers you with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster) {
@@ -7492,6 +7687,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     s: true,
     m: "a small parchment with a bit of holy text written on it",
     lists: ["Cleric", "Paladin"],
+    description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
@@ -7522,6 +7718,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
     s: true,
     m: "a tiny strip of white cloth",
     lists: ["Artificer", "Cleric", "Paladin"],
+    description: `Your spell bolsters your allies with toughness and resolve. Choose up to three creatures within range. Each target's hit point maximum and current hit points increase by 5 for the duration.
+
+  At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 3, 30, true) }),
     getTargets: (g2, caster, { targets }) => targets,
     apply(_0, _1, _2, _3) {
@@ -7572,6 +7771,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
     v: true,
     s: true,
     lists: ["Artificer", "Paladin", "Wizard"],
+    description: `You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic weapon with a +1 bonus to attack rolls and damage rolls.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the bonus increases to +2. When you use a spell slot of 6th level or higher, the bonus increases to +3.`,
     getConfig: (g2, caster) => ({
       item: new ChoiceResolver(
         g2,
@@ -8387,6 +8589,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     concentration: true,
     v: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster) {
@@ -8415,6 +8618,15 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     s: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `Three illusory duplicates of yourself appear in your space. Until the spell ends, the duplicates move with you and mimic your actions, shifting position so it's impossible to track which image is real. You can use your action to dismiss the illusory duplicates.
+
+  Each time a creature targets you with an attack during the spell's duration, roll a d20 to determine whether the attack instead targets one of your duplicates.
+
+  If you have three duplicates, you must roll a 6 or higher to change the attack's target to a duplicate. With two duplicates, you must roll an 8 or higher. With one duplicate, you must roll an 11 or higher.
+
+  A duplicate's AC equals 10 + your Dexterity modifier. If an attack hits a duplicate, the duplicate is destroyed. A duplicate can be destroyed only by an attack that hits it. It ignores all other damage and effects. The spell ends when all three duplicates are destroyed.
+
+  A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
@@ -8432,6 +8644,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     time: "bonus action",
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 30) }),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
@@ -8451,6 +8664,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     s: true,
     lists: ["Bard", "Cleric", "Ranger"],
+    description: `For the duration, no sound can be created within or pass through a 20-foot-radius sphere centered on a point you choose within range. Any creature or object entirely inside the sphere is immune to thunder damage, and creatures are deafened while entirely inside it. Casting a spell that includes a verbal component is impossible there.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", radius: 20, centre: point }],
     getTargets: () => [],
@@ -8471,6 +8685,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a drop of bitumen and a spider",
     lists: ["Artificer", "Sorcerer", "Warlock", "Wizard"],
+    description: `Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.`,
     getConfig: (g2, caster) => ({
       target: new TargetResolver(g2, caster.reach, true)
     }),
@@ -8493,6 +8708,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "seven sharp thorns or seven small twigs, each sharpened to a point",
     concentration: true,
     lists: ["Druid", "Ranger"],
+    description: `The ground in a 20-foot radius centered on a point within range twists and sprouts hard spikes and thorns. The area becomes difficult terrain for the duration. When a creature moves into or within the area, it takes 2d4 piercing damage for every 5 feet it travels.
+
+  The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
     getTargets: () => [],
@@ -8561,6 +8779,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a bit of fur and a rod of amber, crystal, or glass",
     lists: ["Sorcerer", "Wizard"],
+    description: `A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a Dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much damage on a successful one.
+
+  The lightning ignites flammable objects in the area that aren't being worn or carried.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 100) }),
     getDamage: (g2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
@@ -8609,6 +8832,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     s: true,
     lists: ["Cleric", "Druid"],
+    description: `You step into a stone object or surface large enough to fully contain your body, melding yourself and all the equipment you carry with the stone for the duration. Using your movement, you step into the stone at a point you can touch. Nothing of your presence remains visible or otherwise detectable by nonmagical senses.
+
+  While merged with the stone, you can't see what occurs outside it, and any Wisdom (Perception) checks you make to hear sounds outside it are made with disadvantage. You remain aware of the passage of time and can cast spells on yourself while merged in the stone. You can use your movement to leave the stone where you entered it, which ends the spell. You otherwise can't move.
+
+  Minor physical damage to the stone doesn't harm you, but its partial destruction or a change in its shape (to the extent that you no longer fit within it) expels you and deals 6d6 bludgeoning damage to you. The stone's complete destruction (or transmutation into a different substance) expels you and deals 50 bludgeoning damage to you. If expelled, you fall prone in an unoccupied space closest to where you first entered.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster, method, config) {
@@ -8628,6 +8856,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `Until the spell ends, freezing rain and sleet fall in a 20-foot-tall cylinder with a 40-foot radius centered on a point you choose within range. The area is heavily obscured, and exposed flames in the area are doused.
+
+  The ground in the area is covered with slick ice, making it difficult terrain. When a creature enters the spell's area for the first time on a turn or starts its turn there, it must make a Dexterity saving throw. On a failed save, it falls prone.
+
+  If a creature starts its turn in the spell's area and is concentrating on a spell, the creature must make a successful Constitution saving throw against your spell save DC or lose concentration.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
     getTargets: () => [],
@@ -8648,6 +8881,13 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a drop of molasses",
     lists: ["Sorcerer", "Wizard"],
+    description: `You alter time around up to six creatures of your choice in a 40-foot cube within range. Each target must succeed on a Wisdom saving throw or be affected by this spell for the duration.
+
+  An affected target's speed is halved, it takes a \u22122 penalty to AC and Dexterity saving throws, and it can't use reactions. On its turn, it can use either an action or a bonus action, not both. Regardless of the creature's abilities or magic items, it can't make more than one melee or ranged attack during its turn.
+
+  If the creature attempts to cast a spell with a casting time of 1 action, roll a d20. On an 11 or higher, the spell doesn't take effect until the creature's next turn, and the creature must use its action on that turn to complete the spell. If it can't, the spell is wasted.
+
+  A creature affected by this spell makes another Wisdom saving throw at the end of each of its turns. On a successful save, the effect ends for it.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 6, 120) }),
     getTargets: (g2, caster, { targets }) => targets,
     check(g2, config, ec) {
@@ -8670,6 +8910,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a short reed or piece of straw",
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
+    description: `This spell grants up to ten willing creatures you can see within range the ability to breathe underwater until the spell ends. Affected creatures also retain their normal mode of respiration.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
     getTargets: (g2, caster, { targets }) => targets,
     apply(g2, caster, method, config) {
@@ -8689,6 +8930,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a piece of cork",
     lists: ["Artificer", "Cleric", "Druid", "Ranger", "Sorcerer"],
+    description: `This spell grants the ability to move across any liquid surface\u2014such as water, acid, mud, snow, quicksand, or lava\u2014as if it were harmless solid ground (creatures crossing molten lava can still take damage from the heat). Up to ten willing creatures you can see within range gain this ability for the duration.
+
+  If you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
     getTargets: (g2, caster, { targets }) => targets,
     apply(g2, caster, method, config) {
@@ -8707,6 +8951,19 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a drop of water and a pinch of dust",
     lists: ["Cleric", "Druid", "Wizard"],
+    description: `Until the spell ends, you control any freestanding water inside an area you choose that is a cube up to 100 feet on a side. You can choose from any of the following effects when you cast this spell. As an action on your turn, you can repeat the same effect or choose a different one.
+
+  Flood. You cause the water level of all standing water in the area to rise by as much as 20 feet. If the area includes a shore, the flooding water spills over onto dry land.
+  If you choose an area in a large body of water, you instead create a 20-foot tall wave that travels from one side of the area to the other and then crashes down. Any Huge or smaller vehicles in the wave's path are carried with it to the other side. Any Huge or smaller vehicles struck by the wave have a 25 percent chance of capsizing.
+
+  The water level remains elevated until the spell ends or you choose a different effect. If this effect produced a wave, the wave repeats on the start of your next turn while the flood effect lasts.
+
+  Part Water. You cause water in the area to move apart and create a trench. The trench extends across the spell's area, and the separated water forms a wall to either side. The trench remains until the spell ends or you choose a different effect. The water then slowly fills in the trench over the course of the next round until the normal water level is restored.
+  Redirect Flow. You cause flowing water in the area to move in a direction you choose, even if the water has to flow over obstacles, up walls, or in other unlikely directions. The water in the area moves as you direct it, but once it moves beyond the spell's area, it resumes its flow based on the terrain conditions. The water continues to move in the direction you chose until the spell ends or you choose a different effect.
+  Whirlpool. This effect requires a body of water at least 50 feet square and 25 feet deep. You cause a whirlpool to form in the center of the area. The whirlpool forms a vortex that is 5 feet wide at the base, up to 50 feet wide at the top, and 25 feet tall. Any creature or object in the water and within 25 feet of the vortex is pulled 10 feet toward it. A creature can swim away from the vortex by making a Strength (Athletics) check against your spell save DC.
+  When a creature enters the vortex for the first time on a turn or starts its turn there, it must make a Strength saving throw. On a failed save, the creature takes 2d8 bludgeoning damage and is caught in the vortex until the spell ends. On a successful save, the creature takes half damage, and isn't caught in the vortex. A creature caught in the vortex can use its action to try to swim away from the vortex as described above, but has disadvantage on the Strength (Athletics) check to do so.
+
+  The first time each turn that an object enters the vortex, the object takes 2d8 bludgeoning damage; this damage occurs each round it remains in the vortex.`,
     getConfig: () => ({}),
     getTargets: () => [],
     apply(g2, caster, method, config) {
@@ -8725,6 +8982,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a leather strap, bound around the arm or a similar appendage",
     lists: ["Artificer", "Bard", "Cleric", "Druid", "Ranger"],
+    description: `You touch a willing creature. For the duration, the target's movement is unaffected by difficult terrain, and spells and other magical effects can neither reduce the target's speed nor cause the target to be paralyzed or restrained.
+
+  The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.`,
     getConfig: (g2, caster) => ({ target: new TargetResolver(g2, caster.reach) }),
     getTargets: (g2, caster, { target }) => [target],
     apply(_0, _1, _2, _3) {
@@ -8749,6 +9009,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `A hail of rock-hard ice pounds to the ground in a 20-foot-radius, 40-foot-high cylinder centered on a point within range. Each creature in the cylinder must make a Dexterity saving throw. A creature takes 2d8 bludgeoning damage and 4d6 cold damage on a failed save, or half as much damage on a successful one.
+
+  Hailstones turn the storm's area of effect into difficult terrain until the end of your next turn.
+
+  At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 300) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea6(point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea6(point)),
@@ -8772,6 +9037,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "soft clay, which must be worked into roughly the desired shape of the stone object",
     lists: ["Artificer", "Cleric", "Druid", "Wizard"],
+    description: `You touch a stone object of Medium size or smaller or a section of stone no more than 5 feet in any dimension and form it into any shape that suits your purpose. So, for example, you could shape a large rock into a weapon, idol, or coffer, or make a small passage through a wall, as long as the wall is less than 5 feet thick. You could also shape a stone door or its frame to seal the door shut. The object you create can have up to two hinges and a latch, but finer mechanical detail isn't possible.`,
     getConfig: () => ({}),
     getTargets: () => [],
     apply(g2, caster, method, config) {
@@ -8801,6 +9067,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "diamond dust worth 100gp, which the spell consumes",
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
+    description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
     getConfig: (g2, caster) => ({
       target: new TargetResolver(g2, caster.reach, true)
     }),
@@ -8833,6 +9100,17 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     s: true,
     lists: ["Druid", "Ranger"],
+    description: `You briefly become one with nature and gain knowledge of the surrounding territory. In the outdoors, the spell gives you knowledge of the land within 3 miles of you. In caves and other natural underground settings, the radius is limited to 300 feet. The spell doesn't function where nature has been replaced by construction, such as in dungeons and towns.
+
+  You instantly gain knowledge of up to three facts of your choice about any of the following subjects as they relate to the area:
+
+  - terrain and bodies of water
+  - prevalent plants, minerals, animals, or peoples
+  - powerful celestials, fey, fiends, elementals, or undead
+  - influence from other planes of existence
+  - buildings
+
+  For example, you could determine the location of powerful undead in the area, the location of major sources of safe drinking water, and the location of any nearby towns.`,
     getConfig: () => ({}),
     getTargets: () => [],
     apply(g2, caster, method) {
@@ -8858,6 +9136,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a small crystal or glass cone",
     lists: ["Sorcerer", "Wizard"],
+    description: `A blast of cold air erupts from your hands. Each creature in a 60-foot cone must make a Constitution saving throw. A creature takes 8d8 cold damage on a failed save, or half as much damage on a successful one.
+
+  A creature killed by this spell becomes a frozen statue until it thaws.
+
+  At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     getDamage: (g2, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g2, caster, { point }) => point && [getArea7(g2, caster, point)],
@@ -8906,6 +9189,15 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water",
     lists: ["Druid", "Wizard"],
+    description: `You call forth an elemental servant. Choose an area of air, earth, fire, or water that fills a 10-foot cube within range. An elemental of challenge rating 5 or lower appropriate to the area you chose appears in an unoccupied space within 10 feet of it. For example, a fire elemental emerges from a bonfire, and an earth elemental rises up from the ground. The elemental disappears when it drops to 0 hit points or when the spell ends.
+
+  The elemental is friendly to you and your companions for the duration. Roll initiative for the elemental, which has its own turns. It obeys any verbal commands that you issue to it (no action required by you). If you don't issue any commands to the elemental, it defends itself from hostile creatures but otherwise takes no actions.
+
+  If your concentration is broken, the elemental doesn't disappear. Instead, you lose control of the elemental, it becomes hostile toward you and your companions, and it might attack. An uncontrolled elemental can't be dismissed by you, and it disappears 1 hour after you summoned it.
+
+  The DM has the elemental's statistics.
+
+  At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the challenge rating increases by 1 for each slot level above 5th.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 90) }),
     getTargets: () => [],
     apply(g2, caster, method, config) {
@@ -8914,25 +9206,6 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }
   });
   var ConjureElemental_default = ConjureElemental;
-
-  // src/spells/level5/Scrying.ts
-  var Scrying = simpleSpell({
-    name: "Scrying",
-    level: 5,
-    school: "Divination",
-    time: "long",
-    v: true,
-    s: true,
-    m: "a focus worth at least 1,000 gp, such as a crystal ball, a silver mirror, or a font filled with holy water",
-    lists: ["Bard", "Cleric", "Druid", "Warlock", "Wizard"],
-    getConfig: () => ({}),
-    getTargets: () => [],
-    apply(g2, caster, method) {
-      return __async(this, null, function* () {
-      });
-    }
-  });
-  var Scrying_default = Scrying;
 
   // src/classes/druid/Land/index.ts
   var BonusCantrip = new ConfiguredFeature(
@@ -8966,8 +9239,8 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 5, spell: WaterWalk_default },
       { level: 7, spell: ControlWater_default },
       { level: 7, spell: FreedomOfMovement_default },
-      { level: 9, spell: ConjureElemental_default },
-      { level: 9, spell: Scrying_default }
+      { level: 9, spell: ConjureElemental_default }
+      // { level: 9, spell: Scrying },
     ],
     desert: [
       { level: 3, spell: Blur_default },
@@ -9014,10 +9287,10 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       // { level: 3, spell: MelfsAcidArrow },
       { level: 5, spell: WaterWalk_default },
       // { level: 5, spell: StinkingCloud },
-      { level: 7, spell: FreedomOfMovement_default },
+      { level: 7, spell: FreedomOfMovement_default }
       // { level: 7, spell: LocateCreature },
       // { level: 9, spell: InsectPlague },
-      { level: 9, spell: Scrying_default }
+      // { level: 9, spell: Scrying },
     ],
     Underdark: [
       { level: 3, spell: SpiderClimb_default }
@@ -9280,6 +9553,9 @@ The creature is aware of this effect before it makes its attack against you.`
     v: true,
     s: true,
     lists: ["Artificer", "Druid", "Warlock"],
+    description: `You touch one to three pebbles and imbue them with magic. You or someone else can make a ranged spell attack with one of the pebbles by throwing it or hurling it with a sling. If thrown, a pebble has a range of 60 feet. If someone else attacks with a pebble, that attacker adds your spellcasting ability modifier, not the attacker's, to the attack roll. On a hit, the target takes bludgeoning damage equal to 1d6 + your spellcasting ability modifier. Whether the attack hits or misses, the spell then ends on the stone.
+
+  If you cast this spell again, the spell ends on any pebbles still affected by your previous casting.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
     apply(g2, caster, method) {
@@ -9312,6 +9588,9 @@ The creature is aware of this effect before it makes its attack against you.`
     v: true,
     s: true,
     lists: ["Bard", "Druid", "Sorcerer", "Wizard"],
+    description: `You cause a tremor in the ground within range. Each creature other than you in that area must make a Dexterity saving throw. On a failed save, a creature takes 1d6 bludgeoning damage and is knocked prone. If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
     getConfig: () => ({}),
     getAffectedArea: (g2, caster) => [getArea8(g2, caster)],
     getDamage: (g2, caster, method, { slot }) => [
@@ -9404,7 +9683,10 @@ The creature is aware of this effect before it makes its attack against you.`
         "Move Moonbeam",
         "implemented",
         { point: new PointToPointResolver(g2, controller.centre, 60) },
-        { time: "action" }
+        {
+          time: "action",
+          description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`
+        }
       );
       this.controller = controller;
     }
@@ -9517,6 +9799,15 @@ The creature is aware of this effect before it makes its attack against you.`
     s: true,
     m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
     lists: ["Druid"],
+    description: `A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high cylinder centered on a point within range. Until the spell ends, dim light fills the cylinder.
+
+  When a creature enters the spell's area for the first time on a turn or starts its turn there, it is engulfed in ghostly flames that cause searing pain, and it must make a Constitution saving throw. It takes 2d10 radiant damage on a failed save, or half as much damage on a successful one.
+
+  A shapechanger makes its saving throw with disadvantage. If it fails, it also instantly reverts to its original form and can't assume a different form until it leaves the spell's light.
+
+  On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.
+
+  At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea9(point)],
     getDamage: (g2, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
@@ -9549,6 +9840,9 @@ The creature is aware of this effect before it makes its attack against you.`
     s: true,
     m: "a piece of obsidian",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `Choose a point you can see on the ground within range. A fountain of churned earth and stone erupts in a 20-foot cube centered on that point. Each creature in that area must make a Dexterity saving throw. A creature takes 3d12 bludgeoning damage on a failed save, or half as much damage on a successful one. Additionally, the ground in that area becomes difficult terrain until cleared. Each 5-foot-square portion of the area requires at least 1 minute to clear by hand.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea10(g2, point)],
     getDamage: (g2, caster, method, { slot }) => [
@@ -9663,6 +9957,19 @@ The creature is aware of this effect before it makes its attack against you.`
     time: "bonus action",
     v: true,
     lists: ["Druid", "Ranger"],
+    description: `A nature spirit answers your call and transforms you into a powerful guardian. The transformation lasts until the spell ends. You choose one of the following forms to assume: Primal Beast or Great Tree.
+
+  Primal Beast. Bestial fur covers your body, your facial features become feral, and you gain the following benefits:
+  - Your walking speed increases by 10 feet.
+  - You gain darkvision with a range of 120 feet.
+  - You make Strength-based attack rolls with advantage.
+  - Your melee weapon attacks deal an extra 1d6 force damage on a hit.
+
+  Great Tree. Your skin appears barky, leaves sprout from your hair, and you gain the following benefits:
+  - You gain 10 temporary hit points.
+  - You make Constitution saving throws with advantage.
+  - You make Dexterity- and Wisdom-based attack rolls with advantage.
+  - While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.`,
     getConfig: (g2) => ({ form: new ChoiceResolver(g2, FormChoices) }),
     getTargets: (g2, caster) => [caster],
     apply(_0, _1, _2, _3) {
@@ -10347,7 +10654,8 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "warning": "_warning_q460t_1"
+    "warning": "_warning_1fks4_1",
+    "description": "_description_1fks4_10"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -10648,6 +10956,10 @@ The creature is aware of this effect before it makes its attack against you.`
     );
     const disabled = (0, import_hooks7.useMemo)(() => errors.length > 0, [errors]);
     const damage = (0, import_hooks7.useMemo)(() => action.getDamage(config), [action, config]);
+    const description = (0, import_hooks7.useMemo)(
+      () => action.getDescription(config),
+      [action, config]
+    );
     const heal = (0, import_hooks7.useMemo)(() => action.getHeal(config), [action, config]);
     const execute = (0, import_hooks7.useCallback)(() => {
       if (checkConfig(g2, action, config))
@@ -10692,6 +11004,7 @@ The creature is aware of this effect before it makes its attack against you.`
     return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
       /* @__PURE__ */ o("div", { children: action.name }),
       statusWarning,
+      description && /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, i) => /* @__PURE__ */ o("p", { children: p }, i)) }),
       damage && /* @__PURE__ */ o("div", { children: [
         "Damage:",
         " ",

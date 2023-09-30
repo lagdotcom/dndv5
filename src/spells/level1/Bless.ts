@@ -16,10 +16,10 @@ function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
 
 const BlessEffect = new Effect("Bless", "turnEnd", (g) => {
   g.events.on("BeforeAttack", ({ detail: { bonus, who } }) =>
-    applyBless(g, who, bonus),
+    applyBless(g, who, bonus)
   );
   g.events.on("BeforeSave", ({ detail: { bonus, who } }) =>
-    applyBless(g, who, bonus),
+    applyBless(g, who, bonus)
   );
 });
 
@@ -33,6 +33,9 @@ const Bless = scalingSpell<HasTargets>({
   s: true,
   m: "a sprinkling of holy water",
   lists: ["Cleric", "Paladin"],
+  description: `You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
 
   getConfig: (g, caster, method, { slot }) => ({
     targets: new MultiTargetResolver(g, 1, (slot ?? 1) + 2, 30, true),

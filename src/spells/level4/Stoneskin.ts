@@ -15,7 +15,7 @@ const StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
         MundaneDamageTypes.includes(damageType)
       )
         response.add("resist", StoneskinEffect);
-    },
+    }
   );
 });
 
@@ -29,6 +29,7 @@ const Stoneskin = simpleSpell<HasTarget>({
   s: true,
   m: "diamond dust worth 100gp, which the spell consumes",
   lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
+  description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
 
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, true),

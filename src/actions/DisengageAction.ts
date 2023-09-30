@@ -9,7 +9,17 @@ export const DisengageEffect = new Effect("Disengage", "turnEnd", () => {
 
 export default class DisengageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Disengage", "missing", {}, { time: "action" });
+    super(
+      g,
+      actor,
+      "Disengage",
+      "missing",
+      {},
+      {
+        time: "action",
+        description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`,
+      }
+    );
   }
 
   async apply(): Promise<void> {

@@ -26,6 +26,7 @@ export default interface Action<T extends object = object> extends Source {
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape[] | undefined;
   getConfig(config: Partial<T>): ActionConfig<T>;
   getDamage(config: Partial<T>): DamageAmount[] | undefined;
+  getDescription(config: Partial<T>): string | undefined;
   getHeal(config: Partial<T>): Amount[] | undefined;
   getResources(config: Partial<T>): Map<Resource, number>;
   getTime(config: Partial<T>): ActionTime | undefined;

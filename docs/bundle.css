@@ -172,13 +172,21 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/ChooseActionConfigPanel.module.scss */
-._warning_q460t_1 {
+._warning_1fks4_1 {
   font-size: 0.8em;
   font-weight: bold;
   color: red;
 }
-._warning_q460t_1::before {
+._warning_1fks4_1::before {
   content: "WARNING: ";
+}
+._description_1fks4_10 {
+  font-size: 0.8em;
+  max-height: 100px;
+  overflow-y: auto;
+}
+._description_1fks4_10 p {
+  margin: 0.5em 0;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/CombatantRef.module.scss */

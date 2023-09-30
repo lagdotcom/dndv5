@@ -20,6 +20,7 @@ const ShieldOfFaith = simpleSpell<HasTarget>({
   s: true,
   m: "a small parchment with a bit of holy text written on it",
   lists: ["Cleric", "Paladin"],
+  description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, true) }),
   getTargets: (g, caster, { target }) => [target],
@@ -28,7 +29,7 @@ const ShieldOfFaith = simpleSpell<HasTarget>({
     await target.addEffect(
       ShieldOfFaithEffect,
       { duration: minutes(10) },
-      caster,
+      caster
     );
 
     caster.concentrateOn({

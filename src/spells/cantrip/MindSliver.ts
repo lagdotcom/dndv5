@@ -16,7 +16,7 @@ const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
       interrupt.add(
         new EvaluateLater(who, MindSliverEffect, async () => {
           who.removeEffect(MindSliverEffect);
-        }),
+        })
       );
     }
   });
@@ -29,6 +29,9 @@ const MindSliver = simpleSpell<HasTarget>({
   school: "Enchantment",
   v: true,
   lists: ["Sorcerer", "Warlock", "Wizard"],
+  description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
+
+  This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
@@ -55,14 +58,14 @@ const MindSliver = simpleSpell<HasTarget>({
         method,
         tags: svSet(),
       },
-      { fail: "normal", save: "zero" },
+      { fail: "normal", save: "zero" }
     );
     await g.damage(
       MindSliver,
       "psychic",
       { attacker, target, spell: MindSliver, method },
       [["psychic", damage]],
-      save.damageResponse,
+      save.damageResponse
     );
 
     if (save.outcome === "fail") {
@@ -75,10 +78,10 @@ const MindSliver = simpleSpell<HasTarget>({
             interrupt.add(
               new EvaluateLater(who, MindSliver, async () => {
                 await target.removeEffect(MindSliverEffect);
-              }),
+              })
             );
           }
-        },
+        }
       );
       await target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
     }

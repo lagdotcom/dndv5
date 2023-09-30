@@ -1,6 +1,9 @@
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { ctSet } from "../../types/CreatureType";
 import { scalingSpell } from "../common";
+
+const cannotHeal = ctSet("undead", "construct");
 
 const CureWounds = scalingSpell<HasTarget>({
   status: "incomplete",
@@ -10,6 +13,9 @@ const CureWounds = scalingSpell<HasTarget>({
   v: true,
   s: true,
   lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+  description: `A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
 
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, true),
@@ -25,9 +31,15 @@ const CureWounds = scalingSpell<HasTarget>({
   },
   getTargets: (g, caster, { target }) => [target],
 
-  // TODO This spell has no effect on undead or constructs.
+  check(g, { target }, ec) {
+    if (target && cannotHeal.has(target.type))
+      ec.add(`Cannot heal a ${target.type}`, CureWounds);
+    return ec;
+  },
 
   async apply(g, actor, method, { slot, target }) {
+    if (cannotHeal.has(target.type)) return;
+
     const modifier = actor[method.ability].modifier;
     const rolled = await g.rollHeal(slot, {
       source: CureWounds,

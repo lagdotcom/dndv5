@@ -26,7 +26,7 @@ const getArea = (centre: Point): SpecifiedCylinder => ({
 class MoveMoonbeamAction extends AbstractAction<HasPoint> {
   constructor(
     g: Engine,
-    public controller: MoonbeamController,
+    public controller: MoonbeamController
   ) {
     super(
       g,
@@ -34,7 +34,10 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
       "Move Moonbeam",
       "implemented",
       { point: new PointToPointResolver(g, controller.centre, 60) },
-      { time: "action" },
+      {
+        time: "action",
+        description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
+      }
     );
   }
 
@@ -60,13 +63,13 @@ class MoonbeamController {
     public caster: Combatant,
     public method: SpellcastingMethod,
     public centre: Point,
-    public slot: number,
+    public slot: number
   ) {
     this.shape = getArea(centre);
     this.area = new ActiveEffectArea(
       "Moonbeam",
       this.shape,
-      arSet("dim light"),
+      arSet("dim light")
     );
     g.addEffectArea(this.area);
 
@@ -81,13 +84,13 @@ class MoonbeamController {
 
         if (g.getInside(this.shape).includes(who))
           interrupt.add(this.getDamager(who));
-      }),
+      })
     );
     this.subscriptions.push(
       g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
         if (g.getInside(this.shape).includes(who))
           interrupt.add(this.getDamager(who));
-      }),
+      })
     );
 
     /* On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction. */
@@ -95,7 +98,7 @@ class MoonbeamController {
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === this.caster && this.hasBeenATurn)
           actions.push(new MoveMoonbeamAction(g, this));
-      }),
+      })
     );
   }
 
@@ -135,7 +138,7 @@ class MoonbeamController {
           target: target,
         },
         [["radiant", damage]],
-        result.damageResponse,
+        result.damageResponse
       );
 
       // TODO If it fails, it also instantly reverts to its original form and can't assume a different form until it leaves the spell's light.
@@ -165,6 +168,15 @@ const Moonbeam = scalingSpell<HasPoint>({
   s: true,
   m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
   lists: ["Druid"],
+  description: `A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high cylinder centered on a point within range. Until the spell ends, dim light fills the cylinder.
+
+  When a creature enters the spell's area for the first time on a turn or starts its turn there, it is engulfed in ghostly flames that cause searing pain, and it must make a Constitution saving throw. It takes 2d10 radiant damage on a failed save, or half as much damage on a successful one.
+
+  A shapechanger makes its saving throw with disadvantage. If it fails, it also instantly reverts to its original form and can't assume a different form until it leaves the spell's light.
+
+  On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.
+
+  At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.`,
 
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
   getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
