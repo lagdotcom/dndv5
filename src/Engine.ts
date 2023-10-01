@@ -196,7 +196,15 @@ export default class Engine {
 
     const outcome = success ? ("success" as const) : ("fail" as const);
     this.fire(
-      new SaveEvent({ pre: pre.detail, roll, dc, outcome, total, forced }),
+      new SaveEvent({
+        pre: pre.detail,
+        diceType: diceType.result,
+        roll,
+        dc,
+        outcome,
+        total,
+        forced,
+      }),
     );
 
     return {
@@ -213,8 +221,15 @@ export default class Engine {
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
 
-    const pre = this.fire(
-      new BeforeCheckEvent({ ...e, dc, bonus, diceType, successResponse }),
+    const pre = await this.resolve(
+      new BeforeCheckEvent({
+        ...e,
+        dc,
+        bonus,
+        diceType,
+        successResponse,
+        interrupt: new InterruptionCollector(),
+      }),
     );
 
     let forced = false;
@@ -232,6 +247,7 @@ export default class Engine {
     this.fire(
       new AbilityCheckEvent({
         pre: pre.detail,
+        diceType: diceType.result,
         roll,
         dc,
         outcome,

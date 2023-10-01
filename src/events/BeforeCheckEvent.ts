@@ -1,5 +1,6 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
+import InterruptionCollector from "../collectors/InterruptionCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import AbilityName from "../types/AbilityName";
 import { CheckTag } from "../types/CheckTag";
@@ -16,6 +17,7 @@ export interface BeforeCheckDetail {
   bonus: BonusCollector;
   successResponse: SuccessResponseCollector;
   tags: Set<CheckTag>;
+  interrupt: InterruptionCollector;
 }
 
 export default class BeforeCheckEvent extends CustomEvent<BeforeCheckDetail> {

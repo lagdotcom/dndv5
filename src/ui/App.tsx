@@ -256,26 +256,29 @@ export default function App({ g, onMount }: Props) {
         <Menu caption="Quick Actions" {...actionMenu} onClick={onClickAction} />
       )}
       <div className={styles.sidePanel}>
-        {activeCombatant.value && (
-          <ActiveUnitPanel
-            who={activeCombatant.value}
-            onPass={onPass}
-            onChooseAction={onChooseAction}
-          />
-        )}
-        {action && (
-          <ChooseActionConfigPanel
-            g={g}
-            action={action}
-            onCancel={onCancelAction}
-            onExecute={onExecuteAction}
-          />
-        )}
-        {moveBounds.value && (
+        {moveBounds.value ? (
           <BoundedMovePanel
             bounds={moveBounds.value.detail}
             onFinish={onFinishBoundedMove}
           />
+        ) : (
+          <>
+            {activeCombatant.value && (
+              <ActiveUnitPanel
+                who={activeCombatant.value}
+                onPass={onPass}
+                onChooseAction={onChooseAction}
+              />
+            )}
+            {action && (
+              <ChooseActionConfigPanel
+                g={g}
+                action={action}
+                onCancel={onCancelAction}
+                onExecute={onExecuteAction}
+              />
+            )}
+          </>
         )}
       </div>
       <EventLog g={g} />

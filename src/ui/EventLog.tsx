@@ -132,14 +132,22 @@ function EffectRemovedMessage({ who, effect }: EffectRemovedDetail) {
   );
 }
 
-function AbilityCheckMessage({ roll, total, dc }: AbilityCheckDetail) {
+function AbilityCheckMessage({
+  diceType,
+  roll,
+  total,
+  dc,
+}: AbilityCheckDetail) {
   return (
     <LogMessage
-      message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
-        roll.type.ability,
-      )} (${roll.type.skill}) ability check. (DC ${dc})`}
+      message={`${roll.type.who.name} rolls a ${total}${
+        diceType !== "normal" && ` at ${diceType}`
+      } on a ${describeAbility(roll.type.ability)} (${
+        roll.type.skill
+      }) ability check. (DC ${dc})`}
     >
-      <CombatantRef who={roll.type.who} /> rolls a {total} on a{" "}
+      <CombatantRef who={roll.type.who} /> rolls a {total}
+      {diceType !== "normal" ? ` at ${diceType}` : ""} on a{" "}
       {describeAbility(roll.type.ability)} ({roll.type.skill}) ability check.
       (DC {dc})
     </LogMessage>
@@ -153,24 +161,25 @@ function InitiativeMessage({
 }: DiceRolledDetail<InitiativeRoll>) {
   return (
     <LogMessage
-      message={`${type.who.name} rolls a ${value} for initiative${
-        diceType !== "normal" ? ` at ${diceType}` : ""
-      }.`}
+      message={`${type.who.name} rolls a ${value}${
+        diceType !== "normal" && ` at ${diceType}`
+      } for initiative.`}
     >
-      <CombatantRef who={type.who} /> rolls a {value} for initiative
-      {diceType !== "normal" && ` at ${diceType}`}.
+      <CombatantRef who={type.who} /> rolls a {value}
+      {diceType !== "normal" ? ` at ${diceType}` : ""} for initiative.
     </LogMessage>
   );
 }
 
-function SaveMessage({ roll, total, dc }: SaveEventDetail) {
+function SaveMessage({ diceType, roll, total, dc }: SaveEventDetail) {
   return (
     <LogMessage
-      message={`${roll.type.who.name} rolls a ${total} on a ${describeAbility(
-        roll.type.ability,
-      )} saving throw. (DC ${dc})`}
+      message={`${roll.type.who.name} rolls a ${total}${
+        diceType !== "normal" && ` at ${diceType}`
+      } on a ${describeAbility(roll.type.ability)} saving throw. (DC ${dc})`}
     >
-      <CombatantRef who={roll.type.who} /> rolls a {total} on a{" "}
+      <CombatantRef who={roll.type.who} /> rolls a {total}
+      {diceType !== "normal" ? ` at ${diceType}` : ""} on a{" "}
       {describeAbility(roll.type.ability)} saving throw. (DC {dc})
     </LogMessage>
   );

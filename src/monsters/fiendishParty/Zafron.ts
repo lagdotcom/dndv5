@@ -1,10 +1,14 @@
 import Engine from "../../Engine";
+import { EventListener } from "../../events/Dispatcher";
 import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
+import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import YesNoChoice from "../../interruptions/YesNoChoice";
 import { ScaleMailArmor } from "../../items/armor";
 import { Greataxe } from "../../items/weapons";
 import Monster from "../../Monster";
+import { BoundedMove } from "../../movement";
 import { WeaponItem } from "../../types/Item";
 import { makeMultiattack } from "../common";
 import tokenUrl from "./Zafron_token.png";
@@ -34,10 +38,47 @@ const BullRush = notImplementedFeature(
   "Until the beginning of his next turn, Zafron gains resistance to bludgeoning, piercing and slashing damage. Then, he moves up to his speed in a single direction. All enemies that he passes through must make a DC 15 Dexterity save or be knocked prone.",
 );
 
-// TODO
-const SurvivalReflex = notImplementedFeature(
+const SurvivalReflex = new SimpleFeature(
   "Survival Reflex",
   "Reaction: When forced to make a skill check or saving throw, Zafron gains advantage on the roll. After the triggering action is complete, he may move up to half his speed.",
+  (g, me) => {
+    let activated = false;
+
+    const useReflex: EventListener<"BeforeCheck" | "BeforeSave"> = ({
+      detail: { who, interrupt, diceType },
+    }) => {
+      if (who === me && me.time.has("reaction"))
+        interrupt.add(
+          new YesNoChoice(
+            me,
+            SurvivalReflex,
+            "Survival Reflex",
+            `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
+            async () => {
+              me.time.delete("reaction");
+              activated = true;
+              diceType.add("advantage", SurvivalReflex);
+            },
+          ),
+        );
+    };
+    g.events.on("BeforeCheck", useReflex);
+    g.events.on("BeforeSave", useReflex);
+
+    g.events.on("AfterAction", ({ detail: { interrupt } }) => {
+      if (activated) {
+        activated = false;
+        interrupt.add(
+          new EvaluateLater(me, SurvivalReflex, async () =>
+            g.applyBoundedMove(
+              me,
+              new BoundedMove(SurvivalReflex, me.speed / 2),
+            ),
+          ),
+        );
+      }
+    });
+  },
 );
 
 export default class Zafron extends Monster {

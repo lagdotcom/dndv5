@@ -2550,7 +2550,15 @@
         }
         const outcome = success ? "success" : "fail";
         this.fire(
-          new SaveEvent({ pre: pre.detail, roll, dc, outcome, total, forced })
+          new SaveEvent({
+            pre: pre.detail,
+            diceType: diceType.result,
+            roll,
+            dc,
+            outcome,
+            total,
+            forced
+          })
         );
         return {
           outcome,
@@ -2564,8 +2572,14 @@
         const successResponse = new SuccessResponseCollector();
         const bonus = new BonusCollector();
         const diceType = new DiceTypeCollector();
-        const pre = this.fire(
-          new BeforeCheckEvent(__spreadProps(__spreadValues({}, e), { dc, bonus, diceType, successResponse }))
+        const pre = yield this.resolve(
+          new BeforeCheckEvent(__spreadProps(__spreadValues({}, e), {
+            dc,
+            bonus,
+            diceType,
+            successResponse,
+            interrupt: new InterruptionCollector()
+          }))
         );
         let forced = false;
         let success = false;
@@ -2581,6 +2595,7 @@
         this.fire(
           new AbilityCheckEvent({
             pre: pre.detail,
+            diceType: diceType.result,
             roll,
             dc,
             outcome,
@@ -4335,6 +4350,59 @@
     }
   };
 
+  // src/movement.ts
+  var getDefaultMovement = (who) => ({
+    name: "Movement",
+    cannotApproach: /* @__PURE__ */ new Set(),
+    maximum: who.speed,
+    mustUseAll: false,
+    provokesOpportunityAttacks: true,
+    onMove(who2, cost) {
+      who2.movedSoFar += cost;
+      return who2.movedSoFar >= who2.speed;
+    }
+  });
+  var BoundedMoveRule = new DndRule("Bounded Movement", (g2) => {
+    g2.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
+      for (const other of handler.cannotApproach) {
+        const otherPos = g2.getState(other).position;
+        const oldDistance = getDistanceBetween(
+          from,
+          who.sizeInUnits,
+          otherPos,
+          other.sizeInUnits
+        );
+        const newDistance = getDistanceBetween(
+          to,
+          who.sizeInUnits,
+          otherPos,
+          other.sizeInUnits
+        );
+        if (newDistance < oldDistance)
+          error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
+      }
+    });
+  });
+  var BoundedMove = class {
+    constructor(source, maximum, {
+      cannotApproach = [],
+      mustUseAll = false,
+      provokesOpportunityAttacks = true
+    } = {}) {
+      this.source = source;
+      this.maximum = maximum;
+      this.name = source.name;
+      this.used = 0;
+      this.cannotApproach = new Set(cannotApproach);
+      this.mustUseAll = mustUseAll;
+      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
+    }
+    onMove(who, cost) {
+      this.used += cost;
+      return this.used >= this.maximum;
+    }
+  };
+
   // src/monsters/fiendishParty/Zafron_token.png
   var Zafron_token_default = "./Zafron_token-HS5HC4BR.png";
 
@@ -4360,9 +4428,49 @@
     "Bull Rush",
     "Until the beginning of his next turn, Zafron gains resistance to bludgeoning, piercing and slashing damage. Then, he moves up to his speed in a single direction. All enemies that he passes through must make a DC 15 Dexterity save or be knocked prone."
   );
-  var SurvivalReflex = notImplementedFeature(
+  var SurvivalReflex = new SimpleFeature(
     "Survival Reflex",
-    "Reaction: When forced to make a skill check or saving throw, Zafron gains advantage on the roll. After the triggering action is complete, he may move up to half his speed."
+    "Reaction: When forced to make a skill check or saving throw, Zafron gains advantage on the roll. After the triggering action is complete, he may move up to half his speed.",
+    (g2, me) => {
+      let activated = false;
+      const useReflex = ({
+        detail: { who, interrupt, diceType }
+      }) => {
+        if (who === me && me.time.has("reaction"))
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              SurvivalReflex,
+              "Survival Reflex",
+              `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
+              () => __async(void 0, null, function* () {
+                me.time.delete("reaction");
+                activated = true;
+                diceType.add("advantage", SurvivalReflex);
+              })
+            )
+          );
+      };
+      g2.events.on("BeforeCheck", useReflex);
+      g2.events.on("BeforeSave", useReflex);
+      g2.events.on("AfterAction", ({ detail: { interrupt } }) => {
+        if (activated) {
+          activated = false;
+          interrupt.add(
+            new EvaluateLater(
+              me,
+              SurvivalReflex,
+              () => __async(void 0, null, function* () {
+                return g2.applyBoundedMove(
+                  me,
+                  new BoundedMove(SurvivalReflex, me.speed / 2)
+                );
+              })
+            )
+          );
+        }
+      });
+    }
   );
   var Zafron = class extends Monster {
     constructor(g2) {
@@ -4703,59 +4811,6 @@ Once you use this feature, you can't use it again until you finish a short or lo
     ])
   };
   var rogue_default = Rogue;
-
-  // src/movement.ts
-  var getDefaultMovement = (who) => ({
-    name: "Movement",
-    cannotApproach: /* @__PURE__ */ new Set(),
-    maximum: who.speed,
-    mustUseAll: false,
-    provokesOpportunityAttacks: true,
-    onMove(who2, cost) {
-      who2.movedSoFar += cost;
-      return who2.movedSoFar >= who2.speed;
-    }
-  });
-  var BoundedMoveRule = new DndRule("Bounded Movement", (g2) => {
-    g2.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
-      for (const other of handler.cannotApproach) {
-        const otherPos = g2.getState(other).position;
-        const oldDistance = getDistanceBetween(
-          from,
-          who.sizeInUnits,
-          otherPos,
-          other.sizeInUnits
-        );
-        const newDistance = getDistanceBetween(
-          to,
-          who.sizeInUnits,
-          otherPos,
-          other.sizeInUnits
-        );
-        if (newDistance < oldDistance)
-          error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
-      }
-    });
-  });
-  var BoundedMove = class {
-    constructor(source, maximum, {
-      cannotApproach = [],
-      mustUseAll = false,
-      provokesOpportunityAttacks = true
-    } = {}) {
-      this.source = source;
-      this.maximum = maximum;
-      this.name = source.name;
-      this.used = 0;
-      this.cannotApproach = new Set(cannotApproach);
-      this.mustUseAll = mustUseAll;
-      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
-    }
-    onMove(who, cost) {
-      this.used += cost;
-      return this.used >= this.maximum;
-    }
-  };
 
   // src/classes/rogue/Scout/index.ts
   var Skirmisher = new SimpleFeature(
@@ -11215,17 +11270,21 @@ The creature is aware of this effect before it makes its attack against you.`
       "."
     ] });
   }
-  function AbilityCheckMessage({ roll, total, dc }) {
+  function AbilityCheckMessage({
+    diceType,
+    roll,
+    total,
+    dc
+  }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${roll.type.who.name} rolls a ${total} on a ${describeAbility(
-          roll.type.ability
-        )} (${roll.type.skill}) ability check. (DC ${dc})`,
+        message: `${roll.type.who.name} rolls a ${total}${diceType !== "normal" && ` at ${diceType}`} on a ${describeAbility(roll.type.ability)} (${roll.type.skill}) ability check. (DC ${dc})`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: roll.type.who }),
           " rolls a ",
           total,
+          diceType !== "normal" ? ` at ${diceType}` : "",
           " on a",
           " ",
           describeAbility(roll.type.ability),
@@ -11246,29 +11305,27 @@ The creature is aware of this effect before it makes its attack against you.`
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${type.who.name} rolls a ${value} for initiative${diceType !== "normal" ? ` at ${diceType}` : ""}.`,
+        message: `${type.who.name} rolls a ${value}${diceType !== "normal" && ` at ${diceType}`} for initiative.`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: type.who }),
           " rolls a ",
           value,
-          " for initiative",
-          diceType !== "normal" && ` at ${diceType}`,
-          "."
+          diceType !== "normal" ? ` at ${diceType}` : "",
+          " for initiative."
         ]
       }
     );
   }
-  function SaveMessage({ roll, total, dc }) {
+  function SaveMessage({ diceType, roll, total, dc }) {
     return /* @__PURE__ */ o(
       LogMessage,
       {
-        message: `${roll.type.who.name} rolls a ${total} on a ${describeAbility(
-          roll.type.ability
-        )} saving throw. (DC ${dc})`,
+        message: `${roll.type.who.name} rolls a ${total}${diceType !== "normal" && ` at ${diceType}`} on a ${describeAbility(roll.type.ability)} saving throw. (DC ${dc})`,
         children: [
           /* @__PURE__ */ o(CombatantRef, { who: roll.type.who }),
           " rolls a ",
           total,
+          diceType !== "normal" ? ` at ${diceType}` : "",
           " on a",
           " ",
           describeAbility(roll.type.ability),
@@ -11772,7 +11829,13 @@ The creature is aware of this effect before it makes its attack against you.`
         }
       ),
       actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({ caption: "Quick Actions" }, actionMenu), { onClick: onClickAction })),
-      /* @__PURE__ */ o("div", { className: App_module_default.sidePanel, children: [
+      /* @__PURE__ */ o("div", { className: App_module_default.sidePanel, children: moveBounds.value ? /* @__PURE__ */ o(
+        BoundedMovePanel,
+        {
+          bounds: moveBounds.value.detail,
+          onFinish: onFinishBoundedMove
+        }
+      ) : /* @__PURE__ */ o(import_preact3.Fragment, { children: [
         activeCombatant.value && /* @__PURE__ */ o(
           ActiveUnitPanel,
           {
@@ -11789,15 +11852,8 @@ The creature is aware of this effect before it makes its attack against you.`
             onCancel: onCancelAction,
             onExecute: onExecuteAction
           }
-        ),
-        moveBounds.value && /* @__PURE__ */ o(
-          BoundedMovePanel,
-          {
-            bounds: moveBounds.value.detail,
-            onFinish: onFinishBoundedMove
-          }
         )
-      ] }),
+      ] }) }),
       /* @__PURE__ */ o(EventLog, { g: g2 }),
       chooseFromList.value && /* @__PURE__ */ o(ListChoiceDialog, __spreadValues({}, chooseFromList.value.detail)),
       chooseManyFromList.value && /* @__PURE__ */ o(MultiListChoiceDialog, __spreadValues({}, chooseManyFromList.value.detail)),
