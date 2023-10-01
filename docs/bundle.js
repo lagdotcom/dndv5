@@ -10768,17 +10768,24 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/CombatantRef.module.scss
   var CombatantRef_module_default = {
-    "main": "_main_dtrbs_1",
-    "icon": "_icon_dtrbs_6",
-    "iconLabel": "_iconLabel_dtrbs_12"
+    "main": "_main_1rqki_1",
+    "spaceBefore": "_spaceBefore_1rqki_5",
+    "icon": "_icon_1rqki_9",
+    "iconLabel": "_iconLabel_1rqki_15"
   };
 
   // src/ui/CombatantRef.tsx
-  function CombatantRef({ who }) {
-    return /* @__PURE__ */ o("div", { className: CombatantRef_module_default.main, children: [
-      /* @__PURE__ */ o("img", { className: CombatantRef_module_default.icon, src: who.img, alt: who.name }),
-      /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
-    ] });
+  function CombatantRef({ who, spaceBefore = false }) {
+    return /* @__PURE__ */ o(
+      "div",
+      {
+        className: classnames(CombatantRef_module_default.main, { [CombatantRef_module_default.spaceBefore]: spaceBefore }),
+        children: [
+          /* @__PURE__ */ o("img", { className: CombatantRef_module_default.icon, src: who.img, alt: who.name }),
+          /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
+        ]
+      }
+    );
   }
 
   // src/ui/ChooseActionConfigPanel.tsx
@@ -11180,181 +11187,149 @@ The creature is aware of this effect before it makes its attack against you.`
     return { cancel, fire, handle };
   }
 
-  // src/ui/EventLog.tsx
-  function LogMessage({
-    children,
-    message
-  }) {
-    return /* @__PURE__ */ o("li", { "aria-label": message, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
+  // src/ui/utils/messages.tsx
+  var msgCombatant = (c, space = false) => ({
+    element: /* @__PURE__ */ o(CombatantRef, { who: c, spaceBefore: space }),
+    text: c.name
+  });
+  var msgDiceType = (dt) => dt !== "normal" ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+    " at ",
+    dt
+  ] }), text: ` at ${dt}` } : void 0;
+  var msgWeapon = (w) => w ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+    " with ",
+    w.name
+  ] }), text: ` with ${w.name}` } : void 0;
+  var msgSpell = (s) => s ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+    " with ",
+    s.name
+  ] }), text: ` with ${s.name}` } : void 0;
+  var msgAmmo = (a) => a ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+    ", firing ",
+    a.name
+  ] }), text: `, firing ${a.name}` } : void 0;
+  var msgUpcast = (spell, level) => level > spell.level ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+    " at level ",
+    level
+  ] }), text: ` at level ${level}` } : void 0;
+  var msgNonzero = (value, text) => value ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: "text" }), text } : void 0;
+  function getDamageEntryText([type, entry]) {
+    return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
   }
-  function AttackMessage({
+  var dmgBreakdown = (breakdown) => ({
+    element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+      "(",
+      /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: Array.from(breakdown).map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
+      ")"
+    ] }),
+    text: `(${Array.from(breakdown).map(getDamageEntryText).join(", ")})`
+  });
+  var getAttackMessage = ({
     pre: { who, target, weapon, ammo, spell },
     roll,
     total,
     ac
-  }) {
-    return /* @__PURE__ */ o(
-      LogMessage,
-      {
-        message: `${who.name} attacks ${target.name}${roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""}${weapon ? ` with ${weapon.name}` : ""}${spell ? ` with ${spell.name}` : ""}${ammo ? `, firing ${ammo.name}` : ""} (${total}). (AC ${ac})`,
-        children: [
-          /* @__PURE__ */ o(CombatantRef, { who }),
-          "attacks\xA0",
-          /* @__PURE__ */ o(CombatantRef, { who: target }),
-          roll.diceType !== "normal" && ` at ${roll.diceType}`,
-          weapon && ` with ${weapon.name}`,
-          spell && ` with ${spell.name}`,
-          ammo && `, firing ${ammo.name}`,
-          "\xA0(",
-          total,
-          "). (AC ",
-          ac,
-          ")"
-        ]
-      }
-    );
-  }
-  function CastMessage({ level, spell, who }) {
-    return /* @__PURE__ */ o(
-      LogMessage,
-      {
-        message: `${who.name} casts ${spell.name}${level !== spell.level ? ` at level ${level}` : ""}.`,
-        children: [
-          /* @__PURE__ */ o(CombatantRef, { who }),
-          "casts ",
-          spell.name,
-          level !== spell.level && ` at level ${level}`,
-          "."
-        ]
-      }
-    );
-  }
-  function getDamageEntryText([type, entry]) {
-    return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
-  }
-  function DamageMessage({ who, total, breakdown }) {
-    return /* @__PURE__ */ o(
-      LogMessage,
-      {
-        message: `${who.name} takes ${total} damage. (${Array.from(breakdown).map(getDamageEntryText).join(", ")})`,
-        children: [
-          /* @__PURE__ */ o(CombatantRef, { who }),
-          "takes ",
-          total,
-          " damage. (",
-          /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: Array.from(breakdown).map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
-          ")"
-        ]
-      }
-    );
-  }
-  function DeathMessage({ who }) {
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} dies!`, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      "dies!"
-    ] });
-  }
-  function EffectAddedMessage({ who, effect }) {
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} gains effect: ${effect.name}`, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      " gains effect: ",
-      effect.name,
-      "."
-    ] });
-  }
-  function EffectRemovedMessage({ who, effect }) {
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} loses effect: ${effect.name}`, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      " loses effect: ",
-      effect.name,
-      "."
-    ] });
-  }
-  function AbilityCheckMessage({
+  }) => [
+    msgCombatant(who),
+    " attacks ",
+    msgCombatant(target, true),
+    msgDiceType(roll.diceType),
+    msgWeapon(weapon),
+    msgSpell(spell),
+    msgAmmo(ammo),
+    ` (${total}). (AC ${ac})`
+  ];
+  var getCastMessage = ({ level, spell, who }) => [
+    msgCombatant(who),
+    " casts ",
+    spell.name,
+    msgUpcast(spell, level),
+    "."
+  ];
+  var getDamageMessage = ({
+    who,
+    total,
+    breakdown
+  }) => [
+    msgCombatant(who),
+    ` takes ${total} damage. `,
+    dmgBreakdown(breakdown)
+  ];
+  var getDeathMessage = ({ who }) => [
+    msgCombatant(who),
+    " dies!"
+  ];
+  var getEffectAddedMessage = ({ who, effect }) => [
+    msgCombatant(who),
+    ` gains effect: ${effect.name}.`
+  ];
+  var getEffectRemovedMessage = ({
+    who,
+    effect
+  }) => [
+    msgCombatant(who),
+    ` loses effect: ${effect.name}.`
+  ];
+  var getAbilityCheckMessage = ({
     diceType,
-    roll,
+    roll: {
+      type: { who, ability, skill }
+    },
     total,
     dc
-  }) {
-    return /* @__PURE__ */ o(
-      LogMessage,
-      {
-        message: `${roll.type.who.name} rolls a ${total}${diceType !== "normal" && ` at ${diceType}`} on a ${describeAbility(roll.type.ability)} (${roll.type.skill}) ability check. (DC ${dc})`,
-        children: [
-          /* @__PURE__ */ o(CombatantRef, { who: roll.type.who }),
-          " rolls a ",
-          total,
-          diceType !== "normal" ? ` at ${diceType}` : "",
-          " on a",
-          " ",
-          describeAbility(roll.type.ability),
-          " (",
-          roll.type.skill,
-          ") ability check. (DC ",
-          dc,
-          ")"
-        ]
-      }
-    );
-  }
-  function InitiativeMessage({
+  }) => [
+    msgCombatant(who),
+    ` rolls a ${total}`,
+    msgDiceType(diceType),
+    " on a ",
+    describeAbility(ability),
+    ` (${skill}) ability check. (DC ${dc})`
+  ];
+  var getInitiativeMessage = ({
     diceType,
     type,
     value
-  }) {
-    return /* @__PURE__ */ o(
-      LogMessage,
-      {
-        message: `${type.who.name} rolls a ${value}${diceType !== "normal" && ` at ${diceType}`} for initiative.`,
-        children: [
-          /* @__PURE__ */ o(CombatantRef, { who: type.who }),
-          " rolls a ",
-          value,
-          diceType !== "normal" ? ` at ${diceType}` : "",
-          " for initiative."
-        ]
-      }
-    );
-  }
-  function SaveMessage({ diceType, roll, total, dc }) {
-    return /* @__PURE__ */ o(
-      LogMessage,
-      {
-        message: `${roll.type.who.name} rolls a ${total}${diceType !== "normal" && ` at ${diceType}`} on a ${describeAbility(roll.type.ability)} saving throw. (DC ${dc})`,
-        children: [
-          /* @__PURE__ */ o(CombatantRef, { who: roll.type.who }),
-          " rolls a ",
-          total,
-          diceType !== "normal" ? ` at ${diceType}` : "",
-          " on a",
-          " ",
-          describeAbility(roll.type.ability),
-          " saving throw. (DC ",
-          dc,
-          ")"
-        ]
-      }
-    );
-  }
-  function HealedMessage({ who, amount, fullAmount }) {
-    const over = fullAmount - amount;
-    const wasted = over > 0 ? ` (${over} wasted)` : void 0;
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} heals for ${amount}${wasted}.`, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      " heals for ",
-      amount,
-      wasted,
-      "."
-    ] });
-  }
-  function ExhaustionMessage({ who, value }) {
-    const amount = value ? `${value}` : "no";
-    return /* @__PURE__ */ o(LogMessage, { message: `${who.name} now has ${amount} exhaustion.`, children: [
-      /* @__PURE__ */ o(CombatantRef, { who }),
-      " now has ",
-      amount,
-      " exhaustion."
-    ] });
+  }) => [
+    msgCombatant(type.who),
+    ` rolls a ${value}`,
+    msgDiceType(diceType),
+    " for initiative."
+  ];
+  var getSaveMessage = ({
+    diceType,
+    roll: {
+      type: { who, ability }
+    },
+    total,
+    dc
+  }) => [
+    msgCombatant(who),
+    ` rolls a ${total}`,
+    msgDiceType(diceType),
+    " on a ",
+    describeAbility(ability),
+    ` saving throw. (DC ${dc})`
+  ];
+  var getHealedMessage = ({
+    who,
+    amount,
+    fullAmount
+  }) => [
+    msgCombatant(who),
+    ` heals for ${amount}`,
+    msgNonzero(fullAmount - amount, ` (${fullAmount - amount} wasted)`),
+    "."
+  ];
+  var getExhaustionMessage = ({ who, value }) => [
+    msgCombatant(who),
+    `now has ${value ? value : "no"} exhaustion.`
+  ];
+
+  // src/ui/EventLog.tsx
+  function LogMessage({ message }) {
+    const text = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.text).join("");
+    const children = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.element);
+    return /* @__PURE__ */ o("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function EventLog({ g: g2 }) {
     const ref = (0, import_hooks9.useRef)(null);
@@ -11372,52 +11347,56 @@ The creature is aware of this effect before it makes its attack against you.`
     (0, import_hooks9.useEffect)(() => {
       g2.events.on(
         "Attack",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(AttackMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAttackMessage(detail) }))
       );
       g2.events.on(
         "CombatantDamaged",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(DamageMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getDamageMessage(detail) }))
       );
       g2.events.on(
         "CombatantHealed",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(HealedMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getHealedMessage(detail) }))
       );
       g2.events.on(
         "CombatantDied",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(DeathMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getDeathMessage(detail) }))
       );
       g2.events.on("EffectAdded", ({ detail }) => {
         if (!detail.effect.quiet)
-          addMessage(/* @__PURE__ */ o(EffectAddedMessage, __spreadValues({}, detail)));
+          addMessage(/* @__PURE__ */ o(LogMessage, { message: getEffectAddedMessage(detail) }));
       });
       g2.events.on("EffectRemoved", ({ detail }) => {
         if (!detail.effect.quiet)
-          addMessage(/* @__PURE__ */ o(EffectRemovedMessage, __spreadValues({}, detail)));
+          addMessage(/* @__PURE__ */ o(LogMessage, { message: getEffectRemovedMessage(detail) }));
       });
       g2.events.on(
         "SpellCast",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(CastMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getCastMessage(detail) }))
       );
       g2.events.on("DiceRolled", ({ detail }) => {
         if (detail.type.type === "initiative")
           addMessage(
             /* @__PURE__ */ o(
-              InitiativeMessage,
-              __spreadValues({}, detail)
+              LogMessage,
+              {
+                message: getInitiativeMessage(
+                  detail
+                )
+              }
             )
           );
       });
       g2.events.on(
         "AbilityCheck",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(AbilityCheckMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAbilityCheckMessage(detail) }))
       );
       g2.events.on(
         "Save",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(SaveMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getSaveMessage(detail) }))
       );
       g2.events.on(
         "Exhaustion",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(ExhaustionMessage, __spreadValues({}, detail)))
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getExhaustionMessage(detail) }))
       );
     }, [addMessage, g2]);
     return /* @__PURE__ */ o("div", { className: EventLog_module_default.container, children: [

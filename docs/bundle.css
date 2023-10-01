@@ -233,16 +233,19 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/CombatantRef.module.scss */
-._main_dtrbs_1 {
+._main_1rqki_1 {
   display: inline-flex;
   align-items: center;
 }
-._icon_dtrbs_6 {
+._main_1rqki_1._spaceBefore_1rqki_5 {
+  margin-left: 4px;
+}
+._icon_1rqki_9 {
   width: 20px;
   height: 20px;
   margin-right: 4px;
 }
-._iconLabel_dtrbs_12 {
+._iconLabel_1rqki_15 {
   margin-right: 4px;
 }
 

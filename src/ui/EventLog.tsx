@@ -1,209 +1,42 @@
-import { ComponentChildren, VNode } from "preact";
+import { VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
-import { AbilityCheckDetail } from "../events/AbilityCheckEvent";
-import { AttackDetail } from "../events/AttackEvent";
-import { CombatantDamagedDetail } from "../events/CombatantDamagedEvent";
-import { CombatantDiedDetail } from "../events/CombatantDiedEvent";
-import { CombatantHealedDetail } from "../events/CombatantHealedEvent";
 import { DiceRolledDetail } from "../events/DiceRolledEvent";
-import { EffectAddedDetail } from "../events/EffectAddedEvent";
-import { EffectRemovedDetail } from "../events/EffectRemovedEvent";
-import { ExhaustionDetail } from "../events/ExhaustionEvent";
-import { SaveEventDetail } from "../events/SaveEvent";
-import { SpellCastDetail } from "../events/SpellCastEvent";
-import DamageBreakdown from "../types/DamageBreakdown";
-import DamageType from "../types/DamageType";
 import { InitiativeRoll } from "../types/RollType";
-import { describeAbility } from "../utils/text";
-import CombatantRef from "./CombatantRef";
-import common from "./common.module.scss";
+import { isDefined } from "../utils/types";
 import styles from "./EventLog.module.scss";
 import useTimeout from "./hooks/useTimeout";
+import {
+  getAbilityCheckMessage,
+  getAttackMessage,
+  getCastMessage,
+  getDamageMessage,
+  getDeathMessage,
+  getEffectAddedMessage,
+  getEffectRemovedMessage,
+  getExhaustionMessage,
+  getHealedMessage,
+  getInitiativeMessage,
+  getSaveMessage,
+  MessagePart,
+} from "./utils/messages";
 
-function LogMessage({
-  children,
-  message,
-}: {
-  children: ComponentChildren;
-  message: string;
-}) {
+function LogMessage({ message }: { message: MessagePart[] }) {
+  const text = message
+    .filter(isDefined)
+    .map((x) => (typeof x === "string" ? x : x.text))
+    .join("");
+  const children = message
+    .filter(isDefined)
+    .map((x) => (typeof x === "string" ? x : x.element));
+
   return (
-    <li aria-label={message} className={styles.messageWrapper}>
+    <li aria-label={text} className={styles.messageWrapper}>
       <div aria-hidden="true" className={styles.message}>
         {children}
       </div>
     </li>
-  );
-}
-
-function AttackMessage({
-  pre: { who, target, weapon, ammo, spell },
-  roll,
-  total,
-  ac,
-}: AttackDetail) {
-  return (
-    <LogMessage
-      message={`${who.name} attacks ${target.name}${
-        roll.diceType !== "normal" ? ` at ${roll.diceType}` : ""
-      }${weapon ? ` with ${weapon.name}` : ""}${
-        spell ? ` with ${spell.name}` : ""
-      }${ammo ? `, firing ${ammo.name}` : ""} (${total}). (AC ${ac})`}
-    >
-      <CombatantRef who={who} />
-      attacks&nbsp;
-      <CombatantRef who={target} />
-      {roll.diceType !== "normal" && ` at ${roll.diceType}`}
-      {weapon && ` with ${weapon.name}`}
-      {spell && ` with ${spell.name}`}
-      {ammo && `, firing ${ammo.name}`}
-      &nbsp;({total}). (AC {ac})
-    </LogMessage>
-  );
-}
-
-function CastMessage({ level, spell, who }: SpellCastDetail) {
-  // TODO should probably not show you all this info...
-  return (
-    <LogMessage
-      message={`${who.name} casts ${spell.name}${
-        level !== spell.level ? ` at level ${level}` : ""
-      }.`}
-    >
-      <CombatantRef who={who} />
-      casts {spell.name}
-      {level !== spell.level && ` at level ${level}`}.
-    </LogMessage>
-  );
-}
-
-function getDamageEntryText([type, entry]: [
-  type: DamageType,
-  entry: DamageBreakdown,
-]) {
-  return `${entry.amount} ${type}${
-    entry.response !== "normal" ? ` ${entry.response}` : ""
-  }`;
-}
-
-function DamageMessage({ who, total, breakdown }: CombatantDamagedDetail) {
-  return (
-    <LogMessage
-      message={`${who.name} takes ${total} damage. (${Array.from(breakdown)
-        .map(getDamageEntryText)
-        .join(", ")})`}
-    >
-      <CombatantRef who={who} />
-      takes {total} damage. (
-      <div className={common.damageList}>
-        {Array.from(breakdown).map(([type, entry]) => (
-          <span key={type}>{getDamageEntryText([type, entry])}</span>
-        ))}
-      </div>
-      )
-    </LogMessage>
-  );
-}
-
-function DeathMessage({ who }: CombatantDiedDetail) {
-  return (
-    <LogMessage message={`${who.name} dies!`}>
-      <CombatantRef who={who} />
-      dies!
-    </LogMessage>
-  );
-}
-
-function EffectAddedMessage({ who, effect }: EffectAddedDetail) {
-  return (
-    <LogMessage message={`${who.name} gains effect: ${effect.name}`}>
-      <CombatantRef who={who} /> gains effect: {effect.name}.
-    </LogMessage>
-  );
-}
-
-function EffectRemovedMessage({ who, effect }: EffectRemovedDetail) {
-  return (
-    <LogMessage message={`${who.name} loses effect: ${effect.name}`}>
-      <CombatantRef who={who} /> loses effect: {effect.name}.
-    </LogMessage>
-  );
-}
-
-function AbilityCheckMessage({
-  diceType,
-  roll,
-  total,
-  dc,
-}: AbilityCheckDetail) {
-  return (
-    <LogMessage
-      message={`${roll.type.who.name} rolls a ${total}${
-        diceType !== "normal" && ` at ${diceType}`
-      } on a ${describeAbility(roll.type.ability)} (${
-        roll.type.skill
-      }) ability check. (DC ${dc})`}
-    >
-      <CombatantRef who={roll.type.who} /> rolls a {total}
-      {diceType !== "normal" ? ` at ${diceType}` : ""} on a{" "}
-      {describeAbility(roll.type.ability)} ({roll.type.skill}) ability check.
-      (DC {dc})
-    </LogMessage>
-  );
-}
-
-function InitiativeMessage({
-  diceType,
-  type,
-  value,
-}: DiceRolledDetail<InitiativeRoll>) {
-  return (
-    <LogMessage
-      message={`${type.who.name} rolls a ${value}${
-        diceType !== "normal" && ` at ${diceType}`
-      } for initiative.`}
-    >
-      <CombatantRef who={type.who} /> rolls a {value}
-      {diceType !== "normal" ? ` at ${diceType}` : ""} for initiative.
-    </LogMessage>
-  );
-}
-
-function SaveMessage({ diceType, roll, total, dc }: SaveEventDetail) {
-  return (
-    <LogMessage
-      message={`${roll.type.who.name} rolls a ${total}${
-        diceType !== "normal" && ` at ${diceType}`
-      } on a ${describeAbility(roll.type.ability)} saving throw. (DC ${dc})`}
-    >
-      <CombatantRef who={roll.type.who} /> rolls a {total}
-      {diceType !== "normal" ? ` at ${diceType}` : ""} on a{" "}
-      {describeAbility(roll.type.ability)} saving throw. (DC {dc})
-    </LogMessage>
-  );
-}
-
-function HealedMessage({ who, amount, fullAmount }: CombatantHealedDetail) {
-  const over = fullAmount - amount;
-  const wasted = over > 0 ? ` (${over} wasted)` : undefined;
-
-  return (
-    <LogMessage message={`${who.name} heals for ${amount}${wasted}.`}>
-      <CombatantRef who={who} /> heals for {amount}
-      {wasted}.
-    </LogMessage>
-  );
-}
-
-function ExhaustionMessage({ who, value }: ExhaustionDetail) {
-  const amount = value ? `${value}` : "no";
-
-  return (
-    <LogMessage message={`${who.name} now has ${amount} exhaustion.`}>
-      <CombatantRef who={who} /> now has {amount} exhaustion.
-    </LogMessage>
   );
 }
 
@@ -223,43 +56,46 @@ export default function EventLog({ g }: { g: Engine }) {
 
   useEffect(() => {
     g.events.on("Attack", ({ detail }) =>
-      addMessage(<AttackMessage {...detail} />),
+      addMessage(<LogMessage message={getAttackMessage(detail)} />),
     );
     g.events.on("CombatantDamaged", ({ detail }) =>
-      addMessage(<DamageMessage {...detail} />),
+      addMessage(<LogMessage message={getDamageMessage(detail)} />),
     );
     g.events.on("CombatantHealed", ({ detail }) =>
-      addMessage(<HealedMessage {...detail} />),
+      addMessage(<LogMessage message={getHealedMessage(detail)} />),
     );
     g.events.on("CombatantDied", ({ detail }) =>
-      addMessage(<DeathMessage {...detail} />),
+      addMessage(<LogMessage message={getDeathMessage(detail)} />),
     );
     g.events.on("EffectAdded", ({ detail }) => {
-      if (!detail.effect.quiet) addMessage(<EffectAddedMessage {...detail} />);
+      if (!detail.effect.quiet)
+        addMessage(<LogMessage message={getEffectAddedMessage(detail)} />);
     });
     g.events.on("EffectRemoved", ({ detail }) => {
       if (!detail.effect.quiet)
-        addMessage(<EffectRemovedMessage {...detail} />);
+        addMessage(<LogMessage message={getEffectRemovedMessage(detail)} />);
     });
     g.events.on("SpellCast", ({ detail }) =>
-      addMessage(<CastMessage {...detail} />),
+      addMessage(<LogMessage message={getCastMessage(detail)} />),
     );
     g.events.on("DiceRolled", ({ detail }) => {
       if (detail.type.type === "initiative")
         addMessage(
-          <InitiativeMessage
-            {...(detail as DiceRolledDetail<InitiativeRoll>)}
+          <LogMessage
+            message={getInitiativeMessage(
+              detail as DiceRolledDetail<InitiativeRoll>,
+            )}
           />,
         );
     });
     g.events.on("AbilityCheck", ({ detail }) =>
-      addMessage(<AbilityCheckMessage {...detail} />),
+      addMessage(<LogMessage message={getAbilityCheckMessage(detail)} />),
     );
     g.events.on("Save", ({ detail }) =>
-      addMessage(<SaveMessage {...detail} />),
+      addMessage(<LogMessage message={getSaveMessage(detail)} />),
     );
     g.events.on("Exhaustion", ({ detail }) =>
-      addMessage(<ExhaustionMessage {...detail} />),
+      addMessage(<LogMessage message={getExhaustionMessage(detail)} />),
     );
   }, [addMessage, g]);
 

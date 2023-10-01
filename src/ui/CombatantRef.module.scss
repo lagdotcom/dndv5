@@ -1,6 +1,10 @@
 .main {
   display: inline-flex;
   align-items: center;
+
+  &.spaceBefore {
+    margin-left: 4px;
+  }
 }
 
 .icon {
