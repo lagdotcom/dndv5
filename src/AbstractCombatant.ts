@@ -122,6 +122,8 @@ export default abstract class AbstractCombatant implements Combatant {
   temporaryHP: number;
   temporaryHPSource?: Source;
   conditionImmunities: Set<ConditionName>;
+  deathSaveFailures: number;
+  deathSaveSuccesses: number;
 
   constructor(
     public g: Engine,
@@ -216,6 +218,8 @@ export default abstract class AbstractCombatant implements Combatant {
     this.exhaustion = 0;
     this.temporaryHP = 0;
     this.conditionImmunities = new Set();
+    this.deathSaveFailures = 0;
+    this.deathSaveSuccesses = 0;
   }
 
   get baseACMethod(): ACMethod {

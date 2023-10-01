@@ -13,7 +13,7 @@ import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
-import { Dead, Dying } from "./effects";
+import { Dead, Dying, Stable } from "./effects";
 import AbilityCheckEvent from "./events/AbilityCheckEvent";
 import AfterActionEvent from "./events/AfterActionEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
@@ -47,6 +47,7 @@ import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import GetMoveCostEvent from "./events/GetMoveCostEvent";
 import SaveEvent from "./events/SaveEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
+import TurnSkippedEvent from "./events/TurnSkippedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoice from "./interruptions/YesNoChoice";
 import { MapSquareSize } from "./MapSquare";
@@ -208,6 +209,7 @@ export default class Engine {
     );
 
     return {
+      roll,
       outcome,
       forced,
       damageResponse: success
@@ -293,9 +295,13 @@ export default class Engine {
         : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
       who = this.initiativeOrder[this.initiativePosition];
 
-      if (!who.hasEffect(Dead)) scan = false;
+      // TODO this seems a bit dangerous
+      if (!who.conditions.has("Unconscious")) scan = false;
       else {
         who.tickEffects("turnStart");
+        await this.resolve(
+          new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() }),
+        );
         who.tickEffects("turnEnd");
       }
     }
@@ -450,15 +456,17 @@ export default class Engine {
     );
 
     if (target.hp <= 0) {
-      // TODO check massive damage
       await target.endConcentration();
 
-      if (target.diesAtZero) {
-        this.combatants.delete(target);
-        await target.addEffect(Dead, { duration: Infinity });
-        this.fire(new CombatantDiedEvent({ who: target, attacker }));
+      if (target.diesAtZero || target.hp <= -target.hpMax) {
+        await this.kill(target, attacker);
       } else if (!target.hasEffect(Dying)) {
+        target.hp = 0;
+        await target.removeEffect(Stable);
         await target.addEffect(Dying, { duration: Infinity });
+      } else {
+        target.hp = 0;
+        await this.failDeathSave(target);
       }
 
       return;
@@ -474,6 +482,28 @@ export default class Engine {
       });
 
       if (result.outcome === "fail") await target.endConcentration();
+    }
+  }
+
+  async kill(target: Combatant, attacker?: Combatant) {
+    this.combatants.delete(target);
+    await target.addEffect(Dead, { duration: Infinity });
+    this.fire(new CombatantDiedEvent({ who: target, attacker }));
+  }
+
+  async failDeathSave(who: Combatant, count = 1, attacker?: Combatant) {
+    who.deathSaveFailures += count;
+    if (who.deathSaveFailures >= 3) await this.kill(who, attacker);
+  }
+
+  async succeedDeathSave(who: Combatant) {
+    who.deathSaveSuccesses++;
+    if (who.deathSaveSuccesses >= 3) {
+      await who.removeEffect(Dying);
+
+      who.deathSaveFailures = 0;
+      who.deathSaveSuccesses = 0;
+      await who.addEffect(Stable, { duration: Infinity });
     }
   }
 
@@ -723,10 +753,9 @@ export default class Engine {
     return this.applyHeal(gather.detail.target, total, gather.detail.actor);
   }
 
-  async applyHeal(who: Combatant, fullAmount: number, actor: Combatant) {
+  async applyHeal(who: Combatant, fullAmount: number, actor?: Combatant) {
     const amount = Math.min(fullAmount, who.hpMax - who.hp);
-
-    // TODO reset death saves
+    who.hp += amount;
 
     return this.resolve(
       new CombatantHealedEvent({

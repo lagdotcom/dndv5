@@ -1,5 +1,6 @@
 export const SaveTags = [
   "concentration",
+  "death",
   "disease",
   "forced movement",
   "frightened",

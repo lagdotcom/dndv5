@@ -55,8 +55,8 @@ export type LuckRoll = { type: "luck"; who: Combatant };
 export type SavingThrow<T = unknown> = {
   type: "save";
   who: Combatant;
-  attacker: Combatant;
-  ability: AbilityName;
+  attacker?: Combatant;
+  ability?: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
   effect?: Effect<T>;

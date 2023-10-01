@@ -12,10 +12,10 @@ import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
 export interface BeforeSaveDetail<T = unknown> {
-  attacker: Combatant;
+  attacker?: Combatant;
   who: Combatant;
   dc: number;
-  ability: AbilityName;
+  ability?: AbilityName;
   diceType: DiceTypeCollector;
   bonus: BonusCollector;
   successResponse: SuccessResponseCollector;

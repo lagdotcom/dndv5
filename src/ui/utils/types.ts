@@ -1,9 +1,12 @@
+import Effect from "../../Effect";
 import Combatant from "../../types/Combatant";
 import CombatantState from "../../types/CombatantState";
 import ConditionName from "../../types/ConditionName";
 import Point from "../../types/Point";
 
-export interface UnitEffect {
+export interface UnitEffect<T = unknown> {
+  effect: Effect<T>;
+  config: T;
   name: string;
   icon?: string;
   duration: number;
@@ -27,6 +30,8 @@ export interface UnitData {
   temporaryHP: number;
   effects: UnitEffect[];
   conditions: ConditionName[];
+  deathSaveFailures: number;
+  deathSaveSuccesses: number;
 }
 
 export function getUnitData(who: Combatant, state: CombatantState): UnitData {
@@ -43,14 +48,22 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     hp,
     hpMax,
     temporaryHP,
+    deathSaveFailures,
+    deathSaveSuccesses,
     effects: effectsMap,
     conditions: conditionsSet,
   } = who;
 
   const effects: UnitEffect[] = [];
-  for (const [k, v] of effectsMap) {
-    if (k.quiet) continue;
-    effects.push({ name: k.name, icon: k.image, duration: v.duration });
+  for (const [effect, config] of effectsMap) {
+    if (effect.quiet) continue;
+    effects.push({
+      name: effect.name,
+      icon: effect.image,
+      duration: config.duration,
+      effect,
+      config,
+    });
   }
 
   const conditions: ConditionName[] = [];
@@ -70,6 +83,8 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     hp,
     hpMax,
     temporaryHP,
+    deathSaveFailures,
+    deathSaveSuccesses,
     effects,
     conditions,
   };

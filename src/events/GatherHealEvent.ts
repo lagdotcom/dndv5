@@ -6,7 +6,7 @@ import Combatant from "../types/Combatant";
 import Spell from "../types/Spell";
 
 export interface GatherHealDetail {
-  actor: Combatant;
+  actor?: Combatant;
   target: Combatant;
   action?: Action;
   spell?: Spell;

@@ -2,8 +2,10 @@ import AbstractAction from "./actions/AbstractAction";
 import ErrorCollector from "./collectors/ErrorCollector";
 import Effect from "./Effect";
 import Engine from "./Engine";
+import EvaluateLater from "./interruptions/EvaluateLater";
 import Combatant from "./types/Combatant";
 import { coSet } from "./types/ConditionName";
+import { svSet } from "./types/SaveTag";
 import { distance } from "./utils/units";
 
 export const Dying = new Effect("Dying", "turnStart", (g) => {
@@ -15,7 +17,51 @@ export const Dying = new Effect("Dying", "turnStart", (g) => {
     }
   });
 
-  // TODO death saves etc.
+  g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
+    if (who.hasEffect(Dying))
+      interrupt.add(
+        new EvaluateLater(who, Dying, async () => {
+          const result = await g.savingThrow(10, { who, tags: svSet("death") });
+
+          if (result.roll.value === 20) await g.heal(Dying, 1, { target: who });
+          else if (result.roll.value === 1) await g.failDeathSave(who, 2);
+          else if (result.outcome === "fail") await g.failDeathSave(who);
+          else await g.succeedDeathSave(who);
+        }),
+      );
+  });
+
+  g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+    if (who.hasEffect(Dying))
+      interrupt.add(
+        new EvaluateLater(who, Dying, async () => {
+          who.deathSaveFailures = 0;
+          who.deathSaveSuccesses = 0;
+          await who.removeEffect(Dying);
+          await who.addEffect(Prone, { duration: Infinity });
+        }),
+      );
+  });
+});
+
+export const Stable = new Effect("Stable", "turnStart", (g) => {
+  g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+    if (who.hasEffect(Stable)) {
+      conditions.add("Incapacitated", Stable);
+      conditions.add("Prone", Stable);
+      conditions.add("Unconscious", Stable);
+    }
+  });
+
+  g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+    if (who.hasEffect(Stable))
+      interrupt.add(
+        new EvaluateLater(who, Stable, async () => {
+          await who.removeEffect(Stable);
+          await who.addEffect(Prone, { duration: Infinity });
+        }),
+      );
+  });
 });
 
 export const Dead = new Effect(

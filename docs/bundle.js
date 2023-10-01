@@ -1343,6 +1343,8 @@
       this.exhaustion = 0;
       this.temporaryHP = 0;
       this.conditionImmunities = /* @__PURE__ */ new Set();
+      this.deathSaveFailures = 0;
+      this.deathSaveSuccesses = 0;
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -1693,8 +1695,21 @@
     return { average, list };
   }
 
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply, priority2 = 5) {
+      this.who = who;
+      this.source = source;
+      this.apply = apply;
+      this.priority = priority2;
+    }
+  };
+
   // src/types/ConditionName.ts
   var coSet = (...items) => new Set(items);
+
+  // src/types/SaveTag.ts
+  var svSet = (...items) => new Set(items);
 
   // src/effects.ts
   var Dying = new Effect("Dying", "turnStart", (g2) => {
@@ -1704,6 +1719,51 @@
         conditions.add("Prone", Dying);
         conditions.add("Unconscious", Dying);
       }
+    });
+    g2.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(Dying))
+        interrupt.add(
+          new EvaluateLater(who, Dying, () => __async(void 0, null, function* () {
+            const result = yield g2.savingThrow(10, { who, tags: svSet("death") });
+            if (result.roll.value === 20)
+              yield g2.heal(Dying, 1, { target: who });
+            else if (result.roll.value === 1)
+              yield g2.failDeathSave(who, 2);
+            else if (result.outcome === "fail")
+              yield g2.failDeathSave(who);
+            else
+              yield g2.succeedDeathSave(who);
+          }))
+        );
+    });
+    g2.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(Dying))
+        interrupt.add(
+          new EvaluateLater(who, Dying, () => __async(void 0, null, function* () {
+            who.deathSaveFailures = 0;
+            who.deathSaveSuccesses = 0;
+            yield who.removeEffect(Dying);
+            yield who.addEffect(Prone, { duration: Infinity });
+          }))
+        );
+    });
+  });
+  var Stable = new Effect("Stable", "turnStart", (g2) => {
+    g2.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+      if (who.hasEffect(Stable)) {
+        conditions.add("Incapacitated", Stable);
+        conditions.add("Prone", Stable);
+        conditions.add("Unconscious", Stable);
+      }
+    });
+    g2.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(Stable))
+        interrupt.add(
+          new EvaluateLater(who, Stable, () => __async(void 0, null, function* () {
+            yield who.removeEffect(Stable);
+            yield who.addEffect(Prone, { duration: Infinity });
+          }))
+        );
     });
   });
   var Dead = new Effect(
@@ -1978,7 +2038,8 @@
       bonus.add(who[ability].modifier, AbilityScoreRule);
     });
     g2.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
-      bonus.add(who[ability].modifier, AbilityScoreRule);
+      if (ability)
+        bonus.add(who[ability].modifier, AbilityScoreRule);
     });
     g2.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
       if (ability)
@@ -2114,8 +2175,10 @@
       bonus.add(who.pb * mul, ProficiencyRule);
     });
     g2.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
-      const mul = who.getProficiencyMultiplier(ability);
-      bonus.add(who.pb * mul, ProficiencyRule);
+      if (ability) {
+        const mul = who.getProficiencyMultiplier(ability);
+        bonus.add(who.pb * mul, ProficiencyRule);
+      }
     });
   });
   var ResourcesRule = new DndRule("Resources", (g2) => {
@@ -2380,6 +2443,13 @@
     }
   };
 
+  // src/events/TurnSkippedEvent.ts
+  var TurnSkippedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnSkipped", { detail });
+    }
+  };
+
   // src/events/TurnStartedEvent.ts
   var TurnStartedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2419,9 +2489,6 @@
       });
     }
   };
-
-  // src/types/SaveTag.ts
-  var svSet = (...items) => new Set(items);
 
   // src/utils/map.ts
   function orderedKeys(map, comparator) {
@@ -2561,6 +2628,7 @@
           })
         );
         return {
+          roll,
           outcome,
           forced,
           damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
@@ -2633,10 +2701,13 @@
         while (scan) {
           this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
           who = this.initiativeOrder[this.initiativePosition];
-          if (!who.hasEffect(Dead))
+          if (!who.conditions.has("Unconscious"))
             scan = false;
           else {
             who.tickEffects("turnStart");
+            yield this.resolve(
+              new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
+            );
             who.tickEffects("turnEnd");
           }
         }
@@ -2770,12 +2841,15 @@
         );
         if (target.hp <= 0) {
           yield target.endConcentration();
-          if (target.diesAtZero) {
-            this.combatants.delete(target);
-            yield target.addEffect(Dead, { duration: Infinity });
-            this.fire(new CombatantDiedEvent({ who: target, attacker }));
+          if (target.diesAtZero || target.hp <= -target.hpMax) {
+            yield this.kill(target, attacker);
           } else if (!target.hasEffect(Dying)) {
+            target.hp = 0;
+            yield target.removeEffect(Stable);
             yield target.addEffect(Dying, { duration: Infinity });
+          } else {
+            target.hp = 0;
+            yield this.failDeathSave(target);
           }
           return;
         }
@@ -2789,6 +2863,31 @@
           });
           if (result.outcome === "fail")
             yield target.endConcentration();
+        }
+      });
+    }
+    kill(target, attacker) {
+      return __async(this, null, function* () {
+        this.combatants.delete(target);
+        yield target.addEffect(Dead, { duration: Infinity });
+        this.fire(new CombatantDiedEvent({ who: target, attacker }));
+      });
+    }
+    failDeathSave(who, count = 1, attacker) {
+      return __async(this, null, function* () {
+        who.deathSaveFailures += count;
+        if (who.deathSaveFailures >= 3)
+          yield this.kill(who, attacker);
+      });
+    }
+    succeedDeathSave(who) {
+      return __async(this, null, function* () {
+        who.deathSaveSuccesses++;
+        if (who.deathSaveSuccesses >= 3) {
+          yield who.removeEffect(Dying);
+          who.deathSaveFailures = 0;
+          who.deathSaveSuccesses = 0;
+          yield who.addEffect(Stable, { duration: Infinity });
         }
       });
     }
@@ -2993,6 +3092,7 @@
     applyHeal(who, fullAmount, actor) {
       return __async(this, null, function* () {
         const amount = Math.min(fullAmount, who.hpMax - who.hp);
+        who.hp += amount;
         return this.resolve(
           new CombatantHealedEvent({
             who,
@@ -3033,16 +3133,6 @@
       this.name = name;
       this.text = text;
       this.setup = setup;
-    }
-  };
-
-  // src/interruptions/EvaluateLater.ts
-  var EvaluateLater = class {
-    constructor(who, source, apply, priority2 = 5) {
-      this.who = who;
-      this.source = source;
-      this.apply = apply;
-      this.priority = priority2;
     }
   };
 
@@ -10496,17 +10586,35 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/UnitHP.module.scss
   var UnitHP_module_default = {
-    "hp": "_hp_qcojh_1",
-    "detailed": "_detailed_qcojh_13",
-    "detailedBar": "_detailedBar_qcojh_17",
-    "text": "_text_qcojh_27",
-    "ok": "_ok_qcojh_35",
-    "bloody": "_bloody_qcojh_39",
-    "down": "_down_qcojh_43"
+    "hp": "_hp_1j4fd_1",
+    "detailed": "_detailed_1j4fd_13",
+    "detailedBar": "_detailedBar_1j4fd_17",
+    "text": "_text_1j4fd_27",
+    "ok": "_ok_1j4fd_35",
+    "bloody": "_bloody_1j4fd_39",
+    "down": "_down_1j4fd_43",
+    "success": "_success_1j4fd_47",
+    "failure": "_failure_1j4fd_51"
   };
 
   // src/ui/UnitHP.tsx
+  function UnitDeathSaves({ u }) {
+    return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ o("div", { className: UnitHP_module_default.text, children: [
+      "Down: ",
+      /* @__PURE__ */ o("span", { className: UnitHP_module_default.success, children: u.deathSaveSuccesses }),
+      " /",
+      " ",
+      /* @__PURE__ */ o("span", { className: UnitHP_module_default.failure, children: u.deathSaveFailures })
+    ] }) });
+  }
+  function UnitStable() {
+    return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ o("span", { className: UnitHP_module_default.text, children: "Stable" }) });
+  }
   function UnitDetailedHP({ u }) {
+    if (u.effects.find((e) => e.effect === Stable))
+      return /* @__PURE__ */ o(UnitStable, {});
+    if (u.hp <= 0)
+      return /* @__PURE__ */ o(UnitDeathSaves, { u });
     const width = `${u.hp * 100 / u.hpMax}%`;
     return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.detailed), children: [
       /* @__PURE__ */ o("span", { className: UnitHP_module_default.detailedBar, style: { width } }),
@@ -11566,14 +11674,22 @@ The creature is aware of this effect before it makes its attack against you.`
       hp,
       hpMax,
       temporaryHP,
+      deathSaveFailures,
+      deathSaveSuccesses,
       effects: effectsMap,
       conditions: conditionsSet
     } = who;
     const effects = [];
-    for (const [k, v] of effectsMap) {
-      if (k.quiet)
+    for (const [effect, config] of effectsMap) {
+      if (effect.quiet)
         continue;
-      effects.push({ name: k.name, icon: k.image, duration: v.duration });
+      effects.push({
+        name: effect.name,
+        icon: effect.image,
+        duration: config.duration,
+        effect,
+        config
+      });
     }
     const conditions = [];
     for (const condition of conditionsSet)
@@ -11592,6 +11708,8 @@ The creature is aware of this effect before it makes its attack against you.`
       hp,
       hpMax,
       temporaryHP,
+      deathSaveFailures,
+      deathSaveSuccesses,
       effects,
       conditions
     };
@@ -11668,6 +11786,7 @@ The creature is aware of this effect before it makes its attack against you.`
             moveHandler.value = getDefaultMovement(who);
             movingCombatantId.value = who.id;
             hideActionMenu();
+            refreshUnits();
             allActions.value = g2.getActions(who);
           }))
         );

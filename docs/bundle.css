@@ -115,7 +115,7 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/UnitHP.module.scss */
-._hp_qcojh_1 {
+._hp_1j4fd_1 {
   position: absolute;
   top: 0;
   left: 0;
@@ -126,11 +126,11 @@
   color: white;
   height: 18px;
 }
-._detailed_qcojh_13 {
+._detailed_1j4fd_13 {
   background-color: red;
   z-index: 10;
 }
-._detailed_qcojh_13 ._detailedBar_qcojh_17 {
+._detailed_1j4fd_13 ._detailedBar_1j4fd_17 {
   position: absolute;
   top: 0;
   left: 0;
@@ -140,21 +140,27 @@
   height: 18px;
   z-index: 11;
 }
-._detailed_qcojh_13 ._text_qcojh_27 {
+._detailed_1j4fd_13 ._text_1j4fd_27 {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 12;
 }
-._ok_qcojh_35 {
+._ok_1j4fd_35 {
   background-color: green;
 }
-._bloody_qcojh_39 {
+._bloody_1j4fd_39 {
   background-color: red;
 }
-._down_qcojh_43 {
+._down_1j4fd_43 {
   background-color: black;
+}
+._success_1j4fd_47 {
+  color: green;
+}
+._failure_1j4fd_51 {
+  color: red;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/UnitMoveButton.module.scss */

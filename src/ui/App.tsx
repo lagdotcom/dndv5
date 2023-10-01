@@ -93,6 +93,7 @@ export default function App({ g, onMount }: Props) {
           movingCombatantId.value = who.id;
           hideActionMenu();
 
+          refreshUnits();
           allActions.value = g.getActions(who);
         }),
       );

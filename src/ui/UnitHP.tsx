@@ -1,3 +1,4 @@
+import { Stable } from "../effects";
 import styles from "./UnitHP.module.scss";
 import classnames from "./utils/classnames";
 import { UnitData } from "./utils/types";
@@ -6,7 +7,29 @@ interface Props {
   u: UnitData;
 }
 
+function UnitDeathSaves({ u }: Props) {
+  return (
+    <div className={classnames(styles.hp, styles.down)}>
+      <div className={styles.text}>
+        Down: <span className={styles.success}>{u.deathSaveSuccesses}</span> /{" "}
+        <span className={styles.failure}>{u.deathSaveFailures}</span>
+      </div>
+    </div>
+  );
+}
+
+function UnitStable() {
+  return (
+    <div className={classnames(styles.hp, styles.down)}>
+      <span className={styles.text}>Stable</span>
+    </div>
+  );
+}
+
 export function UnitDetailedHP({ u }: Props) {
+  if (u.effects.find((e) => e.effect === Stable)) return <UnitStable />;
+  if (u.hp <= 0) return <UnitDeathSaves u={u} />;
+
   const width = `${(u.hp * 100) / u.hpMax}%`;
 
   return (

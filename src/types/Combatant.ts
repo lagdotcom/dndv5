@@ -83,6 +83,8 @@ export default interface Combatant extends Source {
   readonly exhaustion: number;
   temporaryHP: number;
   temporaryHPSource?: Source;
+  deathSaveFailures: number;
+  deathSaveSuccesses: number;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

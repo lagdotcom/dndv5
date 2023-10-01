@@ -35,6 +35,7 @@ import MultiListChoiceEvent from "./MultiListChoiceEvent";
 import SaveEvent from "./SaveEvent";
 import SpellCastEvent from "./SpellCastEvent";
 import TurnEndedEvent from "./TurnEndedEvent";
+import TurnSkippedEvent from "./TurnSkippedEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
 import YesNoChoiceEvent from "./YesNoChoiceEvent";
 
@@ -76,6 +77,7 @@ export type EventTypes = {
   Save: SaveEvent;
   SpellCast: SpellCastEvent;
   TurnEnded: TurnEndedEvent;
+  TurnSkipped: TurnSkippedEvent;
   TurnStarted: TurnStartedEvent;
   YesNoChoice: YesNoChoiceEvent;
 };
