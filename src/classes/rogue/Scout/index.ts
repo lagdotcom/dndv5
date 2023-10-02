@@ -1,8 +1,10 @@
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
+import { MapSquareSize } from "../../../MapSquare";
 import { BoundedMove } from "../../../movement";
 import PCSubclass from "../../../types/PCSubclass";
+import { round } from "../../../utils/numbers";
 import { distance } from "../../../utils/units";
 
 const Skirmisher = new SimpleFeature(
@@ -25,9 +27,11 @@ const Skirmisher = new SimpleFeature(
               me.time.delete("reaction");
               return g.applyBoundedMove(
                 me,
-                new BoundedMove(Skirmisher, me.speed / 2, {
-                  provokesOpportunityAttacks: false,
-                }),
+                new BoundedMove(
+                  Skirmisher,
+                  round(me.speed / 2, MapSquareSize),
+                  { provokesOpportunityAttacks: false },
+                ),
               );
             },
           ),

@@ -2,12 +2,14 @@ import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import { MapSquareSize } from "../../MapSquare";
 import { BoundedMove } from "../../movement";
 import { abSet } from "../../types/AbilityName";
 import ConditionName from "../../types/ConditionName";
 import Item, { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { skSet } from "../../types/SkillName";
+import { round } from "../../utils/numbers";
 import { intersects } from "../../utils/set";
 import { makeASI, makeExtraAttack } from "../common";
 import Rage, { RageAction } from "./Rage";
@@ -102,7 +104,10 @@ const InstinctivePounce = new SimpleFeature(
           new EvaluateLater(me, InstinctivePounce, async () =>
             g.applyBoundedMove(
               me,
-              new BoundedMove(InstinctivePounce, me.speed / 2),
+              new BoundedMove(
+                InstinctivePounce,
+                round(me.speed / 2, MapSquareSize),
+              ),
             ),
           ),
         );

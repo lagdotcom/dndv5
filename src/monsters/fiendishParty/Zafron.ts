@@ -7,9 +7,11 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { ScaleMailArmor } from "../../items/armor";
 import { Greataxe } from "../../items/weapons";
+import { MapSquareSize } from "../../MapSquare";
 import Monster from "../../Monster";
 import { BoundedMove } from "../../movement";
 import { WeaponItem } from "../../types/Item";
+import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
 import tokenUrl from "./Zafron_token.png";
 
@@ -72,7 +74,10 @@ const SurvivalReflex = new SimpleFeature(
           new EvaluateLater(me, SurvivalReflex, async () =>
             g.applyBoundedMove(
               me,
-              new BoundedMove(SurvivalReflex, me.speed / 2),
+              new BoundedMove(
+                SurvivalReflex,
+                round(me.speed / 2, MapSquareSize),
+              ),
             ),
           ),
         );

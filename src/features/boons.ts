@@ -1,12 +1,14 @@
 import AbstractAction from "../actions/AbstractAction";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
+import { MapSquareSize } from "../MapSquare";
 import { BoundedMove } from "../movement";
 import TargetResolver from "../resolvers/TargetResolver";
 import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
 import { svSet } from "../types/SaveTag";
 import { getSaveDC } from "../utils/dnd";
+import { round } from "../utils/numbers";
 import SimpleFeature from "./SimpleFeature";
 
 const HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
@@ -39,7 +41,7 @@ class HissAction extends AbstractAction<HasTarget> {
         target.time.delete("reaction");
         await g.applyBoundedMove(
           target,
-          new BoundedMove(this, target.speed / 2, {
+          new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
             cannotApproach: [actor],
             mustUseAll: true,
             provokesOpportunityAttacks: false,

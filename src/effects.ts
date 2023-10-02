@@ -3,9 +3,11 @@ import ErrorCollector from "./collectors/ErrorCollector";
 import Effect from "./Effect";
 import Engine from "./Engine";
 import EvaluateLater from "./interruptions/EvaluateLater";
+import { MapSquareSize } from "./MapSquare";
 import Combatant from "./types/Combatant";
 import { coSet } from "./types/ConditionName";
 import { svSet } from "./types/SaveTag";
+import { round } from "./utils/numbers";
 import { distance } from "./utils/units";
 
 export const Dying = new Effect("Dying", "turnStart", (g) => {
@@ -112,12 +114,16 @@ class StandUpAction extends AbstractAction {
     super(g, actor, "Stand Up", "implemented", {});
   }
 
+  get cost() {
+    return round(this.actor.speed / 2, MapSquareSize);
+  }
+
   check(config: never, ec: ErrorCollector) {
     if (!this.actor.conditions.has("Prone")) ec.add("not prone", this);
 
     const speed = this.actor.speed;
     if (speed <= 0) ec.add("cannot move", this);
-    else if (this.actor.movedSoFar > speed / 2)
+    else if (this.actor.movedSoFar > this.cost)
       ec.add("not enough movement", this);
 
     return super.check(config, ec);
@@ -126,8 +132,7 @@ class StandUpAction extends AbstractAction {
   async apply() {
     super.apply({});
 
-    const speed = this.actor.speed;
-    this.actor.movedSoFar += speed / 2;
+    this.actor.movedSoFar += this.cost;
 
     // TODO [MESSAGES] report this somehow
     await this.actor.removeEffect(Prone);

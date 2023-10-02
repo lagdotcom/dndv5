@@ -1809,21 +1809,23 @@
     constructor(g2, actor) {
       super(g2, actor, "Stand Up", "implemented", {});
     }
+    get cost() {
+      return round(this.actor.speed / 2, MapSquareSize);
+    }
     check(config, ec) {
       if (!this.actor.conditions.has("Prone"))
         ec.add("not prone", this);
       const speed = this.actor.speed;
       if (speed <= 0)
         ec.add("cannot move", this);
-      else if (this.actor.movedSoFar > speed / 2)
+      else if (this.actor.movedSoFar > this.cost)
         ec.add("not enough movement", this);
       return super.check(config, ec);
     }
     apply() {
       return __async(this, null, function* () {
         __superGet(_StandUpAction.prototype, this, "apply").call(this, {});
-        const speed = this.actor.speed;
-        this.actor.movedSoFar += speed / 2;
+        this.actor.movedSoFar += this.cost;
         yield this.actor.removeEffect(Prone);
       });
     }
@@ -4553,7 +4555,10 @@
               () => __async(void 0, null, function* () {
                 return g2.applyBoundedMove(
                   me,
-                  new BoundedMove(SurvivalReflex, me.speed / 2)
+                  new BoundedMove(
+                    SurvivalReflex,
+                    round(me.speed / 2, MapSquareSize)
+                  )
                 );
               })
             )
@@ -4919,9 +4924,11 @@ Once you use this feature, you can't use it again until you finish a short or lo
                 me.time.delete("reaction");
                 return g2.applyBoundedMove(
                   me,
-                  new BoundedMove(Skirmisher, me.speed / 2, {
-                    provokesOpportunityAttacks: false
-                  })
+                  new BoundedMove(
+                    Skirmisher,
+                    round(me.speed / 2, MapSquareSize),
+                    { provokesOpportunityAttacks: false }
+                  )
                 );
               })
             )
@@ -5187,7 +5194,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
             target.time.delete("reaction");
             yield g2.applyBoundedMove(
               target,
-              new BoundedMove(this, target.speed / 2, {
+              new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
                 cannotApproach: [actor],
                 mustUseAll: true,
                 provokesOpportunityAttacks: false
@@ -8291,7 +8298,10 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
               () => __async(void 0, null, function* () {
                 return g2.applyBoundedMove(
                   me,
-                  new BoundedMove(InstinctivePounce, me.speed / 2)
+                  new BoundedMove(
+                    InstinctivePounce,
+                    round(me.speed / 2, MapSquareSize)
+                  )
                 );
               })
             )
