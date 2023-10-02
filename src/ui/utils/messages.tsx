@@ -137,7 +137,7 @@ export const getAbilityCheckMessage = ({
   dc,
 }: AbilityCheckDetail) => [
   msgCombatant(who),
-  ` rolls a ${total}`,
+  ` gets a ${total}`,
   msgDiceType(diceType),
   " on a ",
   describeAbility(ability),
@@ -150,7 +150,7 @@ export const getInitiativeMessage = ({
   value,
 }: DiceRolledDetail<InitiativeRoll>) => [
   msgCombatant(type.who),
-  ` rolls a ${value}`,
+  ` gets a ${value}`,
   msgDiceType(diceType),
   " for initiative.",
 ];
@@ -158,16 +158,16 @@ export const getInitiativeMessage = ({
 export const getSaveMessage = ({
   diceType,
   roll: {
-    type: { who, ability },
+    type: { who, ability, tags },
   },
   total,
   dc,
 }: SaveEventDetail) => [
   msgCombatant(who),
-  ` rolls a ${total}`,
+  ` gets a ${total}`,
   msgDiceType(diceType),
   " on a ",
-  describeAbility(ability),
+  tags.has("death") ? "death" : ability ? describeAbility(ability) : "",
   ` saving throw. (DC ${dc})`,
 ];
 

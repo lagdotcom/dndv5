@@ -20,7 +20,11 @@ const IntellectFortressEffect = new Effect(
     );
 
     g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-      if (who.hasEffect(IntellectFortressEffect) && mental.has(ability))
+      if (
+        who.hasEffect(IntellectFortressEffect) &&
+        ability &&
+        mental.has(ability)
+      )
         diceType.add("advantage", IntellectFortressEffect);
     });
   },

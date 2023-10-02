@@ -6853,7 +6853,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       );
       g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-        if (who.hasEffect(IntellectFortressEffect) && mental.has(ability))
+        if (who.hasEffect(IntellectFortressEffect) && ability && mental.has(ability))
           diceType.add("advantage", IntellectFortressEffect);
       });
     }
@@ -11387,7 +11387,7 @@ The creature is aware of this effect before it makes its attack against you.`
     dc
   }) => [
     msgCombatant(who),
-    ` rolls a ${total}`,
+    ` gets a ${total}`,
     msgDiceType(diceType),
     " on a ",
     describeAbility(ability),
@@ -11399,23 +11399,23 @@ The creature is aware of this effect before it makes its attack against you.`
     value
   }) => [
     msgCombatant(type.who),
-    ` rolls a ${value}`,
+    ` gets a ${value}`,
     msgDiceType(diceType),
     " for initiative."
   ];
   var getSaveMessage = ({
     diceType,
     roll: {
-      type: { who, ability }
+      type: { who, ability, tags }
     },
     total,
     dc
   }) => [
     msgCombatant(who),
-    ` rolls a ${total}`,
+    ` gets a ${total}`,
     msgDiceType(diceType),
     " on a ",
-    describeAbility(ability),
+    tags.has("death") ? "death" : ability ? describeAbility(ability) : "",
     ` saving throw. (DC ${dc})`
   ];
   var getHealedMessage = ({
