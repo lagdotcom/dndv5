@@ -80,9 +80,14 @@ export const getAttackMessage = ({
   roll,
   total,
   ac,
+  outcome,
 }: AttackDetail) => [
   msgCombatant(who),
-  " attacks ",
+  outcome === "miss"
+    ? " misses "
+    : outcome === "hit"
+    ? " hits "
+    : " CRITICALLY hits ",
   msgCombatant(target, true),
   msgDiceType(roll.diceType),
   msgWeapon(weapon),

@@ -276,6 +276,18 @@ export default abstract class AbstractCombatant implements Combatant {
       conditions.ignoreValue(condition);
 
     this.g.fire(new GetConditionsEvent({ who: this, conditions }));
+
+    // cascading conditions
+    for (const co of conditions.entries) {
+      if (
+        co.value === "Paralyzed" ||
+        co.value === "Petrified" ||
+        co.value === "Stunned" ||
+        co.value === "Unconscious"
+      )
+        conditions.add("Incapacitated", co.source);
+    }
+
     return conditions.result;
   }
 

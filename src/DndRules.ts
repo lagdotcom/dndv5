@@ -244,6 +244,44 @@ export const OpportunityAttacksRule = new DndRule(
   },
 );
 
+export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
+  g.events.on("BeforeMove", ({ detail: { who, error } }) => {
+    if (who.conditions.has("Paralyzed")) error.add("paralyzed", ParalyzedRule);
+  });
+
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (action.actor.conditions.has("Paralyzed") && action.vocal)
+      error.add("paralyzed", ParalyzedRule);
+  });
+
+  g.events.on("BeforeSave", ({ detail: { ability, who, successResponse } }) => {
+    if (
+      who.conditions.has("Paralyzed") &&
+      (ability === "str" || ability === "dex")
+    )
+      successResponse.add("fail", ParalyzedRule);
+  });
+
+  g.events.on("BeforeAttack", ({ detail }) => {
+    if (detail.target.conditions.has("Paralyzed"))
+      detail.diceType.add("advantage", ParalyzedRule);
+  });
+
+  g.events.on("Attack", ({ detail }) => {
+    const { who, target } = detail.pre;
+
+    if (
+      target.conditions.has("Paralyzed") &&
+      distance(g, who, target) <= 5 &&
+      detail.outcome === "hit"
+    ) {
+      // TODO is this completely safe?
+      detail.forced = true;
+      detail.outcome = "critical";
+    }
+  });
+});
+
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
     const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;

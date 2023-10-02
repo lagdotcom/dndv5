@@ -107,7 +107,7 @@ it("supports Fog Cloud", async () => {
   await user.click(menuitem("heavy crossbow (crossbow bolt)"));
   expect(
     logMsg(
-      "thug attacks Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7). (AC 14)",
+      "thug misses Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7). (AC 14)",
     ),
   ).toBeVisible();
   await user.click(btn("End Turn"));
@@ -117,7 +117,7 @@ it("supports Fog Cloud", async () => {
   g.dice.force(5, { type: "attack", who: pc });
   await user.click(menuitem("dart"));
   expect(
-    logMsg("Tethilssethanar attacks thug with dart (9). (AC 11)"),
+    logMsg("Tethilssethanar misses thug with dart (9). (AC 11)"),
   ).toBeVisible();
 });
 

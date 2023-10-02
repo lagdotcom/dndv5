@@ -53,6 +53,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       ranges.push(`range ${weapon.shortRange}/${weapon.longRange} ft.`);
     }
 
+    // TODO
     const bonus = "+?";
     const { average, list } = describeDice([weapon.damage]);
     const damageType = weapon.damage.damageType;

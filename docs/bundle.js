@@ -961,6 +961,7 @@
       this.time = spell.time;
       this.icon = spell.icon;
       this.subIcon = method.icon;
+      this.vocal = spell.v;
     }
     get status() {
       return this.spell.status;
@@ -1342,6 +1343,10 @@
       for (const condition of this.conditionImmunities)
         conditions.ignoreValue(condition);
       this.g.fire(new GetConditionsEvent({ who: this, conditions }));
+      for (const co of conditions.entries) {
+        if (co.value === "Paralyzed" || co.value === "Petrified" || co.value === "Stunned" || co.value === "Unconscious")
+          conditions.add("Incapacitated", co.source);
+      }
       return conditions.result;
     }
     get speed() {
@@ -2322,6 +2327,31 @@
       });
     }
   );
+  var ParalyzedRule = new DndRule("Paralyzed", (g2) => {
+    g2.events.on("BeforeMove", ({ detail: { who, error } }) => {
+      if (who.conditions.has("Paralyzed"))
+        error.add("paralyzed", ParalyzedRule);
+    });
+    g2.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.actor.conditions.has("Paralyzed") && action.vocal)
+        error.add("paralyzed", ParalyzedRule);
+    });
+    g2.events.on("BeforeSave", ({ detail: { ability, who, successResponse } }) => {
+      if (who.conditions.has("Paralyzed") && (ability === "str" || ability === "dex"))
+        successResponse.add("fail", ParalyzedRule);
+    });
+    g2.events.on("BeforeAttack", ({ detail }) => {
+      if (detail.target.conditions.has("Paralyzed"))
+        detail.diceType.add("advantage", ParalyzedRule);
+    });
+    g2.events.on("Attack", ({ detail }) => {
+      const { who, target } = detail.pre;
+      if (target.conditions.has("Paralyzed") && distance(g2, who, target) <= 5 && detail.outcome === "hit") {
+        detail.forced = true;
+        detail.outcome = "critical";
+      }
+    });
+  });
   var ProficiencyRule = new DndRule("Proficiency", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
       const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
@@ -11493,10 +11523,11 @@ The creature is aware of this effect before it makes its attack against you.`
     pre: { who, target, weapon, ammo, spell },
     roll,
     total,
-    ac
+    ac,
+    outcome
   }) => [
     msgCombatant(who),
-    " attacks ",
+    outcome === "miss" ? " misses " : outcome === "hit" ? " hits " : " CRITICALLY hits ",
     msgCombatant(target, true),
     msgDiceType(roll.diceType),
     msgWeapon(weapon),
