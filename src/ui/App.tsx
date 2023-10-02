@@ -217,7 +217,7 @@ export default function App({ g, onMount }: Props) {
     (who: Combatant, dir: MoveDirection) => {
       if (moveHandler.value) {
         hideActionMenu();
-        void g.move(who, dir, moveHandler.value).then((result) => {
+        void g.moveInDirection(who, dir, moveHandler.value).then((result) => {
           if (result.type === "error") console.warn(result.error.messages);
           else if (result.type === "unbind") onFinishBoundedMove();
           return result;

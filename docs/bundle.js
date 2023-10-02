@@ -2839,19 +2839,23 @@
         );
       });
     }
-    move(who, direction, handler, type = "speed") {
+    moveInDirection(who, direction, handler, type = "speed") {
       return __async(this, null, function* () {
-        const state = this.combatants.get(who);
-        if (!state)
-          return { type: "invalid" };
+        const state = this.getState(who);
         const old = state.position;
         const position = movePoint(old, direction);
+        return this.move(who, position, handler, type);
+      });
+    }
+    move(who, position, handler, type = "speed") {
+      return __async(this, null, function* () {
+        const state = this.getState(who);
+        const old = state.position;
         const error = new ErrorCollector();
         const pre = yield this.resolve(
           new BeforeMoveEvent({
             who,
             from: old,
-            direction,
             to: position,
             handler,
             type,
@@ -2869,7 +2873,6 @@
           new GetMoveCostEvent({
             who,
             from: old,
-            direction,
             to: position,
             handler,
             type,
@@ -2881,7 +2884,6 @@
         yield this.resolve(
           new CombatantMovedEvent({
             who,
-            direction,
             old,
             position,
             handler,
@@ -8890,6 +8892,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   // src/spells/level2/MistyStep.ts
   var MistyStep = simpleSpell({
+    status: "implemented",
     name: "Misty Step",
     level: 2,
     school: "Conjuration",
@@ -8899,8 +8902,16 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 30) }),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point }) {
+        yield g2.move(caster, point, {
+          name: "Misty Step",
+          cannotApproach: /* @__PURE__ */ new Set(),
+          maximum: 30,
+          provokesOpportunityAttacks: false,
+          mustUseAll: false,
+          onMove: () => true
+        });
       });
     }
   });
@@ -11993,7 +12004,7 @@ The creature is aware of this effect before it makes its attack against you.`
       (who, dir) => {
         if (moveHandler.value) {
           hideActionMenu();
-          void g2.move(who, dir, moveHandler.value).then((result) => {
+          void g2.moveInDirection(who, dir, moveHandler.value).then((result) => {
             if (result.type === "error")
               console.warn(result.error.messages);
             else if (result.type === "unbind")

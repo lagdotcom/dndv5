@@ -90,7 +90,7 @@ const Spellcasting = bonusSpellsFeature(
   [{ level: 1, spell: HealingWord }],
 );
 
-// TODO
+// TODO [PICKPOINT] [REALREACTION]
 const DancingStep = notImplementedFeature(
   "Dancing Step",
   "Reaction: When an enemy moves within 5 ft., Yulash teleports to a spot within 20 ft. that she can see.",

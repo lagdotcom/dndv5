@@ -62,6 +62,7 @@ import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
 import MoveDirection from "./types/MoveDirection";
 import MoveHandler from "./types/MoveHandler";
 import MovementType from "./types/MovementType";
+import Point from "./types/Point";
 import RollType, {
   AbilityCheck,
   DamageRoll,
@@ -314,24 +315,33 @@ export default class Engine {
     );
   }
 
-  async move(
+  async moveInDirection(
     who: Combatant,
     direction: MoveDirection,
     handler: MoveHandler,
     type: MovementType = "speed",
   ) {
-    const state = this.combatants.get(who);
-    if (!state) return { type: "invalid" as const };
-
+    const state = this.getState(who);
     const old = state.position;
     const position = movePoint(old, direction);
+
+    return this.move(who, position, handler, type);
+  }
+
+  async move(
+    who: Combatant,
+    position: Point,
+    handler: MoveHandler,
+    type: MovementType = "speed",
+  ) {
+    const state = this.getState(who);
+    const old = state.position;
 
     const error = new ErrorCollector();
     const pre = await this.resolve(
       new BeforeMoveEvent({
         who,
         from: old,
-        direction,
         to: position,
         handler,
         type,
@@ -349,7 +359,6 @@ export default class Engine {
       new GetMoveCostEvent({
         who,
         from: old,
-        direction,
         to: position,
         handler,
         type,
@@ -363,7 +372,6 @@ export default class Engine {
     await this.resolve(
       new CombatantMovedEvent({
         who,
-        direction,
         old,
         position,
         handler,
@@ -789,5 +797,3 @@ export default class Engine {
     who.temporaryHPSource = source;
   }
 }
-
-export type EngineMoveResult = Awaited<ReturnType<Engine["move"]>>;
