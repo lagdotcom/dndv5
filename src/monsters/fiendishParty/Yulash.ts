@@ -98,9 +98,8 @@ const DancingStep = notImplementedFeature(
 
 export default class Yulash extends Monster {
   constructor(g: Engine) {
-    super(g, "Yulash", 5, "monstrosity", "medium", tokenUrl);
+    super(g, "Yulash", 5, "monstrosity", "medium", tokenUrl, 65);
     this.diesAtZero = false;
-    this.hp = this.hpMax = 65;
     this.movement.set("speed", 30);
     this.setAbilityScores(8, 16, 14, 12, 13, 18);
     this.pb = 3;

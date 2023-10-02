@@ -1,8 +1,18 @@
 import { HasTargets } from "../../configs";
+import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
+const AidEffect = new Effect<{ amount: number }>("Aid", "turnStart", (g) => {
+  g.events.on("GetMaxHP", ({ detail: { who, bonus } }) => {
+    const config = who.getEffectConfig(AidEffect);
+    if (config) bonus.add(config.amount, AidEffect);
+  });
+});
+
 const Aid = scalingSpell<HasTargets>({
+  status: "implemented",
   name: "Aid",
   level: 2,
   school: "Abjuration",
@@ -17,8 +27,14 @@ const Aid = scalingSpell<HasTargets>({
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, true) }),
   getTargets: (g, caster, { targets }) => targets,
 
-  async apply(g, caster, method, { slot, targets }) {
-    /* TODO [GETMAXHP]  */
+  async apply(g, actor, method, { slot, targets }) {
+    const amount = (slot - 1) * 5;
+    const duration = hours(8);
+
+    for (const target of targets) {
+      if (await target.addEffect(AidEffect, { duration, amount }))
+        await g.heal(Aid, amount, { actor, target, spell: Aid });
+    }
   },
 });
 export default Aid;

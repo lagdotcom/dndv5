@@ -5,6 +5,7 @@ import OpportunityAttack from "./actions/OpportunityAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
+import EvaluateLater from "./interruptions/EvaluateLater";
 import PickFromListChoice from "./interruptions/PickFromListChoice";
 import PointSet from "./PointSet";
 import { ResourceRegistry } from "./resources";
@@ -117,8 +118,26 @@ export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
     if (who.exhaustion >= 3) diceType.add("disadvantage", ExhaustionRule);
   });
 
-  // TODO [GETMAXHP] exhaustion 4: half max hp
-  // TODO [DEATH] exhaustion 6: death
+  g.events.on("GetMaxHP", ({ detail: { who, multiplier } }) => {
+    if (who.exhaustion >= 4) multiplier.add("half", ExhaustionRule);
+  });
+
+  g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
+    if (who.exhaustion >= 6)
+      interrupt.add(
+        new EvaluateLater(who, ExhaustionRule, async () => g.kill(who)),
+      );
+  });
+});
+
+export const IncapacitatedRule = new DndRule("Incapacitated", (g) => {
+  g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+    if (
+      action.actor.conditions.has("Incapacitated") &&
+      (action.isAttack || action.getTime(config))
+    )
+      error.add("incapacitated", IncapacitatedRule);
+  });
 });
 
 export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {

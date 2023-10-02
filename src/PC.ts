@@ -66,7 +66,7 @@ export default class PC extends AbstractCombatant {
 
     // TODO multi class
 
-    this.hpMax +=
+    this.baseHpMax +=
       (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) +
       this.con.modifier;
 

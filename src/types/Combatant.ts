@@ -42,6 +42,7 @@ export default interface Combatant extends Source {
   diesAtZero: boolean;
   level: number;
   hp: number;
+  baseHpMax: number;
   hpMax: number;
   baseACMethod: ACMethod;
   baseAC: number;

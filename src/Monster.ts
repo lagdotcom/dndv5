@@ -12,8 +12,9 @@ export default class Monster extends AbstractCombatant {
     type: CreatureType,
     size: SizeCategory,
     img: string,
+    hpMax: number,
   ) {
-    super(g, name, { type, size, img, side: 1 });
+    super(g, name, { type, size, img, side: 1, hpMax });
   }
 
   don(item: Item, giveProficiency = false): void {

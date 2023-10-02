@@ -208,9 +208,8 @@ const HellishRebuke = new SimpleFeature(
 
 export default class Birnotec extends Monster {
   constructor(g: Engine) {
-    super(g, "Birnotec", 5, "humanoid", "medium", tokenUrl);
+    super(g, "Birnotec", 5, "humanoid", "medium", tokenUrl, 35);
     this.diesAtZero = false;
-    this.hp = this.hpMax = 35;
     this.movement.set("speed", 30);
     this.setAbilityScores(6, 15, 8, 12, 13, 20);
     this.pb = 3;

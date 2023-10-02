@@ -105,9 +105,8 @@ const SmoulderingRage = new SimpleFeature(
 
 export default class Kay extends Monster {
   constructor(g: Engine) {
-    super(g, hiddenName, 6, "humanoid", "medium", tokenUrl);
+    super(g, hiddenName, 6, "humanoid", "medium", tokenUrl, 75);
     this.diesAtZero = false;
-    this.hp = this.hpMax = 75;
     this.movement.set("speed", 30);
     this.setAbilityScores(14, 18, 16, 10, 8, 14);
     this.pb = 3;

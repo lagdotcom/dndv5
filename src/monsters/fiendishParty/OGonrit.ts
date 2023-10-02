@@ -125,9 +125,8 @@ const Spellcasting = bonusSpellsFeature(
 
 export default class OGonrit extends Monster {
   constructor(g: Engine) {
-    super(g, "O Gonrit", 5, "fiend", "medium", tokenUrl);
+    super(g, "O Gonrit", 5, "fiend", "medium", tokenUrl, 65);
     this.diesAtZero = false;
-    this.hp = this.hpMax = 65;
     this.movement.set("speed", 30);
     this.setAbilityScores(12, 8, 14, 10, 18, 13);
     this.pb = 3;

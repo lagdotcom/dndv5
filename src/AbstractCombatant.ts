@@ -10,6 +10,7 @@ import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import ExhaustionEvent from "./events/ExhaustionEvent";
 import GetConditionsEvent from "./events/GetConditionsEvent";
+import GetMaxHPEvent from "./events/GetMaxHPEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import { MapSquareSize } from "./MapSquare";
@@ -80,7 +81,7 @@ export default abstract class AbstractCombatant implements Combatant {
 
   diesAtZero: boolean;
   hp: number;
-  hpMax: number;
+  baseHpMax: number;
   pb: number;
   naturalAC: number;
 
@@ -172,7 +173,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.diesAtZero = diesAtZero;
     this.hands = hands;
     this.hp = hp;
-    this.hpMax = hpMax;
+    this.baseHpMax = hpMax;
     this.img = img;
     this.level = level;
     this.pb = pb;
@@ -284,6 +285,21 @@ export default abstract class AbstractCombatant implements Combatant {
 
     const e = this.g.fire(
       new GetSpeedEvent({
+        who: this,
+        bonus,
+        multiplier: new MultiplierCollector(),
+      }),
+    );
+
+    return bonus.result * e.detail.multiplier.result;
+  }
+
+  get hpMax(): number {
+    const bonus = new BonusCollector();
+    bonus.add(this.baseHpMax, this);
+
+    const e = this.g.fire(
+      new GetMaxHPEvent({
         who: this,
         bonus,
         multiplier: new MultiplierCollector(),

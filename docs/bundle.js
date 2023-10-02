@@ -928,6 +928,13 @@
     }
   };
 
+  // src/events/GetMaxHPEvent.ts
+  var GetMaxHPEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetMaxHP", { detail });
+    }
+  };
+
   // src/events/GetSpeedEvent.ts
   var GetSpeedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -1237,7 +1244,7 @@
       this.diesAtZero = diesAtZero;
       this.hands = hands;
       this.hp = hp;
-      this.hpMax = hpMax;
+      this.baseHpMax = hpMax;
       this.img = img;
       this.level = level;
       this.pb = pb;
@@ -1343,6 +1350,18 @@
       bonus.add((_a = this.movement.get("speed")) != null ? _a : 0, this);
       const e = this.g.fire(
         new GetSpeedEvent({
+          who: this,
+          bonus,
+          multiplier: new MultiplierCollector()
+        })
+      );
+      return bonus.result * e.detail.multiplier.result;
+    }
+    get hpMax() {
+      const bonus = new BonusCollector();
+      bonus.add(this.baseHpMax, this);
+      const e = this.g.fire(
+        new GetMaxHPEvent({
           who: this,
           bonus,
           multiplier: new MultiplierCollector()
@@ -2190,6 +2209,24 @@
     g2.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
       if (who.exhaustion >= 3)
         diceType.add("disadvantage", ExhaustionRule);
+    });
+    g2.events.on("GetMaxHP", ({ detail: { who, multiplier } }) => {
+      if (who.exhaustion >= 4)
+        multiplier.add("half", ExhaustionRule);
+    });
+    g2.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
+      if (who.exhaustion >= 6)
+        interrupt.add(
+          new EvaluateLater(who, ExhaustionRule, () => __async(void 0, null, function* () {
+            return g2.kill(who);
+          }))
+        );
+    });
+  });
+  var IncapacitatedRule = new DndRule("Incapacitated", (g2) => {
+    g2.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+      if (action.actor.conditions.has("Incapacitated") && (action.isAttack || action.getTime(config)))
+        error.add("incapacitated", IncapacitatedRule);
     });
   });
   var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g2) => {
@@ -3261,8 +3298,8 @@
 
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
-    constructor(g2, name, cr, type, size, img) {
-      super(g2, name, { type, size, img, side: 1 });
+    constructor(g2, name, cr, type, size, img, hpMax) {
+      super(g2, name, { type, size, img, side: 1, hpMax });
       this.cr = cr;
     }
     don(item, giveProficiency = false) {
@@ -3636,9 +3673,8 @@
   );
   var Birnotec = class extends Monster {
     constructor(g2) {
-      super(g2, "Birnotec", 5, "humanoid", "medium", Birnotec_token_default);
+      super(g2, "Birnotec", 5, "humanoid", "medium", Birnotec_token_default, 35);
       this.diesAtZero = false;
-      this.hp = this.hpMax = 35;
       this.movement.set("speed", 30);
       this.setAbilityScores(6, 15, 8, 12, 13, 20);
       this.pb = 3;
@@ -4049,9 +4085,8 @@
   );
   var Kay = class extends Monster {
     constructor(g2) {
-      super(g2, hiddenName, 6, "humanoid", "medium", Kay_token_default);
+      super(g2, hiddenName, 6, "humanoid", "medium", Kay_token_default, 75);
       this.diesAtZero = false;
-      this.hp = this.hpMax = 75;
       this.movement.set("speed", 30);
       this.setAbilityScores(14, 18, 16, 10, 8, 14);
       this.pb = 3;
@@ -4373,9 +4408,8 @@
   );
   var OGonrit = class extends Monster {
     constructor(g2) {
-      super(g2, "O Gonrit", 5, "fiend", "medium", OGonrit_token_default);
+      super(g2, "O Gonrit", 5, "fiend", "medium", OGonrit_token_default, 65);
       this.diesAtZero = false;
-      this.hp = this.hpMax = 65;
       this.movement.set("speed", 30);
       this.setAbilityScores(12, 8, 14, 10, 18, 13);
       this.pb = 3;
@@ -4521,9 +4555,8 @@
   );
   var Yulash = class extends Monster {
     constructor(g2) {
-      super(g2, "Yulash", 5, "monstrosity", "medium", Yulash_token_default);
+      super(g2, "Yulash", 5, "monstrosity", "medium", Yulash_token_default, 65);
       this.diesAtZero = false;
-      this.hp = this.hpMax = 65;
       this.movement.set("speed", 30);
       this.setAbilityScores(8, 16, 14, 12, 13, 18);
       this.pb = 3;
@@ -4690,9 +4723,8 @@
   );
   var Zafron = class extends Monster {
     constructor(g2) {
-      super(g2, "Zafron Halehart", 5, "fiend", "medium", Zafron_token_default);
+      super(g2, "Zafron Halehart", 5, "fiend", "medium", Zafron_token_default, 105);
       this.diesAtZero = false;
-      this.hp = this.hpMax = 105;
       this.movement.set("speed", 30);
       this.setAbilityScores(18, 14, 20, 7, 10, 13);
       this.pb = 3;
@@ -5441,7 +5473,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.classLevels.set(cls.name, level);
       this.level++;
       this.pb = getProficiencyBonusByLevel(this.level);
-      this.hpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.modifier;
+      this.baseHpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.modifier;
       if (level === 1) {
         for (const prof of (_b = cls == null ? void 0 : cls.armorProficiencies) != null ? _b : [])
           this.armorProficiencies.add(prof);
@@ -7962,7 +7994,15 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var ShieldOfFaith_default = ShieldOfFaith;
 
   // src/spells/level2/Aid.ts
+  var AidEffect = new Effect("Aid", "turnStart", (g2) => {
+    g2.events.on("GetMaxHP", ({ detail: { who, bonus } }) => {
+      const config = who.getEffectConfig(AidEffect);
+      if (config)
+        bonus.add(config.amount, AidEffect);
+    });
+  });
   var Aid = scalingSpell({
+    status: "implemented",
     name: "Aid",
     level: 2,
     school: "Abjuration",
@@ -7976,7 +8016,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 3, 30, true) }),
     getTargets: (g2, caster, { targets }) => targets,
     apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { slot, targets }) {
+      return __async(this, arguments, function* (g2, actor, method, { slot, targets }) {
+        const amount = (slot - 1) * 5;
+        const duration = hours(8);
+        for (const target of targets) {
+          if (yield target.addEffect(AidEffect, { duration, amount }))
+            yield g2.heal(Aid, amount, { actor, target, spell: Aid });
+        }
       });
     }
   });

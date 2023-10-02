@@ -39,6 +39,8 @@ class MagicWeaponController {
     this.item.magical = false;
     this.item.name = this.oldName;
     for (const cleanup of this.subscriptions) cleanup();
+
+    // TODO [MESSAGE]
   };
 }
 
