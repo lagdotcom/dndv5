@@ -1,15 +1,17 @@
 import DashAction from "./actions/DashAction";
 import DisengageAction from "./actions/DisengageAction";
 import DodgeAction from "./actions/DodgeAction";
+import OpportunityAttack from "./actions/OpportunityAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
+import PickFromListChoice from "./interruptions/PickFromListChoice";
 import PointSet from "./PointSet";
 import { ResourceRegistry } from "./resources";
 import Item from "./types/Item";
 import { resolveArea } from "./utils/areas";
 import { getValidAmmunition } from "./utils/items";
-import { distance, getSquares } from "./utils/units";
+import { distance, getDistanceBetween, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
@@ -166,6 +168,62 @@ export const OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
       error.add("No attacks left", OneAttackPerTurnRule);
   });
 });
+
+export const OpportunityAttacksRule = new DndRule(
+  "Opportunity Attacks",
+  (g) => {
+    g.events.on("BeforeMove", ({ detail }) => {
+      if (!detail.handler.provokesOpportunityAttacks) return;
+
+      for (const [attacker, state] of g.combatants) {
+        if (attacker.side === detail.who.side) continue;
+
+        const oldDistance = getDistanceBetween(
+          detail.from,
+          detail.who.sizeInUnits,
+          state.position,
+          attacker.sizeInUnits,
+        );
+        const newDistance = getDistanceBetween(
+          detail.to,
+          detail.who.sizeInUnits,
+          state.position,
+          attacker.sizeInUnits,
+        );
+
+        const config = { target: detail.who };
+        const validActions: OpportunityAttack[] = [];
+        for (const weapon of attacker.weapons) {
+          if (weapon.rangeCategory !== "melee") continue;
+          const range = attacker.reach + weapon.reach;
+          if (oldDistance <= range && newDistance > range) {
+            const opportunity = new OpportunityAttack(g, attacker, weapon);
+            if (g.check(opportunity, config).result)
+              validActions.push(opportunity);
+          }
+        }
+
+        if (validActions.length)
+          detail.interrupt.add(
+            new PickFromListChoice(
+              attacker,
+              OpportunityAttacksRule,
+              "Opportunity Attack",
+              `${detail.who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
+              validActions.map((value) => ({
+                label: value.weapon.name,
+                value,
+              })),
+              async (opportunity) => {
+                await g.act(opportunity, config);
+              },
+              true,
+            ),
+          );
+      }
+    });
+  },
+);
 
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {

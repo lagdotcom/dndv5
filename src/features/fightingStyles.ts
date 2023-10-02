@@ -24,7 +24,7 @@ export const FightingStyleProtection = new SimpleFeature(
               me,
               FightingStyleProtection,
               "Fighting Style: Protection",
-              `${target.name} is being attacked. Impose disadvantage?`,
+              `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
               async () => {
                 me.time.delete("reaction");
                 diceType.add("disadvantage", FightingStyleProtection);

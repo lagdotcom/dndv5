@@ -1,6 +1,7 @@
 import { UsedAttackAction } from "../effects";
 import Engine from "../Engine";
 import { ActionConfig } from "../types/Action";
+import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
 import Empty from "../types/Empty";
 import ImplementationStatus from "../types/ImplementationStatus";
@@ -21,7 +22,7 @@ export default class AbstractAttackAction<
     this.isAttack = true;
   }
 
-  getTime() {
+  getTime(): ActionTime | undefined {
     // if we already used Attack, costs nothing
     if (this.actor.hasEffect(UsedAttackAction)) return undefined;
 

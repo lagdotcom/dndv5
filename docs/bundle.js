@@ -447,67 +447,6 @@
     }
   };
 
-  // src/actions/DisengageAction.ts
-  var DisengageEffect = new Effect("Disengage", "turnEnd", () => {
-  });
-  var DisengageAction = class _DisengageAction extends AbstractAction {
-    constructor(g2, actor) {
-      super(
-        g2,
-        actor,
-        "Disengage",
-        "missing",
-        {},
-        {
-          time: "action",
-          description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`
-        }
-      );
-    }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DisengageAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(DisengageEffect, { duration: 1 });
-      });
-    }
-  };
-
-  // src/actions/DodgeAction.ts
-  function canDodge(who) {
-    return who.hasEffect(DodgeEffect) && who.speed > 0 && !who.conditions.has("Incapacitated");
-  }
-  var DodgeEffect = new Effect("Dodge", "turnStart", (g2) => {
-    g2.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
-      if (canDodge(target))
-        diceType.add("disadvantage", DodgeEffect);
-    });
-    g2.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
-      if (canDodge(who))
-        diceType.add("advantage", DodgeEffect);
-    });
-  });
-  var DodgeAction = class _DodgeAction extends AbstractAction {
-    constructor(g2, actor) {
-      super(
-        g2,
-        actor,
-        "Dodge",
-        "incomplete",
-        {},
-        {
-          time: "action",
-          description: `When you take the Dodge action, you focus entirely on avoiding attacks. Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage. You lose this benefit if you are incapacitated (as explained in the appendix) or if your speed drops to 0.`
-        }
-      );
-    }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DodgeAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(DodgeEffect, { duration: 1 });
-      });
-    }
-  };
-
   // src/colours.ts
   var ItemRarityColours = {
     Common: "#242528",
@@ -1996,6 +1935,131 @@
     });
   }
 
+  // src/actions/OpportunityAttack.ts
+  var OpportunityAttack = class extends WeaponAttack {
+    constructor(g2, actor, weapon) {
+      super(g2, actor, weapon);
+      this.isAttack = false;
+    }
+    getTime() {
+      return "reaction";
+    }
+    check(config, ec) {
+      super.check(config, ec);
+      if (this.weapon.rangeCategory !== "melee")
+        ec.add("can only make opportunity attacks with melee weapons", this);
+      return ec;
+    }
+    apply(_0) {
+      return __async(this, arguments, function* ({ target }) {
+        this.actor.time.delete("reaction");
+        yield doStandardAttack(this.g, {
+          ability: this.ability,
+          ammo: this.ammo,
+          attacker: this.actor,
+          source: this,
+          target,
+          weapon: this.weapon
+        });
+      });
+    }
+  };
+
+  // src/actions/DisengageAction.ts
+  var DisengageEffect = new Effect("Disengage", "turnEnd", (g2) => {
+    g2.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.actor.hasEffect(DisengageEffect) && action instanceof OpportunityAttack)
+        error.add("target used Disengage", DisengageEffect);
+    });
+  });
+  var DisengageAction = class _DisengageAction extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Disengage",
+        "missing",
+        {},
+        {
+          time: "action",
+          description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`
+        }
+      );
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(_DisengageAction.prototype, this, "apply").call(this, {});
+        yield this.actor.addEffect(DisengageEffect, { duration: 1 });
+      });
+    }
+  };
+
+  // src/actions/DodgeAction.ts
+  function canDodge(who) {
+    return who.hasEffect(DodgeEffect) && who.speed > 0 && !who.conditions.has("Incapacitated");
+  }
+  var DodgeEffect = new Effect("Dodge", "turnStart", (g2) => {
+    g2.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+      if (canDodge(target))
+        diceType.add("disadvantage", DodgeEffect);
+    });
+    g2.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+      if (canDodge(who))
+        diceType.add("advantage", DodgeEffect);
+    });
+  });
+  var DodgeAction = class _DodgeAction extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Dodge",
+        "incomplete",
+        {},
+        {
+          time: "action",
+          description: `When you take the Dodge action, you focus entirely on avoiding attacks. Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage. You lose this benefit if you are incapacitated (as explained in the appendix) or if your speed drops to 0.`
+        }
+      );
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(_DodgeAction.prototype, this, "apply").call(this, {});
+        yield this.actor.addEffect(DodgeEffect, { duration: 1 });
+      });
+    }
+  };
+
+  // src/events/ListChoiceEvent.ts
+  var ListChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("ListChoice", { detail });
+    }
+  };
+
+  // src/interruptions/PickFromListChoice.ts
+  var PickFromListChoice = class {
+    constructor(who, source, title, text, items, chosen, allowNone = false, priority2 = 10) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.items = items;
+      this.chosen = chosen;
+      this.allowNone = allowNone;
+      this.priority = priority2;
+    }
+    apply(g2) {
+      return __async(this, null, function* () {
+        const choice = yield new Promise(
+          (resolve) => g2.fire(new ListChoiceEvent({ interruption: this, resolve }))
+        );
+        if (choice)
+          return this.chosen(choice);
+      });
+    }
+  };
+
   // src/resources.ts
   var ResourceRegistry = /* @__PURE__ */ new Map();
   var ShortRestResource = class {
@@ -2167,6 +2231,60 @@
         error.add("No attacks left", OneAttackPerTurnRule);
     });
   });
+  var OpportunityAttacksRule = new DndRule(
+    "Opportunity Attacks",
+    (g2) => {
+      g2.events.on("BeforeMove", ({ detail }) => {
+        if (!detail.handler.provokesOpportunityAttacks)
+          return;
+        for (const [attacker, state] of g2.combatants) {
+          if (attacker.side === detail.who.side)
+            continue;
+          const oldDistance = getDistanceBetween(
+            detail.from,
+            detail.who.sizeInUnits,
+            state.position,
+            attacker.sizeInUnits
+          );
+          const newDistance = getDistanceBetween(
+            detail.to,
+            detail.who.sizeInUnits,
+            state.position,
+            attacker.sizeInUnits
+          );
+          const config = { target: detail.who };
+          const validActions = [];
+          for (const weapon of attacker.weapons) {
+            if (weapon.rangeCategory !== "melee")
+              continue;
+            const range = attacker.reach + weapon.reach;
+            if (oldDistance <= range && newDistance > range) {
+              const opportunity = new OpportunityAttack(g2, attacker, weapon);
+              if (g2.check(opportunity, config).result)
+                validActions.push(opportunity);
+            }
+          }
+          if (validActions.length)
+            detail.interrupt.add(
+              new PickFromListChoice(
+                attacker,
+                OpportunityAttacksRule,
+                "Opportunity Attack",
+                `${detail.who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
+                validActions.map((value) => ({
+                  label: value.weapon.name,
+                  value
+                })),
+                (opportunity) => __async(void 0, null, function* () {
+                  yield g2.act(opportunity, config);
+                }),
+                true
+              )
+            );
+        }
+      });
+    }
+  );
   var ProficiencyRule = new DndRule("Proficiency", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
       const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
@@ -2969,6 +3087,7 @@
     check(action, config) {
       const error = new ErrorCollector();
       this.fire(new CheckActionEvent({ action, config, error }));
+      action.check(config, error);
       return error;
     }
     act(action, config) {
@@ -4016,7 +4135,7 @@
                 me,
                 FightingStyleProtection,
                 "Fighting Style: Protection",
-                `${target.name} is being attacked. Impose disadvantage?`,
+                `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
                 () => __async(void 0, null, function* () {
                   me.time.delete("reaction");
                   diceType.add("disadvantage", FightingStyleProtection);
@@ -5003,34 +5122,6 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var armorPlus1 = armorPlus(1, "Rare");
   var armorPlus2 = armorPlus(2, "Very Rare");
   var armorPlus3 = armorPlus(3, "Legendary");
-
-  // src/events/ListChoiceEvent.ts
-  var ListChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("ListChoice", { detail });
-    }
-  };
-
-  // src/interruptions/PickFromListChoice.ts
-  var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen, priority2 = 10) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.items = items;
-      this.chosen = chosen;
-      this.priority = priority2;
-    }
-    apply(g2) {
-      return __async(this, null, function* () {
-        const choice = yield new Promise(
-          (resolve) => g2.fire(new ListChoiceEvent({ interruption: this, resolve }))
-        );
-        return this.chosen(choice);
-      });
-    }
-  };
 
   // src/enchantments/weapon.ts
   var ChaoticBurstResource = new TurnResource("Chaotic Burst", 1);
@@ -10214,7 +10305,6 @@ The creature is aware of this effect before it makes its attack against you.`
   // src/utils/config.ts
   function getConfigErrors(g2, action, config) {
     const ec = g2.check(action, config);
-    action.check(config, ec);
     for (const [key, resolver] of Object.entries(action.getConfig(config))) {
       const value = config[key];
       resolver.check(value, action, ec);
@@ -11571,7 +11661,10 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [resolve]
     );
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label }, label)) });
+    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
+      interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label }, label)),
+      interruption.allowNone && /* @__PURE__ */ o("button", { onClick: () => decide(), children: "(None)" })
+    ] });
   }
 
   // src/ui/Menu.module.scss

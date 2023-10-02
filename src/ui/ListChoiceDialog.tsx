@@ -9,7 +9,7 @@ export default function ListChoiceDialog<T>({
   resolve,
 }: ListChoiceDetail<T>) {
   const decide = useCallback(
-    (value: T) => {
+    (value?: T) => {
       chooseFromList.value = undefined;
       resolve(value);
     },
@@ -23,6 +23,9 @@ export default function ListChoiceDialog<T>({
           {label}
         </button>
       ))}
+      {interruption.allowNone && (
+        <button onClick={() => decide()}>(None)</button>
+      )}
     </Dialog>
   );
 }

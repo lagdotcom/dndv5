@@ -2,9 +2,16 @@ import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import AbstractAction from "./AbstractAction";
+import OpportunityAttack from "./OpportunityAttack";
 
-export const DisengageEffect = new Effect("Disengage", "turnEnd", () => {
-  // TODO [OPPORTUNITY]
+export const DisengageEffect = new Effect("Disengage", "turnEnd", (g) => {
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (
+      action.actor.hasEffect(DisengageEffect) &&
+      action instanceof OpportunityAttack
+    )
+      error.add("target used Disengage", DisengageEffect);
+  });
 });
 
 export default class DisengageAction extends AbstractAction {

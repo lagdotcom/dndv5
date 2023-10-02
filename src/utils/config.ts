@@ -8,7 +8,6 @@ export function getConfigErrors<T extends object>(
   config: Partial<T>,
 ) {
   const ec = g.check(action, config);
-  action.check(config, ec);
 
   for (const [key, resolver] of Object.entries(action.getConfig(config))) {
     const value = config[key as keyof T] as unknown;

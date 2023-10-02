@@ -606,6 +606,7 @@ export default class Engine {
   check<T extends object>(action: Action<T>, config: Partial<T>) {
     const error = new ErrorCollector();
     this.fire(new CheckActionEvent({ action, config, error }));
+    action.check(config, error);
     return error;
   }
 
