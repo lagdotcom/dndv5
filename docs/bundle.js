@@ -1991,8 +1991,8 @@
 
   // src/actions/DisengageAction.ts
   var DisengageEffect = new Effect("Disengage", "turnEnd", (g2) => {
-    g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.actor.hasEffect(DisengageEffect) && action instanceof OpportunityAttack)
+    g2.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+      if (action instanceof OpportunityAttack && config.target.hasEffect(DisengageEffect))
         error.add("target used Disengage", DisengageEffect);
     });
   });
