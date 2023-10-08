@@ -8998,7 +8998,59 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var MistyStep_default = MistyStep;
 
   // src/spells/level2/Silence.ts
+  var getSilenceArea = (centre) => ({
+    type: "sphere",
+    radius: 20,
+    centre
+  });
+  var SilenceController = class {
+    constructor(g2, centre, shape = getSilenceArea(centre), area = new ActiveEffectArea(
+      "Silence",
+      shape,
+      arSet("silenced"),
+      "purple"
+    ), squares = resolveArea(shape)) {
+      this.g = g2;
+      this.centre = centre;
+      this.shape = shape;
+      this.area = area;
+      this.squares = squares;
+      this.onSpellEnd = () => __async(this, null, function* () {
+        this.g.removeEffectArea(this.area);
+        for (const cleanup of this.subscriptions)
+          cleanup();
+      });
+      this.subscriptions = [
+        g2.events.on(
+          "GetDamageResponse",
+          ({ detail: { damageType, who, response } }) => {
+            if (damageType === "thunder" && this.entirelyContains(who))
+              response.add("immune", Silence);
+          }
+        ),
+        g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+          if (this.entirelyContains(who))
+            conditions.add("Deafened", Silence);
+        }),
+        g2.events.on("CheckAction", ({ detail: { action, error } }) => {
+          if (action instanceof CastSpell && action.spell.v)
+            error.add("silenced", Silence);
+        })
+      ];
+      g2.addEffectArea(area);
+    }
+    entirelyContains(who) {
+      const position = this.g.getState(who).position;
+      const squares = getSquares(who, position);
+      for (const square of squares) {
+        if (!this.squares.has(square))
+          return false;
+      }
+      return true;
+    }
+  };
   var Silence = simpleSpell({
+    status: "implemented",
     name: "Silence",
     level: 2,
     ritual: true,
@@ -9009,10 +9061,16 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Bard", "Cleric", "Ranger"],
     description: `For the duration, no sound can be created within or pass through a 20-foot-radius sphere centered on a point you choose within range. Any creature or object entirely inside the sphere is immune to thunder damage, and creatures are deafened while entirely inside it. Casting a spell that includes a verbal component is impossible there.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
-    getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", radius: 20, centre: point }],
+    getAffectedArea: (g2, caster, { point }) => point && [getSilenceArea(point)],
     getTargets: () => [],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
+        const controller = new SilenceController(g2, point);
+        yield caster.concentrateOn({
+          spell: Silence,
+          duration: minutes(10),
+          onSpellEnd: controller.onSpellEnd
+        });
       });
     }
   });

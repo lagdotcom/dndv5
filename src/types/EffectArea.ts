@@ -16,6 +16,7 @@ export const AreaTags = [
   "heavily obscured",
   "holy",
   "plants",
+  "silenced",
 ] as const;
 export type AreaTag = (typeof AreaTags)[number];
 export const arSet = (...items: AreaTag[]) => new Set(items);
