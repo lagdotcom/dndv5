@@ -7747,6 +7747,26 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
 
   // src/spells/level1/Sanctuary.ts
   var SanctuaryEffect = new Effect("Sanctuary", "turnStart", (g2) => {
+    const getRemover = (who) => new EvaluateLater(who, SanctuaryEffect, () => __async(void 0, null, function* () {
+      yield who.removeEffect(SanctuaryEffect);
+    }));
+    g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+      if (pre.who.hasEffect(SanctuaryEffect))
+        interrupt.add(getRemover(pre.who));
+    });
+    g2.events.on("SpellCast", ({ detail: { who, targets, interrupt } }) => {
+      if (who.hasEffect(SanctuaryEffect))
+        for (const target of targets) {
+          if (target.side !== who.side) {
+            interrupt.add(getRemover(target));
+            return;
+          }
+        }
+    });
+    g2.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
+      if (attacker.hasEffect(SanctuaryEffect))
+        interrupt.add(getRemover(attacker));
+    });
   });
   var Sanctuary = simpleSpell({
     name: "Sanctuary",
