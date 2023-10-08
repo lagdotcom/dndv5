@@ -12,7 +12,7 @@ export interface BeforeCheckDetail {
   dc: number;
   target?: Combatant;
   ability: AbilityName;
-  skill: SkillName;
+  skill?: SkillName;
   diceType: DiceTypeCollector;
   bonus: BonusCollector;
   successResponse: SuccessResponseCollector;

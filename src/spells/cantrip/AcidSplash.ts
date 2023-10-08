@@ -2,7 +2,6 @@ import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { isCombatantArray } from "../../utils/types";
 import { distance } from "../../utils/units";
 import { getCantripDice, simpleSpell } from "../common";
@@ -47,7 +46,7 @@ const AcidSplash = simpleSpell<HasTargets>({
 
     for (const target of targets) {
       const save = await g.savingThrow(
-        getSaveDC(attacker, method.ability),
+        method.getSaveDC(attacker, AcidSplash),
         {
           who: target,
           attacker,

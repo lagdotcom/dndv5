@@ -6,7 +6,6 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
-import { getSaveDC } from "../../utils/dnd";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -23,7 +22,7 @@ const HoldPersonEffect = new Effect<{
   g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
     const config = who.getEffectConfig(HoldPersonEffect);
     if (config) {
-      const dc = getSaveDC(config.caster, config.method.ability);
+      const dc = config.method.getSaveDC(config.caster, HoldPerson);
       interrupt.add(
         new EvaluateLater(who, HoldPersonEffect, async () => {
           const save = await g.savingThrow(dc, {
@@ -75,7 +74,7 @@ const HoldPerson = scalingSpell<HasTargets>({
   },
 
   async apply(g, caster, method, { targets }) {
-    const dc = getSaveDC(caster, method.ability);
+    const dc = method.getSaveDC(caster, HoldPerson);
     const affected = new Set<Combatant>();
     const duration = minutes(1);
     const conditions = coSet("Paralyzed");

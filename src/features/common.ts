@@ -29,7 +29,7 @@ export function bonusSpellsFeature(
       if (resource) me.initResource(resource);
       if (addAsList) {
         me.preparedSpells.add(spell);
-        method.addCastableSpell(spell, me);
+        method.addCastableSpell?.(spell, me);
       } else spellImplementationWarning(spell, me);
     }
 

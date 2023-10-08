@@ -16,7 +16,7 @@ export type AbilityCheck = {
   who: Combatant;
   attacker?: Combatant;
   ability: AbilityName;
-  skill: SkillName;
+  skill?: SkillName;
   tags: Set<CheckTag>;
 };
 export type AttackRoll = {
@@ -24,7 +24,7 @@ export type AttackRoll = {
   who: Combatant;
   target: Combatant;
   weapon?: WeaponItem;
-  ability: AbilityName;
+  ability?: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
 };

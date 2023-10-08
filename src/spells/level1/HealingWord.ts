@@ -22,7 +22,10 @@ const HealingWord = scalingSpell<HasTarget>({
   }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: slot ?? 1, size: 4 } },
-    { type: "flat", amount: caster[method.ability].modifier },
+    {
+      type: "flat",
+      amount: method.ability ? caster[method.ability].modifier : 0,
+    },
   ],
   getTargets: (g, caster, { target }) => [target],
 
@@ -35,7 +38,7 @@ const HealingWord = scalingSpell<HasTarget>({
   async apply(g, actor, method, { slot, target }) {
     if (cannotHeal.has(target.type)) return;
 
-    const modifier = actor[method.ability].modifier;
+    const modifier = method.ability ? actor[method.ability].modifier : 0;
     const rolled = await g.rollHeal(slot, {
       source: HealingWord,
       actor,

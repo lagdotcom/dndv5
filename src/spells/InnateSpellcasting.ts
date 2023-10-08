@@ -1,8 +1,10 @@
 import AbilityName from "../types/AbilityName";
 import { ActionIcon } from "../types/Action";
+import Combatant from "../types/Combatant";
 import Resource from "../types/Resource";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
+import { getSaveDC } from "../utils/dnd";
 
 export default class InnateSpellcasting implements SpellcastingMethod {
   constructor(
@@ -24,5 +26,9 @@ export default class InnateSpellcasting implements SpellcastingMethod {
 
   getMaxSlot(spell: Spell): number {
     return spell.level;
+  }
+
+  getSaveDC(caster: Combatant): number {
+    return getSaveDC(caster, this.ability);
   }
 }

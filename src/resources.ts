@@ -2,6 +2,18 @@ import Resource from "./types/Resource";
 
 export const ResourceRegistry = new Map<string, Resource>();
 
+export class DawnResource implements Resource {
+  refresh: "dawn";
+  constructor(
+    public name: string,
+    public maximum: number,
+  ) {
+    // TODO how much do you get back at dawn
+    ResourceRegistry.set(name, this);
+    this.refresh = "dawn";
+  }
+}
+
 export class ShortRestResource implements Resource {
   refresh: "shortRest";
   constructor(

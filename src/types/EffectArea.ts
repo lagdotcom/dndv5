@@ -15,6 +15,7 @@ export const AreaTags = [
   "dim light",
   "heavily obscured",
   "holy",
+  "lightly obscured",
   "plants",
   "silenced",
 ] as const;

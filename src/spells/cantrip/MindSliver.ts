@@ -4,7 +4,6 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { getCantripDice, simpleSpell } from "../common";
 
 const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
@@ -49,7 +48,7 @@ const MindSliver = simpleSpell<HasTarget>({
     });
 
     const save = await g.savingThrow(
-      getSaveDC(attacker, method.ability),
+      method.getSaveDC(attacker, MindSliver),
       {
         who: target,
         attacker,

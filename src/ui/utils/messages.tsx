@@ -146,7 +146,8 @@ export const getAbilityCheckMessage = ({
   msgDiceType(diceType),
   " on a ",
   describeAbility(ability),
-  ` (${skill}) ability check. (DC ${dc})`,
+  skill ? ` (${skill})` : undefined,
+  ` ability check. (DC ${dc})`,
 ];
 
 export const getInitiativeMessage = ({

@@ -12,7 +12,6 @@ import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -86,8 +85,6 @@ class MoonbeamController {
         if (g.getInside(this.shape).includes(who))
           interrupt.add(this.getDamager(who));
       }),
-    );
-    this.subscriptions.push(
       g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
         if (g.getInside(this.shape).includes(who))
           interrupt.add(this.getDamager(who));
@@ -117,7 +114,7 @@ class MoonbeamController {
         spell: Moonbeam,
         target,
       });
-      const dc = getSaveDC(this.caster, this.method.ability);
+      const dc = this.method.getSaveDC(this.caster, Moonbeam);
 
       // TODO A shapechanger makes its saving throw with disadvantage.
       const result = await this.g.savingThrow(dc, {
@@ -186,7 +183,6 @@ const Moonbeam = scalingSpell<HasPoint>({
 
   async apply(g, caster, method, { point, slot }) {
     const controller = new MoonbeamController(g, caster, method, point, slot);
-
     caster.concentrateOn({
       duration: minutes(1),
       spell: Moonbeam,

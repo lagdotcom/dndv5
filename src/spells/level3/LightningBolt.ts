@@ -6,7 +6,6 @@ import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 function getArea(g: Engine, actor: Combatant, point: Point) {
@@ -47,7 +46,7 @@ const LightningBolt = scalingSpell<HasPoint>({
       damageType: "lightning",
       attacker,
     });
-    const dc = getSaveDC(attacker, method.ability);
+    const dc = method.getSaveDC(attacker, LightningBolt, slot);
 
     // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.
 

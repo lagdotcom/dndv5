@@ -4,7 +4,6 @@ import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 const getArea = (centre: Point): SpecifiedSphere => ({
@@ -42,7 +41,7 @@ const Fireball = scalingSpell<HasPoint>({
       damageType: "fire",
       attacker,
     });
-    const dc = getSaveDC(attacker, method.ability);
+    const dc = method.getSaveDC(attacker, Fireball, slot);
 
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 

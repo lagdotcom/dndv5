@@ -1039,10 +1039,12 @@
       this.type = "SpellSlot";
     }
     getMinimum(who) {
-      return this.method.getMinSlot(this.spell, who);
+      var _a, _b, _c;
+      return (_c = (_b = (_a = this.method).getMinSlot) == null ? void 0 : _b.call(_a, this.spell, who)) != null ? _c : this.spell.level;
     }
     getMaximum(who) {
-      return this.method.getMaxSlot(this.spell, who);
+      var _a, _b, _c;
+      return (_c = (_b = (_a = this.method).getMaxSlot) == null ? void 0 : _b.call(_a, this.spell, who)) != null ? _c : this.spell.level;
     }
     check(value, action, ec) {
       if (action instanceof CastSpell)
@@ -2088,6 +2090,14 @@
 
   // src/resources.ts
   var ResourceRegistry = /* @__PURE__ */ new Map();
+  var DawnResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "dawn";
+    }
+  };
   var ShortRestResource = class {
     constructor(name, maximum) {
       this.name = name;
@@ -2124,7 +2134,8 @@
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g2) => {
     g2.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-      bonus.add(who[ability].modifier, AbilityScoreRule);
+      if (ability)
+        bonus.add(who[ability].modifier, AbilityScoreRule);
     });
     g2.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
       bonus.add(who[ability].modifier, AbilityScoreRule);
@@ -2360,8 +2371,10 @@
       bonus.add(who.pb * mul, ProficiencyRule);
     });
     g2.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
-      const mul = who.getProficiencyMultiplier(skill);
-      bonus.add(who.pb * mul, ProficiencyRule);
+      if (skill) {
+        const mul = who.getProficiencyMultiplier(skill);
+        bonus.add(who.pb * mul, ProficiencyRule);
+      }
     });
     g2.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
       if (ability) {
@@ -2377,6 +2390,22 @@
         if ((resource == null ? void 0 : resource.refresh) === "turnStart")
           who.refreshResource(resource);
       }
+    });
+  });
+  var RestrainedRule = new DndRule("Restrained", (g2) => {
+    g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Restrained"))
+        multiplier.add("zero", RestrainedRule);
+    });
+    g2.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
+      if (who.conditions.has("Restrained"))
+        diceType.add("disadvantage", RestrainedRule);
+      if (target.conditions.has("Restrained"))
+        diceType.add("advantage", RestrainedRule);
+    });
+    g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+      if (who.conditions.has("Restrained") && ability === "dex")
+        diceType.add("disadvantage", RestrainedRule);
     });
   });
   var TurnTimeRule = new DndRule("Turn Time", (g2) => {
@@ -3362,6 +3391,9 @@
     getMaxSlot(spell) {
       return spell.level;
     }
+    getSaveDC(caster) {
+      return getSaveDC(caster, this.ability);
+    }
   };
 
   // src/utils/time.ts
@@ -4150,7 +4182,7 @@
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
     return new SimpleFeature(name, text, (g2, me) => {
-      var _a;
+      var _a, _b;
       const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
       const spells = entries.filter((entry) => entry.level <= casterLevel);
       for (const { resource, spell } of spells) {
@@ -4158,7 +4190,7 @@
           me.initResource(resource);
         if (addAsList) {
           me.preparedSpells.add(spell);
-          method.addCastableSpell(spell, me);
+          (_b = method.addCastableSpell) == null ? void 0 : _b.call(method, spell, me);
         } else
           spellImplementationWarning(spell, me);
       }
@@ -4314,7 +4346,10 @@
     }),
     getHeal: (g2, caster, method, { slot }) => [
       { type: "dice", amount: { count: (slot != null ? slot : 3) - 2, size: 4 } },
-      { type: "flat", amount: caster[method.ability].modifier }
+      {
+        type: "flat",
+        amount: method.ability ? caster[method.ability].modifier : 0
+      }
     ],
     getTargets: (g2, caster, { targets }) => targets,
     check(g2, { targets }, ec) {
@@ -4334,7 +4369,7 @@
           source: MassHealingWord,
           actor,
           size: 4
-        })) + actor[method.ability].modifier;
+        })) + (method.ability ? actor[method.ability].modifier : 0);
         for (const target of targets) {
           if (cannotHeal.has(target.type))
             continue;
@@ -4483,7 +4518,10 @@
     }),
     getHeal: (g2, caster, method, { slot }) => [
       { type: "dice", amount: { count: slot != null ? slot : 1, size: 4 } },
-      { type: "flat", amount: caster[method.ability].modifier }
+      {
+        type: "flat",
+        amount: method.ability ? caster[method.ability].modifier : 0
+      }
     ],
     getTargets: (g2, caster, { target }) => [target],
     check(g2, { target }, ec) {
@@ -4495,7 +4533,7 @@
       return __async(this, arguments, function* (g2, actor, method, { slot, target }) {
         if (cannotHeal2.has(target.type))
           return;
-        const modifier = actor[method.ability].modifier;
+        const modifier = method.ability ? actor[method.ability].modifier : 0;
         const rolled = yield g2.rollHeal(slot, {
           source: HealingWord,
           actor,
@@ -5761,6 +5799,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       const { resources } = this.getEntry(who);
       return resources[level - 1];
     }
+    getSaveDC(who) {
+      return getSaveDC(who, this.ability);
+    }
   };
 
   // src/classes/wizard/index.ts
@@ -6323,7 +6364,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         });
         for (const target of targets) {
           const save = yield g2.savingThrow(
-            getSaveDC(attacker, method.ability),
+            method.getSaveDC(attacker, AcidSplash),
             {
               who: target,
               attacker,
@@ -6415,7 +6456,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType: "psychic"
         });
         const save = yield g2.savingThrow(
-          getSaveDC(attacker, method.ability),
+          method.getSaveDC(attacker, MindSliver),
           {
             who: target,
             attacker,
@@ -6555,7 +6596,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           method,
           damageType: "cold"
         });
-        const dc = getSaveDC(attacker, method.ability);
+        const dc = method.getSaveDC(attacker, IceKnife, slot);
         for (const victim of g2.getInside(getArea2(g2, target))) {
           const save = yield g2.savingThrow(
             dc,
@@ -6766,7 +6807,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       const config = who.getEffectConfig(HoldPersonEffect);
       if (config) {
-        const dc = getSaveDC(config.caster, config.method.ability);
+        const dc = config.method.getSaveDC(config.caster, HoldPerson);
         interrupt.add(
           new EvaluateLater(who, HoldPersonEffect, () => __async(void 0, null, function* () {
             const save = yield g2.savingThrow(dc, {
@@ -6811,7 +6852,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     },
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { targets }) {
-        const dc = getSaveDC(caster, method.ability);
+        const dc = method.getSaveDC(caster, HoldPerson);
         const affected = /* @__PURE__ */ new Set();
         const duration = minutes(1);
         const conditions = coSet("Paralyzed");
@@ -6894,7 +6935,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         method,
         damageType: "fire"
       });
-      const dc = getSaveDC(attacker, method.ability);
+      const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
       for (const point of points) {
         for (const target of g2.getInside({
           type: "sphere",
@@ -7054,7 +7095,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType: "fire",
           attacker
         });
-        const dc = getSaveDC(attacker, method.ability);
+        const dc = method.getSaveDC(attacker, Fireball, slot);
         for (const target of g2.getInside(getArea3(point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
@@ -7926,13 +7967,188 @@ Once you use this feature, you can't use it again until you finish a long rest.
   };
   var Devotion_default = Devotion;
 
+  // src/spells/level2/Web.ts
+  var BreakFreeFromWebAction = class _BreakFreeFromWebAction extends AbstractAction {
+    constructor(g2, actor, caster, method) {
+      super(
+        g2,
+        actor,
+        "Break Free from Webs",
+        "implemented",
+        {},
+        {
+          time: "action",
+          description: `Make a Strength check to break free of the webs.`
+        }
+      );
+      this.caster = caster;
+      this.method = method;
+    }
+    apply() {
+      return __async(this, null, function* () {
+        yield __superGet(_BreakFreeFromWebAction.prototype, this, "apply").call(this, {});
+        const dc = this.method.getSaveDC(this.caster, Web);
+        const result = yield this.g.abilityCheck(dc, {
+          ability: "str",
+          who: this.actor,
+          tags: chSet()
+        });
+        if (result.outcome === "success")
+          yield this.actor.removeEffect(Webbed);
+      });
+    }
+  };
+  var Webbed = new Effect(
+    "Webbed",
+    "turnStart",
+    (g2) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        const config = who.getEffectConfig(Webbed);
+        if (config)
+          actions.push(
+            new BreakFreeFromWebAction(g2, who, config.caster, config.method)
+          );
+      });
+      g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(Webbed))
+          conditions.add("Restrained", Webbed);
+      });
+    }
+  );
+  var getWebArea = (centre) => ({
+    type: "cube",
+    length: 20,
+    centre
+  });
+  var WebController = class {
+    constructor(g2, caster, method, centre, shape = getWebArea(centre), area = new ActiveEffectArea(
+      "Web",
+      shape,
+      arSet("difficult terrain", "lightly obscured"),
+      "white"
+    )) {
+      this.g = g2;
+      this.caster = caster;
+      this.method = method;
+      this.centre = centre;
+      this.shape = shape;
+      this.area = area;
+      this.onSpellEnd = () => __async(this, null, function* () {
+        this.g.removeEffectArea(this.area);
+        for (const cleanup of this.subscriptions)
+          cleanup();
+      });
+      g2.addEffectArea(area);
+      this.affectedThisTurn = /* @__PURE__ */ new Set();
+      this.subscriptions = [];
+      this.subscriptions.push(
+        g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+          this.affectedThisTurn.clear();
+          if (g2.getInside(shape).includes(who))
+            interrupt.add(this.getWebber(who));
+        }),
+        g2.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
+          if (g2.getInside(shape).includes(who))
+            interrupt.add(this.getWebber(who));
+        })
+      );
+    }
+    getWebber(target) {
+      const { caster, method } = this;
+      return new EvaluateLater(target, Web, () => __async(this, null, function* () {
+        if (this.affectedThisTurn.has(target))
+          return;
+        this.affectedThisTurn.add(target);
+        const dc = this.method.getSaveDC(this.caster, Web);
+        const result = yield this.g.savingThrow(dc, {
+          ability: "dex",
+          attacker: caster,
+          method,
+          spell: Web,
+          who: target,
+          tags: svSet()
+        });
+        if (result.outcome === "fail")
+          yield target.addEffect(Webbed, {
+            caster,
+            method,
+            duration: minutes(1),
+            conditions: coSet("Restrained")
+          });
+      }));
+    }
+  };
+  var Web = simpleSpell({
+    status: "incomplete",
+    name: "Web",
+    level: 2,
+    school: "Conjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a bit of spiderweb",
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `You conjure a mass of thick, sticky webbing at a point of your choice within range. The webs fill a 20-foot cube from that point for the duration. The webs are difficult terrain and lightly obscure their area.
+
+  If the webs aren't anchored between two solid masses (such as walls or trees) or layered across a floor, wall, or ceiling, the conjured web collapses on itself, and the spell ends at the start of your next turn. Webs layered over a flat surface have a depth of 5 feet.
+
+  Each creature that starts its turn in the webs or that enters them during its turn must make a Dexterity saving throw. On a failed save, the creature is restrained as long as it remains in the webs or until it breaks free.
+
+  A creature restrained by the webs can use its action to make a Strength check against your spell save DC. If it succeeds, it is no longer restrained.
+
+  The webs are flammable. Any 5-foot cube of webs exposed to fire burns away in 1 round, dealing 2d4 fire damage to any creature that starts its turn in the fire.`,
+    getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
+    getTargets: () => [],
+    getAffectedArea: (g2, caster, { point }) => point && [getWebArea(point)],
+    apply(_0, _1, _2, _3) {
+      return __async(this, arguments, function* (g2, caster, method, { point }) {
+        const controller = new WebController(g2, caster, method, point);
+        caster.concentrateOn({
+          spell: Web,
+          duration: hours(1),
+          onSpellEnd: controller.onSpellEnd
+        });
+      });
+    }
+  });
+  var Web_default = Web;
+
   // src/items/wands.ts
-  var WandOfWeb = class extends AbstractWondrous {
-    constructor(g2, charges = 7) {
-      super(g2, "Wand of Web", 1);
+  var AbstractWand = class extends AbstractWondrous {
+    constructor(g2, name, rarity, charges, maxCharges, resource, spell, saveDC, method = {
+      name,
+      getResourceForSpell: () => resource,
+      getSaveDC: () => saveDC
+    }) {
+      super(g2, name, 1);
       this.charges = charges;
+      this.maxCharges = maxCharges;
+      this.resource = resource;
+      this.spell = spell;
+      this.saveDC = saveDC;
+      this.method = method;
       this.attunement = true;
-      this.rarity = "Uncommon";
+      this.rarity = rarity;
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who.equipment.has(this) && who.attunements.has(this)) {
+          who.initResource(resource, charges, maxCharges);
+          actions.push(new CastSpell(g2, who, method, spell));
+        }
+      });
+    }
+  };
+  var WandOfWeb = class extends AbstractWand {
+    constructor(g2, charges = 7) {
+      super(
+        g2,
+        "Wand of Web",
+        "Uncommon",
+        charges,
+        7,
+        new DawnResource("charge", 7),
+        Web_default,
+        15
+      );
     }
   };
 
@@ -9276,7 +9492,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           damageType: "lightning",
           attacker
         });
-        const dc = getSaveDC(attacker, method.ability);
+        const dc = method.getSaveDC(attacker, LightningBolt, slot);
         for (const target of g2.getInside(getArea5(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
@@ -9631,7 +9847,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           damageType: "cold",
           attacker
         });
-        const dc = getSaveDC(attacker, method.ability);
+        const dc = method.getSaveDC(attacker, ConeOfCold, slot);
         for (const target of g2.getInside(getArea7(g2, attacker, point))) {
           const save = yield g2.savingThrow(dc, {
             attacker,
@@ -10083,7 +10299,7 @@ The creature is aware of this effect before it makes its attack against you.`
           damageType: "bludgeoning",
           attacker
         });
-        const dc = getSaveDC(attacker, method.ability);
+        const dc = method.getSaveDC(attacker, EarthTremor, slot);
         const shape = getArea8(g2, attacker);
         for (const target of g2.getInside(shape, [attacker])) {
           const save = yield g2.savingThrow(
@@ -10208,9 +10424,7 @@ The creature is aware of this effect before it makes its attack against you.`
             this.hasBeenATurn = true;
           if (g2.getInside(this.shape).includes(who))
             interrupt.add(this.getDamager(who));
-        })
-      );
-      this.subscriptions.push(
+        }),
         g2.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
           if (g2.getInside(this.shape).includes(who))
             interrupt.add(this.getDamager(who));
@@ -10237,7 +10451,7 @@ The creature is aware of this effect before it makes its attack against you.`
           spell: Moonbeam,
           target
         });
-        const dc = getSaveDC(this.caster, this.method.ability);
+        const dc = this.method.getSaveDC(this.caster, Moonbeam);
         const result = yield this.g.savingThrow(dc, {
           ability: "con",
           attacker: this.caster,
@@ -10337,7 +10551,7 @@ The creature is aware of this effect before it makes its attack against you.`
           damageType: "bludgeoning",
           attacker
         });
-        const dc = getSaveDC(attacker, method.ability);
+        const dc = method.getSaveDC(attacker, EruptingEarth, slot);
         const shape = getArea10(g2, point);
         for (const target of g2.getInside(shape)) {
           const save = yield g2.savingThrow(dc, {
@@ -11799,7 +12013,8 @@ The creature is aware of this effect before it makes its attack against you.`
     msgDiceType(diceType),
     " on a ",
     describeAbility(ability),
-    ` (${skill}) ability check. (DC ${dc})`
+    skill ? ` (${skill})` : void 0,
+    ` ability check. (DC ${dc})`
   ];
   var getInitiativeMessage = ({
     diceType,

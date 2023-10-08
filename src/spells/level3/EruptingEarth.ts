@@ -6,7 +6,6 @@ import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 const getArea = (g: Engine, centre: Point): SpecifiedCube => ({
@@ -44,7 +43,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
       damageType: "bludgeoning",
       attacker,
     });
-    const dc = getSaveDC(attacker, method.ability);
+    const dc = method.getSaveDC(attacker, EruptingEarth, slot);
 
     const shape = getArea(g, point);
     for (const target of g.getInside(shape)) {

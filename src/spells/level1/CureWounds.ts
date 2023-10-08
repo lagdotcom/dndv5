@@ -21,7 +21,7 @@ const CureWounds = scalingSpell<HasTarget>({
     target: new TargetResolver(g, caster.reach, true),
   }),
   getHeal: (g, caster, method, { slot }) => {
-    const modifier = caster[method.ability].modifier;
+    const modifier = method.ability ? caster[method.ability].modifier : 0;
     const count = slot ?? 1;
 
     return [
@@ -40,7 +40,7 @@ const CureWounds = scalingSpell<HasTarget>({
   async apply(g, actor, method, { slot, target }) {
     if (cannotHeal.has(target.type)) return;
 
-    const modifier = actor[method.ability].modifier;
+    const modifier = method.ability ? actor[method.ability].modifier : 0;
     const rolled = await g.rollHeal(slot, {
       source: CureWounds,
       actor,

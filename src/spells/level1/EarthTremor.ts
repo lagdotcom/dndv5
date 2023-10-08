@@ -5,7 +5,6 @@ import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
@@ -43,7 +42,7 @@ const EarthTremor = scalingSpell({
       damageType: "bludgeoning",
       attacker,
     });
-    const dc = getSaveDC(attacker, method.ability);
+    const dc = method.getSaveDC(attacker, EarthTremor, slot);
 
     const shape = getArea(g, attacker);
     for (const target of g.getInside(shape, [attacker])) {

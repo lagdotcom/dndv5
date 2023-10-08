@@ -12,7 +12,7 @@ const RecklessAttackResource = new TurnResource("Reckless Attack", 1);
 function canBeReckless(
   who: Combatant,
   tags: Set<AttackTag>,
-  ability: AbilityName,
+  ability?: AbilityName,
 ) {
   return (
     who.hasEffect(RecklessAttackEffect) &&

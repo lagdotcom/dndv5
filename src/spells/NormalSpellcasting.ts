@@ -8,6 +8,7 @@ import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
+import { getSaveDC } from "../utils/dnd";
 import { enumerate } from "../utils/numbers";
 
 type SpellcastingStrength = "full" | "half";
@@ -158,5 +159,9 @@ export default class NormalSpellcasting implements SpellcastingMethod {
   getResourceForSpell(spell: Spell, level: number, who: Combatant) {
     const { resources } = this.getEntry(who);
     return resources[level - 1];
+  }
+
+  getSaveDC(who: Combatant) {
+    return getSaveDC(who, this.ability);
   }
 }

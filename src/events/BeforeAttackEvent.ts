@@ -12,7 +12,7 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 export interface BeforeAttackDetail {
   who: Combatant;
   target: Combatant;
-  ability: AbilityName;
+  ability?: AbilityName;
   weapon?: WeaponItem;
   ammo?: AmmoItem;
   spell?: Spell;

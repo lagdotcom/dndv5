@@ -6,7 +6,6 @@ import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { scalingSpell } from "../common";
 
 const getArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
@@ -79,7 +78,7 @@ const IceKnife = scalingSpell<HasTarget>({
       method,
       damageType: "cold",
     });
-    const dc = getSaveDC(attacker, method.ability);
+    const dc = method.getSaveDC(attacker, IceKnife, slot);
 
     for (const victim of g.getInside(getArea(g, target))) {
       const save = await g.savingThrow(

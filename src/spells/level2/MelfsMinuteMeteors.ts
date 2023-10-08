@@ -8,7 +8,6 @@ import Resource from "../../types/Resource";
 import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
-import { getSaveDC } from "../../utils/dnd";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -32,7 +31,7 @@ async function fireMeteors(
     method,
     damageType: "fire",
   });
-  const dc = getSaveDC(attacker, method.ability);
+  const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
 
   for (const point of points) {
     for (const target of g.getInside({

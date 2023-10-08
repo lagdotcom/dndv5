@@ -16,7 +16,7 @@ import { distance, getDistanceBetween, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-    bonus.add(who[ability].modifier, AbilityScoreRule);
+    if (ability) bonus.add(who[ability].modifier, AbilityScoreRule);
   });
   g.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
     bonus.add(who[ability].modifier, AbilityScoreRule);
@@ -288,8 +288,10 @@ export const ProficiencyRule = new DndRule("Proficiency", (g) => {
     bonus.add(who.pb * mul, ProficiencyRule);
   });
   g.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
-    const mul = who.getProficiencyMultiplier(skill);
-    bonus.add(who.pb * mul, ProficiencyRule);
+    if (skill) {
+      const mul = who.getProficiencyMultiplier(skill);
+      bonus.add(who.pb * mul, ProficiencyRule);
+    }
   });
   g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
     if (ability) {
@@ -305,6 +307,23 @@ export const ResourcesRule = new DndRule("Resources", (g) => {
       const resource = ResourceRegistry.get(name);
       if (resource?.refresh === "turnStart") who.refreshResource(resource);
     }
+  });
+});
+
+export const RestrainedRule = new DndRule("Restrained", (g) => {
+  g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+    if (who.conditions.has("Restrained"))
+      multiplier.add("zero", RestrainedRule);
+  });
+  g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
+    if (who.conditions.has("Restrained"))
+      diceType.add("disadvantage", RestrainedRule);
+    if (target.conditions.has("Restrained"))
+      diceType.add("advantage", RestrainedRule);
+  });
+  g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+    if (who.conditions.has("Restrained") && ability === "dex")
+      diceType.add("disadvantage", RestrainedRule);
   });
 });
 

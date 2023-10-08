@@ -19,11 +19,11 @@ export default class SlotResolver implements Resolver<number> {
   }
 
   getMinimum(who: Combatant) {
-    return this.method.getMinSlot(this.spell, who);
+    return this.method.getMinSlot?.(this.spell, who) ?? this.spell.level;
   }
 
   getMaximum(who: Combatant) {
-    return this.method.getMaxSlot(this.spell, who);
+    return this.method.getMaxSlot?.(this.spell, who) ?? this.spell.level;
   }
 
   check(value: unknown, action: Action, ec: ErrorCollector) {

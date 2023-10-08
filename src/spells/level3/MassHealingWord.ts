@@ -22,7 +22,10 @@ const MassHealingWord = scalingSpell<HasTargets>({
   }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot ?? 3) - 2, size: 4 } },
-    { type: "flat", amount: caster[method.ability].modifier },
+    {
+      type: "flat",
+      amount: method.ability ? caster[method.ability].modifier : 0,
+    },
   ],
   getTargets: (g, caster, { targets }) => targets,
 
@@ -45,7 +48,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
         source: MassHealingWord,
         actor,
         size: 4,
-      })) + actor[method.ability].modifier;
+      })) + (method.ability ? actor[method.ability].modifier : 0);
 
     for (const target of targets) {
       if (cannotHeal.has(target.type)) continue;
