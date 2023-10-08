@@ -54,7 +54,7 @@ export default function Battlefield({
         <BattlefieldEffect key={effect.id} {...effect} />
       ))}
       {(actionAreas.value ?? []).map((shape, i) => (
-        <BattlefieldEffect key={`temp${i}`} shape={shape} />
+        <BattlefieldEffect key={`temp${i}`} shape={shape} top={true} />
       ))}
     </main>
   );

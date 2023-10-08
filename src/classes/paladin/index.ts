@@ -136,6 +136,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
         `Paladin Aura (${me.name})`,
         { type: "within", radius, target: me, position },
         arSet("holy"),
+        "yellow",
       );
       g.addEffectArea(area);
     };

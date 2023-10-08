@@ -19,15 +19,20 @@ export function convertSizeToUnit(size: SizeCategory) {
 }
 
 export function getDistanceBetween(
-  posA: Point,
-  sizeA: number,
-  posB: Point,
-  sizeB: number,
+  { x: x1, y: y1 }: Point,
+  size1: number,
+  { x: x2, y: y2 }: Point,
+  size2: number,
 ) {
-  // TODO [SIZE] unit sizes
-  const dx = Math.abs(posA.x - posB.x);
-  const dy = Math.abs(posA.y - posB.y);
-  return Math.max(dx, dy);
+  // Calculate the closest points on the edges
+  const closest_x1: number = Math.max(x1, x2);
+  const closest_x2: number = Math.min(x1 + size1, x2 + size2);
+  const closest_y1: number = Math.max(y1, y2);
+  const closest_y2: number = Math.min(y1 + size1, y2 + size2);
+
+  return (
+    Math.max(closest_x1 - closest_x2, closest_y1 - closest_y2) + MapSquareSize
+  );
 }
 
 export function distance(g: Engine, a: Combatant, b: Combatant) {

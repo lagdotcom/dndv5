@@ -71,6 +71,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
       "Erupting Earth",
       shape,
       arSet("difficult terrain"),
+      "brown",
     );
     g.addEffectArea(area);
   },

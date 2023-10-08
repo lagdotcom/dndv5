@@ -41,4 +41,5 @@ export default interface EffectArea extends Source {
   id: number;
   tags: Set<AreaTag>;
   shape: SpecifiedEffectShape;
+  tint: string;
 }

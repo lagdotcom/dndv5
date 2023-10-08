@@ -7,6 +7,7 @@ export default class ActiveEffectArea implements EffectArea {
     public name: string,
     public shape: SpecifiedEffectShape,
     public tags: Set<AreaTag>,
+    public tint: string,
   ) {
     this.id = NaN;
   }

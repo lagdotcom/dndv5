@@ -72,23 +72,26 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/BattlefieldEffect.module.scss */
-._main_1mq49_1 {
+._main_1azly_1 {
   position: absolute;
   z-index: 5;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0.25;
-}
-._label_1mq49_10 {
+  width: 1000px;
+  margin-left: -500px;
+  text-align: center;
   pointer-events: none;
 }
-._square_1mq49_14 {
+._main_1azly_1._top_1azly_9 {
+  z-index: 25;
+}
+._square_1azly_13 {
   position: absolute;
   pointer-events: none;
   z-index: 3;
   box-sizing: border-box;
-  border: 1px solid silver;
+  opacity: 0.25;
+}
+._square_1azly_13._top_1azly_9 {
+  z-index: 23;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
@@ -256,7 +259,7 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */
-._container_8nmu9_1 {
+._container_fnmiq_1 {
   position: absolute;
   bottom: 8px;
   left: 8px;
@@ -266,19 +269,19 @@
   box-shadow: silver 0px 0px 4px 4px;
   height: 100px;
   overflow-y: scroll;
-  z-index: 9;
+  z-index: 29;
 }
-._main_8nmu9_14 {
+._main_fnmiq_14 {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   margin: 0;
   padding: 0;
 }
-._messageWrapper_8nmu9_22 {
+._messageWrapper_fnmiq_22 {
   list-style: none;
 }
-._message_8nmu9_22 {
+._message_fnmiq_22 {
   display: flex;
   align-items: center;
   padding: 2px;

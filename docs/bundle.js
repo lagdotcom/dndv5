@@ -779,10 +779,12 @@
   function convertSizeToUnit(size) {
     return categoryUnits[size] * MapSquareSize;
   }
-  function getDistanceBetween(posA, sizeA, posB, sizeB) {
-    const dx = Math.abs(posA.x - posB.x);
-    const dy = Math.abs(posA.y - posB.y);
-    return Math.max(dx, dy);
+  function getDistanceBetween({ x: x1, y: y1 }, size1, { x: x2, y: y2 }, size2) {
+    const closest_x1 = Math.max(x1, x2);
+    const closest_x2 = Math.min(x1 + size1, x2 + size2);
+    const closest_y1 = Math.max(y1, y2);
+    const closest_y2 = Math.min(y1 + size1, y2 + size2);
+    return Math.max(closest_x1 - closest_x2, closest_y1 - closest_y2) + MapSquareSize;
   }
   function distance(g2, a, b) {
     const as = g2.getState(a);
@@ -7145,10 +7147,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ActiveEffectArea.ts
   var ActiveEffectArea = class {
-    constructor(name, shape, tags) {
+    constructor(name, shape, tags, tint) {
       this.name = name;
       this.shape = shape;
       this.tags = tags;
+      this.tint = tint;
       this.id = NaN;
     }
   };
@@ -7441,7 +7444,8 @@ At 18th level, the range of this aura increases to 30 feet.`,
         area = new ActiveEffectArea(
           `Paladin Aura (${me.name})`,
           { type: "within", radius, target: me, position },
-          arSet("holy")
+          arSet("holy"),
+          "yellow"
         );
         g2.addEffectArea(area);
       };
@@ -9058,7 +9062,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         const area = new ActiveEffectArea(
           "Spike Growth",
           { type: "sphere", centre: point, radius: 20 },
-          arSet("difficult terrain", "plants")
+          arSet("difficult terrain", "plants"),
+          "green"
         );
         g2.addEffectArea(area);
         const spiky = resolveArea(area.shape);
@@ -9975,7 +9980,8 @@ The creature is aware of this effect before it makes its attack against you.`
         const area = new ActiveEffectArea(
           "Earth Tremor",
           shape,
-          arSet("difficult terrain")
+          arSet("difficult terrain"),
+          "brown"
         );
         g2.addEffectArea(area);
       });
@@ -10056,7 +10062,8 @@ The creature is aware of this effect before it makes its attack against you.`
       this.area = new ActiveEffectArea(
         "Moonbeam",
         this.shape,
-        arSet("dim light")
+        arSet("dim light"),
+        "yellow"
       );
       g2.addEffectArea(this.area);
       this.hasBeenATurn = false;
@@ -10220,7 +10227,8 @@ The creature is aware of this effect before it makes its attack against you.`
         const area = new ActiveEffectArea(
           "Erupting Earth",
           shape,
-          arSet("difficult terrain")
+          arSet("difficult terrain"),
+          "brown"
         );
         g2.addEffectArea(area);
       });
@@ -10662,9 +10670,9 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
-    "main": "_main_1mq49_1",
-    "label": "_label_1mq49_10",
-    "square": "_square_1mq49_14"
+    "main": "_main_1azly_1",
+    "top": "_top_1azly_9",
+    "square": "_square_1azly_13"
   };
 
   // src/ui/BattlefieldEffect.tsx
@@ -10678,77 +10686,55 @@ The creature is aware of this effect before it makes its attack against you.`
     if (tags.has("dim light"))
       return "skyblue";
   }
-  function Sphere({
-    shape,
-    name,
-    tags
-  }) {
-    const style = (0, import_hooks3.useMemo)(() => {
-      const size = shape.radius * scale.value;
-      return {
-        left: shape.centre.x * scale.value - size,
-        top: shape.centre.y * scale.value - size,
-        width: size * 2,
-        height: size * 2,
-        borderRadius: size * 2,
-        backgroundColor: getAuraColour(tags)
-      };
-    }, [shape.centre.x, shape.centre.y, shape.radius, tags]);
-    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: name }) });
-  }
-  function WithinArea({
-    shape,
-    name,
-    tags
-  }) {
-    const style = (0, import_hooks3.useMemo)(() => {
-      const size = (shape.radius * 2 + shape.target.sizeInUnits) * scale.value;
-      return {
-        left: (shape.position.x - shape.radius) * scale.value,
-        top: (shape.position.y - shape.radius) * scale.value,
-        width: size,
-        height: size,
-        backgroundColor: getAuraColour(tags)
-      };
-    }, [
-      shape.position.x,
-      shape.position.y,
-      shape.radius,
-      shape.target.sizeInUnits,
-      tags
-    ]);
-    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.main, style, children: /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.label, children: name }) });
-  }
-  function AffectedSquare({ point }) {
+  function AffectedSquare({ point, tint, top = false }) {
     const style = (0, import_hooks3.useMemo)(
       () => ({
         left: point.x * scale.value,
         top: point.y * scale.value,
         width: scale.value * MapSquareSize,
-        height: scale.value * MapSquareSize
+        height: scale.value * MapSquareSize,
+        backgroundColor: tint
       }),
-      [point]
+      [point.x, point.y, tint]
     );
-    return /* @__PURE__ */ o("div", { className: BattlefieldEffect_module_default.square, style });
+    return /* @__PURE__ */ o(
+      "div",
+      {
+        className: classnames(BattlefieldEffect_module_default.square, { [BattlefieldEffect_module_default.top]: top }),
+        style
+      }
+    );
   }
   function BattlefieldEffect({
     name = "Pending",
     shape,
-    tags = /* @__PURE__ */ new Set()
+    tags = /* @__PURE__ */ new Set(),
+    top = false,
+    tint = getAuraColour(tags)
   }) {
-    const main = (0, import_hooks3.useMemo)(() => {
-      switch (shape.type) {
-        case "cylinder":
-        case "sphere":
-          return /* @__PURE__ */ o(Sphere, { name, tags, shape });
-        case "within":
-          return /* @__PURE__ */ o(WithinArea, { name, tags, shape });
+    const { points, style } = (0, import_hooks3.useMemo)(() => {
+      const points2 = Array.from(resolveArea(shape));
+      let cx = 0;
+      let cy = 0;
+      for (const p of points2) {
+        cx += p.x + MapSquareSize / 2;
+        cy += p.y + MapSquareSize / 2;
       }
-    }, [name, shape, tags]);
-    const points = (0, import_hooks3.useMemo)(() => Array.from(resolveArea(shape)), [shape]);
+      const left = cx / points2.length * scale.value;
+      const top2 = cy / points2.length * scale.value;
+      const style2 = { left, top: top2 };
+      return { points: points2, style: style2 };
+    }, [shape]);
     return /* @__PURE__ */ o(import_preact3.Fragment, { children: [
-      main,
-      points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { shape, point: p }, i))
+      /* @__PURE__ */ o(
+        "div",
+        {
+          className: classnames(BattlefieldEffect_module_default.main, { [BattlefieldEffect_module_default.top]: top }),
+          style,
+          children: name
+        }
+      ),
+      points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { point: p, tint: tint != null ? tint : "silver", top }, i))
     ] });
   }
 
@@ -11029,7 +11015,7 @@ The creature is aware of this effect before it makes its attack against you.`
           unit.id
         )),
         allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, __spreadValues({}, effect), effect.id)),
-        ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape }, `temp${i}`))
+        ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`))
       ] })
     );
   }
@@ -11449,10 +11435,10 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
-    "container": "_container_8nmu9_1",
-    "main": "_main_8nmu9_14",
-    "messageWrapper": "_messageWrapper_8nmu9_22",
-    "message": "_message_8nmu9_22"
+    "container": "_container_fnmiq_1",
+    "main": "_main_fnmiq_14",
+    "messageWrapper": "_messageWrapper_fnmiq_22",
+    "message": "_message_fnmiq_22"
   };
 
   // src/ui/hooks/useTimeout.ts

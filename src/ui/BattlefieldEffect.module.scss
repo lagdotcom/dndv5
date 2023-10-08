@@ -1,14 +1,14 @@
 .main {
   position: absolute;
   z-index: 5;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0.25;
-}
-
-.label {
+  width: 1000px;
+  margin-left: -500px;
+  text-align: center;
   pointer-events: none;
+
+  &.top {
+    z-index: 25;
+  }
 }
 
 .square {
@@ -16,5 +16,9 @@
   pointer-events: none;
   z-index: 3;
   box-sizing: border-box;
-  border: 1px solid silver;
+  opacity: 0.25;
+
+  &.top {
+    z-index: 23;
+  }
 }

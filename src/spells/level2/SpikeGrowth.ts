@@ -34,6 +34,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
       "Spike Growth",
       { type: "sphere", centre: point, radius: 20 },
       arSet("difficult terrain", "plants"),
+      "green",
     );
     g.addEffectArea(area);
     const spiky = resolveArea(area.shape);

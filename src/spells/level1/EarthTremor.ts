@@ -77,6 +77,7 @@ const EarthTremor = scalingSpell({
       "Earth Tremor",
       shape,
       arSet("difficult terrain"),
+      "brown",
     );
     g.addEffectArea(area);
   },

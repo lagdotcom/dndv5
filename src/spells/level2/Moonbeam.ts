@@ -70,6 +70,7 @@ class MoonbeamController {
       "Moonbeam",
       this.shape,
       arSet("dim light"),
+      "yellow",
     );
     g.addEffectArea(this.area);
 
