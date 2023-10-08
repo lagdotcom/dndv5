@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import Engine from "../Engine";
 import { PickChoice } from "../interruptions/PickFromListChoice";
+import AllocationResolver, {
+  Allocation,
+} from "../resolvers/AllocationResolver";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import MultiPointResolver from "../resolvers/MultiPointResolver";
 import MultiTargetResolver from "../resolvers/MultiTargetResolver";
@@ -25,6 +28,7 @@ import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
 import commonStyles from "./common.module.scss";
 import Labelled from "./Labelled";
+import RangeInput from "./RangeInput";
 import classnames from "./utils/classnames";
 import {
   actionAreas,
@@ -296,15 +300,84 @@ function ChooseNumber({
       <div>
         {resolver.rangeName} Choice: {value ?? "NONE"}
       </div>
+      <RangeInput
+        min={resolver.min}
+        max={resolver.max}
+        value={value ?? 0}
+        onChange={(value) => onChange(field, value)}
+      />
+    </div>
+  );
+}
+
+function ChooseAllocations({
+  field,
+  resolver,
+  value,
+  onChange,
+}: ChooserProps<Allocation[], AllocationResolver>) {
+  const addTarget = useCallback(
+    (who?: Combatant) => {
+      if (who && !(value ?? []).find((e) => e.who === who))
+        onChange(field, (value ?? []).concat({ amount: 0, who }));
+      wantsCombatant.value = undefined;
+    },
+    [field, onChange, value],
+  );
+
+  const onClick = useCallback(() => {
+    wantsCombatant.value =
+      wantsCombatant.value !== addTarget ? addTarget : undefined;
+  }, [addTarget]);
+
+  const remove = useCallback(
+    (who: Combatant) =>
+      onChange(
+        field,
+        (value ?? []).filter((x) => x.who !== who),
+      ),
+    [field, onChange, value],
+  );
+
+  return (
+    <div>
       <div>
-        <input
-          type="range"
-          min={resolver.min}
-          max={resolver.max}
-          value={value}
-          onChange={(e) => onChange(field, e.currentTarget.valueAsNumber)}
-        />
+        {resolver.rangeName} (
+        {describeRange(resolver.minimum, resolver.maximum)}):
+        {(value ?? []).length ? (
+          <ul>
+            {(value ?? []).map(({ amount, who }) => (
+              <li key={who.id}>
+                <CombatantRef who={who} />{" "}
+                <button onClick={() => remove(who)}>remove {who.name}</button>
+                <RangeInput
+                  min={0}
+                  max={resolver.maximum}
+                  value={amount}
+                  onChange={(amount) =>
+                    onChange(
+                      field,
+                      (value ?? []).map((x) =>
+                        x.who === who ? { amount, who } : x,
+                      ),
+                    )
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          "NONE"
+        )}
       </div>
+      <button
+        className={classnames({
+          [buttonStyles.active]: wantsCombatant.value === addTarget,
+        })}
+        onClick={onClick}
+      >
+        Add Target
+      </button>
     </div>
   );
 }
@@ -416,6 +489,8 @@ export default function ChooseActionConfigPanel<T extends object>({
           return <ChooseText {...subProps} />;
         else if (resolver instanceof NumberRangeResolver)
           return <ChooseNumber {...subProps} />;
+        else if (resolver instanceof AllocationResolver)
+          return <ChooseAllocations {...subProps} />;
         else
           return (
             <div>

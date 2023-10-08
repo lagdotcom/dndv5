@@ -1,6 +1,9 @@
+import { Allocation } from "./resolvers/AllocationResolver";
 import Combatant from "./types/Combatant";
 import { WeaponItem } from "./types/Item";
 import Point from "./types/Point";
+
+export type HasAllocations = { targets: Allocation[] };
 
 export type HasTarget = { target: Combatant };
 export type HasTargets = { targets: Combatant[] };

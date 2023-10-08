@@ -258,6 +258,30 @@
   margin-right: 4px;
 }
 
+/* esbuild-sass-plugin:css-chunk:src/ui/RangeInput.module.scss */
+._main_1k0vn_1 {
+  display: inline-grid;
+  grid-template-columns: 20px auto 20px;
+  grid-template-areas: "min slider max" "value value value";
+}
+._min_1k0vn_7 {
+  grid-area: min;
+}
+._slider_1k0vn_11 {
+  grid-area: slider;
+}
+._max_1k0vn_15 {
+  grid-area: max;
+}
+._value_1k0vn_19 {
+  grid-area: value;
+}
+._min_1k0vn_7,
+._max_1k0vn_15,
+._value_1k0vn_19 {
+  text-align: center;
+}
+
 /* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */
 ._container_fnmiq_1 {
   position: absolute;
