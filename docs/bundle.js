@@ -11816,7 +11816,7 @@ The creature is aware of this effect before it makes its attack against you.`
     " at level ",
     level
   ] }), text: ` at level ${level}` } : void 0;
-  var msgNonzero = (value, text) => value ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: "text" }), text } : void 0;
+  var msgNonzero = (value, text) => value ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: text }), text } : void 0;
   function getDamageEntryText([type, entry]) {
     return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
   }

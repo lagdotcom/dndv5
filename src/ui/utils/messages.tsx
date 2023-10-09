@@ -49,7 +49,7 @@ const msgUpcast = (spell: Spell, level: number): MessagePart =>
     : undefined;
 
 const msgNonzero = (value: number, text: string): MessagePart =>
-  value ? { element: <>text</>, text } : undefined;
+  value ? { element: <>{text}</>, text } : undefined;
 
 function getDamageEntryText([type, entry]: [
   type: DamageType,
