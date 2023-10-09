@@ -10,15 +10,29 @@ export const getDefaultMovement = (who: Combatant): MoveHandler => ({
   maximum: who.speed,
   mustUseAll: false,
   provokesOpportunityAttacks: true,
+  teleportation: false,
   onMove(who, cost) {
     who.movedSoFar += cost;
     return who.movedSoFar >= who.speed;
   },
 });
 
+export const getTeleportation = (
+  maximum: number,
+  name = "Teleport",
+): MoveHandler => ({
+  name,
+  cannotApproach: new Set(),
+  maximum,
+  mustUseAll: false,
+  provokesOpportunityAttacks: false,
+  teleportation: true,
+  onMove: () => true,
+});
+
 export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
   g.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
-    for (const other of handler.cannotApproach) {
+    for (const other of handler?.cannotApproach ?? []) {
       const otherPos = g.getState(other).position;
 
       const oldDistance = getDistanceBetween(
@@ -40,11 +54,10 @@ export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
   });
 });
 
-interface BoundedMoveConfig {
-  cannotApproach: Combatant[];
-  mustUseAll: boolean;
-  provokesOpportunityAttacks: boolean;
-}
+type BoundedMoveConfig = Omit<
+  MoveHandler,
+  "maximum" | "cannotApproach" | "onMove" | "name"
+> & { cannotApproach: Combatant[] };
 
 export class BoundedMove implements MoveHandler {
   name: string;
@@ -52,6 +65,7 @@ export class BoundedMove implements MoveHandler {
   cannotApproach: Set<Combatant>;
   mustUseAll: boolean;
   provokesOpportunityAttacks: boolean;
+  teleportation: boolean;
 
   constructor(
     public source: Source,
@@ -60,6 +74,7 @@ export class BoundedMove implements MoveHandler {
       cannotApproach = [],
       mustUseAll = false,
       provokesOpportunityAttacks = true,
+      teleportation = false,
     }: Partial<BoundedMoveConfig> = {},
   ) {
     this.name = source.name;
@@ -67,6 +82,7 @@ export class BoundedMove implements MoveHandler {
     this.cannotApproach = new Set(cannotApproach);
     this.mustUseAll = mustUseAll;
     this.provokesOpportunityAttacks = provokesOpportunityAttacks;
+    this.teleportation = teleportation;
   }
 
   onMove(who: Combatant, cost: number) {

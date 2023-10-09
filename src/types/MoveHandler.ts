@@ -6,6 +6,7 @@ export default interface MoveHandler extends Source {
   cannotApproach: Set<Combatant>;
   mustUseAll: boolean;
   provokesOpportunityAttacks: boolean;
+  teleportation: boolean;
 
   onMove(who: Combatant, cost: number): boolean;
 }

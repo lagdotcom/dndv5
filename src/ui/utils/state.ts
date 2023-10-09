@@ -51,6 +51,8 @@ export const scale = signal(20);
 
 export const showSideHP = signal<number[]>([0]);
 
+export const teleportInfo = signal<SpecifiedEffectShape | undefined>(undefined);
+
 export const wantsCombatant = signal<Listener<Combatant> | undefined>(
   undefined,
 );

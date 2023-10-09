@@ -72,17 +72,17 @@
     }
   });
 
-  // globalExternal:preact/hooks
-  var require_hooks = __commonJS({
-    "globalExternal:preact/hooks"(exports, module) {
-      module.exports = globalThis.preactHooks;
-    }
-  });
-
   // globalExternal:@preact/signals
   var require_signals = __commonJS({
     "globalExternal:@preact/signals"(exports, module) {
       module.exports = globalThis.preactSignals;
+    }
+  });
+
+  // globalExternal:preact/hooks
+  var require_hooks = __commonJS({
+    "globalExternal:preact/hooks"(exports, module) {
+      module.exports = globalThis.preactHooks;
     }
   });
 
@@ -4500,6 +4500,72 @@
     }
   };
 
+  // src/movement.ts
+  var getDefaultMovement = (who) => ({
+    name: "Movement",
+    cannotApproach: /* @__PURE__ */ new Set(),
+    maximum: who.speed,
+    mustUseAll: false,
+    provokesOpportunityAttacks: true,
+    teleportation: false,
+    onMove(who2, cost) {
+      who2.movedSoFar += cost;
+      return who2.movedSoFar >= who2.speed;
+    }
+  });
+  var getTeleportation = (maximum, name = "Teleport") => ({
+    name,
+    cannotApproach: /* @__PURE__ */ new Set(),
+    maximum,
+    mustUseAll: false,
+    provokesOpportunityAttacks: false,
+    teleportation: true,
+    onMove: () => true
+  });
+  var BoundedMoveRule = new DndRule("Bounded Movement", (g2) => {
+    g2.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
+      var _a;
+      for (const other of (_a = handler == null ? void 0 : handler.cannotApproach) != null ? _a : []) {
+        const otherPos = g2.getState(other).position;
+        const oldDistance = getDistanceBetween(
+          from,
+          who.sizeInUnits,
+          otherPos,
+          other.sizeInUnits
+        );
+        const newDistance = getDistanceBetween(
+          to,
+          who.sizeInUnits,
+          otherPos,
+          other.sizeInUnits
+        );
+        if (newDistance < oldDistance)
+          error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
+      }
+    });
+  });
+  var BoundedMove = class {
+    constructor(source, maximum, {
+      cannotApproach = [],
+      mustUseAll = false,
+      provokesOpportunityAttacks = true,
+      teleportation = false
+    } = {}) {
+      this.source = source;
+      this.maximum = maximum;
+      this.name = source.name;
+      this.used = 0;
+      this.cannotApproach = new Set(cannotApproach);
+      this.mustUseAll = mustUseAll;
+      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
+      this.teleportation = teleportation;
+    }
+    onMove(who, cost) {
+      this.used += cost;
+      return this.used >= this.maximum;
+    }
+  };
+
   // src/spells/level1/HealingWord.ts
   var cannotHeal2 = ctSet("undead", "construct");
   var HealingWord = scalingSpell({
@@ -4619,9 +4685,64 @@
     SpellcastingMethod2,
     [{ level: 1, spell: HealingWord_default }]
   );
-  var DancingStep = notImplementedFeature(
+  var DancingStepAction = class _DancingStepAction extends AbstractAction {
+    constructor(g2, actor, distance2 = 20) {
+      super(
+        g2,
+        actor,
+        "Dancing Step",
+        "implemented",
+        {},
+        {
+          time: "reaction",
+          description: `Teleport to a spot within ${distance2} ft. that you can see.`
+        }
+      );
+      this.distance = distance2;
+    }
+    apply() {
+      return __async(this, null, function* () {
+        __superGet(_DancingStepAction.prototype, this, "apply").call(this, {});
+        yield this.g.applyBoundedMove(
+          this.actor,
+          getTeleportation(this.distance, "Dancing Step")
+        );
+      });
+    }
+  };
+  var DancingStep = new SimpleFeature(
     "Dancing Step",
-    "Reaction: When an enemy moves within 5 ft., Yulash teleports to a spot within 20 ft. that she can see."
+    "Reaction: When an enemy moves within 5 ft., Yulash teleports to a spot within 20 ft. that she can see.",
+    (g2, me) => {
+      g2.events.on(
+        "CombatantMoved",
+        ({ detail: { who, position, interrupt } }) => {
+          if (who.side === me.side)
+            return;
+          const distance2 = getDistanceBetween(
+            position,
+            who.sizeInUnits,
+            g2.getState(me).position,
+            me.sizeInUnits
+          );
+          if (distance2 <= 5) {
+            const step = new DancingStepAction(g2, me);
+            if (g2.check(step, {}).result)
+              interrupt.add(
+                new YesNoChoice(
+                  me,
+                  DancingStep,
+                  "Dancing Step",
+                  `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
+                  () => __async(void 0, null, function* () {
+                    yield g2.act(step, {});
+                  })
+                )
+              );
+          }
+        }
+      );
+    }
   );
   var Yulash = class extends Monster {
     constructor(g2) {
@@ -4666,59 +4787,6 @@
     }
   };
 
-  // src/movement.ts
-  var getDefaultMovement = (who) => ({
-    name: "Movement",
-    cannotApproach: /* @__PURE__ */ new Set(),
-    maximum: who.speed,
-    mustUseAll: false,
-    provokesOpportunityAttacks: true,
-    onMove(who2, cost) {
-      who2.movedSoFar += cost;
-      return who2.movedSoFar >= who2.speed;
-    }
-  });
-  var BoundedMoveRule = new DndRule("Bounded Movement", (g2) => {
-    g2.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
-      for (const other of handler.cannotApproach) {
-        const otherPos = g2.getState(other).position;
-        const oldDistance = getDistanceBetween(
-          from,
-          who.sizeInUnits,
-          otherPos,
-          other.sizeInUnits
-        );
-        const newDistance = getDistanceBetween(
-          to,
-          who.sizeInUnits,
-          otherPos,
-          other.sizeInUnits
-        );
-        if (newDistance < oldDistance)
-          error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
-      }
-    });
-  });
-  var BoundedMove = class {
-    constructor(source, maximum, {
-      cannotApproach = [],
-      mustUseAll = false,
-      provokesOpportunityAttacks = true
-    } = {}) {
-      this.source = source;
-      this.maximum = maximum;
-      this.name = source.name;
-      this.used = 0;
-      this.cannotApproach = new Set(cannotApproach);
-      this.mustUseAll = mustUseAll;
-      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
-    }
-    onMove(who, cost) {
-      this.used += cost;
-      return this.used >= this.maximum;
-    }
-  };
-
   // src/monsters/fiendishParty/Zafron_token.png
   var Zafron_token_default = "./Zafron_token-HS5HC4BR.png";
 
@@ -4749,7 +4817,7 @@
       }
     );
   });
-  var BullRushAction = class extends AbstractAction {
+  var BullRushAction = class _BullRushAction extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -4764,12 +4832,14 @@
       );
     }
     check(config, ec) {
+      super.check(config, ec);
       if (this.actor.speed <= 0)
         ec.add("cannot move", this);
       return ec;
     }
     apply() {
       return __async(this, null, function* () {
+        __superGet(_BullRushAction.prototype, this, "apply").call(this, {});
         const { g: g2, actor } = this;
         const rushed = /* @__PURE__ */ new Set();
         yield actor.addEffect(BullRushEffect, { duration: 1 });
@@ -4782,6 +4852,7 @@
           provokesOpportunityAttacks: true,
           cannotApproach: /* @__PURE__ */ new Set(),
           mustUseAll: false,
+          teleportation: false,
           onMove(who, cost) {
             const position = g2.getState(who).position;
             for (const hit of g2.getInside(
@@ -9376,14 +9447,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getTargets: (g2, caster) => [caster],
     apply(_0, _1, _2, _3) {
       return __async(this, arguments, function* (g2, caster, method, { point }) {
-        yield g2.move(caster, point, {
-          name: "Misty Step",
-          cannotApproach: /* @__PURE__ */ new Set(),
-          maximum: 30,
-          provokesOpportunityAttacks: false,
-          mustUseAll: false,
-          onMove: () => true
-        });
+        yield g2.move(caster, point, getTeleportation(30, "Misty Step"));
       });
     }
   });
@@ -10843,6 +10907,7 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/ui/App.tsx
+  var import_signals2 = __toESM(require_signals());
   var import_hooks16 = __toESM(require_hooks());
 
   // src/utils/config.ts
@@ -11051,6 +11116,7 @@ The creature is aware of this effect before it makes its attack against you.`
   );
   var scale = (0, import_signals.signal)(20);
   var showSideHP = (0, import_signals.signal)([0]);
+  var teleportInfo = (0, import_signals.signal)(void 0);
   var wantsCombatant = (0, import_signals.signal)(
     void 0
   );
@@ -11463,7 +11529,16 @@ The creature is aware of this effect before it makes its attack against you.`
           unit.id
         )),
         allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, __spreadValues({}, effect), effect.id)),
-        ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`))
+        ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`)),
+        teleportInfo.value && /* @__PURE__ */ o(
+          BattlefieldEffect,
+          {
+            shape: teleportInfo.value,
+            top: true,
+            name: "Teleport"
+          },
+          "teleport"
+        )
       ] })
     );
   }
@@ -11473,7 +11548,9 @@ The creature is aware of this effect before it makes its attack against you.`
     return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Bounded Movement", children: [
       /* @__PURE__ */ o(Labelled, { label: bounds.handler.name, children: bounds.who.name }),
       /* @__PURE__ */ o("div", { children: [
-        "Move up to ",
+        bounds.handler.teleportation ? "Teleport" : "Move",
+        " up to",
+        " ",
         bounds.handler.maximum,
         " feet."
       ] }),
@@ -12499,38 +12576,96 @@ The creature is aware of this effect before it makes its attack against you.`
     const refreshAreas = (0, import_hooks16.useCallback)(() => {
       allEffects.value = Array.from(g2.effects);
     }, [g2]);
+    const onFinishBoundedMove = (0, import_hooks16.useCallback)(() => {
+      if (moveBounds.value) {
+        moveBounds.value.detail.resolve();
+        moveBounds.value = void 0;
+        if (g2.activeCombatant) {
+          movingCombatantId.value = g2.activeCombatant.id;
+          moveHandler.value = getDefaultMovement(g2.activeCombatant);
+        }
+      }
+    }, [g2]);
+    const processMove = (0, import_hooks16.useCallback)(
+      (mover) => {
+        void mover.then((result) => {
+          if (result.type === "error")
+            console.warn(result.error.messages);
+          else if (result.type === "unbind")
+            onFinishBoundedMove();
+          return result;
+        });
+      },
+      [onFinishBoundedMove]
+    );
     (0, import_hooks16.useEffect)(() => {
-      g2.events.on("CombatantPlaced", refreshUnits);
-      g2.events.on("CombatantMoved", refreshUnits);
-      g2.events.on("CombatantDied", refreshUnits);
-      g2.events.on("EffectAdded", refreshUnits);
-      g2.events.on("EffectRemoved", refreshUnits);
-      g2.events.on("AreaPlaced", refreshAreas);
-      g2.events.on("AreaRemoved", refreshAreas);
-      g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
-        interrupt.add(
-          new UIResponse(who, () => __async(this, null, function* () {
-            activeCombatantId.value = who.id;
-            moveHandler.value = getDefaultMovement(who);
+      const subscriptions = [
+        g2.events.on("CombatantPlaced", refreshUnits),
+        g2.events.on("CombatantMoved", refreshUnits),
+        g2.events.on("CombatantDied", refreshUnits),
+        g2.events.on("EffectAdded", refreshUnits),
+        g2.events.on("EffectRemoved", refreshUnits),
+        g2.events.on("AreaPlaced", refreshAreas),
+        g2.events.on("AreaRemoved", refreshAreas),
+        g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+          interrupt.add(
+            new UIResponse(who, () => __async(this, null, function* () {
+              activeCombatantId.value = who.id;
+              moveHandler.value = getDefaultMovement(who);
+              movingCombatantId.value = who.id;
+              hideActionMenu();
+              refreshUnits();
+              allActions.value = g2.getActions(who);
+            }))
+          );
+        }),
+        g2.events.on("ListChoice", (e) => chooseFromList.value = e),
+        g2.events.on("MultiListChoice", (e) => chooseManyFromList.value = e),
+        g2.events.on("YesNoChoice", (e) => chooseYesNo.value = e),
+        g2.events.on("BoundedMove", (e) => {
+          const { who, handler } = e.detail;
+          (0, import_signals2.batch)(() => {
+            moveBounds.value = e;
+            moveHandler.value = handler;
             movingCombatantId.value = who.id;
-            hideActionMenu();
-            refreshUnits();
-            allActions.value = g2.getActions(who);
-          }))
-        );
-      });
-      g2.events.on("ListChoice", (e) => chooseFromList.value = e);
-      g2.events.on("MultiListChoice", (e) => chooseManyFromList.value = e);
-      g2.events.on("YesNoChoice", (e) => chooseYesNo.value = e);
-      g2.events.on("BoundedMove", (e) => {
-        moveBounds.value = e;
-        moveHandler.value = e.detail.handler;
-        movingCombatantId.value = e.detail.who.id;
-      });
+            if (handler.teleportation) {
+              const shape = {
+                type: "within",
+                target: who,
+                position: g2.getState(who).position,
+                radius: handler.maximum
+              };
+              teleportInfo.value = shape;
+              const area = resolveArea(shape);
+              wantsPoint.value = (p) => {
+                if (p && area.has(p)) {
+                  processMove(g2.move(who, p, handler));
+                  (0, import_signals2.batch)(() => {
+                    wantsPoint.value = void 0;
+                    teleportInfo.value = void 0;
+                  });
+                }
+              };
+            }
+          });
+        })
+      ];
       onMount == null ? void 0 : onMount(g2);
       for (const iconUrl of getAllIcons(g2))
         cache2.get(iconUrl);
-    }, [cache2, g2, hideActionMenu, onMount, refreshAreas, refreshUnits]);
+      return () => {
+        for (const cleanup of subscriptions)
+          cleanup();
+      };
+    }, [
+      cache2,
+      g2,
+      hideActionMenu,
+      onMount,
+      processMove,
+      refreshAreas,
+      refreshUnits
+    ]);
     const onExecuteAction = (0, import_hooks16.useCallback)(
       (action2, config) => {
         setAction(void 0);
@@ -12604,30 +12739,14 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [g2]
     );
-    const onFinishBoundedMove = (0, import_hooks16.useCallback)(() => {
-      if (moveBounds.value) {
-        moveBounds.value.detail.resolve();
-        moveBounds.value = void 0;
-        if (g2.activeCombatant) {
-          movingCombatantId.value = g2.activeCombatant.id;
-          moveHandler.value = getDefaultMovement(g2.activeCombatant);
-        }
-      }
-    }, [g2]);
     const onMoveCombatant = (0, import_hooks16.useCallback)(
       (who, dir) => {
         if (moveHandler.value) {
           hideActionMenu();
-          void g2.moveInDirection(who, dir, moveHandler.value).then((result) => {
-            if (result.type === "error")
-              console.warn(result.error.messages);
-            else if (result.type === "unbind")
-              onFinishBoundedMove();
-            return result;
-          });
+          processMove(g2.moveInDirection(who, dir, moveHandler.value));
         }
       },
-      [g2, hideActionMenu, onFinishBoundedMove]
+      [g2, hideActionMenu, processMove]
     );
     const onPass = (0, import_hooks16.useCallback)(() => {
       setAction(void 0);

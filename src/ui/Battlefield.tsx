@@ -14,6 +14,7 @@ import {
   allEffects,
   movingCombatantId,
   scale,
+  teleportInfo,
 } from "./utils/state";
 
 interface Props {
@@ -56,6 +57,14 @@ export default function Battlefield({
       {(actionAreas.value ?? []).map((shape, i) => (
         <BattlefieldEffect key={`temp${i}`} shape={shape} top={true} />
       ))}
+      {teleportInfo.value && (
+        <BattlefieldEffect
+          key="teleport"
+          shape={teleportInfo.value}
+          top={true}
+          name="Teleport"
+        />
+      )}
     </main>
   );
 }

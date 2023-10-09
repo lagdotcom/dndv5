@@ -1,4 +1,5 @@
 import { HasPoint } from "../../configs";
+import { getTeleportation } from "../../movement";
 import PointResolver from "../../resolvers/PointResolver";
 import { simpleSpell } from "../common";
 
@@ -16,14 +17,7 @@ const MistyStep = simpleSpell<HasPoint>({
   getTargets: (g, caster) => [caster],
 
   async apply(g, caster, method, { point }) {
-    await g.move(caster, point, {
-      name: "Misty Step",
-      cannotApproach: new Set(),
-      maximum: 30,
-      provokesOpportunityAttacks: false,
-      mustUseAll: false,
-      onMove: () => true,
-    });
+    await g.move(caster, point, getTeleportation(30, "Misty Step"));
   },
 });
 export default MistyStep;

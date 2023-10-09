@@ -7,16 +7,18 @@ import {
   notImplementedFeature,
 } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
+import YesNoChoice from "../../interruptions/YesNoChoice";
 import { LeatherArmor } from "../../items/armor";
 import { Rapier } from "../../items/weapons";
 import Monster from "../../Monster";
+import { getTeleportation } from "../../movement";
 import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
-// import MistyStepSpell from "../../spells/level2/MistyStep";
+import { getDistanceBetween } from "../../utils/units";
 import tokenUrl from "./Yulash_token.png";
 
 // TODO
@@ -90,10 +92,68 @@ const Spellcasting = bonusSpellsFeature(
   [{ level: 1, spell: HealingWord }],
 );
 
-// TODO [PICKPOINT] [REALREACTION]
-const DancingStep = notImplementedFeature(
+class DancingStepAction extends AbstractAction {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    public distance = 20,
+  ) {
+    super(
+      g,
+      actor,
+      "Dancing Step",
+      "implemented",
+      {},
+      {
+        time: "reaction",
+        description: `Teleport to a spot within ${distance} ft. that you can see.`,
+      },
+    );
+  }
+
+  async apply() {
+    super.apply({});
+    await this.g.applyBoundedMove(
+      this.actor,
+      getTeleportation(this.distance, "Dancing Step"),
+    );
+  }
+}
+
+const DancingStep = new SimpleFeature(
   "Dancing Step",
   "Reaction: When an enemy moves within 5 ft., Yulash teleports to a spot within 20 ft. that she can see.",
+  (g, me) => {
+    g.events.on(
+      "CombatantMoved",
+      ({ detail: { who, position, interrupt } }) => {
+        if (who.side === me.side) return;
+
+        const distance = getDistanceBetween(
+          position,
+          who.sizeInUnits,
+          g.getState(me).position,
+          me.sizeInUnits,
+        );
+
+        if (distance <= 5) {
+          const step = new DancingStepAction(g, me);
+          if (g.check(step, {}).result)
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                DancingStep,
+                "Dancing Step",
+                `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
+                async () => {
+                  await g.act(step, {});
+                },
+              ),
+            );
+        }
+      },
+    );
+  },
 );
 
 export default class Yulash extends Monster {

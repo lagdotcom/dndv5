@@ -71,12 +71,15 @@ class BullRushAction extends AbstractAction {
   }
 
   check(config: never, ec: ErrorCollector) {
+    super.check(config, ec);
+
     if (this.actor.speed <= 0) ec.add("cannot move", this);
 
     return ec;
   }
 
   async apply() {
+    super.apply({});
     const { g, actor } = this;
 
     const rushed = new Set<Combatant>();
@@ -92,6 +95,7 @@ class BullRushAction extends AbstractAction {
       provokesOpportunityAttacks: true,
       cannotApproach: new Set(),
       mustUseAll: false,
+      teleportation: false,
       onMove(who, cost) {
         const position = g.getState(who).position;
         for (const hit of g.getInside(

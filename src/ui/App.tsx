@@ -1,11 +1,14 @@
+import { batch } from "@preact/signals";
 import { useCallback, useContext, useEffect, useState } from "preact/hooks";
 
-import Engine from "../Engine";
+import Engine, { EngineMoveResult } from "../Engine";
 import { getDefaultMovement } from "../movement";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import { SpecifiedEffectShape } from "../types/EffectArea";
 import MoveDirection from "../types/MoveDirection";
 import Point from "../types/Point";
+import { resolveArea } from "../utils/areas";
 import { checkConfig } from "../utils/config";
 import ActiveUnitPanel from "./ActiveUnitPanel";
 import styles from "./App.module.scss";
@@ -30,6 +33,7 @@ import {
   moveBounds,
   moveHandler,
   movingCombatantId,
+  teleportInfo,
   wantsCombatant,
   wantsPoint,
 } from "./utils/state";
@@ -75,44 +79,106 @@ export default function App({ g, onMount }: Props) {
     allEffects.value = Array.from(g.effects);
   }, [g]);
 
+  const onFinishBoundedMove = useCallback(() => {
+    if (moveBounds.value) {
+      moveBounds.value.detail.resolve();
+      moveBounds.value = undefined;
+      if (g.activeCombatant) {
+        movingCombatantId.value = g.activeCombatant.id;
+        moveHandler.value = getDefaultMovement(g.activeCombatant);
+      }
+    }
+  }, [g]);
+
+  const processMove = useCallback(
+    (mover: EngineMoveResult) => {
+      void mover.then((result) => {
+        if (result.type === "error") console.warn(result.error.messages);
+        else if (result.type === "unbind") onFinishBoundedMove();
+        return result;
+      });
+    },
+    [onFinishBoundedMove],
+  );
+
   useEffect(() => {
-    g.events.on("CombatantPlaced", refreshUnits);
-    g.events.on("CombatantMoved", refreshUnits);
-    g.events.on("CombatantDied", refreshUnits);
-    g.events.on("EffectAdded", refreshUnits);
-    g.events.on("EffectRemoved", refreshUnits);
+    const subscriptions = [
+      g.events.on("CombatantPlaced", refreshUnits),
+      g.events.on("CombatantMoved", refreshUnits),
+      g.events.on("CombatantDied", refreshUnits),
+      g.events.on("EffectAdded", refreshUnits),
+      g.events.on("EffectRemoved", refreshUnits),
 
-    g.events.on("AreaPlaced", refreshAreas);
-    g.events.on("AreaRemoved", refreshAreas);
+      g.events.on("AreaPlaced", refreshAreas),
+      g.events.on("AreaRemoved", refreshAreas),
 
-    g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
-      interrupt.add(
-        new UIResponse(who, async () => {
-          activeCombatantId.value = who.id;
-          moveHandler.value = getDefaultMovement(who);
+      g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+        interrupt.add(
+          new UIResponse(who, async () => {
+            activeCombatantId.value = who.id;
+            moveHandler.value = getDefaultMovement(who);
+            movingCombatantId.value = who.id;
+            hideActionMenu();
+
+            refreshUnits();
+            allActions.value = g.getActions(who);
+          }),
+        );
+      }),
+
+      g.events.on("ListChoice", (e) => (chooseFromList.value = e)),
+      g.events.on("MultiListChoice", (e) => (chooseManyFromList.value = e)),
+      g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e)),
+
+      g.events.on("BoundedMove", (e) => {
+        const { who, handler } = e.detail;
+
+        batch(() => {
+          moveBounds.value = e;
+          moveHandler.value = handler;
           movingCombatantId.value = who.id;
-          hideActionMenu();
 
-          refreshUnits();
-          allActions.value = g.getActions(who);
-        }),
-      );
-    });
+          if (handler.teleportation) {
+            const shape = {
+              type: "within",
+              target: who,
+              position: g.getState(who).position,
+              radius: handler.maximum,
+            } as SpecifiedEffectShape;
+            teleportInfo.value = shape;
+            const area = resolveArea(shape);
 
-    g.events.on("ListChoice", (e) => (chooseFromList.value = e));
-    g.events.on("MultiListChoice", (e) => (chooseManyFromList.value = e));
-    g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e));
+            wantsPoint.value = (p) => {
+              if (p && area.has(p)) {
+                processMove(g.move(who, p, handler));
 
-    g.events.on("BoundedMove", (e) => {
-      moveBounds.value = e;
-      moveHandler.value = e.detail.handler;
-      movingCombatantId.value = e.detail.who.id;
-    });
+                batch(() => {
+                  wantsPoint.value = undefined;
+                  teleportInfo.value = undefined;
+                });
+              }
+            };
+          }
+        });
+      }),
+    ];
 
     onMount?.(g);
 
     for (const iconUrl of getAllIcons(g)) cache.get(iconUrl);
-  }, [cache, g, hideActionMenu, onMount, refreshAreas, refreshUnits]);
+
+    return () => {
+      for (const cleanup of subscriptions) cleanup();
+    };
+  }, [
+    cache,
+    g,
+    hideActionMenu,
+    onMount,
+    processMove,
+    refreshAreas,
+    refreshUnits,
+  ]);
 
   const onExecuteAction = useCallback(
     <T extends object>(action: Action<T>, config: T) => {
@@ -202,29 +268,14 @@ export default function App({ g, onMount }: Props) {
     [g],
   );
 
-  const onFinishBoundedMove = useCallback(() => {
-    if (moveBounds.value) {
-      moveBounds.value.detail.resolve();
-      moveBounds.value = undefined;
-      if (g.activeCombatant) {
-        movingCombatantId.value = g.activeCombatant.id;
-        moveHandler.value = getDefaultMovement(g.activeCombatant);
-      }
-    }
-  }, [g]);
-
   const onMoveCombatant = useCallback(
     (who: Combatant, dir: MoveDirection) => {
       if (moveHandler.value) {
         hideActionMenu();
-        void g.moveInDirection(who, dir, moveHandler.value).then((result) => {
-          if (result.type === "error") console.warn(result.error.messages);
-          else if (result.type === "unbind") onFinishBoundedMove();
-          return result;
-        });
+        processMove(g.moveInDirection(who, dir, moveHandler.value));
       }
     },
-    [g, hideActionMenu, onFinishBoundedMove],
+    [g, hideActionMenu, processMove],
   );
 
   const onPass = useCallback(() => {

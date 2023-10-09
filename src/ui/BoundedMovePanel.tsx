@@ -13,7 +13,10 @@ export default function BoundedMovePanel({ bounds, onFinish }: Props) {
   return (
     <aside className={commonStyles.panel} aria-label="Bounded Movement">
       <Labelled label={bounds.handler.name}>{bounds.who.name}</Labelled>
-      <div>Move up to {bounds.handler.maximum} feet.</div>
+      <div>
+        {bounds.handler.teleportation ? "Teleport" : "Move"} up to{" "}
+        {bounds.handler.maximum} feet.
+      </div>
       <button onClick={onFinish} disabled={bounds.handler.mustUseAll}>
         End Movement Early
       </button>

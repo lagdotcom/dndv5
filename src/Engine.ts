@@ -797,3 +797,5 @@ export default class Engine {
     who.temporaryHPSource = source;
   }
 }
+
+export type EngineMoveResult = ReturnType<Engine["move"]>;
