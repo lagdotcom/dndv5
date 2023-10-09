@@ -1,6 +1,9 @@
+import AbstractAction from "../../actions/AbstractAction";
+import ErrorCollector from "../../collectors/ErrorCollector";
+import Effect from "../../Effect";
+import { Prone } from "../../effects";
 import Engine from "../../Engine";
 import { EventListener } from "../../events/Dispatcher";
-import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
@@ -10,7 +13,12 @@ import { Greataxe } from "../../items/weapons";
 import { MapSquareSize } from "../../MapSquare";
 import Monster from "../../Monster";
 import { BoundedMove } from "../../movement";
+import Combatant from "../../types/Combatant";
+import { coSet } from "../../types/ConditionName";
+import { MundaneDamageTypes } from "../../types/DamageType";
 import { WeaponItem } from "../../types/Item";
+import { svSet } from "../../types/SaveTag";
+import { getSaveDC } from "../../utils/dnd";
 import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
 import tokenUrl from "./Zafron_token.png";
@@ -34,10 +42,101 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
   },
 );
 
-// TODO
-const BullRush = notImplementedFeature(
+const BullRushEffect = new Effect("Bull Rush", "turnStart", (g) => {
+  g.events.on(
+    "GetDamageResponse",
+    ({ detail: { who, damageType, response } }) => {
+      if (
+        who.hasEffect(BullRushEffect) &&
+        MundaneDamageTypes.includes(damageType)
+      )
+        response.add("resist", BullRushEffect);
+    },
+  );
+});
+
+class BullRushAction extends AbstractAction {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Bull Rush",
+      "incomplete",
+      {},
+      {
+        time: "action",
+        description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`,
+      },
+    );
+  }
+
+  check(config: never, ec: ErrorCollector) {
+    if (this.actor.speed <= 0) ec.add("cannot move", this);
+
+    return ec;
+  }
+
+  async apply() {
+    const { g, actor } = this;
+
+    const rushed = new Set<Combatant>();
+
+    await actor.addEffect(BullRushEffect, { duration: 1 });
+
+    const maximum = actor.speed;
+    let used = 0;
+    await g.applyBoundedMove(actor, {
+      // TODO must keep moving in same direction
+      name: "Bull Rush",
+      maximum,
+      provokesOpportunityAttacks: true,
+      cannotApproach: new Set(),
+      mustUseAll: false,
+      onMove(who, cost) {
+        const position = g.getState(who).position;
+        for (const hit of g.getInside(
+          {
+            type: "within",
+            position,
+            target: actor,
+            radius: 0,
+          },
+          [who],
+        )) {
+          // TODO [MESSAGE]
+          rushed.add(hit);
+        }
+
+        used += cost;
+        return used >= maximum;
+      },
+    });
+
+    const dc = getSaveDC(actor, "str");
+    const config = { duration: Infinity, conditions: coSet("Prone") };
+
+    for (const who of rushed) {
+      const result = await g.savingThrow(dc, {
+        ability: "dex",
+        attacker: actor,
+        effect: Prone,
+        config,
+        tags: svSet(),
+        who,
+      });
+      if (result.outcome === "fail") await who.addEffect(Prone, config, actor);
+    }
+  }
+}
+
+const BullRush = new SimpleFeature(
   "Bull Rush",
   "Until the beginning of his next turn, Zafron gains resistance to bludgeoning, piercing and slashing damage. Then, he moves up to his speed in a single direction. All enemies that he passes through must make a DC 15 Dexterity save or be knocked prone.",
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new BullRushAction(g, me));
+    });
+  },
 );
 
 const SurvivalReflex = new SimpleFeature(

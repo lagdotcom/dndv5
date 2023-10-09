@@ -4740,9 +4740,91 @@
       );
     }
   );
-  var BullRush = notImplementedFeature(
+  var BullRushEffect = new Effect("Bull Rush", "turnStart", (g2) => {
+    g2.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, response } }) => {
+        if (who.hasEffect(BullRushEffect) && MundaneDamageTypes.includes(damageType))
+          response.add("resist", BullRushEffect);
+      }
+    );
+  });
+  var BullRushAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Bull Rush",
+        "incomplete",
+        {},
+        {
+          time: "action",
+          description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`
+        }
+      );
+    }
+    check(config, ec) {
+      if (this.actor.speed <= 0)
+        ec.add("cannot move", this);
+      return ec;
+    }
+    apply() {
+      return __async(this, null, function* () {
+        const { g: g2, actor } = this;
+        const rushed = /* @__PURE__ */ new Set();
+        yield actor.addEffect(BullRushEffect, { duration: 1 });
+        const maximum = actor.speed;
+        let used = 0;
+        yield g2.applyBoundedMove(actor, {
+          // TODO must keep moving in same direction
+          name: "Bull Rush",
+          maximum,
+          provokesOpportunityAttacks: true,
+          cannotApproach: /* @__PURE__ */ new Set(),
+          mustUseAll: false,
+          onMove(who, cost) {
+            const position = g2.getState(who).position;
+            for (const hit of g2.getInside(
+              {
+                type: "within",
+                position,
+                target: actor,
+                radius: 0
+              },
+              [who]
+            )) {
+              rushed.add(hit);
+            }
+            used += cost;
+            return used >= maximum;
+          }
+        });
+        const dc = getSaveDC(actor, "str");
+        const config = { duration: Infinity, conditions: coSet("Prone") };
+        for (const who of rushed) {
+          const result = yield g2.savingThrow(dc, {
+            ability: "dex",
+            attacker: actor,
+            effect: Prone,
+            config,
+            tags: svSet(),
+            who
+          });
+          if (result.outcome === "fail")
+            yield who.addEffect(Prone, config, actor);
+        }
+      });
+    }
+  };
+  var BullRush = new SimpleFeature(
     "Bull Rush",
-    "Until the beginning of his next turn, Zafron gains resistance to bludgeoning, piercing and slashing damage. Then, he moves up to his speed in a single direction. All enemies that he passes through must make a DC 15 Dexterity save or be knocked prone."
+    "Until the beginning of his next turn, Zafron gains resistance to bludgeoning, piercing and slashing damage. Then, he moves up to his speed in a single direction. All enemies that he passes through must make a DC 15 Dexterity save or be knocked prone.",
+    (g2, me) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new BullRushAction(g2, me));
+      });
+    }
   );
   var SurvivalReflex = new SimpleFeature(
     "Survival Reflex",
