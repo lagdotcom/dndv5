@@ -2,28 +2,10 @@
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
-  var __defProps = Object.defineProperties;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
   var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __propIsEnum = Object.prototype.propertyIsEnumerable;
-  var __reflectGet = Reflect.get;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __spreadValues = (a, b) => {
-    for (var prop in b || (b = {}))
-      if (__hasOwnProp.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    if (__getOwnPropSymbols)
-      for (var prop of __getOwnPropSymbols(b)) {
-        if (__propIsEnum.call(b, prop))
-          __defNormalProp(a, prop, b[prop]);
-      }
-    return a;
-  };
-  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   var __commonJS = (cb, mod) => function __require() {
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
@@ -43,27 +25,6 @@
     isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
     mod
   ));
-  var __superGet = (cls, obj, key) => __reflectGet(__getProtoOf(cls), key, obj);
-  var __async = (__this, __arguments, generator) => {
-    return new Promise((resolve, reject) => {
-      var fulfilled = (value) => {
-        try {
-          step(generator.next(value));
-        } catch (e) {
-          reject(e);
-        }
-      };
-      var rejected = (value) => {
-        try {
-          step(generator.throw(value));
-        } catch (e) {
-          reject(e);
-        }
-      };
-      var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-      step((generator = generator.apply(__this, __arguments)).next());
-    });
-  };
 
   // globalExternal:preact
   var require_preact = __commonJS({
@@ -400,14 +361,12 @@
       return ec;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    apply(config) {
-      return __async(this, null, function* () {
-        const time = this.getTime(config);
-        if (time)
-          this.actor.time.delete(time);
-        for (const [resource, cost] of this.getResources(config))
-          this.actor.spendResource(resource, cost);
-      });
+    async apply(config) {
+      const time = this.getTime(config);
+      if (time)
+        this.actor.time.delete(time);
+      for (const [resource, cost] of this.getResources(config))
+        this.actor.spendResource(resource, cost);
     }
   };
 
@@ -418,7 +377,7 @@
         multiplier.add("double", DashEffect);
     });
   });
-  var DashAction = class _DashAction extends AbstractAction {
+  var DashAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -439,11 +398,9 @@
         ec.add("Zero speed", this);
       return super.check(config, ec);
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DashAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(DashEffect, { duration: 1 });
-      });
+    async apply() {
+      super.apply({});
+      await this.actor.addEffect(DashEffect, { duration: 1 });
     }
   };
 
@@ -1004,29 +961,27 @@
           ec.add(`Not enough ${resource.name} left`, this.method);
       return this.spell.check(this.g, config, ec);
     }
-    apply(config) {
-      return __async(this, null, function* () {
-        const { actor, g: g2, method, spell } = this;
-        actor.time.delete(spell.time);
-        for (const [resource, amount] of this.getResources(config))
-          actor.spendResource(resource, amount);
-        const sc = yield g2.resolve(
-          new SpellCastEvent({
-            who: actor,
-            spell,
-            method,
-            level: spell.getLevel(config),
-            targets: new Set(spell.getTargets(g2, actor, config)),
-            interrupt: new InterruptionCollector(),
-            success: new SuccessResponseCollector()
-          })
-        );
-        if (sc.detail.success.result === "fail")
-          return;
-        if (spell.concentration)
-          yield actor.endConcentration();
-        return spell.apply(g2, actor, method, config);
-      });
+    async apply(config) {
+      const { actor, g: g2, method, spell } = this;
+      actor.time.delete(spell.time);
+      for (const [resource, amount] of this.getResources(config))
+        actor.spendResource(resource, amount);
+      const sc = await g2.resolve(
+        new SpellCastEvent({
+          who: actor,
+          spell,
+          method,
+          level: spell.getLevel(config),
+          targets: new Set(spell.getTargets(g2, actor, config)),
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (sc.detail.success.result === "fail")
+        return;
+      if (spell.concentration)
+        await actor.endConcentration();
+      return spell.apply(g2, actor, method, config);
     }
   };
 
@@ -1158,9 +1113,10 @@
     check,
     getAffectedArea,
     getConfig(g2, actor, method, config) {
-      return __spreadProps(__spreadValues({}, getConfig(g2, actor, method, config)), {
+      return {
+        ...getConfig(g2, actor, method, config),
         slot: new SlotResolver(this, method)
-      });
+      };
     },
     getDamage: getDamage2,
     getHeal,
@@ -1476,18 +1432,14 @@
     setConfig(feature, config) {
       this.configs.set(feature.name, config);
     }
-    endConcentration() {
-      return __async(this, null, function* () {
-        for (const other of this.concentratingOn)
-          yield other.onSpellEnd();
-        this.concentratingOn.clear();
-      });
+    async endConcentration() {
+      for (const other of this.concentratingOn)
+        await other.onSpellEnd();
+      this.concentratingOn.clear();
     }
-    concentrateOn(entry) {
-      return __async(this, null, function* () {
-        yield this.endConcentration();
-        this.concentratingOn.add(entry);
-      });
+    async concentrateOn(entry) {
+      await this.endConcentration();
+      this.concentratingOn.add(entry);
     }
     finalise() {
       for (const feature of this.features.values())
@@ -1496,31 +1448,29 @@
       for (const spell of this.preparedSpells)
         spellImplementationWarning(spell, this);
     }
-    addEffect(effect, config, attacker) {
-      return __async(this, null, function* () {
-        const e = yield this.g.resolve(
-          new BeforeEffectEvent({
-            who: this,
-            effect,
-            config,
-            attacker,
-            interrupt: new InterruptionCollector(),
-            success: new SuccessResponseCollector()
-          })
-        );
-        if (e.detail.success.result === "fail")
-          return false;
-        this.effects.set(effect, config);
-        yield this.g.resolve(
-          new EffectAddedEvent({
-            who: this,
-            effect,
-            config,
-            interrupt: new InterruptionCollector()
-          })
-        );
-        return true;
-      });
+    async addEffect(effect, config, attacker) {
+      const e = await this.g.resolve(
+        new BeforeEffectEvent({
+          who: this,
+          effect,
+          config,
+          attacker,
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (e.detail.success.result === "fail")
+        return false;
+      this.effects.set(effect, config);
+      await this.g.resolve(
+        new EffectAddedEvent({
+          who: this,
+          effect,
+          config,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      return true;
     }
     getEffectConfig(effect) {
       return this.effects.get(effect);
@@ -1528,31 +1478,27 @@
     hasEffect(effect) {
       return this.effects.has(effect);
     }
-    removeEffect(effect) {
-      return __async(this, null, function* () {
-        const config = this.getEffectConfig(effect);
-        if (config) {
-          this.effects.delete(effect);
-          yield this.g.resolve(
-            new EffectRemovedEvent({
-              who: this,
-              effect,
-              config,
-              interrupt: new InterruptionCollector()
-            })
-          );
-          return true;
-        }
-        return false;
-      });
+    async removeEffect(effect) {
+      const config = this.getEffectConfig(effect);
+      if (config) {
+        this.effects.delete(effect);
+        await this.g.resolve(
+          new EffectRemovedEvent({
+            who: this,
+            effect,
+            config,
+            interrupt: new InterruptionCollector()
+          })
+        );
+        return true;
+      }
+      return false;
     }
-    tickEffects(durationTimer) {
-      return __async(this, null, function* () {
-        for (const [effect, config] of this.effects) {
-          if (effect.durationTimer === durationTimer && --config.duration < 1)
-            yield this.removeEffect(effect);
-        }
-      });
+    async tickEffects(durationTimer) {
+      for (const [effect, config] of this.effects) {
+        if (effect.durationTimer === durationTimer && --config.duration < 1)
+          await this.removeEffect(effect);
+      }
     }
     addKnownSpells(...spells) {
       for (const spell of spells)
@@ -1564,23 +1510,21 @@
         this.preparedSpells.add(spell);
       }
     }
-    changeExhaustion(delta) {
-      return __async(this, null, function* () {
-        const old = this.exhaustion;
-        const value = clamp(this.exhaustion + delta, 0, 6);
-        const e = new ExhaustionEvent({
-          who: this,
-          old,
-          delta,
-          value,
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
-        });
-        yield this.g.resolve(e);
-        if (e.detail.success.result !== "fail")
-          this.exhaustion = value;
-        return this.exhaustion;
+    async changeExhaustion(delta) {
+      const old = this.exhaustion;
+      const value = clamp(this.exhaustion + delta, 0, 6);
+      const e = new ExhaustionEvent({
+        who: this,
+        old,
+        delta,
+        value,
+        interrupt: new InterruptionCollector(),
+        success: new SuccessResponseCollector()
       });
+      await this.g.resolve(e);
+      if (e.detail.success.result !== "fail")
+        this.exhaustion = value;
+      return this.exhaustion;
     }
   };
 
@@ -1690,28 +1634,28 @@
     g2.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(Dying))
         interrupt.add(
-          new EvaluateLater(who, Dying, () => __async(void 0, null, function* () {
-            const result = yield g2.savingThrow(10, { who, tags: svSet("death") });
+          new EvaluateLater(who, Dying, async () => {
+            const result = await g2.savingThrow(10, { who, tags: svSet("death") });
             if (result.roll.value === 20)
-              yield g2.heal(Dying, 1, { target: who });
+              await g2.heal(Dying, 1, { target: who });
             else if (result.roll.value === 1)
-              yield g2.failDeathSave(who, 2);
+              await g2.failDeathSave(who, 2);
             else if (result.outcome === "fail")
-              yield g2.failDeathSave(who);
+              await g2.failDeathSave(who);
             else
-              yield g2.succeedDeathSave(who);
-          }))
+              await g2.succeedDeathSave(who);
+          })
         );
     });
     g2.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(Dying))
         interrupt.add(
-          new EvaluateLater(who, Dying, () => __async(void 0, null, function* () {
+          new EvaluateLater(who, Dying, async () => {
             who.deathSaveFailures = 0;
             who.deathSaveSuccesses = 0;
-            yield who.removeEffect(Dying);
-            yield who.addEffect(Prone, { duration: Infinity });
-          }))
+            await who.removeEffect(Dying);
+            await who.addEffect(Prone, { duration: Infinity });
+          })
         );
     });
   });
@@ -1726,10 +1670,10 @@
     g2.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(Stable))
         interrupt.add(
-          new EvaluateLater(who, Stable, () => __async(void 0, null, function* () {
-            yield who.removeEffect(Stable);
-            yield who.addEffect(Prone, { duration: Infinity });
-          }))
+          new EvaluateLater(who, Stable, async () => {
+            await who.removeEffect(Stable);
+            await who.addEffect(Prone, { duration: Infinity });
+          })
         );
     });
   });
@@ -1753,7 +1697,7 @@
     void 0,
     { quiet: true }
   );
-  var DropProneAction = class _DropProneAction extends AbstractAction {
+  var DropProneAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Drop Prone", "implemented", {});
     }
@@ -1762,17 +1706,15 @@
         ec.add("already prone", this);
       return super.check(config, ec);
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DropProneAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(Prone, {
-          conditions: coSet("Prone"),
-          duration: Infinity
-        });
+    async apply() {
+      super.apply({});
+      await this.actor.addEffect(Prone, {
+        conditions: coSet("Prone"),
+        duration: Infinity
       });
     }
   };
-  var StandUpAction = class _StandUpAction extends AbstractAction {
+  var StandUpAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Stand Up", "implemented", {});
     }
@@ -1789,12 +1731,10 @@
         ec.add("not enough movement", this);
       return super.check(config, ec);
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_StandUpAction.prototype, this, "apply").call(this, {});
-        this.actor.movedSoFar += this.cost;
-        yield this.actor.removeEffect(Prone);
-      });
+    async apply() {
+      super.apply({});
+      this.actor.movedSoFar += this.cost;
+      await this.actor.removeEffect(Prone);
     }
   };
   var Prone = new Effect("Prone", "turnEnd", (g2) => {
@@ -1822,7 +1762,7 @@
   });
 
   // src/actions/AbstractAttackAction.ts
-  var AbstractAttackAction = class _AbstractAttackAction extends AbstractAction {
+  var AbstractAttackAction = class extends AbstractAction {
     constructor(g2, actor, name, status, config, options = {}) {
       super(g2, actor, name, status, config, options);
       this.isAttack = true;
@@ -1832,17 +1772,15 @@
         return void 0;
       return "action";
     }
-    apply(config) {
-      return __async(this, null, function* () {
-        __superGet(_AbstractAttackAction.prototype, this, "apply").call(this, config);
-        this.actor.attacksSoFar.push(this);
-        yield this.actor.addEffect(UsedAttackAction, { duration: 1 });
-      });
+    async apply(config) {
+      super.apply(config);
+      this.actor.attacksSoFar.push(this);
+      await this.actor.addEffect(UsedAttackAction, { duration: 1 });
     }
   };
 
   // src/actions/WeaponAttack.ts
-  var WeaponAttack = class _WeaponAttack extends AbstractAttackAction {
+  var WeaponAttack = class extends AbstractAttackAction {
     constructor(g2, actor, weapon, ammo) {
       super(
         g2,
@@ -1881,86 +1819,82 @@
         " or "
       )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        __superGet(_WeaponAttack.prototype, this, "apply").call(this, { target });
-        yield doStandardAttack(this.g, {
-          ability: this.ability,
-          ammo: this.ammo,
-          attacker: this.actor,
-          source: this,
-          target,
-          weapon: this.weapon
-        });
+    async apply({ target }) {
+      super.apply({ target });
+      await doStandardAttack(this.g, {
+        ability: this.ability,
+        ammo: this.ammo,
+        attacker: this.actor,
+        source: this,
+        target,
+        weapon: this.weapon
       });
     }
   };
-  function doStandardAttack(_0, _1) {
-    return __async(this, arguments, function* (g2, {
-      ability,
-      ammo,
-      attacker,
-      source,
+  async function doStandardAttack(g2, {
+    ability,
+    ammo,
+    attacker,
+    source,
+    target,
+    weapon
+  }) {
+    const tags = /* @__PURE__ */ new Set();
+    tags.add(
+      distance(g2, attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
+    );
+    if (weapon.category !== "natural")
+      tags.add("weapon");
+    if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
+      tags.add("magical");
+    const e = await g2.attack({
+      who: attacker,
+      tags,
       target,
-      weapon
-    }) {
-      const tags = /* @__PURE__ */ new Set();
-      tags.add(
-        distance(g2, attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
-      );
-      if (weapon.category !== "natural")
-        tags.add("weapon");
-      if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
-        tags.add("magical");
-      const e = yield g2.attack({
-        who: attacker,
-        tags,
-        target,
-        ability,
-        weapon,
-        ammo
-      });
-      if (e.hit) {
-        if (ammo)
-          ammo.quantity--;
-        const { damage } = weapon;
-        const baseDamage = [];
-        if (damage.type === "dice") {
-          const { count, size } = damage.amount;
-          const amount = yield g2.rollDamage(
-            count,
-            {
-              source,
-              size,
-              damageType: damage.damageType,
-              attacker,
-              target,
-              ability,
-              weapon
-            },
-            e.critical
-          );
-          baseDamage.push([damage.damageType, amount]);
-        } else
-          baseDamage.push([damage.damageType, damage.amount]);
-        const e2 = yield g2.damage(
-          weapon,
-          weapon.damage.damageType,
+      ability,
+      weapon,
+      ammo
+    });
+    if (e.hit) {
+      if (ammo)
+        ammo.quantity--;
+      const { damage } = weapon;
+      const baseDamage = [];
+      if (damage.type === "dice") {
+        const { count, size } = damage.amount;
+        const amount = await g2.rollDamage(
+          count,
           {
-            attack: e.attack,
+            source,
+            size,
+            damageType: damage.damageType,
             attacker,
             target,
             ability,
-            weapon,
-            ammo,
-            critical: e.critical
+            weapon
           },
-          baseDamage
+          e.critical
         );
-        return { type: "hit", attack: e, damage: e2 };
-      }
-      return { type: "miss", attack: e };
-    });
+        baseDamage.push([damage.damageType, amount]);
+      } else
+        baseDamage.push([damage.damageType, damage.amount]);
+      const e2 = await g2.damage(
+        weapon,
+        weapon.damage.damageType,
+        {
+          attack: e.attack,
+          attacker,
+          target,
+          ability,
+          weapon,
+          ammo,
+          critical: e.critical
+        },
+        baseDamage
+      );
+      return { type: "hit", attack: e, damage: e2 };
+    }
+    return { type: "miss", attack: e };
   }
 
   // src/actions/OpportunityAttack.ts
@@ -1978,17 +1912,15 @@
         ec.add("can only make opportunity attacks with melee weapons", this);
       return ec;
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        this.actor.time.delete("reaction");
-        yield doStandardAttack(this.g, {
-          ability: this.ability,
-          ammo: this.ammo,
-          attacker: this.actor,
-          source: this,
-          target,
-          weapon: this.weapon
-        });
+    async apply({ target }) {
+      this.actor.time.delete("reaction");
+      await doStandardAttack(this.g, {
+        ability: this.ability,
+        ammo: this.ammo,
+        attacker: this.actor,
+        source: this,
+        target,
+        weapon: this.weapon
       });
     }
   };
@@ -2000,7 +1932,7 @@
         error.add("target used Disengage", DisengageEffect);
     });
   });
-  var DisengageAction = class _DisengageAction extends AbstractAction {
+  var DisengageAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -2014,11 +1946,9 @@
         }
       );
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DisengageAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(DisengageEffect, { duration: 1 });
-      });
+    async apply() {
+      super.apply({});
+      await this.actor.addEffect(DisengageEffect, { duration: 1 });
     }
   };
 
@@ -2036,7 +1966,7 @@
         diceType.add("advantage", DodgeEffect);
     });
   });
-  var DodgeAction = class _DodgeAction extends AbstractAction {
+  var DodgeAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -2050,11 +1980,9 @@
         }
       );
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DodgeAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(DodgeEffect, { duration: 1 });
-      });
+    async apply() {
+      super.apply({});
+      await this.actor.addEffect(DodgeEffect, { duration: 1 });
     }
   };
 
@@ -2077,14 +2005,12 @@
       this.allowNone = allowNone;
       this.priority = priority2;
     }
-    apply(g2) {
-      return __async(this, null, function* () {
-        const choice = yield new Promise(
-          (resolve) => g2.fire(new ListChoiceEvent({ interruption: this, resolve }))
-        );
-        if (choice)
-          return this.chosen(choice);
-      });
+    async apply(g2) {
+      const choice = await new Promise(
+        (resolve) => g2.fire(new ListChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        return this.chosen(choice);
     }
   };
 
@@ -2235,9 +2161,7 @@
     g2.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
       if (who.exhaustion >= 6)
         interrupt.add(
-          new EvaluateLater(who, ExhaustionRule, () => __async(void 0, null, function* () {
-            return g2.kill(who);
-          }))
+          new EvaluateLater(who, ExhaustionRule, async () => g2.kill(who))
         );
     });
   });
@@ -2330,9 +2254,9 @@
                   label: value.weapon.name,
                   value
                 })),
-                (opportunity) => __async(void 0, null, function* () {
-                  yield g2.act(opportunity, config);
-                }),
+                async (opportunity) => {
+                  await g2.act(opportunity, config);
+                },
                 true
               )
             );
@@ -2693,18 +2617,16 @@
       this.no = no;
       this.priority = priority2;
     }
-    apply(g2) {
-      return __async(this, null, function* () {
-        var _a, _b;
-        const choice = yield new Promise(
-          (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-        );
-        if (choice)
-          yield (_a = this.yes) == null ? void 0 : _a.call(this);
-        else
-          yield (_b = this.no) == null ? void 0 : _b.call(this);
-        return choice;
-      });
+    async apply(g2) {
+      var _a, _b;
+      const choice = await new Promise(
+        (resolve) => g2.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        await ((_a = this.yes) == null ? void 0 : _a.call(this));
+      else
+        await ((_b = this.no) == null ? void 0 : _b.call(this));
+      return choice;
     }
   };
 
@@ -2759,429 +2681,402 @@
       this.combatants.set(who, { position, initiative: NaN });
       this.fire(new CombatantPlacedEvent({ who, position }));
     }
-    start() {
-      return __async(this, null, function* () {
-        for (const [c, cs] of this.combatants) {
-          c.finalise();
-          cs.initiative = yield this.rollInitiative(c);
-        }
-        this.initiativeOrder = orderedKeys(
-          this.combatants,
-          ([, a], [, b]) => b.initiative - a.initiative
-        );
-        yield this.resolve(
-          new BattleStartedEvent({ interrupt: new InterruptionCollector() })
-        );
-        yield this.nextTurn();
-      });
+    async start() {
+      for (const [c, cs] of this.combatants) {
+        c.finalise();
+        cs.initiative = await this.rollInitiative(c);
+      }
+      this.initiativeOrder = orderedKeys(
+        this.combatants,
+        ([, a], [, b]) => b.initiative - a.initiative
+      );
+      await this.resolve(
+        new BattleStartedEvent({ interrupt: new InterruptionCollector() })
+      );
+      await this.nextTurn();
     }
-    rollDamage(count, e, critical = false) {
-      return __async(this, null, function* () {
-        let total = 0;
-        for (let i = 0; i < count * (critical ? 2 : 1); i++) {
-          const roll = yield this.roll(__spreadProps(__spreadValues({}, e), { type: "damage" }));
-          total += roll.value;
-        }
-        return total;
-      });
+    async rollDamage(count, e, critical = false) {
+      let total = 0;
+      for (let i = 0; i < count * (critical ? 2 : 1); i++) {
+        const roll = await this.roll({ ...e, type: "damage" });
+        total += roll.value;
+      }
+      return total;
     }
-    rollInitiative(who) {
-      return __async(this, null, function* () {
-        const gi = yield this.resolve(
-          new GetInitiativeEvent({
-            who,
-            bonus: new BonusCollector(),
-            diceType: new DiceTypeCollector(),
-            interrupt: new InterruptionCollector()
-          })
-        );
-        const roll = yield this.roll(
-          { type: "initiative", who },
-          gi.detail.diceType.result
-        );
-        return roll.value + gi.detail.bonus.result;
-      });
+    async rollInitiative(who) {
+      const gi = await this.resolve(
+        new GetInitiativeEvent({
+          who,
+          bonus: new BonusCollector(),
+          diceType: new DiceTypeCollector(),
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const roll = await this.roll(
+        { type: "initiative", who },
+        gi.detail.diceType.result
+      );
+      return roll.value + gi.detail.bonus.result;
     }
-    savingThrow(_0, _1) {
-      return __async(this, arguments, function* (dc, e, { save, fail } = {
-        save: "half",
-        fail: "normal"
-      }) {
-        const successResponse = new SuccessResponseCollector();
-        const bonus = new BonusCollector();
-        const diceType = new DiceTypeCollector();
-        const saveDamageResponse = new SaveDamageResponseCollector(save);
-        const failDamageResponse = new SaveDamageResponseCollector(fail);
-        const pre = yield this.resolve(
-          new BeforeSaveEvent(__spreadProps(__spreadValues({}, e), {
-            dc,
-            bonus,
-            diceType,
-            successResponse,
-            saveDamageResponse,
-            failDamageResponse,
-            interrupt: new InterruptionCollector()
-          }))
-        );
-        let forced = false;
-        let success = false;
-        const roll = yield this.roll(__spreadValues({ type: "save" }, e), diceType.result);
-        const total = roll.value + bonus.result;
-        if (successResponse.result !== "normal") {
-          success = successResponse.result === "success";
-          forced = true;
-        } else {
-          success = total >= dc;
-        }
-        const outcome = success ? "success" : "fail";
-        this.fire(
-          new SaveEvent({
-            pre: pre.detail,
-            diceType: diceType.result,
-            roll,
-            dc,
-            outcome,
-            total,
-            forced
-          })
-        );
-        return {
+    async savingThrow(dc, e, { save, fail } = {
+      save: "half",
+      fail: "normal"
+    }) {
+      const successResponse = new SuccessResponseCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const saveDamageResponse = new SaveDamageResponseCollector(save);
+      const failDamageResponse = new SaveDamageResponseCollector(fail);
+      const pre = await this.resolve(
+        new BeforeSaveEvent({
+          ...e,
+          dc,
+          bonus,
+          diceType,
+          successResponse,
+          saveDamageResponse,
+          failDamageResponse,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      let forced = false;
+      let success = false;
+      const roll = await this.roll({ type: "save", ...e }, diceType.result);
+      const total = roll.value + bonus.result;
+      if (successResponse.result !== "normal") {
+        success = successResponse.result === "success";
+        forced = true;
+      } else {
+        success = total >= dc;
+      }
+      const outcome = success ? "success" : "fail";
+      this.fire(
+        new SaveEvent({
+          pre: pre.detail,
+          diceType: diceType.result,
           roll,
+          dc,
           outcome,
-          forced,
-          damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
-        };
-      });
+          total,
+          forced
+        })
+      );
+      return {
+        roll,
+        outcome,
+        forced,
+        damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
+      };
     }
-    abilityCheck(dc, e) {
-      return __async(this, null, function* () {
-        const successResponse = new SuccessResponseCollector();
-        const bonus = new BonusCollector();
-        const diceType = new DiceTypeCollector();
-        const pre = yield this.resolve(
-          new BeforeCheckEvent(__spreadProps(__spreadValues({}, e), {
-            dc,
-            bonus,
-            diceType,
-            successResponse,
+    async abilityCheck(dc, e) {
+      const successResponse = new SuccessResponseCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const pre = await this.resolve(
+        new BeforeCheckEvent({
+          ...e,
+          dc,
+          bonus,
+          diceType,
+          successResponse,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      let forced = false;
+      let success = false;
+      const roll = await this.roll({ type: "check", ...e }, diceType.result);
+      const total = roll.value + bonus.result;
+      if (successResponse.result !== "normal") {
+        success = successResponse.result === "success";
+        forced = true;
+      } else {
+        success = total >= dc;
+      }
+      const outcome = success ? "success" : "fail";
+      this.fire(
+        new AbilityCheckEvent({
+          pre: pre.detail,
+          diceType: diceType.result,
+          roll,
+          dc,
+          outcome,
+          total,
+          forced
+        })
+      );
+      return { outcome, forced };
+    }
+    async roll(type, diceType = "normal") {
+      const roll = this.dice.roll(type, diceType);
+      return (await this.resolve(
+        new DiceRolledEvent({
+          type,
+          diceType,
+          ...roll,
+          interrupt: new InterruptionCollector()
+        })
+      )).detail;
+    }
+    async nextTurn() {
+      if (this.activeCombatant)
+        await this.resolve(
+          new TurnEndedEvent({
+            who: this.activeCombatant,
             interrupt: new InterruptionCollector()
-          }))
-        );
-        let forced = false;
-        let success = false;
-        const roll = yield this.roll(__spreadValues({ type: "check" }, e), diceType.result);
-        const total = roll.value + bonus.result;
-        if (successResponse.result !== "normal") {
-          success = successResponse.result === "success";
-          forced = true;
-        } else {
-          success = total >= dc;
-        }
-        const outcome = success ? "success" : "fail";
-        this.fire(
-          new AbilityCheckEvent({
-            pre: pre.detail,
-            diceType: diceType.result,
-            roll,
-            dc,
-            outcome,
-            total,
-            forced
           })
         );
-        return { outcome, forced };
-      });
-    }
-    roll(type, diceType = "normal") {
-      return __async(this, null, function* () {
-        const roll = this.dice.roll(type, diceType);
-        return (yield this.resolve(
-          new DiceRolledEvent(__spreadProps(__spreadValues({
-            type,
-            diceType
-          }, roll), {
-            interrupt: new InterruptionCollector()
-          }))
-        )).detail;
-      });
-    }
-    nextTurn() {
-      return __async(this, null, function* () {
-        if (this.activeCombatant)
-          yield this.resolve(
-            new TurnEndedEvent({
-              who: this.activeCombatant,
-              interrupt: new InterruptionCollector()
-            })
+      let who = this.initiativeOrder[this.initiativePosition];
+      let scan = true;
+      while (scan) {
+        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
+        who = this.initiativeOrder[this.initiativePosition];
+        if (!who.conditions.has("Unconscious"))
+          scan = false;
+        else {
+          who.tickEffects("turnStart");
+          await this.resolve(
+            new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
           );
-        let who = this.initiativeOrder[this.initiativePosition];
-        let scan = true;
-        while (scan) {
-          this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
-          who = this.initiativeOrder[this.initiativePosition];
-          if (!who.conditions.has("Unconscious"))
-            scan = false;
-          else {
-            who.tickEffects("turnStart");
-            yield this.resolve(
-              new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
-            );
-            who.tickEffects("turnEnd");
-          }
+          who.tickEffects("turnEnd");
         }
-        this.activeCombatant = who;
-        who.attacksSoFar = [];
-        who.movedSoFar = 0;
-        yield this.resolve(
-          new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
-        );
-      });
+      }
+      this.activeCombatant = who;
+      who.attacksSoFar = [];
+      who.movedSoFar = 0;
+      await this.resolve(
+        new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
+      );
     }
-    moveInDirection(who, direction, handler, type = "speed") {
-      return __async(this, null, function* () {
-        const state = this.getState(who);
-        const old = state.position;
-        const position = movePoint(old, direction);
-        return this.move(who, position, handler, type);
-      });
+    async moveInDirection(who, direction, handler, type = "speed") {
+      const state = this.getState(who);
+      const old = state.position;
+      const position = movePoint(old, direction);
+      return this.move(who, position, handler, type);
     }
-    move(who, position, handler, type = "speed") {
-      return __async(this, null, function* () {
-        const state = this.getState(who);
-        const old = state.position;
-        const error = new ErrorCollector();
-        const pre = yield this.resolve(
-          new BeforeMoveEvent({
-            who,
-            from: old,
-            to: position,
-            handler,
-            type,
-            error,
-            interrupt: new InterruptionCollector(),
-            success: new SuccessResponseCollector()
-          })
-        );
-        if (pre.detail.success.result === "fail")
-          return { type: "prevented" };
-        if (!error.result)
-          return { type: "error", error };
-        const multiplier = new MultiplierCollector();
+    async move(who, position, handler, type = "speed") {
+      const state = this.getState(who);
+      const old = state.position;
+      const error = new ErrorCollector();
+      const pre = await this.resolve(
+        new BeforeMoveEvent({
+          who,
+          from: old,
+          to: position,
+          handler,
+          type,
+          error,
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (pre.detail.success.result === "fail")
+        return { type: "prevented" };
+      if (!error.result)
+        return { type: "error", error };
+      const multiplier = new MultiplierCollector();
+      this.fire(
+        new GetMoveCostEvent({
+          who,
+          from: old,
+          to: position,
+          handler,
+          type,
+          multiplier
+        })
+      );
+      state.position = position;
+      const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+      await this.resolve(
+        new CombatantMovedEvent({
+          who,
+          old,
+          position,
+          handler,
+          type,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (handlerDone)
+        return { type: "unbind" };
+      return { type: "ok" };
+    }
+    async applyDamage(damage, {
+      attack,
+      attacker,
+      multiplier: baseMultiplier = 1,
+      target
+    }) {
+      let total = 0;
+      let heal = 0;
+      const breakdown = /* @__PURE__ */ new Map();
+      for (const [damageType, raw] of damage) {
+        const collector = new DamageResponseCollector();
+        const innateResponse = target.damageResponses.get(damageType);
+        if (innateResponse)
+          collector.add(innateResponse, target);
         this.fire(
-          new GetMoveCostEvent({
-            who,
-            from: old,
-            to: position,
-            handler,
-            type,
-            multiplier
-          })
-        );
-        state.position = position;
-        const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
-        yield this.resolve(
-          new CombatantMovedEvent({
-            who,
-            old,
-            position,
-            handler,
-            type,
-            interrupt: new InterruptionCollector()
-          })
-        );
-        if (handlerDone)
-          return { type: "unbind" };
-        return { type: "ok" };
-      });
-    }
-    applyDamage(_0, _1) {
-      return __async(this, arguments, function* (damage, {
-        attack,
-        attacker,
-        multiplier: baseMultiplier = 1,
-        target
-      }) {
-        let total = 0;
-        let heal = 0;
-        const breakdown = /* @__PURE__ */ new Map();
-        for (const [damageType, raw] of damage) {
-          const collector = new DamageResponseCollector();
-          const innateResponse = target.damageResponses.get(damageType);
-          if (innateResponse)
-            collector.add(innateResponse, target);
-          this.fire(
-            new GetDamageResponseEvent({
-              attack,
-              who: target,
-              damageType,
-              response: collector
-            })
-          );
-          const response = collector.result;
-          if (response === "immune")
-            continue;
-          let amount = raw;
-          if (response === "absorb") {
-            heal += raw;
-          } else {
-            let multiplier = baseMultiplier;
-            if (response === "resist")
-              multiplier *= 0.5;
-            else if (response === "vulnerable")
-              multiplier *= 2;
-            amount = Math.ceil(raw * multiplier);
-            total += amount;
-          }
-          breakdown.set(damageType, { response, raw, amount });
-        }
-        if (heal > total)
-          return this.applyHeal(target, heal - total, target);
-        total -= heal;
-        if (total < 1)
-          return;
-        const takenByTemporaryHP = Math.min(total, target.temporaryHP);
-        target.temporaryHP -= takenByTemporaryHP;
-        const afterTemporaryHP = total - takenByTemporaryHP;
-        target.hp -= afterTemporaryHP;
-        const temporaryHPSource = target.temporaryHPSource;
-        if (target.temporaryHP <= 0)
-          target.temporaryHPSource = void 0;
-        yield this.resolve(
-          new CombatantDamagedEvent({
-            who: target,
+          new GetDamageResponseEvent({
             attack,
-            attacker,
-            total,
-            takenByTemporaryHP,
-            afterTemporaryHP,
-            temporaryHPSource,
-            breakdown,
-            interrupt: new InterruptionCollector()
-          })
-        );
-        if (target.hp <= 0) {
-          yield target.endConcentration();
-          if (target.diesAtZero || target.hp <= -target.hpMax) {
-            yield this.kill(target, attacker);
-          } else if (!target.hasEffect(Dying)) {
-            target.hp = 0;
-            yield target.removeEffect(Stable);
-            yield target.addEffect(Dying, { duration: Infinity });
-          } else {
-            target.hp = 0;
-            yield this.failDeathSave(target);
-          }
-          return;
-        }
-        if (target.concentratingOn.size) {
-          const dc = Math.max(10, Math.floor(total / 2));
-          const result = yield this.savingThrow(dc, {
-            attacker,
             who: target,
-            ability: "con",
-            tags: svSet("concentration")
-          });
-          if (result.outcome === "fail")
-            yield target.endConcentration();
-        }
-      });
-    }
-    kill(target, attacker) {
-      return __async(this, null, function* () {
-        this.combatants.delete(target);
-        yield target.addEffect(Dead, { duration: Infinity });
-        this.fire(new CombatantDiedEvent({ who: target, attacker }));
-      });
-    }
-    failDeathSave(who, count = 1, attacker) {
-      return __async(this, null, function* () {
-        who.deathSaveFailures += count;
-        if (who.deathSaveFailures >= 3)
-          yield this.kill(who, attacker);
-      });
-    }
-    succeedDeathSave(who) {
-      return __async(this, null, function* () {
-        who.deathSaveSuccesses++;
-        if (who.deathSaveSuccesses >= 3) {
-          yield who.removeEffect(Dying);
-          who.deathSaveFailures = 0;
-          who.deathSaveSuccesses = 0;
-          yield who.addEffect(Stable, { duration: Infinity });
-        }
-      });
-    }
-    attack(e) {
-      return __async(this, null, function* () {
-        const pre = yield this.resolve(
-          new BeforeAttackEvent(__spreadProps(__spreadValues({}, e), {
-            diceType: new DiceTypeCollector(),
-            bonus: new BonusCollector(),
-            interrupt: new InterruptionCollector(),
-            success: new SuccessResponseCollector()
-          }))
-        );
-        if (pre.detail.success.result === "fail")
-          return { outcome: "cancelled", hit: false };
-        const ac = yield this.getAC(e.target, pre.detail);
-        const roll = yield this.roll(
-          {
-            type: "attack",
-            who: e.who,
-            target: e.target,
-            ac,
-            ability: e.ability
-          },
-          pre.detail.diceType.result
-        );
-        const total = roll.value + pre.detail.bonus.result;
-        const attack = yield this.resolve(
-          new AttackEvent({
-            pre: pre.detail,
-            roll,
-            total,
-            ac,
-            outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= ac ? "hit" : "miss",
-            forced: false,
-            // TODO
-            interrupt: new InterruptionCollector()
+            damageType,
+            response: collector
           })
         );
-        const { outcome } = attack.detail;
-        return {
-          outcome,
-          attack: attack.detail,
-          hit: outcome === "hit" || outcome === "critical",
-          critical: outcome === "critical"
-        };
-      });
-    }
-    damage(_0, _1, _2) {
-      return __async(this, arguments, function* (source, damageType, e, damageInitialiser = [], startingMultiplier) {
-        if (startingMultiplier === "zero")
-          return;
-        const map = new DamageMap(damageInitialiser);
-        const multiplier = new MultiplierCollector();
-        if (typeof startingMultiplier !== "undefined")
-          multiplier.add(startingMultiplier, source);
-        const gather = yield this.resolve(
-          new GatherDamageEvent(__spreadProps(__spreadValues({
-            critical: false
-          }, e), {
-            map,
-            bonus: new BonusCollector(),
-            interrupt: new InterruptionCollector(),
-            multiplier
-          }))
-        );
-        map.add(damageType, gather.detail.bonus.result);
-        return this.applyDamage(map, {
-          source,
-          attack: e.attack,
-          attacker: e.attacker,
-          target: e.target,
-          multiplier: multiplier.result
+        const response = collector.result;
+        if (response === "immune")
+          continue;
+        let amount = raw;
+        if (response === "absorb") {
+          heal += raw;
+        } else {
+          let multiplier = baseMultiplier;
+          if (response === "resist")
+            multiplier *= 0.5;
+          else if (response === "vulnerable")
+            multiplier *= 2;
+          amount = Math.ceil(raw * multiplier);
+          total += amount;
+        }
+        breakdown.set(damageType, { response, raw, amount });
+      }
+      if (heal > total)
+        return this.applyHeal(target, heal - total, target);
+      total -= heal;
+      if (total < 1)
+        return;
+      const takenByTemporaryHP = Math.min(total, target.temporaryHP);
+      target.temporaryHP -= takenByTemporaryHP;
+      const afterTemporaryHP = total - takenByTemporaryHP;
+      target.hp -= afterTemporaryHP;
+      const temporaryHPSource = target.temporaryHPSource;
+      if (target.temporaryHP <= 0)
+        target.temporaryHPSource = void 0;
+      await this.resolve(
+        new CombatantDamagedEvent({
+          who: target,
+          attack,
+          attacker,
+          total,
+          takenByTemporaryHP,
+          afterTemporaryHP,
+          temporaryHPSource,
+          breakdown,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (target.hp <= 0) {
+        await target.endConcentration();
+        if (target.diesAtZero || target.hp <= -target.hpMax) {
+          await this.kill(target, attacker);
+        } else if (!target.hasEffect(Dying)) {
+          target.hp = 0;
+          await target.removeEffect(Stable);
+          await target.addEffect(Dying, { duration: Infinity });
+        } else {
+          target.hp = 0;
+          await this.failDeathSave(target);
+        }
+        return;
+      }
+      if (target.concentratingOn.size) {
+        const dc = Math.max(10, Math.floor(total / 2));
+        const result = await this.savingThrow(dc, {
+          attacker,
+          who: target,
+          ability: "con",
+          tags: svSet("concentration")
         });
+        if (result.outcome === "fail")
+          await target.endConcentration();
+      }
+    }
+    async kill(target, attacker) {
+      this.combatants.delete(target);
+      await target.addEffect(Dead, { duration: Infinity });
+      this.fire(new CombatantDiedEvent({ who: target, attacker }));
+    }
+    async failDeathSave(who, count = 1, attacker) {
+      who.deathSaveFailures += count;
+      if (who.deathSaveFailures >= 3)
+        await this.kill(who, attacker);
+    }
+    async succeedDeathSave(who) {
+      who.deathSaveSuccesses++;
+      if (who.deathSaveSuccesses >= 3) {
+        await who.removeEffect(Dying);
+        who.deathSaveFailures = 0;
+        who.deathSaveSuccesses = 0;
+        await who.addEffect(Stable, { duration: Infinity });
+      }
+    }
+    async attack(e) {
+      const pre = await this.resolve(
+        new BeforeAttackEvent({
+          ...e,
+          diceType: new DiceTypeCollector(),
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (pre.detail.success.result === "fail")
+        return { outcome: "cancelled", hit: false };
+      const ac = await this.getAC(e.target, pre.detail);
+      const roll = await this.roll(
+        {
+          type: "attack",
+          who: e.who,
+          target: e.target,
+          ac,
+          ability: e.ability
+        },
+        pre.detail.diceType.result
+      );
+      const total = roll.value + pre.detail.bonus.result;
+      const attack = await this.resolve(
+        new AttackEvent({
+          pre: pre.detail,
+          roll,
+          total,
+          ac,
+          outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= ac ? "hit" : "miss",
+          forced: false,
+          // TODO
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const { outcome } = attack.detail;
+      return {
+        outcome,
+        attack: attack.detail,
+        hit: outcome === "hit" || outcome === "critical",
+        critical: outcome === "critical"
+      };
+    }
+    async damage(source, damageType, e, damageInitialiser = [], startingMultiplier) {
+      if (startingMultiplier === "zero")
+        return;
+      const map = new DamageMap(damageInitialiser);
+      const multiplier = new MultiplierCollector();
+      if (typeof startingMultiplier !== "undefined")
+        multiplier.add(startingMultiplier, source);
+      const gather = await this.resolve(
+        new GatherDamageEvent({
+          critical: false,
+          ...e,
+          map,
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          multiplier
+        })
+      );
+      map.add(damageType, gather.detail.bonus.result);
+      return this.applyDamage(map, {
+        source,
+        attack: e.attack,
+        attacker: e.attacker,
+        target: e.target,
+        multiplier: multiplier.result
       });
     }
     check(action, config) {
@@ -3190,17 +3085,15 @@
       action.check(config, error);
       return error;
     }
-    act(action, config) {
-      return __async(this, null, function* () {
-        yield action.apply(config);
-        return this.resolve(
-          new AfterActionEvent({
-            action,
-            config,
-            interrupt: new InterruptionCollector()
-          })
-        );
-      });
+    async act(action, config) {
+      await action.apply(config);
+      return this.resolve(
+        new AfterActionEvent({
+          action,
+          config,
+          interrupt: new InterruptionCollector()
+        })
+      );
     }
     getActions(who, target) {
       return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
@@ -3216,20 +3109,18 @@
         who.baseACMethod
       );
     }
-    getAC(who, pre) {
-      return __async(this, null, function* () {
-        const method = this.getBestACMethod(who);
-        const e = yield this.resolve(
-          new GetACEvent({
-            who,
-            method,
-            bonus: new BonusCollector(),
-            interrupt: new InterruptionCollector(),
-            pre
-          })
-        );
-        return method.ac + e.detail.bonus.result;
-      });
+    async getAC(who, pre) {
+      const method = this.getBestACMethod(who);
+      const e = await this.resolve(
+        new GetACEvent({
+          who,
+          method,
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          pre
+        })
+      );
+      return method.ac + e.detail.bonus.result;
     }
     fire(e) {
       if (e.interrupt)
@@ -3239,13 +3130,11 @@
       this.events.fire(e);
       return e;
     }
-    resolve(e) {
-      return __async(this, null, function* () {
-        this.events.fire(e);
-        for (const interruption of e.detail.interrupt)
-          yield interruption.apply(this);
-        return e;
-      });
+    async resolve(e) {
+      this.events.fire(e);
+      for (const interruption of e.detail.interrupt)
+        await interruption.apply(this);
+      return e;
     }
     getState(who) {
       var _a;
@@ -3275,72 +3164,61 @@
       }
       return inside;
     }
-    applyBoundedMove(who, handler) {
-      return __async(this, null, function* () {
-        return new Promise(
-          (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
-        );
-      });
+    async applyBoundedMove(who, handler) {
+      return new Promise(
+        (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
+      );
     }
-    rollHeal(count, e, critical = false) {
-      return __async(this, null, function* () {
-        let total = 0;
-        for (let i = 0; i < count * (critical ? 2 : 1); i++) {
-          const roll = yield this.roll(__spreadProps(__spreadValues({}, e), { type: "heal" }));
-          total += roll.value;
-        }
-        return total;
-      });
+    async rollHeal(count, e, critical = false) {
+      let total = 0;
+      for (let i = 0; i < count * (critical ? 2 : 1); i++) {
+        const roll = await this.roll({ ...e, type: "heal" });
+        total += roll.value;
+      }
+      return total;
     }
-    heal(source, amount, e, startingMultiplier) {
-      return __async(this, null, function* () {
-        const bonus = new BonusCollector();
-        bonus.add(amount, source);
-        const multiplier = new MultiplierCollector();
-        if (typeof startingMultiplier !== "undefined")
-          multiplier.add(startingMultiplier, source);
-        const gather = yield this.resolve(
-          new GatherHealEvent(__spreadProps(__spreadValues({}, e), {
-            bonus,
-            multiplier,
-            interrupt: new InterruptionCollector()
-          }))
-        );
-        const total = bonus.result * multiplier.result;
-        return this.applyHeal(gather.detail.target, total, gather.detail.actor);
-      });
+    async heal(source, amount, e, startingMultiplier) {
+      const bonus = new BonusCollector();
+      bonus.add(amount, source);
+      const multiplier = new MultiplierCollector();
+      if (typeof startingMultiplier !== "undefined")
+        multiplier.add(startingMultiplier, source);
+      const gather = await this.resolve(
+        new GatherHealEvent({
+          ...e,
+          bonus,
+          multiplier,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const total = bonus.result * multiplier.result;
+      return this.applyHeal(gather.detail.target, total, gather.detail.actor);
     }
-    applyHeal(who, fullAmount, actor) {
-      return __async(this, null, function* () {
-        const amount = Math.min(fullAmount, who.hpMax - who.hp);
-        who.hp += amount;
-        return this.resolve(
-          new CombatantHealedEvent({
-            who,
-            actor,
-            amount,
-            fullAmount,
-            interrupt: new InterruptionCollector()
-          })
-        );
-      });
+    async applyHeal(who, fullAmount, actor) {
+      const amount = Math.min(fullAmount, who.hpMax - who.hp);
+      who.hp += amount;
+      return this.resolve(
+        new CombatantHealedEvent({
+          who,
+          actor,
+          amount,
+          fullAmount,
+          interrupt: new InterruptionCollector()
+        })
+      );
     }
-    giveTemporaryHP(who, count, source) {
-      return __async(this, null, function* () {
-        var _a;
-        if (who.temporaryHP > 0)
-          return new YesNoChoice(
-            who,
-            source,
-            `Replace Temporary HP?`,
-            `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
-            () => __async(this, null, function* () {
-              return this.setTemporaryHP(who, count, source);
-            })
-          ).apply(this);
-        this.setTemporaryHP(who, count, source);
-        return true;
-      });
+    async giveTemporaryHP(who, count, source) {
+      var _a;
+      if (who.temporaryHP > 0)
+        return new YesNoChoice(
+          who,
+          source,
+          `Replace Temporary HP?`,
+          `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
+          async () => this.setTemporaryHP(who, count, source)
+        ).apply(this);
+      this.setTemporaryHP(who, count, source);
+      return true;
     }
     setTemporaryHP(who, count, source) {
       who.temporaryHP = count;
@@ -3410,14 +3288,14 @@
         const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
         if (config && pre.target.temporaryHPSource === ArmorOfAgathysEffect && pre.tags.has("melee"))
           interrupt.add(
-            new EvaluateLater(pre.who, ArmorOfAgathysEffect, () => __async(void 0, null, function* () {
-              yield g2.damage(
+            new EvaluateLater(pre.who, ArmorOfAgathysEffect, async () => {
+              await g2.damage(
                 ArmorOfAgathysEffect,
                 "cold",
                 { attacker: pre.target, target: pre.who },
                 [["cold", config.count]]
               );
-            }))
+            })
           );
       });
       g2.events.on(
@@ -3425,9 +3303,9 @@
         ({ detail: { who, temporaryHPSource, interrupt } }) => {
           if (temporaryHPSource === ArmorOfAgathysEffect && who.temporaryHP <= 0)
             interrupt.add(
-              new EvaluateLater(who, ArmorOfAgathysEffect, () => __async(void 0, null, function* () {
-                yield who.removeEffect(ArmorOfAgathysEffect);
-              }))
+              new EvaluateLater(who, ArmorOfAgathysEffect, async () => {
+                await who.removeEffect(ArmorOfAgathysEffect);
+              })
             );
         }
       );
@@ -3447,14 +3325,12 @@
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { slot }) {
-        const count = slot * 5;
-        if (yield g2.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
-          const duration = hours(1);
-          yield caster.addEffect(ArmorOfAgathysEffect, { count, duration }, caster);
-        }
-      });
+    async apply(g2, caster, method, { slot }) {
+      const count = slot * 5;
+      if (await g2.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
+        const duration = hours(1);
+        await caster.addEffect(ArmorOfAgathysEffect, { count, duration }, caster);
+      }
     }
   });
   var ArmorOfAgathys_default = ArmorOfAgathys;
@@ -3472,75 +3348,69 @@
       this.type = type;
       this.config = config;
     }
-    attack(target) {
-      return __async(this, null, function* () {
-        const { caster: who, method, spell, type } = this;
-        this.attackResult = yield this.g.attack({
-          who,
-          target,
-          ability: method.ability,
-          tags: atSet(type, "spell", "magical"),
-          spell,
-          method
-        });
-        return this.attackResult;
+    async attack(target) {
+      const { caster: who, method, spell, type } = this;
+      this.attackResult = await this.g.attack({
+        who,
+        target,
+        ability: method.ability,
+        tags: atSet(type, "spell", "magical"),
+        spell,
+        method
       });
+      return this.attackResult;
     }
-    getDamage(target) {
-      return __async(this, null, function* () {
-        if (!this.attackResult)
-          throw new Error("Run .attack() first");
-        const { critical } = this.attackResult;
-        const { g: g2, caster: attacker, config, method, spell } = this;
-        const damage = spell.getDamage(g2, attacker, method, config);
-        if (damage) {
-          const amounts = [];
-          let first = true;
-          for (const { type, amount, damageType } of damage) {
-            if (first) {
-              this.baseDamageType = damageType;
-              first = false;
-            }
-            if (type === "dice") {
-              const { count, size } = amount;
-              const roll = yield g2.rollDamage(
-                count,
-                {
-                  source: spell,
-                  size,
-                  damageType,
-                  attacker,
-                  target,
-                  spell,
-                  method
-                },
-                critical
-              );
-              amounts.push([damageType, roll]);
-            } else
-              amounts.push([damageType, amount]);
+    async getDamage(target) {
+      if (!this.attackResult)
+        throw new Error("Run .attack() first");
+      const { critical } = this.attackResult;
+      const { g: g2, caster: attacker, config, method, spell } = this;
+      const damage = spell.getDamage(g2, attacker, method, config);
+      if (damage) {
+        const amounts = [];
+        let first = true;
+        for (const { type, amount, damageType } of damage) {
+          if (first) {
+            this.baseDamageType = damageType;
+            first = false;
           }
-          return amounts;
+          if (type === "dice") {
+            const { count, size } = amount;
+            const roll = await g2.rollDamage(
+              count,
+              {
+                source: spell,
+                size,
+                damageType,
+                attacker,
+                target,
+                spell,
+                method
+              },
+              critical
+            );
+            amounts.push([damageType, roll]);
+          } else
+            amounts.push([damageType, amount]);
         }
-      });
+        return amounts;
+      }
     }
-    damage(target, initialiser) {
-      return __async(this, null, function* () {
-        if (!this.attackResult)
-          throw new Error("Run .attack() first");
-        const { attack, critical, hit } = this.attackResult;
-        if (!hit)
-          return;
-        const { g: g2, baseDamageType, caster: attacker, method, spell } = this;
-        if (!baseDamageType)
-          throw new Error("Run .getDamage() first");
-        return g2.damage(
-          spell,
-          baseDamageType,
-          { attack, attacker, target, critical, spell, method },
-          initialiser
-        );
-      });
+    async damage(target, initialiser) {
+      if (!this.attackResult)
+        throw new Error("Run .attack() first");
+      const { attack, critical, hit } = this.attackResult;
+      if (!hit)
+        return;
+      const { g: g2, baseDamageType, caster: attacker, method, spell } = this;
+      if (!baseDamageType)
+        throw new Error("Run .getDamage() first");
+      return g2.damage(
+        spell,
+        baseDamageType,
+        { attack, attacker, target, critical, spell, method },
+        initialiser
+      );
     }
   };
 
@@ -3581,52 +3451,50 @@
     getAffectedArea: (g2, caster, { target }) => target && [getArea(g2, target)],
     getDamage: () => [_dd(2, 10, "force")],
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-        const rsa = new SpellAttack(
-          g2,
-          caster,
-          EldritchBurstSpell,
-          BirnotecSpellcasting,
-          "ranged",
-          { target }
+    async apply(g2, caster, method, { target }) {
+      const rsa = new SpellAttack(
+        g2,
+        caster,
+        EldritchBurstSpell,
+        BirnotecSpellcasting,
+        "ranged",
+        { target }
+      );
+      const attack = await rsa.attack(target);
+      if (attack.outcome === "cancelled")
+        return;
+      if (attack.hit) {
+        const damage2 = await rsa.getDamage(target);
+        await rsa.damage(target, damage2);
+      }
+      const damage = await g2.rollDamage(
+        1,
+        { size: 10, source: this, attacker: caster, damageType: "force" },
+        attack.critical
+      );
+      for (const other of g2.getInside(getArea(g2, target))) {
+        if (other === target)
+          continue;
+        const save = await g2.savingThrow(
+          15,
+          {
+            attacker: caster,
+            who: other,
+            ability: "dex",
+            spell: EldritchBurstSpell,
+            method,
+            tags: svSet()
+          },
+          { fail: "normal", save: "zero" }
         );
-        const attack = yield rsa.attack(target);
-        if (attack.outcome === "cancelled")
-          return;
-        if (attack.hit) {
-          const damage2 = yield rsa.getDamage(target);
-          yield rsa.damage(target, damage2);
-        }
-        const damage = yield g2.rollDamage(
-          1,
-          { size: 10, source: this, attacker: caster, damageType: "force" },
-          attack.critical
+        await g2.damage(
+          this,
+          "force",
+          { attacker: caster, target: other, spell: EldritchBurstSpell, method },
+          [["force", damage]],
+          save.damageResponse
         );
-        for (const other of g2.getInside(getArea(g2, target))) {
-          if (other === target)
-            continue;
-          const save = yield g2.savingThrow(
-            15,
-            {
-              attacker: caster,
-              who: other,
-              ability: "dex",
-              spell: EldritchBurstSpell,
-              method,
-              tags: svSet()
-            },
-            { fail: "normal", save: "zero" }
-          );
-          yield g2.damage(
-            this,
-            "force",
-            { attacker: caster, target: other, spell: EldritchBurstSpell, method },
-            [["force", damage]],
-            save.damageResponse
-          );
-        }
-      });
+      }
     }
   });
   var BirnotecSpellcasting = new InnateSpellcasting(
@@ -3654,11 +3522,11 @@
     (g2, me) => {
       g2.events.on("BattleStarted", ({ detail: { interrupt } }) => {
         interrupt.add(
-          new EvaluateLater(me, ArmorOfAgathys2, () => __async(void 0, null, function* () {
-            yield ArmorOfAgathys_default.apply(g2, me, BirnotecSpellcasting, {
+          new EvaluateLater(me, ArmorOfAgathys2, async () => {
+            await ArmorOfAgathys_default.apply(g2, me, BirnotecSpellcasting, {
               slot: 3
             });
-          }))
+          })
         );
       });
     }
@@ -3675,9 +3543,9 @@
               AntimagicProdigy,
               "Antimagic Prodigy",
               `Use ${me.name}'s reaction to attempt to counter the spell?`,
-              () => __async(void 0, null, function* () {
+              async () => {
                 me.time.delete("reaction");
-                const save = yield g2.abilityCheck(15, {
+                const save = await g2.abilityCheck(15, {
                   who,
                   attacker: me,
                   skill: "Arcana",
@@ -3686,7 +3554,7 @@
                 });
                 if (save.outcome === "fail")
                   success.add("fail", AntimagicProdigy);
-              })
+              }
             )
           );
       });
@@ -3706,29 +3574,29 @@
                 HellishRebuke,
                 "Hellish Rebuke",
                 `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                () => __async(void 0, null, function* () {
+                async () => {
                   me.time.delete("reaction");
-                  const damage = yield g2.rollDamage(2, {
+                  const damage = await g2.rollDamage(2, {
                     source: HellishRebuke,
                     size: 10,
                     attacker: me,
                     target: attacker,
                     damageType: "fire"
                   });
-                  const save = yield g2.savingThrow(15, {
+                  const save = await g2.savingThrow(15, {
                     who: attacker,
                     attacker: me,
                     ability: "dex",
                     tags: svSet()
                   });
-                  yield g2.damage(
+                  await g2.damage(
                     HellishRebuke,
                     "fire",
                     { attacker: me, target: attacker },
                     [["fire", damage]],
                     save.damageResponse
                   );
-                })
+                }
               )
             );
         }
@@ -4079,8 +3947,8 @@
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("weapon")))
             interrupt.add(
-              new EvaluateLater(me, ScreamingInside, () => __async(void 0, null, function* () {
-                const amount = yield g2.rollDamage(
+              new EvaluateLater(me, ScreamingInside, async () => {
+                const amount = await g2.rollDamage(
                   1,
                   {
                     source: ScreamingInside,
@@ -4092,7 +3960,7 @@
                   critical
                 );
                 map.add("psychic", amount);
-              }))
+              })
             );
         }
       );
@@ -4109,10 +3977,10 @@
       g2.events.on("CombatantDamaged", ({ detail: { who, total, interrupt } }) => {
         if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
           interrupt.add(
-            new EvaluateLater(who, WreathedInShadowEffect, () => __async(void 0, null, function* () {
-              yield who.removeEffect(WreathedInShadowEffect);
+            new EvaluateLater(who, WreathedInShadowEffect, async () => {
+              await who.removeEffect(WreathedInShadowEffect);
               who.name = realName;
-            }))
+            })
           );
       });
     }
@@ -4121,10 +3989,10 @@
     "Wreathed in Shadow",
     "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
     (g2, me) => {
-      const wreathe = new EvaluateLater(me, WreathedInShadow, () => __async(void 0, null, function* () {
-        yield me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+      const wreathe = new EvaluateLater(me, WreathedInShadow, async () => {
+        await me.addEffect(WreathedInShadowEffect, { duration: Infinity });
         me.name = hiddenName;
-      }));
+      });
       g2.events.on("BattleStarted", ({ detail: { interrupt } }) => {
         interrupt.add(wreathe);
       });
@@ -4237,10 +4105,10 @@
                 FightingStyleProtection,
                 "Fighting Style: Protection",
                 `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
-                () => __async(void 0, null, function* () {
+                async () => {
                   me.time.delete("reaction");
                   diceType.add("disadvantage", FightingStyleProtection);
-                })
+                }
               )
             );
         }
@@ -4254,9 +4122,9 @@
       if (target.hasEffect(GuidingBoltEffect)) {
         diceType.add("advantage", GuidingBoltEffect);
         interrupt.add(
-          new EvaluateLater(target, GuidingBoltEffect, () => __async(void 0, null, function* () {
-            yield target.removeEffect(GuidingBoltEffect);
-          }))
+          new EvaluateLater(target, GuidingBoltEffect, async () => {
+            await target.removeEffect(GuidingBoltEffect);
+          })
         );
       }
     });
@@ -4277,18 +4145,16 @@
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
     ],
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
-        const rsa = new SpellAttack(g2, attacker, GuidingBolt, method, "ranged", {
-          slot,
-          target
-        });
-        if ((yield rsa.attack(target)).hit) {
-          const damage = yield rsa.getDamage(target);
-          yield rsa.damage(target, damage);
-          yield target.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
-        }
+    async apply(g2, attacker, method, { slot, target }) {
+      const rsa = new SpellAttack(g2, attacker, GuidingBolt, method, "ranged", {
+        slot,
+        target
       });
+      if ((await rsa.attack(target)).hit) {
+        const damage = await rsa.getDamage(target);
+        await rsa.damage(target, damage);
+        await target.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
+      }
     }
   });
   var GuidingBolt_default = GuidingBolt;
@@ -4363,19 +4229,17 @@
       }
       return ec;
     },
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, actor, method, { slot, targets }) {
-        const amount = (yield g2.rollHeal(slot - 2, {
-          source: MassHealingWord,
-          actor,
-          size: 4
-        })) + (method.ability ? actor[method.ability].modifier : 0);
-        for (const target of targets) {
-          if (cannotHeal.has(target.type))
-            continue;
-          yield g2.applyHeal(target, amount, actor);
-        }
-      });
+    async apply(g2, actor, method, { slot, targets }) {
+      const amount = await g2.rollHeal(slot - 2, {
+        source: MassHealingWord,
+        actor,
+        size: 4
+      }) + (method.ability ? actor[method.ability].modifier : 0);
+      for (const target of targets) {
+        if (cannotHeal.has(target.type))
+          continue;
+        await g2.applyHeal(target, amount, actor);
+      }
     }
   });
   var MassHealingWord_default = MassHealingWord;
@@ -4393,8 +4257,8 @@
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
           if (attacker.side === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(g2, me, attacker) <= 30)
             interrupt.add(
-              new EvaluateLater(attacker, FiendishMantle, () => __async(void 0, null, function* () {
-                const amount = yield g2.rollDamage(
+              new EvaluateLater(attacker, FiendishMantle, async () => {
+                const amount = await g2.rollDamage(
                   1,
                   {
                     attacker,
@@ -4405,7 +4269,7 @@
                   critical
                 );
                 map.add("necrotic", amount);
-              }))
+              })
             );
         }
       );
@@ -4417,7 +4281,7 @@
         conditions.add("Stunned", ShieldBashEffect);
     });
   });
-  var ShieldBashAction = class _ShieldBashAction extends AbstractAction {
+  var ShieldBashAction = class extends AbstractAction {
     constructor(g2, actor, ability) {
       super(
         g2,
@@ -4429,23 +4293,21 @@
       );
       this.ability = ability;
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        __superGet(_ShieldBashAction.prototype, this, "apply").call(this, { target });
-        const { g: g2, actor, ability } = this;
-        const dc = getSaveDC(actor, ability);
-        const config = { conditions: coSet("Stunned"), duration: 1 };
-        const { outcome } = yield g2.savingThrow(dc, {
-          ability: "con",
-          attacker: actor,
-          effect: ShieldBashEffect,
-          config,
-          who: target,
-          tags: svSet()
-        });
-        if (outcome === "fail")
-          yield target.addEffect(ShieldBashEffect, config, actor);
+    async apply({ target }) {
+      super.apply({ target });
+      const { g: g2, actor, ability } = this;
+      const dc = getSaveDC(actor, ability);
+      const config = { conditions: coSet("Stunned"), duration: 1 };
+      const { outcome } = await g2.savingThrow(dc, {
+        ability: "con",
+        attacker: actor,
+        effect: ShieldBashEffect,
+        config,
+        who: target,
+        tags: svSet()
       });
+      if (outcome === "fail")
+        await target.addEffect(ShieldBashEffect, config, actor);
     }
   };
   var ShieldBash = new SimpleFeature(
@@ -4595,24 +4457,22 @@
         ec.add(`Cannot heal a ${target.type}`, HealingWord);
       return ec;
     },
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, actor, method, { slot, target }) {
-        if (cannotHeal2.has(target.type))
-          return;
-        const modifier = method.ability ? actor[method.ability].modifier : 0;
-        const rolled = yield g2.rollHeal(slot, {
-          source: HealingWord,
-          actor,
-          target,
-          spell: HealingWord,
-          method,
-          size: 4
-        });
-        yield g2.heal(HealingWord, rolled + modifier, {
-          actor,
-          spell: HealingWord,
-          target
-        });
+    async apply(g2, actor, method, { slot, target }) {
+      if (cannotHeal2.has(target.type))
+        return;
+      const modifier = method.ability ? actor[method.ability].modifier : 0;
+      const rolled = await g2.rollHeal(slot, {
+        source: HealingWord,
+        actor,
+        target,
+        spell: HealingWord,
+        method,
+        size: 4
+      });
+      await g2.heal(HealingWord, rolled + modifier, {
+        actor,
+        spell: HealingWord,
+        target
       });
     }
   });
@@ -4630,7 +4490,7 @@
     "Discord",
     "One enemy within 30 ft. must make a DC 15 Charisma save or use its reaction to make one melee attack against an ally in range."
   );
-  var IrritationAction = class _IrritationAction extends AbstractAction {
+  var IrritationAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -4647,20 +4507,18 @@
         ec.add("Target is not concentrating", this);
       return ec;
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        __superGet(_IrritationAction.prototype, this, "apply").call(this, { target });
-        const { g: g2, actor } = this;
-        const dc = getSaveDC(actor, "cha");
-        const result = yield g2.savingThrow(dc, {
-          ability: "con",
-          attacker: actor,
-          tags: svSet("concentration"),
-          who: target
-        });
-        if (result.outcome === "fail")
-          yield target.endConcentration();
+    async apply({ target }) {
+      super.apply({ target });
+      const { g: g2, actor } = this;
+      const dc = getSaveDC(actor, "cha");
+      const result = await g2.savingThrow(dc, {
+        ability: "con",
+        attacker: actor,
+        tags: svSet("concentration"),
+        who: target
       });
+      if (result.outcome === "fail")
+        await target.endConcentration();
     }
   };
   var Irritation = new SimpleFeature(
@@ -4685,7 +4543,7 @@
     SpellcastingMethod2,
     [{ level: 1, spell: HealingWord_default }]
   );
-  var DancingStepAction = class _DancingStepAction extends AbstractAction {
+  var DancingStepAction = class extends AbstractAction {
     constructor(g2, actor, distance2 = 20) {
       super(
         g2,
@@ -4700,14 +4558,12 @@
       );
       this.distance = distance2;
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_DancingStepAction.prototype, this, "apply").call(this, {});
-        yield this.g.applyBoundedMove(
-          this.actor,
-          getTeleportation(this.distance, "Dancing Step")
-        );
-      });
+    async apply() {
+      super.apply({});
+      await this.g.applyBoundedMove(
+        this.actor,
+        getTeleportation(this.distance, "Dancing Step")
+      );
     }
   };
   var DancingStep = new SimpleFeature(
@@ -4734,9 +4590,9 @@
                   DancingStep,
                   "Dancing Step",
                   `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
-                  () => __async(void 0, null, function* () {
-                    yield g2.act(step, {});
-                  })
+                  async () => {
+                    await g2.act(step, {});
+                  }
                 )
               );
           }
@@ -4800,9 +4656,9 @@
         ({ detail: { attack, attacker, interrupt } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.weapon) === weapon)
             interrupt.add(
-              new EvaluateLater(me, LustForBattle, () => __async(void 0, null, function* () {
-                yield g2.giveTemporaryHP(me, 5, LustForBattle);
-              }))
+              new EvaluateLater(me, LustForBattle, async () => {
+                await g2.giveTemporaryHP(me, 5, LustForBattle);
+              })
             );
         }
       );
@@ -4817,7 +4673,7 @@
       }
     );
   });
-  var BullRushAction = class _BullRushAction extends AbstractAction {
+  var BullRushAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -4837,54 +4693,52 @@
         ec.add("cannot move", this);
       return ec;
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_BullRushAction.prototype, this, "apply").call(this, {});
-        const { g: g2, actor } = this;
-        const rushed = /* @__PURE__ */ new Set();
-        yield actor.addEffect(BullRushEffect, { duration: 1 });
-        const maximum = actor.speed;
-        let used = 0;
-        yield g2.applyBoundedMove(actor, {
-          // TODO must keep moving in same direction
-          name: "Bull Rush",
-          maximum,
-          provokesOpportunityAttacks: true,
-          cannotApproach: /* @__PURE__ */ new Set(),
-          mustUseAll: false,
-          teleportation: false,
-          onMove(who, cost) {
-            const position = g2.getState(who).position;
-            for (const hit of g2.getInside(
-              {
-                type: "within",
-                position,
-                target: actor,
-                radius: 0
-              },
-              [who]
-            )) {
-              rushed.add(hit);
-            }
-            used += cost;
-            return used >= maximum;
+    async apply() {
+      super.apply({});
+      const { g: g2, actor } = this;
+      const rushed = /* @__PURE__ */ new Set();
+      await actor.addEffect(BullRushEffect, { duration: 1 });
+      const maximum = actor.speed;
+      let used = 0;
+      await g2.applyBoundedMove(actor, {
+        // TODO must keep moving in same direction
+        name: "Bull Rush",
+        maximum,
+        provokesOpportunityAttacks: true,
+        cannotApproach: /* @__PURE__ */ new Set(),
+        mustUseAll: false,
+        teleportation: false,
+        onMove(who, cost) {
+          const position = g2.getState(who).position;
+          for (const hit of g2.getInside(
+            {
+              type: "within",
+              position,
+              target: actor,
+              radius: 0
+            },
+            [who]
+          )) {
+            rushed.add(hit);
           }
-        });
-        const dc = getSaveDC(actor, "str");
-        const config = { duration: Infinity, conditions: coSet("Prone") };
-        for (const who of rushed) {
-          const result = yield g2.savingThrow(dc, {
-            ability: "dex",
-            attacker: actor,
-            effect: Prone,
-            config,
-            tags: svSet(),
-            who
-          });
-          if (result.outcome === "fail")
-            yield who.addEffect(Prone, config, actor);
+          used += cost;
+          return used >= maximum;
         }
       });
+      const dc = getSaveDC(actor, "str");
+      const config = { duration: Infinity, conditions: coSet("Prone") };
+      for (const who of rushed) {
+        const result = await g2.savingThrow(dc, {
+          ability: "dex",
+          attacker: actor,
+          effect: Prone,
+          config,
+          tags: svSet(),
+          who
+        });
+        if (result.outcome === "fail")
+          await who.addEffect(Prone, config, actor);
+      }
     }
   };
   var BullRush = new SimpleFeature(
@@ -4912,11 +4766,11 @@
               SurvivalReflex,
               "Survival Reflex",
               `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
-              () => __async(void 0, null, function* () {
+              async () => {
                 me.time.delete("reaction");
                 activated = true;
                 diceType.add("advantage", SurvivalReflex);
-              })
+              }
             )
           );
       };
@@ -4929,15 +4783,13 @@
             new EvaluateLater(
               me,
               SurvivalReflex,
-              () => __async(void 0, null, function* () {
-                return g2.applyBoundedMove(
-                  me,
-                  new BoundedMove(
-                    SurvivalReflex,
-                    round(me.speed / 2, MapSquareSize)
-                  )
-                );
-              })
+              async () => g2.applyBoundedMove(
+                me,
+                new BoundedMove(
+                  SurvivalReflex,
+                  round(me.speed / 2, MapSquareSize)
+                )
+              )
             )
           );
         }
@@ -5054,10 +4906,10 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                   SneakAttack,
                   "Sneak Attack",
                   `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
-                  () => __async(void 0, null, function* () {
+                  async () => {
                     me.spendResource(SneakAttackResource);
                     const damageType = weapon.damage.damageType;
-                    const damage = yield g2.rollDamage(
+                    const damage = await g2.rollDamage(
                       count,
                       {
                         source: SneakAttack,
@@ -5071,7 +4923,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                       critical
                     );
                     map.add(damageType, damage);
-                  })
+                  }
                 )
               );
             }
@@ -5102,13 +4954,13 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
       if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
         interrupt.add(
-          new EvaluateLater(pre.who, SteadyAimAdvantageEffect, () => __async(void 0, null, function* () {
-            yield pre.who.removeEffect(SteadyAimAdvantageEffect);
-          }))
+          new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
+            await pre.who.removeEffect(SteadyAimAdvantageEffect);
+          })
         );
     });
   });
-  var SteadyAimAction = class _SteadyAimAction extends AbstractAction {
+  var SteadyAimAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
     }
@@ -5117,12 +4969,10 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         ec.add("Already moved this turn", this);
       return super.check(config, ec);
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_SteadyAimAction.prototype, this, "apply").call(this, {});
-        yield this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
-        yield this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
-      });
+    async apply() {
+      super.apply({});
+      await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
+      await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
     }
   };
   var SteadyAim = new SimpleFeature(
@@ -5196,10 +5046,10 @@ In addition, you understand a set of secret signs and symbols used to convey sho
                 UncannyDodge,
                 "Uncanny Dodge",
                 `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                () => __async(void 0, null, function* () {
+                async () => {
                   me.time.delete("reaction");
                   multiplier.add("half", UncannyDodge);
-                })
+                }
               )
             );
         }
@@ -5296,7 +5146,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
               Skirmisher,
               "Skirmisher",
               `Use ${me.name}'s reaction to move half their speed?`,
-              () => __async(void 0, null, function* () {
+              async () => {
                 me.time.delete("reaction");
                 return g2.applyBoundedMove(
                   me,
@@ -5306,7 +5156,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
                     { provokesOpportunityAttacks: false }
                   )
                 );
-              })
+              }
             )
           );
       });
@@ -5435,9 +5285,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
                   "Chaotic Burst",
                   "Choose the damage type:",
                   [a, b].map(getOptionFromRoll),
-                  (type) => __async(this, null, function* () {
-                    return addBurst(type);
-                  })
+                  async (type) => addBurst(type)
                 )
               );
           }
@@ -5462,11 +5310,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var LuckPoint = new LongRestResource("Luck Point", 3);
   function addLuckyOpportunity(g2, who, message, interrupt, callback) {
     interrupt.add(
-      new YesNoChoice(who, Lucky, "Lucky", message, () => __async(this, null, function* () {
+      new YesNoChoice(who, Lucky, "Lucky", message, async () => {
         who.spendResource(LuckPoint);
-        const nr = yield g2.roll({ type: "luck", who });
+        const nr = await g2.roll({ type: "luck", who });
         callback(nr.value);
-      }))
+      })
     );
   }
   var Lucky = new SimpleFeature(
@@ -5515,7 +5363,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/features/boons.ts
   var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
-  var HissAction = class _HissAction extends AbstractAction {
+  var HissAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -5526,31 +5374,29 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         { time: "bonus action", resources: [[HissResource, 1]] }
       );
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        __superGet(_HissAction.prototype, this, "apply").call(this, { target });
-        const { g: g2, actor } = this;
-        if (target.time.has("reaction")) {
-          const dc = getSaveDC(actor, "cha");
-          const save = yield g2.savingThrow(dc, {
-            who: target,
-            attacker: actor,
-            ability: "wis",
-            tags: svSet("frightened", "forced movement")
-          });
-          if (save.outcome === "fail") {
-            target.time.delete("reaction");
-            yield g2.applyBoundedMove(
-              target,
-              new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
-                cannotApproach: [actor],
-                mustUseAll: true,
-                provokesOpportunityAttacks: false
-              })
-            );
-          }
+    async apply({ target }) {
+      super.apply({ target });
+      const { g: g2, actor } = this;
+      if (target.time.has("reaction")) {
+        const dc = getSaveDC(actor, "cha");
+        const save = await g2.savingThrow(dc, {
+          who: target,
+          attacker: actor,
+          ability: "wis",
+          tags: svSet("frightened", "forced movement")
+        });
+        if (save.outcome === "fail") {
+          target.time.delete("reaction");
+          await g2.applyBoundedMove(
+            target,
+            new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
+              cannotApproach: [actor],
+              mustUseAll: true,
+              provokesOpportunityAttacks: false
+            })
+          );
         }
-      });
+      }
     }
   };
   var BoonOfVassetri = new SimpleFeature(
@@ -5737,9 +5583,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   When the spell ends, the target floats gently to the ground if it is still aloft.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-      });
+    async apply(g2, caster, method, { target }) {
     }
   });
   var Levitate_default = Levitate;
@@ -6049,13 +5893,11 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.chosen = chosen;
       this.priority = priority2;
     }
-    apply(g2) {
-      return __async(this, null, function* () {
-        const choice = yield new Promise(
-          (resolve) => g2.fire(new MultiListChoiceEvent({ interruption: this, resolve }))
-        );
-        return this.chosen(choice);
-      });
+    async apply(g2) {
+      const choice = await new Promise(
+        (resolve) => g2.fire(new MultiListChoiceEvent({ interruption: this, resolve }))
+      );
+      return this.chosen(choice);
     }
   };
 
@@ -6084,7 +5926,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
                 })),
                 0,
                 level + 1,
-                (chosen) => __async(void 0, null, function* () {
+                async (chosen) => {
                   for (const target of chosen) {
                     const unsubscribe = g2.events.on(
                       "BeforeSave",
@@ -6105,7 +5947,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
                       }
                     );
                   }
-                })
+                }
               )
             );
         }
@@ -6269,7 +6111,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const size = me.sizeInUnits;
     return aimCone(position, size, point, 15);
   }
-  var BreathWeaponAction = class _BreathWeaponAction extends AbstractAttackAction {
+  var BreathWeaponAction = class extends AbstractAttackAction {
     constructor(g2, actor, damageType, damageDice) {
       super(
         g2,
@@ -6291,33 +6133,31 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (point)
         return [getBreathArea(this.g, this.actor, point)];
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ point }) {
-        __superGet(_BreathWeaponAction.prototype, this, "apply").call(this, { point });
-        const { actor: attacker, g: g2, damageDice, damageType } = this;
-        const damage = yield g2.rollDamage(damageDice, {
-          source: this,
-          attacker,
-          size: 10,
-          damageType
-        });
-        const dc = 8 + attacker.con.modifier + attacker.pb;
-        for (const target of g2.getInside(getBreathArea(g2, attacker, point))) {
-          const save = yield g2.savingThrow(dc, {
-            attacker,
-            who: target,
-            ability: "dex",
-            tags: svSet()
-          });
-          yield g2.damage(
-            this,
-            damageType,
-            { attacker, target },
-            [[damageType, damage]],
-            save.damageResponse
-          );
-        }
+    async apply({ point }) {
+      super.apply({ point });
+      const { actor: attacker, g: g2, damageDice, damageType } = this;
+      const damage = await g2.rollDamage(damageDice, {
+        source: this,
+        attacker,
+        size: 10,
+        damageType
       });
+      const dc = 8 + attacker.con.modifier + attacker.pb;
+      for (const target of g2.getInside(getBreathArea(g2, attacker, point))) {
+        const save = await g2.savingThrow(dc, {
+          attacker,
+          who: target,
+          ability: "dex",
+          tags: svSet()
+        });
+        await g2.damage(
+          this,
+          damageType,
+          { attacker, target },
+          [[damageType, damage]],
+          save.damageResponse
+        );
+      }
     }
   };
   function getBreathWeaponDamageDice(level) {
@@ -6357,7 +6197,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       });
     }
   );
-  var EnervatingBreathAction = class _EnervatingBreathAction extends MetallicBreathAction {
+  var EnervatingBreathAction = class extends MetallicBreathAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -6368,28 +6208,26 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.`
       );
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ point }) {
-        __superGet(_EnervatingBreathAction.prototype, this, "apply").call(this, { point });
-        const { g: g2, actor } = this;
-        const dc = getSaveDC(actor, "con");
-        const config = { conditions: coSet("Incapacitated"), duration: 2 };
-        for (const target of g2.getInside(getBreathArea(g2, actor, point))) {
-          const save = yield g2.savingThrow(dc, {
-            attacker: actor,
-            ability: "con",
-            who: target,
-            effect: EnervatingBreathEffect,
-            config,
-            tags: svSet()
-          });
-          if (!save)
-            yield target.addEffect(EnervatingBreathEffect, config, actor);
-        }
-      });
+    async apply({ point }) {
+      super.apply({ point });
+      const { g: g2, actor } = this;
+      const dc = getSaveDC(actor, "con");
+      const config = { conditions: coSet("Incapacitated"), duration: 2 };
+      for (const target of g2.getInside(getBreathArea(g2, actor, point))) {
+        const save = await g2.savingThrow(dc, {
+          attacker: actor,
+          ability: "con",
+          who: target,
+          effect: EnervatingBreathEffect,
+          config,
+          tags: svSet()
+        });
+        if (!save)
+          await target.addEffect(EnervatingBreathEffect, config, actor);
+      }
     }
   };
-  var RepulsionBreathAction = class _RepulsionBreathAction extends MetallicBreathAction {
+  var RepulsionBreathAction = class extends MetallicBreathAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -6400,26 +6238,24 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`
       );
     }
-    apply(config) {
-      return __async(this, null, function* () {
-        __superGet(_RepulsionBreathAction.prototype, this, "apply").call(this, config);
-        const { g: g2, actor } = this;
-        const dc = getSaveDC(actor, "con");
-        for (const target of g2.getInside(
-          getBreathArea(this.g, actor, config.point)
-        )) {
-          const save = yield g2.savingThrow(dc, {
-            attacker: actor,
-            ability: "str",
-            who: target,
-            effect: Prone,
-            tags: svSet()
-          });
-          if (!save) {
-            yield target.addEffect(Prone, { duration: Infinity });
-          }
+    async apply(config) {
+      super.apply(config);
+      const { g: g2, actor } = this;
+      const dc = getSaveDC(actor, "con");
+      for (const target of g2.getInside(
+        getBreathArea(this.g, actor, config.point)
+      )) {
+        const save = await g2.savingThrow(dc, {
+          attacker: actor,
+          ability: "str",
+          who: target,
+          effect: Prone,
+          tags: svSet()
+        });
+        if (!save) {
+          await target.addEffect(Prone, { duration: Infinity });
         }
-      });
+      }
     }
   };
   function makeAncestry(a, dt) {
@@ -6504,39 +6340,37 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }
       return ec;
     },
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { targets }) {
-        const count = getCantripDice(attacker);
-        const damage = yield g2.rollDamage(count, {
-          source: AcidSplash,
-          size: 6,
-          attacker,
-          spell: AcidSplash,
-          method,
-          damageType: "acid"
-        });
-        for (const target of targets) {
-          const save = yield g2.savingThrow(
-            method.getSaveDC(attacker, AcidSplash),
-            {
-              who: target,
-              attacker,
-              ability: "dex",
-              spell: AcidSplash,
-              method,
-              tags: svSet()
-            },
-            { fail: "normal", save: "zero" }
-          );
-          yield g2.damage(
-            AcidSplash,
-            "acid",
-            { attacker, target, spell: AcidSplash, method },
-            [["acid", damage]],
-            save.damageResponse
-          );
-        }
+    async apply(g2, attacker, method, { targets }) {
+      const count = getCantripDice(attacker);
+      const damage = await g2.rollDamage(count, {
+        source: AcidSplash,
+        size: 6,
+        attacker,
+        spell: AcidSplash,
+        method,
+        damageType: "acid"
       });
+      for (const target of targets) {
+        const save = await g2.savingThrow(
+          method.getSaveDC(attacker, AcidSplash),
+          {
+            who: target,
+            attacker,
+            ability: "dex",
+            spell: AcidSplash,
+            method,
+            tags: svSet()
+          },
+          { fail: "normal", save: "zero" }
+        );
+        await g2.damage(
+          AcidSplash,
+          "acid",
+          { attacker, target, spell: AcidSplash, method },
+          [["acid", damage]],
+          save.damageResponse
+        );
+      }
     }
   });
   var AcidSplash_default = AcidSplash;
@@ -6556,16 +6390,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (g2, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const rsa = new SpellAttack(g2, attacker, FireBolt, method, "ranged", {
-          target
-        });
-        if ((yield rsa.attack(target)).hit) {
-          const damage = yield rsa.getDamage(target);
-          yield rsa.damage(target, damage);
-        }
+    async apply(g2, attacker, method, { target }) {
+      const rsa = new SpellAttack(g2, attacker, FireBolt, method, "ranged", {
+        target
       });
+      if ((await rsa.attack(target)).hit) {
+        const damage = await rsa.getDamage(target);
+        await rsa.damage(target, damage);
+      }
     }
   });
   var FireBolt_default = FireBolt;
@@ -6577,9 +6409,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         const { value } = g2.dice.roll({ type: "bane", who });
         bonus.add(-value, MindSliver);
         interrupt.add(
-          new EvaluateLater(who, MindSliverEffect, () => __async(void 0, null, function* () {
+          new EvaluateLater(who, MindSliverEffect, async () => {
             who.removeEffect(MindSliverEffect);
-          }))
+          })
         );
       }
     });
@@ -6597,54 +6429,52 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const damage = yield g2.rollDamage(getCantripDice(attacker), {
-          source: MindSliver,
+    async apply(g2, attacker, method, { target }) {
+      const damage = await g2.rollDamage(getCantripDice(attacker), {
+        source: MindSliver,
+        attacker,
+        target,
+        spell: MindSliver,
+        method,
+        size: 6,
+        damageType: "psychic"
+      });
+      const save = await g2.savingThrow(
+        method.getSaveDC(attacker, MindSliver),
+        {
+          who: target,
           attacker,
-          target,
+          ability: "int",
           spell: MindSliver,
           method,
-          size: 6,
-          damageType: "psychic"
-        });
-        const save = yield g2.savingThrow(
-          method.getSaveDC(attacker, MindSliver),
-          {
-            who: target,
-            attacker,
-            ability: "int",
-            spell: MindSliver,
-            method,
-            tags: svSet()
-          },
-          { fail: "normal", save: "zero" }
-        );
-        yield g2.damage(
-          MindSliver,
-          "psychic",
-          { attacker, target, spell: MindSliver, method },
-          [["psychic", damage]],
-          save.damageResponse
-        );
-        if (save.outcome === "fail") {
-          let endCounter = 2;
-          const removeTurnTracker = g2.events.on(
-            "TurnEnded",
-            ({ detail: { who, interrupt } }) => {
-              if (who === attacker && endCounter-- <= 0) {
-                removeTurnTracker();
-                interrupt.add(
-                  new EvaluateLater(who, MindSliver, () => __async(this, null, function* () {
-                    yield target.removeEffect(MindSliverEffect);
-                  }))
-                );
-              }
+          tags: svSet()
+        },
+        { fail: "normal", save: "zero" }
+      );
+      await g2.damage(
+        MindSliver,
+        "psychic",
+        { attacker, target, spell: MindSliver, method },
+        [["psychic", damage]],
+        save.damageResponse
+      );
+      if (save.outcome === "fail") {
+        let endCounter = 2;
+        const removeTurnTracker = g2.events.on(
+          "TurnEnded",
+          ({ detail: { who, interrupt } }) => {
+            if (who === attacker && endCounter-- <= 0) {
+              removeTurnTracker();
+              interrupt.add(
+                new EvaluateLater(who, MindSliver, async () => {
+                  await target.removeEffect(MindSliverEffect);
+                })
+              );
             }
-          );
-          yield target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
-        }
-      });
+          }
+        );
+        await target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
+      }
     }
   });
   var MindSliver_default = MindSliver;
@@ -6670,17 +6500,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { target }) {
-        const rsa = new SpellAttack(g2, attacker, RayOfFrost, method, "ranged", {
-          target
-        });
-        if ((yield rsa.attack(target)).hit) {
-          const damage = yield rsa.getDamage(target);
-          yield rsa.damage(target, damage);
-          yield target.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
-        }
+    async apply(g2, attacker, method, { target }) {
+      const rsa = new SpellAttack(g2, attacker, RayOfFrost, method, "ranged", {
+        target
       });
+      if ((await rsa.attack(target)).hit) {
+        const damage = await rsa.getDamage(target);
+        await rsa.damage(target, damage);
+        await target.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
+      }
     }
   });
   var RayOfFrost_default = RayOfFrost;
@@ -6710,68 +6538,66 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
     getTargets: (g2, caster, { target }) => g2.getInside(getArea2(g2, target)),
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { slot, target }) {
-        const { attack, hit, critical } = yield g2.attack({
-          who: attacker,
-          tags: atSet("ranged", "spell", "magical"),
-          target,
-          ability: method.ability,
-          spell: IceKnife,
-          method
-        });
-        if (hit) {
-          const damage2 = yield g2.rollDamage(
-            1,
-            {
-              source: IceKnife,
-              size: 10,
-              attacker,
-              target,
-              spell: IceKnife,
-              method,
-              damageType: "piercing"
-            },
-            critical
-          );
-          yield g2.damage(
-            IceKnife,
-            "piercing",
-            { attack, attacker, target, spell: IceKnife, method, critical },
-            [["piercing", damage2]]
-          );
-        }
-        const damage = yield g2.rollDamage(1 + slot, {
-          source: IceKnife,
-          size: 6,
-          attacker,
-          spell: IceKnife,
-          method,
-          damageType: "cold"
-        });
-        const dc = method.getSaveDC(attacker, IceKnife, slot);
-        for (const victim of g2.getInside(getArea2(g2, target))) {
-          const save = yield g2.savingThrow(
-            dc,
-            {
-              attacker,
-              ability: "dex",
-              spell: IceKnife,
-              method,
-              who: victim,
-              tags: svSet()
-            },
-            { fail: "normal", save: "zero" }
-          );
-          yield g2.damage(
-            IceKnife,
-            "cold",
-            { attacker, target: victim, spell: IceKnife, method },
-            [["cold", damage]],
-            save.damageResponse
-          );
-        }
+    async apply(g2, attacker, method, { slot, target }) {
+      const { attack, hit, critical } = await g2.attack({
+        who: attacker,
+        tags: atSet("ranged", "spell", "magical"),
+        target,
+        ability: method.ability,
+        spell: IceKnife,
+        method
       });
+      if (hit) {
+        const damage2 = await g2.rollDamage(
+          1,
+          {
+            source: IceKnife,
+            size: 10,
+            attacker,
+            target,
+            spell: IceKnife,
+            method,
+            damageType: "piercing"
+          },
+          critical
+        );
+        await g2.damage(
+          IceKnife,
+          "piercing",
+          { attack, attacker, target, spell: IceKnife, method, critical },
+          [["piercing", damage2]]
+        );
+      }
+      const damage = await g2.rollDamage(1 + slot, {
+        source: IceKnife,
+        size: 6,
+        attacker,
+        spell: IceKnife,
+        method,
+        damageType: "cold"
+      });
+      const dc = method.getSaveDC(attacker, IceKnife, slot);
+      for (const victim of g2.getInside(getArea2(g2, target))) {
+        const save = await g2.savingThrow(
+          dc,
+          {
+            attacker,
+            ability: "dex",
+            spell: IceKnife,
+            method,
+            who: victim,
+            tags: svSet()
+          },
+          { fail: "normal", save: "zero" }
+        );
+        await g2.damage(
+          IceKnife,
+          "cold",
+          { attacker, target: victim, spell: IceKnife, method },
+          [["cold", damage]],
+          save.damageResponse
+        );
+      }
     }
   });
   var IceKnife_default = IceKnife;
@@ -6852,27 +6678,25 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }),
     getDamage: (g2, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
     getTargets: (g2, caster, { targets }) => targets.map((e) => e.who),
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { targets }) {
-        const perBolt = (yield g2.rollDamage(1, {
-          source: MagicMissile,
-          spell: MagicMissile,
-          method,
-          attacker,
-          damageType: "force",
-          size: 4
-        })) + 1;
-        for (const { amount, who } of targets) {
-          if (amount < 1)
-            continue;
-          yield g2.damage(
-            MagicMissile,
-            "force",
-            { spell: MagicMissile, method, target: who, attacker },
-            [["force", perBolt * amount]]
-          );
-        }
-      });
+    async apply(g2, attacker, method, { targets }) {
+      const perBolt = await g2.rollDamage(1, {
+        source: MagicMissile,
+        spell: MagicMissile,
+        method,
+        attacker,
+        damageType: "force",
+        size: 4
+      }) + 1;
+      for (const { amount, who } of targets) {
+        if (amount < 1)
+          continue;
+        await g2.damage(
+          MagicMissile,
+          "force",
+          { spell: MagicMissile, method, target: who, attacker },
+          [["force", perBolt * amount]]
+        );
+      }
     }
   });
   var MagicMissile_default = MagicMissile;
@@ -6890,9 +6714,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var Shield_default = Shield2;
@@ -6944,9 +6766,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       ])
     }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { mode, target }) {
-      });
+    async apply(g2, caster, method, { mode, target }) {
     }
   });
   var EnlargeReduce_default = EnlargeReduce;
@@ -6962,8 +6782,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (config) {
         const dc = config.method.getSaveDC(config.caster, HoldPerson);
         interrupt.add(
-          new EvaluateLater(who, HoldPersonEffect, () => __async(void 0, null, function* () {
-            const save = yield g2.savingThrow(dc, {
+          new EvaluateLater(who, HoldPersonEffect, async () => {
+            const save = await g2.savingThrow(dc, {
               who,
               attacker: config.caster,
               ability: "wis",
@@ -6973,12 +6793,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               tags: svSet()
             });
             if (save.outcome === "success") {
-              yield who.removeEffect(HoldPersonEffect);
+              await who.removeEffect(HoldPersonEffect);
               config.affected.delete(who);
               if (config.affected.size < 1)
-                yield config.caster.endConcentration();
+                await config.caster.endConcentration();
             }
-          }))
+          })
         );
       }
     });
@@ -7003,44 +6823,40 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     check(g2, { targets }, ec) {
       return ec;
     },
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { targets }) {
-        const dc = method.getSaveDC(caster, HoldPerson);
-        const affected = /* @__PURE__ */ new Set();
-        const duration = minutes(1);
-        const conditions = coSet("Paralyzed");
-        for (const target of targets) {
-          const config = {
-            affected,
-            caster,
-            method,
-            duration,
-            conditions
-          };
-          const save = yield g2.savingThrow(dc, {
-            who: target,
-            attacker: caster,
-            ability: "wis",
-            spell: HoldPerson,
-            effect: HoldPersonEffect,
-            config,
-            tags: svSet()
-          });
-          if (save.outcome === "fail" && (yield target.addEffect(HoldPersonEffect, config)))
-            affected.add(target);
-        }
-        if (affected.size > 0)
-          yield caster.concentrateOn({
-            spell: HoldPerson,
-            duration,
-            onSpellEnd() {
-              return __async(this, null, function* () {
-                for (const target of affected)
-                  yield target.removeEffect(HoldPersonEffect);
-              });
-            }
-          });
-      });
+    async apply(g2, caster, method, { targets }) {
+      const dc = method.getSaveDC(caster, HoldPerson);
+      const affected = /* @__PURE__ */ new Set();
+      const duration = minutes(1);
+      const conditions = coSet("Paralyzed");
+      for (const target of targets) {
+        const config = {
+          affected,
+          caster,
+          method,
+          duration,
+          conditions
+        };
+        const save = await g2.savingThrow(dc, {
+          who: target,
+          attacker: caster,
+          ability: "wis",
+          spell: HoldPerson,
+          effect: HoldPersonEffect,
+          config,
+          tags: svSet()
+        });
+        if (save.outcome === "fail" && await target.addEffect(HoldPersonEffect, config))
+          affected.add(target);
+      }
+      if (affected.size > 0)
+        await caster.concentrateOn({
+          spell: HoldPerson,
+          duration,
+          async onSpellEnd() {
+            for (const target of affected)
+              await target.removeEffect(HoldPersonEffect);
+          }
+        });
     }
   });
   var HoldPerson_default = HoldPerson;
@@ -7076,45 +6892,43 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/spells/level2/MelfsMinuteMeteors.ts
   var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
-  function fireMeteors(_0, _1, _2, _3) {
-    return __async(this, arguments, function* (g2, attacker, method, { points }, spendMeteors = true) {
-      if (spendMeteors)
-        attacker.spendResource(MeteorResource, points.length);
-      const damage = yield g2.rollDamage(2, {
-        source: MelfsMinuteMeteors,
-        attacker,
-        size: 6,
-        spell: MelfsMinuteMeteors,
-        method,
-        damageType: "fire"
-      });
-      const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
-      for (const point of points) {
-        for (const target of g2.getInside({
-          type: "sphere",
-          centre: point,
-          radius: 5
-        })) {
-          const save = yield g2.savingThrow(dc, {
-            ability: "dex",
-            attacker,
-            spell: MelfsMinuteMeteors,
-            method,
-            who: target,
-            tags: svSet()
-          });
-          yield g2.damage(
-            MelfsMinuteMeteors,
-            "fire",
-            { attacker, target, spell: MelfsMinuteMeteors, method },
-            [["fire", damage]],
-            save.damageResponse
-          );
-        }
-      }
+  async function fireMeteors(g2, attacker, method, { points }, spendMeteors = true) {
+    if (spendMeteors)
+      attacker.spendResource(MeteorResource, points.length);
+    const damage = await g2.rollDamage(2, {
+      source: MelfsMinuteMeteors,
+      attacker,
+      size: 6,
+      spell: MelfsMinuteMeteors,
+      method,
+      damageType: "fire"
     });
+    const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
+    for (const point of points) {
+      for (const target of g2.getInside({
+        type: "sphere",
+        centre: point,
+        radius: 5
+      })) {
+        const save = await g2.savingThrow(dc, {
+          ability: "dex",
+          attacker,
+          spell: MelfsMinuteMeteors,
+          method,
+          who: target,
+          tags: svSet()
+        });
+        await g2.damage(
+          MelfsMinuteMeteors,
+          "fire",
+          { attacker, target, spell: MelfsMinuteMeteors, method },
+          [["fire", damage]],
+          save.damageResponse
+        );
+      }
+    }
   }
-  var FireMeteorsAction = class _FireMeteorsAction extends AbstractAction {
+  var FireMeteorsAction = class extends AbstractAction {
     constructor(g2, actor, method) {
       var _a;
       super(
@@ -7148,11 +6962,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       var _a;
       return /* @__PURE__ */ new Map([[MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
     }
-    apply(config) {
-      return __async(this, null, function* () {
-        __superGet(_FireMeteorsAction.prototype, this, "apply").call(this, config);
-        return fireMeteors(this.g, this.actor, this.method, config, false);
-      });
+    async apply(config) {
+      super.apply(config);
+      return fireMeteors(this.g, this.actor, this.method, config, false);
     }
   };
   var MelfsMinuteMeteors = scalingSpell({
@@ -7176,39 +6988,35 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       (centre) => g2.getInside({ type: "sphere", centre, radius: 5 })
     ),
     getDamage: () => [_dd(2, 6, "fire")],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { points, slot }) {
-        const meteors = slot * 2;
-        attacker.initResource(MeteorResource, meteors);
-        yield fireMeteors(g2, attacker, method, { points });
-        let meteorActionEnabled = false;
-        const removeMeteorAction = g2.events.on(
-          "GetActions",
-          ({ detail: { who, actions } }) => {
-            if (who === attacker && meteorActionEnabled)
-              actions.push(new FireMeteorsAction(g2, attacker, method));
+    async apply(g2, attacker, method, { points, slot }) {
+      const meteors = slot * 2;
+      attacker.initResource(MeteorResource, meteors);
+      await fireMeteors(g2, attacker, method, { points });
+      let meteorActionEnabled = false;
+      const removeMeteorAction = g2.events.on(
+        "GetActions",
+        ({ detail: { who, actions } }) => {
+          if (who === attacker && meteorActionEnabled)
+            actions.push(new FireMeteorsAction(g2, attacker, method));
+        }
+      );
+      const removeTurnListener = g2.events.on(
+        "TurnEnded",
+        ({ detail: { who } }) => {
+          if (who === attacker) {
+            meteorActionEnabled = true;
+            removeTurnListener();
           }
-        );
-        const removeTurnListener = g2.events.on(
-          "TurnEnded",
-          ({ detail: { who } }) => {
-            if (who === attacker) {
-              meteorActionEnabled = true;
-              removeTurnListener();
-            }
-          }
-        );
-        yield attacker.concentrateOn({
-          spell: MelfsMinuteMeteors,
-          duration: minutes(10),
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              removeMeteorAction();
-              removeTurnListener();
-              attacker.removeResource(MeteorResource);
-            });
-          }
-        });
+        }
+      );
+      await attacker.concentrateOn({
+        spell: MelfsMinuteMeteors,
+        duration: minutes(10),
+        async onSpellEnd() {
+          removeMeteorAction();
+          removeTurnListener();
+          attacker.removeResource(MeteorResource);
+        }
       });
     }
   });
@@ -7238,35 +7046,33 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getAffectedArea: (g2, caster, { point }) => point && [getArea3(point)],
     getDamage: (g2, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea3(point)),
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
-        const damage = yield g2.rollDamage(5 + slot, {
-          source: Fireball,
-          size: 6,
+    async apply(g2, attacker, method, { point, slot }) {
+      const damage = await g2.rollDamage(5 + slot, {
+        source: Fireball,
+        size: 6,
+        spell: Fireball,
+        method,
+        damageType: "fire",
+        attacker
+      });
+      const dc = method.getSaveDC(attacker, Fireball, slot);
+      for (const target of g2.getInside(getArea3(point))) {
+        const save = await g2.savingThrow(dc, {
+          attacker,
+          ability: "dex",
           spell: Fireball,
           method,
-          damageType: "fire",
-          attacker
+          who: target,
+          tags: svSet()
         });
-        const dc = method.getSaveDC(attacker, Fireball, slot);
-        for (const target of g2.getInside(getArea3(point))) {
-          const save = yield g2.savingThrow(dc, {
-            attacker,
-            ability: "dex",
-            spell: Fireball,
-            method,
-            who: target,
-            tags: svSet()
-          });
-          yield g2.damage(
-            Fireball,
-            "fire",
-            { attacker, spell: Fireball, method, target },
-            [["fire", damage]],
-            save.damageResponse
-          );
-        }
-      });
+        await g2.damage(
+          Fireball,
+          "fire",
+          { attacker, spell: Fireball, method, target },
+          [["fire", damage]],
+          save.damageResponse
+        );
+      }
     }
   });
   var Fireball_default = Fireball;
@@ -7306,21 +7112,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 3) - 2, 30, true)
     }),
     getTargets: (g2, caster, { targets }) => targets,
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { targets }) {
-        const duration = hours(1);
-        for (const target of targets)
-          yield target.addEffect(IntellectFortressEffect, { duration }, caster);
-        caster.concentrateOn({
-          spell: IntellectFortress,
-          duration,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              for (const target of targets)
-                yield target.removeEffect(IntellectFortressEffect);
-            });
-          }
-        });
+    async apply(g2, caster, method, { targets }) {
+      const duration = hours(1);
+      for (const target of targets)
+        await target.addEffect(IntellectFortressEffect, { duration }, caster);
+      caster.concentrateOn({
+        spell: IntellectFortress,
+        duration,
+        async onSpellEnd() {
+          for (const target of targets)
+            await target.removeEffect(IntellectFortressEffect);
+        }
       });
     }
   });
@@ -7354,9 +7156,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }),
     getTargets: () => [],
     getDamage: (g2, caster, method, { slot }) => [_dd((slot != null ? slot : 4) + 1, 8, "fire")],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point, shape }) {
-      });
+    async apply(g2, caster, method, { point, shape }) {
     }
   });
   var WallOfFire_default = WallOfFire;
@@ -7451,7 +7251,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Harness Divine Power",
     1
   );
-  var HarnessDivinePowerAction = class _HarnessDivinePowerAction extends AbstractAction {
+  var HarnessDivinePowerAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -7490,11 +7290,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }
       return super.check({ slot }, ec);
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ slot }) {
-        __superGet(_HarnessDivinePowerAction.prototype, this, "apply").call(this, { slot });
-        this.actor.giveResource(SpellSlotResources[slot], 1);
-      });
+    async apply({ slot }) {
+      super.apply({ slot });
+      this.actor.giveResource(SpellSlotResources[slot], 1);
     }
   };
   function getHarnessCount(level) {
@@ -7551,7 +7349,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/classes/paladin/LayOnHands.ts
   var LayOnHandsResource = new LongRestResource("Lay on Hands", 5);
-  var LayOnHandsHealAction = class _LayOnHandsHealAction extends AbstractAction {
+  var LayOnHandsHealAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -7582,14 +7380,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         resources.set(LayOnHandsResource, cost);
       return resources;
     }
-    apply(config) {
-      return __async(this, null, function* () {
-        yield __superGet(_LayOnHandsHealAction.prototype, this, "apply").call(this, config);
-        yield this.g.heal(this, config.cost, {
-          action: this,
-          target: config.target,
-          actor: this.actor
-        });
+    async apply(config) {
+      await super.apply(config);
+      await this.g.heal(this, config.cost, {
+        action: this,
+        target: config.target,
+        actor: this.actor
       });
     }
   };
@@ -7644,19 +7440,19 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
                     disabled: me.getResource(SpellSlotResources[value]) < 1
                   }))
                 ],
-                (slot) => __async(void 0, null, function* () {
+                async (slot) => {
                   if (isNaN(slot))
                     return;
                   me.spendResource(SpellSlotResources[slot], 1);
                   const count = Math.min(5, slot + 1);
                   const extra = target.type === "undead" || target.type === "fiend" ? 1 : 0;
-                  const damage = yield g2.rollDamage(
+                  const damage = await g2.rollDamage(
                     count + extra,
                     { source: DivineSmite, attacker, size: 8 },
                     critical
                   );
                   map.add("radiant", damage);
-                })
+                }
               )
             );
         }
@@ -7762,8 +7558,8 @@ At 18th level, the range of this aura increases to 30 feet.`,
         ({ detail: { attack, attacker, critical, target, interrupt, map } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
             interrupt.add(
-              new EvaluateLater(attacker, ImprovedDivineSmite, () => __async(void 0, null, function* () {
-                const amount = yield g2.rollDamage(
+              new EvaluateLater(attacker, ImprovedDivineSmite, async () => {
+                const amount = await g2.rollDamage(
                   1,
                   {
                     source: ImprovedDivineSmite,
@@ -7775,7 +7571,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
                   critical
                 );
                 map.add("radiant", amount);
-              }))
+              })
             );
         }
       );
@@ -7880,19 +7676,15 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       target: new TargetResolver(g2, caster.reach, true)
     }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-        const duration = minutes(10);
-        yield target.addEffect(ProtectionEffect, { duration }, caster);
-        yield caster.concentrateOn({
-          spell: ProtectionFromEvilAndGood,
-          duration,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              yield target.removeEffect(ProtectionEffect);
-            });
-          }
-        });
+    async apply(g2, caster, method, { target }) {
+      const duration = minutes(10);
+      await target.addEffect(ProtectionEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: ProtectionFromEvilAndGood,
+        duration,
+        async onSpellEnd() {
+          await target.removeEffect(ProtectionEffect);
+        }
       });
     }
   });
@@ -7900,9 +7692,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
 
   // src/spells/level1/Sanctuary.ts
   var SanctuaryEffect = new Effect("Sanctuary", "turnStart", (g2) => {
-    const getRemover = (who) => new EvaluateLater(who, SanctuaryEffect, () => __async(void 0, null, function* () {
-      yield who.removeEffect(SanctuaryEffect);
-    }));
+    const getRemover = (who) => new EvaluateLater(who, SanctuaryEffect, async () => {
+      await who.removeEffect(SanctuaryEffect);
+    });
     g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
       if (pre.who.hasEffect(SanctuaryEffect))
         interrupt.add(getRemover(pre.who));
@@ -7935,14 +7727,12 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 30, true) }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-        yield target.addEffect(
-          SanctuaryEffect,
-          { caster, method, duration: minutes(1) },
-          caster
-        );
-      });
+    async apply(g2, caster, method, { target }) {
+      await target.addEffect(
+        SanctuaryEffect,
+        { caster, method, duration: minutes(1) },
+        caster
+      );
     }
   });
   var Sanctuary_default = Sanctuary;
@@ -7987,10 +7777,8 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         ec.add("target does not have chosen effect", LesserRestoration);
       return ec;
     },
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target, effect }) {
-        yield target.removeEffect(effect);
-      });
+    async apply(g2, caster, method, { target, effect }) {
+      await target.removeEffect(effect);
     }
   });
   var LesserRestoration_default = LesserRestoration;
@@ -8014,9 +7802,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     getAffectedArea: (g2, caster, { point }) => point && [getArea4(point)],
     getTargets: () => [],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var ZoneOfTruth_default = ZoneOfTruth;
@@ -8035,7 +7821,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       });
     }
   );
-  var SacredWeaponAction = class _SacredWeaponAction extends AbstractAction {
+  var SacredWeaponAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -8056,13 +7842,11 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         ec.add("already active", this);
       return ec;
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ weapon }) {
-        __superGet(_SacredWeaponAction.prototype, this, "apply").call(this, { weapon });
-        yield this.actor.addEffect(SacredWeaponEffect, {
-          duration: minutes(1),
-          weapon
-        });
+    async apply({ weapon }) {
+      super.apply({ weapon });
+      await this.actor.addEffect(SacredWeaponEffect, {
+        duration: minutes(1),
+        weapon
       });
     }
   };
@@ -8141,7 +7925,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var Devotion_default = Devotion;
 
   // src/spells/level2/Web.ts
-  var BreakFreeFromWebAction = class _BreakFreeFromWebAction extends AbstractAction {
+  var BreakFreeFromWebAction = class extends AbstractAction {
     constructor(g2, actor, caster, method) {
       super(
         g2,
@@ -8157,18 +7941,16 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.caster = caster;
       this.method = method;
     }
-    apply() {
-      return __async(this, null, function* () {
-        yield __superGet(_BreakFreeFromWebAction.prototype, this, "apply").call(this, {});
-        const dc = this.method.getSaveDC(this.caster, Web);
-        const result = yield this.g.abilityCheck(dc, {
-          ability: "str",
-          who: this.actor,
-          tags: chSet()
-        });
-        if (result.outcome === "success")
-          yield this.actor.removeEffect(Webbed);
+    async apply() {
+      await super.apply({});
+      const dc = this.method.getSaveDC(this.caster, Web);
+      const result = await this.g.abilityCheck(dc, {
+        ability: "str",
+        who: this.actor,
+        tags: chSet()
       });
+      if (result.outcome === "success")
+        await this.actor.removeEffect(Webbed);
     }
   };
   var Webbed = new Effect(
@@ -8206,11 +7988,11 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.centre = centre;
       this.shape = shape;
       this.area = area;
-      this.onSpellEnd = () => __async(this, null, function* () {
+      this.onSpellEnd = async () => {
         this.g.removeEffectArea(this.area);
         for (const cleanup of this.subscriptions)
           cleanup();
-      });
+      };
       g2.addEffectArea(area);
       this.affectedThisTurn = /* @__PURE__ */ new Set();
       this.subscriptions = [];
@@ -8228,12 +8010,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
     getWebber(target) {
       const { caster, method } = this;
-      return new EvaluateLater(target, Web, () => __async(this, null, function* () {
+      return new EvaluateLater(target, Web, async () => {
         if (this.affectedThisTurn.has(target))
           return;
         this.affectedThisTurn.add(target);
         const dc = this.method.getSaveDC(this.caster, Web);
-        const result = yield this.g.savingThrow(dc, {
+        const result = await this.g.savingThrow(dc, {
           ability: "dex",
           attacker: caster,
           method,
@@ -8242,13 +8024,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
           tags: svSet()
         });
         if (result.outcome === "fail")
-          yield target.addEffect(Webbed, {
+          await target.addEffect(Webbed, {
             caster,
             method,
             duration: minutes(1),
             conditions: coSet("Restrained")
           });
-      }));
+      });
     }
   };
   var Web = simpleSpell({
@@ -8273,14 +8055,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     getConfig: (g2) => ({ point: new PointResolver(g2, 60) }),
     getTargets: () => [],
     getAffectedArea: (g2, caster, { point }) => point && [getWebArea(point)],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point }) {
-        const controller = new WebController(g2, caster, method, point);
-        caster.concentrateOn({
-          spell: Web,
-          duration: hours(1),
-          onSpellEnd: controller.onSpellEnd
-        });
+    async apply(g2, caster, method, { point }) {
+      const controller = new WebController(g2, caster, method, point);
+      caster.concentrateOn({
+        spell: Web,
+        duration: hours(1),
+        onSpellEnd: controller.onSpellEnd
       });
     }
   });
@@ -8376,19 +8156,17 @@ Once you use this feature, you can't use it again until you finish a long rest.
       targets: new MultiTargetResolver(g2, 1, (slot != null ? slot : 1) + 2, 30, true)
     }),
     getTargets: (g2, caster, { targets }) => targets,
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { targets }) {
-        const duration = minutes(1);
-        for (const target of targets)
-          yield target.addEffect(BlessEffect, { duration }, caster);
-        yield caster.concentrateOn({
-          spell: Bless,
-          duration,
-          onSpellEnd: () => __async(this, null, function* () {
-            for (const target of targets)
-              yield target.removeEffect(BlessEffect);
-          })
-        });
+    async apply(g2, caster, method, { targets }) {
+      const duration = minutes(1);
+      for (const target of targets)
+        await target.addEffect(BlessEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: Bless,
+        duration,
+        onSpellEnd: async () => {
+          for (const target of targets)
+            await target.removeEffect(BlessEffect);
+        }
       });
     }
   });
@@ -8401,10 +8179,10 @@ Once you use this feature, you can't use it again until you finish a long rest.
       ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
         if (attacker.hasEffect(DivineFavorEffect) && weapon)
           interrupt.add(
-            new EvaluateLater(attacker, DivineFavorEffect, () => __async(void 0, null, function* () {
+            new EvaluateLater(attacker, DivineFavorEffect, async () => {
               map.add(
                 "radiant",
-                yield g2.rollDamage(
+                await g2.rollDamage(
                   1,
                   {
                     source: DivineFavor,
@@ -8415,7 +8193,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
                   critical
                 )
               );
-            }))
+            })
           );
       }
     );
@@ -8433,19 +8211,15 @@ Once you use this feature, you can't use it again until you finish a long rest.
     description: `Your prayer empowers you with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster) {
-      return __async(this, null, function* () {
-        const duration = minutes(1);
-        yield caster.addEffect(DivineFavorEffect, { duration }, caster);
-        yield caster.concentrateOn({
-          spell: DivineFavor,
-          duration,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              yield caster.removeEffect(DivineFavorEffect);
-            });
-          }
-        });
+    async apply(g2, caster) {
+      const duration = minutes(1);
+      await caster.addEffect(DivineFavorEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: DivineFavor,
+        duration,
+        async onSpellEnd() {
+          await caster.removeEffect(DivineFavorEffect);
+        }
       });
     }
   });
@@ -8471,20 +8245,18 @@ Once you use this feature, you can't use it again until you finish a long rest.
     description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
     getConfig: (g2) => ({ target: new TargetResolver(g2, 60, true) }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-        yield target.addEffect(
-          ShieldOfFaithEffect,
-          { duration: minutes(10) },
-          caster
-        );
-        caster.concentrateOn({
-          spell: ShieldOfFaith,
-          duration: minutes(10),
-          onSpellEnd: () => __async(this, null, function* () {
-            yield target.removeEffect(ShieldOfFaithEffect);
-          })
-        });
+    async apply(g2, caster, method, { target }) {
+      await target.addEffect(
+        ShieldOfFaithEffect,
+        { duration: minutes(10) },
+        caster
+      );
+      caster.concentrateOn({
+        spell: ShieldOfFaith,
+        duration: minutes(10),
+        onSpellEnd: async () => {
+          await target.removeEffect(ShieldOfFaithEffect);
+        }
       });
     }
   });
@@ -8512,15 +8284,13 @@ Once you use this feature, you can't use it again until you finish a long rest.
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 3, 30, true) }),
     getTargets: (g2, caster, { targets }) => targets,
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, actor, method, { slot, targets }) {
-        const amount = (slot - 1) * 5;
-        const duration = hours(8);
-        for (const target of targets) {
-          if (yield target.addEffect(AidEffect, { duration, amount }))
-            yield g2.heal(Aid, amount, { actor, target, spell: Aid });
-        }
-      });
+    async apply(g2, actor, method, { slot, targets }) {
+      const amount = (slot - 1) * 5;
+      const duration = hours(8);
+      for (const target of targets) {
+        if (await target.addEffect(AidEffect, { duration, amount }))
+          await g2.heal(Aid, amount, { actor, target, spell: Aid });
+      }
     }
   });
   var Aid_default = Aid;
@@ -8540,12 +8310,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
       this.slot = slot;
       this.item = item;
       this.bonus = bonus;
-      this.onSpellEnd = () => __async(this, null, function* () {
+      this.onSpellEnd = async () => {
         this.item.magical = false;
         this.item.name = this.oldName;
         for (const cleanup of this.subscriptions)
           cleanup();
-      });
+      };
       const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
       this.subscriptions = [
         g2.events.on("BeforeAttack", handler),
@@ -8576,14 +8346,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
       )
     }),
     getTargets: (g2, caster) => [caster],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { slot, item }) {
-        const controller = new MagicWeaponController(g2, caster, slot, item);
-        caster.concentrateOn({
-          duration: hours(1),
-          spell: MagicWeapon,
-          onSpellEnd: controller.onSpellEnd
-        });
+    async apply(g2, caster, method, { slot, item }) {
+      const controller = new MagicWeaponController(g2, caster, slot, item);
+      caster.concentrateOn({
+        duration: hours(1),
+        spell: MagicWeapon,
+        onSpellEnd: controller.onSpellEnd
       });
     }
   });
@@ -8657,7 +8425,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
     return 4;
   }
   var RageResource = new LongRestResource("Rage", 2);
-  var EndRageAction = class _EndRageAction extends AbstractAction {
+  var EndRageAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(g2, actor, "End Rage", "implemented", {}, { time: "bonus action" });
     }
@@ -8666,11 +8434,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
         ec.add("Not raging", this);
       return ec;
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_EndRageAction.prototype, this, "apply").call(this, {});
-        yield this.actor.removeEffect(RageEffect);
-      });
+    async apply() {
+      super.apply({});
+      await this.actor.removeEffect(RageEffect);
     }
   };
   function isRaging(who) {
@@ -8717,41 +8483,41 @@ Once you use this feature, you can't use it again until you finish a long rest.
     g2.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
       if (isRaging(who) && who.conditions.has("Unconscious"))
         interrupt.add(
-          new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
-            yield who.removeEffect(RageEffect);
-          }))
+          new EvaluateLater(who, RageEffect, async () => {
+            await who.removeEffect(RageEffect);
+          })
         );
     });
     g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
       if (isRaging(pre.who) && pre.who.side !== pre.target.side)
         interrupt.add(
-          new EvaluateLater(pre.who, RageEffect, () => __async(void 0, null, function* () {
-            yield pre.who.addEffect(DidAttackTag, { duration: Infinity });
-          }))
+          new EvaluateLater(pre.who, RageEffect, async () => {
+            await pre.who.addEffect(DidAttackTag, { duration: Infinity });
+          })
         );
     });
     g2.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
       if (isRaging(who))
         interrupt.add(
-          new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
-            yield who.addEffect(TookDamageTag, { duration: Infinity });
-          }))
+          new EvaluateLater(who, RageEffect, async () => {
+            await who.addEffect(TookDamageTag, { duration: Infinity });
+          })
         );
     });
     g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       if (isRaging(who)) {
         if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
           interrupt.add(
-            new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
-              yield who.removeEffect(RageEffect);
-            }))
+            new EvaluateLater(who, RageEffect, async () => {
+              await who.removeEffect(RageEffect);
+            })
           );
         else
           interrupt.add(
-            new EvaluateLater(who, RageEffect, () => __async(void 0, null, function* () {
-              yield who.removeEffect(DidAttackTag);
-              yield who.removeEffect(TookDamageTag);
-            }))
+            new EvaluateLater(who, RageEffect, async () => {
+              await who.removeEffect(DidAttackTag);
+              await who.removeEffect(TookDamageTag);
+            })
           );
       }
     });
@@ -8760,7 +8526,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
         actions.push(new EndRageAction(g2, who));
     });
   });
-  var RageAction = class _RageAction extends AbstractAction {
+  var RageAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
         g2,
@@ -8771,12 +8537,10 @@ Once you use this feature, you can't use it again until you finish a long rest.
         { time: "bonus action", resources: [[RageResource, 1]] }
       );
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_RageAction.prototype, this, "apply").call(this, {});
-        if (yield this.actor.addEffect(RageEffect, { duration: minutes(1) }))
-          yield this.actor.endConcentration();
-      });
+    async apply() {
+      super.apply({});
+      if (await this.actor.addEffect(RageEffect, { duration: minutes(1) }))
+        await this.actor.endConcentration();
     }
   };
   var Rage = new SimpleFeature(
@@ -8840,11 +8604,11 @@ Once you have raged the maximum number of times for your barbarian level, you mu
                 RecklessAttack,
                 "Reckless Attack",
                 `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
-                () => __async(void 0, null, function* () {
-                  yield me.addEffect(RecklessAttackEffect, { duration: 1 });
+                async () => {
+                  await me.addEffect(RecklessAttackEffect, { duration: 1 });
                   if (canBeReckless(who, tags, ability))
                     diceType.add("advantage", RecklessAttackEffect);
-                })
+                }
               )
             );
           }
@@ -8931,15 +8695,13 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
             new EvaluateLater(
               me,
               InstinctivePounce,
-              () => __async(void 0, null, function* () {
-                return g2.applyBoundedMove(
-                  me,
-                  new BoundedMove(
-                    InstinctivePounce,
-                    round(me.speed / 2, MapSquareSize)
-                  )
-                );
-              })
+              async () => g2.applyBoundedMove(
+                me,
+                new BoundedMove(
+                  InstinctivePounce,
+                  round(me.speed / 2, MapSquareSize)
+                )
+              )
             )
           );
       });
@@ -9019,7 +8781,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
   var frenzy_default = "./frenzy-XYJEPIJ4.svg";
 
   // src/classes/barbarian/Berserker/index.ts
-  var FrenzyAttack = class _FrenzyAttack extends AbstractAction {
+  var FrenzyAttack = class extends AbstractAction {
     constructor(g2, actor, weapon) {
       super(
         g2,
@@ -9034,16 +8796,14 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       this.icon = getItemIcon(weapon);
       this.subIcon = { url: frenzy_default };
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        __superGet(_FrenzyAttack.prototype, this, "apply").call(this, { target });
-        yield doStandardAttack(this.g, {
-          ability: this.ability,
-          attacker: this.actor,
-          source: this,
-          target,
-          weapon: this.weapon
-        });
+    async apply({ target }) {
+      super.apply({ target });
+      await doStandardAttack(this.g, {
+        ability: this.ability,
+        attacker: this.actor,
+        source: this,
+        target,
+        weapon: this.weapon
       });
     }
   };
@@ -9062,10 +8822,10 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       g2.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
         if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
           interrupt.add(
-            new EvaluateLater(who, FrenzyEffect, () => __async(void 0, null, function* () {
-              yield who.removeEffect(FrenzyEffect);
-              yield who.changeExhaustion(1);
-            }))
+            new EvaluateLater(who, FrenzyEffect, async () => {
+              await who.removeEffect(FrenzyEffect);
+              await who.changeExhaustion(1);
+            })
           );
         }
       });
@@ -9084,9 +8844,9 @@ Each time you use this feature after the first, the DC increases by 5. When you 
               Frenzy,
               "Frenzy",
               `Should ${me.name} enter a Frenzy?`,
-              () => __async(void 0, null, function* () {
-                yield me.addEffect(FrenzyEffect, { duration: minutes(1) });
-              })
+              async () => {
+                await me.addEffect(FrenzyEffect, { duration: minutes(1) });
+              }
             )
           );
       });
@@ -9144,17 +8904,17 @@ If the creature succeeds on its saving throw, you can't use this feature on that
         ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
           if (weapon === item && attacker.attunements.has(weapon))
             interrupt.add(
-              new EvaluateLater(attacker, this, () => __async(this, null, function* () {
+              new EvaluateLater(attacker, this, async () => {
                 const damageType = "radiant";
                 map.add(
                   damageType,
-                  yield g2.rollDamage(
+                  await g2.rollDamage(
                     1,
                     { source: darkSun, size: 10, attacker, damageType },
                     critical
                   )
                 );
-              }))
+              })
             );
         }
       );
@@ -9204,11 +8964,11 @@ If the creature succeeds on its saving throw, you can't use this feature on that
               Lucky2,
               "Lucky",
               `${me.name} rolled a 1 on a ${t.type} check. Reroll it?`,
-              () => __async(void 0, null, function* () {
+              async () => {
                 const newRoll = g2.dice.roll(t).value;
                 otherValues.push(value);
                 detail.value = newRoll;
-              })
+              }
             )
           );
       });
@@ -9389,19 +9149,15 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster) {
-      return __async(this, null, function* () {
-        const duration = minutes(1);
-        yield caster.addEffect(BlurEffect, { duration }, caster);
-        yield caster.concentrateOn({
-          spell: Blur,
-          duration,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              yield caster.removeEffect(BlurEffect);
-            });
-          }
-        });
+    async apply(g2, caster) {
+      const duration = minutes(1);
+      await caster.addEffect(BlurEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: Blur,
+        duration,
+        async onSpellEnd() {
+          await caster.removeEffect(BlurEffect);
+        }
       });
     }
   });
@@ -9426,9 +9182,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var MirrorImage_default = MirrorImage;
@@ -9445,10 +9199,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 30) }),
     getTargets: (g2, caster) => [caster],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point }) {
-        yield g2.move(caster, point, getTeleportation(30, "Misty Step"));
-      });
+    async apply(g2, caster, method, { point }) {
+      await g2.move(caster, point, getTeleportation(30, "Misty Step"));
     }
   });
   var MistyStep_default = MistyStep;
@@ -9471,11 +9223,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       this.shape = shape;
       this.area = area;
       this.squares = squares;
-      this.onSpellEnd = () => __async(this, null, function* () {
+      this.onSpellEnd = async () => {
         this.g.removeEffectArea(this.area);
         for (const cleanup of this.subscriptions)
           cleanup();
-      });
+      };
       this.subscriptions = [
         g2.events.on(
           "GetDamageResponse",
@@ -9519,14 +9271,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g2) => ({ point: new PointResolver(g2, 120) }),
     getAffectedArea: (g2, caster, { point }) => point && [getSilenceArea(point)],
     getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point }) {
-        const controller = new SilenceController(g2, point);
-        yield caster.concentrateOn({
-          spell: Silence,
-          duration: minutes(10),
-          onSpellEnd: controller.onSpellEnd
-        });
+    async apply(g2, caster, method, { point }) {
+      const controller = new SilenceController(g2, point);
+      await caster.concentrateOn({
+        spell: Silence,
+        duration: minutes(10),
+        onSpellEnd: controller.onSpellEnd
       });
     }
   });
@@ -9547,9 +9297,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       target: new TargetResolver(g2, caster.reach, true)
     }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-      });
+    async apply(g2, caster, method, { target }) {
     }
   });
   var SpiderClimb_default = SpiderClimb;
@@ -9571,52 +9319,48 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
     getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { point }) {
-        const area = new ActiveEffectArea(
-          "Spike Growth",
-          { type: "sphere", centre: point, radius: 20 },
-          arSet("difficult terrain", "plants"),
-          "green"
-        );
-        g2.addEffectArea(area);
-        const spiky = resolveArea(area.shape);
-        const unsubscribe = g2.events.on(
-          "CombatantMoved",
-          ({ detail: { who, position, interrupt } }) => {
-            const squares = getSquares(who, position);
-            if (spiky.overlaps(squares))
-              interrupt.add(
-                new EvaluateLater(who, SpikeGrowth, () => __async(this, null, function* () {
-                  const amount = yield g2.rollDamage(2, {
-                    source: SpikeGrowth,
-                    attacker,
-                    target: who,
-                    size: 4,
-                    damageType: "piercing",
-                    spell: SpikeGrowth,
-                    method
-                  });
-                  yield g2.damage(
-                    SpikeGrowth,
-                    "piercing",
-                    { attacker, target: who, spell: SpikeGrowth, method },
-                    [["piercing", amount]]
-                  );
-                }))
-              );
-          }
-        );
-        attacker.concentrateOn({
-          spell: SpikeGrowth,
-          duration: minutes(10),
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              g2.removeEffectArea(area);
-              unsubscribe();
-            });
-          }
-        });
+    async apply(g2, attacker, method, { point }) {
+      const area = new ActiveEffectArea(
+        "Spike Growth",
+        { type: "sphere", centre: point, radius: 20 },
+        arSet("difficult terrain", "plants"),
+        "green"
+      );
+      g2.addEffectArea(area);
+      const spiky = resolveArea(area.shape);
+      const unsubscribe = g2.events.on(
+        "CombatantMoved",
+        ({ detail: { who, position, interrupt } }) => {
+          const squares = getSquares(who, position);
+          if (spiky.overlaps(squares))
+            interrupt.add(
+              new EvaluateLater(who, SpikeGrowth, async () => {
+                const amount = await g2.rollDamage(2, {
+                  source: SpikeGrowth,
+                  attacker,
+                  target: who,
+                  size: 4,
+                  damageType: "piercing",
+                  spell: SpikeGrowth,
+                  method
+                });
+                await g2.damage(
+                  SpikeGrowth,
+                  "piercing",
+                  { attacker, target: who, spell: SpikeGrowth, method },
+                  [["piercing", amount]]
+                );
+              })
+            );
+        }
+      );
+      attacker.concentrateOn({
+        spell: SpikeGrowth,
+        duration: minutes(10),
+        async onSpellEnd() {
+          g2.removeEffectArea(area);
+          unsubscribe();
+        }
       });
     }
   });
@@ -9648,35 +9392,33 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     ],
     getAffectedArea: (g2, caster, { point }) => point && [getArea5(g2, caster, point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea5(g2, caster, point)),
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
-        const damage = yield g2.rollDamage(5 + slot, {
-          source: LightningBolt,
-          size: 6,
+    async apply(g2, attacker, method, { slot, point }) {
+      const damage = await g2.rollDamage(5 + slot, {
+        source: LightningBolt,
+        size: 6,
+        spell: LightningBolt,
+        method,
+        damageType: "lightning",
+        attacker
+      });
+      const dc = method.getSaveDC(attacker, LightningBolt, slot);
+      for (const target of g2.getInside(getArea5(g2, attacker, point))) {
+        const save = await g2.savingThrow(dc, {
+          attacker,
+          ability: "dex",
           spell: LightningBolt,
           method,
-          damageType: "lightning",
-          attacker
+          who: target,
+          tags: svSet()
         });
-        const dc = method.getSaveDC(attacker, LightningBolt, slot);
-        for (const target of g2.getInside(getArea5(g2, attacker, point))) {
-          const save = yield g2.savingThrow(dc, {
-            attacker,
-            ability: "dex",
-            spell: LightningBolt,
-            method,
-            who: target,
-            tags: svSet()
-          });
-          yield g2.damage(
-            LightningBolt,
-            "lightning",
-            { attacker, spell: LightningBolt, method, target },
-            [["lightning", damage]],
-            save.damageResponse
-          );
-        }
-      });
+        await g2.damage(
+          LightningBolt,
+          "lightning",
+          { attacker, spell: LightningBolt, method, target },
+          [["lightning", damage]],
+          save.damageResponse
+        );
+      }
     }
   });
   var LightningBolt_default = LightningBolt;
@@ -9697,9 +9439,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   Minor physical damage to the stone doesn't harm you, but its partial destruction or a change in its shape (to the extent that you no longer fit within it) expels you and deals 6d6 bludgeoning damage to you. The stone's complete destruction (or transmutation into a different substance) expels you and deals 50 bludgeoning damage to you. If expelled, you fall prone in an unoccupied space closest to where you first entered.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var MeldIntoStone_default = MeldIntoStone;
@@ -9722,9 +9462,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g2) => ({ point: new PointResolver(g2, 150) }),
     getAffectedArea: (g2, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
     getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point }) {
-      });
+    async apply(g2, caster, method, { point }) {
     }
   });
   var SleetStorm_default = SleetStorm;
@@ -9751,9 +9489,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     check(g2, config, ec) {
       return ec;
     },
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { targets }) {
-      });
+    async apply(g2, caster, method, { targets }) {
     }
   });
   var Slow_default = Slow;
@@ -9771,9 +9507,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `This spell grants up to ten willing creatures you can see within range the ability to breathe underwater until the spell ends. Affected creatures also retain their normal mode of respiration.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
     getTargets: (g2, caster, { targets }) => targets,
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var WaterBreathing_default = WaterBreathing;
@@ -9793,9 +9527,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   If you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.`,
     getConfig: (g2) => ({ targets: new MultiTargetResolver(g2, 1, 10, 30) }),
     getTargets: (g2, caster, { targets }) => targets,
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var WaterWalk_default = WaterWalk;
@@ -9824,9 +9556,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   The first time each turn that an object enters the vortex, the object takes 2d8 bludgeoning damage; this damage occurs each round it remains in the vortex.`,
     getConfig: () => ({}),
     getTargets: () => [],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var ControlWater_default = ControlWater;
@@ -9845,9 +9575,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.`,
     getConfig: (g2, caster) => ({ target: new TargetResolver(g2, caster.reach) }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-      });
+    async apply(g2, caster, method, { target }) {
     }
   });
   var FreedomOfMovement_default = FreedomOfMovement;
@@ -9879,9 +9607,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
     ],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var IceStorm_default = IceStorm;
@@ -9898,9 +9624,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `You touch a stone object of Medium size or smaller or a section of stone no more than 5 feet in any dimension and form it into any shape that suits your purpose. So, for example, you could shape a large rock into a weapon, idol, or coffer, or make a small passage through a wall, as long as the wall is less than 5 feet thick. You could also shape a stone door or its frame to seal the door shut. The object you create can have up to two hinges and a latch, but finer mechanical detail isn't possible.`,
     getConfig: () => ({}),
     getTargets: () => [],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var StoneShape_default = StoneShape;
@@ -9930,19 +9654,15 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       target: new TargetResolver(g2, caster.reach, true)
     }),
     getTargets: (g2, caster, { target }) => [target],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { target }) {
-        const duration = hours(1);
-        yield target.addEffect(StoneskinEffect, { duration }, caster);
-        yield caster.concentrateOn({
-          spell: Stoneskin,
-          duration,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              yield target.removeEffect(StoneskinEffect);
-            });
-          }
-        });
+    async apply(g2, caster, method, { target }) {
+      const duration = hours(1);
+      await target.addEffect(StoneskinEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: Stoneskin,
+        duration,
+        async onSpellEnd() {
+          await target.removeEffect(StoneskinEffect);
+        }
       });
     }
   });
@@ -9971,9 +9691,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   For example, you could determine the location of powerful undead in the area, the location of major sources of safe drinking water, and the location of any nearby towns.`,
     getConfig: () => ({}),
     getTargets: () => [],
-    apply(g2, caster, method) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method) {
     }
   });
   var CommuneWithNature_default = CommuneWithNature;
@@ -10003,35 +9721,33 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getDamage: (g2, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g2, caster, { point }) => point && [getArea7(g2, caster, point)],
     getTargets: (g2, caster, { point }) => g2.getInside(getArea7(g2, caster, point)),
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { slot, point }) {
-        const damage = yield g2.rollDamage(3 + slot, {
-          source: ConeOfCold,
-          size: 8,
+    async apply(g2, attacker, method, { slot, point }) {
+      const damage = await g2.rollDamage(3 + slot, {
+        source: ConeOfCold,
+        size: 8,
+        spell: ConeOfCold,
+        method,
+        damageType: "cold",
+        attacker
+      });
+      const dc = method.getSaveDC(attacker, ConeOfCold, slot);
+      for (const target of g2.getInside(getArea7(g2, attacker, point))) {
+        const save = await g2.savingThrow(dc, {
+          attacker,
+          ability: "con",
           spell: ConeOfCold,
           method,
-          damageType: "cold",
-          attacker
+          who: target,
+          tags: svSet()
         });
-        const dc = method.getSaveDC(attacker, ConeOfCold, slot);
-        for (const target of g2.getInside(getArea7(g2, attacker, point))) {
-          const save = yield g2.savingThrow(dc, {
-            attacker,
-            ability: "con",
-            spell: ConeOfCold,
-            method,
-            who: target,
-            tags: svSet()
-          });
-          yield g2.damage(
-            ConeOfCold,
-            "cold",
-            { attacker, spell: ConeOfCold, method, target },
-            [["cold", damage]],
-            save.damageResponse
-          );
-        }
-      });
+        await g2.damage(
+          ConeOfCold,
+          "cold",
+          { attacker, spell: ConeOfCold, method, target },
+          [["cold", damage]],
+          save.damageResponse
+        );
+      }
     }
   });
   var ConeOfCold_default = ConeOfCold;
@@ -10058,9 +9774,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the challenge rating increases by 1 for each slot level above 5th.`,
     getConfig: (g2) => ({ point: new PointResolver(g2, 90) }),
     getTargets: () => [],
-    apply(g2, caster, method, config) {
-      return __async(this, null, function* () {
-      });
+    async apply(g2, caster, method, config) {
     }
   });
   var ConjureElemental_default = ConjureElemental;
@@ -10226,7 +9940,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var silvered_default = silvered;
 
   // src/items/CloakOfElvenkind.ts
-  var CloakHoodAction = class _CloakHoodAction extends AbstractAction {
+  var CloakHoodAction = class extends AbstractAction {
     constructor(g2, actor, cloak) {
       super(
         g2,
@@ -10238,11 +9952,9 @@ The creature is aware of this effect before it makes its attack against you.`
       );
       this.cloak = cloak;
     }
-    apply() {
-      return __async(this, null, function* () {
-        __superGet(_CloakHoodAction.prototype, this, "apply").call(this, {});
-        this.cloak.hoodUp = !this.cloak.hoodUp;
-      });
+    async apply() {
+      super.apply({});
+      this.cloak.hoodUp = !this.cloak.hoodUp;
     }
   };
   var CloakOfElvenkind = class extends AbstractWondrous {
@@ -10339,7 +10051,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/spells/cantrip/MagicStone.ts
   var MagicStoneResource = new TemporaryResource("Magic Stone", 3);
-  var MagicStoneAction = class _MagicStoneAction extends AbstractAttackAction {
+  var MagicStoneAction = class extends AbstractAttackAction {
     constructor(g2, actor, method, unsubscribe) {
       super(
         g2,
@@ -10355,51 +10067,49 @@ The creature is aware of this effect before it makes its attack against you.`
       this.method = method;
       this.unsubscribe = unsubscribe;
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ target }) {
-        __superGet(_MagicStoneAction.prototype, this, "apply").call(this, { target });
-        const { g: g2, actor, method } = this;
-        if (actor.getResource(MagicStoneResource) < 1)
-          this.unsubscribe();
-        const { attack, critical, hit } = yield g2.attack({
-          who: actor,
-          tags: atSet("ranged", "spell", "magical"),
-          target,
-          ability: method.ability,
-          spell: MagicStone,
-          method
-        });
-        if (hit) {
-          const amount = yield g2.rollDamage(
-            1,
-            {
-              source: MagicStone,
-              size: 6,
-              damageType: "bludgeoning",
-              attacker: actor,
-              target,
-              ability: method.ability,
-              spell: MagicStone,
-              method
-            },
-            critical
-          );
-          yield g2.damage(
-            this,
-            "bludgeoning",
-            {
-              attack,
-              attacker: actor,
-              target,
-              ability: method.ability,
-              critical,
-              spell: MagicStone,
-              method
-            },
-            [["bludgeoning", amount]]
-          );
-        }
+    async apply({ target }) {
+      super.apply({ target });
+      const { g: g2, actor, method } = this;
+      if (actor.getResource(MagicStoneResource) < 1)
+        this.unsubscribe();
+      const { attack, critical, hit } = await g2.attack({
+        who: actor,
+        tags: atSet("ranged", "spell", "magical"),
+        target,
+        ability: method.ability,
+        spell: MagicStone,
+        method
       });
+      if (hit) {
+        const amount = await g2.rollDamage(
+          1,
+          {
+            source: MagicStone,
+            size: 6,
+            damageType: "bludgeoning",
+            attacker: actor,
+            target,
+            ability: method.ability,
+            spell: MagicStone,
+            method
+          },
+          critical
+        );
+        await g2.damage(
+          this,
+          "bludgeoning",
+          {
+            attack,
+            attacker: actor,
+            target,
+            ability: method.ability,
+            critical,
+            spell: MagicStone,
+            method
+          },
+          [["bludgeoning", amount]]
+        );
+      }
     }
   };
   var MagicStone = simpleSpell({
@@ -10416,17 +10126,15 @@ The creature is aware of this effect before it makes its attack against you.`
   If you cast this spell again, the spell ends on any pebbles still affected by your previous casting.`,
     getConfig: () => ({}),
     getTargets: (g2, caster) => [caster],
-    apply(g2, caster, method) {
-      return __async(this, null, function* () {
-        caster.initResource(MagicStoneResource);
-        const unsubscribe = g2.events.on(
-          "GetActions",
-          ({ detail: { who, actions } }) => {
-            if (who === caster && who.hasResource(MagicStoneResource))
-              actions.push(new MagicStoneAction(g2, who, method, unsubscribe));
-          }
-        );
-      });
+    async apply(g2, caster, method) {
+      caster.initResource(MagicStoneResource);
+      const unsubscribe = g2.events.on(
+        "GetActions",
+        ({ detail: { who, actions } }) => {
+          if (who === caster && who.hasResource(MagicStoneResource))
+            actions.push(new MagicStoneAction(g2, who, method, unsubscribe));
+        }
+      );
     }
   });
   var MagicStone_default = MagicStone;
@@ -10455,50 +10163,48 @@ The creature is aware of this effect before it makes its attack against you.`
       _dd(slot != null ? slot : 1, 6, "bludgeoning")
     ],
     getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { slot }) {
-        const damage = yield g2.rollDamage(slot, {
-          source: EarthTremor,
-          size: 6,
-          spell: EarthTremor,
-          method,
-          damageType: "bludgeoning",
-          attacker
-        });
-        const dc = method.getSaveDC(attacker, EarthTremor, slot);
-        const shape = getArea8(g2, attacker);
-        for (const target of g2.getInside(shape, [attacker])) {
-          const save = yield g2.savingThrow(
-            dc,
-            {
-              attacker,
-              ability: "dex",
-              spell: EarthTremor,
-              method,
-              who: target,
-              tags: svSet()
-            },
-            { fail: "normal", save: "zero" }
-          );
-          if (save.damageResponse !== "zero") {
-            yield g2.damage(
-              EarthTremor,
-              "bludgeoning",
-              { attacker, spell: EarthTremor, method, target },
-              [["bludgeoning", damage]],
-              save.damageResponse
-            );
-            yield target.addEffect(Prone, { duration: Infinity }, attacker);
-          }
-        }
-        const area = new ActiveEffectArea(
-          "Earth Tremor",
-          shape,
-          arSet("difficult terrain"),
-          "brown"
-        );
-        g2.addEffectArea(area);
+    async apply(g2, attacker, method, { slot }) {
+      const damage = await g2.rollDamage(slot, {
+        source: EarthTremor,
+        size: 6,
+        spell: EarthTremor,
+        method,
+        damageType: "bludgeoning",
+        attacker
       });
+      const dc = method.getSaveDC(attacker, EarthTremor, slot);
+      const shape = getArea8(g2, attacker);
+      for (const target of g2.getInside(shape, [attacker])) {
+        const save = await g2.savingThrow(
+          dc,
+          {
+            attacker,
+            ability: "dex",
+            spell: EarthTremor,
+            method,
+            who: target,
+            tags: svSet()
+          },
+          { fail: "normal", save: "zero" }
+        );
+        if (save.damageResponse !== "zero") {
+          await g2.damage(
+            EarthTremor,
+            "bludgeoning",
+            { attacker, spell: EarthTremor, method, target },
+            [["bludgeoning", damage]],
+            save.damageResponse
+          );
+          await target.addEffect(Prone, { duration: Infinity }, attacker);
+        }
+      }
+      const area = new ActiveEffectArea(
+        "Earth Tremor",
+        shape,
+        arSet("difficult terrain"),
+        "brown"
+      );
+      g2.addEffectArea(area);
     }
   });
   var EarthTremor_default = EarthTremor;
@@ -10534,7 +10240,7 @@ The creature is aware of this effect before it makes its attack against you.`
     height: 40,
     radius: 5
   });
-  var MoveMoonbeamAction = class _MoveMoonbeamAction extends AbstractAction {
+  var MoveMoonbeamAction = class extends AbstractAction {
     constructor(g2, controller) {
       super(
         g2,
@@ -10553,11 +10259,9 @@ The creature is aware of this effect before it makes its attack against you.`
       if (point)
         return [getArea9(point)];
     }
-    apply(_0) {
-      return __async(this, arguments, function* ({ point }) {
-        __superGet(_MoveMoonbeamAction.prototype, this, "apply").call(this, { point });
-        yield this.controller.move(point);
-      });
+    async apply({ point }) {
+      super.apply({ point });
+      await this.controller.move(point);
     }
   };
   var MoonbeamController = class {
@@ -10567,11 +10271,11 @@ The creature is aware of this effect before it makes its attack against you.`
       this.method = method;
       this.centre = centre;
       this.slot = slot;
-      this.onSpellEnd = () => __async(this, null, function* () {
+      this.onSpellEnd = async () => {
         this.g.removeEffectArea(this.area);
         for (const cleanup of this.subscriptions)
           cleanup();
-      });
+      };
       this.shape = getArea9(centre);
       this.area = new ActiveEffectArea(
         "Moonbeam",
@@ -10604,11 +10308,11 @@ The creature is aware of this effect before it makes its attack against you.`
       );
     }
     getDamager(target) {
-      return new EvaluateLater(target, Moonbeam, () => __async(this, null, function* () {
+      return new EvaluateLater(target, Moonbeam, async () => {
         if (this.hurtThisTurn.has(target))
           return;
         this.hurtThisTurn.add(target);
-        const damage = yield this.g.rollDamage(this.slot, {
+        const damage = await this.g.rollDamage(this.slot, {
           attacker: this.caster,
           damageType: "radiant",
           method: this.method,
@@ -10618,7 +10322,7 @@ The creature is aware of this effect before it makes its attack against you.`
           target
         });
         const dc = this.method.getSaveDC(this.caster, Moonbeam);
-        const result = yield this.g.savingThrow(dc, {
+        const result = await this.g.savingThrow(dc, {
           ability: "con",
           attacker: this.caster,
           method: this.method,
@@ -10626,7 +10330,7 @@ The creature is aware of this effect before it makes its attack against you.`
           who: target,
           tags: svSet()
         });
-        yield this.g.damage(
+        await this.g.damage(
           Moonbeam,
           "radiant",
           {
@@ -10638,7 +10342,7 @@ The creature is aware of this effect before it makes its attack against you.`
           [["radiant", damage]],
           result.damageResponse
         );
-      }));
+      });
     }
     move(centre) {
       this.g.removeEffectArea(this.area);
@@ -10670,14 +10374,12 @@ The creature is aware of this effect before it makes its attack against you.`
     getAffectedArea: (g2, caster, { point }) => point && [getArea9(point)],
     getDamage: (g2, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
     getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { point, slot }) {
-        const controller = new MoonbeamController(g2, caster, method, point, slot);
-        caster.concentrateOn({
-          duration: minutes(1),
-          spell: Moonbeam,
-          onSpellEnd: controller.onSpellEnd
-        });
+    async apply(g2, caster, method, { point, slot }) {
+      const controller = new MoonbeamController(g2, caster, method, point, slot);
+      caster.concentrateOn({
+        duration: minutes(1),
+        spell: Moonbeam,
+        onSpellEnd: controller.onSpellEnd
       });
     }
   });
@@ -10707,43 +10409,41 @@ The creature is aware of this effect before it makes its attack against you.`
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
     getTargets: () => [],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, attacker, method, { point, slot }) {
-        const damage = yield g2.rollDamage(slot, {
-          source: EruptingEarth,
-          size: 12,
+    async apply(g2, attacker, method, { point, slot }) {
+      const damage = await g2.rollDamage(slot, {
+        source: EruptingEarth,
+        size: 12,
+        spell: EruptingEarth,
+        method,
+        damageType: "bludgeoning",
+        attacker
+      });
+      const dc = method.getSaveDC(attacker, EruptingEarth, slot);
+      const shape = getArea10(g2, point);
+      for (const target of g2.getInside(shape)) {
+        const save = await g2.savingThrow(dc, {
+          attacker,
+          ability: "dex",
           spell: EruptingEarth,
           method,
-          damageType: "bludgeoning",
-          attacker
+          who: target,
+          tags: svSet()
         });
-        const dc = method.getSaveDC(attacker, EruptingEarth, slot);
-        const shape = getArea10(g2, point);
-        for (const target of g2.getInside(shape)) {
-          const save = yield g2.savingThrow(dc, {
-            attacker,
-            ability: "dex",
-            spell: EruptingEarth,
-            method,
-            who: target,
-            tags: svSet()
-          });
-          yield g2.damage(
-            EruptingEarth,
-            "bludgeoning",
-            { attacker, spell: EruptingEarth, method, target },
-            [["bludgeoning", damage]],
-            save.damageResponse
-          );
-        }
-        const area = new ActiveEffectArea(
-          "Erupting Earth",
-          shape,
-          arSet("difficult terrain"),
-          "brown"
+        await g2.damage(
+          EruptingEarth,
+          "bludgeoning",
+          { attacker, spell: EruptingEarth, method, target },
+          [["bludgeoning", damage]],
+          save.damageResponse
         );
-        g2.addEffectArea(area);
-      });
+      }
+      const area = new ActiveEffectArea(
+        "Erupting Earth",
+        shape,
+        arSet("difficult terrain"),
+        "brown"
+      );
+      g2.addEffectArea(area);
     }
   });
   var EruptingEarth_default = EruptingEarth;
@@ -10772,8 +10472,8 @@ The creature is aware of this effect before it makes its attack against you.`
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
           if (attacker.hasEffect(PrimalBeastEffect) && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
             interrupt.add(
-              new EvaluateLater(attacker, PrimalBeastEffect, () => __async(void 0, null, function* () {
-                const amount = yield g2.rollDamage(
+              new EvaluateLater(attacker, PrimalBeastEffect, async () => {
+                const amount = await g2.rollDamage(
                   1,
                   {
                     source: PrimalBeastEffect,
@@ -10785,7 +10485,7 @@ The creature is aware of this effect before it makes its attack against you.`
                   critical
                 );
                 map.add("radiant", amount);
-              }))
+              })
             );
         }
       );
@@ -10831,24 +10531,20 @@ The creature is aware of this effect before it makes its attack against you.`
   - While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.`,
     getConfig: (g2) => ({ form: new ChoiceResolver(g2, FormChoices) }),
     getTargets: (g2, caster) => [caster],
-    apply(_0, _1, _2, _3) {
-      return __async(this, arguments, function* (g2, caster, method, { form }) {
-        const duration = minutes(1);
-        let effect = PrimalBeastEffect;
-        if (form === GreatTree) {
-          effect = GreatTreeEffect;
-          yield g2.giveTemporaryHP(caster, 10, GreatTreeEffect);
+    async apply(g2, caster, method, { form }) {
+      const duration = minutes(1);
+      let effect = PrimalBeastEffect;
+      if (form === GreatTree) {
+        effect = GreatTreeEffect;
+        await g2.giveTemporaryHP(caster, 10, GreatTreeEffect);
+      }
+      await caster.addEffect(effect, { duration });
+      caster.concentrateOn({
+        duration,
+        spell: GuardianOfNature,
+        async onSpellEnd() {
+          await caster.removeEffect(effect);
         }
-        yield caster.addEffect(effect, { duration });
-        caster.concentrateOn({
-          duration,
-          spell: GuardianOfNature,
-          onSpellEnd() {
-            return __async(this, null, function* () {
-              yield caster.removeEffect(effect);
-            });
-          }
-        });
       });
     }
   });
@@ -11528,7 +11224,7 @@ The creature is aware of this effect before it makes its attack against you.`
           },
           unit.id
         )),
-        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, __spreadValues({}, effect), effect.id)),
+        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { ...effect }, effect.id)),
         ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`)),
         teleportInfo.value && /* @__PURE__ */ o(
           BattlefieldEffect,
@@ -11938,7 +11634,7 @@ The creature is aware of this effect before it makes its attack against you.`
     ] });
   }
   function getInitialConfig(action, initial) {
-    const config = __spreadValues({}, initial);
+    const config = { ...initial };
     for (const [key, resolver] of Object.entries(action.getConfig(config))) {
       if (resolver instanceof SlotResolver && !config[key])
         config[key] = resolver.getMinimum(action.actor);
@@ -11965,7 +11661,7 @@ The creature is aware of this effect before it makes its attack against you.`
   }) {
     const [config, setConfig] = (0, import_hooks8.useState)(getInitialConfig(action, initialConfig));
     const patchConfig = (0, import_hooks8.useCallback)(
-      (key, value) => setConfig((old) => __spreadProps(__spreadValues({}, old), { [key]: value })),
+      (key, value) => setConfig((old) => ({ ...old, [key]: value })),
       []
     );
     (0, import_hooks8.useEffect)(() => {
@@ -11999,21 +11695,21 @@ The creature is aware of this effect before it makes its attack against you.`
           value: config[key]
         };
         if (resolver instanceof TargetResolver)
-          return /* @__PURE__ */ o(ChooseTarget, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChooseTarget, { ...subProps });
         else if (resolver instanceof MultiTargetResolver)
-          return /* @__PURE__ */ o(ChooseTargets, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChooseTargets, { ...subProps });
         else if (resolver instanceof PointResolver || resolver instanceof PointToPointResolver)
-          return /* @__PURE__ */ o(ChoosePoint, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChoosePoint, { ...subProps });
         else if (resolver instanceof MultiPointResolver)
-          return /* @__PURE__ */ o(ChoosePoints, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChoosePoints, { ...subProps });
         else if (resolver instanceof SlotResolver)
-          return /* @__PURE__ */ o(ChooseSlot, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChooseSlot, { ...subProps });
         else if (resolver instanceof ChoiceResolver)
-          return /* @__PURE__ */ o(ChooseText, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChooseText, { ...subProps });
         else if (resolver instanceof NumberRangeResolver)
-          return /* @__PURE__ */ o(ChooseNumber, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChooseNumber, { ...subProps });
         else if (resolver instanceof AllocationResolver)
-          return /* @__PURE__ */ o(ChooseAllocations, __spreadValues({}, subProps));
+          return /* @__PURE__ */ o(ChooseAllocations, { ...subProps });
         else
           return /* @__PURE__ */ o("div", { children: [
             "(no frontend for resolver type [",
@@ -12348,7 +12044,7 @@ The creature is aware of this effect before it makes its attack against you.`
     ) });
   }
   function Dialog(props) {
-    return /* @__PURE__ */ o(ReactDialog, __spreadValues({}, props));
+    return /* @__PURE__ */ o(ReactDialog, { ...props });
   }
 
   // src/ui/ListChoiceDialog.tsx
@@ -12609,14 +12305,14 @@ The creature is aware of this effect before it makes its attack against you.`
         g2.events.on("AreaRemoved", refreshAreas),
         g2.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
           interrupt.add(
-            new UIResponse(who, () => __async(this, null, function* () {
+            new UIResponse(who, async () => {
               activeCombatantId.value = who.id;
               moveHandler.value = getDefaultMovement(who);
               movingCombatantId.value = who.id;
               hideActionMenu();
               refreshUnits();
               allActions.value = g2.getActions(who);
-            }))
+            })
           );
         }),
         g2.events.on("ListChoice", (e) => chooseFromList.value = e),
@@ -12773,7 +12469,7 @@ The creature is aware of this effect before it makes its attack against you.`
           onMoveCombatant
         }
       ),
-      actionMenu.show && /* @__PURE__ */ o(Menu, __spreadProps(__spreadValues({ caption: "Quick Actions" }, actionMenu), { onClick: onClickAction })),
+      actionMenu.show && /* @__PURE__ */ o(Menu, { caption: "Quick Actions", ...actionMenu, onClick: onClickAction }),
       /* @__PURE__ */ o("div", { className: App_module_default.sidePanel, children: moveBounds.value ? /* @__PURE__ */ o(
         BoundedMovePanel,
         {
@@ -12800,9 +12496,9 @@ The creature is aware of this effect before it makes its attack against you.`
         )
       ] }) }),
       /* @__PURE__ */ o(EventLog, { g: g2 }),
-      chooseFromList.value && /* @__PURE__ */ o(ListChoiceDialog, __spreadValues({}, chooseFromList.value.detail)),
-      chooseManyFromList.value && /* @__PURE__ */ o(MultiListChoiceDialog, __spreadValues({}, chooseManyFromList.value.detail)),
-      chooseYesNo.value && /* @__PURE__ */ o(YesNoDialog, __spreadValues({}, chooseYesNo.value.detail))
+      chooseFromList.value && /* @__PURE__ */ o(ListChoiceDialog, { ...chooseFromList.value.detail }),
+      chooseManyFromList.value && /* @__PURE__ */ o(MultiListChoiceDialog, { ...chooseManyFromList.value.detail }),
+      chooseYesNo.value && /* @__PURE__ */ o(YesNoDialog, { ...chooseYesNo.value.detail })
     ] });
   }
 

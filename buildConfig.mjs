@@ -13,7 +13,7 @@ export default function getBuildConfig(options = {}) {
     entryPoints: ["src/index.tsx"],
     bundle: true,
     outfile: "docs/bundle.js",
-    target: "es2016",
+    target: "es2018",
     define: {
       [`process.env.APP_BUILD_VERSION`]: JSON.stringify(
         process.env.npm_package_version
