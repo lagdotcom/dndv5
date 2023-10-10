@@ -7,7 +7,7 @@ import SimpleFeature from "../../../features/SimpleFeature";
 import ChoiceResolver from "../../../resolvers/ChoiceResolver";
 import Combatant from "../../../types/Combatant";
 import { minutes } from "../../../utils/time";
-import { ChannelDivinityResource } from "../common";
+import { ChannelDivinityResource, PaladinIcon } from "../common";
 
 const SacredWeaponEffect = new Effect<HasWeapon>(
   "Sacred Weapon",
@@ -40,6 +40,8 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
       },
       { time: "action", resources: [[ChannelDivinityResource, 1]] },
     );
+
+    this.subIcon = PaladinIcon;
   }
 
   check(config: never, ec: ErrorCollector) {

@@ -10,6 +10,7 @@ import PCClass from "../../types/PCClass";
 import SkillName, { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
 import { makeASI } from "../common";
+import { RogueIcon } from "./common";
 import Evasion from "./Evasion";
 import SneakAttack from "./SneakAttack";
 import SteadyAim from "./SteadyAim";
@@ -54,6 +55,7 @@ const CunningAction = new SimpleFeature(
         for (const action of cunning) {
           action.name += " (Cunning Action)";
           action.time = "bonus action";
+          action.subIcon = RogueIcon;
         }
 
         actions.push(...cunning);

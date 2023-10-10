@@ -1,11 +1,15 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
+import { ActionIcon } from "../../types/Action";
 import { acSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
-import { makeASI } from "../common";
+import { ClassColours, makeASI } from "../common";
+import iconUrl from "./icon.svg";
+
+const DruidIcon: ActionIcon = { url: iconUrl, colour: ClassColours.Druid };
 
 const Druidic = nonCombatFeature(
   "Druidic",
@@ -19,6 +23,7 @@ export const DruidSpellcasting = new NormalSpellcasting(
   "full",
   "Druid",
   "Druid",
+  DruidIcon,
 );
 
 // TODO [CANCELACTION]

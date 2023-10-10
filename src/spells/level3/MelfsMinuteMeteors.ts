@@ -10,6 +10,7 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/melfs-minute-meteors.svg";
 
 const MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
 
@@ -81,6 +82,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
         ),
       },
       {
+        iconUrl,
         time: "bonus action",
         damage: [_dd(2, 6, "fire")],
         description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`,
@@ -108,6 +110,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
 const MelfsMinuteMeteors = scalingSpell<HasPoints>({
   status: "implemented",
   name: "Melf's Minute Meteors",
+  icon: { url: iconUrl },
   level: 3,
   school: "Evocation",
   concentration: true,

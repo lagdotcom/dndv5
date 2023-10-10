@@ -7,6 +7,7 @@ import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/lightning-bolt.svg";
 
 function getArea(g: Engine, actor: Combatant, point: Point) {
   const position = g.getState(actor).position;
@@ -17,6 +18,7 @@ function getArea(g: Engine, actor: Combatant, point: Point) {
 const LightningBolt = scalingSpell<HasPoint>({
   status: "implemented",
   name: "Lightning Bolt",
+  icon: { url: iconUrl },
   level: 3,
   school: "Evocation",
   v: true,

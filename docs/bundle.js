@@ -308,6 +308,8 @@
       damage,
       description,
       heal,
+      iconColour,
+      iconUrl,
       resources,
       time
     } = {}) {
@@ -322,6 +324,8 @@
       this.heal = heal;
       this.resources = new Map(resources);
       this.time = time;
+      if (iconUrl)
+        this.icon = { url: iconUrl, colour: iconColour };
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getAffectedArea(config) {
@@ -370,6 +374,9 @@
     }
   };
 
+  // src/actions/icons/dash.svg
+  var dash_default = "./dash-CNRMKC55.svg";
+
   // src/actions/DashAction.ts
   var DashEffect = new Effect("Dash", "turnEnd", (g2) => {
     g2.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
@@ -386,6 +393,7 @@
         "implemented",
         {},
         {
+          iconUrl: dash_default,
           time: "action",
           description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
 
@@ -1606,6 +1614,59 @@
     return { average, list };
   }
 
+  // src/types/ConditionName.ts
+  var coSet = (...items) => new Set(items);
+
+  // src/actions/icons/prone.svg
+  var prone_default = "./prone-ZBMZRVQM.svg";
+
+  // src/actions/DropProneAction.ts
+  var DropProneAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Drop Prone", "implemented", {}, { iconUrl: prone_default });
+    }
+    check(config, ec) {
+      if (this.actor.conditions.has("Prone"))
+        ec.add("already prone", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(Prone, {
+        conditions: coSet("Prone"),
+        duration: Infinity
+      });
+    }
+  };
+
+  // src/actions/icons/stand.svg
+  var stand_default = "./stand-L4X6POXJ.svg";
+
+  // src/actions/StandUpAction.ts
+  var StandUpAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(g2, actor, "Stand Up", "implemented", {}, { iconUrl: stand_default });
+    }
+    get cost() {
+      return round(this.actor.speed / 2, MapSquareSize);
+    }
+    check(config, ec) {
+      if (!this.actor.conditions.has("Prone"))
+        ec.add("not prone", this);
+      const speed = this.actor.speed;
+      if (speed <= 0)
+        ec.add("cannot move", this);
+      else if (this.actor.movedSoFar > this.cost)
+        ec.add("not enough movement", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      this.actor.movedSoFar += this.cost;
+      await this.actor.removeEffect(Prone);
+    }
+  };
+
   // src/interruptions/EvaluateLater.ts
   var EvaluateLater = class {
     constructor(who, source, apply, priority2 = 5) {
@@ -1615,9 +1676,6 @@
       this.priority = priority2;
     }
   };
-
-  // src/types/ConditionName.ts
-  var coSet = (...items) => new Set(items);
 
   // src/types/SaveTag.ts
   var svSet = (...items) => new Set(items);
@@ -1697,46 +1755,6 @@
     void 0,
     { quiet: true }
   );
-  var DropProneAction = class extends AbstractAction {
-    constructor(g2, actor) {
-      super(g2, actor, "Drop Prone", "implemented", {});
-    }
-    check(config, ec) {
-      if (this.actor.conditions.has("Prone"))
-        ec.add("already prone", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(Prone, {
-        conditions: coSet("Prone"),
-        duration: Infinity
-      });
-    }
-  };
-  var StandUpAction = class extends AbstractAction {
-    constructor(g2, actor) {
-      super(g2, actor, "Stand Up", "implemented", {});
-    }
-    get cost() {
-      return round(this.actor.speed / 2, MapSquareSize);
-    }
-    check(config, ec) {
-      if (!this.actor.conditions.has("Prone"))
-        ec.add("not prone", this);
-      const speed = this.actor.speed;
-      if (speed <= 0)
-        ec.add("cannot move", this);
-      else if (this.actor.movedSoFar > this.cost)
-        ec.add("not enough movement", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      this.actor.movedSoFar += this.cost;
-      await this.actor.removeEffect(Prone);
-    }
-  };
   var Prone = new Effect("Prone", "turnEnd", (g2) => {
     g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
       if (who.hasEffect(Prone))
@@ -1952,6 +1970,9 @@
     }
   };
 
+  // src/actions/icons/dodge.svg
+  var dodge_default = "./dodge-NSUUDBS5.svg";
+
   // src/actions/DodgeAction.ts
   function canDodge(who) {
     return who.hasEffect(DodgeEffect) && who.speed > 0 && !who.conditions.has("Incapacitated");
@@ -1975,6 +1996,7 @@
         "incomplete",
         {},
         {
+          iconUrl: dodge_default,
           time: "action",
           description: `When you take the Dodge action, you focus entirely on avoiding attacks. Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage. You lose this benefit if you are incapacitated (as explained in the appendix) or if your speed drops to 0.`
         }
@@ -3432,6 +3454,9 @@
   // src/monsters/fiendishParty/Birnotec_token.png
   var Birnotec_token_default = "./Birnotec_token-JGKE3FD4.png";
 
+  // src/monsters/fiendishParty/icons/eldritch-burst.svg
+  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
+
   // src/monsters/fiendishParty/Birnotec.ts
   function getArea(g2, target) {
     return {
@@ -3444,6 +3469,7 @@
   var EldritchBurstSpell = simpleSpell({
     status: "implemented",
     name: "Eldritch Burst",
+    icon: { url: eldritch_burst_default },
     level: 0,
     school: "Evocation",
     lists: ["Warlock"],
@@ -3661,6 +3687,9 @@
     }
   };
 
+  // src/items/icons/arrow.svg
+  var arrow_default = "./arrow-ZFSXM2J5.svg";
+
   // src/items/icons/bolt.svg
   var bolt_default = "./bolt-RV5OQWXW.svg";
 
@@ -3675,6 +3704,7 @@
   var Arrow = class extends AbstractAmmo {
     constructor(g2, quantity) {
       super(g2, "arrow", "bow", quantity);
+      this.iconUrl = arrow_default;
     }
   };
   var CrossbowBolt = class extends AbstractAmmo {
@@ -3726,14 +3756,26 @@
     }
   };
 
+  // src/items/icons/greataxe.svg
+  var greataxe_default = "./greataxe-D7DZHVBT.svg";
+
   // src/items/icons/light-crossbow.svg
   var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
+
+  // src/items/icons/longbow.svg
+  var longbow_default = "./longbow-2S2OQHMY.svg";
 
   // src/items/icons/longsword.svg
   var longsword_default = "./longsword-B4PZKYLG.svg";
 
+  // src/items/icons/mace.svg
+  var mace_default = "./mace-NNUCEVKZ.svg";
+
   // src/items/icons/quarterstaff.svg
   var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
+
+  // src/items/icons/rapier.svg
+  var rapier_default = "./rapier-ZROPHPFJ.svg";
 
   // src/items/icons/spear.svg
   var spear_default = "./spear-JE22DTMJ.svg";
@@ -3792,6 +3834,7 @@
   var Mace = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "mace", "simple", "melee", _dd(1, 6, "bludgeoning"));
+      this.iconUrl = mace_default;
     }
   };
   var Quarterstaff = class extends AbstractWeapon {
@@ -3840,6 +3883,7 @@
         "heavy",
         "two-handed"
       ]);
+      this.iconUrl = greataxe_default;
     }
   };
   var Longsword = class extends AbstractWeapon {
@@ -3853,6 +3897,7 @@
   var Rapier = class extends AbstractWeapon {
     constructor(g2) {
       super(g2, "rapier", "martial", "melee", _dd(1, 8, "piercing"), ["finesse"]);
+      this.iconUrl = rapier_default;
     }
   };
   var Shortsword = class extends AbstractWeapon {
@@ -3892,6 +3937,7 @@
         600
       );
       this.ammunitionTag = "bow";
+      this.iconUrl = longbow_default;
     }
   };
 
@@ -4244,6 +4290,9 @@
   });
   var MassHealingWord_default = MassHealingWord;
 
+  // src/monsters/fiendishParty/icons/shield-bash.svg
+  var shield_bash_default = "./shield-bash-MWF4OEPW.svg";
+
   // src/monsters/fiendishParty/OGonrit_token.png
   var OGonrit_token_default = "./OGonrit_token-C5AF3HHR.png";
 
@@ -4275,12 +4324,17 @@
       );
     }
   );
-  var ShieldBashEffect = new Effect("Shield Bash", "turnEnd", (g2) => {
-    g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-      if (who.hasEffect(ShieldBashEffect))
-        conditions.add("Stunned", ShieldBashEffect);
-    });
-  });
+  var ShieldBashEffect = new Effect(
+    "Shield Bash",
+    "turnEnd",
+    (g2) => {
+      g2.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(ShieldBashEffect))
+          conditions.add("Stunned", ShieldBashEffect);
+      });
+    },
+    { image: shield_bash_default }
+  );
   var ShieldBashAction = class extends AbstractAction {
     constructor(g2, actor, ability) {
       super(
@@ -4289,7 +4343,7 @@
         "Shield Bash",
         "implemented",
         { target: new TargetResolver(g2, actor.reach) },
-        { time: "action" }
+        { iconUrl: shield_bash_default, time: "action" }
       );
       this.ability = ability;
     }
@@ -4800,6 +4854,9 @@
     }
   };
 
+  // src/monsters/fiendishParty/icons/bull-rush.svg
+  var bull_rush_default = "./bull-rush-C6PSXUHN.svg";
+
   // src/monsters/fiendishParty/Zafron_token.png
   var Zafron_token_default = "./Zafron_token-HS5HC4BR.png";
 
@@ -4821,15 +4878,20 @@
       );
     }
   );
-  var BullRushEffect = new Effect("Bull Rush", "turnStart", (g2) => {
-    g2.events.on(
-      "GetDamageResponse",
-      ({ detail: { who, damageType, response } }) => {
-        if (who.hasEffect(BullRushEffect) && MundaneDamageTypes.includes(damageType))
-          response.add("resist", BullRushEffect);
-      }
-    );
-  });
+  var BullRushEffect = new Effect(
+    "Bull Rush",
+    "turnStart",
+    (g2) => {
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who.hasEffect(BullRushEffect) && MundaneDamageTypes.includes(damageType))
+            response.add("resist", BullRushEffect);
+        }
+      );
+    },
+    { image: bull_rush_default }
+  );
   var BullRushAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
@@ -4839,6 +4901,7 @@
         "incomplete",
         {},
         {
+          iconUrl: bull_rush_default,
           time: "action",
           description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`
         }
@@ -4999,6 +5062,20 @@
   var toSet = (...items) => new Set(items);
 
   // src/classes/common.ts
+  var ClassColours = {
+    Barbarian: "#e7623e",
+    Bard: "#ab6dac",
+    Cleric: "#91a1b2",
+    Druid: "#7a853b",
+    Fighter: "#7f513e",
+    Monk: "#51a5c5",
+    Paladin: "#b59e54",
+    Ranger: "#507f62",
+    Rogue: "#555752",
+    Sorcerer: "#992e2e",
+    Warlock: "#7b469b",
+    Wizard: "#2a50a1"
+  };
   function asiSetup(g2, me, config) {
     if (config.type === "ability")
       for (const ability of config.abilities)
@@ -5025,6 +5102,15 @@ If your DM allows the use of feats, you may instead take a feat.`,
       });
     });
   }
+
+  // src/classes/rogue/icon.svg
+  var icon_default = "./icon-NHSUDBY6.svg";
+
+  // src/classes/rogue/common.ts
+  var RogueIcon = {
+    url: icon_default,
+    colour: ClassColours.Rogue
+  };
 
   // src/classes/rogue/SneakAttack.ts
   function getSneakAttackDice(level) {
@@ -5095,6 +5181,9 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   );
   var SneakAttack_default = SneakAttack;
 
+  // src/classes/rogue/icons/steady-aim.svg
+  var steady_aim_default = "./steady-aim-INID7FA2.svg";
+
   // src/classes/rogue/SteadyAim.ts
   var SteadyAimNoMoveEffect = new Effect(
     "Steady Aim",
@@ -5107,23 +5196,36 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     },
     { quiet: true }
   );
-  var SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g2) => {
-    g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-      if (who.hasEffect(SteadyAimAdvantageEffect))
-        diceType.add("advantage", SteadyAimAdvantageEffect);
-    });
-    g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-      if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
-        interrupt.add(
-          new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
-            await pre.who.removeEffect(SteadyAimAdvantageEffect);
-          })
-        );
-    });
-  });
+  var SteadyAimAdvantageEffect = new Effect(
+    "Steady Aim",
+    "turnEnd",
+    (g2) => {
+      g2.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+        if (who.hasEffect(SteadyAimAdvantageEffect))
+          diceType.add("advantage", SteadyAimAdvantageEffect);
+      });
+      g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+        if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
+          interrupt.add(
+            new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
+              await pre.who.removeEffect(SteadyAimAdvantageEffect);
+            })
+          );
+      });
+    },
+    { image: steady_aim_default }
+  );
   var SteadyAimAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
+      super(
+        g2,
+        actor,
+        "Steady Aim",
+        "implemented",
+        {},
+        { iconUrl: steady_aim_default, time: "bonus action" }
+      );
+      this.subIcon = RogueIcon;
     }
     check(config, ec) {
       if (this.actor.movedSoFar)
@@ -5187,6 +5289,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
           for (const action of cunning) {
             action.name += " (Cunning Action)";
             action.time = "bonus action";
+            action.subIcon = RogueIcon;
           }
           actions.push(...cunning);
         }
@@ -5522,6 +5625,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   );
   var Lucky_default = Lucky;
 
+  // src/features/icons/hiss.svg
+  var hiss_default = "./hiss-UPUMVUAV.svg";
+
   // src/features/boons.ts
   var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
   var HissAction = class extends AbstractAction {
@@ -5532,7 +5638,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         "Hiss (Boon of Vassetri)",
         "implemented",
         { target: new TargetResolver(g2, 5) },
-        { time: "bonus action", resources: [[HissResource, 1]] }
+        {
+          iconUrl: hiss_default,
+          time: "bonus action",
+          resources: [[HissResource, 1]]
+        }
       );
     }
     async apply({ target }) {
@@ -5658,6 +5768,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
+  // src/items/icons/punch.svg
+  var punch_default = "./punch-JPHSSLGW.svg";
+
   // src/PC.ts
   var UnarmedStrike = class extends AbstractWeapon {
     constructor(g2, owner) {
@@ -5667,6 +5780,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         damageType: "bludgeoning"
       });
       this.owner = owner;
+      this.iconUrl = punch_default;
     }
   };
   var PC = class extends AbstractCombatant {
@@ -5727,10 +5841,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
+  // src/spells/level2/icons/levitate.svg
+  var levitate_default = "./levitate-QW3QKX7H.svg";
+
   // src/spells/level2/Levitate.ts
   var Levitate = simpleSpell({
     name: "Levitate",
     level: 2,
+    icon: { url: levitate_default },
     school: "Transmutation",
     concentration: true,
     v: true,
@@ -5962,7 +6080,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
+  // src/classes/wizard/icon.svg
+  var icon_default2 = "./icon-FEOOHPRA.svg";
+
   // src/classes/wizard/index.ts
+  var WizardIcon = { url: icon_default2, colour: ClassColours.Wizard };
   var ArcaneRecovery = nonCombatFeature(
     "Arcane Recovery",
     `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
@@ -5977,7 +6099,8 @@ You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
     "int",
     "full",
     "Wizard",
-    "Wizard"
+    "Wizard",
+    WizardIcon
   );
   var CantripFormulas = nonCombatFeature(
     "Cantrip Formulas",
@@ -6256,6 +6379,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return feature;
   }
 
+  // src/races/icons/breath.svg
+  var breath_default = "./breath-25O5D5OU.svg";
+
+  // src/races/icons/special-breath.svg
+  var special_breath_default = "./special-breath-M2XCTDTK.svg";
+
   // src/races/Dragonborn_FTD.ts
   var MetallicDragonborn = {
     name: "Dragonborn (Metallic)",
@@ -6281,6 +6410,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "implemented",
         { point: new PointResolver(g2, 15) },
         {
+          iconUrl: breath_default,
           damage: [_dd(damageDice, 10, damageType)],
           resources: [[BreathWeaponResource, 1]],
           description: `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
@@ -6338,7 +6468,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         name,
         status,
         { point: new PointResolver(g2, 15) },
-        { resources: [[MetallicBreathWeaponResource, 1]], description }
+        {
+          resources: [[MetallicBreathWeaponResource, 1]],
+          description,
+          iconUrl: special_breath_default
+        }
       );
     }
     getAffectedArea({
@@ -6478,10 +6612,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
   var BronzeDragonborn = makeAncestry("Bronze", "lightning");
 
+  // src/spells/cantrip/icons/acid-splash.svg
+  var acid_splash_default = "./acid-splash-7IYZVNCL.svg";
+
   // src/spells/cantrip/AcidSplash.ts
   var AcidSplash = simpleSpell({
     status: "implemented",
     name: "Acid Splash",
+    icon: { url: acid_splash_default },
     level: 0,
     school: "Conjuration",
     v: true,
@@ -6536,10 +6674,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var AcidSplash_default = AcidSplash;
 
+  // src/spells/cantrip/icons/fire-bolt.svg
+  var fire_bolt_default = "./fire-bolt-JP4GPEON.svg";
+
   // src/spells/cantrip/FireBolt.ts
   var FireBolt = simpleSpell({
     status: "implemented",
     name: "Fire Bolt",
+    icon: { url: fire_bolt_default },
     level: 0,
     school: "Evocation",
     v: true,
@@ -6640,6 +6782,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var MindSliver_default = MindSliver;
 
+  // src/spells/cantrip/icons/ray-of-frost.svg
+  var ray_of_frost_default = "./ray-of-frost-5EAHUBPB.svg";
+
   // src/spells/cantrip/RayOfFrost.ts
   var RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g2) => {
     g2.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
@@ -6650,6 +6795,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var RayOfFrost = simpleSpell({
     status: "implemented",
     name: "Ray of Frost",
+    icon: { url: ray_of_frost_default },
     level: 0,
     school: "Evocation",
     v: true,
@@ -6674,6 +6820,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var RayOfFrost_default = RayOfFrost;
 
+  // src/spells/level1/icons/ice-knife.svg
+  var ice_knife_default = "./ice-knife-4B5PYKBA.svg";
+
   // src/spells/level1/IceKnife.ts
   var getArea2 = (g2, target) => ({
     type: "within",
@@ -6684,6 +6833,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var IceKnife = scalingSpell({
     status: "implemented",
     name: "Ice Knife",
+    icon: { url: ice_knife_default },
     level: 1,
     school: "Conjuration",
     s: true,
@@ -6812,6 +6962,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/spells/level1/icons/magic-missile.svg
+  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
+
   // src/spells/level1/MagicMissile.ts
   var getDamage = (slot) => [
     _dd(slot + 2, 4, "force"),
@@ -6820,6 +6973,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MagicMissile = scalingSpell({
     status: "implemented",
     name: "Magic Missile",
+    icon: { url: magic_missile_default },
     level: 1,
     school: "Evocation",
     v: true,
@@ -6862,9 +7016,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var MagicMissile_default = MagicMissile;
 
+  // src/spells/level1/icons/shield.svg
+  var shield_default = "./shield-O4MYNFME.svg";
+
   // src/spells/level1/Shield.ts
   var Shield2 = simpleSpell({
     name: "Shield",
+    icon: { url: shield_default },
     level: 1,
     school: "Abjuration",
     time: "reaction",
@@ -7022,166 +7180,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var HoldPerson_default = HoldPerson;
 
-  // src/resolvers/MultiPointResolver.ts
-  var MultiPointResolver = class {
-    constructor(g2, minimum, maximum, maxRange) {
-      this.g = g2;
-      this.minimum = minimum;
-      this.maximum = maximum;
-      this.maxRange = maxRange;
-      this.type = "Points";
-    }
-    get name() {
-      return `${describeRange(this.minimum, this.maximum)} points${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
-    }
-    check(value, action, ec) {
-      if (!isPointArray(value))
-        ec.add("No points", this);
-      else {
-        if (value.length < this.minimum)
-          ec.add(`At least ${this.minimum} points`, this);
-        if (value.length > this.maximum)
-          ec.add(`At most ${this.maximum} points`, this);
-        for (const point of value) {
-          if (distanceTo(this.g, action.actor, point) > this.maxRange)
-            ec.add("Out of range", this);
-        }
-      }
-      return ec;
-    }
-  };
-
-  // src/spells/level2/MelfsMinuteMeteors.ts
-  var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
-  async function fireMeteors(g2, attacker, method, { points }, spendMeteors = true) {
-    if (spendMeteors)
-      attacker.spendResource(MeteorResource, points.length);
-    const damage = await g2.rollDamage(2, {
-      source: MelfsMinuteMeteors,
-      attacker,
-      size: 6,
-      spell: MelfsMinuteMeteors,
-      method,
-      damageType: "fire"
-    });
-    const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
-    for (const point of points) {
-      for (const target of g2.getInside({
-        type: "sphere",
-        centre: point,
-        radius: 5
-      })) {
-        const save = await g2.savingThrow(dc, {
-          ability: "dex",
-          attacker,
-          spell: MelfsMinuteMeteors,
-          method,
-          who: target,
-          tags: svSet()
-        });
-        await g2.damage(
-          MelfsMinuteMeteors,
-          "fire",
-          { attacker, target, spell: MelfsMinuteMeteors, method },
-          [["fire", damage]],
-          save.damageResponse
-        );
-      }
-    }
-  }
-  var FireMeteorsAction = class extends AbstractAction {
-    constructor(g2, actor, method) {
-      var _a;
-      super(
-        g2,
-        actor,
-        "Melf's Minute Meteors",
-        "incomplete",
-        {
-          points: new MultiPointResolver(
-            g2,
-            1,
-            Math.min(2, (_a = actor.resources.get(MeteorResource.name)) != null ? _a : 2),
-            120
-          )
-        },
-        {
-          time: "bonus action",
-          damage: [_dd(2, 6, "fire")],
-          description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`
-        }
-      );
-      this.method = method;
-    }
-    getAffectedArea({ points }) {
-      if (points)
-        return points.map(
-          (centre) => ({ type: "sphere", centre, radius: 5 })
-        );
-    }
-    getResources({ points }) {
-      var _a;
-      return /* @__PURE__ */ new Map([[MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
-    }
-    async apply(config) {
-      await super.apply(config);
-      return fireMeteors(this.g, this.actor, this.method, config, false);
-    }
-  };
-  var MelfsMinuteMeteors = scalingSpell({
-    status: "implemented",
-    name: "Melf's Minute Meteors",
-    level: 3,
-    school: "Evocation",
-    concentration: true,
-    v: true,
-    s: true,
-    m: "niter, sulfur, and pine tar formed into a bead",
-    lists: ["Sorcerer", "Wizard"],
-    description: `You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell\u2014and as a bonus action on each of your turns thereafter\u2014you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.
-
-  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.`,
-    getConfig: (g2) => ({
-      points: new MultiPointResolver(g2, 1, 2, 120)
-    }),
-    getAffectedArea: (g2, caster, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
-    getTargets: (g2, caster, { points }) => points.flatMap(
-      (centre) => g2.getInside({ type: "sphere", centre, radius: 5 })
-    ),
-    getDamage: () => [_dd(2, 6, "fire")],
-    async apply(g2, attacker, method, { points, slot }) {
-      const meteors = slot * 2;
-      attacker.initResource(MeteorResource, meteors);
-      await fireMeteors(g2, attacker, method, { points });
-      let meteorActionEnabled = false;
-      const removeMeteorAction = g2.events.on(
-        "GetActions",
-        ({ detail: { who, actions } }) => {
-          if (who === attacker && meteorActionEnabled)
-            actions.push(new FireMeteorsAction(g2, attacker, method));
-        }
-      );
-      const removeTurnListener = g2.events.on(
-        "TurnEnded",
-        ({ detail: { who } }) => {
-          if (who === attacker) {
-            meteorActionEnabled = true;
-            removeTurnListener();
-          }
-        }
-      );
-      await attacker.concentrateOn({
-        spell: MelfsMinuteMeteors,
-        duration: minutes(10),
-        async onSpellEnd() {
-          removeMeteorAction();
-          removeTurnListener();
-          attacker.removeResource(MeteorResource);
-        }
-      });
-    }
-  });
-  var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
+  // src/spells/level3/icons/fireball.svg
+  var fireball_default = "./fireball-GYKJUQJQ.svg";
 
   // src/spells/level3/Fireball.ts
   var getArea3 = (centre) => ({
@@ -7192,6 +7192,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var Fireball = scalingSpell({
     status: "implemented",
     name: "Fireball",
+    icon: { url: fireball_default },
     level: 3,
     school: "Evocation",
     v: true,
@@ -7289,6 +7290,175 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IntellectFortress_default = IntellectFortress;
 
+  // src/resolvers/MultiPointResolver.ts
+  var MultiPointResolver = class {
+    constructor(g2, minimum, maximum, maxRange) {
+      this.g = g2;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.maxRange = maxRange;
+      this.type = "Points";
+    }
+    get name() {
+      return `${describeRange(this.minimum, this.maximum)} points${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+    }
+    check(value, action, ec) {
+      if (!isPointArray(value))
+        ec.add("No points", this);
+      else {
+        if (value.length < this.minimum)
+          ec.add(`At least ${this.minimum} points`, this);
+        if (value.length > this.maximum)
+          ec.add(`At most ${this.maximum} points`, this);
+        for (const point of value) {
+          if (distanceTo(this.g, action.actor, point) > this.maxRange)
+            ec.add("Out of range", this);
+        }
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/level3/icons/melfs-minute-meteors.svg
+  var melfs_minute_meteors_default = "./melfs-minute-meteors-FGCLF5JZ.svg";
+
+  // src/spells/level3/MelfsMinuteMeteors.ts
+  var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
+  async function fireMeteors(g2, attacker, method, { points }, spendMeteors = true) {
+    if (spendMeteors)
+      attacker.spendResource(MeteorResource, points.length);
+    const damage = await g2.rollDamage(2, {
+      source: MelfsMinuteMeteors,
+      attacker,
+      size: 6,
+      spell: MelfsMinuteMeteors,
+      method,
+      damageType: "fire"
+    });
+    const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
+    for (const point of points) {
+      for (const target of g2.getInside({
+        type: "sphere",
+        centre: point,
+        radius: 5
+      })) {
+        const save = await g2.savingThrow(dc, {
+          ability: "dex",
+          attacker,
+          spell: MelfsMinuteMeteors,
+          method,
+          who: target,
+          tags: svSet()
+        });
+        await g2.damage(
+          MelfsMinuteMeteors,
+          "fire",
+          { attacker, target, spell: MelfsMinuteMeteors, method },
+          [["fire", damage]],
+          save.damageResponse
+        );
+      }
+    }
+  }
+  var FireMeteorsAction = class extends AbstractAction {
+    constructor(g2, actor, method) {
+      var _a;
+      super(
+        g2,
+        actor,
+        "Melf's Minute Meteors",
+        "incomplete",
+        {
+          points: new MultiPointResolver(
+            g2,
+            1,
+            Math.min(2, (_a = actor.resources.get(MeteorResource.name)) != null ? _a : 2),
+            120
+          )
+        },
+        {
+          iconUrl: melfs_minute_meteors_default,
+          time: "bonus action",
+          damage: [_dd(2, 6, "fire")],
+          description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`
+        }
+      );
+      this.method = method;
+    }
+    getAffectedArea({ points }) {
+      if (points)
+        return points.map(
+          (centre) => ({ type: "sphere", centre, radius: 5 })
+        );
+    }
+    getResources({ points }) {
+      var _a;
+      return /* @__PURE__ */ new Map([[MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
+    }
+    async apply(config) {
+      await super.apply(config);
+      return fireMeteors(this.g, this.actor, this.method, config, false);
+    }
+  };
+  var MelfsMinuteMeteors = scalingSpell({
+    status: "implemented",
+    name: "Melf's Minute Meteors",
+    icon: { url: melfs_minute_meteors_default },
+    level: 3,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "niter, sulfur, and pine tar formed into a bead",
+    lists: ["Sorcerer", "Wizard"],
+    description: `You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell\u2014and as a bonus action on each of your turns thereafter\u2014you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.`,
+    getConfig: (g2) => ({
+      points: new MultiPointResolver(g2, 1, 2, 120)
+    }),
+    getAffectedArea: (g2, caster, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
+    getTargets: (g2, caster, { points }) => points.flatMap(
+      (centre) => g2.getInside({ type: "sphere", centre, radius: 5 })
+    ),
+    getDamage: () => [_dd(2, 6, "fire")],
+    async apply(g2, attacker, method, { points, slot }) {
+      const meteors = slot * 2;
+      attacker.initResource(MeteorResource, meteors);
+      await fireMeteors(g2, attacker, method, { points });
+      let meteorActionEnabled = false;
+      const removeMeteorAction = g2.events.on(
+        "GetActions",
+        ({ detail: { who, actions } }) => {
+          if (who === attacker && meteorActionEnabled)
+            actions.push(new FireMeteorsAction(g2, attacker, method));
+        }
+      );
+      const removeTurnListener = g2.events.on(
+        "TurnEnded",
+        ({ detail: { who } }) => {
+          if (who === attacker) {
+            meteorActionEnabled = true;
+            removeTurnListener();
+          }
+        }
+      );
+      await attacker.concentrateOn({
+        spell: MelfsMinuteMeteors,
+        duration: minutes(10),
+        async onSpellEnd() {
+          removeMeteorAction();
+          removeTurnListener();
+          attacker.removeResource(MeteorResource);
+        }
+      });
+    }
+  });
+  var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
+
+  // src/spells/level4/icons/fire-wall.svg
+  var fire_wall_default = "./fire-wall-4FF3YRI5.svg";
+
   // src/spells/level4/WallOfFire.ts
   var shapeChoices = [
     { label: "line", value: "line" },
@@ -7297,6 +7467,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var WallOfFire = scalingSpell({
     name: "Wall of Fire",
     level: 4,
+    icon: { url: fire_wall_default },
     school: "Evocation",
     concentration: true,
     v: true,
@@ -7388,14 +7559,22 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/types/EffectArea.ts
   var arSet = (...items) => new Set(items);
 
+  // src/classes/paladin/icon.svg
+  var icon_default3 = "./icon-QFY4DOD4.svg";
+
   // src/classes/paladin/common.ts
+  var PaladinIcon = {
+    url: icon_default3,
+    colour: ClassColours.Paladin
+  };
   var PaladinSpellcasting = new NormalSpellcasting(
     "Paladin",
     `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
     "cha",
     "half",
     "Paladin",
-    "Paladin"
+    "Paladin",
+    PaladinIcon
   );
   var ChannelDivinityResource = new ShortRestResource(
     "Channel Divinity",
@@ -7442,6 +7621,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           ]
         }
       );
+      this.subIcon = PaladinIcon;
     }
     check({ slot }, ec) {
       if (slot) {
@@ -7508,6 +7688,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/classes/paladin/icons/lay-on-hands.svg
+  var lay_on_hands_default = "./lay-on-hands-F5ZGB5B6.svg";
+
   // src/classes/paladin/LayOnHands.ts
   var LayOnHandsResource = new LongRestResource("Lay on Hands", 5);
   var LayOnHandsHealAction = class extends AbstractAction {
@@ -7521,8 +7704,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           cost: new NumberRangeResolver(g2, "Spend", 1, Infinity),
           target: new TargetResolver(g2, actor.reach, true)
         },
-        { time: "action" }
+        { iconUrl: lay_on_hands_default, time: "action" }
       );
+      this.subIcon = PaladinIcon;
     }
     getConfig() {
       const resourceMax = this.actor.getResource(LayOnHandsResource);
@@ -7782,6 +7966,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   };
   var paladin_default = Paladin;
 
+  // src/spells/level1/icons/protection-evil-good.svg
+  var protection_evil_good_default = "./protection-evil-good-OPG4SIM6.svg";
+
   // src/spells/level1/ProtectionFromEvilAndGood.ts
   var affectedTypes = ctSet(
     "aberration",
@@ -7818,11 +8005,13 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
             diceType.add("advantage", ProtectionEffect);
         }
       );
-    }
+    },
+    { image: protection_evil_good_default }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
     status: "implemented",
     name: "Protection from Evil and Good",
+    icon: { url: protection_evil_good_default },
     level: 1,
     school: "Abjuration",
     concentration: true,
@@ -7997,6 +8186,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         },
         { time: "action", resources: [[ChannelDivinityResource, 1]] }
       );
+      this.subIcon = PaladinIcon;
     }
     check(config, ec) {
       if (this.actor.hasEffect(SacredWeaponEffect))
@@ -8050,9 +8240,7 @@ Whenever an enemy creature starts its turn in the bright light, the creature tak
 
 In addition, for the duration, you have advantage on saving throws against spells cast by fiends or undead.
 
-Once you use this feature, you can't use it again until you finish a long rest.
-
-`
+Once you use this feature, you can't use it again until you finish a long rest.`
   );
   var OathSpells = bonusSpellsFeature(
     "Oath Spells",
@@ -8085,6 +8273,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
   };
   var Devotion_default = Devotion;
 
+  // src/spells/level2/icons/web.svg
+  var web_default = "./web-ERLMYCL3.svg";
+
   // src/spells/level2/Web.ts
   var BreakFreeFromWebAction = class extends AbstractAction {
     constructor(g2, actor, caster, method) {
@@ -8095,6 +8286,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
         "implemented",
         {},
         {
+          iconUrl: web_default,
           time: "action",
           description: `Make a Strength check to break free of the webs.`
         }
@@ -8129,7 +8321,8 @@ Once you use this feature, you can't use it again until you finish a long rest.
         if (who.hasEffect(Webbed))
           conditions.add("Restrained", Webbed);
       });
-    }
+    },
+    { image: web_default }
   );
   var getWebArea = (centre) => ({
     type: "cube",
@@ -8197,6 +8390,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var Web = simpleSpell({
     status: "incomplete",
     name: "Web",
+    icon: { url: web_default },
     level: 2,
     school: "Conjuration",
     concentration: true,
@@ -8283,6 +8477,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
   };
   var Human_default = Human;
 
+  // src/spells/level1/icons/bless.svg
+  var bless_default = "./bless-VVWIP7W3.svg";
+
   // src/spells/level1/Bless.ts
   function applyBless(g2, who, bonus) {
     if (who.hasEffect(BlessEffect)) {
@@ -8290,19 +8487,25 @@ Once you use this feature, you can't use it again until you finish a long rest.
       bonus.add(dr.value, BlessEffect);
     }
   }
-  var BlessEffect = new Effect("Bless", "turnEnd", (g2) => {
-    g2.events.on(
-      "BeforeAttack",
-      ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
-    );
-    g2.events.on(
-      "BeforeSave",
-      ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
-    );
-  });
+  var BlessEffect = new Effect(
+    "Bless",
+    "turnEnd",
+    (g2) => {
+      g2.events.on(
+        "BeforeAttack",
+        ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
+      );
+      g2.events.on(
+        "BeforeSave",
+        ({ detail: { bonus, who } }) => applyBless(g2, who, bonus)
+      );
+    },
+    { image: bless_default }
+  );
   var Bless = scalingSpell({
     status: "implemented",
     name: "Bless",
+    icon: { url: bless_default },
     level: 1,
     school: "Enchantment",
     concentration: true,
@@ -8386,16 +8589,25 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var DivineFavor_default = DivineFavor;
 
+  // src/spells/level1/icons/shield-of-faith.svg
+  var shield_of_faith_default = "./shield-of-faith-6VIBSZE5.svg";
+
   // src/spells/level1/ShieldOfFaith.ts
-  var ShieldOfFaithEffect = new Effect("Shield of Faith", "turnStart", (g2) => {
-    g2.events.on("GetAC", ({ detail: { who, bonus } }) => {
-      if (who.hasEffect(ShieldOfFaithEffect))
-        bonus.add(2, ShieldOfFaith);
-    });
-  });
+  var ShieldOfFaithEffect = new Effect(
+    "Shield of Faith",
+    "turnStart",
+    (g2) => {
+      g2.events.on("GetAC", ({ detail: { who, bonus } }) => {
+        if (who.hasEffect(ShieldOfFaithEffect))
+          bonus.add(2, ShieldOfFaith);
+      });
+    },
+    { image: shield_of_faith_default }
+  );
   var ShieldOfFaith = simpleSpell({
     status: "implemented",
     name: "Shield of Faith",
+    icon: { url: shield_of_faith_default },
     level: 1,
     school: "Abjuration",
     time: "bonus action",
@@ -8423,17 +8635,26 @@ Once you use this feature, you can't use it again until you finish a long rest.
   });
   var ShieldOfFaith_default = ShieldOfFaith;
 
+  // src/spells/level2/icons/aid.svg
+  var aid_default = "./aid-2OQR6NMW.svg";
+
   // src/spells/level2/Aid.ts
-  var AidEffect = new Effect("Aid", "turnStart", (g2) => {
-    g2.events.on("GetMaxHP", ({ detail: { who, bonus } }) => {
-      const config = who.getEffectConfig(AidEffect);
-      if (config)
-        bonus.add(config.amount, AidEffect);
-    });
-  });
+  var AidEffect = new Effect(
+    "Aid",
+    "turnStart",
+    (g2) => {
+      g2.events.on("GetMaxHP", ({ detail: { who, bonus } }) => {
+        const config = who.getEffectConfig(AidEffect);
+        if (config)
+          bonus.add(config.amount, AidEffect);
+      });
+    },
+    { image: aid_default }
+  );
   var Aid = scalingSpell({
     status: "implemented",
     name: "Aid",
+    icon: { url: aid_default },
     level: 2,
     school: "Abjuration",
     v: true,
@@ -8455,6 +8676,9 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   });
   var Aid_default = Aid;
+
+  // src/spells/level2/icons/magic-weapon.svg
+  var magic_weapon_default = "./magic-weapon-JOO7KH5L.svg";
 
   // src/spells/level2/MagicWeapon.ts
   function slotToBonus(slot) {
@@ -8490,6 +8714,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var MagicWeapon = scalingSpell({
     status: "implemented",
     name: "Magic Weapon",
+    icon: { url: magic_weapon_default },
     level: 2,
     school: "Transmutation",
     concentration: true,
@@ -8564,6 +8789,12 @@ Once you use this feature, you can't use it again until you finish a long rest.
     }
   };
 
+  // src/classes/barbarian/icons/end-rage.svg
+  var end_rage_default = "./end-rage-BCM52AKW.svg";
+
+  // src/classes/barbarian/icons/rage.svg
+  var rage_default = "./rage-N4H3NAED.svg";
+
   // src/classes/barbarian/Rage.ts
   function getRageCount(level) {
     if (level < 3)
@@ -8588,7 +8819,14 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var RageResource = new LongRestResource("Rage", 2);
   var EndRageAction = class extends AbstractAction {
     constructor(g2, actor) {
-      super(g2, actor, "End Rage", "implemented", {}, { time: "bonus action" });
+      super(
+        g2,
+        actor,
+        "End Rage",
+        "implemented",
+        {},
+        { iconUrl: end_rage_default, time: "bonus action" }
+      );
     }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
@@ -8610,83 +8848,88 @@ Once you use this feature, you can't use it again until you finish a long rest.
   var TookDamageTag = new Effect("(Damaged)", "turnEnd", void 0, {
     quiet: true
   });
-  var RageEffect = new Effect("Rage", "turnStart", (g2) => {
-    g2.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
-      if (isRaging(who) && ability === "str")
-        diceType.add("advantage", RageEffect);
-    });
-    g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-      if (isRaging(who) && ability === "str")
-        diceType.add("advantage", RageEffect);
-    });
-    g2.events.on(
-      "GatherDamage",
-      ({ detail: { attacker, attack, ability, bonus } }) => {
-        var _a;
-        if (isRaging(attacker) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
-          bonus.add(
-            getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
-            RageEffect
-          );
-      }
-    );
-    g2.events.on(
-      "GetDamageResponse",
-      ({ detail: { who, damageType, response } }) => {
-        if (isRaging(who) && MundaneDamageTypes.includes(damageType))
-          response.add("resist", RageEffect);
-      }
-    );
-    g2.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.actor.hasEffect(RageEffect) && action.isSpell)
-        error.add("cannot cast spells", RageEffect);
-    });
-    g2.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
-      if (isRaging(who) && who.conditions.has("Unconscious"))
-        interrupt.add(
-          new EvaluateLater(who, RageEffect, async () => {
-            await who.removeEffect(RageEffect);
-          })
-        );
-    });
-    g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-      if (isRaging(pre.who) && pre.who.side !== pre.target.side)
-        interrupt.add(
-          new EvaluateLater(pre.who, RageEffect, async () => {
-            await pre.who.addEffect(DidAttackTag, { duration: Infinity });
-          })
-        );
-    });
-    g2.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
-      if (isRaging(who))
-        interrupt.add(
-          new EvaluateLater(who, RageEffect, async () => {
-            await who.addEffect(TookDamageTag, { duration: Infinity });
-          })
-        );
-    });
-    g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-      if (isRaging(who)) {
-        if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
+  var RageEffect = new Effect(
+    "Rage",
+    "turnStart",
+    (g2) => {
+      g2.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
+        if (isRaging(who) && ability === "str")
+          diceType.add("advantage", RageEffect);
+      });
+      g2.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+        if (isRaging(who) && ability === "str")
+          diceType.add("advantage", RageEffect);
+      });
+      g2.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, attack, ability, bonus } }) => {
+          var _a;
+          if (isRaging(attacker) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
+            bonus.add(
+              getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
+              RageEffect
+            );
+        }
+      );
+      g2.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (isRaging(who) && MundaneDamageTypes.includes(damageType))
+            response.add("resist", RageEffect);
+        }
+      );
+      g2.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action.actor.hasEffect(RageEffect) && action.isSpell)
+          error.add("cannot cast spells", RageEffect);
+      });
+      g2.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
+        if (isRaging(who) && who.conditions.has("Unconscious"))
           interrupt.add(
             new EvaluateLater(who, RageEffect, async () => {
               await who.removeEffect(RageEffect);
             })
           );
-        else
+      });
+      g2.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+        if (isRaging(pre.who) && pre.who.side !== pre.target.side)
           interrupt.add(
-            new EvaluateLater(who, RageEffect, async () => {
-              await who.removeEffect(DidAttackTag);
-              await who.removeEffect(TookDamageTag);
+            new EvaluateLater(pre.who, RageEffect, async () => {
+              await pre.who.addEffect(DidAttackTag, { duration: Infinity });
             })
           );
-      }
-    });
-    g2.events.on("GetActions", ({ detail: { who, actions } }) => {
-      if (who.hasEffect(RageEffect))
-        actions.push(new EndRageAction(g2, who));
-    });
-  });
+      });
+      g2.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+        if (isRaging(who))
+          interrupt.add(
+            new EvaluateLater(who, RageEffect, async () => {
+              await who.addEffect(TookDamageTag, { duration: Infinity });
+            })
+          );
+      });
+      g2.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        if (isRaging(who)) {
+          if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
+            interrupt.add(
+              new EvaluateLater(who, RageEffect, async () => {
+                await who.removeEffect(RageEffect);
+              })
+            );
+          else
+            interrupt.add(
+              new EvaluateLater(who, RageEffect, async () => {
+                await who.removeEffect(DidAttackTag);
+                await who.removeEffect(TookDamageTag);
+              })
+            );
+        }
+      });
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who.hasEffect(RageEffect))
+          actions.push(new EndRageAction(g2, who));
+      });
+    },
+    { image: rage_default }
+  );
   var RageAction = class extends AbstractAction {
     constructor(g2, actor) {
       super(
@@ -8695,7 +8938,22 @@ Once you use this feature, you can't use it again until you finish a long rest.
         "Rage",
         "incomplete",
         {},
-        { time: "bonus action", resources: [[RageResource, 1]] }
+        {
+          iconUrl: rage_default,
+          time: "bonus action",
+          resources: [[RageResource, 1]],
+          description: `On your turn, you can enter a rage as a bonus action.
+
+While raging, you gain the following benefits if you aren't wearing heavy armor:
+
+- You have advantage on Strength checks and Strength saving throws.
+- When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
+- You have resistance to bludgeoning, piercing, and slashing damage.
+
+If you are able to cast spells, you can't cast them or concentrate on them while raging.
+
+Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`
+        }
       );
     }
     async apply() {
@@ -9252,7 +9510,11 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     }
   };
 
+  // src/classes/druid/icon.svg
+  var icon_default4 = "./icon-CV77NMBS.svg";
+
   // src/classes/druid/index.ts
+  var DruidIcon = { url: icon_default4, colour: ClassColours.Druid };
   var Druidic = nonCombatFeature(
     "Druidic",
     `You know Druidic, the secret language of druids. You can speak the language and use it to leave hidden messages. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful DC 15 Wisdom (Perception) check but can't decipher it without magic.`
@@ -9263,7 +9525,8 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     "wis",
     "full",
     "Druid",
-    "Druid"
+    "Druid",
+    DruidIcon
   );
   var WildShape = notImplementedFeature(
     "Wild Shape",
@@ -9511,10 +9774,14 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var SpiderClimb_default = SpiderClimb;
 
+  // src/spells/level2/icons/spike-growth.svg
+  var spike_growth_default = "./spike-growth-CD24K45V.svg";
+
   // src/spells/level2/SpikeGrowth.ts
   var SpikeGrowth = simpleSpell({
     status: "incomplete",
     name: "Spike Growth",
+    icon: { url: spike_growth_default },
     level: 2,
     school: "Transmutation",
     v: true,
@@ -9575,6 +9842,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var SpikeGrowth_default = SpikeGrowth;
 
+  // src/spells/level3/icons/lightning-bolt.svg
+  var lightning_bolt_default = "./lightning-bolt-MGFW7XHW.svg";
+
   // src/spells/level3/LightningBolt.ts
   function getArea5(g2, actor, point) {
     const position = g2.getState(actor).position;
@@ -9584,6 +9854,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var LightningBolt = scalingSpell({
     status: "implemented",
     name: "Lightning Bolt",
+    icon: { url: lightning_bolt_default },
     level: 3,
     school: "Evocation",
     v: true,
@@ -10148,6 +10419,9 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var silvered_default = silvered;
 
+  // src/items/icons/hood.svg
+  var hood_default = "./hood-NYMML4K2.svg";
+
   // src/items/CloakOfElvenkind.ts
   var CloakHoodAction = class extends AbstractAction {
     constructor(g2, actor, cloak) {
@@ -10157,7 +10431,11 @@ The creature is aware of this effect before it makes its attack against you.`
         cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
         "incomplete",
         {},
-        { time: "action" }
+        {
+          iconUrl: cloak.iconUrl,
+          iconColour: ItemRarityColours[cloak.rarity],
+          time: "action"
+        }
       );
       this.cloak = cloak;
     }
@@ -10172,6 +10450,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.hoodUp = hoodUp;
       this.attunement = true;
       this.rarity = "Uncommon";
+      this.iconUrl = hood_default;
       const cloaked = (who) => who && who.equipment.has(this) && who.attunements.has(this) && this.hoodUp;
       g2.events.on(
         "BeforeCheck",
@@ -10258,6 +10537,9 @@ The creature is aware of this effect before it makes its attack against you.`
     features: /* @__PURE__ */ new Set([DwarvenArmorTraining])
   };
 
+  // src/spells/cantrip/icons/magic-stone.svg
+  var magic_stone_default = "./magic-stone-255GD6HJ.svg";
+
   // src/spells/cantrip/MagicStone.ts
   var MagicStoneResource = new TemporaryResource("Magic Stone", 3);
   var MagicStoneAction = class extends AbstractAttackAction {
@@ -10269,6 +10551,7 @@ The creature is aware of this effect before it makes its attack against you.`
         "incomplete",
         { target: new TargetResolver(g2, 60) },
         {
+          iconUrl: magic_stone_default,
           damage: [_dd(1, 6, "bludgeoning")],
           resources: [[MagicStoneResource, 1]]
         }
@@ -10324,6 +10607,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var MagicStone = simpleSpell({
     status: "incomplete",
     name: "Magic Stone",
+    icon: { url: magic_stone_default },
     level: 0,
     school: "Transmutation",
     time: "bonus action",
@@ -10348,6 +10632,9 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var MagicStone_default = MagicStone;
 
+  // src/spells/level1/icons/earth-tremor.svg
+  var earth_tremor_default = "./earth-tremor-EZT5PRHJ.svg";
+
   // src/spells/level1/EarthTremor.ts
   var getArea8 = (g2, caster) => ({
     type: "within",
@@ -10358,6 +10645,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var EarthTremor = scalingSpell({
     status: "incomplete",
     name: "Earth Tremor",
+    icon: { url: earth_tremor_default },
     level: 1,
     school: "Evocation",
     v: true,
@@ -10442,6 +10730,9 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
+  // src/spells/level2/icons/moonbeam.svg
+  var moonbeam_default = "./moonbeam-2AFBKWN7.svg";
+
   // src/spells/level2/Moonbeam.ts
   var getArea9 = (centre) => ({
     type: "cylinder",
@@ -10458,6 +10749,7 @@ The creature is aware of this effect before it makes its attack against you.`
         "implemented",
         { point: new PointToPointResolver(g2, controller.centre, 60) },
         {
+          iconUrl: moonbeam_default,
           time: "action",
           description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`
         }
@@ -10563,6 +10855,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var Moonbeam = scalingSpell({
     status: "incomplete",
     name: "Moonbeam",
+    icon: { url: moonbeam_default },
     level: 2,
     school: "Evocation",
     concentration: true,
@@ -10594,6 +10887,9 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var Moonbeam_default = Moonbeam;
 
+  // src/spells/level3/icons/erupting-earth.svg
+  var erupting_earth_default = "./erupting-earth-NCHHCQWD.svg";
+
   // src/spells/level3/EruptingEarth.ts
   var getArea10 = (g2, centre) => ({
     type: "cube",
@@ -10603,6 +10899,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var EruptingEarth = scalingSpell({
     status: "incomplete",
     name: "Erupting Earth",
+    icon: { url: erupting_earth_default },
     level: 3,
     school: "Evocation",
     v: true,

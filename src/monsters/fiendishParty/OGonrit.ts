@@ -19,6 +19,7 @@ import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { distance } from "../../utils/units";
+import bashUrl from "./icons/shield-bash.svg";
 import tokenUrl from "./OGonrit_token.png";
 
 const FiendishMantle = new SimpleFeature(
@@ -54,12 +55,17 @@ const FiendishMantle = new SimpleFeature(
   },
 );
 
-const ShieldBashEffect = new Effect("Shield Bash", "turnEnd", (g) => {
-  g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-    if (who.hasEffect(ShieldBashEffect))
-      conditions.add("Stunned", ShieldBashEffect);
-  });
-});
+const ShieldBashEffect = new Effect(
+  "Shield Bash",
+  "turnEnd",
+  (g) => {
+    g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(ShieldBashEffect))
+        conditions.add("Stunned", ShieldBashEffect);
+    });
+  },
+  { image: bashUrl },
+);
 
 class ShieldBashAction extends AbstractAction<HasTarget> {
   constructor(
@@ -73,7 +79,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       "Shield Bash",
       "implemented",
       { target: new TargetResolver(g, actor.reach) },
-      { time: "action" },
+      { iconUrl: bashUrl, time: "action" },
     );
   }
 

@@ -1,10 +1,12 @@
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../common";
+import iconUrl from "./icons/levitate.svg";
 
 const Levitate = simpleSpell<HasTarget>({
   name: "Levitate",
   level: 2,
+  icon: { url: iconUrl },
   school: "Transmutation",
   concentration: true,
   v: true,

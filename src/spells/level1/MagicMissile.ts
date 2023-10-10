@@ -3,6 +3,7 @@ import AllocationResolver from "../../resolvers/AllocationResolver";
 import DamageAmount from "../../types/DamageAmount";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/magic-missile.svg";
 
 const getDamage = (slot: number): DamageAmount[] => [
   _dd(slot + 2, 4, "force"),
@@ -12,6 +13,7 @@ const getDamage = (slot: number): DamageAmount[] => [
 const MagicMissile = scalingSpell<HasAllocations>({
   status: "implemented",
   name: "Magic Missile",
+  icon: { url: iconUrl },
   level: 1,
   school: "Evocation",
   v: true,

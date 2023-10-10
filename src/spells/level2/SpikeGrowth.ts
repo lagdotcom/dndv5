@@ -7,10 +7,12 @@ import { resolveArea } from "../../utils/areas";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
+import iconUrl from "./icons/spike-growth.svg";
 
 const SpikeGrowth = simpleSpell<HasPoint>({
   status: "incomplete",
   name: "Spike Growth",
+  icon: { url: iconUrl },
   level: 2,
   school: "Transmutation",
   v: true,

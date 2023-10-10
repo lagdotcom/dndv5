@@ -3,17 +3,24 @@ import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/aid.svg";
 
-const AidEffect = new Effect<{ amount: number }>("Aid", "turnStart", (g) => {
-  g.events.on("GetMaxHP", ({ detail: { who, bonus } }) => {
-    const config = who.getEffectConfig(AidEffect);
-    if (config) bonus.add(config.amount, AidEffect);
-  });
-});
+const AidEffect = new Effect<{ amount: number }>(
+  "Aid",
+  "turnStart",
+  (g) => {
+    g.events.on("GetMaxHP", ({ detail: { who, bonus } }) => {
+      const config = who.getEffectConfig(AidEffect);
+      if (config) bonus.add(config.amount, AidEffect);
+    });
+  },
+  { image: iconUrl },
+);
 
 const Aid = scalingSpell<HasTargets>({
   status: "implemented",
   name: "Aid",
+  icon: { url: iconUrl },
   level: 2,
   school: "Abjuration",
   v: true,

@@ -5,10 +5,12 @@ import { _dd } from "../../utils/dice";
 import { isCombatantArray } from "../../utils/types";
 import { distance } from "../../utils/units";
 import { getCantripDice, simpleSpell } from "../common";
+import iconUrl from "./icons/acid-splash.svg";
 
 const AcidSplash = simpleSpell<HasTargets>({
   status: "implemented",
   name: "Acid Splash",
+  icon: { url: iconUrl },
   level: 0,
   school: "Conjuration",
   v: true,

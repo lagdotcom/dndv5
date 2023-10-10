@@ -1,7 +1,9 @@
 import { simpleSpell } from "../common";
+import iconUrl from "./icons/shield.svg";
 
 const Shield = simpleSpell({
   name: "Shield",
+  icon: { url: iconUrl },
   level: 1,
   school: "Abjuration",
   time: "reaction", // TODO which you take when you are hit by an attack or targeted by the magic missile spell

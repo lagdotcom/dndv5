@@ -7,6 +7,7 @@ import { SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/ice-knife.svg";
 
 const getArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
   type: "within",
@@ -18,6 +19,7 @@ const getArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
 const IceKnife = scalingSpell<HasTarget>({
   status: "implemented",
   name: "Ice Knife",
+  icon: { url: iconUrl },
   level: 1,
   school: "Conjuration",
   s: true,

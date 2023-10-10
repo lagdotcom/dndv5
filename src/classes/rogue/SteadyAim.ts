@@ -5,6 +5,8 @@ import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Combatant from "../../types/Combatant";
+import { RogueIcon } from "./common";
+import iconUrl from "./icons/steady-aim.svg";
 
 const SteadyAimNoMoveEffect = new Effect(
   "Steady Aim",
@@ -18,25 +20,38 @@ const SteadyAimNoMoveEffect = new Effect(
   { quiet: true },
 );
 
-const SteadyAimAdvantageEffect = new Effect("Steady Aim", "turnEnd", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-    if (who.hasEffect(SteadyAimAdvantageEffect))
-      diceType.add("advantage", SteadyAimAdvantageEffect);
-  });
+const SteadyAimAdvantageEffect = new Effect(
+  "Steady Aim",
+  "turnEnd",
+  (g) => {
+    g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+      if (who.hasEffect(SteadyAimAdvantageEffect))
+        diceType.add("advantage", SteadyAimAdvantageEffect);
+    });
 
-  g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-    if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
-      interrupt.add(
-        new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
-          await pre.who.removeEffect(SteadyAimAdvantageEffect);
-        }),
-      );
-  });
-});
+    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+      if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
+        interrupt.add(
+          new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
+            await pre.who.removeEffect(SteadyAimAdvantageEffect);
+          }),
+        );
+    });
+  },
+  { image: iconUrl },
+);
 
 class SteadyAimAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Steady Aim", "implemented", {}, { time: "bonus action" });
+    super(
+      g,
+      actor,
+      "Steady Aim",
+      "implemented",
+      {},
+      { iconUrl, time: "bonus action" },
+    );
+    this.subIcon = RogueIcon;
   }
 
   check(config: never, ec: ErrorCollector) {

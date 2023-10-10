@@ -3,16 +3,23 @@ import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import iconUrl from "./icons/shield-of-faith.svg";
 
-const ShieldOfFaithEffect = new Effect("Shield of Faith", "turnStart", (g) => {
-  g.events.on("GetAC", ({ detail: { who, bonus } }) => {
-    if (who.hasEffect(ShieldOfFaithEffect)) bonus.add(2, ShieldOfFaith);
-  });
-});
+const ShieldOfFaithEffect = new Effect(
+  "Shield of Faith",
+  "turnStart",
+  (g) => {
+    g.events.on("GetAC", ({ detail: { who, bonus } }) => {
+      if (who.hasEffect(ShieldOfFaithEffect)) bonus.add(2, ShieldOfFaith);
+    });
+  },
+  { image: iconUrl },
+);
 
 const ShieldOfFaith = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Shield of Faith",
+  icon: { url: iconUrl },
   level: 1,
   school: "Abjuration",
   time: "bonus action",

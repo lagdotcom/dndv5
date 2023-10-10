@@ -41,9 +41,7 @@ Whenever an enemy creature starts its turn in the bright light, the creature tak
 
 In addition, for the duration, you have advantage on saving throws against spells cast by fiends or undead.
 
-Once you use this feature, you can't use it again until you finish a long rest.
-
-`,
+Once you use this feature, you can't use it again until you finish a long rest.`,
 );
 
 const OathSpells = bonusSpellsFeature(

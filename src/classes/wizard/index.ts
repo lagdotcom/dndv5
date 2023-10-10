@@ -1,9 +1,13 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
+import { ActionIcon } from "../../types/Action";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
-import { makeASI } from "../common";
+import { ClassColours, makeASI } from "../common";
+import iconUrl from "./icon.svg";
+
+const WizardIcon: ActionIcon = { url: iconUrl, colour: ClassColours.Wizard };
 
 const ArcaneRecovery = nonCombatFeature(
   "Arcane Recovery",
@@ -21,6 +25,7 @@ export const WizardSpellcasting = new NormalSpellcasting(
   "full",
   "Wizard",
   "Wizard",
+  WizardIcon,
 );
 
 const CantripFormulas = nonCombatFeature(

@@ -10,9 +10,14 @@ import {
 } from "../types/Item";
 import { _dd } from "../utils/dice";
 import AbstractItem from "./AbstractItem";
+import clubUrl from "./icons/club.svg";
+import greataxeUrl from "./icons/greataxe.svg";
 import lightCrossbowUrl from "./icons/light-crossbow.svg";
+import longbowUrl from "./icons/longbow.svg";
 import longswordUrl from "./icons/longsword.svg";
+import maceUrl from "./icons/mace.svg";
 import quarterstaffUrl from "./icons/quarterstaff.svg";
+import rapierUrl from "./icons/rapier.svg";
 import spearUrl from "./icons/spear.svg";
 import tridentUrl from "./icons/trident.svg";
 
@@ -51,6 +56,7 @@ export abstract class AbstractWeapon
 export class Club extends AbstractWeapon {
   constructor(g: Engine) {
     super(g, "club", "simple", "melee", _dd(1, 4, "bludgeoning"), ["light"]);
+    this.iconUrl = clubUrl;
   }
 }
 
@@ -129,6 +135,7 @@ export class LightHammer extends AbstractWeapon {
 export class Mace extends AbstractWeapon {
   constructor(g: Engine) {
     super(g, "mace", "simple", "melee", _dd(1, 6, "bludgeoning"));
+    this.iconUrl = maceUrl;
   }
 }
 
@@ -259,6 +266,7 @@ export class Greataxe extends AbstractWeapon {
       "heavy",
       "two-handed",
     ]);
+    this.iconUrl = greataxeUrl;
   }
 }
 
@@ -325,6 +333,7 @@ export class Pike extends AbstractWeapon {
 export class Rapier extends AbstractWeapon {
   constructor(g: Engine) {
     super(g, "rapier", "martial", "melee", _dd(1, 8, "piercing"), ["finesse"]);
+    this.iconUrl = rapierUrl;
   }
 }
 
@@ -447,6 +456,7 @@ export class Longbow extends AbstractWeapon {
       600,
     );
     this.ammunitionTag = "bow";
+    this.iconUrl = longbowUrl;
   }
 }
 

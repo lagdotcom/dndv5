@@ -21,6 +21,7 @@ import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
+import bullRushIconUrl from "./icons/bull-rush.svg";
 import tokenUrl from "./Zafron_token.png";
 
 const LustForBattle = new ConfiguredFeature<WeaponItem>(
@@ -42,18 +43,23 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
   },
 );
 
-const BullRushEffect = new Effect("Bull Rush", "turnStart", (g) => {
-  g.events.on(
-    "GetDamageResponse",
-    ({ detail: { who, damageType, response } }) => {
-      if (
-        who.hasEffect(BullRushEffect) &&
-        MundaneDamageTypes.includes(damageType)
-      )
-        response.add("resist", BullRushEffect);
-    },
-  );
-});
+const BullRushEffect = new Effect(
+  "Bull Rush",
+  "turnStart",
+  (g) => {
+    g.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, response } }) => {
+        if (
+          who.hasEffect(BullRushEffect) &&
+          MundaneDamageTypes.includes(damageType)
+        )
+          response.add("resist", BullRushEffect);
+      },
+    );
+  },
+  { image: bullRushIconUrl },
+);
 
 class BullRushAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
@@ -64,6 +70,7 @@ class BullRushAction extends AbstractAction {
       "incomplete",
       {},
       {
+        iconUrl: bullRushIconUrl,
         time: "action",
         description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`,
       },

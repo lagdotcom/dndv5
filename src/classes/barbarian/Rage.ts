@@ -9,6 +9,8 @@ import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
+import endRageIconUrl from "./icons/end-rage.svg";
+import rageIconUrl from "./icons/rage.svg";
 
 function getRageCount(level: number) {
   if (level < 3) return 2;
@@ -29,7 +31,14 @@ export const RageResource = new LongRestResource("Rage", 2);
 
 class EndRageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "End Rage", "implemented", {}, { time: "bonus action" });
+    super(
+      g,
+      actor,
+      "End Rage",
+      "implemented",
+      {},
+      { iconUrl: endRageIconUrl, time: "bonus action" },
+    );
   }
 
   check(config: never, ec: ErrorCollector) {
@@ -55,97 +64,102 @@ const TookDamageTag = new Effect("(Damaged)", "turnEnd", undefined, {
   quiet: true,
 });
 
-export const RageEffect = new Effect("Rage", "turnStart", (g) => {
-  // You have advantage on Strength checks and Strength saving throws.
-  g.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
-    if (isRaging(who) && ability === "str")
-      diceType.add("advantage", RageEffect);
-  });
-  g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-    if (isRaging(who) && ability === "str")
-      diceType.add("advantage", RageEffect);
-  });
+export const RageEffect = new Effect(
+  "Rage",
+  "turnStart",
+  (g) => {
+    // You have advantage on Strength checks and Strength saving throws.
+    g.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
+      if (isRaging(who) && ability === "str")
+        diceType.add("advantage", RageEffect);
+    });
+    g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+      if (isRaging(who) && ability === "str")
+        diceType.add("advantage", RageEffect);
+    });
 
-  // When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
-  g.events.on(
-    "GatherDamage",
-    ({ detail: { attacker, attack, ability, bonus } }) => {
-      if (
-        isRaging(attacker) &&
-        hasAll(attack?.pre.tags, ["melee", "weapon"]) &&
-        ability === "str"
-      )
-        bonus.add(
-          getRageBonus(attacker.classLevels.get("Barbarian") ?? 0),
-          RageEffect,
-        );
-    },
-  );
+    // When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, attack, ability, bonus } }) => {
+        if (
+          isRaging(attacker) &&
+          hasAll(attack?.pre.tags, ["melee", "weapon"]) &&
+          ability === "str"
+        )
+          bonus.add(
+            getRageBonus(attacker.classLevels.get("Barbarian") ?? 0),
+            RageEffect,
+          );
+      },
+    );
 
-  // You have resistance to bludgeoning, piercing, and slashing damage.
-  g.events.on(
-    "GetDamageResponse",
-    ({ detail: { who, damageType, response } }) => {
-      if (isRaging(who) && MundaneDamageTypes.includes(damageType))
-        response.add("resist", RageEffect);
-    },
-  );
+    // You have resistance to bludgeoning, piercing, and slashing damage.
+    g.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, response } }) => {
+        if (isRaging(who) && MundaneDamageTypes.includes(damageType))
+          response.add("resist", RageEffect);
+      },
+    );
 
-  // If you are able to cast spells, you can't cast them or concentrate on them while raging.
-  g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (action.actor.hasEffect(RageEffect) && action.isSpell)
-      error.add("cannot cast spells", RageEffect);
-  });
+    // If you are able to cast spells, you can't cast them or concentrate on them while raging.
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.actor.hasEffect(RageEffect) && action.isSpell)
+        error.add("cannot cast spells", RageEffect);
+    });
 
-  // It ends early if you are knocked unconscious
-  g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
-    if (isRaging(who) && who.conditions.has("Unconscious"))
-      interrupt.add(
-        new EvaluateLater(who, RageEffect, async () => {
-          await who.removeEffect(RageEffect);
-        }),
-      );
-  });
-
-  // ...or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
-  g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-    if (isRaging(pre.who) && pre.who.side !== pre.target.side)
-      interrupt.add(
-        new EvaluateLater(pre.who, RageEffect, async () => {
-          await pre.who.addEffect(DidAttackTag, { duration: Infinity });
-        }),
-      );
-  });
-  g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
-    if (isRaging(who))
-      interrupt.add(
-        new EvaluateLater(who, RageEffect, async () => {
-          await who.addEffect(TookDamageTag, { duration: Infinity });
-        }),
-      );
-  });
-  g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-    if (isRaging(who)) {
-      if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
+    // It ends early if you are knocked unconscious
+    g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
+      if (isRaging(who) && who.conditions.has("Unconscious"))
         interrupt.add(
           new EvaluateLater(who, RageEffect, async () => {
             await who.removeEffect(RageEffect);
           }),
         );
-      else
+    });
+
+    // ...or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
+    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+      if (isRaging(pre.who) && pre.who.side !== pre.target.side)
         interrupt.add(
-          new EvaluateLater(who, RageEffect, async () => {
-            await who.removeEffect(DidAttackTag);
-            await who.removeEffect(TookDamageTag);
+          new EvaluateLater(pre.who, RageEffect, async () => {
+            await pre.who.addEffect(DidAttackTag, { duration: Infinity });
           }),
         );
-    }
-  });
+    });
+    g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+      if (isRaging(who))
+        interrupt.add(
+          new EvaluateLater(who, RageEffect, async () => {
+            await who.addEffect(TookDamageTag, { duration: Infinity });
+          }),
+        );
+    });
+    g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+      if (isRaging(who)) {
+        if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
+          interrupt.add(
+            new EvaluateLater(who, RageEffect, async () => {
+              await who.removeEffect(RageEffect);
+            }),
+          );
+        else
+          interrupt.add(
+            new EvaluateLater(who, RageEffect, async () => {
+              await who.removeEffect(DidAttackTag);
+              await who.removeEffect(TookDamageTag);
+            }),
+          );
+      }
+    });
 
-  g.events.on("GetActions", ({ detail: { who, actions } }) => {
-    if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
-  });
-});
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
+    });
+  },
+  { image: rageIconUrl },
+);
 
 export class RageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
@@ -155,7 +169,22 @@ export class RageAction extends AbstractAction {
       "Rage",
       "incomplete",
       {},
-      { time: "bonus action", resources: [[RageResource, 1]] },
+      {
+        iconUrl: rageIconUrl,
+        time: "bonus action",
+        resources: [[RageResource, 1]],
+        description: `On your turn, you can enter a rage as a bonus action.
+
+While raging, you gain the following benefits if you aren't wearing heavy armor:
+
+- You have advantage on Strength checks and Strength saving throws.
+- When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
+- You have resistance to bludgeoning, piercing, and slashing damage.
+
+If you are able to cast spells, you can't cast them or concentrate on them while raging.
+
+Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`,
+      },
     );
   }
 

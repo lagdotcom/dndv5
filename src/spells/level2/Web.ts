@@ -15,6 +15,7 @@ import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import iconUrl from "./icons/web.svg";
 
 class BreakFreeFromWebAction extends AbstractAction {
   constructor(
@@ -30,6 +31,7 @@ class BreakFreeFromWebAction extends AbstractAction {
       "implemented",
       {},
       {
+        iconUrl,
         time: "action",
         description: `Make a Strength check to break free of the webs.`,
       },
@@ -66,6 +68,7 @@ const Webbed = new Effect<{ caster: Combatant; method: SpellcastingMethod }>(
       if (who.hasEffect(Webbed)) conditions.add("Restrained", Webbed);
     });
   },
+  { image: iconUrl },
 );
 
 const getWebArea = (centre: Point): SpecifiedCube => ({
@@ -146,6 +149,7 @@ class WebController {
 const Web = simpleSpell<HasPoint>({
   status: "incomplete",
   name: "Web",
+  icon: { url: iconUrl },
   level: 2,
   school: "Conjuration",
   concentration: true,

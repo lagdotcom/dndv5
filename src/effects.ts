@@ -1,13 +1,8 @@
-import AbstractAction from "./actions/AbstractAction";
-import ErrorCollector from "./collectors/ErrorCollector";
+import DropProneAction from "./actions/DropProneAction";
+import StandUpAction from "./actions/StandUpAction";
 import Effect from "./Effect";
-import Engine from "./Engine";
 import EvaluateLater from "./interruptions/EvaluateLater";
-import { MapSquareSize } from "./MapSquare";
-import Combatant from "./types/Combatant";
-import { coSet } from "./types/ConditionName";
 import { svSet } from "./types/SaveTag";
-import { round } from "./utils/numbers";
 import { distance } from "./utils/units";
 
 export const Dying = new Effect("Dying", "turnStart", (g) => {
@@ -87,57 +82,6 @@ export const UsedAttackAction = new Effect(
   undefined,
   { quiet: true },
 );
-
-class DropProneAction extends AbstractAction {
-  constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Drop Prone", "implemented", {});
-  }
-
-  check(config: never, ec: ErrorCollector) {
-    if (this.actor.conditions.has("Prone")) ec.add("already prone", this);
-
-    return super.check(config, ec);
-  }
-
-  async apply() {
-    await super.apply({});
-
-    await this.actor.addEffect(Prone, {
-      conditions: coSet("Prone"),
-      duration: Infinity,
-    });
-  }
-}
-
-class StandUpAction extends AbstractAction {
-  constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Stand Up", "implemented", {});
-  }
-
-  get cost() {
-    return round(this.actor.speed / 2, MapSquareSize);
-  }
-
-  check(config: never, ec: ErrorCollector) {
-    if (!this.actor.conditions.has("Prone")) ec.add("not prone", this);
-
-    const speed = this.actor.speed;
-    if (speed <= 0) ec.add("cannot move", this);
-    else if (this.actor.movedSoFar > this.cost)
-      ec.add("not enough movement", this);
-
-    return super.check(config, ec);
-  }
-
-  async apply() {
-    await super.apply({});
-
-    this.actor.movedSoFar += this.cost;
-
-    // TODO [MESSAGES] report this somehow
-    await this.actor.removeEffect(Prone);
-  }
-}
 
 export const Prone = new Effect("Prone", "turnEnd", (g) => {
   g.events.on("GetConditions", ({ detail: { who, conditions } }) => {

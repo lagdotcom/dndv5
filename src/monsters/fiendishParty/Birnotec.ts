@@ -16,6 +16,7 @@ import { SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import tokenUrl from "./Birnotec_token.png";
+import burstUrl from "./icons/eldritch-burst.svg";
 
 function getArea(g: Engine, target: Combatant): SpecifiedWithin {
   return {
@@ -29,6 +30,7 @@ function getArea(g: Engine, target: Combatant): SpecifiedWithin {
 const EldritchBurstSpell = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Eldritch Burst",
+  icon: { url: burstUrl },
   level: 0,
   school: "Evocation",
   lists: ["Warlock"],

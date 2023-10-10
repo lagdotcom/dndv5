@@ -16,6 +16,8 @@ export interface AbstractActionOptions {
   damage?: DamageAmount[];
   description?: string;
   heal?: Amount[];
+  iconColour?: string;
+  iconUrl?: string;
   resources?: [Resource, number][];
   time?: ActionTime;
 }
@@ -44,6 +46,8 @@ export default abstract class AbstractAction<T extends object = Empty>
       damage,
       description,
       heal,
+      iconColour,
+      iconUrl,
       resources,
       time,
     }: AbstractActionOptions = {},
@@ -54,6 +58,8 @@ export default abstract class AbstractAction<T extends object = Empty>
     this.heal = heal;
     this.resources = new Map(resources);
     this.time = time;
+
+    if (iconUrl) this.icon = { url: iconUrl, colour: iconColour };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

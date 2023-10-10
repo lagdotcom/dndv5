@@ -6,6 +6,7 @@ import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/magic-weapon.svg";
 
 function slotToBonus(slot: number) {
   if (slot >= 6) return 3;
@@ -47,6 +48,7 @@ class MagicWeaponController {
 const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
   status: "implemented",
   name: "Magic Weapon",
+  icon: { url: iconUrl },
   level: 2,
   school: "Transmutation",
   concentration: true,

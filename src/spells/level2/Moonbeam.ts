@@ -14,6 +14,7 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/moonbeam.svg";
 
 const getArea = (centre: Point): SpecifiedCylinder => ({
   type: "cylinder",
@@ -34,6 +35,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
       "implemented",
       { point: new PointToPointResolver(g, controller.centre, 60) },
       {
+        iconUrl,
         time: "action",
         description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
       },
@@ -159,6 +161,7 @@ class MoonbeamController {
 const Moonbeam = scalingSpell<HasPoint>({
   status: "incomplete",
   name: "Moonbeam",
+  icon: { url: iconUrl },
   level: 2,
   school: "Evocation",
   concentration: true,

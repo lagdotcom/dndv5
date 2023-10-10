@@ -5,6 +5,7 @@ import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/fireball.svg";
 
 const getArea = (centre: Point): SpecifiedSphere => ({
   type: "sphere",
@@ -15,6 +16,7 @@ const getArea = (centre: Point): SpecifiedSphere => ({
 const Fireball = scalingSpell<HasPoint>({
   status: "implemented",
   name: "Fireball",
+  icon: { url: iconUrl },
   level: 3,
   school: "Evocation",
   v: true,

@@ -4,6 +4,7 @@ import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import PointResolver from "../../resolvers/PointResolver";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/fire-wall.svg";
 
 type Shape = "line" | "ring";
 
@@ -15,6 +16,7 @@ const shapeChoices: PickChoice<Shape>[] = [
 const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
   name: "Wall of Fire",
   level: 4,
+  icon: { url: iconUrl },
   school: "Evocation",
   concentration: true,
   v: true,

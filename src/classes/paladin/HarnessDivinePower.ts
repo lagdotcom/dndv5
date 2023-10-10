@@ -11,7 +11,7 @@ import {
 } from "../../spells/NormalSpellcasting";
 import Combatant from "../../types/Combatant";
 import { enumerate, ordinal } from "../../utils/numbers";
-import { ChannelDivinityResource } from "./common";
+import { ChannelDivinityResource, PaladinIcon } from "./common";
 
 const HarnessDivinePowerResource = new LongRestResource(
   "Harness Divine Power",
@@ -52,6 +52,8 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
         ],
       },
     );
+
+    this.subIcon = PaladinIcon;
   }
 
   check({ slot }: Partial<Scales>, ec: ErrorCollector): ErrorCollector {

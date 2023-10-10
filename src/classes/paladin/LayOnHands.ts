@@ -7,6 +7,8 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Resource from "../../types/Resource";
+import { PaladinIcon } from "./common";
+import iconUrl from "./icons/lay-on-hands.svg";
 
 const LayOnHandsResource = new LongRestResource("Lay on Hands", 5);
 
@@ -23,8 +25,10 @@ class LayOnHandsHealAction extends AbstractAction<HasCost & HasTarget> {
         cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
         target: new TargetResolver(g, actor.reach, true),
       },
-      { time: "action" },
+      { iconUrl, time: "action" },
     );
+
+    this.subIcon = PaladinIcon;
   }
 
   getConfig() {

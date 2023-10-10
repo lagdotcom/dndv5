@@ -1,5 +1,6 @@
 import AbstractCombatant from "./AbstractCombatant";
 import Engine from "./Engine";
+import punchUrl from "./items/icons/punch.svg";
 import { AbstractWeapon } from "./items/weapons";
 import PCClass from "./types/PCClass";
 import PCClassName from "./types/PCClassName";
@@ -18,6 +19,7 @@ export class UnarmedStrike extends AbstractWeapon {
       amount: 1,
       damageType: "bludgeoning",
     });
+    this.iconUrl = punchUrl;
   }
 }
 

@@ -6,6 +6,7 @@ import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/earth-tremor.svg";
 
 const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
   type: "within",
@@ -17,6 +18,7 @@ const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
 const EarthTremor = scalingSpell({
   status: "incomplete",
   name: "Earth Tremor",
+  icon: { url: iconUrl },
   level: 1,
   school: "Evocation",
   v: true,

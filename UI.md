@@ -16,3 +16,7 @@
 | 10  | hp bar (back)           |
 | 5   | effect label            |
 | 3   | effect square           |
+
+## icon resources
+
+https://www.svgrepo.com/collection/game-skills-vectors

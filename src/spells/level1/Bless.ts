@@ -6,6 +6,7 @@ import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
+import iconUrl from "./icons/bless.svg";
 
 function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
   if (who.hasEffect(BlessEffect)) {
@@ -14,18 +15,24 @@ function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
   }
 }
 
-const BlessEffect = new Effect("Bless", "turnEnd", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { bonus, who } }) =>
-    applyBless(g, who, bonus),
-  );
-  g.events.on("BeforeSave", ({ detail: { bonus, who } }) =>
-    applyBless(g, who, bonus),
-  );
-});
+const BlessEffect = new Effect(
+  "Bless",
+  "turnEnd",
+  (g) => {
+    g.events.on("BeforeAttack", ({ detail: { bonus, who } }) =>
+      applyBless(g, who, bonus),
+    );
+    g.events.on("BeforeSave", ({ detail: { bonus, who } }) =>
+      applyBless(g, who, bonus),
+    );
+  },
+  { image: iconUrl },
+);
 
 const Bless = scalingSpell<HasTargets>({
   status: "implemented",
   name: "Bless",
+  icon: { url: iconUrl },
   level: 1,
   school: "Enchantment",
   concentration: true,

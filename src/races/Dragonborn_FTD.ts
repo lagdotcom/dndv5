@@ -18,6 +18,8 @@ import { svSet } from "../types/SaveTag";
 import { _dd } from "../utils/dice";
 import { getSaveDC } from "../utils/dnd";
 import { resistanceFeature } from "./common";
+import breathUrl from "./icons/breath.svg";
+import specialBreathUrl from "./icons/special-breath.svg";
 
 const MetallicDragonborn: PCRace = {
   name: "Dragonborn (Metallic)",
@@ -53,6 +55,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       "implemented",
       { point: new PointResolver(g, 15) },
       {
+        iconUrl: breathUrl,
         damage: [_dd(damageDice, 10, damageType)],
         resources: [[BreathWeaponResource, 1]],
         description: `When you take the Attack action on your turn, you can replace one of your attacks with an exhalation of magical energy in a 15-foot cone. Each creature in that area must make a Dexterity saving throw (DC = 8 + your Constitution modifier + your proficiency bonus). On a failed save, the creature takes 1d10 damage of the type associated with your Metallic Ancestry. On a successful save, it takes half as much damage. This damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).
@@ -117,7 +120,11 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
       name,
       status,
       { point: new PointResolver(g, 15) },
-      { resources: [[MetallicBreathWeaponResource, 1]], description },
+      {
+        resources: [[MetallicBreathWeaponResource, 1]],
+        description,
+        iconUrl: specialBreathUrl,
+      },
     );
   }
 

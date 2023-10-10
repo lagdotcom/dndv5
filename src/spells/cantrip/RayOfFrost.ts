@@ -4,6 +4,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
+import iconUrl from "./icons/ray-of-frost.svg";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
 const RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {
@@ -15,6 +16,7 @@ const RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {
 const RayOfFrost = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Ray of Frost",
+  icon: { url: iconUrl },
   level: 0,
   school: "Evocation",
   v: true,

@@ -9,6 +9,7 @@ import Combatant from "../types/Combatant";
 import { svSet } from "../types/SaveTag";
 import { getSaveDC } from "../utils/dnd";
 import { round } from "../utils/numbers";
+import hissIconUrl from "./icons/hiss.svg";
 import SimpleFeature from "./SimpleFeature";
 
 const HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
@@ -21,7 +22,11 @@ class HissAction extends AbstractAction<HasTarget> {
       "Hiss (Boon of Vassetri)",
       "implemented",
       { target: new TargetResolver(g, 5) },
-      { time: "bonus action", resources: [[HissResource, 1]] },
+      {
+        iconUrl: hissIconUrl,
+        time: "bonus action",
+        resources: [[HissResource, 1]],
+      },
     );
   }
 
