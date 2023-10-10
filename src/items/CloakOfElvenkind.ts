@@ -20,7 +20,7 @@ class CloakHoodAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
     this.cloak.hoodUp = !this.cloak.hoodUp;
     // TODO [MESSAGES] announce it
   }

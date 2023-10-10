@@ -66,7 +66,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
   }
 
   async apply({ point }: HasPoint) {
-    super.apply({ point });
+    await super.apply({ point });
     const { actor: attacker, g, damageDice, damageType } = this;
 
     const damage = await g.rollDamage(damageDice, {
@@ -152,7 +152,7 @@ class EnervatingBreathAction extends MetallicBreathAction {
   }
 
   async apply({ point }: HasPoint) {
-    super.apply({ point });
+    await super.apply({ point });
 
     const { g, actor } = this;
     const dc = getSaveDC(actor, "con");
@@ -186,7 +186,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
   }
 
   async apply(config: HasPoint) {
-    super.apply(config);
+    await super.apply(config);
     const { g, actor } = this;
     const dc = getSaveDC(actor, "con");
 

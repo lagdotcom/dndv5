@@ -50,7 +50,7 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
   }
 
   async apply({ weapon }: HasWeapon) {
-    super.apply({ weapon });
+    await super.apply({ weapon });
     await this.actor.addEffect(SacredWeaponEffect, {
       duration: minutes(1),
       weapon,

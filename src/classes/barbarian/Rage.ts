@@ -39,7 +39,7 @@ class EndRageAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
     await this.actor.removeEffect(RageEffect);
   }
 }
@@ -160,7 +160,7 @@ export class RageAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
     if (await this.actor.addEffect(RageEffect, { duration: minutes(1) }))
       await this.actor.endConcentration();
   }

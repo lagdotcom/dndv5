@@ -46,7 +46,7 @@ class SteadyAimAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
 
     await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
     await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });

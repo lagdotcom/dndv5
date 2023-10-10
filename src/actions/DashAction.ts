@@ -33,7 +33,7 @@ export default class DashAction extends AbstractAction {
   }
 
   async apply(): Promise<void> {
-    super.apply({});
+    await super.apply({});
     await this.actor.addEffect(DashEffect, { duration: 1 });
   }
 }

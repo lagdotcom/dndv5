@@ -79,7 +79,7 @@ class BullRushAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
     const { g, actor } = this;
 
     const affected = [actor];

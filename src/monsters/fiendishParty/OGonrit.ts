@@ -78,7 +78,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
   }
 
   async apply({ target }: HasTarget) {
-    super.apply({ target });
+    await super.apply({ target });
 
     const { g, actor, ability } = this;
     const dc = getSaveDC(actor, ability);

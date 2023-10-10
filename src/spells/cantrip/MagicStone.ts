@@ -33,7 +33,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
   }
 
   async apply({ target }: HasTarget) {
-    super.apply({ target });
+    await super.apply({ target });
     const { g, actor, method } = this;
 
     if (actor.getResource(MagicStoneResource) < 1) this.unsubscribe();

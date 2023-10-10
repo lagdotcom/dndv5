@@ -100,7 +100,7 @@ class DropProneAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
 
     await this.actor.addEffect(Prone, {
       conditions: coSet("Prone"),
@@ -130,7 +130,7 @@ class StandUpAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
 
     this.actor.movedSoFar += this.cost;
 

@@ -41,8 +41,7 @@ class FrenzyAttack extends AbstractAction<HasTarget> {
   }
 
   async apply({ target }: HasTarget) {
-    super.apply({ target });
-
+    await super.apply({ target });
     await doStandardAttack(this.g, {
       ability: this.ability,
       attacker: this.actor,

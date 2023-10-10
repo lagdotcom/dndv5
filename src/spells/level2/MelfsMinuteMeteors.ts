@@ -100,7 +100,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
   }
 
   async apply(config: HasPoints) {
-    super.apply(config);
+    await super.apply(config);
     return fireMeteors(this.g, this.actor, this.method, config, false);
   }
 }

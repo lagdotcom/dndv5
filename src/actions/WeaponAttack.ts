@@ -66,8 +66,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   }
 
   async apply({ target }: HasTarget) {
-    super.apply({ target });
-
+    await super.apply({ target });
     await doStandardAttack(this.g, {
       ability: this.ability,
       ammo: this.ammo,

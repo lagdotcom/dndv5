@@ -26,7 +26,7 @@ class HissAction extends AbstractAction<HasTarget> {
   }
 
   async apply({ target }: HasTarget) {
-    super.apply({ target });
+    await super.apply({ target });
     const { g, actor } = this;
 
     if (target.time.has("reaction")) {

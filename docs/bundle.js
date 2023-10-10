@@ -399,7 +399,7 @@
       return super.check(config, ec);
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.actor.addEffect(DashEffect, { duration: 1 });
     }
   };
@@ -1707,7 +1707,7 @@
       return super.check(config, ec);
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.actor.addEffect(Prone, {
         conditions: coSet("Prone"),
         duration: Infinity
@@ -1732,7 +1732,7 @@
       return super.check(config, ec);
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       this.actor.movedSoFar += this.cost;
       await this.actor.removeEffect(Prone);
     }
@@ -1773,7 +1773,7 @@
       return "action";
     }
     async apply(config) {
-      super.apply(config);
+      await super.apply(config);
       this.actor.attacksSoFar.push(this);
       await this.actor.addEffect(UsedAttackAction, { duration: 1 });
     }
@@ -1820,7 +1820,7 @@
       )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
     }
     async apply({ target }) {
-      super.apply({ target });
+      await super.apply({ target });
       await doStandardAttack(this.g, {
         ability: this.ability,
         ammo: this.ammo,
@@ -1947,7 +1947,7 @@
       );
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.actor.addEffect(DisengageEffect, { duration: 1 });
     }
   };
@@ -1981,7 +1981,7 @@
       );
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.actor.addEffect(DodgeEffect, { duration: 1 });
     }
   };
@@ -4294,7 +4294,7 @@
       this.ability = ability;
     }
     async apply({ target }) {
-      super.apply({ target });
+      await super.apply({ target });
       const { g: g2, actor, ability } = this;
       const dc = getSaveDC(actor, ability);
       const config = { conditions: coSet("Stunned"), duration: 1 };
@@ -4482,13 +4482,170 @@
   var Yulash_token_default = "./Yulash_token-YXCZ3ZVJ.png";
 
   // src/monsters/fiendishParty/Yulash.ts
-  var Cheer = notImplementedFeature(
+  function getMeleeAttackOptions(g2, attacker, filter) {
+    const options = [];
+    const attackerPosition = g2.getState(attacker).position;
+    for (const weapon of attacker.weapons) {
+      if (weapon.rangeCategory !== "melee")
+        continue;
+      for (const [target, { position }] of g2.combatants) {
+        if (target === attacker || !filter(target, weapon))
+          continue;
+        const reach = attacker.reach + weapon.reach;
+        if (reach >= getDistanceBetween(
+          attackerPosition,
+          attacker.sizeInUnits,
+          position,
+          target.sizeInUnits
+        ))
+          options.push({ target, weapon });
+      }
+    }
+    return options;
+  }
+  var CheerAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Cheer",
+        "implemented",
+        { target: new TargetResolver(g2, 30) },
+        {
+          time: "action",
+          description: `One ally within 30 ft. may make a melee attack against an enemy in range.`
+        }
+      );
+    }
+    check({ target }, ec) {
+      super.check({ target }, ec);
+      if (target) {
+        if (target.side !== this.actor.side)
+          ec.add("must target ally", this);
+        if (!this.getValidAttacks(target).length)
+          ec.add("no valid attack", this);
+      }
+      return ec;
+    }
+    getValidAttacks(attacker) {
+      return getMeleeAttackOptions(
+        this.g,
+        attacker,
+        (target) => attacker.side !== target.side
+      );
+    }
+    async apply({ target: attacker }) {
+      await super.apply({ target: attacker });
+      const attacks = this.getValidAttacks(attacker);
+      const choice = new PickFromListChoice(
+        attacker,
+        this,
+        "Cheer",
+        `Pick an attack to make.`,
+        attacks.map((value) => ({
+          value,
+          label: `attack ${value.target.name} with ${value.weapon.name}`
+        })),
+        async ({ target, weapon }) => {
+          await doStandardAttack(this.g, {
+            source: this,
+            ability: getWeaponAbility(attacker, weapon),
+            attacker,
+            target,
+            weapon
+          });
+        },
+        true
+      );
+      await choice.apply(this.g);
+    }
+  };
+  var Cheer = new SimpleFeature(
     "Cheer",
-    "One ally within 30 ft. may make a melee attack against an enemy in range."
+    "One ally within 30 ft. may make a melee attack against an enemy in range.",
+    (g2, me) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new CheerAction(g2, me));
+      });
+    }
   );
-  var Discord = notImplementedFeature(
+  var DiscordAction = class extends AbstractAction {
+    constructor(g2, actor) {
+      super(
+        g2,
+        actor,
+        "Discord",
+        "implemented",
+        { target: new TargetResolver(g2, 30) },
+        {
+          time: "action",
+          description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`
+        }
+      );
+    }
+    check({ target }, ec) {
+      super.check({ target }, ec);
+      if (target) {
+        if (target.side === this.actor.side)
+          ec.add("must target enemy", this);
+        if (!target.time.has("reaction"))
+          ec.add("no reaction left", this);
+        if (!this.getValidAttacks(target).length)
+          ec.add("no valid attack", this);
+      }
+      return ec;
+    }
+    getValidAttacks(attacker) {
+      return getMeleeAttackOptions(
+        this.g,
+        attacker,
+        (target) => attacker.side === target.side
+      );
+    }
+    async apply({ target: attacker }) {
+      await super.apply({ target: attacker });
+      const dc = getSaveDC(this.actor, "cha");
+      const result = await this.g.savingThrow(dc, {
+        ability: "cha",
+        attacker: this.actor,
+        who: attacker,
+        tags: svSet("charm")
+      });
+      if (result.outcome === "success")
+        return;
+      const attacks = this.getValidAttacks(attacker);
+      const choice = new PickFromListChoice(
+        attacker,
+        this,
+        "Discord",
+        `Pick an attack to make.`,
+        attacks.map((value) => ({
+          value,
+          label: `attack ${value.target.name} with ${value.weapon.name}`
+        })),
+        async ({ target, weapon }) => {
+          await doStandardAttack(this.g, {
+            source: this,
+            ability: getWeaponAbility(attacker, weapon),
+            attacker,
+            target,
+            weapon
+          });
+        }
+      );
+      await choice.apply(this.g);
+    }
+  };
+  var Discord = new SimpleFeature(
     "Discord",
-    "One enemy within 30 ft. must make a DC 15 Charisma save or use its reaction to make one melee attack against an ally in range."
+    "One enemy within 30 ft. must make a DC 15 Charisma save or use its reaction to make one melee attack against an ally in range.",
+    (g2, me) => {
+      g2.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new DiscordAction(g2, me));
+      });
+    }
   );
   var IrritationAction = class extends AbstractAction {
     constructor(g2, actor) {
@@ -4508,7 +4665,7 @@
       return ec;
     }
     async apply({ target }) {
-      super.apply({ target });
+      await super.apply({ target });
       const { g: g2, actor } = this;
       const dc = getSaveDC(actor, "cha");
       const result = await g2.savingThrow(dc, {
@@ -4559,7 +4716,7 @@
       this.distance = distance2;
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.g.applyBoundedMove(
         this.actor,
         getTeleportation(this.distance, "Dancing Step")
@@ -4694,7 +4851,7 @@
       return ec;
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       const { g: g2, actor } = this;
       const affected = [actor];
       const promises = [];
@@ -4974,7 +5131,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
       return super.check(config, ec);
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
       await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
     }
@@ -5379,7 +5536,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       );
     }
     async apply({ target }) {
-      super.apply({ target });
+      await super.apply({ target });
       const { g: g2, actor } = this;
       if (target.time.has("reaction")) {
         const dc = getSaveDC(actor, "cha");
@@ -6138,7 +6295,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         return [getBreathArea(this.g, this.actor, point)];
     }
     async apply({ point }) {
-      super.apply({ point });
+      await super.apply({ point });
       const { actor: attacker, g: g2, damageDice, damageType } = this;
       const damage = await g2.rollDamage(damageDice, {
         source: this,
@@ -6213,7 +6370,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       );
     }
     async apply({ point }) {
-      super.apply({ point });
+      await super.apply({ point });
       const { g: g2, actor } = this;
       const dc = getSaveDC(actor, "con");
       const config = { conditions: coSet("Incapacitated"), duration: 2 };
@@ -6243,7 +6400,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       );
     }
     async apply(config) {
-      super.apply(config);
+      await super.apply(config);
       const { g: g2, actor } = this;
       const dc = getSaveDC(actor, "con");
       for (const target of g2.getInside(
@@ -6967,7 +7124,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return /* @__PURE__ */ new Map([[MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
     }
     async apply(config) {
-      super.apply(config);
+      await super.apply(config);
       return fireMeteors(this.g, this.actor, this.method, config, false);
     }
   };
@@ -7295,7 +7452,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return super.check({ slot }, ec);
     }
     async apply({ slot }) {
-      super.apply({ slot });
+      await super.apply({ slot });
       this.actor.giveResource(SpellSlotResources[slot], 1);
     }
   };
@@ -7847,7 +8004,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       return ec;
     }
     async apply({ weapon }) {
-      super.apply({ weapon });
+      await super.apply({ weapon });
       await this.actor.addEffect(SacredWeaponEffect, {
         duration: minutes(1),
         weapon
@@ -8439,7 +8596,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       return ec;
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       await this.actor.removeEffect(RageEffect);
     }
   };
@@ -8542,7 +8699,7 @@ Once you use this feature, you can't use it again until you finish a long rest.
       );
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       if (await this.actor.addEffect(RageEffect, { duration: minutes(1) }))
         await this.actor.endConcentration();
     }
@@ -8801,7 +8958,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       this.subIcon = { url: frenzy_default };
     }
     async apply({ target }) {
-      super.apply({ target });
+      await super.apply({ target });
       await doStandardAttack(this.g, {
         ability: this.ability,
         attacker: this.actor,
@@ -9957,7 +10114,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.cloak = cloak;
     }
     async apply() {
-      super.apply({});
+      await super.apply({});
       this.cloak.hoodUp = !this.cloak.hoodUp;
     }
   };
@@ -10072,7 +10229,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.unsubscribe = unsubscribe;
     }
     async apply({ target }) {
-      super.apply({ target });
+      await super.apply({ target });
       const { g: g2, actor, method } = this;
       if (actor.getResource(MagicStoneResource) < 1)
         this.unsubscribe();
@@ -10264,8 +10421,8 @@ The creature is aware of this effect before it makes its attack against you.`
         return [getArea9(point)];
     }
     async apply({ point }) {
-      super.apply({ point });
-      await this.controller.move(point);
+      await super.apply({ point });
+      this.controller.move(point);
     }
   };
   var MoonbeamController = class {

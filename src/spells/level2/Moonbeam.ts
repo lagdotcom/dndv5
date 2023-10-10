@@ -45,8 +45,8 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
   }
 
   async apply({ point }: HasPoint) {
-    super.apply({ point });
-    await this.controller.move(point);
+    await super.apply({ point });
+    this.controller.move(point);
   }
 }
 

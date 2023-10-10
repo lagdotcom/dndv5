@@ -1,12 +1,11 @@
 import AbstractAction from "../../actions/AbstractAction";
+import { doStandardAttack } from "../../actions/WeaponAttack";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
-import {
-  bonusSpellsFeature,
-  notImplementedFeature,
-} from "../../features/common";
+import { bonusSpellsFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
+import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { LeatherArmor } from "../../items/armor";
 import { Rapier } from "../../items/weapons";
@@ -16,21 +15,198 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
+import { WeaponItem } from "../../types/Item";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
+import { getWeaponAbility } from "../../utils/items";
 import { getDistanceBetween } from "../../utils/units";
 import tokenUrl from "./Yulash_token.png";
 
-// TODO
-const Cheer = notImplementedFeature(
+function getMeleeAttackOptions(
+  g: Engine,
+  attacker: Combatant,
+  filter: (target: Combatant, weapon: WeaponItem) => boolean,
+) {
+  const options = [];
+  const attackerPosition = g.getState(attacker).position;
+
+  for (const weapon of attacker.weapons) {
+    if (weapon.rangeCategory !== "melee") continue;
+
+    for (const [target, { position }] of g.combatants) {
+      if (target === attacker || !filter(target, weapon)) continue;
+
+      const reach = attacker.reach + weapon.reach;
+      if (
+        reach >=
+        getDistanceBetween(
+          attackerPosition,
+          attacker.sizeInUnits,
+          position,
+          target.sizeInUnits,
+        )
+      )
+        options.push({ target, weapon });
+    }
+  }
+
+  return options;
+}
+
+class CheerAction extends AbstractAction<HasTarget> {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Cheer",
+      "implemented",
+      { target: new TargetResolver(g, 30) },
+      {
+        time: "action",
+        description: `One ally within 30 ft. may make a melee attack against an enemy in range.`,
+      },
+    );
+  }
+
+  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
+    super.check({ target }, ec);
+
+    if (target) {
+      if (target.side !== this.actor.side) ec.add("must target ally", this);
+
+      if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
+    }
+
+    return ec;
+  }
+
+  getValidAttacks(attacker: Combatant) {
+    return getMeleeAttackOptions(
+      this.g,
+      attacker,
+      (target) => attacker.side !== target.side,
+    );
+  }
+
+  async apply({ target: attacker }: HasTarget) {
+    await super.apply({ target: attacker });
+
+    const attacks = this.getValidAttacks(attacker);
+    const choice = new PickFromListChoice(
+      attacker,
+      this,
+      "Cheer",
+      `Pick an attack to make.`,
+      attacks.map((value) => ({
+        value,
+        label: `attack ${value.target.name} with ${value.weapon.name}`,
+      })),
+      async ({ target, weapon }) => {
+        await doStandardAttack(this.g, {
+          source: this,
+          ability: getWeaponAbility(attacker, weapon),
+          attacker,
+          target,
+          weapon,
+        });
+      },
+      true,
+    );
+    await choice.apply(this.g);
+  }
+}
+
+const Cheer = new SimpleFeature(
   "Cheer",
   "One ally within 30 ft. may make a melee attack against an enemy in range.",
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new CheerAction(g, me));
+    });
+  },
 );
 
-// TODO
-const Discord = notImplementedFeature(
+class DiscordAction extends AbstractAction<HasTarget> {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Discord",
+      "implemented",
+      { target: new TargetResolver(g, 30) },
+      {
+        time: "action",
+        description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`,
+      },
+    );
+  }
+
+  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
+    super.check({ target }, ec);
+
+    if (target) {
+      if (target.side === this.actor.side) ec.add("must target enemy", this);
+
+      if (!target.time.has("reaction")) ec.add("no reaction left", this);
+
+      if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
+    }
+
+    return ec;
+  }
+
+  getValidAttacks(attacker: Combatant) {
+    return getMeleeAttackOptions(
+      this.g,
+      attacker,
+      (target) => attacker.side === target.side,
+    );
+  }
+
+  async apply({ target: attacker }: HasTarget) {
+    await super.apply({ target: attacker });
+
+    const dc = getSaveDC(this.actor, "cha");
+    const result = await this.g.savingThrow(dc, {
+      ability: "cha",
+      attacker: this.actor,
+      who: attacker,
+      tags: svSet("charm"),
+    });
+    if (result.outcome === "success") return;
+
+    const attacks = this.getValidAttacks(attacker);
+    const choice = new PickFromListChoice(
+      attacker,
+      this,
+      "Discord",
+      `Pick an attack to make.`,
+      attacks.map((value) => ({
+        value,
+        label: `attack ${value.target.name} with ${value.weapon.name}`,
+      })),
+      async ({ target, weapon }) => {
+        await doStandardAttack(this.g, {
+          source: this,
+          ability: getWeaponAbility(attacker, weapon),
+          attacker,
+          target,
+          weapon,
+        });
+      },
+    );
+    await choice.apply(this.g);
+  }
+}
+
+const Discord = new SimpleFeature(
   "Discord",
   "One enemy within 30 ft. must make a DC 15 Charisma save or use its reaction to make one melee attack against an ally in range.",
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new DiscordAction(g, me));
+    });
+  },
 );
 
 class IrritationAction extends AbstractAction<HasTarget> {
@@ -55,7 +231,7 @@ class IrritationAction extends AbstractAction<HasTarget> {
   }
 
   async apply({ target }: HasTarget) {
-    super.apply({ target });
+    await super.apply({ target });
 
     const { g, actor } = this;
     const dc = getSaveDC(actor, "cha");
@@ -112,7 +288,7 @@ class DancingStepAction extends AbstractAction {
   }
 
   async apply() {
-    super.apply({});
+    await super.apply({});
     await this.g.applyBoundedMove(
       this.actor,
       getTeleportation(this.distance, "Dancing Step"),

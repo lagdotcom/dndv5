@@ -68,8 +68,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
   }
 
   async apply({ slot }: Scales) {
-    super.apply({ slot });
-
+    await super.apply({ slot });
     this.actor.giveResource(SpellSlotResources[slot], 1);
   }
 }
