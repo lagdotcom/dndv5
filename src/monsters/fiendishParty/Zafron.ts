@@ -82,7 +82,8 @@ class BullRushAction extends AbstractAction {
     super.apply({});
     const { g, actor } = this;
 
-    const rushed = new Set<Combatant>();
+    const affected = [actor];
+    const promises: Promise<void>[] = [];
 
     await actor.addEffect(BullRushEffect, { duration: 1 });
 
@@ -96,7 +97,7 @@ class BullRushAction extends AbstractAction {
       cannotApproach: new Set(),
       mustUseAll: false,
       teleportation: false,
-      onMove(who, cost) {
+      onMove: (who, cost) => {
         const position = g.getState(who).position;
         for (const hit of g.getInside(
           {
@@ -105,10 +106,11 @@ class BullRushAction extends AbstractAction {
             target: actor,
             radius: 0,
           },
-          [who],
+          affected,
         )) {
           // TODO [MESSAGE]
-          rushed.add(hit);
+          affected.push(hit);
+          promises.push(this.knockOver(hit));
         }
 
         used += cost;
@@ -116,20 +118,23 @@ class BullRushAction extends AbstractAction {
       },
     });
 
+    await Promise.all(promises);
+  }
+
+  async knockOver(who: Combatant) {
+    const { g, actor } = this;
+
     const dc = getSaveDC(actor, "str");
     const config = { duration: Infinity, conditions: coSet("Prone") };
-
-    for (const who of rushed) {
-      const result = await g.savingThrow(dc, {
-        ability: "dex",
-        attacker: actor,
-        effect: Prone,
-        config,
-        tags: svSet(),
-        who,
-      });
-      if (result.outcome === "fail") await who.addEffect(Prone, config, actor);
-    }
+    const result = await g.savingThrow(dc, {
+      ability: "dex",
+      attacker: actor,
+      effect: Prone,
+      config,
+      tags: svSet(),
+      who,
+    });
+    if (result.outcome === "fail") await who.addEffect(Prone, config, actor);
   }
 }
 

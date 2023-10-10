@@ -4696,7 +4696,8 @@
     async apply() {
       super.apply({});
       const { g: g2, actor } = this;
-      const rushed = /* @__PURE__ */ new Set();
+      const affected = [actor];
+      const promises = [];
       await actor.addEffect(BullRushEffect, { duration: 1 });
       const maximum = actor.speed;
       let used = 0;
@@ -4708,7 +4709,7 @@
         cannotApproach: /* @__PURE__ */ new Set(),
         mustUseAll: false,
         teleportation: false,
-        onMove(who, cost) {
+        onMove: (who, cost) => {
           const position = g2.getState(who).position;
           for (const hit of g2.getInside(
             {
@@ -4717,28 +4718,31 @@
               target: actor,
               radius: 0
             },
-            [who]
+            affected
           )) {
-            rushed.add(hit);
+            affected.push(hit);
+            promises.push(this.knockOver(hit));
           }
           used += cost;
           return used >= maximum;
         }
       });
+      await Promise.all(promises);
+    }
+    async knockOver(who) {
+      const { g: g2, actor } = this;
       const dc = getSaveDC(actor, "str");
       const config = { duration: Infinity, conditions: coSet("Prone") };
-      for (const who of rushed) {
-        const result = await g2.savingThrow(dc, {
-          ability: "dex",
-          attacker: actor,
-          effect: Prone,
-          config,
-          tags: svSet(),
-          who
-        });
-        if (result.outcome === "fail")
-          await who.addEffect(Prone, config, actor);
-      }
+      const result = await g2.savingThrow(dc, {
+        ability: "dex",
+        attacker: actor,
+        effect: Prone,
+        config,
+        tags: svSet(),
+        who
+      });
+      if (result.outcome === "fail")
+        await who.addEffect(Prone, config, actor);
     }
   };
   var BullRush = new SimpleFeature(
