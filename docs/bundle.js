@@ -8868,11 +8868,59 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
       });
     }
   );
-  var BrutalCritical = notImplementedFeature(
+  var getBrutalDice = (level) => {
+    if (level < 13)
+      return 1;
+    if (level < 17)
+      return 2;
+    return 3;
+  };
+  var BrutalCritical = new SimpleFeature(
     "Brutal Critical",
     `Beginning at 9th level, you can roll one additional weapon damage die when determining the extra damage for a critical hit with a melee attack.
 
-This increases to two additional dice at 13th level and three additional dice at 17th level.`
+This increases to two additional dice at 13th level and three additional dice at 17th level.`,
+    (g2, me) => {
+      var _a;
+      const count = getBrutalDice((_a = me.classLevels.get("Barbarian")) != null ? _a : 9);
+      g2.events.on(
+        "GatherDamage",
+        ({
+          detail: {
+            attacker,
+            attack,
+            critical,
+            interrupt,
+            weapon,
+            target,
+            bonus
+          }
+        }) => {
+          if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && critical) {
+            const base = weapon == null ? void 0 : weapon.damage;
+            if ((base == null ? void 0 : base.type) === "dice") {
+              interrupt.add(
+                new EvaluateLater(me, BrutalCritical, async () => {
+                  const damage = await g2.rollDamage(
+                    count,
+                    {
+                      source: BrutalCritical,
+                      attacker: me,
+                      damageType: base.damageType,
+                      size: base.amount.size,
+                      target,
+                      weapon
+                    },
+                    false
+                  );
+                  bonus.add(damage, BrutalCritical);
+                })
+              );
+            }
+          }
+        }
+      );
+    }
   );
   var RelentlessRage = notImplementedFeature(
     "Relentless Rage",

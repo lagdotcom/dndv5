@@ -115,12 +115,60 @@ const InstinctivePounce = new SimpleFeature(
   },
 );
 
-// TODO
-const BrutalCritical = notImplementedFeature(
+const getBrutalDice = (level: number) => {
+  if (level < 13) return 1;
+  if (level < 17) return 2;
+  return 3;
+};
+
+const BrutalCritical = new SimpleFeature(
   "Brutal Critical",
   `Beginning at 9th level, you can roll one additional weapon damage die when determining the extra damage for a critical hit with a melee attack.
 
 This increases to two additional dice at 13th level and three additional dice at 17th level.`,
+  (g, me) => {
+    const count = getBrutalDice(me.classLevels.get("Barbarian") ?? 9);
+
+    g.events.on(
+      "GatherDamage",
+      ({
+        detail: {
+          attacker,
+          attack,
+          critical,
+          interrupt,
+          weapon,
+          target,
+          bonus,
+        },
+      }) => {
+        if (attacker === me && attack?.pre.tags.has("melee") && critical) {
+          const base = weapon?.damage;
+
+          if (base?.type === "dice") {
+            interrupt.add(
+              new EvaluateLater(me, BrutalCritical, async () => {
+                const damage = await g.rollDamage(
+                  count,
+                  {
+                    source: BrutalCritical,
+                    attacker: me,
+                    damageType: base.damageType,
+                    size: base.amount.size,
+                    target,
+                    weapon,
+                  },
+                  false,
+                );
+
+                bonus.add(damage, BrutalCritical);
+              }),
+            );
+          }
+        }
+      },
+    );
+  },
 );
 
 // TODO [DAMAGEINTERRUPT]
