@@ -1,5 +1,6 @@
 import Druid, { ASI4 } from "../../classes/druid";
 import Land, { BonusCantrip, CircleSpells } from "../../classes/druid/Land";
+import WildShape from "../../classes/druid/WildShape";
 import silvered from "../../enchantments/silvered";
 import Engine from "../../Engine";
 import { HideArmor } from "../../items/armor";
@@ -7,6 +8,8 @@ import CloakOfElvenkind from "../../items/CloakOfElvenkind";
 import { ArrowCatchingShield } from "../../items/shields";
 import { Handaxe, Shortsword, Spear } from "../../items/weapons";
 import { BootsOfTheWinterlands } from "../../items/wondrous";
+import Bat from "../../monsters/Bat";
+import GiantBadger from "../../monsters/GiantBadger";
 import PC from "../../PC";
 import { MountainDwarf, ToolProficiency } from "../../races/Dwarf";
 import MagicStone from "../../spells/cantrip/MagicStone";
@@ -43,6 +46,8 @@ export default class Salgar extends PC {
     this.setConfig(CircleSpells, "mountain");
     this.setConfig(BonusCantrip, MagicStone);
     this.setConfig(ASI4, { type: "ability", abilities: ["cha", "wis"] });
+
+    this.setConfig(WildShape, [new Bat(g), new GiantBadger(g)]);
 
     this.skills.set("Insight", 1);
     this.skills.set("Survival", 1);

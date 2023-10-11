@@ -7,6 +7,7 @@ import { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
 import { makeASI } from "../common";
 import { DruidIcon } from "./common";
+import WildShape from "./WildShape";
 
 const Druidic = nonCombatFeature(
   "Druidic",
@@ -21,12 +22,6 @@ export const DruidSpellcasting = new NormalSpellcasting(
   "Druid",
   "Druid",
   DruidIcon,
-);
-
-// TODO [CANCELACTION]
-const WildShape = notImplementedFeature(
-  "Wild Shape",
-  `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
 );
 
 // TODO [SUMMONING]

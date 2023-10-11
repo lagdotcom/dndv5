@@ -86,6 +86,7 @@ export default interface Combatant extends Source {
   temporaryHPSource?: Source;
   deathSaveFailures: number;
   deathSaveSuccesses: number;
+  features: Map<string, Feature>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

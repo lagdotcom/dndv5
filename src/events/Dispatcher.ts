@@ -4,11 +4,22 @@ export type EventListener<T extends EventType> = (e: EventTypes[T]) => void;
 
 export type Unsubscribe = () => void;
 
+type Tap = (cleanup: Unsubscribe) => void;
+
 export default class Dispatcher {
+  taps: Set<Tap>;
+
   constructor(
     public debug = false,
     private target = new EventTarget(),
-  ) {}
+  ) {
+    this.taps = new Set();
+  }
+
+  tap(listener: Tap) {
+    this.taps.add(listener);
+    return () => this.taps.delete(listener);
+  }
 
   fire<T>(event: CustomEvent<T>) {
     if (this.debug) console.log("fire:", event);
@@ -26,7 +37,9 @@ export default class Dispatcher {
       options,
     );
 
-    return () => this.off(type, callback);
+    const cleanup = () => this.off(type, callback);
+    for (const tap of this.taps) tap(cleanup);
+    return cleanup;
   }
 
   off<T extends EventType>(

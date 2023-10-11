@@ -2579,6 +2579,11 @@
     constructor(debug = false, target = new EventTarget()) {
       this.debug = debug;
       this.target = target;
+      this.taps = /* @__PURE__ */ new Set();
+    }
+    tap(listener) {
+      this.taps.add(listener);
+      return () => this.taps.delete(listener);
     }
     fire(event) {
       if (this.debug)
@@ -2591,7 +2596,10 @@
         callback,
         options
       );
-      return () => this.off(type, callback);
+      const cleanup = () => this.off(type, callback);
+      for (const tap of this.taps)
+        tap(cleanup);
+      return cleanup;
     }
     off(type, callback, options) {
       return this.target.removeEventListener(
@@ -2997,7 +3005,7 @@
       multiplier: baseMultiplier = 1,
       target
     }) {
-      const { totalDamage, healAmount, damageBreakdown } = this.calculateDamage(
+      const { total, healAmount, breakdown } = this.calculateDamage(
         damage,
         target,
         baseMultiplier,
@@ -3006,35 +3014,32 @@
       if (healAmount > 0) {
         await this.applyHeal(target, healAmount, target);
       }
-      if (totalDamage < 1)
+      if (total < 1)
         return;
-      const { takenByTemporaryHP, afterTemporaryHP } = this.applyTemporaryHP(
-        target,
-        totalDamage
-      );
+      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(target, total);
       await this.resolve(
         new CombatantDamagedEvent({
           who: target,
           attack,
           attacker,
-          total: totalDamage,
+          total,
           takenByTemporaryHP,
           afterTemporaryHP,
-          temporaryHPSource: target.temporaryHPSource,
-          breakdown: damageBreakdown,
+          temporaryHPSource,
+          breakdown,
           interrupt: new InterruptionCollector()
         })
       );
       if (target.hp <= 0) {
         await this.handleCombatantDeath(target, attacker);
       } else if (target.concentratingOn.size) {
-        await this.handleConcentrationCheck(target, totalDamage);
+        await this.handleConcentrationCheck(target, total);
       }
     }
     calculateDamage(damage, target, baseMultiplier, attack) {
-      let totalDamage = 0;
+      let total = 0;
       let healAmount = 0;
-      const damageBreakdown = /* @__PURE__ */ new Map();
+      const breakdown = /* @__PURE__ */ new Map();
       for (const [damageType, raw] of damage) {
         const collector = this.calculateDamageResponse(
           damageType,
@@ -3047,11 +3052,11 @@
         if (response === "absorb") {
           healAmount += raw;
         } else {
-          totalDamage += amount;
+          total += amount;
         }
-        damageBreakdown.set(damageType, { response, raw, amount });
+        breakdown.set(damageType, { response, raw, amount });
       }
-      return { totalDamage, healAmount, damageBreakdown };
+      return { total, healAmount, breakdown };
     }
     calculateDamageResponse(damageType, raw, target, baseMultiplier, attack) {
       const collector = new DamageResponseCollector();
@@ -3094,10 +3099,11 @@
       target.temporaryHP -= takenByTemporaryHP;
       const afterTemporaryHP = totalDamage - takenByTemporaryHP;
       target.hp -= afterTemporaryHP;
+      const temporaryHPSource = target.temporaryHPSource;
       if (target.temporaryHP <= 0) {
         target.temporaryHPSource = void 0;
       }
-      return { takenByTemporaryHP, afterTemporaryHP };
+      return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
     }
     async handleCombatantDeath(target, attacker) {
       await target.endConcentration();
@@ -4095,6 +4101,16 @@
   ];
 
   // src/monsters/common.ts
+  var KeenHearing = new SimpleFeature(
+    "Keen Hearing",
+    `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
+    (g, me) => {
+      g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("hearing"))
+          diceType.add("advantage", KeenHearing);
+      });
+    }
+  );
   var KeenSmell = new SimpleFeature(
     "Keen Smell",
     `This has advantage on Wisdom (Perception) checks that rely on smell.`,
@@ -9683,6 +9699,146 @@ If the creature succeeds on its saving throw, you can't use this feature on that
   // src/classes/druid/common.ts
   var DruidIcon = makeIcon(icon_default4, ClassColours.Druid);
 
+  // src/classes/druid/WildShape.ts
+  var WildShapeResource = new ShortRestResource("Wild Shape", 2);
+  var WildShapeController = class {
+    constructor(g, me, form) {
+      this.g = g;
+      this.me = me;
+      this.form = form;
+      this.backup = {
+        name: me.name,
+        img: me.img,
+        type: me.type,
+        size: me.size,
+        hands: me.hands,
+        reach: me.reach,
+        hp: me.hp,
+        baseHpMax: me.baseHpMax,
+        movement: me.movement,
+        skills: me.skills,
+        equipment: me.equipment,
+        inventory: me.inventory,
+        senses: me.senses,
+        naturalWeapons: me.naturalWeapons,
+        damageResponses: me.damageResponses
+      };
+      this.str = me.str.score;
+      this.dex = me.dex.score;
+      this.con = me.con.score;
+      this.removeFeatures = /* @__PURE__ */ new Set();
+      for (const [name, feature] of form.features) {
+        if (!me.features.has(name))
+          this.removeFeatures.add(feature);
+      }
+      this.subscriptions = [];
+    }
+    async apply() {
+      const { g, me, form } = this;
+      me.name = `${form.name} (${me.name})`;
+      me.img = form.img;
+      me.type = form.type;
+      me.size = form.size;
+      me.hands = form.hands;
+      me.reach = form.reach;
+      me.baseHpMax = form.baseHpMax;
+      me.hp = form.hpMax;
+      me.movement = form.movement;
+      me.skills;
+      me.equipment = /* @__PURE__ */ new Set();
+      me.inventory = /* @__PURE__ */ new Set();
+      me.senses = form.senses;
+      me.naturalWeapons = form.naturalWeapons;
+      me.str.score = form.str.score;
+      me.dex.score = form.dex.score;
+      me.con.score = form.con.score;
+      me.damageResponses = form.damageResponses;
+      const cleanup = g.events.tap((cleanup2) => this.subscriptions.push(cleanup2));
+      for (const [name, feature] of form.features) {
+        me.addFeature(feature);
+        feature.setup(g, me, form.getConfig(name));
+      }
+      cleanup();
+      this.subscriptions.push(
+        // You can revert to your normal form earlier by using a bonus action on your turn.
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            actions.push(new RevertAction(g, me, this));
+        }),
+        // TODO You automatically revert if you fall unconscious, drop to 0 hit points, or die.
+        g.events.on("CombatantDamaged", ({ detail: { who } }) => {
+          if (who === me && me.hp <= 0) {
+            const rollover = me.hp;
+            this.remove();
+            me.hp += rollover;
+          }
+        }),
+        // You can't cast spells
+        g.events.on("CheckAction", ({ detail }) => {
+          if (detail.action.actor === me && detail.action.isSpell)
+            detail.error.add("cannot cast spells", WildShape);
+        })
+      );
+    }
+    remove() {
+      const { me, backup, str, dex, con, removeFeatures, subscriptions } = this;
+      Object.assign(me, backup);
+      me.str.score = str;
+      me.dex.score = dex;
+      me.con.score = con;
+      for (const feature of removeFeatures)
+        me.features.delete(feature.name);
+      for (const cleanup of subscriptions)
+        cleanup();
+    }
+  };
+  var RevertAction = class extends AbstractAction {
+    constructor(g, actor, controller) {
+      super(g, actor, "Revert Form", "implemented", {}, { time: "bonus action" });
+      this.controller = controller;
+    }
+    async apply(config) {
+      await super.apply(config);
+      this.controller.remove();
+    }
+  };
+  var WildShapeAction = class extends AbstractAction {
+    constructor(g, actor, forms) {
+      super(
+        g,
+        actor,
+        "Wild Shape",
+        "incomplete",
+        {
+          form: new ChoiceResolver(
+            g,
+            forms.map((value) => ({ value, label: value.name }))
+          )
+        },
+        { time: "action", resources: [[WildShapeResource, 1]] }
+      );
+      this.forms = forms;
+    }
+    async apply({ form }) {
+      await super.apply({ form });
+      const controller = new WildShapeController(this.g, this.actor, form);
+      await controller.apply();
+    }
+  };
+  var WildShape = new ConfiguredFeature(
+    "Wild Shape",
+    `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
+    (g, me, forms) => {
+      console.warn(`[Feature Not Complete] Wild Shape (on ${me.name})`);
+      me.initResource(WildShapeResource);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new WildShapeAction(g, me, forms));
+      });
+    }
+  );
+  var WildShape_default = WildShape;
+
   // src/classes/druid/index.ts
   var Druidic = nonCombatFeature(
     "Druidic",
@@ -9696,10 +9852,6 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     "Druid",
     "Druid",
     DruidIcon
-  );
-  var WildShape = notImplementedFeature(
-    "Wild Shape",
-    `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`
   );
   var WildCompanion = notImplementedFeature(
     "Wild Companion",
@@ -9760,7 +9912,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     ),
     features: /* @__PURE__ */ new Map([
       [1, [Druidic, DruidSpellcasting.feature]],
-      [2, [WildShape, WildCompanion]],
+      [2, [WildShape_default, WildCompanion]],
       [4, [ASI45, CantripVersatility]],
       [8, [ASI85]],
       [12, [ASI125]],
@@ -10646,6 +10798,77 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
+  // src/monsters/Bat_token.png
+  var Bat_token_default = "./Bat_token-N3PIK5K4.png";
+
+  // src/monsters/Bat.ts
+  var Bite = class extends AbstractWeapon {
+    constructor(g) {
+      super(g, "Bite", "natural", "melee", {
+        type: "flat",
+        amount: 1,
+        damageType: "piercing"
+      });
+      this.hands = 0;
+      this.forceAbilityScore = "dex";
+    }
+  };
+  var Bat = class extends Monster {
+    constructor(g) {
+      super(g, "bat", 0, "beast", "tiny", Bat_token_default, 1);
+      this.movement.set("speed", 5);
+      this.movement.set("fly", 30);
+      this.setAbilityScores(2, 15, 8, 2, 12, 4);
+      this.senses.set("blindsight", 50);
+      this.pb = 2;
+      this.addFeature(KeenHearing);
+      this.naturalWeapons.add(new Bite(g));
+    }
+  };
+
+  // src/monsters/GiantBadger_token.png
+  var GiantBadger_token_default = "./GiantBadger_token-R3QZK5QP.png";
+
+  // src/monsters/GiantBadger.ts
+  var Bite2 = class extends AbstractWeapon {
+    constructor(g) {
+      super(g, "Bite", "natural", "melee", _dd(1, 6, "piercing"));
+      this.hands = 0;
+    }
+  };
+  var Claws = class extends AbstractWeapon {
+    constructor(g) {
+      super(g, "Claws", "natural", "melee", _dd(2, 4, "slashing"));
+      this.hands = 0;
+    }
+  };
+  var GiantBadger = class extends Monster {
+    constructor(g) {
+      super(g, "giant badger", 0.25, "beast", "medium", GiantBadger_token_default, 13);
+      this.movement.set("speed", 30);
+      this.movement.set("burrow", 10);
+      this.setAbilityScores(13, 10, 15, 2, 12, 5);
+      this.senses.set("darkvision", 30);
+      this.pb = 2;
+      this.addFeature(KeenSmell);
+      this.addFeature(
+        makeMultiattack(
+          "The badger makes two attacks: one with its bite and one with its claws.",
+          (me, action) => {
+            if (me.attacksSoFar.length >= 2)
+              return false;
+            const weaponName = action.weapon.name;
+            return !me.attacksSoFar.find(
+              (a) => a.weapon.name === weaponName
+            );
+          }
+        )
+      );
+      this.naturalWeapons.add(new Bite2(g));
+      this.naturalWeapons.add(new Claws(g));
+    }
+  };
+
   // src/races/Dwarf.ts
   var Darkvision = darkvisionFeature();
   var DwarvenResilience = poisonResistance(
@@ -11247,6 +11470,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(CircleSpells, "mountain");
       this.setConfig(BonusCantrip, MagicStone_default);
       this.setConfig(ASI45, { type: "ability", abilities: ["cha", "wis"] });
+      this.setConfig(WildShape_default, [new Bat(g), new GiantBadger(g)]);
       this.skills.set("Insight", 1);
       this.skills.set("Survival", 1);
       this.don(new ArrowCatchingShield(g), true);

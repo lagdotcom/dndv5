@@ -1,8 +1,8 @@
 import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
-import tokenUrl from "./Badger_token.png";
-import { KeenSmell } from "./common";
+import tokenUrl from "./Bat_token.png";
+import { KeenHearing } from "./common";
 
 class Bite extends AbstractWeapon {
   constructor(g: Engine) {
@@ -16,16 +16,17 @@ class Bite extends AbstractWeapon {
   }
 }
 
-export default class Badger extends Monster {
+export default class Bat extends Monster {
   constructor(g: Engine) {
-    super(g, "badger", 0, "beast", "tiny", tokenUrl, 3);
-    this.movement.set("speed", 20);
-    this.movement.set("burrow", 5);
-    this.setAbilityScores(4, 11, 12, 2, 12, 5);
-    this.senses.set("darkvision", 30);
+    super(g, "bat", 0, "beast", "tiny", tokenUrl, 1);
+    this.movement.set("speed", 5);
+    this.movement.set("fly", 30);
+    this.setAbilityScores(2, 15, 8, 2, 12, 4);
+    this.senses.set("blindsight", 50);
     this.pb = 2;
 
-    this.addFeature(KeenSmell);
+    // TODO Echolocation. The bat can't use its blindsight while deafened.
+    this.addFeature(KeenHearing);
 
     this.naturalWeapons.add(new Bite(g));
   }

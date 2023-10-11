@@ -5,6 +5,17 @@ import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import { getFlanker } from "../utils/dnd";
 
+export const KeenHearing = new SimpleFeature(
+  "Keen Hearing",
+  `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
+  (g, me) => {
+    g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+      if (who === me && tags.has("hearing"))
+        diceType.add("advantage", KeenHearing);
+    });
+  },
+);
+
 export const KeenSmell = new SimpleFeature(
   "Keen Smell",
   `This has advantage on Wisdom (Perception) checks that rely on smell.`,

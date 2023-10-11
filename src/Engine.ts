@@ -407,7 +407,7 @@ export default class Engine {
       multiplier?: number;
     },
   ) {
-    const { totalDamage, healAmount, damageBreakdown } = this.calculateDamage(
+    const { total, healAmount, breakdown } = this.calculateDamage(
       damage,
       target,
       baseMultiplier,
@@ -418,23 +418,21 @@ export default class Engine {
       await this.applyHeal(target, healAmount, target);
     }
 
-    if (totalDamage < 1) return;
+    if (total < 1) return;
 
-    const { takenByTemporaryHP, afterTemporaryHP } = this.applyTemporaryHP(
-      target,
-      totalDamage,
-    );
+    const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } =
+      this.applyTemporaryHP(target, total);
 
     await this.resolve(
       new CombatantDamagedEvent({
         who: target,
         attack,
         attacker,
-        total: totalDamage,
+        total,
         takenByTemporaryHP,
         afterTemporaryHP,
-        temporaryHPSource: target.temporaryHPSource,
-        breakdown: damageBreakdown,
+        temporaryHPSource,
+        breakdown,
         interrupt: new InterruptionCollector(),
       }),
     );
@@ -442,7 +440,7 @@ export default class Engine {
     if (target.hp <= 0) {
       await this.handleCombatantDeath(target, attacker);
     } else if (target.concentratingOn.size) {
-      await this.handleConcentrationCheck(target, totalDamage);
+      await this.handleConcentrationCheck(target, total);
     }
   }
 
@@ -452,9 +450,9 @@ export default class Engine {
     baseMultiplier: number,
     attack?: AttackDetail,
   ) {
-    let totalDamage = 0;
+    let total = 0;
     let healAmount = 0;
-    const damageBreakdown = new Map<DamageType, DamageBreakdown>();
+    const breakdown = new Map<DamageType, DamageBreakdown>();
 
     for (const [damageType, raw] of damage) {
       const collector = this.calculateDamageResponse(
@@ -470,13 +468,13 @@ export default class Engine {
       if (response === "absorb") {
         healAmount += raw;
       } else {
-        totalDamage += amount;
+        total += amount;
       }
 
-      damageBreakdown.set(damageType, { response, raw, amount });
+      breakdown.set(damageType, { response, raw, amount });
     }
 
-    return { totalDamage, healAmount, damageBreakdown };
+    return { total, healAmount, breakdown };
   }
 
   private calculateDamageResponse(
@@ -540,12 +538,13 @@ export default class Engine {
     target.temporaryHP -= takenByTemporaryHP;
     const afterTemporaryHP = totalDamage - takenByTemporaryHP;
     target.hp -= afterTemporaryHP;
+    const temporaryHPSource = target.temporaryHPSource;
 
     if (target.temporaryHP <= 0) {
       target.temporaryHPSource = undefined;
     }
 
-    return { takenByTemporaryHP, afterTemporaryHP };
+    return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
   }
 
   private async handleCombatantDeath(target: Combatant, attacker: Combatant) {
