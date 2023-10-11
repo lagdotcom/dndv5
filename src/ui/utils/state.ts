@@ -76,6 +76,7 @@ export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
   movingCombatant,
   scale,
   showSideHP,
+  teleportInfo,
   wantsCombatant,
   wantsPoint,
 };

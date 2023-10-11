@@ -11505,6 +11505,7 @@ The creature is aware of this effect before it makes its attack against you.`
     movingCombatant,
     scale,
     showSideHP,
+    teleportInfo,
     wantsCombatant,
     wantsPoint
   };
@@ -13085,7 +13086,7 @@ The creature is aware of this effect before it makes its attack against you.`
         setAction(void 0);
         actionAreas.value = void 0;
         const me = activeCombatant.value;
-        if (me) {
+        if (me && !moveBounds.peek()) {
           setTarget(who);
           const items = allActions.value.map((action2) => {
             const testConfig = { target: who, point: g.getState(who).position };

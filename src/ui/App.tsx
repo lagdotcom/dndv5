@@ -242,7 +242,7 @@ export default function App({ g, onMount }: Props) {
       actionAreas.value = undefined;
 
       const me = activeCombatant.value;
-      if (me) {
+      if (me && !moveBounds.peek()) {
         setTarget(who);
 
         const items = allActions.value
