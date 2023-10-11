@@ -1,4 +1,5 @@
 import { aimLine } from "../../aim";
+import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
@@ -18,7 +19,7 @@ function getArea(g: Engine, actor: Combatant, point: Point) {
 const LightningBolt = scalingSpell<HasPoint>({
   status: "implemented",
   name: "Lightning Bolt",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.lightning),
   level: 3,
   school: "Evocation",
   v: true,

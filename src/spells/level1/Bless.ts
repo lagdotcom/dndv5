@@ -1,4 +1,5 @@
 import BonusCollector from "../../collectors/BonusCollector";
+import { makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
@@ -7,6 +8,8 @@ import Combatant from "../../types/Combatant";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 import iconUrl from "./icons/bless.svg";
+
+const BlessIcon = makeIcon(iconUrl);
 
 function applyBless(g: Engine, who: Combatant, bonus: BonusCollector) {
   if (who.hasEffect(BlessEffect)) {
@@ -26,13 +29,13 @@ const BlessEffect = new Effect(
       applyBless(g, who, bonus),
     );
   },
-  { image: iconUrl },
+  { icon: BlessIcon },
 );
 
 const Bless = scalingSpell<HasTargets>({
   status: "implemented",
   name: "Bless",
-  icon: { url: iconUrl },
+  icon: BlessIcon,
   level: 1,
   school: "Enchantment",
   concentration: true,

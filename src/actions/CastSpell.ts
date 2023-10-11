@@ -4,17 +4,18 @@ import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
-import Action, { ActionIcon } from "../types/Action";
+import Action from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
+import Icon from "../types/Icon";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
 export default class CastSpell<T extends object> implements Action<T> {
   name: string;
   time: ActionTime;
-  icon?: ActionIcon;
-  subIcon?: ActionIcon;
+  icon?: Icon;
+  subIcon?: Icon;
   isSpell: true;
   vocal?: boolean;
 

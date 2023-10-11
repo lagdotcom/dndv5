@@ -56,6 +56,7 @@ import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
 import DamageBreakdown from "./types/DamageBreakdown";
+import DamageResponse from "./types/DamageResponse";
 import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
@@ -126,19 +127,26 @@ export default class Engine {
     await this.nextTurn();
   }
 
+  async rollMany(count: number, e: RollType, critical = false) {
+    const rolls = await Promise.all(
+      Array(count * (critical ? 2 : 1))
+        .fill(null)
+        .map(async () => await this.roll(e)),
+    );
+
+    return rolls.reduce((acc, roll) => acc + roll.value, 0);
+  }
+
   async rollDamage(
     count: number,
     e: Omit<DamageRoll, "type">,
     critical = false,
   ) {
-    let total = 0;
+    return this.rollMany(count, { ...e, type: "damage" }, critical);
+  }
 
-    for (let i = 0; i < count * (critical ? 2 : 1); i++) {
-      const roll = await this.roll({ ...e, type: "damage" });
-      total += roll.value;
-    }
-
-    return total;
+  async rollHeal(count: number, e: Omit<HealRoll, "type">, critical = false) {
+    return this.rollMany(count, { ...e, type: "heal" }, critical);
   }
 
   async rollInitiative(who: Combatant) {
@@ -399,97 +407,176 @@ export default class Engine {
       multiplier?: number;
     },
   ) {
-    let total = 0;
-    let heal = 0;
+    const { totalDamage, healAmount, damageBreakdown } = this.calculateDamage(
+      damage,
+      target,
+      baseMultiplier,
+      attack,
+    );
 
-    const breakdown = new Map<DamageType, DamageBreakdown>();
-
-    for (const [damageType, raw] of damage) {
-      const collector = new DamageResponseCollector();
-
-      const innateResponse = target.damageResponses.get(damageType);
-      if (innateResponse) collector.add(innateResponse, target);
-
-      this.fire(
-        new GetDamageResponseEvent({
-          attack,
-          who: target,
-          damageType,
-          response: collector,
-        }),
-      );
-
-      const response = collector.result;
-      if (response === "immune") continue;
-
-      let amount = raw;
-      if (response === "absorb") {
-        heal += raw;
-      } else {
-        let multiplier = baseMultiplier;
-        if (response === "resist") multiplier *= 0.5;
-        else if (response === "vulnerable") multiplier *= 2;
-
-        amount = Math.ceil(raw * multiplier);
-        total += amount;
-      }
-
-      breakdown.set(damageType, { response, raw, amount });
+    if (healAmount > 0) {
+      await this.applyHeal(target, healAmount, target);
     }
 
-    if (heal > total) return this.applyHeal(target, heal - total, target);
+    if (totalDamage < 1) return;
 
-    total -= heal;
-    if (total < 1) return;
-
-    const takenByTemporaryHP = Math.min(total, target.temporaryHP);
-    target.temporaryHP -= takenByTemporaryHP;
-    const afterTemporaryHP = total - takenByTemporaryHP;
-    target.hp -= afterTemporaryHP;
-    const temporaryHPSource = target.temporaryHPSource;
-    if (target.temporaryHP <= 0) target.temporaryHPSource = undefined;
+    const { takenByTemporaryHP, afterTemporaryHP } = this.applyTemporaryHP(
+      target,
+      totalDamage,
+    );
 
     await this.resolve(
       new CombatantDamagedEvent({
         who: target,
         attack,
         attacker,
-        total,
+        total: totalDamage,
         takenByTemporaryHP,
         afterTemporaryHP,
-        temporaryHPSource,
-        breakdown,
+        temporaryHPSource: target.temporaryHPSource,
+        breakdown: damageBreakdown,
         interrupt: new InterruptionCollector(),
       }),
     );
 
     if (target.hp <= 0) {
-      await target.endConcentration();
+      await this.handleCombatantDeath(target, attacker);
+    } else if (target.concentratingOn.size) {
+      await this.handleConcentrationCheck(target, totalDamage);
+    }
+  }
 
-      if (target.diesAtZero || target.hp <= -target.hpMax) {
-        await this.kill(target, attacker);
-      } else if (!target.hasEffect(Dying)) {
-        target.hp = 0;
-        await target.removeEffect(Stable);
-        await target.addEffect(Dying, { duration: Infinity });
+  private calculateDamage(
+    damage: DamageMap,
+    target: Combatant,
+    baseMultiplier: number,
+    attack?: AttackDetail,
+  ) {
+    let totalDamage = 0;
+    let healAmount = 0;
+    const damageBreakdown = new Map<DamageType, DamageBreakdown>();
+
+    for (const [damageType, raw] of damage) {
+      const collector = this.calculateDamageResponse(
+        damageType,
+        raw,
+        target,
+        baseMultiplier,
+        attack,
+      );
+
+      const { response, amount } = collector;
+
+      if (response === "absorb") {
+        healAmount += raw;
       } else {
-        target.hp = 0;
-        await this.failDeathSave(target);
+        totalDamage += amount;
       }
 
-      return;
+      damageBreakdown.set(damageType, { response, raw, amount });
     }
 
-    if (target.concentratingOn.size) {
-      const dc = Math.max(10, Math.floor(total / 2));
-      const result = await this.savingThrow(dc, {
-        attacker,
-        who: target,
-        ability: "con",
-        tags: svSet("concentration"),
-      });
+    return { totalDamage, healAmount, damageBreakdown };
+  }
 
-      if (result.outcome === "fail") await target.endConcentration();
+  private calculateDamageResponse(
+    damageType: DamageType,
+    raw: number,
+    target: Combatant,
+    baseMultiplier: number,
+    attack?: AttackDetail,
+  ) {
+    const collector = new DamageResponseCollector();
+    const innateResponse = target.damageResponses.get(damageType);
+
+    if (innateResponse) {
+      collector.add(innateResponse, target);
+    }
+
+    this.fire(
+      new GetDamageResponseEvent({
+        attack,
+        who: target,
+        damageType,
+        response: collector,
+      }),
+    );
+
+    const { response, amount } = this.calculateDamageAmount(
+      raw,
+      collector.result,
+      baseMultiplier,
+    );
+
+    return { response, amount };
+  }
+
+  private calculateDamageAmount(
+    raw: number,
+    response: DamageResponse,
+    baseMultiplier: number,
+  ) {
+    let amount = raw;
+
+    if (response === "absorb") {
+      amount = 0;
+    } else {
+      let multiplier = baseMultiplier;
+
+      if (response === "resist") {
+        multiplier *= 0.5;
+      } else if (response === "vulnerable") {
+        multiplier *= 2;
+      }
+
+      amount = Math.ceil(raw * multiplier);
+    }
+
+    return { response, amount };
+  }
+
+  private applyTemporaryHP(target: Combatant, totalDamage: number) {
+    const takenByTemporaryHP = Math.min(totalDamage, target.temporaryHP);
+    target.temporaryHP -= takenByTemporaryHP;
+    const afterTemporaryHP = totalDamage - takenByTemporaryHP;
+    target.hp -= afterTemporaryHP;
+
+    if (target.temporaryHP <= 0) {
+      target.temporaryHPSource = undefined;
+    }
+
+    return { takenByTemporaryHP, afterTemporaryHP };
+  }
+
+  private async handleCombatantDeath(target: Combatant, attacker: Combatant) {
+    await target.endConcentration();
+
+    if (target.diesAtZero || target.hp <= -target.hpMax) {
+      await this.kill(target, attacker);
+    } else if (!target.hasEffect(Dying)) {
+      target.hp = 0;
+      await target.removeEffect(Stable);
+      await target.addEffect(Dying, { duration: Infinity });
+    } else {
+      target.hp = 0;
+      await this.failDeathSave(target);
+    }
+  }
+
+  private async handleConcentrationCheck(
+    target: Combatant,
+    totalDamage: number,
+  ) {
+    const dc = Math.max(10, Math.floor(totalDamage / 2));
+    const result = await this.savingThrow(dc, {
+      attacker: target,
+      who: target,
+      ability: "con",
+      tags: svSet("concentration"),
+    });
+
+    if (result.outcome === "fail") {
+      target.endConcentration();
     }
   }
 
@@ -723,17 +810,6 @@ export default class Engine {
     return new Promise<void>((resolve) =>
       this.fire(new StartBoundedMoveEvent({ who, handler, resolve })),
     );
-  }
-
-  async rollHeal(count: number, e: Omit<HealRoll, "type">, critical = false) {
-    let total = 0;
-
-    for (let i = 0; i < count * (critical ? 2 : 1); i++) {
-      const roll = await this.roll({ ...e, type: "heal" });
-      total += roll.value;
-    }
-
-    return total;
   }
 
   async heal(

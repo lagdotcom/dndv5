@@ -1,3 +1,4 @@
+import { makeIcon } from "../../colours";
 import { getWeaponPlusHandler } from "../../enchantments/plus";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
@@ -16,6 +17,7 @@ function slotToBonus(slot: number) {
 
 class MagicWeaponController {
   oldName: string;
+  oldColour?: string;
   subscriptions: Unsubscribe[];
 
   constructor(
@@ -32,13 +34,17 @@ class MagicWeaponController {
     ];
 
     this.oldName = item.name;
+    this.oldColour = item.icon?.colour;
+
     item.magical = true;
     item.name = `${item.name} (Magic Weapon +${bonus})`;
+    if (item.icon) item.icon.colour = "purple";
   }
 
   onSpellEnd = async () => {
     this.item.magical = false;
     this.item.name = this.oldName;
+    if (this.item.icon) this.item.icon.colour = this.oldColour;
     for (const cleanup of this.subscriptions) cleanup();
 
     // TODO [MESSAGE]
@@ -48,7 +54,7 @@ class MagicWeaponController {
 const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
   status: "implemented",
   name: "Magic Weapon",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl),
   level: 2,
   school: "Transmutation",
   concentration: true,

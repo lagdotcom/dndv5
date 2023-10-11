@@ -4,6 +4,7 @@ import Amount from "./Amount";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
+import Icon from "./Icon";
 import ImplementationStatus from "./ImplementationStatus";
 import Resolver from "./Resolver";
 import Resource from "./Resource";
@@ -11,13 +12,10 @@ import Source from "./Source";
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
 
-export type ActionIcon = { url: string; colour?: string };
-
 export default interface Action<T extends object = object> extends Source {
   status: ImplementationStatus;
   actor: Combatant;
-  icon?: ActionIcon;
-  subIcon?: ActionIcon;
+  subIcon?: Icon;
   isAttack?: boolean;
   isSpell?: boolean;
   vocal?: boolean;

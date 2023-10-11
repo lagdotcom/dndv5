@@ -2,13 +2,14 @@ import Effect from "../../Effect";
 import Combatant from "../../types/Combatant";
 import CombatantState from "../../types/CombatantState";
 import ConditionName from "../../types/ConditionName";
+import Icon from "../../types/Icon";
 import Point from "../../types/Point";
 
 export interface UnitEffect<T = unknown> {
   effect: Effect<T>;
   config: T;
   name: string;
-  icon?: string;
+  icon?: Icon;
   duration: number;
 }
 
@@ -59,7 +60,7 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
     if (effect.quiet) continue;
     effects.push({
       name: effect.name,
-      icon: effect.image,
+      icon: effect.icon,
       duration: config.duration,
       effect,
       config,

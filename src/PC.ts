@@ -8,18 +8,22 @@ import PCRace from "./types/PCRace";
 import PCSubclass from "./types/PCSubclass";
 import { getDefaultHPRoll } from "./utils/dice";
 import { getProficiencyBonusByLevel } from "./utils/dnd";
+import { mergeSets } from "./utils/set";
 
 export class UnarmedStrike extends AbstractWeapon {
   constructor(
     g: Engine,
     public owner: PC,
   ) {
-    super(g, "unarmed strike", "natural", "melee", {
-      type: "flat",
-      amount: 1,
-      damageType: "bludgeoning",
-    });
-    this.iconUrl = punchUrl;
+    super(
+      g,
+      "unarmed strike",
+      "natural",
+      "melee",
+      { type: "flat", amount: 1, damageType: "bludgeoning" },
+      undefined,
+      punchUrl,
+    );
   }
 }
 
@@ -73,24 +77,22 @@ export default class PC extends AbstractCombatant {
       this.con.modifier;
 
     if (level === 1) {
-      for (const prof of cls?.armorProficiencies ?? [])
-        this.armorProficiencies.add(prof);
-      for (const prof of cls?.saveProficiencies ?? [])
-        this.saveProficiencies.add(prof);
+      mergeSets(this.armorProficiencies, cls.armorProficiencies);
+      mergeSets(this.saveProficiencies, cls.saveProficiencies);
+      mergeSets(
+        this.weaponCategoryProficiencies,
+        cls.weaponCategoryProficiencies,
+      );
+      mergeSets(this.weaponProficiencies, cls.weaponProficiencies);
+
       for (const prof of cls?.toolProficiencies ?? [])
         this.toolProficiencies.set(prof, 1);
-      for (const prof of cls?.weaponCategoryProficiencies ?? [])
-        this.weaponCategoryProficiencies.add(prof);
-      for (const prof of cls?.weaponProficiencies ?? [])
-        this.weaponProficiencies.add(prof);
     }
 
-    for (const feature of cls.features.get(level) ?? [])
-      this.addFeature(feature);
+    this.addFeatures(cls.features.get(level));
 
     const sub = this.subclasses.get(cls.name);
-    for (const feature of sub?.features.get(level) ?? [])
-      this.addFeature(feature);
+    this.addFeatures(sub?.features.get(level));
   }
 
   addSubclass(sub: PCSubclass) {

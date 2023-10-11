@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { SpecifiedSphere } from "../../types/EffectArea";
@@ -16,7 +17,7 @@ const getArea = (centre: Point): SpecifiedSphere => ({
 const Fireball = scalingSpell<HasPoint>({
   status: "implemented",
   name: "Fireball",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.fire),
   level: 3,
   school: "Evocation",
   v: true,

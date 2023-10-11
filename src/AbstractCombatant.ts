@@ -321,6 +321,10 @@ export default abstract class AbstractCombatant implements Combatant {
     return bonus.result * e.detail.multiplier.result;
   }
 
+  addFeatures(features?: Feature[]) {
+    for (const feature of features ?? []) this.addFeature(feature);
+  }
+
   addFeature(feature: Feature) {
     if (this.features.get(feature.name)) {
       console.warn(

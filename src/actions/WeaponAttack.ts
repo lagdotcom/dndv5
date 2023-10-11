@@ -1,4 +1,3 @@
-import { getItemIcon } from "../colours";
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
@@ -30,8 +29,8 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       { target: new TargetResolver(g, getWeaponRange(actor, weapon)) },
     );
     this.ability = getWeaponAbility(actor, weapon);
-    this.icon = getItemIcon(weapon);
-    this.subIcon = getItemIcon(ammo);
+    this.icon = weapon.icon;
+    this.subIcon = ammo?.icon;
   }
 
   getDamage() {

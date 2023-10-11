@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { svSet } from "../../types/SaveTag";
@@ -10,7 +11,7 @@ import iconUrl from "./icons/acid-splash.svg";
 const AcidSplash = simpleSpell<HasTargets>({
   status: "implemented",
   name: "Acid Splash",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.acid),
   level: 0,
   school: "Conjuration",
   v: true,

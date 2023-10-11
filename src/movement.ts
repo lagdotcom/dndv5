@@ -2,7 +2,7 @@ import DndRule from "./DndRule";
 import Combatant from "./types/Combatant";
 import MoveHandler from "./types/MoveHandler";
 import Source from "./types/Source";
-import { getDistanceBetween } from "./utils/units";
+import { compareDistances } from "./utils/units";
 
 export const getDefaultMovement = (who: Combatant): MoveHandler => ({
   name: "Movement",
@@ -32,20 +32,15 @@ export const getTeleportation = (
 
 export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
   g.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
-    for (const other of handler?.cannotApproach ?? []) {
+    for (const other of handler.cannotApproach ?? []) {
       const otherPos = g.getState(other).position;
 
-      const oldDistance = getDistanceBetween(
+      const { oldDistance, newDistance } = compareDistances(
+        other,
+        otherPos,
+        who,
         from,
-        who.sizeInUnits,
-        otherPos,
-        other.sizeInUnits,
-      );
-      const newDistance = getDistanceBetween(
         to,
-        who.sizeInUnits,
-        otherPos,
-        other.sizeInUnits,
       );
 
       if (newDistance < oldDistance)

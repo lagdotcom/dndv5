@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action, { ActionIcon } from "../types/Action";
+import Action from "../types/Action";
 import { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Amount from "../types/Amount";
@@ -8,6 +8,7 @@ import Combatant from "../types/Combatant";
 import DamageAmount from "../types/DamageAmount";
 import { SpecifiedEffectShape } from "../types/EffectArea";
 import Empty from "../types/Empty";
+import Icon from "../types/Icon";
 import ImplementationStatus from "../types/ImplementationStatus";
 import Resource from "../types/Resource";
 
@@ -16,8 +17,7 @@ export interface AbstractActionOptions {
   damage?: DamageAmount[];
   description?: string;
   heal?: Amount[];
-  iconColour?: string;
-  iconUrl?: string;
+  icon?: Icon;
   resources?: [Resource, number][];
   time?: ActionTime;
 }
@@ -25,8 +25,8 @@ export interface AbstractActionOptions {
 export default abstract class AbstractAction<T extends object = Empty>
   implements Action<T>
 {
-  icon?: ActionIcon;
-  subIcon?: ActionIcon;
+  icon?: Icon;
+  subIcon?: Icon;
   isAttack?: boolean;
   area?: SpecifiedEffectShape[];
   damage?: DamageAmount[];
@@ -46,8 +46,7 @@ export default abstract class AbstractAction<T extends object = Empty>
       damage,
       description,
       heal,
-      iconColour,
-      iconUrl,
+      icon,
       resources,
       time,
     }: AbstractActionOptions = {},
@@ -58,8 +57,7 @@ export default abstract class AbstractAction<T extends object = Empty>
     this.heal = heal;
     this.resources = new Map(resources);
     this.time = time;
-
-    if (iconUrl) this.icon = { url: iconUrl, colour: iconColour };
+    this.icon = icon;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

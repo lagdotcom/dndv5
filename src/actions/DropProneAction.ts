@@ -1,4 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { makeIcon } from "../colours";
 import { Prone } from "../effects";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
@@ -6,9 +7,11 @@ import { coSet } from "../types/ConditionName";
 import AbstractAction from "./AbstractAction";
 import iconUrl from "./icons/prone.svg";
 
+const DropProneIcon = makeIcon(iconUrl);
+
 export default class DropProneAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Drop Prone", "implemented", {}, { iconUrl });
+    super(g, actor, "Drop Prone", "implemented", {}, { icon: DropProneIcon });
   }
 
   check(config: never, ec: ErrorCollector) {

@@ -1,3 +1,4 @@
+import { ItemRarityColours } from "../colours";
 import PickFromListChoice, {
   PickChoice,
 } from "../interruptions/PickFromListChoice";
@@ -30,6 +31,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
     item.name = `chaotic burst ${item.weaponType}`;
     item.attunement = true;
     item.rarity = "Rare";
+    if (item.icon) item.icon.colour = ItemRarityColours.Rare;
 
     g.events.on("TurnStarted", ({ detail: { who } }) => {
       if (who.equipment.has(item) && who.attunements.has(item))
@@ -85,6 +87,7 @@ export const vicious: Enchantment<"weapon"> = {
     item.name = `vicious ${item.name}`;
     item.magical = true;
     item.rarity = "Rare";
+    if (item.icon) item.icon.colour = ItemRarityColours.Rare;
 
     g.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
       if (weapon === item && attack?.roll.value === 20) bonus.add(7, vicious);

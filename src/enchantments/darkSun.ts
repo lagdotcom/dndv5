@@ -1,3 +1,4 @@
+import { ItemRarityColours } from "../colours";
 import EvaluateLater from "../interruptions/EvaluateLater";
 import Enchantment from "../types/Enchantment";
 import { weaponPlus1 } from "./plus";
@@ -9,6 +10,7 @@ const darkSun: Enchantment<"weapon"> = {
     item.name = `${item.weaponType} of the dark sun`;
     item.attunement = true;
     item.rarity = "Rare";
+    if (item.icon) item.icon.colour = ItemRarityColours.Rare;
 
     g.events.on(
       "GatherDamage",

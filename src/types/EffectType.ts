@@ -1,5 +1,6 @@
 import ConditionName from "./ConditionName";
 import { EffectTag } from "./EffectTag";
+import Icon from "./Icon";
 import Source from "./Source";
 
 export type EffectDurationTimer = "turnStart" | "turnEnd";
@@ -14,5 +15,5 @@ export default interface EffectType<T = object> extends Source {
   quiet: boolean;
   example?: T;
   tags: Set<EffectTag>;
-  image?: string;
+  icon?: Icon;
 }

@@ -1,5 +1,6 @@
 import AbstractAction from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
+import { makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
@@ -17,6 +18,8 @@ import { hours, minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 import iconUrl from "./icons/web.svg";
 
+const WebIcon = makeIcon(iconUrl);
+
 class BreakFreeFromWebAction extends AbstractAction {
   constructor(
     g: Engine,
@@ -31,7 +34,7 @@ class BreakFreeFromWebAction extends AbstractAction {
       "implemented",
       {},
       {
-        iconUrl,
+        icon: WebIcon,
         time: "action",
         description: `Make a Strength check to break free of the webs.`,
       },
@@ -68,7 +71,7 @@ const Webbed = new Effect<{ caster: Combatant; method: SpellcastingMethod }>(
       if (who.hasEffect(Webbed)) conditions.add("Restrained", Webbed);
     });
   },
-  { image: iconUrl },
+  { icon: WebIcon },
 );
 
 const getWebArea = (centre: Point): SpecifiedCube => ({
@@ -149,7 +152,7 @@ class WebController {
 const Web = simpleSpell<HasPoint>({
   status: "incomplete",
   name: "Web",
-  icon: { url: iconUrl },
+  icon: WebIcon,
   level: 2,
   school: "Conjuration",
   concentration: true,

@@ -1,5 +1,4 @@
 import AbstractAction from "../actions/AbstractAction";
-import { ItemRarityColours } from "../colours";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import iconUrl from "./icons/hood.svg";
@@ -17,11 +16,7 @@ class CloakHoodAction extends AbstractAction {
       cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
       "incomplete",
       {},
-      {
-        iconUrl: cloak.iconUrl,
-        iconColour: ItemRarityColours[cloak.rarity],
-        time: "action",
-      },
+      { icon: cloak.icon, time: "action" },
     );
   }
 
@@ -37,10 +32,9 @@ export default class CloakOfElvenkind extends AbstractWondrous {
     g: Engine,
     public hoodUp = true,
   ) {
-    super(g, "Cloak of Elvenkind");
+    super(g, "Cloak of Elvenkind", 0, iconUrl);
     this.attunement = true;
     this.rarity = "Uncommon";
-    this.iconUrl = iconUrl;
 
     const cloaked = (who?: Combatant) =>
       who &&

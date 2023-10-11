@@ -1,9 +1,12 @@
+import { Heal, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 import iconUrl from "./icons/aid.svg";
+
+const AidIcon = makeIcon(iconUrl, Heal);
 
 const AidEffect = new Effect<{ amount: number }>(
   "Aid",
@@ -14,13 +17,13 @@ const AidEffect = new Effect<{ amount: number }>(
       if (config) bonus.add(config.amount, AidEffect);
     });
   },
-  { image: iconUrl },
+  { icon: AidIcon },
 );
 
 const Aid = scalingSpell<HasTargets>({
   status: "implemented",
   name: "Aid",
-  icon: { url: iconUrl },
+  icon: AidIcon,
   level: 2,
   school: "Abjuration",
   v: true,

@@ -1,4 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { makeIcon } from "../colours";
 import { Prone } from "../effects";
 import Engine from "../Engine";
 import { MapSquareSize } from "../MapSquare";
@@ -7,9 +8,11 @@ import { round } from "../utils/numbers";
 import AbstractAction from "./AbstractAction";
 import iconUrl from "./icons/stand.svg";
 
+const StandUpIcon = makeIcon(iconUrl);
+
 export default class StandUpAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Stand Up", "implemented", {}, { iconUrl });
+    super(g, actor, "Stand Up", "implemented", {}, { icon: StandUpIcon });
   }
 
   get cost() {

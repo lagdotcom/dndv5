@@ -8,21 +8,6 @@ import Feature from "../types/Feature";
 import PCClassName from "../types/PCClassName";
 import { ordinal } from "../utils/numbers";
 
-export const ClassColours = {
-  Barbarian: "#e7623e",
-  Bard: "#ab6dac",
-  Cleric: "#91a1b2",
-  Druid: "#7a853b",
-  Fighter: "#7f513e",
-  Monk: "#51a5c5",
-  Paladin: "#b59e54",
-  Ranger: "#507f62",
-  Rogue: "#555752",
-  Sorcerer: "#992e2e",
-  Warlock: "#7b469b",
-  Wizard: "#2a50a1",
-};
-
 type ASIConfig =
   | { type: "ability"; abilities: AbilityName[] }
   | { type: "feat"; feat: Feature };

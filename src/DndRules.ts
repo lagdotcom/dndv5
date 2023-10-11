@@ -9,10 +9,12 @@ import EvaluateLater from "./interruptions/EvaluateLater";
 import PickFromListChoice from "./interruptions/PickFromListChoice";
 import PointSet from "./PointSet";
 import { ResourceRegistry } from "./resources";
+import Combatant from "./types/Combatant";
 import Item from "./types/Item";
+import Point from "./types/Point";
 import { resolveArea } from "./utils/areas";
 import { getValidAmmunition } from "./utils/items";
-import { distance, getDistanceBetween, getSquares } from "./utils/units";
+import { compareDistances, distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
@@ -188,59 +190,71 @@ export const OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
   });
 });
 
+function getValidOpportunityAttacks(
+  g: Engine,
+  attacker: Combatant,
+  position: Point,
+  target: Combatant,
+  from: Point,
+  to: Point,
+) {
+  const { oldDistance, newDistance } = compareDistances(
+    attacker,
+    position,
+    target,
+    from,
+    to,
+  );
+
+  return attacker.weapons
+    .filter((weapon) => weapon.rangeCategory === "melee")
+    .filter((weapon) => {
+      const range = attacker.reach + weapon.reach;
+      return oldDistance <= range && newDistance > range;
+    })
+    .map((weapon) => new OpportunityAttack(g, attacker, weapon))
+    .filter((opportunity) => g.check(opportunity, { target }).result);
+}
+
 export const OpportunityAttacksRule = new DndRule(
   "Opportunity Attacks",
   (g) => {
-    g.events.on("BeforeMove", ({ detail }) => {
-      if (!detail.handler.provokesOpportunityAttacks) return;
+    g.events.on(
+      "BeforeMove",
+      ({ detail: { handler, who, from, to, interrupt } }) => {
+        if (!handler.provokesOpportunityAttacks) return;
 
-      for (const [attacker, state] of g.combatants) {
-        if (attacker.side === detail.who.side) continue;
+        for (const [attacker, { position }] of g.combatants) {
+          if (attacker.side === who.side) continue;
 
-        const oldDistance = getDistanceBetween(
-          detail.from,
-          detail.who.sizeInUnits,
-          state.position,
-          attacker.sizeInUnits,
-        );
-        const newDistance = getDistanceBetween(
-          detail.to,
-          detail.who.sizeInUnits,
-          state.position,
-          attacker.sizeInUnits,
-        );
-
-        const config = { target: detail.who };
-        const validActions: OpportunityAttack[] = [];
-        for (const weapon of attacker.weapons) {
-          if (weapon.rangeCategory !== "melee") continue;
-          const range = attacker.reach + weapon.reach;
-          if (oldDistance <= range && newDistance > range) {
-            const opportunity = new OpportunityAttack(g, attacker, weapon);
-            if (g.check(opportunity, config).result)
-              validActions.push(opportunity);
-          }
-        }
-
-        if (validActions.length)
-          detail.interrupt.add(
-            new PickFromListChoice(
-              attacker,
-              OpportunityAttacksRule,
-              "Opportunity Attack",
-              `${detail.who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
-              validActions.map((value) => ({
-                label: value.weapon.name,
-                value,
-              })),
-              async (opportunity) => {
-                await g.act(opportunity, config);
-              },
-              true,
-            ),
+          const validActions = getValidOpportunityAttacks(
+            g,
+            attacker,
+            position,
+            who,
+            from,
+            to,
           );
-      }
-    });
+          if (validActions.length)
+            interrupt.add(
+              new PickFromListChoice(
+                attacker,
+                OpportunityAttacksRule,
+                "Opportunity Attack",
+                `${who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
+                validActions.map((value) => ({
+                  label: value.weapon.name,
+                  value,
+                })),
+                async (opportunity) => {
+                  await g.act(opportunity, { target: who });
+                },
+                true,
+              ),
+            );
+        }
+      },
+    );
   },
 );
 

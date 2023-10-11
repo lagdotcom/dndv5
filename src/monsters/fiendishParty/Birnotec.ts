@@ -1,4 +1,5 @@
 import CastSpell from "../../actions/CastSpell";
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -27,10 +28,12 @@ function getArea(g: Engine, target: Combatant): SpecifiedWithin {
   };
 }
 
+const BurstIcon = makeIcon(burstUrl, DamageColours.force);
+
 const EldritchBurstSpell = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Eldritch Burst",
-  icon: { url: burstUrl },
+  icon: BurstIcon,
   level: 0,
   school: "Evocation",
   lists: ["Warlock"],

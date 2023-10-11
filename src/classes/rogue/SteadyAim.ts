@@ -1,5 +1,6 @@
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
+import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -7,6 +8,8 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import Combatant from "../../types/Combatant";
 import { RogueIcon } from "./common";
 import iconUrl from "./icons/steady-aim.svg";
+
+const SteadyAimIcon = makeIcon(iconUrl);
 
 const SteadyAimNoMoveEffect = new Effect(
   "Steady Aim",
@@ -38,7 +41,7 @@ const SteadyAimAdvantageEffect = new Effect(
         );
     });
   },
-  { image: iconUrl },
+  { icon: SteadyAimIcon },
 );
 
 class SteadyAimAction extends AbstractAction {
@@ -49,7 +52,7 @@ class SteadyAimAction extends AbstractAction {
       "Steady Aim",
       "implemented",
       {},
-      { iconUrl, time: "bonus action" },
+      { icon: SteadyAimIcon, time: "bonus action" },
     );
     this.subIcon = RogueIcon;
   }

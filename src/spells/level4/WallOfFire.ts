@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
@@ -16,7 +17,7 @@ const shapeChoices: PickChoice<Shape>[] = [
 const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
   name: "Wall of Fire",
   level: 4,
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.fire),
   school: "Evocation",
   concentration: true,
   v: true,

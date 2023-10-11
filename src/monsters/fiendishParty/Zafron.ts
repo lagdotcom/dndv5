@@ -1,5 +1,6 @@
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
+import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
 import Engine from "../../Engine";
@@ -43,6 +44,8 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
   },
 );
 
+const BullRushIcon = makeIcon(bullRushIconUrl);
+
 const BullRushEffect = new Effect(
   "Bull Rush",
   "turnStart",
@@ -58,7 +61,7 @@ const BullRushEffect = new Effect(
       },
     );
   },
-  { image: bullRushIconUrl },
+  { icon: BullRushIcon },
 );
 
 class BullRushAction extends AbstractAction {
@@ -70,7 +73,7 @@ class BullRushAction extends AbstractAction {
       "incomplete",
       {},
       {
-        iconUrl: bullRushIconUrl,
+        icon: BullRushIcon,
         time: "action",
         description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`,
       },

@@ -1,4 +1,5 @@
 import ActiveEffectArea from "../../ActiveEffectArea";
+import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
@@ -12,7 +13,7 @@ import iconUrl from "./icons/spike-growth.svg";
 const SpikeGrowth = simpleSpell<HasPoint>({
   status: "incomplete",
   name: "Spike Growth",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.piercing),
   level: 2,
   school: "Transmutation",
   v: true,

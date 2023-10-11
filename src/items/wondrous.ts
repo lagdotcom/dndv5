@@ -1,17 +1,13 @@
 import Engine from "../Engine";
-import { WondrousItem } from "../types/Item";
+import { ItemRarity, WondrousItem } from "../types/Item";
 import AbstractItem from "./AbstractItem";
 
 export class AbstractWondrous
   extends AbstractItem<"wondrous">
   implements WondrousItem
 {
-  constructor(
-    g: Engine,
-    name: string,
-    public hands = 0,
-  ) {
-    super(g, "wondrous", name);
+  constructor(g: Engine, name: string, hands = 0, iconUrl?: string) {
+    super(g, "wondrous", name, hands, iconUrl);
   }
 }
 
@@ -101,7 +97,6 @@ export class DragonTouchedFocus extends AbstractWondrous {
   }
 }
 
-// TODO item rarity
 export const FigurineTypes = [
   "Bronze Griffin",
   "Ebony Fly",
@@ -114,12 +109,26 @@ export const FigurineTypes = [
   "Silver Raven",
 ] as const;
 export type FigurineType = (typeof FigurineTypes)[number];
+
+export const FigurineData: Record<FigurineType, { rarity: ItemRarity }> = {
+  "Bronze Griffin": { rarity: "Rare" },
+  "Ebony Fly": { rarity: "Rare" },
+  "Golden Lions": { rarity: "Rare" },
+  "Ivory Goats": { rarity: "Rare" },
+  "Marble Elephant": { rarity: "Rare" },
+  "Obsidian Steed": { rarity: "Very Rare" },
+  "Onyx Dog": { rarity: "Rare" },
+  "Serpentine Owl": { rarity: "Rare" },
+  "Silver Raven": { rarity: "Uncommon" },
+};
+
 export class FigurineOfWondrousPower extends AbstractWondrous {
   constructor(
     g: Engine,
     public type: FigurineType,
   ) {
     super(g, `Figurine of Wondrous Power, ${type}`, 0);
+    this.rarity = FigurineData[type].rarity;
 
     /* TODO [SUMMONING] If you use an action to speak the command word and throw the figurine to a point on the ground within 60 feet of you, the figurine becomes a living creature. If the space where the creature would appear is occupied by other creatures or objects, or if there isn't enough space for the creature, the figurine doesn't become a creature.
 

@@ -1,4 +1,5 @@
 import ActiveEffectArea from "../../ActiveEffectArea";
+import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
@@ -18,7 +19,7 @@ const getArea = (g: Engine, centre: Point): SpecifiedCube => ({
 const EruptingEarth = scalingSpell<HasPoint>({
   status: "incomplete",
   name: "Erupting Earth",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.bludgeoning),
   level: 3,
   school: "Evocation",
   v: true,

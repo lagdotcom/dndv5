@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -16,7 +17,7 @@ const RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {
 const RayOfFrost = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Ray of Frost",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.cold),
   level: 0,
   school: "Evocation",
   v: true,

@@ -1,4 +1,5 @@
 import AbstractAttackAction from "../../actions/AbstractAttackAction";
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
@@ -10,6 +11,8 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
 import iconUrl from "./icons/magic-stone.svg";
+
+const MagicStoneIcon = makeIcon(iconUrl, DamageColours.bludgeoning);
 
 const MagicStoneResource = new TemporaryResource("Magic Stone", 3);
 
@@ -27,7 +30,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
       "incomplete",
       { target: new TargetResolver(g, 60) },
       {
-        iconUrl,
+        icon: MagicStoneIcon,
         damage: [_dd(1, 6, "bludgeoning")],
         resources: [[MagicStoneResource, 1]],
       },
@@ -87,7 +90,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
 const MagicStone = simpleSpell({
   status: "incomplete",
   name: "Magic Stone",
-  icon: { url: iconUrl },
+  icon: MagicStoneIcon,
   level: 0,
   school: "Transmutation",
   time: "bonus action",

@@ -11,7 +11,11 @@ export default function UnitEffectIcon({ effect }: Props) {
 
   return (
     <div title={effect.name}>
-      <SVGIcon src={effect.icon ?? unknownIconUrl} size={25} />
+      <SVGIcon
+        src={effect.icon?.url ?? unknownIconUrl}
+        color={effect.icon?.colour}
+        size={25}
+      />
     </div>
   );
 }

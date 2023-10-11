@@ -10,15 +10,15 @@ export class AbstractAmmo extends AbstractItem<"ammo"> implements AmmoItem {
     name: string,
     public ammunitionTag: AmmunitionTag,
     public quantity: number,
+    iconUrl?: string,
   ) {
-    super(g, "ammo", name);
+    super(g, "ammo", name, 0, iconUrl);
   }
 }
 
 export class Arrow extends AbstractAmmo {
   constructor(g: Engine, quantity: number) {
-    super(g, "arrow", "bow", quantity);
-    this.iconUrl = arrowUrl;
+    super(g, "arrow", "bow", quantity, arrowUrl);
   }
 }
 
@@ -30,8 +30,7 @@ export class BlowgunNeedle extends AbstractAmmo {
 
 export class CrossbowBolt extends AbstractAmmo {
   constructor(g: Engine, quantity: number) {
-    super(g, "crossbow bolt", "crossbow", quantity);
-    this.iconUrl = boltUrl;
+    super(g, "crossbow bolt", "crossbow", quantity, boltUrl);
   }
 }
 

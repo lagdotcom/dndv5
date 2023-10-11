@@ -1,15 +1,12 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
-import { ActionIcon } from "../../types/Action";
 import { acSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
-import { ClassColours, makeASI } from "../common";
-import iconUrl from "./icon.svg";
-
-const DruidIcon: ActionIcon = { url: iconUrl, colour: ClassColours.Druid };
+import { makeASI } from "../common";
+import { DruidIcon } from "./common";
 
 const Druidic = nonCombatFeature(
   "Druidic",

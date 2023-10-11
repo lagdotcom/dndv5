@@ -1,13 +1,13 @@
-import { ActionIcon } from "../types/Action";
+import Icon from "../types/Icon";
 import styles from "./IconButton.module.scss";
 import SVGIcon from "./SVGIcon";
 
 interface Props {
   alt: string;
   disabled?: boolean;
-  icon: ActionIcon;
+  icon: Icon;
   size?: number;
-  sub?: ActionIcon;
+  sub?: Icon;
   subSize?: number;
 
   onClick(): void;

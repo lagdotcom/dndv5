@@ -24,3 +24,7 @@ export function* filterSet<T>(
 ) {
   for (const value of values) if (predicate(value)) yield value;
 }
+
+export function mergeSets<T>(destination: Set<T>, source?: Set<T>) {
+  for (const item of source ?? []) destination.add(item);
+}

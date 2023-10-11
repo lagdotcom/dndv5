@@ -1,4 +1,5 @@
 import ActiveEffectArea from "../../ActiveEffectArea";
+import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
 import Engine from "../../Engine";
 import Combatant from "../../types/Combatant";
@@ -18,7 +19,7 @@ const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
 const EarthTremor = scalingSpell({
   status: "incomplete",
   name: "Earth Tremor",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.bludgeoning),
   level: 1,
   school: "Evocation",
   v: true,

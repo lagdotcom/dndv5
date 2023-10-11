@@ -17,35 +17,35 @@ import App from "./ui/App";
 import { FetchCache, SVGCacheContext } from "./ui/utils/SVGCache";
 
 const cache = new FetchCache();
-const g = new Engine();
+const gInstance = new Engine();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).g = g;
+(window as any).g = gInstance;
 render(
   <SVGCacheContext.Provider value={cache}>
     <App
-      g={g}
+      g={gInstance}
       onMount={() => {
-        const aura = new Aura(g);
-        const beldalynn = new Beldalynn(g);
-        const galilea = new Galilea(g);
-        const salgar = new Salgar(g);
-        const hagrond = new Hagrond(g);
-        const birnotec = new Birnotec(g);
-        const kay = new Kay(g);
-        const gonrit = new OGonrit(g);
-        const yulash = new Yulash(g);
-        const zafron = new Zafron(g);
-        g.place(aura, 20, 20);
-        g.place(beldalynn, 10, 30);
-        g.place(galilea, 5, 0);
-        g.place(salgar, 15, 30);
-        g.place(hagrond, 0, 5);
-        g.place(birnotec, 15, 0);
-        g.place(kay, 20, 0);
-        g.place(gonrit, 10, 15);
-        g.place(yulash, 25, 10);
-        g.place(zafron, 10, 5);
-        g.start();
+        const aura = new Aura(gInstance);
+        const beldalynn = new Beldalynn(gInstance);
+        const galilea = new Galilea(gInstance);
+        const salgar = new Salgar(gInstance);
+        const hagrond = new Hagrond(gInstance);
+        const birnotec = new Birnotec(gInstance);
+        const kay = new Kay(gInstance);
+        const gonrit = new OGonrit(gInstance);
+        const yulash = new Yulash(gInstance);
+        const zafron = new Zafron(gInstance);
+        gInstance.place(aura, 20, 20);
+        gInstance.place(beldalynn, 10, 30);
+        gInstance.place(galilea, 5, 0);
+        gInstance.place(salgar, 15, 30);
+        gInstance.place(hagrond, 0, 5);
+        gInstance.place(birnotec, 15, 0);
+        gInstance.place(kay, 20, 0);
+        gInstance.place(gonrit, 10, 15);
+        gInstance.place(yulash, 25, 10);
+        gInstance.place(zafron, 10, 5);
+        gInstance.start();
       }}
     />
   </SVGCacheContext.Provider>,

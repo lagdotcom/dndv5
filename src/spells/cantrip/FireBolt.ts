@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
@@ -8,7 +9,7 @@ import iconUrl from "./icons/fire-bolt.svg";
 const FireBolt = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Fire Bolt",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.fire),
   level: 0,
   school: "Evocation",
   v: true,

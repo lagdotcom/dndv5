@@ -53,6 +53,28 @@ export function distanceTo(g: Engine, who: Combatant, to: Point) {
   return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
 }
 
+export function compareDistances(
+  stationary: Combatant,
+  stationaryPosition: Point,
+  mover: Combatant,
+  oldPosition: Point,
+  newPosition: Point,
+) {
+  const oldDistance = getDistanceBetween(
+    oldPosition,
+    mover.sizeInUnits,
+    stationaryPosition,
+    stationary.sizeInUnits,
+  );
+  const newDistance = getDistanceBetween(
+    newPosition,
+    mover.sizeInUnits,
+    stationaryPosition,
+    stationary.sizeInUnits,
+  );
+  return { oldDistance, newDistance };
+}
+
 export function getSquares(who: Combatant, position: Point) {
   return new PointSet(
     enumerateMapSquares(

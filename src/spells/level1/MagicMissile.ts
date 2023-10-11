@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasAllocations } from "../../configs";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import DamageAmount from "../../types/DamageAmount";
@@ -13,7 +14,7 @@ const getDamage = (slot: number): DamageAmount[] => [
 const MagicMissile = scalingSpell<HasAllocations>({
   status: "implemented",
   name: "Magic Missile",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.force),
   level: 1,
   school: "Evocation",
   v: true,

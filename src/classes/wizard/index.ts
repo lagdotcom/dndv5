@@ -1,13 +1,10 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
-import { ActionIcon } from "../../types/Action";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
-import { ClassColours, makeASI } from "../common";
-import iconUrl from "./icon.svg";
-
-const WizardIcon: ActionIcon = { url: iconUrl, colour: ClassColours.Wizard };
+import { makeASI } from "../common";
+import { WizardIcon } from "./common";
 
 const ArcaneRecovery = nonCombatFeature(
   "Arcane Recovery",

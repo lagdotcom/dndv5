@@ -1,4 +1,5 @@
 import AbstractAction from "../../actions/AbstractAction";
+import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
@@ -55,6 +56,8 @@ const FiendishMantle = new SimpleFeature(
   },
 );
 
+const ShieldBashIcon = makeIcon(bashUrl);
+
 const ShieldBashEffect = new Effect(
   "Shield Bash",
   "turnEnd",
@@ -64,7 +67,7 @@ const ShieldBashEffect = new Effect(
         conditions.add("Stunned", ShieldBashEffect);
     });
   },
-  { image: bashUrl },
+  { icon: ShieldBashIcon },
 );
 
 class ShieldBashAction extends AbstractAction<HasTarget> {
@@ -79,7 +82,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       "Shield Bash",
       "implemented",
       { target: new TargetResolver(g, actor.reach) },
-      { iconUrl: bashUrl, time: "action" },
+      { icon: ShieldBashIcon, time: "action" },
     );
   }
 

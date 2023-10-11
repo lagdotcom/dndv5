@@ -1,5 +1,6 @@
 import AbstractAction from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
+import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
@@ -15,6 +16,8 @@ import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 import iconUrl from "./icons/moonbeam.svg";
+
+const MoonbeamIcon = makeIcon(iconUrl, DamageColours.radiant);
 
 const getArea = (centre: Point): SpecifiedCylinder => ({
   type: "cylinder",
@@ -35,7 +38,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
       "implemented",
       { point: new PointToPointResolver(g, controller.centre, 60) },
       {
-        iconUrl,
+        icon: MoonbeamIcon,
         time: "action",
         description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
       },
@@ -161,7 +164,7 @@ class MoonbeamController {
 const Moonbeam = scalingSpell<HasPoint>({
   status: "incomplete",
   name: "Moonbeam",
-  icon: { url: iconUrl },
+  icon: MoonbeamIcon,
   level: 2,
   school: "Evocation",
   concentration: true,

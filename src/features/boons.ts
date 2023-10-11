@@ -1,4 +1,5 @@
 import AbstractAction from "../actions/AbstractAction";
+import { makeIcon } from "../colours";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
 import { MapSquareSize } from "../MapSquare";
@@ -23,7 +24,7 @@ class HissAction extends AbstractAction<HasTarget> {
       "implemented",
       { target: new TargetResolver(g, 5) },
       {
-        iconUrl: hissIconUrl,
+        icon: makeIcon(hissIconUrl),
         time: "bonus action",
         resources: [[HissResource, 1]],
       },

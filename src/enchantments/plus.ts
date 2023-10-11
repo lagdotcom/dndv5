@@ -1,3 +1,4 @@
+import { ItemRarityColours } from "../colours";
 import Engine from "../Engine";
 import { EventListener } from "../events/Dispatcher";
 import Enchantment from "../types/Enchantment";
@@ -23,6 +24,7 @@ const weaponPlus = (
     item.name = `${item.name} +${value}`;
     item.magical = true;
     item.rarity = rarity;
+    if (item.icon) item.icon.colour = ItemRarityColours[rarity];
 
     const handler = getWeaponPlusHandler(item, value, this);
     g.events.on("BeforeAttack", handler);
@@ -43,6 +45,7 @@ const armorPlus = (
     item.name = `${item.name} +${value}`;
     item.magical = true;
     item.rarity = rarity;
+    if (item.icon) item.icon.colour = ItemRarityColours[rarity];
 
     item.ac += value;
   },

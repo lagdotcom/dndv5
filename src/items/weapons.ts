@@ -9,6 +9,7 @@ import {
   WeaponRangeCategory,
 } from "../types/Item";
 import { _dd } from "../utils/dice";
+import { distance } from "../utils/units";
 import AbstractItem from "./AbstractItem";
 import clubUrl from "./icons/club.svg";
 import greataxeUrl from "./icons/greataxe.svg";
@@ -38,10 +39,11 @@ export abstract class AbstractWeapon
     public rangeCategory: WeaponRangeCategory,
     public damage: DamageAmount,
     properties: Iterable<WeaponProperty> = [],
+    iconUrl?: string,
     public shortRange?: number,
     public longRange?: number,
   ) {
-    super(g, "weapon", name, 1);
+    super(g, "weapon", name, 1, iconUrl);
 
     this.weaponType = name;
     this.properties = new Set(properties);
@@ -55,8 +57,15 @@ export abstract class AbstractWeapon
 
 export class Club extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "club", "simple", "melee", _dd(1, 4, "bludgeoning"), ["light"]);
-    this.iconUrl = clubUrl;
+    super(
+      g,
+      "club",
+      "simple",
+      "melee",
+      _dd(1, 4, "bludgeoning"),
+      ["light"],
+      clubUrl,
+    );
   }
 }
 
@@ -69,6 +78,7 @@ export class Dagger extends AbstractWeapon {
       "melee",
       _dd(1, 4, "piercing"),
       ["finesse", "light", "thrown"],
+      undefined, // TODO [ICON]
       20,
       60,
     );
@@ -78,9 +88,15 @@ export class Dagger extends AbstractWeapon {
 
 export class Greatclub extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "greatclub", "simple", "melee", _dd(1, 8, "bludgeoning"), [
-      "two-handed",
-    ]);
+    super(
+      g,
+      "greatclub",
+      "simple",
+      "melee",
+      _dd(1, 8, "bludgeoning"),
+      ["two-handed"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
@@ -93,6 +109,7 @@ export class Handaxe extends AbstractWeapon {
       "melee",
       _dd(1, 6, "slashing"),
       ["light", "thrown"],
+      undefined, // TODO [ICON]
       20,
       60,
     );
@@ -109,6 +126,7 @@ export class Javelin extends AbstractWeapon {
       "melee",
       _dd(1, 6, "piercing"),
       ["thrown"],
+      undefined, // TODO [ICON]
       30,
       120,
     );
@@ -125,6 +143,7 @@ export class LightHammer extends AbstractWeapon {
       "melee",
       _dd(1, 4, "bludgeoning"),
       ["light", "thrown"],
+      undefined, // TODO [ICON]
       20,
       60,
     );
@@ -134,23 +153,43 @@ export class LightHammer extends AbstractWeapon {
 
 export class Mace extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "mace", "simple", "melee", _dd(1, 6, "bludgeoning"));
-    this.iconUrl = maceUrl;
+    super(
+      g,
+      "mace",
+      "simple",
+      "melee",
+      _dd(1, 6, "bludgeoning"),
+      undefined,
+      maceUrl,
+    );
   }
 }
 
 export class Quarterstaff extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "quarterstaff", "simple", "melee", _dd(1, 6, "bludgeoning"), [
-      "versatile",
-    ]);
-    this.iconUrl = quarterstaffUrl;
+    super(
+      g,
+      "quarterstaff",
+      "simple",
+      "melee",
+      _dd(1, 6, "bludgeoning"),
+      ["versatile"],
+      quarterstaffUrl,
+    );
   }
 }
 
 export class Sickle extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "sickle", "simple", "melee", _dd(1, 4, "slashing"), ["light"]);
+    super(
+      g,
+      "sickle",
+      "simple",
+      "melee",
+      _dd(1, 4, "slashing"),
+      ["light"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
@@ -163,11 +202,11 @@ export class Spear extends AbstractWeapon {
       "melee",
       _dd(1, 6, "piercing"),
       ["thrown", "versatile"],
+      spearUrl,
       20,
       60,
     );
     this.quantity = quantity;
-    this.iconUrl = spearUrl;
   }
 }
 
@@ -180,11 +219,11 @@ export class LightCrossbow extends AbstractWeapon {
       "ranged",
       _dd(1, 8, "piercing"),
       ["ammunition", "loading", "two-handed"],
+      lightCrossbowUrl,
       80,
       320,
     );
     this.ammunitionTag = "crossbow";
-    this.iconUrl = lightCrossbowUrl;
   }
 }
 
@@ -197,6 +236,7 @@ export class Dart extends AbstractWeapon {
       "ranged",
       _dd(1, 4, "piercing"),
       ["finesse", "thrown"],
+      undefined, // TODO [ICON]
       20,
       60,
     );
@@ -213,6 +253,7 @@ export class Shortbow extends AbstractWeapon {
       "ranged",
       _dd(1, 6, "piercing"),
       ["ammunition", "two-handed"],
+      undefined, // TODO [ICON]
       80,
       320,
     );
@@ -229,6 +270,7 @@ export class Sling extends AbstractWeapon {
       "ranged",
       _dd(1, 4, "bludgeoning"),
       ["ammunition"],
+      undefined, // TODO [ICON]
       30,
       120,
     );
@@ -238,120 +280,206 @@ export class Sling extends AbstractWeapon {
 
 export class Battleaxe extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "battleaxe", "martial", "melee", _dd(1, 8, "slashing"), [
-      "versatile",
-    ]);
+    super(
+      g,
+      "battleaxe",
+      "martial",
+      "melee",
+      _dd(1, 8, "slashing"),
+      ["versatile"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Flail extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "flail", "martial", "melee", _dd(1, 8, "bludgeoning"));
+    super(
+      g,
+      "flail",
+      "martial",
+      "melee",
+      _dd(1, 8, "bludgeoning"),
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Glaive extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "glaive", "martial", "melee", _dd(1, 10, "slashing"), [
-      "heavy",
-      "reach",
-      "two-handed",
-    ]);
+    super(
+      g,
+      "glaive",
+      "martial",
+      "melee",
+      _dd(1, 10, "slashing"),
+      ["heavy", "reach", "two-handed"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Greataxe extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "greataxe", "martial", "melee", _dd(1, 12, "slashing"), [
-      "heavy",
-      "two-handed",
-    ]);
-    this.iconUrl = greataxeUrl;
+    super(
+      g,
+      "greataxe",
+      "martial",
+      "melee",
+      _dd(1, 12, "slashing"),
+      ["heavy", "two-handed"],
+      greataxeUrl,
+    );
   }
 }
 
 export class Greatsword extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "greatsword", "martial", "melee", _dd(2, 6, "slashing"), [
-      "heavy",
-      "two-handed",
-    ]);
+    super(
+      g,
+      "greatsword",
+      "martial",
+      "melee",
+      _dd(2, 6, "slashing"),
+      ["heavy", "two-handed"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Halberd extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "halberd", "martial", "melee", _dd(1, 10, "slashing"), [
-      "heavy",
-      "reach",
-      "two-handed",
-    ]);
+    super(
+      g,
+      "halberd",
+      "martial",
+      "melee",
+      _dd(1, 10, "slashing"),
+      ["heavy", "reach", "two-handed"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Lance extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "lance", "martial", "melee", _dd(1, 12, "piercing"), ["reach"]);
-    // TODO [HANDS] You have disadvantage when you use a lance to attack a target within 5 feet of you. Also, a lance requires two hands to wield when you aren't mounted.
+    super(
+      g,
+      "lance",
+      "martial",
+      "melee",
+      _dd(1, 12, "piercing"),
+      ["reach"],
+      undefined, // TODO [ICON]
+    );
+    // You have disadvantage when you use a lance to attack a target within 5 feet of you.
+    g.events.on(
+      "BeforeAttack",
+      ({ detail: { weapon, who, target, diceType } }) => {
+        if (weapon === this && distance(g, who, target) <= 5)
+          diceType.add("disadvantage", this);
+      },
+    );
+
+    // TODO [HANDS] Also, a lance requires two hands to wield when you aren't mounted.
   }
 }
 
 export class Longsword extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "longsword", "martial", "melee", _dd(1, 8, "slashing"), [
-      "versatile",
-    ]);
-    this.iconUrl = longswordUrl;
+    super(
+      g,
+      "longsword",
+      "martial",
+      "melee",
+      _dd(1, 8, "slashing"),
+      ["versatile"],
+      longswordUrl,
+    );
   }
 }
 
 export class Maul extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "maul", "martial", "melee", _dd(2, 6, "bludgeoning"), [
-      "heavy",
-      "two-handed",
-    ]);
+    super(
+      g,
+      "maul",
+      "martial",
+      "melee",
+      _dd(2, 6, "bludgeoning"),
+      ["heavy", "two-handed"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Morningstar extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "morningstar", "martial", "melee", _dd(1, 8, "piercing"));
+    super(
+      g,
+      "morningstar",
+      "martial",
+      "melee",
+      _dd(1, 8, "piercing"),
+      undefined,
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Pike extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "pike", "martial", "melee", _dd(1, 10, "piercing"), [
-      "heavy",
-      "reach",
-      "two-handed",
-    ]);
+    super(
+      g,
+      "pike",
+      "martial",
+      "melee",
+      _dd(1, 10, "piercing"),
+      ["heavy", "reach", "two-handed"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Rapier extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "rapier", "martial", "melee", _dd(1, 8, "piercing"), ["finesse"]);
-    this.iconUrl = rapierUrl;
+    super(
+      g,
+      "rapier",
+      "martial",
+      "melee",
+      _dd(1, 8, "piercing"),
+      ["finesse"],
+      rapierUrl,
+    );
   }
 }
 
 export class Scimitar extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "scimitar", "martial", "melee", _dd(1, 6, "slashing"), [
-      "finesse",
-      "light",
-    ]);
+    super(
+      g,
+      "scimitar",
+      "martial",
+      "melee",
+      _dd(1, 6, "slashing"),
+      ["finesse", "light"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Shortsword extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "shortsword", "martial", "melee", _dd(1, 6, "piercing"), [
-      "finesse",
-      "light",
-    ]);
+    super(
+      g,
+      "shortsword",
+      "martial",
+      "melee",
+      _dd(1, 6, "piercing"),
+      ["finesse", "light"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
@@ -364,34 +492,53 @@ export class Trident extends AbstractWeapon {
       "melee",
       _dd(1, 6, "piercing"),
       ["thrown", "versatile"],
+      tridentUrl,
       20,
       60,
     );
     this.quantity = quantity;
-    this.iconUrl = tridentUrl;
   }
 }
 
 export class WarPick extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "war pick", "martial", "melee", _dd(1, 8, "piercing"));
+    super(
+      g,
+      "war pick",
+      "martial",
+      "melee",
+      _dd(1, 8, "piercing"),
+      undefined,
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Warhammer extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "warhammer", "martial", "melee", _dd(1, 8, "bludgeoning"), [
-      "versatile",
-    ]);
+    super(
+      g,
+      "warhammer",
+      "martial",
+      "melee",
+      _dd(1, 8, "bludgeoning"),
+      ["versatile"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
 export class Whip extends AbstractWeapon {
   constructor(g: Engine) {
-    super(g, "whip", "martial", "melee", _dd(1, 4, "slashing"), [
-      "finesse",
-      "reach",
-    ]);
+    super(
+      g,
+      "whip",
+      "martial",
+      "melee",
+      _dd(1, 4, "slashing"),
+      ["finesse", "reach"],
+      undefined, // TODO [ICON]
+    );
   }
 }
 
@@ -404,6 +551,7 @@ export class Blowgun extends AbstractWeapon {
       "ranged",
       { type: "flat", amount: 1, damageType: "piercing" },
       ["ammunition", "loading"],
+      undefined, // TODO [ICON]
       25,
       100,
     );
@@ -420,6 +568,7 @@ export class HandCrossbow extends AbstractWeapon {
       "ranged",
       _dd(1, 6, "piercing"),
       ["ammunition", "light", "loading"],
+      undefined, // TODO [ICON]
       30,
       120,
     );
@@ -436,6 +585,7 @@ export class HeavyCrossbow extends AbstractWeapon {
       "ranged",
       _dd(1, 10, "piercing"),
       ["ammunition", "heavy", "loading", "two-handed"],
+      undefined, // TODO [ICON]
       100,
       400,
     );
@@ -452,11 +602,11 @@ export class Longbow extends AbstractWeapon {
       "ranged",
       _dd(1, 8, "piercing"),
       ["ammunition", "heavy", "two-handed"],
+      longbowUrl,
       150,
       600,
     );
     this.ammunitionTag = "bow";
-    this.iconUrl = longbowUrl;
   }
 }
 
@@ -469,6 +619,7 @@ export class Net extends AbstractWeapon {
       "ranged",
       { type: "flat", amount: 0, damageType: "bludgeoning" },
       ["thrown"],
+      undefined, // TODO [ICON]
       5,
       15,
     );

@@ -1,4 +1,5 @@
 import AbstractAction from "../../actions/AbstractAction";
+import { Heal, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -9,6 +10,8 @@ import Combatant from "../../types/Combatant";
 import Resource from "../../types/Resource";
 import { PaladinIcon } from "./common";
 import iconUrl from "./icons/lay-on-hands.svg";
+
+const LayOnHandsIcon = makeIcon(iconUrl, Heal);
 
 const LayOnHandsResource = new LongRestResource("Lay on Hands", 5);
 
@@ -25,7 +28,7 @@ class LayOnHandsHealAction extends AbstractAction<HasCost & HasTarget> {
         cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
         target: new TargetResolver(g, actor.reach, true),
       },
-      { iconUrl, time: "action" },
+      { icon: LayOnHandsIcon, time: "action" },
     );
 
     this.subIcon = PaladinIcon;

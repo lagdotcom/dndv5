@@ -18,7 +18,6 @@ export interface BaseItem extends Source {
   rarity: ItemRarity;
   attunement?: boolean;
   magical?: boolean;
-  iconUrl?: string;
 }
 
 export const WeaponCategories = ["natural", "simple", "martial"] as const;

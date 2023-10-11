@@ -1,15 +1,23 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { makeIcon } from "../colours";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import AbstractAction from "./AbstractAction";
 import iconUrl from "./icons/dash.svg";
 
-export const DashEffect = new Effect("Dash", "turnEnd", (g) => {
-  g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-    if (who.hasEffect(DashEffect)) multiplier.add("double", DashEffect);
-  });
-});
+const DashIcon = makeIcon(iconUrl);
+
+export const DashEffect = new Effect(
+  "Dash",
+  "turnEnd",
+  (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.hasEffect(DashEffect)) multiplier.add("double", DashEffect);
+    });
+  },
+  { icon: DashIcon },
+);
 
 export default class DashAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
@@ -20,7 +28,7 @@ export default class DashAction extends AbstractAction {
       "implemented",
       {},
       {
-        iconUrl,
+        icon: DashIcon,
         time: "action",
         description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
 

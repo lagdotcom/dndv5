@@ -1,3 +1,4 @@
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -19,7 +20,7 @@ const getArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
 const IceKnife = scalingSpell<HasTarget>({
   status: "implemented",
   name: "Ice Knife",
-  icon: { url: iconUrl },
+  icon: makeIcon(iconUrl, DamageColours.cold),
   level: 1,
   school: "Conjuration",
   s: true,

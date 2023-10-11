@@ -13,8 +13,9 @@ export abstract class AbstractArmor
     public ac: number,
     public stealthDisadvantage = false,
     public minimumStrength = 0,
+    iconUrl?: string,
   ) {
-    super(g, "armor", name);
+    super(g, "armor", name, 0, iconUrl);
   }
 }
 

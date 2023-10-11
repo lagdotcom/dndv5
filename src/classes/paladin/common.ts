@@ -1,13 +1,9 @@
+import { ClassColours, makeIcon } from "../../colours";
 import { ShortRestResource } from "../../resources";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
-import { ActionIcon } from "../../types/Action";
-import { ClassColours } from "../common";
 import iconUrl from "./icon.svg";
 
-export const PaladinIcon: ActionIcon = {
-  url: iconUrl,
-  colour: ClassColours.Paladin,
-};
+export const PaladinIcon = makeIcon(iconUrl, ClassColours.Paladin);
 
 export const PaladinSpellcasting = new NormalSpellcasting(
   "Paladin",

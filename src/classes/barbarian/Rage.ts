@@ -1,5 +1,6 @@
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
+import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -11,6 +12,9 @@ import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
 import endRageIconUrl from "./icons/end-rage.svg";
 import rageIconUrl from "./icons/rage.svg";
+
+const RageIcon = makeIcon(rageIconUrl);
+const EndRageIcon = makeIcon(endRageIconUrl);
 
 function getRageCount(level: number) {
   if (level < 3) return 2;
@@ -37,7 +41,7 @@ class EndRageAction extends AbstractAction {
       "End Rage",
       "implemented",
       {},
-      { iconUrl: endRageIconUrl, time: "bonus action" },
+      { icon: EndRageIcon, time: "bonus action" },
     );
   }
 
@@ -158,7 +162,7 @@ export const RageEffect = new Effect(
       if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
     });
   },
-  { image: rageIconUrl },
+  { icon: RageIcon },
 );
 
 export class RageAction extends AbstractAction {
@@ -170,7 +174,7 @@ export class RageAction extends AbstractAction {
       "incomplete",
       {},
       {
-        iconUrl: rageIconUrl,
+        icon: RageIcon,
         time: "bonus action",
         resources: [[RageResource, 1]],
         description: `On your turn, you can enter a rage as a bonus action.

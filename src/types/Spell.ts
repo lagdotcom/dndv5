@@ -1,11 +1,12 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import { ActionConfig, ActionIcon } from "./Action";
+import { ActionConfig } from "./Action";
 import ActionTime from "./ActionTime";
 import Amount from "./Amount";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
+import Icon from "./Icon";
 import ImplementationStatus from "./ImplementationStatus";
 import Source from "./Source";
 import SpellcastingMethod from "./SpellcastingMethod";
@@ -47,7 +48,7 @@ export default interface Spell<T extends object = object> extends Source {
   s: boolean;
   m?: string; // TODO [MATERIALCOST]
   lists: SpellList[];
-  icon?: ActionIcon;
+  icon?: Icon;
   description?: string;
 
   apply(

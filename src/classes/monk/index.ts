@@ -68,9 +68,14 @@ class MonkWeaponWrapper extends AbstractWeapon {
       weapon.rangeCategory,
       _dd(1, size, weapon.damage.damageType),
       weapon.properties,
+      undefined,
       weapon.shortRange,
       weapon.longRange,
     );
+  }
+
+  get icon() {
+    return this.weapon.icon;
   }
 }
 

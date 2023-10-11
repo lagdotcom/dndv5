@@ -1,3 +1,4 @@
+import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -7,6 +8,8 @@ import { EffectConfig } from "../../types/EffectType";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 import iconUrl from "./icons/protection-evil-good.svg";
+
+const ProtectionEvilGoodIcon = makeIcon(iconUrl);
 
 const affectedTypes = ctSet(
   "aberration",
@@ -57,13 +60,13 @@ const ProtectionEffect = new Effect(
       },
     );
   },
-  { image: iconUrl },
+  { icon: ProtectionEvilGoodIcon },
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Protection from Evil and Good",
-  icon: { url: iconUrl },
+  icon: ProtectionEvilGoodIcon,
   level: 1,
   school: "Abjuration",
   concentration: true,
