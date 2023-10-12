@@ -751,7 +751,7 @@ export default class Engine {
 
   fire<T>(e: CustomEvent<T>) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((e as any).interrupt)
+    if ((e as any).detail.interrupt)
       throw new Error(
         `Use Engine.resolve() on an interruptible event type: ${e.type}`,
       );

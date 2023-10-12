@@ -35,7 +35,8 @@ class HissAction extends AbstractAction<HasTarget> {
     await super.apply({ target });
     const { g, actor } = this;
 
-    if (target.time.has("reaction")) {
+    // TODO make this into an actual reaction?
+    if (target.hasTime("reaction")) {
       const dc = getSaveDC(actor, "cha");
       const save = await g.savingThrow(dc, {
         who: target,
@@ -44,7 +45,7 @@ class HissAction extends AbstractAction<HasTarget> {
         tags: svSet("frightened", "forced movement"),
       });
       if (save.outcome === "fail") {
-        target.time.delete("reaction");
+        target.useTime("reaction");
         await g.applyBoundedMove(
           target,
           new BoundedMove(this, round(target.speed / 2, MapSquareSize), {

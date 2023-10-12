@@ -68,7 +68,6 @@ export default interface Combatant extends Source {
   resources: Map<string, number>;
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
-  time: Set<ActionTime>;
   conditions: Set<ConditionName>;
   attunements: Set<Item>;
   movedSoFar: number;
@@ -117,4 +116,7 @@ export default interface Combatant extends Source {
   removeEffect<T>(effect: EffectType<T>): Promise<boolean>;
   tickEffects(durationTimer: EffectDurationTimer): void;
   changeExhaustion(delta: number): Promise<number>;
+  hasTime(time: ActionTime): boolean;
+  useTime(time: ActionTime): void;
+  resetTime(): void;
 }

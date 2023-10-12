@@ -147,7 +147,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
     if (target) {
       if (target.side === this.actor.side) ec.add("must target enemy", this);
 
-      if (!target.time.has("reaction")) ec.add("no reaction left", this);
+      if (!target.hasTime("reaction")) ec.add("no reaction left", this);
 
       if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
     }

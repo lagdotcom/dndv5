@@ -136,7 +136,8 @@ const AntimagicProdigy = new SimpleFeature(
   `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
   (g, me) => {
     g.events.on("SpellCast", ({ detail: { who, interrupt, success } }) => {
-      if (me.time.has("reaction") && who.side !== me.side)
+      // TODO make this into an actual reaction
+      if (me.hasTime("reaction") && who.side !== me.side)
         interrupt.add(
           new YesNoChoice(
             me,
@@ -144,7 +145,7 @@ const AntimagicProdigy = new SimpleFeature(
             "Antimagic Prodigy",
             `Use ${me.name}'s reaction to attempt to counter the spell?`,
             async () => {
-              me.time.delete("reaction");
+              me.useTime("reaction");
 
               const save = await g.abilityCheck(15, {
                 who,
@@ -171,7 +172,8 @@ const HellishRebuke = new SimpleFeature(
     g.events.on(
       "CombatantDamaged",
       ({ detail: { who, attacker, interrupt } }) => {
-        if (who === me && me.time.has("reaction"))
+        // TODO make this into an actual reaction
+        if (who === me && me.hasTime("reaction"))
           interrupt.add(
             new YesNoChoice(
               me,
@@ -179,7 +181,7 @@ const HellishRebuke = new SimpleFeature(
               "Hellish Rebuke",
               `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
               async () => {
-                me.time.delete("reaction");
+                me.useTime("reaction");
 
                 const damage = await g.rollDamage(2, {
                   source: HellishRebuke,

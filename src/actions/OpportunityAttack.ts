@@ -27,7 +27,7 @@ export default class OpportunityAttack extends WeaponAttack {
   }
 
   async apply({ target }: HasTarget) {
-    this.actor.time.delete("reaction");
+    this.actor.useTime("reaction");
 
     await doStandardAttack(this.g, {
       ability: this.ability,

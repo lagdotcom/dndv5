@@ -72,7 +72,8 @@ const UncannyDodge = new SimpleFeature(
       "GatherDamage",
       ({ detail: { target, attack, interrupt, multiplier } }) => {
         // TODO [SIGHT] ... when an attacker that you can see ...
-        if (attack && target === me && me.time.has("reaction"))
+        // TODO make this into an actual reaction
+        if (attack && target === me && me.hasTime("reaction"))
           interrupt.add(
             new YesNoChoice(
               me,
@@ -80,7 +81,7 @@ const UncannyDodge = new SimpleFeature(
               "Uncanny Dodge",
               `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
               async () => {
-                me.time.delete("reaction");
+                me.useTime("reaction");
                 multiplier.add("half", UncannyDodge);
               },
             ),

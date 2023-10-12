@@ -97,7 +97,7 @@ export default abstract class AbstractAction<T extends object = Empty>
 
   check(config: Partial<T>, ec: ErrorCollector) {
     const time = this.getTime(config);
-    if (time && !this.actor.time.has(time)) ec.add(`No ${time} left`, this);
+    if (time && !this.actor.hasTime(time)) ec.add(`No ${time} left`, this);
 
     for (const [resource, cost] of this.getResources(config))
       if (!this.actor.hasResource(resource, cost))
@@ -109,7 +109,7 @@ export default abstract class AbstractAction<T extends object = Empty>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async apply(config: T) {
     const time = this.getTime(config);
-    if (time) this.actor.time.delete(time);
+    if (time) this.actor.useTime(time);
 
     for (const [resource, cost] of this.getResources(config))
       this.actor.spendResource(resource, cost);

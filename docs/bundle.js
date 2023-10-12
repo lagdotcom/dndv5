@@ -399,7 +399,7 @@
     }
     check(config, ec) {
       const time = this.getTime(config);
-      if (time && !this.actor.time.has(time))
+      if (time && !this.actor.hasTime(time))
         ec.add(`No ${time} left`, this);
       for (const [resource, cost] of this.getResources(config))
         if (!this.actor.hasResource(resource, cost))
@@ -410,7 +410,7 @@
     async apply(config) {
       const time = this.getTime(config);
       if (time)
-        this.actor.time.delete(time);
+        this.actor.useTime(time);
       for (const [resource, cost] of this.getResources(config))
         this.actor.spendResource(resource, cost);
     }
@@ -1015,7 +1015,7 @@
       return this.time;
     }
     check(config, ec) {
-      if (!this.actor.time.has(this.spell.time))
+      if (!this.actor.hasTime(this.spell.time))
         ec.add(`No ${this.spell.time} left`, this);
       for (const [resource, amount] of this.getResources(config))
         if (!this.actor.hasResource(resource, amount))
@@ -1024,7 +1024,7 @@
     }
     async apply(config) {
       const { actor, g, method, spell } = this;
-      actor.time.delete(spell.time);
+      actor.useTime(spell.time);
       for (const [resource, amount] of this.getResources(config))
         actor.spendResource(resource, amount);
       const sc = await g.resolve(
@@ -1591,6 +1591,18 @@
         this.exhaustion = value;
       return this.exhaustion;
     }
+    hasTime(time) {
+      return this.time.has(time);
+    }
+    useTime(time) {
+      this.time.delete(time);
+    }
+    resetTime() {
+      this.time.clear();
+      this.time.add("action");
+      this.time.add("bonus action");
+      this.time.add("reaction");
+    }
   };
 
   // src/resolvers/TargetResolver.ts
@@ -1990,7 +2002,7 @@
       return ec;
     }
     async apply({ target }) {
-      this.actor.time.delete("reaction");
+      this.actor.useTime("reaction");
       await doStandardAttack(this.g, {
         ability: this.ability,
         ammo: this.ammo,
@@ -2420,11 +2432,7 @@
     });
   });
   var TurnTimeRule = new DndRule("Turn Time", (g) => {
-    g.events.on("TurnStarted", ({ detail: { who } }) => {
-      who.time.add("action");
-      who.time.add("bonus action");
-      who.time.add("reaction");
-    });
+    g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
   });
   var WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
     g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
@@ -3263,7 +3271,7 @@
       return method.ac + e.detail.bonus.result;
     }
     fire(e) {
-      if (e.interrupt)
+      if (e.detail.interrupt)
         throw new Error(
           `Use Engine.resolve() on an interruptible event type: ${e.type}`
         );
@@ -3673,7 +3681,7 @@
     `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
     (g, me) => {
       g.events.on("SpellCast", ({ detail: { who, interrupt, success } }) => {
-        if (me.time.has("reaction") && who.side !== me.side)
+        if (me.hasTime("reaction") && who.side !== me.side)
           interrupt.add(
             new YesNoChoice(
               me,
@@ -3681,7 +3689,7 @@
               "Antimagic Prodigy",
               `Use ${me.name}'s reaction to attempt to counter the spell?`,
               async () => {
-                me.time.delete("reaction");
+                me.useTime("reaction");
                 const save = await g.abilityCheck(15, {
                   who,
                   attacker: me,
@@ -3704,7 +3712,7 @@
       g.events.on(
         "CombatantDamaged",
         ({ detail: { who, attacker, interrupt } }) => {
-          if (who === me && me.time.has("reaction"))
+          if (who === me && me.hasTime("reaction"))
             interrupt.add(
               new YesNoChoice(
                 me,
@@ -3712,7 +3720,7 @@
                 "Hellish Rebuke",
                 `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
                 async () => {
-                  me.time.delete("reaction");
+                  me.useTime("reaction");
                   const damage = await g.rollDamage(2, {
                     source: HellishRebuke,
                     size: 10,
@@ -4306,7 +4314,7 @@
       g.events.on(
         "BeforeAttack",
         ({ detail: { who, target, interrupt, diceType } }) => {
-          if (who !== me && target !== me && target.side === me.side && me.time.has("reaction") && me.shield && distance(g, me, target) <= 5)
+          if (who !== me && target !== me && target.side === me.side && me.hasTime("reaction") && me.shield && distance(g, me, target) <= 5)
             interrupt.add(
               new YesNoChoice(
                 me,
@@ -4314,7 +4322,7 @@
                 "Fighting Style: Protection",
                 `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
                 async () => {
-                  me.time.delete("reaction");
+                  me.hasTime("reaction");
                   diceType.add("disadvantage", FightingStyleProtection);
                 }
               )
@@ -4801,7 +4809,7 @@
       if (target) {
         if (target.side === this.actor.side)
           ec.add("must target enemy", this);
-        if (!target.time.has("reaction"))
+        if (!target.hasTime("reaction"))
           ec.add("no reaction left", this);
         if (!this.getValidAttacks(target).length)
           ec.add("no valid attack", this);
@@ -5142,7 +5150,7 @@
       const useReflex = ({
         detail: { who, interrupt, diceType }
       }) => {
-        if (who === me && me.time.has("reaction"))
+        if (who === me && me.hasTime("reaction"))
           interrupt.add(
             new YesNoChoice(
               me,
@@ -5150,7 +5158,7 @@
               "Survival Reflex",
               `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
               async () => {
-                me.time.delete("reaction");
+                me.useTime("reaction");
                 activated = true;
                 diceType.add("advantage", SurvivalReflex);
               }
@@ -5446,7 +5454,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       g.events.on(
         "GatherDamage",
         ({ detail: { target, attack, interrupt, multiplier } }) => {
-          if (attack && target === me && me.time.has("reaction"))
+          if (attack && target === me && me.hasTime("reaction"))
             interrupt.add(
               new YesNoChoice(
                 me,
@@ -5454,7 +5462,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
                 "Uncanny Dodge",
                 `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
                 async () => {
-                  me.time.delete("reaction");
+                  me.useTime("reaction");
                   multiplier.add("half", UncannyDodge);
                 }
               )
@@ -5546,7 +5554,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
     `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
     (g, me) => {
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-        if (who.side !== me.side && me.time.has("reaction") && distance(g, me, who) <= 5)
+        if (who.side !== me.side && me.hasTime("reaction") && distance(g, me, who) <= 5)
           interrupt.add(
             new YesNoChoice(
               me,
@@ -5554,7 +5562,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
               "Skirmisher",
               `Use ${me.name}'s reaction to move half their speed?`,
               async () => {
-                me.time.delete("reaction");
+                me.useTime("reaction");
                 return g.applyBoundedMove(
                   me,
                   new BoundedMove(
@@ -5799,7 +5807,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor } = this;
-      if (target.time.has("reaction")) {
+      if (target.hasTime("reaction")) {
         const dc = getSaveDC(actor, "cha");
         const save = await g.savingThrow(dc, {
           who: target,
@@ -5808,7 +5816,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
           tags: svSet("frightened", "forced movement")
         });
         if (save.outcome === "fail") {
-          target.time.delete("reaction");
+          target.useTime("reaction");
           await g.applyBoundedMove(
             target,
             new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
@@ -9083,7 +9091,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           );
       });
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-        if (isRaging(who)) {
+        if (who.hasEffect(RageEffect)) {
           if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
             interrupt.add(
               new EvaluateLater(who, RageEffect, async () => {

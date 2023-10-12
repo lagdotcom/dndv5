@@ -18,6 +18,7 @@ import { spellImplementationWarning } from "./spells/common";
 import AbilityName from "./types/AbilityName";
 import ACMethod from "./types/ACMethod";
 import Action from "./types/Action";
+import ActionTime from "./types/ActionTime";
 import Combatant from "./types/Combatant";
 import CombatantScore from "./types/CombatantScore";
 import Concentration from "./types/Concentration";
@@ -108,7 +109,7 @@ export default abstract class AbstractCombatant implements Combatant {
   features: Map<string, Feature>;
   classLevels: Map<PCClassName, number>;
   concentratingOn: Set<Concentration>;
-  time: Set<"action" | "bonus action" | "reaction">;
+  time: Set<ActionTime>;
   attunements: Set<Item>;
   movedSoFar: number;
   attacksSoFar: Action[];
@@ -557,5 +558,20 @@ export default abstract class AbstractCombatant implements Combatant {
 
     if (e.detail.success.result !== "fail") this.exhaustion = value;
     return this.exhaustion;
+  }
+
+  hasTime(time: ActionTime) {
+    return this.time.has(time);
+  }
+
+  useTime(time: ActionTime): void {
+    this.time.delete(time);
+  }
+
+  resetTime(): void {
+    this.time.clear();
+    this.time.add("action");
+    this.time.add("bonus action");
+    this.time.add("reaction");
   }
 }

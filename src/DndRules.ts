@@ -342,11 +342,7 @@ export const RestrainedRule = new DndRule("Restrained", (g) => {
 });
 
 export const TurnTimeRule = new DndRule("Turn Time", (g) => {
-  g.events.on("TurnStarted", ({ detail: { who } }) => {
-    who.time.add("action");
-    who.time.add("bonus action");
-    who.time.add("reaction");
-  });
+  g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
 });
 
 export const WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {

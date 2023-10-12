@@ -11,11 +11,12 @@ export const FightingStyleProtection = new SimpleFeature(
       ({ detail: { who, target, interrupt, diceType } }) => {
         // TODO [SIGHT] creature you can see
 
+        // TODO make this into an actual reaction
         if (
           who !== me &&
           target !== me &&
           target.side === me.side &&
-          me.time.has("reaction") &&
+          me.hasTime("reaction") &&
           me.shield &&
           distance(g, me, target) <= 5
         )
@@ -26,7 +27,7 @@ export const FightingStyleProtection = new SimpleFeature(
               "Fighting Style: Protection",
               `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
               async () => {
-                me.time.delete("reaction");
+                me.hasTime("reaction");
                 diceType.add("disadvantage", FightingStyleProtection);
               },
             ),

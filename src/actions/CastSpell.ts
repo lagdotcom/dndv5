@@ -75,7 +75,7 @@ export default class CastSpell<T extends object> implements Action<T> {
   }
 
   check(config: Partial<T>, ec: ErrorCollector): ErrorCollector {
-    if (!this.actor.time.has(this.spell.time))
+    if (!this.actor.hasTime(this.spell.time))
       ec.add(`No ${this.spell.time} left`, this);
 
     for (const [resource, amount] of this.getResources(config))
@@ -87,7 +87,7 @@ export default class CastSpell<T extends object> implements Action<T> {
 
   async apply(config: T) {
     const { actor, g, method, spell } = this;
-    actor.time.delete(spell.time);
+    actor.useTime(spell.time);
 
     for (const [resource, amount] of this.getResources(config))
       actor.spendResource(resource, amount);

@@ -33,7 +33,7 @@ function getRageBonus(level: number) {
 
 export const RageResource = new LongRestResource("Rage", 2);
 
-class EndRageAction extends AbstractAction {
+export class EndRageAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -141,7 +141,7 @@ export const RageEffect = new Effect(
         );
     });
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-      if (isRaging(who)) {
+      if (who.hasEffect(RageEffect)) {
         if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
           interrupt.add(
             new EvaluateLater(who, RageEffect, async () => {

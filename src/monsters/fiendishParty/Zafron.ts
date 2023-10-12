@@ -167,7 +167,8 @@ const SurvivalReflex = new SimpleFeature(
     const useReflex: EventListener<"BeforeCheck" | "BeforeSave"> = ({
       detail: { who, interrupt, diceType },
     }) => {
-      if (who === me && me.time.has("reaction"))
+      // TODO make this into an actual reaction
+      if (who === me && me.hasTime("reaction"))
         interrupt.add(
           new YesNoChoice(
             me,
@@ -175,7 +176,7 @@ const SurvivalReflex = new SimpleFeature(
             "Survival Reflex",
             `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
             async () => {
-              me.time.delete("reaction");
+              me.useTime("reaction");
               activated = true;
               diceType.add("advantage", SurvivalReflex);
             },
