@@ -1,9 +1,10 @@
+import iconUrl from "@img/act/dodge.svg";
+
 import { makeIcon } from "../colours";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import AbstractAction from "./AbstractAction";
-import iconUrl from "./icons/dodge.svg";
 
 const DodgeIcon = makeIcon(iconUrl);
 

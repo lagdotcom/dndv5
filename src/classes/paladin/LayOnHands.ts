@@ -1,3 +1,5 @@
+import iconUrl from "@img/act/lay-on-hands.svg";
+
 import AbstractAction from "../../actions/AbstractAction";
 import { Heal, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
@@ -9,7 +11,6 @@ import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Resource from "../../types/Resource";
 import { PaladinIcon } from "./common";
-import iconUrl from "./icons/lay-on-hands.svg";
 
 const LayOnHandsIcon = makeIcon(iconUrl, Heal);
 

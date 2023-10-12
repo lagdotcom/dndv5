@@ -1,3 +1,5 @@
+import hissIconUrl from "@img/act/hiss.svg";
+
 import AbstractAction from "../actions/AbstractAction";
 import { makeIcon } from "../colours";
 import { HasTarget } from "../configs";
@@ -10,7 +12,6 @@ import Combatant from "../types/Combatant";
 import { svSet } from "../types/SaveTag";
 import { getSaveDC } from "../utils/dnd";
 import { round } from "../utils/numbers";
-import hissIconUrl from "./icons/hiss.svg";
 import SimpleFeature from "./SimpleFeature";
 
 const HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);

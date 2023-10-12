@@ -1,7 +1,8 @@
+import iconUrl from "@img/class/paladin.svg";
+
 import { ClassColours, makeIcon } from "../../colours";
 import { ShortRestResource } from "../../resources";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
-import iconUrl from "./icon.svg";
 
 export const PaladinIcon = makeIcon(iconUrl, ClassColours.Paladin);
 

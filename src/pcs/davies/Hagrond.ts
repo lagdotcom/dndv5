@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/hagrond.png";
+
 import Barbarian, { ASI4, PrimalKnowledge } from "../../classes/barbarian";
 import Berserker from "../../classes/barbarian/Berserker";
 import darkSun from "../../enchantments/darkSun";
@@ -8,7 +10,6 @@ import { Dagger, Handaxe, Spear, Trident } from "../../items/weapons";
 import PC from "../../PC";
 import { StoutHalfling } from "../../races/Halfling";
 import { enchant } from "../../utils/items";
-import tokenUrl from "./Hagrond_token.png";
 
 export default class Hagrond extends PC {
   constructor(g: Engine) {

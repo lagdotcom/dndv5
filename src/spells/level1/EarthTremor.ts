@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/earth-tremor.svg";
+
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
@@ -7,7 +9,6 @@ import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/earth-tremor.svg";
 
 const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
   type: "within",

@@ -1,10 +1,11 @@
+import iconUrl from "@img/spl/magic-missile.svg";
+
 import { DamageColours, makeIcon } from "../../colours";
 import { HasAllocations } from "../../configs";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import DamageAmount from "../../types/DamageAmount";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/magic-missile.svg";
 
 const getDamage = (slot: number): DamageAmount[] => [
   _dd(slot + 2, 4, "force"),

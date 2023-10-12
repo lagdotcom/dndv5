@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/bless.svg";
+
 import BonusCollector from "../../collectors/BonusCollector";
 import { makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
@@ -7,7 +9,6 @@ import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/bless.svg";
 
 const BlessIcon = makeIcon(iconUrl);
 

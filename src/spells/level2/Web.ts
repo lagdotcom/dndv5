@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/web.svg";
+
 import AbstractAction from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { makeIcon } from "../../colours";
@@ -16,7 +18,6 @@ import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/web.svg";
 
 const WebIcon = makeIcon(iconUrl);
 

@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/magic-weapon.svg";
+
 import { makeIcon } from "../../colours";
 import { getWeaponPlusHandler } from "../../enchantments/plus";
 import Engine from "../../Engine";
@@ -7,7 +9,6 @@ import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/magic-weapon.svg";
 
 function slotToBonus(slot: number) {
   if (slot >= 6) return 3;

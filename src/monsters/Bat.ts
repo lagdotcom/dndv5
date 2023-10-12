@@ -1,7 +1,8 @@
+import tokenUrl from "@img/tok/bat.png";
+
 import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
-import tokenUrl from "./Bat_token.png";
 import { KeenHearing } from "./common";
 
 class Bite extends AbstractWeapon {

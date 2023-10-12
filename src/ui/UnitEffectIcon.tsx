@@ -1,4 +1,5 @@
-import unknownIconUrl from "./icons/missing-icon.svg";
+import unknownIconUrl from "@img/ui/missing-icon.svg";
+
 import SVGIcon from "./SVGIcon";
 import { UnitEffect } from "./utils/types";
 

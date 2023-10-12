@@ -1,3 +1,5 @@
+import frenzyUrl from "@img/act/frenzy.svg";
+
 import AbstractAction from "../../../actions/AbstractAction";
 import { doStandardAttack } from "../../../actions/WeaponAttack";
 import { makeIcon } from "../../../colours";
@@ -14,7 +16,6 @@ import { WeaponItem } from "../../../types/Item";
 import { getWeaponAbility } from "../../../utils/items";
 import { minutes } from "../../../utils/time";
 import { RageAction, RageEffect } from "../Rage";
-import frenzyUrl from "./icons/frenzy.svg";
 
 const FrenzyIcon = makeIcon(frenzyUrl);
 

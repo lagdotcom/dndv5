@@ -1,10 +1,11 @@
+import tokenUrl from "@img/tok/pc/tethilssethanar.png";
+
 import Monk from "../../classes/monk";
 import Engine from "../../Engine";
 import { SlingBullet } from "../../items/ammunition";
 import { Dart, Sickle, Sling } from "../../items/weapons";
 import PC from "../../PC";
 import Triton from "../../races/Triton";
-import tokenUrl from "./Tethilssethanar_token.png";
 
 export default class Tethilssethanar extends PC {
   constructor(g: Engine) {

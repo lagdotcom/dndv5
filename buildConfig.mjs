@@ -32,6 +32,7 @@ export default function getBuildConfig(options = {}) {
       ".png": "file",
       ".svg": "file",
     },
+    alias: { "@img": "./src/img" },
     ...options,
   };
 }

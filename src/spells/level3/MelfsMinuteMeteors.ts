@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/melfs-minute-meteors.svg";
+
 import AbstractAction from "../../actions/AbstractAction";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoints } from "../../configs";
@@ -11,7 +13,6 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/melfs-minute-meteors.svg";
 
 const MelfsMinuteMeteorsIcon = makeIcon(iconUrl, DamageColours.fire);
 

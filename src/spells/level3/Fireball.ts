@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/fireball.svg";
+
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
@@ -6,7 +8,6 @@ import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/fireball.svg";
 
 const getArea = (centre: Point): SpecifiedSphere => ({
   type: "sphere",

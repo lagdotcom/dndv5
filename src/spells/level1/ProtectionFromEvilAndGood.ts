@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/protection-evil-good.svg";
+
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
@@ -7,7 +9,6 @@ import { ctSet } from "../../types/CreatureType";
 import { EffectConfig } from "../../types/EffectType";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/protection-evil-good.svg";
 
 const ProtectionEvilGoodIcon = makeIcon(iconUrl);
 

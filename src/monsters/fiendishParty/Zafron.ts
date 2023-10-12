@@ -1,3 +1,6 @@
+import bullRushIconUrl from "@img/act/bull-rush.svg";
+import tokenUrl from "@img/tok/boss/zafron.png";
+
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
@@ -22,8 +25,6 @@ import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
-import bullRushIconUrl from "./icons/bull-rush.svg";
-import tokenUrl from "./Zafron_token.png";
 
 const LustForBattle = new ConfiguredFeature<WeaponItem>(
   "Lust for Battle",

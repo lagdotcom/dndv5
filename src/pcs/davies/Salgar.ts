@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/salgar.png";
+
 import Druid, { ASI4 } from "../../classes/druid";
 import Land, { BonusCantrip, CircleSpells } from "../../classes/druid/Land";
 import WildShape from "../../classes/druid/WildShape";
@@ -20,7 +22,6 @@ import Moonbeam from "../../spells/level2/Moonbeam";
 import EruptingEarth from "../../spells/level3/EruptingEarth";
 import GuardianOfNature from "../../spells/level4/GuardianOfNature";
 import { enchant } from "../../utils/items";
-import tokenUrl from "./Salgar_token.png";
 
 export default class Salgar extends PC {
   constructor(g: Engine) {

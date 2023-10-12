@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/lightning-bolt.svg";
+
 import { aimLine } from "../../aim";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
@@ -8,7 +10,6 @@ import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/lightning-bolt.svg";
 
 function getArea(g: Engine, actor: Combatant, point: Point) {
   const position = g.getState(actor).position;

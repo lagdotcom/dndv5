@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/ray-of-frost.svg";
+
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
@@ -5,7 +7,6 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
-import iconUrl from "./icons/ray-of-frost.svg";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
 const RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {

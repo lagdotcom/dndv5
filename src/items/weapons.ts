@@ -1,3 +1,14 @@
+import clubUrl from "@img/eq/club.svg";
+import greataxeUrl from "@img/eq/greataxe.svg";
+import lightCrossbowUrl from "@img/eq/light-crossbow.svg";
+import longbowUrl from "@img/eq/longbow.svg";
+import longswordUrl from "@img/eq/longsword.svg";
+import maceUrl from "@img/eq/mace.svg";
+import quarterstaffUrl from "@img/eq/quarterstaff.svg";
+import rapierUrl from "@img/eq/rapier.svg";
+import spearUrl from "@img/eq/spear.svg";
+import tridentUrl from "@img/eq/trident.svg";
+
 import Engine from "../Engine";
 import AbilityName from "../types/AbilityName";
 import DamageAmount from "../types/DamageAmount";
@@ -11,16 +22,6 @@ import {
 import { _dd } from "../utils/dice";
 import { distance } from "../utils/units";
 import AbstractItem from "./AbstractItem";
-import clubUrl from "./icons/club.svg";
-import greataxeUrl from "./icons/greataxe.svg";
-import lightCrossbowUrl from "./icons/light-crossbow.svg";
-import longbowUrl from "./icons/longbow.svg";
-import longswordUrl from "./icons/longsword.svg";
-import maceUrl from "./icons/mace.svg";
-import quarterstaffUrl from "./icons/quarterstaff.svg";
-import rapierUrl from "./icons/rapier.svg";
-import spearUrl from "./icons/spear.svg";
-import tridentUrl from "./icons/trident.svg";
 
 export abstract class AbstractWeapon
   extends AbstractItem<"weapon">

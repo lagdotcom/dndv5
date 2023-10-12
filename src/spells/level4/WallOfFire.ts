@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/fire-wall.svg";
+
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
@@ -5,7 +7,6 @@ import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import PointResolver from "../../resolvers/PointResolver";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/fire-wall.svg";
 
 type Shape = "line" | "ring";
 

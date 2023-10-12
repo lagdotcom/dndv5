@@ -1,10 +1,11 @@
+import tokenUrl from "@img/tok/thug.png";
+
 import Engine from "../Engine";
 import { CrossbowBolt } from "../items/ammunition";
 import { LeatherArmor } from "../items/armor";
 import { HeavyCrossbow, Mace } from "../items/weapons";
 import Monster from "../Monster";
 import { isMeleeAttackAction, makeMultiattack, PackTactics } from "./common";
-import tokenUrl from "./Thug_token.png";
 
 export default class Thug extends Monster {
   constructor(g: Engine) {

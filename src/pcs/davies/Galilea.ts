@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/galilea.png";
+
 import Paladin, { ASI4, PaladinFightingStyle } from "../../classes/paladin";
 import Devotion from "../../classes/paladin/Devotion";
 import Engine from "../../Engine";
@@ -18,7 +20,6 @@ import DivineFavor from "../../spells/level1/DivineFavor";
 import ShieldOfFaith from "../../spells/level1/ShieldOfFaith";
 import Aid from "../../spells/level2/Aid";
 import MagicWeapon from "../../spells/level2/MagicWeapon";
-import tokenUrl from "./Galilea_token.png";
 
 export default class Galilea extends PC {
   constructor(g: Engine) {

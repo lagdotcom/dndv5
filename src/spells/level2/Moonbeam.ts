@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/moonbeam.svg";
+
 import AbstractAction from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
@@ -15,7 +17,6 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/moonbeam.svg";
 
 const MoonbeamIcon = makeIcon(iconUrl, DamageColours.radiant);
 

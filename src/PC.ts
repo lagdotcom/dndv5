@@ -1,6 +1,7 @@
+import punchUrl from "@img/eq/punch.svg";
+
 import AbstractCombatant from "./AbstractCombatant";
 import Engine from "./Engine";
-import punchUrl from "./items/icons/punch.svg";
 import { AbstractWeapon } from "./items/weapons";
 import PCClass from "./types/PCClass";
 import PCClassName from "./types/PCClassName";

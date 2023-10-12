@@ -1,10 +1,11 @@
+import iconUrl from "@img/spl/aid.svg";
+
 import { Heal, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/aid.svg";
 
 const AidIcon = makeIcon(iconUrl, Heal);
 

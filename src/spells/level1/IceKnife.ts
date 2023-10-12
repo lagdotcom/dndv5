@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/ice-knife.svg";
+
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
@@ -8,7 +10,6 @@ import { SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/ice-knife.svg";
 
 const getArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
   type: "within",

@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/boss/kay.png";
+
 import Evasion from "../../classes/rogue/Evasion";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
@@ -9,7 +11,6 @@ import { Longbow, Spear } from "../../items/weapons";
 import Monster from "../../Monster";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { makeMultiattack } from "../common";
-import tokenUrl from "./Kay_token.png";
 
 const hiddenName = "Shrouded Figure";
 const realName = "Kay of the Abyss";

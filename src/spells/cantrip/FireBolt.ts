@@ -1,10 +1,11 @@
+import iconUrl from "@img/spl/fire-bolt.svg";
+
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
-import iconUrl from "./icons/fire-bolt.svg";
 
 const FireBolt = simpleSpell<HasTarget>({
   status: "implemented",

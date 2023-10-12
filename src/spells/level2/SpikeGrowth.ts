@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/spike-growth.svg";
+
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
@@ -8,7 +10,6 @@ import { resolveArea } from "../../utils/areas";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/spike-growth.svg";
 
 const SpikeGrowth = simpleSpell<HasPoint>({
   status: "incomplete",

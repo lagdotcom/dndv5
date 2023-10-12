@@ -1,7 +1,8 @@
+import tokenUrl from "@img/tok/badger.png";
+
 import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
-import tokenUrl from "./Badger_token.png";
 import { KeenSmell } from "./common";
 
 class Bite extends AbstractWeapon {

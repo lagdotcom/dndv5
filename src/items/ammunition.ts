@@ -1,8 +1,9 @@
+import arrowUrl from "@img/eq/arrow.svg";
+import boltUrl from "@img/eq/bolt.svg";
+
 import Engine from "../Engine";
 import { AmmoItem, AmmunitionTag } from "../types/Item";
 import AbstractItem from "./AbstractItem";
-import arrowUrl from "./icons/arrow.svg";
-import boltUrl from "./icons/bolt.svg";
 
 export class AbstractAmmo extends AbstractItem<"ammo"> implements AmmoItem {
   constructor(

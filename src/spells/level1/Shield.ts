@@ -1,6 +1,7 @@
+import iconUrl from "@img/spl/shield.svg";
+
 import { makeIcon } from "../../colours";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/shield.svg";
 
 const Shield = simpleSpell({
   name: "Shield",

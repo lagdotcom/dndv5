@@ -1,3 +1,6 @@
+import endRageIconUrl from "@img/act/end-rage.svg";
+import rageIconUrl from "@img/act/rage.svg";
+
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
@@ -10,8 +13,6 @@ import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
-import endRageIconUrl from "./icons/end-rage.svg";
-import rageIconUrl from "./icons/rage.svg";
 
 const RageIcon = makeIcon(rageIconUrl);
 const EndRageIcon = makeIcon(endRageIconUrl);

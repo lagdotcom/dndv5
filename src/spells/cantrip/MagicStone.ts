@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/magic-stone.svg";
+
 import AbstractAttackAction from "../../actions/AbstractAttackAction";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
@@ -10,7 +12,6 @@ import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/magic-stone.svg";
 
 const MagicStoneIcon = makeIcon(iconUrl, DamageColours.bludgeoning);
 

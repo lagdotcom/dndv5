@@ -1,3 +1,6 @@
+import breathUrl from "@img/act/breath.svg";
+import specialBreathUrl from "@img/act/special-breath.svg";
+
 import AbstractAttackAction from "../actions/AbstractAttackAction";
 import { aimCone } from "../aim";
 import { DamageColours, makeIcon } from "../colours";
@@ -19,8 +22,6 @@ import { svSet } from "../types/SaveTag";
 import { _dd } from "../utils/dice";
 import { getSaveDC } from "../utils/dnd";
 import { resistanceFeature } from "./common";
-import breathUrl from "./icons/breath.svg";
-import specialBreathUrl from "./icons/special-breath.svg";
 
 const MetallicDragonborn: PCRace = {
   name: "Dragonborn (Metallic)",

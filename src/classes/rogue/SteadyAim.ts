@@ -1,3 +1,5 @@
+import iconUrl from "@img/act/steady-aim.svg";
+
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
@@ -7,7 +9,6 @@ import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Combatant from "../../types/Combatant";
 import { RogueIcon } from "./common";
-import iconUrl from "./icons/steady-aim.svg";
 
 const SteadyAimIcon = makeIcon(iconUrl);
 

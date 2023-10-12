@@ -1,8 +1,9 @@
+import iconUrl from "@img/spl/levitate.svg";
+
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/levitate.svg";
 
 const Levitate = simpleSpell<HasTarget>({
   name: "Levitate",

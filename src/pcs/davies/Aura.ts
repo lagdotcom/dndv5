@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/aura.png";
+
 import Rogue, { ASI4, Expertise } from "../../classes/rogue";
 import Scout from "../../classes/rogue/Scout";
 import { weaponPlus1 } from "../../enchantments/plus";
@@ -12,7 +14,6 @@ import { BracersOfTheArbalest } from "../../items/wondrous";
 import PC from "../../PC";
 import { AirGenasi } from "../../races/Genasi_EEPC";
 import { enchant } from "../../utils/items";
-import tokenUrl from "./Aura_token.png";
 
 export default class Aura extends PC {
   constructor(g: Engine) {

@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/boss/yulash.png";
+
 import AbstractAction from "../../actions/AbstractAction";
 import { doStandardAttack } from "../../actions/WeaponAttack";
 import ErrorCollector from "../../collectors/ErrorCollector";
@@ -20,7 +22,6 @@ import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { getWeaponAbility } from "../../utils/items";
 import { getDistanceBetween } from "../../utils/units";
-import tokenUrl from "./Yulash_token.png";
 
 function getMeleeAttackOptions(
   g: Engine,

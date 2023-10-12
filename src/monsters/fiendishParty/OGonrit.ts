@@ -1,3 +1,6 @@
+import bashUrl from "@img/act/shield-bash.svg";
+import tokenUrl from "@img/tok/boss/o-gonrit.png";
+
 import AbstractAction from "../../actions/AbstractAction";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
@@ -20,8 +23,6 @@ import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { distance } from "../../utils/units";
-import bashUrl from "./icons/shield-bash.svg";
-import tokenUrl from "./OGonrit_token.png";
 
 const FiendishMantle = new SimpleFeature(
   "Fiendish Mantle",

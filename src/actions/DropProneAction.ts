@@ -1,3 +1,5 @@
+import iconUrl from "@img/act/prone.svg";
+
 import ErrorCollector from "../collectors/ErrorCollector";
 import { makeIcon } from "../colours";
 import { Prone } from "../effects";
@@ -5,7 +7,6 @@ import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import { coSet } from "../types/ConditionName";
 import AbstractAction from "./AbstractAction";
-import iconUrl from "./icons/prone.svg";
 
 const DropProneIcon = makeIcon(iconUrl);
 

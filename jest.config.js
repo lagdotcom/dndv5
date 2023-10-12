@@ -10,4 +10,7 @@ module.exports = {
     ".+\\.(png|svg)$": "jest-transform-stub",
     "^.+\\.tsx?$": "ts-jest",
   },
+  moduleNameMapper: {
+    "@img/(.*)": "<rootDir>/src/img/$1",
+  },
 };

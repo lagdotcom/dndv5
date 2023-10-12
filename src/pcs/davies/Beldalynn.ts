@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/beldalynn.png";
+
 import Wizard, { ASI4 } from "../../classes/wizard";
 import Evocation from "../../classes/wizard/Evocation";
 import { chaoticBurst } from "../../enchantments/weapon";
@@ -20,7 +22,6 @@ import IntellectFortress from "../../spells/level3/IntellectFortress";
 import MelfsMinuteMeteors from "../../spells/level3/MelfsMinuteMeteors";
 import WallOfFire from "../../spells/level4/WallOfFire";
 import { enchant } from "../../utils/items";
-import tokenUrl from "./Beldalynn_token.png";
 
 export default class Beldalynn extends PC {
   constructor(g: Engine) {

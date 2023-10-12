@@ -1,3 +1,5 @@
+import iconUrl from "@img/act/stand.svg";
+
 import ErrorCollector from "../collectors/ErrorCollector";
 import { makeIcon } from "../colours";
 import { Prone } from "../effects";
@@ -6,7 +8,6 @@ import { MapSquareSize } from "../MapSquare";
 import Combatant from "../types/Combatant";
 import { round } from "../utils/numbers";
 import AbstractAction from "./AbstractAction";
-import iconUrl from "./icons/stand.svg";
 
 const StandUpIcon = makeIcon(iconUrl);
 

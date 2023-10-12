@@ -278,6 +278,9 @@
     }
   };
 
+  // src/img/act/dash.svg
+  var dash_default = "./dash-CNRMKC55.svg";
+
   // src/colours.ts
   var ClassColours = {
     Barbarian: "#e7623e",
@@ -415,9 +418,6 @@
         this.actor.spendResource(resource, cost);
     }
   };
-
-  // src/actions/icons/dash.svg
-  var dash_default = "./dash-CNRMKC55.svg";
 
   // src/actions/DashAction.ts
   var DashIcon = makeIcon(dash_default);
@@ -1683,11 +1683,11 @@
     return { average, list };
   }
 
+  // src/img/act/prone.svg
+  var prone_default = "./prone-ZBMZRVQM.svg";
+
   // src/types/ConditionName.ts
   var coSet = (...items) => new Set(items);
-
-  // src/actions/icons/prone.svg
-  var prone_default = "./prone-ZBMZRVQM.svg";
 
   // src/actions/DropProneAction.ts
   var DropProneIcon = makeIcon(prone_default);
@@ -1709,7 +1709,7 @@
     }
   };
 
-  // src/actions/icons/stand.svg
+  // src/img/act/stand.svg
   var stand_default = "./stand-L4X6POXJ.svg";
 
   // src/actions/StandUpAction.ts
@@ -2041,7 +2041,7 @@
     }
   };
 
-  // src/actions/icons/dodge.svg
+  // src/img/act/dodge.svg
   var dodge_default = "./dodge-NSUUDBS5.svg";
 
   // src/actions/DodgeAction.ts
@@ -3366,6 +3366,12 @@
     }
   };
 
+  // src/img/act/eldritch-burst.svg
+  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
+
+  // src/img/tok/boss/birnotec.png
+  var birnotec_default = "./birnotec-JGKE3FD4.png";
+
   // src/features/SimpleFeature.ts
   var SimpleFeature = class {
     constructor(name, text, setup) {
@@ -3569,12 +3575,6 @@
     return Math.ceil(getDiceAverage(1, hitDieSize));
   }
 
-  // src/monsters/fiendishParty/Birnotec_token.png
-  var Birnotec_token_default = "./Birnotec_token-JGKE3FD4.png";
-
-  // src/monsters/fiendishParty/icons/eldritch-burst.svg
-  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
-
   // src/monsters/fiendishParty/Birnotec.ts
   function getArea(g, target) {
     return {
@@ -3750,7 +3750,7 @@
   );
   var Birnotec = class extends Monster {
     constructor(g) {
-      super(g, "Birnotec", 5, "humanoid", "medium", Birnotec_token_default, 35);
+      super(g, "Birnotec", 5, "humanoid", "medium", birnotec_default, 35);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(6, 15, 8, 12, 13, 20);
@@ -3769,6 +3769,9 @@
       this.addFeature(HellishRebuke);
     }
   };
+
+  // src/img/tok/boss/kay.png
+  var kay_default = "./kay-LUSXSSD5.png";
 
   // src/classes/rogue/Evasion.ts
   var Evasion = new SimpleFeature(
@@ -3790,6 +3793,12 @@
   );
   var Evasion_default = Evasion;
 
+  // src/img/eq/arrow.svg
+  var arrow_default = "./arrow-ZFSXM2J5.svg";
+
+  // src/img/eq/bolt.svg
+  var bolt_default = "./bolt-RV5OQWXW.svg";
+
   // src/items/AbstractItem.ts
   var AbstractItem = class {
     constructor(g, itemType, name, hands = 0, iconUrl) {
@@ -3810,12 +3819,6 @@
       e.setup(this.g, this);
     }
   };
-
-  // src/items/icons/arrow.svg
-  var arrow_default = "./arrow-ZFSXM2J5.svg";
-
-  // src/items/icons/bolt.svg
-  var bolt_default = "./bolt-RV5OQWXW.svg";
 
   // src/items/ammunition.ts
   var AbstractAmmo = class extends AbstractItem {
@@ -3878,31 +3881,31 @@
     }
   };
 
-  // src/items/icons/greataxe.svg
+  // src/img/eq/greataxe.svg
   var greataxe_default = "./greataxe-D7DZHVBT.svg";
 
-  // src/items/icons/light-crossbow.svg
+  // src/img/eq/light-crossbow.svg
   var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
 
-  // src/items/icons/longbow.svg
+  // src/img/eq/longbow.svg
   var longbow_default = "./longbow-2S2OQHMY.svg";
 
-  // src/items/icons/longsword.svg
+  // src/img/eq/longsword.svg
   var longsword_default = "./longsword-B4PZKYLG.svg";
 
-  // src/items/icons/mace.svg
+  // src/img/eq/mace.svg
   var mace_default = "./mace-NNUCEVKZ.svg";
 
-  // src/items/icons/quarterstaff.svg
+  // src/img/eq/quarterstaff.svg
   var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
 
-  // src/items/icons/rapier.svg
+  // src/img/eq/rapier.svg
   var rapier_default = "./rapier-ZROPHPFJ.svg";
 
-  // src/items/icons/spear.svg
+  // src/img/eq/spear.svg
   var spear_default = "./spear-JE22DTMJ.svg";
 
-  // src/items/icons/trident.svg
+  // src/img/eq/trident.svg
   var trident_default = "./trident-XL6WP2YY.svg";
 
   // src/items/weapons.ts
@@ -4148,9 +4151,6 @@
     });
   }
 
-  // src/monsters/fiendishParty/Kay_token.png
-  var Kay_token_default = "./Kay_token-LUSXSSD5.png";
-
   // src/monsters/fiendishParty/Kay.ts
   var hiddenName = "Shrouded Figure";
   var realName = "Kay of the Abyss";
@@ -4233,7 +4233,7 @@
   );
   var Kay = class extends Monster {
     constructor(g) {
-      super(g, hiddenName, 6, "humanoid", "medium", Kay_token_default, 75);
+      super(g, hiddenName, 6, "humanoid", "medium", kay_default, 75);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(14, 18, 16, 10, 8, 14);
@@ -4262,6 +4262,12 @@
       this.inventory.add(new Arrow(g, Infinity));
     }
   };
+
+  // src/img/act/shield-bash.svg
+  var shield_bash_default = "./shield-bash-MWF4OEPW.svg";
+
+  // src/img/tok/boss/o-gonrit.png
+  var o_gonrit_default = "./o-gonrit-C5AF3HHR.png";
 
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
@@ -4460,12 +4466,6 @@
   });
   var MassHealingWord_default = MassHealingWord;
 
-  // src/monsters/fiendishParty/icons/shield-bash.svg
-  var shield_bash_default = "./shield-bash-MWF4OEPW.svg";
-
-  // src/monsters/fiendishParty/OGonrit_token.png
-  var OGonrit_token_default = "./OGonrit_token-C5AF3HHR.png";
-
   // src/monsters/fiendishParty/OGonrit.ts
   var FiendishMantle = new SimpleFeature(
     "Fiendish Mantle",
@@ -4562,7 +4562,7 @@
   );
   var OGonrit = class extends Monster {
     constructor(g) {
-      super(g, "O Gonrit", 5, "fiend", "medium", OGonrit_token_default, 65);
+      super(g, "O Gonrit", 5, "fiend", "medium", o_gonrit_default, 65);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(12, 8, 14, 10, 18, 13);
@@ -4586,6 +4586,9 @@
       this.don(new Mace(g), true);
     }
   };
+
+  // src/img/tok/boss/yulash.png
+  var yulash_default = "./yulash-YXCZ3ZVJ.png";
 
   // src/movement.ts
   var getDefaultMovement = (who) => ({
@@ -4697,9 +4700,6 @@
     }
   });
   var HealingWord_default = HealingWord;
-
-  // src/monsters/fiendishParty/Yulash_token.png
-  var Yulash_token_default = "./Yulash_token-YXCZ3ZVJ.png";
 
   // src/monsters/fiendishParty/Yulash.ts
   function getMeleeAttackOptions(g, attacker, filter) {
@@ -4979,7 +4979,7 @@
   );
   var Yulash = class extends Monster {
     constructor(g) {
-      super(g, "Yulash", 5, "monstrosity", "medium", Yulash_token_default, 65);
+      super(g, "Yulash", 5, "monstrosity", "medium", yulash_default, 65);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(8, 16, 14, 12, 13, 18);
@@ -5003,6 +5003,12 @@
     }
   };
 
+  // src/img/act/bull-rush.svg
+  var bull_rush_default = "./bull-rush-C6PSXUHN.svg";
+
+  // src/img/tok/boss/zafron.png
+  var zafron_default = "./zafron-HS5HC4BR.png";
+
   // src/features/ConfiguredFeature.ts
   var ConfiguredFeature = class {
     constructor(name, text, apply) {
@@ -5019,12 +5025,6 @@
       this.apply(g, who, config);
     }
   };
-
-  // src/monsters/fiendishParty/icons/bull-rush.svg
-  var bull_rush_default = "./bull-rush-C6PSXUHN.svg";
-
-  // src/monsters/fiendishParty/Zafron_token.png
-  var Zafron_token_default = "./Zafron_token-HS5HC4BR.png";
 
   // src/monsters/fiendishParty/Zafron.ts
   var LustForBattle = new ConfiguredFeature(
@@ -5189,7 +5189,7 @@
   );
   var Zafron = class extends Monster {
     constructor(g) {
-      super(g, "Zafron Halehart", 5, "fiend", "medium", Zafron_token_default, 105);
+      super(g, "Zafron Halehart", 5, "fiend", "medium", zafron_default, 105);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(18, 14, 20, 7, 10, 13);
@@ -5217,6 +5217,9 @@
       this.don(axe, true);
     }
   };
+
+  // src/img/tok/pc/aura.png
+  var aura_default = "./aura-PXXTYCUY.png";
 
   // src/types/Item.ts
   var wcSet = (...items) => new Set(items);
@@ -5256,11 +5259,11 @@ If your DM allows the use of feats, you may instead take a feat.`,
     });
   }
 
-  // src/classes/rogue/icon.svg
-  var icon_default = "./icon-NHSUDBY6.svg";
+  // src/img/class/rogue.svg
+  var rogue_default = "./rogue-NHSUDBY6.svg";
 
   // src/classes/rogue/common.ts
-  var RogueIcon = makeIcon(icon_default, ClassColours.Rogue);
+  var RogueIcon = makeIcon(rogue_default, ClassColours.Rogue);
 
   // src/classes/rogue/SneakAttack.ts
   function getSneakAttackDice(level) {
@@ -5331,7 +5334,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   );
   var SneakAttack_default = SneakAttack;
 
-  // src/classes/rogue/icons/steady-aim.svg
+  // src/img/act/steady-aim.svg
   var steady_aim_default = "./steady-aim-INID7FA2.svg";
 
   // src/classes/rogue/SteadyAim.ts
@@ -5546,7 +5549,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
       [20, [StrokeOfLuck]]
     ])
   };
-  var rogue_default = Rogue;
+  var rogue_default2 = Rogue;
 
   // src/classes/rogue/Scout/index.ts
   var Skirmisher = new SimpleFeature(
@@ -5784,7 +5787,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   );
   var Lucky_default = Lucky;
 
-  // src/features/icons/hiss.svg
+  // src/img/act/hiss.svg
   var hiss_default = "./hiss-UPUMVUAV.svg";
 
   // src/features/boons.ts
@@ -5938,7 +5941,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
-  // src/items/icons/punch.svg
+  // src/img/eq/punch.svg
   var punch_default = "./punch-JPHSSLGW.svg";
 
   // src/PC.ts
@@ -6011,7 +6014,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
-  // src/spells/level2/icons/levitate.svg
+  // src/img/spl/levitate.svg
   var levitate_default = "./levitate-QW3QKX7H.svg";
 
   // src/spells/level2/Levitate.ts
@@ -6081,25 +6084,22 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     features: /* @__PURE__ */ new Set([UnendingBreath, MingleWithTheWind])
   };
 
-  // src/pcs/davies/Aura_token.png
-  var Aura_token_default = "./Aura_token-PXXTYCUY.png";
-
   // src/pcs/davies/Aura.ts
   var Aura = class extends PC {
     constructor(g) {
-      super(g, "Aura", Aura_token_default);
+      super(g, "Aura", aura_default);
       this.toolProficiencies.set("dice set", 1);
       this.toolProficiencies.set("horn", 1);
       this.setAbilityScores(8, 15, 11, 14, 9, 14);
       this.setRace(AirGenasi);
       this.addSubclass(Scout_default);
-      this.addClassLevel(rogue_default);
-      this.addClassLevel(rogue_default);
-      this.addClassLevel(rogue_default);
-      this.addClassLevel(rogue_default);
-      this.addClassLevel(rogue_default);
-      this.addClassLevel(rogue_default);
-      this.addClassLevel(rogue_default);
+      this.addClassLevel(rogue_default2);
+      this.addClassLevel(rogue_default2);
+      this.addClassLevel(rogue_default2);
+      this.addClassLevel(rogue_default2);
+      this.addClassLevel(rogue_default2);
+      this.addClassLevel(rogue_default2);
+      this.addClassLevel(rogue_default2);
       this.setConfig(Expertise, [
         "Acrobatics",
         "thieves' tools",
@@ -6122,6 +6122,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.inventory.add(enchant(new CrossbowBolt(g, 15), weaponPlus1));
     }
   };
+
+  // src/img/tok/pc/beldalynn.png
+  var beldalynn_default = "./beldalynn-B47TNTON.png";
 
   // src/spells/NormalSpellcasting.ts
   var SpellSlots = {
@@ -6250,11 +6253,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
 
-  // src/classes/wizard/icon.svg
-  var icon_default2 = "./icon-FEOOHPRA.svg";
+  // src/img/class/wizard.svg
+  var wizard_default = "./wizard-FEOOHPRA.svg";
 
   // src/classes/wizard/common.ts
-  var WizardIcon = makeIcon(icon_default2, ClassColours.Wizard);
+  var WizardIcon = makeIcon(wizard_default, ClassColours.Wizard);
 
   // src/classes/wizard/index.ts
   var ArcaneRecovery = nonCombatFeature(
@@ -6327,7 +6330,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       [20, [SignatureSpells]]
     ])
   };
-  var wizard_default = Wizard;
+  var wizard_default2 = Wizard;
 
   // src/events/MultiListChoiceEvent.ts
   var MultiListChoiceEvent = class extends CustomEvent {
@@ -6445,6 +6448,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   };
   var Evocation_default = Evocation;
 
+  // src/img/act/breath.svg
+  var breath_default = "./breath-JCG457K5.svg";
+
+  // src/img/act/special-breath.svg
+  var special_breath_default = "./special-breath-M2XCTDTK.svg";
+
   // src/aim.ts
   var eighth = Math.PI / 4;
   var eighthOffset = eighth / 2;
@@ -6550,12 +6559,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
     return feature;
   }
-
-  // src/races/icons/breath.svg
-  var breath_default = "./breath-JCG457K5.svg";
-
-  // src/races/icons/special-breath.svg
-  var special_breath_default = "./special-breath-M2XCTDTK.svg";
 
   // src/races/Dragonborn_FTD.ts
   var MetallicDragonborn = {
@@ -6784,7 +6787,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
   var BronzeDragonborn = makeAncestry("Bronze", "lightning");
 
-  // src/spells/cantrip/icons/acid-splash.svg
+  // src/img/spl/acid-splash.svg
   var acid_splash_default = "./acid-splash-7IYZVNCL.svg";
 
   // src/spells/cantrip/AcidSplash.ts
@@ -6846,7 +6849,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var AcidSplash_default = AcidSplash;
 
-  // src/spells/cantrip/icons/fire-bolt.svg
+  // src/img/spl/fire-bolt.svg
   var fire_bolt_default = "./fire-bolt-JP4GPEON.svg";
 
   // src/spells/cantrip/FireBolt.ts
@@ -6954,7 +6957,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var MindSliver_default = MindSliver;
 
-  // src/spells/cantrip/icons/ray-of-frost.svg
+  // src/img/spl/ray-of-frost.svg
   var ray_of_frost_default = "./ray-of-frost-5EAHUBPB.svg";
 
   // src/spells/cantrip/RayOfFrost.ts
@@ -6992,7 +6995,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var RayOfFrost_default = RayOfFrost;
 
-  // src/spells/level1/icons/ice-knife.svg
+  // src/img/spl/ice-knife.svg
   var ice_knife_default = "./ice-knife-4B5PYKBA.svg";
 
   // src/spells/level1/IceKnife.ts
@@ -7085,6 +7088,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IceKnife_default = IceKnife;
 
+  // src/img/spl/magic-missile.svg
+  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
+
   // src/resolvers/AllocationResolver.ts
   function isAllocation(value) {
     return typeof value === "object" && typeof value.amount === "number" && typeof value.who === "object";
@@ -7133,9 +7139,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return ec;
     }
   };
-
-  // src/spells/level1/icons/magic-missile.svg
-  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
 
   // src/spells/level1/MagicMissile.ts
   var getDamage = (slot) => [
@@ -7188,7 +7191,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var MagicMissile_default = MagicMissile;
 
-  // src/spells/level1/icons/shield.svg
+  // src/img/spl/shield.svg
   var shield_default = "./shield-O4MYNFME.svg";
 
   // src/spells/level1/Shield.ts
@@ -7352,7 +7355,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var HoldPerson_default = HoldPerson;
 
-  // src/spells/level3/icons/fireball.svg
+  // src/img/spl/fireball.svg
   var fireball_default = "./fireball-GYKJUQJQ.svg";
 
   // src/spells/level3/Fireball.ts
@@ -7462,6 +7465,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var IntellectFortress_default = IntellectFortress;
 
+  // src/img/spl/melfs-minute-meteors.svg
+  var melfs_minute_meteors_default = "./melfs-minute-meteors-FGCLF5JZ.svg";
+
   // src/resolvers/MultiPointResolver.ts
   var MultiPointResolver = class {
     constructor(g, minimum, maximum, maxRange) {
@@ -7490,9 +7496,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return ec;
     }
   };
-
-  // src/spells/level3/icons/melfs-minute-meteors.svg
-  var melfs_minute_meteors_default = "./melfs-minute-meteors-FGCLF5JZ.svg";
 
   // src/spells/level3/MelfsMinuteMeteors.ts
   var MelfsMinuteMeteorsIcon = makeIcon(melfs_minute_meteors_default, DamageColours.fire);
@@ -7629,7 +7632,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var MelfsMinuteMeteors_default = MelfsMinuteMeteors;
 
-  // src/spells/level4/icons/fire-wall.svg
+  // src/img/spl/fire-wall.svg
   var fire_wall_default = "./fire-wall-4FF3YRI5.svg";
 
   // src/spells/level4/WallOfFire.ts
@@ -7666,13 +7669,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
   var WallOfFire_default = WallOfFire;
 
-  // src/pcs/davies/Beldalynn_token.png
-  var Beldalynn_token_default = "./Beldalynn_token-B47TNTON.png";
-
   // src/pcs/davies/Beldalynn.ts
   var Beldalynn = class extends PC {
     constructor(g) {
-      super(g, "Beldalynn", Beldalynn_token_default);
+      super(g, "Beldalynn", beldalynn_default);
       this.setAbilityScores(11, 13, 13, 15, 13, 8);
       this.setRace(BronzeDragonborn);
       this.dex.score++;
@@ -7683,13 +7683,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.languages.add("Elvish");
       this.languages.add("Infernal");
       this.addSubclass(Evocation_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
-      this.addClassLevel(wizard_default);
+      this.addClassLevel(wizard_default2);
+      this.addClassLevel(wizard_default2);
+      this.addClassLevel(wizard_default2);
+      this.addClassLevel(wizard_default2);
+      this.addClassLevel(wizard_default2);
+      this.addClassLevel(wizard_default2);
+      this.addClassLevel(wizard_default2);
       this.setConfig(ASI42, { type: "ability", abilities: ["int", "wis"] });
       this.skills.set("History", 1);
       this.skills.set("Perception", 1);
@@ -7718,6 +7718,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/img/tok/pc/galilea.png
+  var galilea_default = "./galilea-D4XX5FIV.png";
+
   // src/ActiveEffectArea.ts
   var ActiveEffectArea = class {
     constructor(name, shape, tags, tint) {
@@ -7732,11 +7735,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/types/EffectArea.ts
   var arSet = (...items) => new Set(items);
 
-  // src/classes/paladin/icon.svg
-  var icon_default3 = "./icon-QFY4DOD4.svg";
+  // src/img/class/paladin.svg
+  var paladin_default = "./paladin-QFY4DOD4.svg";
 
   // src/classes/paladin/common.ts
-  var PaladinIcon = makeIcon(icon_default3, ClassColours.Paladin);
+  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
   var PaladinSpellcasting = new NormalSpellcasting(
     "Paladin",
     `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
@@ -7830,6 +7833,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   );
   var HarnessDivinePower_default = HarnessDivinePower;
 
+  // src/img/act/lay-on-hands.svg
+  var lay_on_hands_default = "./lay-on-hands-F5ZGB5B6.svg";
+
   // src/resolvers/NumberRangeResolver.ts
   var NumberRangeResolver = class {
     constructor(g, rangeName, min, max) {
@@ -7857,9 +7863,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return ec;
     }
   };
-
-  // src/classes/paladin/icons/lay-on-hands.svg
-  var lay_on_hands_default = "./lay-on-hands-F5ZGB5B6.svg";
 
   // src/classes/paladin/LayOnHands.ts
   var LayOnHandsIcon = makeIcon(lay_on_hands_default, Heal);
@@ -8135,9 +8138,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       [19, [ASI193]]
     ])
   };
-  var paladin_default = Paladin;
+  var paladin_default2 = Paladin;
 
-  // src/spells/level1/icons/protection-evil-good.svg
+  // src/img/spl/protection-evil-good.svg
   var protection_evil_good_default = "./protection-evil-good-OPG4SIM6.svg";
 
   // src/spells/level1/ProtectionFromEvilAndGood.ts
@@ -8445,7 +8448,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   };
   var Devotion_default = Devotion;
 
-  // src/spells/level2/icons/web.svg
+  // src/img/spl/web.svg
   var web_default = "./web-ERLMYCL3.svg";
 
   // src/spells/level2/Web.ts
@@ -8650,7 +8653,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   };
   var Human_default = Human;
 
-  // src/spells/level1/icons/bless.svg
+  // src/img/spl/bless.svg
   var bless_default = "./bless-VVWIP7W3.svg";
 
   // src/spells/level1/Bless.ts
@@ -8763,7 +8766,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   });
   var DivineFavor_default = DivineFavor;
 
-  // src/spells/level1/icons/shield-of-faith.svg
+  // src/img/spl/shield-of-faith.svg
   var shield_of_faith_default = "./shield-of-faith-6VIBSZE5.svg";
 
   // src/spells/level1/ShieldOfFaith.ts
@@ -8810,7 +8813,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   });
   var ShieldOfFaith_default = ShieldOfFaith;
 
-  // src/spells/level2/icons/aid.svg
+  // src/img/spl/aid.svg
   var aid_default = "./aid-2OQR6NMW.svg";
 
   // src/spells/level2/Aid.ts
@@ -8853,7 +8856,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   });
   var Aid_default = Aid;
 
-  // src/spells/level2/icons/magic-weapon.svg
+  // src/img/spl/magic-weapon.svg
   var magic_weapon_default = "./magic-weapon-JOO7KH5L.svg";
 
   // src/spells/level2/MagicWeapon.ts
@@ -8925,25 +8928,22 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   });
   var MagicWeapon_default = MagicWeapon;
 
-  // src/pcs/davies/Galilea_token.png
-  var Galilea_token_default = "./Galilea_token-D4XX5FIV.png";
-
   // src/pcs/davies/Galilea.ts
   var Galilea = class extends PC {
     constructor(g) {
-      super(g, "Galilea", Galilea_token_default);
+      super(g, "Galilea", galilea_default);
       this.toolProficiencies.set("playing card set", 1);
       this.setAbilityScores(13, 10, 15, 11, 11, 13);
       this.setRace(Human_default);
       this.languages.add("Sylvan");
       this.addSubclass(Devotion_default);
-      this.addClassLevel(paladin_default);
-      this.addClassLevel(paladin_default);
-      this.addClassLevel(paladin_default);
-      this.addClassLevel(paladin_default);
-      this.addClassLevel(paladin_default);
-      this.addClassLevel(paladin_default);
-      this.addClassLevel(paladin_default);
+      this.addClassLevel(paladin_default2);
+      this.addClassLevel(paladin_default2);
+      this.addClassLevel(paladin_default2);
+      this.addClassLevel(paladin_default2);
+      this.addClassLevel(paladin_default2);
+      this.addClassLevel(paladin_default2);
+      this.addClassLevel(paladin_default2);
       this.setConfig(PaladinFightingStyle, FightingStyleProtection);
       this.setConfig(ASI43, { type: "ability", abilities: ["str", "str"] });
       this.skills.set("Insight", 1);
@@ -8971,10 +8971,13 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     }
   };
 
-  // src/classes/barbarian/icons/end-rage.svg
+  // src/img/tok/pc/hagrond.png
+  var hagrond_default = "./hagrond-SXREGQ37.png";
+
+  // src/img/act/end-rage.svg
   var end_rage_default = "./end-rage-BCM52AKW.svg";
 
-  // src/classes/barbarian/icons/rage.svg
+  // src/img/act/rage.svg
   var rage_default = "./rage-N4H3NAED.svg";
 
   // src/classes/barbarian/Rage.ts
@@ -9428,7 +9431,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
   };
   var barbarian_default = Barbarian;
 
-  // src/classes/barbarian/Berserker/icons/frenzy.svg
+  // src/img/act/frenzy.svg
   var frenzy_default = "./frenzy-XYJEPIJ4.svg";
 
   // src/classes/barbarian/Berserker/Frenzy.ts
@@ -9667,13 +9670,10 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     features: /* @__PURE__ */ new Set([StoutResilience])
   };
 
-  // src/pcs/davies/Hagrond_token.png
-  var Hagrond_token_default = "./Hagrond_token-SXREGQ37.png";
-
   // src/pcs/davies/Hagrond.ts
   var Hagrond = class extends PC {
     constructor(g) {
-      super(g, "Hagrond", Hagrond_token_default);
+      super(g, "Hagrond", hagrond_default);
       this.skills.set("Survival", 1);
       this.skills.set("Sleight of Hand", 1);
       this.toolProficiencies.set("vehicles (land)", 1);
@@ -9701,11 +9701,14 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     }
   };
 
-  // src/classes/druid/icon.svg
-  var icon_default4 = "./icon-CV77NMBS.svg";
+  // src/img/tok/pc/salgar.png
+  var salgar_default = "./salgar-WLUJXZFZ.png";
+
+  // src/img/class/druid.svg
+  var druid_default = "./druid-CV77NMBS.svg";
 
   // src/classes/druid/common.ts
-  var DruidIcon = makeIcon(icon_default4, ClassColours.Druid);
+  var DruidIcon = makeIcon(druid_default, ClassColours.Druid);
 
   // src/classes/druid/WildShape.ts
   var WildShapeResource = new ShortRestResource("Wild Shape", 2);
@@ -9930,7 +9933,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       [20, [Archdruid]]
     ])
   };
-  var druid_default = Druid;
+  var druid_default2 = Druid;
 
   // src/spells/level2/Blur.ts
   var BlurEffect = new Effect("Blur", "turnStart", (g) => {
@@ -10103,7 +10106,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var SpiderClimb_default = SpiderClimb;
 
-  // src/spells/level2/icons/spike-growth.svg
+  // src/img/spl/spike-growth.svg
   var spike_growth_default = "./spike-growth-CD24K45V.svg";
 
   // src/spells/level2/SpikeGrowth.ts
@@ -10171,7 +10174,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var SpikeGrowth_default = SpikeGrowth;
 
-  // src/spells/level3/icons/lightning-bolt.svg
+  // src/img/spl/lightning-bolt.svg
   var lightning_bolt_default = "./lightning-bolt-MGFW7XHW.svg";
 
   // src/spells/level3/LightningBolt.ts
@@ -10748,7 +10751,7 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var silvered_default = silvered;
 
-  // src/items/icons/hood.svg
+  // src/img/eq/hood.svg
   var hood_default = "./hood-NYMML4K2.svg";
 
   // src/items/CloakOfElvenkind.ts
@@ -10806,8 +10809,8 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
-  // src/monsters/Bat_token.png
-  var Bat_token_default = "./Bat_token-N3PIK5K4.png";
+  // src/img/tok/bat.png
+  var bat_default = "./bat-N3PIK5K4.png";
 
   // src/monsters/Bat.ts
   var Bite = class extends AbstractWeapon {
@@ -10823,7 +10826,7 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var Bat = class extends Monster {
     constructor(g) {
-      super(g, "bat", 0, "beast", "tiny", Bat_token_default, 1);
+      super(g, "bat", 0, "beast", "tiny", bat_default, 1);
       this.movement.set("speed", 5);
       this.movement.set("fly", 30);
       this.setAbilityScores(2, 15, 8, 2, 12, 4);
@@ -10834,8 +10837,8 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
-  // src/monsters/GiantBadger_token.png
-  var GiantBadger_token_default = "./GiantBadger_token-R3QZK5QP.png";
+  // src/img/tok/giant-badger.png
+  var giant_badger_default = "./giant-badger-R3QZK5QP.png";
 
   // src/monsters/GiantBadger.ts
   var Bite2 = class extends AbstractWeapon {
@@ -10852,7 +10855,7 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var GiantBadger = class extends Monster {
     constructor(g) {
-      super(g, "giant badger", 0.25, "beast", "medium", GiantBadger_token_default, 13);
+      super(g, "giant badger", 0.25, "beast", "medium", giant_badger_default, 13);
       this.movement.set("speed", 30);
       this.movement.set("burrow", 10);
       this.setAbilityScores(13, 10, 15, 2, 12, 5);
@@ -10932,7 +10935,7 @@ The creature is aware of this effect before it makes its attack against you.`
     features: /* @__PURE__ */ new Set([DwarvenArmorTraining])
   };
 
-  // src/spells/cantrip/icons/magic-stone.svg
+  // src/img/spl/magic-stone.svg
   var magic_stone_default = "./magic-stone-255GD6HJ.svg";
 
   // src/spells/cantrip/MagicStone.ts
@@ -11028,7 +11031,7 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var MagicStone_default = MagicStone;
 
-  // src/spells/level1/icons/earth-tremor.svg
+  // src/img/spl/earth-tremor.svg
   var earth_tremor_default = "./earth-tremor-EZT5PRHJ.svg";
 
   // src/spells/level1/EarthTremor.ts
@@ -11102,6 +11105,9 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var EarthTremor_default = EarthTremor;
 
+  // src/img/spl/moonbeam.svg
+  var moonbeam_default = "./moonbeam-2AFBKWN7.svg";
+
   // src/resolvers/PointToPointResolver.ts
   var PointToPointResolver = class {
     constructor(g, startPoint, maxRange) {
@@ -11125,9 +11131,6 @@ The creature is aware of this effect before it makes its attack against you.`
       return ec;
     }
   };
-
-  // src/spells/level2/icons/moonbeam.svg
-  var moonbeam_default = "./moonbeam-2AFBKWN7.svg";
 
   // src/spells/level2/Moonbeam.ts
   var MoonbeamIcon = makeIcon(moonbeam_default, DamageColours.radiant);
@@ -11284,7 +11287,7 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var Moonbeam_default = Moonbeam;
 
-  // src/spells/level3/icons/erupting-earth.svg
+  // src/img/spl/erupting-earth.svg
   var erupting_earth_default = "./erupting-earth-NCHHCQWD.svg";
 
   // src/spells/level3/EruptingEarth.ts
@@ -11453,13 +11456,10 @@ The creature is aware of this effect before it makes its attack against you.`
   });
   var GuardianOfNature_default = GuardianOfNature;
 
-  // src/pcs/davies/Salgar_token.png
-  var Salgar_token_default = "./Salgar_token-WLUJXZFZ.png";
-
   // src/pcs/davies/Salgar.ts
   var Salgar = class extends PC {
     constructor(g) {
-      super(g, "Salgar", Salgar_token_default);
+      super(g, "Salgar", salgar_default);
       this.skills.set("Arcana", 1);
       this.skills.set("History", 1);
       this.setAbilityScores(10, 8, 14, 14, 15, 10);
@@ -11467,13 +11467,13 @@ The creature is aware of this effect before it makes its attack against you.`
       this.languages.add("Elvish");
       this.languages.add("Giant");
       this.addSubclass(Land_default);
-      this.addClassLevel(druid_default);
-      this.addClassLevel(druid_default);
-      this.addClassLevel(druid_default);
-      this.addClassLevel(druid_default);
-      this.addClassLevel(druid_default);
-      this.addClassLevel(druid_default);
-      this.addClassLevel(druid_default);
+      this.addClassLevel(druid_default2);
+      this.addClassLevel(druid_default2);
+      this.addClassLevel(druid_default2);
+      this.addClassLevel(druid_default2);
+      this.addClassLevel(druid_default2);
+      this.addClassLevel(druid_default2);
+      this.addClassLevel(druid_default2);
       this.setConfig(ToolProficiency, "mason's tools");
       this.setConfig(CircleSpells, "mountain");
       this.setConfig(BonusCantrip, MagicStone_default);
@@ -11863,7 +11863,7 @@ The creature is aware of this effect before it makes its attack against you.`
     "icons": "_icons_120hg_17"
   };
 
-  // src/ui/icons/missing-icon.svg
+  // src/img/ui/missing-icon.svg
   var missing_icon_default = "./missing-icon-Y2QNJ6M4.svg";
 
   // src/ui/UnitEffectIcon.tsx
@@ -11941,32 +11941,32 @@ The creature is aware of this effect before it makes its attack against you.`
     );
   }
 
-  // src/ui/UnitMoveButton.tsx
-  var import_hooks4 = __toESM(require_hooks());
-
-  // src/ui/icons/e.svg
+  // src/img/ui/e.svg
   var e_default = "./e-DATSAPHV.svg";
 
-  // src/ui/icons/n.svg
+  // src/img/ui/n.svg
   var n_default = "./n-2BLT76O4.svg";
 
-  // src/ui/icons/ne.svg
+  // src/img/ui/ne.svg
   var ne_default = "./ne-WAOZPP55.svg";
 
-  // src/ui/icons/nw.svg
+  // src/img/ui/nw.svg
   var nw_default = "./nw-EMUGHXVG.svg";
 
-  // src/ui/icons/s.svg
+  // src/img/ui/s.svg
   var s_default = "./s-4OPBNP4F.svg";
 
-  // src/ui/icons/se.svg
+  // src/img/ui/se.svg
   var se_default = "./se-XCDEOBHI.svg";
 
-  // src/ui/icons/sw.svg
+  // src/img/ui/sw.svg
   var sw_default = "./sw-NWNDSPVE.svg";
 
-  // src/ui/icons/w.svg
+  // src/img/ui/w.svg
   var w_default = "./w-IMIMIJNF.svg";
+
+  // src/ui/UnitMoveButton.tsx
+  var import_hooks4 = __toESM(require_hooks());
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {

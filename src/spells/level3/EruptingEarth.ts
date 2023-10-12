@@ -1,3 +1,5 @@
+import iconUrl from "@img/spl/erupting-earth.svg";
+
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
@@ -8,7 +10,6 @@ import Point from "../../types/Point";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import iconUrl from "./icons/erupting-earth.svg";
 
 const getArea = (g: Engine, centre: Point): SpecifiedCube => ({
   type: "cube",

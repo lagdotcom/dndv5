@@ -1,7 +1,8 @@
+import iconUrl from "@img/eq/hood.svg";
+
 import AbstractAction from "../actions/AbstractAction";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
-import iconUrl from "./icons/hood.svg";
 import { AbstractWondrous } from "./wondrous";
 
 class CloakHoodAction extends AbstractAction {

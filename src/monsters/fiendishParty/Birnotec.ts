@@ -1,3 +1,6 @@
+import burstUrl from "@img/act/eldritch-burst.svg";
+import tokenUrl from "@img/tok/boss/birnotec.png";
+
 import CastSpell from "../../actions/CastSpell";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
@@ -16,8 +19,6 @@ import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import tokenUrl from "./Birnotec_token.png";
-import burstUrl from "./icons/eldritch-burst.svg";
 
 function getArea(g: Engine, target: Combatant): SpecifiedWithin {
   return {

@@ -1,10 +1,11 @@
+import tokenUrl from "@img/tok/giant-badger.png";
+
 import WeaponAttack from "../actions/WeaponAttack";
 import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
 import { _dd } from "../utils/dice";
 import { KeenSmell, makeMultiattack } from "./common";
-import tokenUrl from "./GiantBadger_token.png";
 
 class Bite extends AbstractWeapon {
   constructor(g: Engine) {

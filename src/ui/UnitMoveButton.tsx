@@ -1,14 +1,14 @@
+import iconEUrl from "@img/ui/e.svg";
+import iconNUrl from "@img/ui/n.svg";
+import iconNEUrl from "@img/ui/ne.svg";
+import iconNWUrl from "@img/ui/nw.svg";
+import iconSUrl from "@img/ui/s.svg";
+import iconSEUrl from "@img/ui/se.svg";
+import iconSWUrl from "@img/ui/sw.svg";
+import iconWUrl from "@img/ui/w.svg";
 import { useCallback, useMemo } from "preact/hooks";
 
 import MoveDirection from "../types/MoveDirection";
-import iconEUrl from "./icons/e.svg";
-import iconNUrl from "./icons/n.svg";
-import iconNEUrl from "./icons/ne.svg";
-import iconNWUrl from "./icons/nw.svg";
-import iconSUrl from "./icons/s.svg";
-import iconSEUrl from "./icons/se.svg";
-import iconSWUrl from "./icons/sw.svg";
-import iconWUrl from "./icons/w.svg";
 import SVGIcon from "./SVGIcon";
 import styles from "./UnitMoveButton.module.scss";
 import classnames from "./utils/classnames";

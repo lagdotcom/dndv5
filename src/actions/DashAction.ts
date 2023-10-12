@@ -1,10 +1,11 @@
+import iconUrl from "@img/act/dash.svg";
+
 import ErrorCollector from "../collectors/ErrorCollector";
 import { makeIcon } from "../colours";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import AbstractAction from "./AbstractAction";
-import iconUrl from "./icons/dash.svg";
 
 const DashIcon = makeIcon(iconUrl);
 

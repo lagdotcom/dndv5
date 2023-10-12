@@ -1,10 +1,11 @@
+import iconUrl from "@img/spl/shield-of-faith.svg";
+
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import iconUrl from "./icons/shield-of-faith.svg";
 
 const ShieldOfFaithIcon = makeIcon(iconUrl);
 
