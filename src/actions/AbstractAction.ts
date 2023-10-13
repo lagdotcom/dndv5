@@ -61,6 +61,11 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  generateHealingConfigs(targets: Combatant[]): T[] {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAffectedArea(config: Partial<T>) {
     return this.area;
   }
@@ -88,6 +93,11 @@ export default abstract class AbstractAction<T extends object = Empty>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getResources(config: Partial<T>) {
     return this.resources;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getTargets(config: T) {
+    return [this.actor];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -373,6 +373,10 @@
       this.icon = icon;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    generateHealingConfigs(targets) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getAffectedArea(config) {
       return this.area;
     }
@@ -395,6 +399,10 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getResources(config) {
       return this.resources;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTargets(config) {
+      return [this.actor];
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getTime(config) {
@@ -986,6 +994,14 @@
     get status() {
       return this.spell.status;
     }
+    generateHealingConfigs(targets) {
+      return this.spell.generateHealingConfigs(
+        this.g,
+        this.actor,
+        this.method,
+        targets
+      );
+    }
     getConfig(config) {
       return this.spell.getConfig(this.g, this.actor, this.method, config);
     }
@@ -1010,6 +1026,9 @@
         this.actor
       );
       return new Map(resource ? [[resource, 1]] : void 0);
+    }
+    getTargets(config) {
+      return this.spell.getTargets(this.g, this.actor, config);
     }
     getTime() {
       return this.time;
@@ -1102,6 +1121,7 @@
     icon,
     apply,
     check = (_g, _config, ec) => ec,
+    generateHealingConfigs = () => [],
     getAffectedArea = () => void 0,
     getConfig,
     getDamage: getDamage2 = () => void 0,
@@ -1125,6 +1145,7 @@
     icon,
     apply,
     check,
+    generateHealingConfigs,
     getAffectedArea,
     getConfig,
     getDamage: getDamage2,
@@ -1149,6 +1170,7 @@
     description,
     apply,
     check = (_g, _config, ec) => ec,
+    generateHealingConfigs,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage: getDamage2 = () => void 0,
@@ -1172,6 +1194,18 @@
     icon,
     apply,
     check,
+    generateHealingConfigs(g, caster, method, targets) {
+      var _a, _b, _c, _d;
+      if (!generateHealingConfigs)
+        return [];
+      const minSlot = (_b = (_a = method.getMinSlot) == null ? void 0 : _a.call(method, this, caster)) != null ? _b : level;
+      const maxSlot = (_d = (_c = method.getMaxSlot) == null ? void 0 : _c.call(method, this, caster)) != null ? _d : level;
+      return enumerate(minSlot, maxSlot).flatMap(
+        (slot) => generateHealingConfigs(slot, targets, g, caster, method).map(
+          (config) => ({ ...config, slot })
+        )
+      );
+    },
     getAffectedArea,
     getConfig(g, actor, method, config) {
       return {
@@ -1258,7 +1292,10 @@
       intScore = 10,
       strScore = 10,
       wisScore = 10,
-      naturalAC = 10
+      naturalAC = 10,
+      rules = [],
+      coefficients = [],
+      groups = []
     }) {
       this.g = g;
       this.name = name;
@@ -1313,6 +1350,9 @@
       this.conditionImmunities = /* @__PURE__ */ new Set();
       this.deathSaveFailures = 0;
       this.deathSaveSuccesses = 0;
+      this.rules = new Set(rules);
+      this.coefficients = new Map(coefficients);
+      this.groups = new Set(groups);
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -1603,6 +1643,13 @@
       this.time.add("bonus action");
       this.time.add("reaction");
     }
+    getCoefficient(co) {
+      const values = [this.coefficients.get(co)];
+      for (const group of this.groups)
+        values.push(group.getCoefficient(co));
+      const filtered = values.filter(isDefined);
+      return filtered.length ? filtered.reduce((p, c) => p * c, 1) : co.defaultValue;
+    }
   };
 
   // src/resolvers/TargetResolver.ts
@@ -1856,6 +1903,9 @@
       super(g, actor, name, status, config, options);
       this.isAttack = true;
     }
+    generateHealingConfigs() {
+      return [];
+    }
     getTime() {
       if (this.actor.hasEffect(UsedAttackAction))
         return void 0;
@@ -1907,6 +1957,9 @@
       )} Weapon Attack: ${bonus} to hit, ${ranges.join(
         " or "
       )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
+    }
+    getTargets(config) {
+      return [config.target];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -3384,7 +3437,13 @@
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
     constructor(g, name, cr, type, size, img, hpMax) {
-      super(g, name, { type, size, img, side: 1, hpMax });
+      super(g, name, {
+        type,
+        size,
+        img,
+        side: 1,
+        hpMax
+      });
       this.cr = cr;
     }
     don(item, giveProficiency = false) {
@@ -4269,6 +4328,17 @@
   // src/img/tok/boss/o-gonrit.png
   var o_gonrit_default = "./o-gonrit-C5AF3HHR.png";
 
+  // src/ai/coefficients.ts
+  var Coefficient = class {
+    constructor(name, defaultValue = 1) {
+      this.name = name;
+      this.defaultValue = defaultValue;
+    }
+  };
+  var HealSelf = new Coefficient("HealSelf");
+  var HealAllies = new Coefficient("HealAllies");
+  var OverHealAllies = new Coefficient("OverHealAllies", -2);
+
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
     return new SimpleFeature(name, text, (g, me) => {
@@ -4416,6 +4486,30 @@
   // src/types/CreatureType.ts
   var ctSet = (...items) => new Set(items);
 
+  // src/utils/combinatorics.ts
+  function combinations(source, size) {
+    const results = [];
+    function backtrack(start, current) {
+      if (current.length === size) {
+        results.push([...current]);
+        return;
+      }
+      for (let i = start; i < source.length; i++) {
+        current.push(source[i]);
+        backtrack(i + 1, current);
+        current.pop();
+      }
+    }
+    backtrack(0, []);
+    return results;
+  }
+  function combinationsMulti(source, min, max) {
+    const v = [];
+    for (let l = min; l <= max; l++)
+      v.push(...combinations(source, l));
+    return v;
+  }
+
   // src/spells/level3/MassHealingWord.ts
   var cannotHeal = ctSet("undead", "construct");
   var MassHealingWord = scalingSpell({
@@ -4429,6 +4523,15 @@
     description: `As you call out words of restoration, up to six creatures of your choice that you can see within range regain hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the healing increases by 1d4 for each slot level above 3rd.`,
+    generateHealingConfigs(slot, allTargets, g, caster) {
+      return combinationsMulti(
+        allTargets.filter(
+          (co) => co.side === caster.side && distance(g, caster, co) <= 60
+        ),
+        1,
+        6
+      ).map((targets) => ({ targets }));
+    },
     getConfig: (g) => ({
       targets: new MultiTargetResolver(g, 1, 6, 60, true)
     }),
@@ -4465,6 +4568,12 @@
     }
   });
   var MassHealingWord_default = MassHealingWord;
+
+  // src/monsters/fiendishParty/common.ts
+  var FiendishParty = {
+    name: "Fiendish Party",
+    getCoefficient: () => void 0
+  };
 
   // src/monsters/fiendishParty/OGonrit.ts
   var FiendishMantle = new SimpleFeature(
@@ -4563,6 +4672,8 @@
   var OGonrit = class extends Monster {
     constructor(g) {
       super(g, "O Gonrit", 5, "fiend", "medium", o_gonrit_default, 65);
+      this.coefficients.set(HealAllies, 1.2);
+      this.groups.add(FiendishParty);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(12, 8, 14, 10, 18, 13);
@@ -4664,6 +4775,9 @@
     description: `A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
+    generateHealingConfigs(slot, targets) {
+      return targets.map((target) => ({ target }));
+    },
     getConfig: (g) => ({
       target: new TargetResolver(g, 60, true)
     }),
@@ -7881,6 +7995,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { icon: LayOnHandsIcon, time: "action" }
       );
       this.subIcon = PaladinIcon;
+    }
+    generateHealingConfigs(targets) {
+      const resourceMax = this.actor.getResource(LayOnHandsResource);
+      return targets.flatMap(
+        (target) => enumerate(1, resourceMax).map((cost) => ({ cost, target }))
+      );
     }
     getConfig() {
       const resourceMax = this.actor.getResource(LayOnHandsResource);

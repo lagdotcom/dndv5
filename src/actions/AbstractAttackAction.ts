@@ -22,6 +22,10 @@ export default class AbstractAttackAction<
     this.isAttack = true;
   }
 
+  generateHealingConfigs() {
+    return [];
+  }
+
   getTime(): ActionTime | undefined {
     // if we already used Attack, costs nothing
     if (this.actor.hasEffect(UsedAttackAction)) return undefined;

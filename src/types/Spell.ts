@@ -87,4 +87,11 @@ export default interface Spell<T extends object = object> extends Source {
   ): Amount[] | undefined;
   getLevel(config: T): number;
   getTargets(g: Engine, caster: Combatant, config: T): Combatant[];
+
+  generateHealingConfigs(
+    g: Engine,
+    caster: Combatant,
+    method: SpellcastingMethod,
+    targets: Combatant[],
+  ): T[];
 }

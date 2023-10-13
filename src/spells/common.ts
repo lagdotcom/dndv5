@@ -8,6 +8,7 @@ import Combatant from "../types/Combatant";
 import Source from "../types/Source";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
+import { enumerate } from "../utils/numbers";
 
 export function getCantripDice(who: Combatant) {
   if (who.level < 5) return 1;
@@ -31,6 +32,7 @@ export const simpleSpell = <T extends object>({
   icon,
   apply,
   check = (_g, _config, ec) => ec,
+  generateHealingConfigs = () => [],
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
@@ -48,6 +50,7 @@ export const simpleSpell = <T extends object>({
     | "s"
     | "description"
     | "check"
+    | "generateHealingConfigs"
     | "getAffectedArea"
     | "getDamage"
     | "getHeal"
@@ -70,6 +73,7 @@ export const simpleSpell = <T extends object>({
   icon,
   apply,
   check,
+  generateHealingConfigs,
   getAffectedArea,
   getConfig,
   getDamage,
@@ -95,6 +99,7 @@ export const scalingSpell = <T extends object>({
   description,
   apply,
   check = (_g, _config, ec) => ec,
+  generateHealingConfigs,
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
@@ -116,8 +121,15 @@ export const scalingSpell = <T extends object>({
     | "getDamage"
     | "getHeal"
   >,
-  "getConfig" | "getLevel" | "scaling"
+  "generateHealingConfigs" | "getConfig" | "getLevel" | "scaling"
 > & {
+  generateHealingConfigs?: (
+    slot: number,
+    targets: Combatant[],
+    g: Engine,
+    caster: Combatant,
+    method: SpellcastingMethod,
+  ) => T[];
   getConfig: (
     g: Engine,
     actor: Combatant,
@@ -141,6 +153,17 @@ export const scalingSpell = <T extends object>({
   icon,
   apply,
   check,
+  generateHealingConfigs(g, caster, method, targets) {
+    if (!generateHealingConfigs) return [];
+
+    const minSlot = method.getMinSlot?.(this, caster) ?? level;
+    const maxSlot = method.getMaxSlot?.(this, caster) ?? level;
+    return enumerate(minSlot, maxSlot).flatMap((slot) =>
+      generateHealingConfigs(slot, targets, g, caster, method).map(
+        (config) => ({ ...config, slot }),
+      ),
+    );
+  },
   getAffectedArea,
   getConfig(g, actor, method, config) {
     return {

@@ -37,6 +37,15 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.status;
   }
 
+  generateHealingConfigs(targets: Combatant[]) {
+    return this.spell.generateHealingConfigs(
+      this.g,
+      this.actor,
+      this.method,
+      targets,
+    );
+  }
+
   getConfig(config: Partial<T>) {
     return this.spell.getConfig(this.g, this.actor, this.method, config);
   }
@@ -68,6 +77,10 @@ export default class CastSpell<T extends object> implements Action<T> {
     );
 
     return new Map(resource ? [[resource, 1]] : undefined);
+  }
+
+  getTargets(config: T) {
+    return this.spell.getTargets(this.g, this.actor, config);
   }
 
   getTime() {

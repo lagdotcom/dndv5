@@ -2,6 +2,7 @@ import bashUrl from "@img/act/shield-bash.svg";
 import tokenUrl from "@img/tok/boss/o-gonrit.png";
 
 import AbstractAction from "../../actions/AbstractAction";
+import { HealAllies } from "../../ai/coefficients";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
@@ -23,6 +24,7 @@ import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
 import { distance } from "../../utils/units";
+import { FiendishParty } from "./common";
 
 const FiendishMantle = new SimpleFeature(
   "Fiendish Mantle",
@@ -136,6 +138,8 @@ const Spellcasting = bonusSpellsFeature(
 export default class OGonrit extends Monster {
   constructor(g: Engine) {
     super(g, "O Gonrit", 5, "fiend", "medium", tokenUrl, 65);
+    this.coefficients.set(HealAllies, 1.2);
+    this.groups.add(FiendishParty);
     this.diesAtZero = false;
     this.movement.set("speed", 30);
     this.setAbilityScores(12, 8, 14, 10, 18, 13);

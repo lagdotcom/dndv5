@@ -10,6 +10,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Resource from "../../types/Resource";
+import { enumerate } from "../../utils/numbers";
 import { PaladinIcon } from "./common";
 
 const LayOnHandsIcon = makeIcon(iconUrl, Heal);
@@ -33,6 +34,14 @@ class LayOnHandsHealAction extends AbstractAction<HasCost & HasTarget> {
     );
 
     this.subIcon = PaladinIcon;
+  }
+
+  generateHealingConfigs(targets: Combatant[]) {
+    const resourceMax = this.actor.getResource(LayOnHandsResource);
+
+    return targets.flatMap((target) =>
+      enumerate(1, resourceMax).map((cost) => ({ cost, target })),
+    );
   }
 
   getConfig() {

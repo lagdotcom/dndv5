@@ -19,7 +19,10 @@ import AbilityName from "./types/AbilityName";
 import ACMethod from "./types/ACMethod";
 import Action from "./types/Action";
 import ActionTime from "./types/ActionTime";
+import AICoefficient from "./types/AICoefficient";
+import AIRule from "./types/AIRule";
 import Combatant from "./types/Combatant";
+import CombatantGroup from "./types/CombatantGroup";
 import CombatantScore from "./types/CombatantScore";
 import Concentration from "./types/Concentration";
 import ConditionName from "./types/ConditionName";
@@ -51,6 +54,7 @@ import ToolName from "./types/ToolName";
 import { getNaturalArmourMethod, getProficiencyType } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
 import { clamp } from "./utils/numbers";
+import { isDefined } from "./utils/types";
 import { convertSizeToUnit } from "./utils/units";
 
 const defaultHandsAmount: Record<CreatureType, number> = {
@@ -126,6 +130,9 @@ export default abstract class AbstractCombatant implements Combatant {
   conditionImmunities: Set<ConditionName>;
   deathSaveFailures: number;
   deathSaveSuccesses: number;
+  rules: Set<AIRule>;
+  coefficients: Map<AICoefficient, number>;
+  groups: Set<CombatantGroup>;
 
   constructor(
     public g: Engine,
@@ -149,6 +156,9 @@ export default abstract class AbstractCombatant implements Combatant {
       strScore = 10,
       wisScore = 10,
       naturalAC = 10,
+      rules = [],
+      coefficients = [],
+      groups = [],
     }: {
       diesAtZero?: boolean;
       hands?: number;
@@ -168,6 +178,9 @@ export default abstract class AbstractCombatant implements Combatant {
       strScore?: number;
       wisScore?: number;
       naturalAC?: number;
+      rules?: AIRule[];
+      coefficients?: [AICoefficient, number][];
+      groups?: CombatantGroup[];
     },
   ) {
     this.id = g.nextId();
@@ -222,6 +235,9 @@ export default abstract class AbstractCombatant implements Combatant {
     this.conditionImmunities = new Set();
     this.deathSaveFailures = 0;
     this.deathSaveSuccesses = 0;
+    this.rules = new Set(rules);
+    this.coefficients = new Map(coefficients);
+    this.groups = new Set(groups);
   }
 
   get baseACMethod(): ACMethod {
@@ -573,5 +589,15 @@ export default abstract class AbstractCombatant implements Combatant {
     this.time.add("action");
     this.time.add("bonus action");
     this.time.add("reaction");
+  }
+
+  getCoefficient(co: AICoefficient) {
+    const values = [this.coefficients.get(co)];
+    for (const group of this.groups) values.push(group.getCoefficient(co));
+    const filtered = values.filter(isDefined);
+
+    return filtered.length
+      ? filtered.reduce((p, c) => p * c, 1)
+      : co.defaultValue;
   }
 }

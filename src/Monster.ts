@@ -14,7 +14,13 @@ export default class Monster extends AbstractCombatant {
     img: string,
     hpMax: number,
   ) {
-    super(g, name, { type, size, img, side: 1, hpMax });
+    super(g, name, {
+      type,
+      size,
+      img,
+      side: 1,
+      hpMax,
+    });
   }
 
   don(item: Item, giveProficiency = false): void {

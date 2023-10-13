@@ -2,23 +2,18 @@ import {
   getByAltText,
   getByRole,
   queryByRole,
-  render,
   screen,
   waitFor,
 } from "@testing-library/preact";
-import userEvent from "@testing-library/user-event";
 
 import { DivineSmite } from "../classes/paladin";
-import Engine from "../Engine";
 import Badger from "../monsters/Badger";
 import Thug from "../monsters/Thug";
 import Aura from "../pcs/davies/Aura";
 import Beldalynn from "../pcs/davies/Beldalynn";
 import Galilea from "../pcs/davies/Galilea";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
-import Combatant from "../types/Combatant";
-import App from "../ui/App";
-import { SVGCacheContext } from "../ui/utils/SVGCache";
+import setupBattleTest from "./setupBattleTest";
 
 const dialog = (name?: string) => screen.getByRole("dialog", { name });
 const main = () => screen.getByRole("main");
@@ -32,39 +27,6 @@ const logMsg = (name: string) => getByRole(log(), "listitem", { name });
 
 const queryToken = (name: string) => queryByRole(main(), name);
 const queryLogMsg = (name: string) => queryByRole(log(), "listitem", { name });
-
-type BattleEntry = [
-  constructor: new (g: Engine) => Combatant,
-  x: number,
-  y: number,
-  initiative: number,
-];
-
-const cache = {
-  async get() {
-    return "";
-  },
-};
-
-async function setupBattleTest(...entries: BattleEntry[]) {
-  const user = userEvent.setup();
-  const g = new Engine();
-  render(
-    <SVGCacheContext.Provider value={cache}>
-      <App g={g} />
-    </SVGCacheContext.Provider>,
-  );
-
-  const combatants = entries.map(([constructor, x, y, initiative]) => {
-    const z = new constructor(g);
-    g.place(z, x, y);
-    g.dice.force(initiative, { type: "initiative", who: z });
-    return z;
-  });
-
-  await g.start();
-  return { g, user, combatants };
-}
 
 it("can run a simple battle", async () => {
   const {

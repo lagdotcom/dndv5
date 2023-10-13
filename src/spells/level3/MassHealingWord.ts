@@ -1,6 +1,8 @@
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { ctSet } from "../../types/CreatureType";
+import { combinationsMulti } from "../../utils/combinatorics";
+import { distance } from "../../utils/units";
 import { scalingSpell } from "../common";
 
 const cannotHeal = ctSet("undead", "construct");
@@ -16,6 +18,16 @@ const MassHealingWord = scalingSpell<HasTargets>({
   description: `As you call out words of restoration, up to six creatures of your choice that you can see within range regain hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the healing increases by 1d4 for each slot level above 3rd.`,
+
+  generateHealingConfigs(slot, allTargets, g, caster) {
+    return combinationsMulti(
+      allTargets.filter(
+        (co) => co.side === caster.side && distance(g, caster, co) <= 60,
+      ),
+      1,
+      6,
+    ).map((targets) => ({ targets }));
+  },
 
   getConfig: (g) => ({
     targets: new MultiTargetResolver(g, 1, 6, 60, true),
