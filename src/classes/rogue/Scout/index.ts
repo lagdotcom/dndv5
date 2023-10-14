@@ -1,40 +1,68 @@
+import AbstractAction from "../../../actions/AbstractAction";
+import ErrorCollector from "../../../collectors/ErrorCollector";
+import Engine from "../../../Engine";
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
 import { MapSquareSize } from "../../../MapSquare";
 import { BoundedMove } from "../../../movement";
+import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
 import { round } from "../../../utils/numbers";
 import { distance } from "../../../utils/units";
+
+class SkirmisherAction extends AbstractAction {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private other: Combatant,
+  ) {
+    super(
+      g,
+      actor,
+      "Skirmisher",
+      "implemented",
+      {},
+      {
+        time: "reaction",
+        description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
+      },
+    );
+  }
+
+  check(config: never, ec: ErrorCollector) {
+    if (this.actor.side === this.other.side) ec.add("same side", this);
+    if (distance(this.g, this.actor, this.other) > MapSquareSize)
+      ec.add("not close enough", this);
+    if (this.actor.speed <= 0) ec.add("cannot move", this);
+    return super.check(config, ec);
+  }
+
+  async apply() {
+    await super.apply({});
+    await this.g.applyBoundedMove(
+      this.actor,
+      new BoundedMove(Skirmisher, round(this.actor.speed / 2, MapSquareSize), {
+        provokesOpportunityAttacks: false,
+      }),
+    );
+  }
+}
 
 const Skirmisher = new SimpleFeature(
   "Skirmisher",
   `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
   (g, me) => {
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-      // TODO make this into an actual reaction
-      if (
-        who.side !== me.side &&
-        me.hasTime("reaction") &&
-        distance(g, me, who) <= 5
-      )
+      const action = new SkirmisherAction(g, me, who);
+      if (g.check(action, {}).result)
         interrupt.add(
           new YesNoChoice(
             me,
             Skirmisher,
             "Skirmisher",
             `Use ${me.name}'s reaction to move half their speed?`,
-            async () => {
-              me.useTime("reaction");
-              return g.applyBoundedMove(
-                me,
-                new BoundedMove(
-                  Skirmisher,
-                  round(me.speed / 2, MapSquareSize),
-                  { provokesOpportunityAttacks: false },
-                ),
-              );
-            },
+            async () => await action.apply(),
           ),
         );
     });

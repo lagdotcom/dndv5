@@ -18,12 +18,10 @@ export default class OpportunityAttack extends WeaponAttack {
   }
 
   check(config: Partial<HasTarget>, ec: ErrorCollector) {
-    super.check(config, ec);
-
     if (this.weapon.rangeCategory !== "melee")
       ec.add("can only make opportunity attacks with melee weapons", this);
 
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {

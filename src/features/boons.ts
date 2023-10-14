@@ -16,6 +16,28 @@ import SimpleFeature from "./SimpleFeature";
 
 const HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
 
+class HissFleeAction extends AbstractAction {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private other: Combatant,
+  ) {
+    super(g, actor, "Flee from Hiss", "implemented", {}, { time: "reaction" });
+  }
+
+  async apply() {
+    await super.apply({});
+    await this.g.applyBoundedMove(
+      this.actor,
+      new BoundedMove(this, round(this.actor.speed / 2, MapSquareSize), {
+        cannotApproach: [this.other],
+        mustUseAll: true,
+        provokesOpportunityAttacks: false,
+      }),
+    );
+  }
+}
+
 class HissAction extends AbstractAction<HasTarget> {
   constructor(g: Engine, actor: Combatant) {
     super(
@@ -36,8 +58,8 @@ class HissAction extends AbstractAction<HasTarget> {
     await super.apply({ target });
     const { g, actor } = this;
 
-    // TODO make this into an actual reaction?
-    if (target.hasTime("reaction")) {
+    const action = new HissFleeAction(g, target, actor);
+    if (g.check(action, {}).result) {
       const dc = getSaveDC(actor, "cha");
       const save = await g.savingThrow(dc, {
         who: target,
@@ -45,17 +67,7 @@ class HissAction extends AbstractAction<HasTarget> {
         ability: "wis",
         tags: svSet("frightened", "forced movement"),
       });
-      if (save.outcome === "fail") {
-        target.useTime("reaction");
-        await g.applyBoundedMove(
-          target,
-          new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
-            cannotApproach: [actor],
-            mustUseAll: true,
-            provokesOpportunityAttacks: false,
-          }),
-        );
-      }
+      if (save.outcome === "fail") await action.apply();
     }
   }
 }

@@ -70,15 +70,13 @@ class CheerAction extends AbstractAction<HasTarget> {
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    super.check({ target }, ec);
-
     if (target) {
       if (target.side !== this.actor.side) ec.add("must target ally", this);
 
       if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
     }
 
-    return ec;
+    return super.check({ target }, ec);
   }
 
   getValidAttacks(attacker: Combatant) {
@@ -143,8 +141,6 @@ class DiscordAction extends AbstractAction<HasTarget> {
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    super.check({ target }, ec);
-
     if (target) {
       if (target.side === this.actor.side) ec.add("must target enemy", this);
 
@@ -153,7 +149,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
       if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
     }
 
-    return ec;
+    return super.check({ target }, ec);
   }
 
   getValidAttacks(attacker: Combatant) {
@@ -223,12 +219,9 @@ class IrritationAction extends AbstractAction<HasTarget> {
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    super.check({ target }, ec);
-
     if (target && target.concentratingOn.size < 1)
       ec.add("Target is not concentrating", this);
-
-    return ec;
+    return super.check({ target }, ec);
   }
 
   async apply({ target }: HasTarget) {

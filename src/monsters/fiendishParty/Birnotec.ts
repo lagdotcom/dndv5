@@ -1,7 +1,10 @@
 import burstUrl from "@img/act/eldritch-burst.svg";
 import tokenUrl from "@img/tok/boss/birnotec.png";
 
+import AbstractAction from "../../actions/AbstractAction";
 import CastSpell from "../../actions/CastSpell";
+import ErrorCollector from "../../collectors/ErrorCollector";
+import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
@@ -132,39 +135,117 @@ const ArmorOfAgathys = new SimpleFeature(
   },
 );
 
+class AntimagicProdigyAction extends AbstractAction<HasTarget> {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private dc: number,
+    private success: SuccessResponseCollector,
+  ) {
+    super(
+      g,
+      actor,
+      "Antimagic Prodigy",
+      "implemented",
+      { target: new TargetResolver(g, Infinity) },
+      {
+        time: "reaction",
+        description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
+      },
+    );
+  }
+
+  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
+    if (target?.side === this.actor.side) ec.add("enemy only", this);
+    return super.check({ target }, ec);
+  }
+
+  async apply({ target }: HasTarget) {
+    await super.apply({ target });
+    const { g, actor, dc, success } = this;
+    const save = await g.abilityCheck(dc, {
+      who: target,
+      attacker: actor,
+      skill: "Arcana",
+      ability: "int",
+      tags: chSet("counterspell"),
+    });
+
+    // TODO [MESSAGES]
+    if (save.outcome === "fail") success.add("fail", AntimagicProdigy);
+  }
+}
+
 const AntimagicProdigy = new SimpleFeature(
   "Antimagic Prodigy",
   `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
   (g, me) => {
-    g.events.on("SpellCast", ({ detail: { who, interrupt, success } }) => {
-      // TODO make this into an actual reaction
-      if (me.hasTime("reaction") && who.side !== me.side)
-        interrupt.add(
-          new YesNoChoice(
-            me,
-            AntimagicProdigy,
-            "Antimagic Prodigy",
-            `Use ${me.name}'s reaction to attempt to counter the spell?`,
-            async () => {
-              me.useTime("reaction");
-
-              const save = await g.abilityCheck(15, {
-                who,
-                attacker: me,
-                skill: "Arcana",
-                ability: "int",
-                tags: chSet("counterspell"),
-              });
-
-              // TODO [MESSAGES]
-              if (save.outcome === "fail")
-                success.add("fail", AntimagicProdigy);
-            },
-          ),
-        );
-    });
+    g.events.on(
+      "SpellCast",
+      ({ detail: { who: target, interrupt, success } }) => {
+        const action = new AntimagicProdigyAction(g, me, 15, success);
+        if (g.check(action, { target }).result)
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              AntimagicProdigy,
+              "Antimagic Prodigy",
+              `Use ${me.name}'s reaction to attempt to counter the spell?`,
+              async () => await action.apply({ target }),
+            ),
+          );
+      },
+    );
   },
 );
+
+class HellishRebukeAction extends AbstractAction<HasTarget> {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private dc: number,
+  ) {
+    super(
+      g,
+      actor,
+      "Hellish Rebuke",
+      "implemented",
+      { target: new TargetResolver(g, Infinity) },
+      {
+        time: "reaction",
+        description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
+      },
+    );
+  }
+
+  async apply({ target }: HasTarget) {
+    await super.apply({ target });
+    const { g, actor, dc } = this;
+
+    const damage = await g.rollDamage(2, {
+      source: HellishRebuke,
+      size: 10,
+      attacker: actor,
+      target,
+      damageType: "fire",
+    });
+
+    const save = await g.savingThrow(dc, {
+      who: target,
+      attacker: actor,
+      ability: "dex",
+      tags: svSet(),
+    });
+
+    await g.damage(
+      HellishRebuke,
+      "fire",
+      { attacker: actor, target },
+      [["fire", damage]],
+      save.damageResponse,
+    );
+  }
+}
 
 const HellishRebuke = new SimpleFeature(
   "Hellish Rebuke",
@@ -173,42 +254,20 @@ const HellishRebuke = new SimpleFeature(
     g.events.on(
       "CombatantDamaged",
       ({ detail: { who, attacker, interrupt } }) => {
-        // TODO make this into an actual reaction
-        if (who === me && me.hasTime("reaction"))
-          interrupt.add(
-            new YesNoChoice(
-              me,
-              HellishRebuke,
-              "Hellish Rebuke",
-              `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-              async () => {
-                me.useTime("reaction");
-
-                const damage = await g.rollDamage(2, {
-                  source: HellishRebuke,
-                  size: 10,
-                  attacker: me,
-                  target: attacker,
-                  damageType: "fire",
-                });
-
-                const save = await g.savingThrow(15, {
-                  who: attacker,
-                  attacker: me,
-                  ability: "dex",
-                  tags: svSet(),
-                });
-
-                await g.damage(
-                  HellishRebuke,
-                  "fire",
-                  { attacker: me, target: attacker },
-                  [["fire", damage]],
-                  save.damageResponse,
-                );
-              },
-            ),
-          );
+        if (who === me) {
+          const action = new HellishRebukeAction(g, me, 15);
+          const config = { target: attacker };
+          if (g.check(action, config).result)
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                HellishRebuke,
+                "Hellish Rebuke",
+                `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
+                async () => await action.apply(config),
+              ),
+            );
+        }
       },
     );
   },

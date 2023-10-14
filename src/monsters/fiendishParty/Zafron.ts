@@ -82,11 +82,8 @@ class BullRushAction extends AbstractAction {
   }
 
   check(config: never, ec: ErrorCollector) {
-    super.check(config, ec);
-
     if (this.actor.speed <= 0) ec.add("cannot move", this);
-
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply() {
@@ -168,7 +165,7 @@ const SurvivalReflex = new SimpleFeature(
     const useReflex: EventListener<"BeforeCheck" | "BeforeSave"> = ({
       detail: { who, interrupt, diceType },
     }) => {
-      // TODO make this into an actual reaction
+      // TODO make this into an actual reaction?
       if (who === me && me.hasTime("reaction"))
         interrupt.add(
           new YesNoChoice(

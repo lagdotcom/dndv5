@@ -1,10 +1,14 @@
+import AbstractAction from "../../actions/AbstractAction";
 import DashAction from "../../actions/DashAction";
 import DisengageAction from "../../actions/DisengageAction";
+import MultiplierCollector from "../../collectors/MultiplierCollector";
+import Engine from "../../Engine";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { abSet } from "../../types/AbilityName";
+import Combatant from "../../types/Combatant";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { skSet } from "../../types/SkillName";
@@ -64,6 +68,33 @@ const CunningAction = new SimpleFeature(
   },
 );
 
+class UncannyDodgeAction extends AbstractAction {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private multiplier: MultiplierCollector,
+  ) {
+    super(
+      g,
+      actor,
+      "Uncanny Dodge",
+      "implemented",
+      {},
+      {
+        description: `when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+        time: "reaction",
+      },
+    );
+  }
+
+  // TODO [SIGHT] ... when an attacker that you can see ...
+
+  async apply() {
+    await super.apply({});
+    this.multiplier.add("half", this);
+  }
+}
+
 const UncannyDodge = new SimpleFeature(
   "Uncanny Dodge",
   `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
@@ -71,21 +102,19 @@ const UncannyDodge = new SimpleFeature(
     g.events.on(
       "GatherDamage",
       ({ detail: { target, attack, interrupt, multiplier } }) => {
-        // TODO [SIGHT] ... when an attacker that you can see ...
-        // TODO make this into an actual reaction
-        if (attack && target === me && me.hasTime("reaction"))
-          interrupt.add(
-            new YesNoChoice(
-              me,
-              UncannyDodge,
-              "Uncanny Dodge",
-              `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-              async () => {
-                me.useTime("reaction");
-                multiplier.add("half", UncannyDodge);
-              },
-            ),
-          );
+        if (attack && target === me) {
+          const action = new UncannyDodgeAction(g, me, multiplier);
+          if (g.check(action, {}).result)
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                UncannyDodge,
+                "Uncanny Dodge",
+                `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
+                async () => await action.apply(),
+              ),
+            );
+        }
       },
     );
   },
