@@ -4,7 +4,7 @@ import { getBoundingBox } from "./utils/areas";
 import { round, roundUp } from "./utils/numbers";
 
 export const MapSquareSize = 5;
-const HalfSquare = MapSquareSize / 2;
+export const HalfSquareSize = MapSquareSize / 2;
 
 export default class MapSquare extends Polygon {
   constructor(
@@ -24,7 +24,7 @@ export default class MapSquare extends Polygon {
   }
 
   getMiddle(): Point {
-    return { x: this.x + HalfSquare, y: this.y + HalfSquare };
+    return { x: this.x + HalfSquareSize, y: this.y + HalfSquareSize };
   }
 }
 

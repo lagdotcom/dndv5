@@ -1,3 +1,4 @@
+import { HalfSquareSize } from "./MapSquare";
 import Point from "./types/Point";
 import { mapSet } from "./utils/set";
 
@@ -37,5 +38,22 @@ export default class PointSet {
 
   *[Symbol.iterator]() {
     for (const tag of this.set) yield asPoint(tag);
+  }
+
+  average(scaleValue = 1, offset = HalfSquareSize): Point {
+    let count = 0;
+    let x = 0;
+    let y = 0;
+
+    for (const p of this) {
+      count++;
+      x += p.x;
+      y += p.y;
+    }
+
+    return {
+      x: (x / count + offset) * scaleValue,
+      y: (y / count + offset) * scaleValue,
+    };
   }
 }

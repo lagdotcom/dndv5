@@ -25,7 +25,7 @@ const SculptSpells = new SimpleFeature(
               SculptSpells,
               "Sculpt Spells",
               `Pick combatants who will be somewhat protected from your spell.`,
-              Array.from(targets).map((value) => ({
+              Array.from(targets, (value) => ({
                 value,
                 label: value.name,
               })),

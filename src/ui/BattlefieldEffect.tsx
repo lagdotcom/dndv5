@@ -53,37 +53,28 @@ export default function BattlefieldEffect({
   name = "Pending",
   shape,
   tags = new Set(),
-  top = false,
+  top: onTop = false,
   tint = getAuraColour(tags),
 }: Props) {
-  const { points, style } = useMemo(() => {
-    const points = Array.from(resolveArea(shape));
-    let cx = 0;
-    let cy = 0;
-    for (const p of points) {
-      cx += p.x + MapSquareSize / 2;
-      cy += p.y + MapSquareSize / 2;
-    }
-
-    const left = (cx / points.length) * scale.value;
-    const top = (cy / points.length) * scale.value;
-
-    const style: JSXInternal.CSSProperties = { left, top };
-
-    return { points, style };
+  const { points, left, top } = useMemo(() => {
+    const points = resolveArea(shape);
+    const { x: left, y: top } = points.average(scale.value);
+    return { points, left, top };
   }, [shape]);
+
+  const squares = Array.from(points, (p, key) => (
+    <AffectedSquare key={key} point={p} tint={tint ?? "silver"} top={onTop} />
+  ));
 
   return (
     <>
       <div
-        className={classnames(styles.main, { [styles.top]: top })}
-        style={style}
+        className={classnames(styles.main, { [styles.top]: onTop })}
+        style={{ left, top }}
       >
         {name}
       </div>
-      {points.map((p, i) => (
-        <AffectedSquare key={i} point={p} tint={tint ?? "silver"} top={top} />
-      ))}
+      {squares}
     </>
   );
 }

@@ -577,6 +577,20 @@
       for (const tag of this.set)
         yield asPoint(tag);
     }
+    average(scaleValue = 1, offset = HalfSquareSize) {
+      let count = 0;
+      let x = 0;
+      let y = 0;
+      for (const p of this) {
+        count++;
+        x += p.x;
+        y += p.y;
+      }
+      return {
+        x: (x / count + offset) * scaleValue,
+        y: (y / count + offset) * scaleValue
+      };
+    }
   };
 
   // src/utils/areas.ts
@@ -738,7 +752,7 @@
 
   // src/MapSquare.ts
   var MapSquareSize = 5;
-  var HalfSquare = MapSquareSize / 2;
+  var HalfSquareSize = MapSquareSize / 2;
   var MapSquare = class extends Polygon {
     constructor(x, y) {
       super([
@@ -754,7 +768,7 @@
       return { x: this.x, y: this.y };
     }
     getMiddle() {
-      return { x: this.x + HalfSquare, y: this.y + HalfSquare };
+      return { x: this.x + HalfSquareSize, y: this.y + HalfSquareSize };
     }
   };
   function* enumerateMapSquares(minX, minY, maxX, maxY) {
@@ -6493,7 +6507,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
                 SculptSpells,
                 "Sculpt Spells",
                 `Pick combatants who will be somewhat protected from your spell.`,
-                Array.from(targets).map((value) => ({
+                Array.from(targets, (value) => ({
                   value,
                   label: value.name
                 })),
@@ -11628,7 +11642,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/App.tsx
   var import_signals2 = __toESM(require_signals());
-  var import_hooks16 = __toESM(require_hooks());
+  var import_hooks17 = __toESM(require_hooks());
 
   // src/utils/config.ts
   function getConfigErrors(g, action, config) {
@@ -11893,11 +11907,12 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/ui/Battlefield.tsx
-  var import_hooks6 = __toESM(require_hooks());
+  var import_hooks7 = __toESM(require_hooks());
 
   // src/ui/Battlefield.module.scss
   var Battlefield_module_default = {
-    "main": "_main_1lt6z_1"
+    "main": "_main_1bit5_1",
+    "panning": "_panning_1bit5_11"
   };
 
   // src/ui/BattlefieldEffect.tsx
@@ -11944,37 +11959,68 @@ The creature is aware of this effect before it makes its attack against you.`
     name = "Pending",
     shape,
     tags = /* @__PURE__ */ new Set(),
-    top = false,
+    top: onTop = false,
     tint = getAuraColour(tags)
   }) {
-    const { points, style } = (0, import_hooks3.useMemo)(() => {
-      const points2 = Array.from(resolveArea(shape));
-      let cx = 0;
-      let cy = 0;
-      for (const p of points2) {
-        cx += p.x + MapSquareSize / 2;
-        cy += p.y + MapSquareSize / 2;
-      }
-      const left = cx / points2.length * scale.value;
-      const top2 = cy / points2.length * scale.value;
-      const style2 = { left, top: top2 };
-      return { points: points2, style: style2 };
+    const { points, left, top } = (0, import_hooks3.useMemo)(() => {
+      const points2 = resolveArea(shape);
+      const { x: left2, y: top2 } = points2.average(scale.value);
+      return { points: points2, left: left2, top: top2 };
     }, [shape]);
+    const squares = Array.from(points, (p, key) => /* @__PURE__ */ o(AffectedSquare, { point: p, tint: tint != null ? tint : "silver", top: onTop }, key));
     return /* @__PURE__ */ o(import_preact3.Fragment, { children: [
       /* @__PURE__ */ o(
         "div",
         {
-          className: classnames(BattlefieldEffect_module_default.main, { [BattlefieldEffect_module_default.top]: top }),
-          style,
+          className: classnames(BattlefieldEffect_module_default.main, { [BattlefieldEffect_module_default.top]: onTop }),
+          style: { left, top },
           children: name
         }
       ),
-      points.map((p, i) => /* @__PURE__ */ o(AffectedSquare, { point: p, tint: tint != null ? tint : "silver", top }, i))
+      squares
     ] });
   }
 
+  // src/ui/hooks/usePanning.ts
+  var import_hooks4 = __toESM(require_hooks());
+  function usePanning(onPan) {
+    const [isPanning, setIsPanning] = (0, import_hooks4.useState)(false);
+    const [panStartCoords, setPanStartCoords] = (0, import_hooks4.useState)({ x: 0, y: 0 });
+    const onMouseDown = (0, import_hooks4.useCallback)((e) => {
+      if (e.button === 2) {
+        setIsPanning(true);
+        setPanStartCoords({ x: e.clientX, y: e.clientY });
+      }
+    }, []);
+    const onMouseEnter = (0, import_hooks4.useCallback)((e) => {
+      if (!e.button)
+        setIsPanning(false);
+    }, []);
+    const onMouseMove = (0, import_hooks4.useCallback)(
+      (e) => {
+        if (isPanning) {
+          const deltaX = e.clientX - panStartCoords.x;
+          const deltaY = e.clientY - panStartCoords.y;
+          onPan(-deltaX, -deltaY);
+          setPanStartCoords({ x: e.clientX, y: e.clientY });
+        }
+      },
+      [isPanning, onPan, panStartCoords.x, panStartCoords.y]
+    );
+    const onMouseUp = (0, import_hooks4.useCallback)(() => {
+      setIsPanning(false);
+    }, []);
+    return {
+      isPanning,
+      onMouseDown,
+      onMouseEnter,
+      onMouseMove,
+      onMouseUp
+    };
+  }
+
   // src/ui/Unit.tsx
-  var import_hooks5 = __toESM(require_hooks());
+  var import_hooks6 = __toESM(require_hooks());
 
   // src/ui/Unit.module.scss
   var Unit_module_default = {
@@ -12086,7 +12132,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var w_default = "./w-IMIMIJNF.svg";
 
   // src/ui/UnitMoveButton.tsx
-  var import_hooks4 = __toESM(require_hooks());
+  var import_hooks5 = __toESM(require_hooks());
 
   // src/ui/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
@@ -12118,11 +12164,11 @@ The creature is aware of this effect before it makes its attack against you.`
     northeast: makeButtonType("moveNE", ne_default, "Move Northeast")
   };
   function UnitMoveButton({ disabled, onClick, type }) {
-    const { className, iconUrl, label } = (0, import_hooks4.useMemo)(
+    const { className, iconUrl, label } = (0, import_hooks5.useMemo)(
       () => buttonTypes[type],
       [type]
     );
-    const clicked = (0, import_hooks4.useCallback)(
+    const clicked = (0, import_hooks5.useCallback)(
       (e) => {
         e.stopPropagation();
         onClick(type);
@@ -12154,11 +12200,11 @@ The creature is aware of this effect before it makes its attack against you.`
       height: u.sizeInUnits * scale.value
     };
     const disabled = u.movedSoFar >= u.speed;
-    const clicked = (0, import_hooks5.useCallback)(
+    const clicked = (0, import_hooks6.useCallback)(
       (e) => onClick(u.who, e),
       [onClick, u]
     );
-    const moved = (0, import_hooks5.useCallback)(
+    const moved = (0, import_hooks6.useCallback)(
       (dir) => onMove(u.who, dir),
       [onMove, u]
     );
@@ -12234,40 +12280,60 @@ The creature is aware of this effect before it makes its attack against you.`
     onMoveCombatant
   }) {
     var _a;
-    const convertCoordinate = (0, import_hooks6.useCallback)((e) => {
+    const [offset, setOffset] = (0, import_hooks7.useState)({ x: 0, y: 0 });
+    const { isPanning, onMouseDown, onMouseEnter, onMouseMove, onMouseUp } = usePanning(
+      (dx, dy) => setOffset((old) => ({ x: old.x + dx, y: old.y + dy }))
+    );
+    const convertCoordinate = (0, import_hooks7.useCallback)((e) => {
       const x = round(Math.floor(e.pageX / scale.value), MapSquareSize);
       const y = round(Math.floor(e.pageY / scale.value), MapSquareSize);
       return { x, y };
     }, []);
-    const onClick = (0, import_hooks6.useCallback)(
+    const onClick = (0, import_hooks7.useCallback)(
       (e) => onClickBattlefield(convertCoordinate(e), e),
       [convertCoordinate, onClickBattlefield]
     );
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-      /* @__PURE__ */ o("main", { className: Battlefield_module_default.main, "aria-label": "Battlefield", onClick, children: [
-        allCombatants.value.map((unit) => /* @__PURE__ */ o(
-          Unit,
-          {
-            isMoving: movingCombatantId.value === unit.id,
-            u: unit,
-            onClick: onClickCombatant,
-            onMove: onMoveCombatant
+      /* @__PURE__ */ o(
+        "main",
+        {
+          className: classnames(Battlefield_module_default.main, { [Battlefield_module_default.panning]: isPanning }),
+          "aria-label": "Battlefield",
+          onClick,
+          onMouseDown,
+          onMouseEnter,
+          onMouseMove,
+          onMouseUp,
+          onContextMenu: (e) => {
+            e.preventDefault();
+            return false;
           },
-          unit.id
-        )),
-        allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { ...effect }, effect.id)),
-        ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`)),
-        teleportInfo.value && /* @__PURE__ */ o(
-          BattlefieldEffect,
-          {
-            shape: teleportInfo.value,
-            top: true,
-            name: "Teleport"
-          },
-          "teleport"
-        )
-      ] })
+          children: /* @__PURE__ */ o("div", { style: { transform: `translate(${offset.x}px, ${offset.y}px)` }, children: [
+            allCombatants.value.map((unit) => /* @__PURE__ */ o(
+              Unit,
+              {
+                isMoving: movingCombatantId.value === unit.id,
+                u: unit,
+                onClick: onClickCombatant,
+                onMove: onMoveCombatant
+              },
+              unit.id
+            )),
+            allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { ...effect }, effect.id)),
+            ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`)),
+            teleportInfo.value && /* @__PURE__ */ o(
+              BattlefieldEffect,
+              {
+                shape: teleportInfo.value,
+                top: true,
+                name: "Teleport"
+              },
+              "teleport"
+            )
+          ] })
+        }
+      )
     );
   }
 
@@ -12287,7 +12353,7 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/ChooseActionConfigPanel.tsx
-  var import_hooks8 = __toESM(require_hooks());
+  var import_hooks9 = __toESM(require_hooks());
 
   // src/ui/button.module.scss
   var button_module_default = {
@@ -12323,7 +12389,7 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/RangeInput.tsx
-  var import_hooks7 = __toESM(require_hooks());
+  var import_hooks8 = __toESM(require_hooks());
 
   // src/ui/RangeInput.module.scss
   var RangeInput_module_default = {
@@ -12336,7 +12402,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/RangeInput.tsx
   function RangeInput({ value, onChange, min, max }) {
-    const changed = (0, import_hooks7.useCallback)(
+    const changed = (0, import_hooks8.useCallback)(
       (e) => onChange(e.currentTarget.valueAsNumber),
       [onChange]
     );
@@ -12360,14 +12426,14 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
-    const setTarget = (0, import_hooks8.useCallback)(
+    const setTarget = (0, import_hooks9.useCallback)(
       (who) => {
         onChange(field, who);
         wantsCombatant.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks8.useCallback)(() => {
+    const onClick = (0, import_hooks9.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ o("div", { children: [
@@ -12394,7 +12460,7 @@ The creature is aware of this effect before it makes its attack against you.`
     onChange
   }) {
     var _a;
-    const addTarget = (0, import_hooks8.useCallback)(
+    const addTarget = (0, import_hooks9.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).includes(who))
           onChange(field, (value != null ? value : []).concat(who));
@@ -12402,10 +12468,10 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks8.useCallback)(() => {
+    const onClick = (0, import_hooks9.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks8.useCallback)(
+    const remove = (0, import_hooks9.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== who)
@@ -12440,14 +12506,14 @@ The creature is aware of this effect before it makes its attack against you.`
     ] });
   }
   function ChoosePoint({ field, value, onChange }) {
-    const setTarget = (0, import_hooks8.useCallback)(
+    const setTarget = (0, import_hooks9.useCallback)(
       (p) => {
         onChange(field, p);
         wantsPoint.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks8.useCallback)(() => {
+    const onClick = (0, import_hooks9.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ o("div", { children: [
@@ -12473,7 +12539,7 @@ The creature is aware of this effect before it makes its attack against you.`
     value,
     onChange
   }) {
-    const addPoint = (0, import_hooks8.useCallback)(
+    const addPoint = (0, import_hooks9.useCallback)(
       (p) => {
         if (p)
           onChange(field, (value != null ? value : []).concat(p));
@@ -12481,10 +12547,10 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks8.useCallback)(() => {
+    const onClick = (0, import_hooks9.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== addPoint ? addPoint : void 0;
     }, [addPoint]);
-    const remove = (0, import_hooks8.useCallback)(
+    const remove = (0, import_hooks9.useCallback)(
       (p) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== p)
@@ -12549,7 +12615,7 @@ The creature is aware of this effect before it makes its attack against you.`
     value,
     onChange
   }) {
-    const [label, setLabel] = (0, import_hooks8.useState)("NONE");
+    const [label, setLabel] = (0, import_hooks9.useState)("NONE");
     const choose = (e) => () => {
       if (e.value === value) {
         onChange(field, void 0);
@@ -12606,7 +12672,7 @@ The creature is aware of this effect before it makes its attack against you.`
     value,
     onChange
   }) {
-    const addTarget = (0, import_hooks8.useCallback)(
+    const addTarget = (0, import_hooks9.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).find((e) => e.who === who))
           onChange(field, (value != null ? value : []).concat({ amount: 0, who }));
@@ -12614,10 +12680,10 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks8.useCallback)(() => {
+    const onClick = (0, import_hooks9.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks8.useCallback)(
+    const remove = (0, import_hooks9.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x.who !== who)
@@ -12691,30 +12757,30 @@ The creature is aware of this effect before it makes its attack against you.`
     onCancel,
     onExecute
   }) {
-    const [config, setConfig] = (0, import_hooks8.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks8.useCallback)(
+    const [config, setConfig] = (0, import_hooks9.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks9.useCallback)(
       (key, value) => setConfig((old) => ({ ...old, [key]: value })),
       []
     );
-    (0, import_hooks8.useEffect)(() => {
+    (0, import_hooks9.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
     }, [action, activeCombatant.value, config]);
-    const errors = (0, import_hooks8.useMemo)(
+    const errors = (0, import_hooks9.useMemo)(
       () => getConfigErrors(g, action, config).messages,
       [g, action, config]
     );
-    const disabled = (0, import_hooks8.useMemo)(() => errors.length > 0, [errors]);
-    const damage = (0, import_hooks8.useMemo)(() => action.getDamage(config), [action, config]);
-    const description = (0, import_hooks8.useMemo)(
+    const disabled = (0, import_hooks9.useMemo)(() => errors.length > 0, [errors]);
+    const damage = (0, import_hooks9.useMemo)(() => action.getDamage(config), [action, config]);
+    const description = (0, import_hooks9.useMemo)(
       () => action.getDescription(config),
       [action, config]
     );
-    const heal = (0, import_hooks8.useMemo)(() => action.getHeal(config), [action, config]);
-    const execute = (0, import_hooks8.useCallback)(() => {
+    const heal = (0, import_hooks9.useMemo)(() => action.getHeal(config), [action, config]);
+    const execute = (0, import_hooks9.useCallback)(() => {
       if (checkConfig(g, action, config))
         onExecute(action, config);
     }, [g, action, config, onExecute]);
-    const elements = (0, import_hooks8.useMemo)(
+    const elements = (0, import_hooks9.useMemo)(
       () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
         const subProps = {
           key,
@@ -12786,7 +12852,7 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/EventLog.tsx
-  var import_hooks10 = __toESM(require_hooks());
+  var import_hooks11 = __toESM(require_hooks());
 
   // src/ui/EventLog.module.scss
   var EventLog_module_default = {
@@ -12797,10 +12863,10 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/ui/hooks/useTimeout.ts
-  var import_hooks9 = __toESM(require_hooks());
+  var import_hooks10 = __toESM(require_hooks());
   function useTimeout(handler, ms = void 0) {
-    const [handle, setHandle] = (0, import_hooks9.useState)();
-    const fire = (0, import_hooks9.useCallback)(
+    const [handle, setHandle] = (0, import_hooks10.useState)();
+    const fire = (0, import_hooks10.useCallback)(
       () => setHandle((old) => {
         if (old)
           return old;
@@ -12811,7 +12877,7 @@ The creature is aware of this effect before it makes its attack against you.`
       }),
       [handler, ms]
     );
-    const cancel = (0, import_hooks9.useCallback)(
+    const cancel = (0, import_hooks10.useCallback)(
       () => setHandle((old) => {
         if (old)
           clearTimeout(old);
@@ -12819,7 +12885,7 @@ The creature is aware of this effect before it makes its attack against you.`
       }),
       []
     );
-    (0, import_hooks9.useEffect)(() => cancel, [cancel]);
+    (0, import_hooks10.useEffect)(() => cancel, [cancel]);
     return { cancel, fire, handle };
   }
 
@@ -12855,10 +12921,10 @@ The creature is aware of this effect before it makes its attack against you.`
   var dmgBreakdown = (breakdown) => ({
     element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
       "(",
-      /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: Array.from(breakdown).map(([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
+      /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: Array.from(breakdown, ([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
       ")"
     ] }),
-    text: `(${Array.from(breakdown).map(getDamageEntryText).join(", ")})`
+    text: `(${Array.from(breakdown, getDamageEntryText).join(", ")})`
   });
   var getAttackMessage = ({
     pre: { who, target, weapon, ammo, spell },
@@ -12970,19 +13036,19 @@ The creature is aware of this effect before it makes its attack against you.`
     return /* @__PURE__ */ o("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function EventLog({ g }) {
-    const ref = (0, import_hooks10.useRef)(null);
-    const [messages, setMessages] = (0, import_hooks10.useState)([]);
+    const ref = (0, import_hooks11.useRef)(null);
+    const [messages, setMessages] = (0, import_hooks11.useState)([]);
     const { fire } = useTimeout(
       () => {
         var _a, _b;
         return (_b = (_a = ref.current) == null ? void 0 : _a.scrollIntoView) == null ? void 0 : _b.call(_a, { behavior: "smooth" });
       }
     );
-    const addMessage = (0, import_hooks10.useCallback)((el) => {
+    const addMessage = (0, import_hooks11.useCallback)((el) => {
       setMessages((old) => old.concat(el).slice(-50));
       fire();
     }, []);
-    (0, import_hooks10.useEffect)(() => {
+    (0, import_hooks11.useEffect)(() => {
       g.events.on(
         "Attack",
         ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAttackMessage(detail) }))
@@ -13044,10 +13110,10 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/ListChoiceDialog.tsx
-  var import_hooks12 = __toESM(require_hooks());
+  var import_hooks13 = __toESM(require_hooks());
 
   // src/ui/Dialog.tsx
-  var import_hooks11 = __toESM(require_hooks());
+  var import_hooks12 = __toESM(require_hooks());
 
   // src/ui/Dialog.module.scss
   var Dialog_module_default = {
@@ -13059,7 +13125,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/Dialog.tsx
   function ReactDialog({ title, text, children }) {
-    const titleId = (0, import_hooks11.useId)();
+    const titleId = (0, import_hooks12.useId)();
     return /* @__PURE__ */ o("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ o(
       "div",
       {
@@ -13084,7 +13150,7 @@ The creature is aware of this effect before it makes its attack against you.`
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks12.useCallback)(
+    const decide = (0, import_hooks13.useCallback)(
       (value) => {
         chooseFromList.value = void 0;
         resolve(value);
@@ -13118,13 +13184,13 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/MultiListChoiceDialog.tsx
-  var import_hooks14 = __toESM(require_hooks());
+  var import_hooks15 = __toESM(require_hooks());
 
   // src/ui/hooks/useList.ts
-  var import_hooks13 = __toESM(require_hooks());
+  var import_hooks14 = __toESM(require_hooks());
   function useList(initialValue = []) {
-    const [list, setList] = (0, import_hooks13.useState)(initialValue);
-    const toggle = (0, import_hooks13.useCallback)(
+    const [list, setList] = (0, import_hooks14.useState)(initialValue);
+    const toggle = (0, import_hooks14.useCallback)(
       (item) => setList(
         (old) => old.includes(item) ? old.filter((x) => x !== item) : old.concat(item)
       ),
@@ -13140,7 +13206,7 @@ The creature is aware of this effect before it makes its attack against you.`
   }) {
     const { list, toggle } = useList();
     const invalidSelection = list.length < interruption.minimum || list.length > interruption.maximum;
-    const decide = (0, import_hooks14.useCallback)(() => {
+    const decide = (0, import_hooks15.useCallback)(() => {
       chooseManyFromList.value = void 0;
       resolve(list);
     }, [list, resolve]);
@@ -13170,16 +13236,17 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/utils/icons.ts
+  var getIconUrl = (item) => item.icon && item.icon.url;
   function getAllIcons(g) {
-    const getIconUrl = (item) => item.icon && item.icon.url;
-    const relevantItems = Array.from(g.combatants.keys()).flatMap((who) => [
-      ...who.inventory,
-      ...who.equipment,
-      ...who.knownSpells,
-      ...who.preparedSpells,
-      ...who.spellcastingMethods
-    ]);
-    return new Set(relevantItems.map(getIconUrl).filter(isDefined));
+    return new Set(
+      Array.from(g.combatants.keys()).flatMap((who) => [
+        ...who.inventory,
+        ...who.equipment,
+        ...who.knownSpells,
+        ...who.preparedSpells,
+        ...who.spellcastingMethods
+      ]).map(getIconUrl).filter(isDefined)
+    );
   }
 
   // src/ui/utils/types.ts
@@ -13250,20 +13317,20 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/ui/YesNoDialog.tsx
-  var import_hooks15 = __toESM(require_hooks());
+  var import_hooks16 = __toESM(require_hooks());
   function YesNoDialog({
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks15.useCallback)(
+    const decide = (0, import_hooks16.useCallback)(
       (value) => {
         chooseYesNo.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks15.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks15.useCallback)(() => decide(false), [decide]);
+    const onYes = (0, import_hooks16.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks16.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
@@ -13272,29 +13339,29 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/App.tsx
   function App({ g, onMount }) {
-    const cache2 = (0, import_hooks16.useContext)(SVGCacheContext);
-    const [target, setTarget] = (0, import_hooks16.useState)();
-    const [action, setAction] = (0, import_hooks16.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks16.useState)({
+    const cache2 = (0, import_hooks17.useContext)(SVGCacheContext);
+    const [target, setTarget] = (0, import_hooks17.useState)();
+    const [action, setAction] = (0, import_hooks17.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks17.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks16.useCallback)(
+    const hideActionMenu = (0, import_hooks17.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks16.useCallback)(() => {
+    const refreshUnits = (0, import_hooks17.useCallback)(() => {
       const list = [];
       for (const [who, state] of g.combatants)
         list.push(getUnitData(who, state));
       allCombatants.value = list;
     }, [g]);
-    const refreshAreas = (0, import_hooks16.useCallback)(() => {
+    const refreshAreas = (0, import_hooks17.useCallback)(() => {
       allEffects.value = Array.from(g.effects);
     }, [g]);
-    const onFinishBoundedMove = (0, import_hooks16.useCallback)(() => {
+    const onFinishBoundedMove = (0, import_hooks17.useCallback)(() => {
       if (moveBounds.value) {
         moveBounds.value.detail.resolve();
         moveBounds.value = void 0;
@@ -13304,7 +13371,7 @@ The creature is aware of this effect before it makes its attack against you.`
         }
       }
     }, [g]);
-    const processMove = (0, import_hooks16.useCallback)(
+    const processMove = (0, import_hooks17.useCallback)(
       (mover) => {
         void mover.then((result) => {
           if (result.type === "error")
@@ -13316,7 +13383,7 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [onFinishBoundedMove]
     );
-    (0, import_hooks16.useEffect)(() => {
+    (0, import_hooks17.useEffect)(() => {
       const subscriptions = [
         g.events.on("CombatantPlaced", refreshUnits),
         g.events.on("CombatantMoved", refreshUnits),
@@ -13384,7 +13451,7 @@ The creature is aware of this effect before it makes its attack against you.`
       refreshAreas,
       refreshUnits
     ]);
-    const onExecuteAction = (0, import_hooks16.useCallback)(
+    const onExecuteAction = (0, import_hooks17.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
@@ -13397,7 +13464,7 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [g, refreshUnits]
     );
-    const onClickAction = (0, import_hooks16.useCallback)(
+    const onClickAction = (0, import_hooks17.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -13410,7 +13477,7 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [g, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks16.useCallback)(
+    const onClickBattlefield = (0, import_hooks17.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -13422,7 +13489,7 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks16.useCallback)(
+    const onClickCombatant = (0, import_hooks17.useCallback)(
       (who, e) => {
         e.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -13457,7 +13524,7 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [g]
     );
-    const onMoveCombatant = (0, import_hooks16.useCallback)(
+    const onMoveCombatant = (0, import_hooks17.useCallback)(
       (who, dir) => {
         if (moveHandler.value) {
           hideActionMenu();
@@ -13466,16 +13533,16 @@ The creature is aware of this effect before it makes its attack against you.`
       },
       [g, hideActionMenu, processMove]
     );
-    const onPass = (0, import_hooks16.useCallback)(() => {
+    const onPass = (0, import_hooks17.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
       void g.nextTurn();
     }, [g]);
-    const onCancelAction = (0, import_hooks16.useCallback)(() => {
+    const onCancelAction = (0, import_hooks17.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks16.useCallback)(
+    const onChooseAction = (0, import_hooks17.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);

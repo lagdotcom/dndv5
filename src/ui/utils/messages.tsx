@@ -65,14 +65,14 @@ const dmgBreakdown = (breakdown: Map<DamageType, DamageBreakdown>) => ({
     <>
       (
       <div className={common.damageList}>
-        {Array.from(breakdown).map(([type, entry]) => (
+        {Array.from(breakdown, ([type, entry]) => (
           <span key={type}>{getDamageEntryText([type, entry])}</span>
         ))}
       </div>
       )
     </>
   ),
-  text: `(${Array.from(breakdown).map(getDamageEntryText).join(", ")})`,
+  text: `(${Array.from(breakdown, getDamageEntryText).join(", ")})`,
 });
 
 export const getAttackMessage = ({

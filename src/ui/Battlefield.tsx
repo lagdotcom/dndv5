@@ -1,4 +1,4 @@
-import { useCallback } from "preact/hooks";
+import { useCallback, useState } from "preact/hooks";
 
 import { MapSquareSize } from "../MapSquare";
 import Combatant from "../types/Combatant";
@@ -7,7 +7,9 @@ import Point from "../types/Point";
 import { round } from "../utils/numbers";
 import styles from "./Battlefield.module.scss";
 import BattlefieldEffect from "./BattlefieldEffect";
+import usePanning from "./hooks/usePanning";
 import Unit from "./Unit";
+import classnames from "./utils/classnames";
 import {
   actionAreas,
   allCombatants,
@@ -28,6 +30,13 @@ export default function Battlefield({
   onClickCombatant,
   onMoveCombatant,
 }: Props) {
+  const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+
+  const { isPanning, onMouseDown, onMouseEnter, onMouseMove, onMouseUp } =
+    usePanning((dx, dy) =>
+      setOffset((old) => ({ x: old.x + dx, y: old.y + dy })),
+    );
+
   const convertCoordinate = useCallback((e: MouseEvent) => {
     const x = round(Math.floor(e.pageX / scale.value), MapSquareSize);
     const y = round(Math.floor(e.pageY / scale.value), MapSquareSize);
@@ -41,30 +50,44 @@ export default function Battlefield({
 
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <main className={styles.main} aria-label="Battlefield" onClick={onClick}>
-      {allCombatants.value.map((unit) => (
-        <Unit
-          key={unit.id}
-          isMoving={movingCombatantId.value === unit.id}
-          u={unit}
-          onClick={onClickCombatant}
-          onMove={onMoveCombatant}
-        />
-      ))}
-      {allEffects.value.map((effect) => (
-        <BattlefieldEffect key={effect.id} {...effect} />
-      ))}
-      {(actionAreas.value ?? []).map((shape, i) => (
-        <BattlefieldEffect key={`temp${i}`} shape={shape} top={true} />
-      ))}
-      {teleportInfo.value && (
-        <BattlefieldEffect
-          key="teleport"
-          shape={teleportInfo.value}
-          top={true}
-          name="Teleport"
-        />
-      )}
+    <main
+      className={classnames(styles.main, { [styles.panning]: isPanning })}
+      aria-label="Battlefield"
+      onClick={onClick}
+      onMouseDown={onMouseDown}
+      onMouseEnter={onMouseEnter}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        return false;
+      }}
+    >
+      <div style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}>
+        {allCombatants.value.map((unit) => (
+          <Unit
+            key={unit.id}
+            isMoving={movingCombatantId.value === unit.id}
+            u={unit}
+            onClick={onClickCombatant}
+            onMove={onMoveCombatant}
+          />
+        ))}
+        {allEffects.value.map((effect) => (
+          <BattlefieldEffect key={effect.id} {...effect} />
+        ))}
+        {(actionAreas.value ?? []).map((shape, i) => (
+          <BattlefieldEffect key={`temp${i}`} shape={shape} top={true} />
+        ))}
+        {teleportInfo.value && (
+          <BattlefieldEffect
+            key="teleport"
+            shape={teleportInfo.value}
+            top={true}
+            name="Teleport"
+          />
+        )}
+      </div>
     </main>
   );
 }

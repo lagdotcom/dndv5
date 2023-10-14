@@ -62,13 +62,17 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/Battlefield.module.scss */
-._main_1lt6z_1 {
+._main_1bit5_1 {
   position: absolute;
   left: 0;
   top: 0;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  cursor: grab;
+}
+._panning_1bit5_11 {
+  cursor: grabbing;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/BattlefieldEffect.module.scss */
