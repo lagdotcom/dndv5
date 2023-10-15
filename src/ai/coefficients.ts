@@ -1,12 +1,10 @@
 import AICoefficient from "../types/AICoefficient";
 
-class Coefficient implements AICoefficient {
-  constructor(
-    public name: string,
-    public defaultValue = 1,
-  ) {}
-}
+const makeAICo = (name: string, defaultValue = 1): AICoefficient => ({
+  name,
+  defaultValue,
+});
 
-export const HealSelf = new Coefficient("HealSelf");
-export const HealAllies = new Coefficient("HealAllies");
-export const OverHealAllies = new Coefficient("OverHealAllies", -2);
+export const HealSelf = makeAICo("HealSelf");
+export const HealAllies = makeAICo("HealAllies");
+export const OverHealAllies = makeAICo("OverHealAllies", -0.5);

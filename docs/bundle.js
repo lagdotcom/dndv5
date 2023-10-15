@@ -4460,15 +4460,13 @@
   var o_gonrit_default = "./o-gonrit-C5AF3HHR.png";
 
   // src/ai/coefficients.ts
-  var Coefficient = class {
-    constructor(name, defaultValue = 1) {
-      this.name = name;
-      this.defaultValue = defaultValue;
-    }
-  };
-  var HealSelf = new Coefficient("HealSelf");
-  var HealAllies = new Coefficient("HealAllies");
-  var OverHealAllies = new Coefficient("OverHealAllies", -2);
+  var makeAICo = (name, defaultValue = 1) => ({
+    name,
+    defaultValue
+  });
+  var HealSelf = makeAICo("HealSelf");
+  var HealAllies = makeAICo("HealAllies");
+  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
 
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {

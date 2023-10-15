@@ -1,6 +1,7 @@
 import HealingRule from "../ai/HealingRule";
 import { HasTargets } from "../configs";
 import OGonrit from "../monsters/fiendishParty/OGonrit";
+import Yulash from "../monsters/fiendishParty/Yulash";
 import Zafron from "../monsters/fiendishParty/Zafron";
 import { AIEvaluation } from "../types/AIRule";
 import Combatant from "../types/Combatant";
@@ -53,5 +54,30 @@ describe("HealingRule", () => {
 
     expect(healMe!.score.result).toBeLessThan(healThem!.score.result);
     expect(healThem!.score.result).toBeLessThan(healBoth!.score.result);
+  });
+
+  it("O Gonrit prefers effective healing to over healing", async () => {
+    const {
+      g,
+      combatants: [me, ally, hurt],
+    } = await setupBattleTest(
+      [OGonrit, 0, 0, 10],
+      [Zafron, 5, 0, 1],
+      [Yulash, 10, 0, 1],
+    );
+    ally.hp -= 2;
+    hurt.hp -= 20;
+
+    const v = h.evaluate(g, me, g.getActions(me));
+
+    const healLess = matchConfig(v, [ally]);
+    const healMore = matchConfig(v, [hurt]);
+    const healBoth = matchConfig(v, [ally, hurt]);
+    expect(healLess).toBeDefined();
+    expect(healMore).toBeDefined();
+    expect(healBoth).toBeDefined();
+
+    expect(healLess!.score.result).toBeLessThan(healMore!.score.result);
+    expect(healMore!.score.result).toBeLessThan(healBoth!.score.result);
   });
 });
