@@ -442,10 +442,10 @@ export default function ChooseActionConfigPanel<T extends object>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action, activeCombatant.value, config]);
 
-  const errors = useMemo(
-    () => getConfigErrors(g, action, config).messages,
-    [g, action, config],
-  );
+  const errors = useMemo(() => {
+    if (action.getTime(config) === "reaction") return ["reaction only"];
+    return getConfigErrors(g, action, config).messages;
+  }, [g, action, config]);
   const disabled = useMemo(() => errors.length > 0, [errors]);
   const damage = useMemo(() => action.getDamage(config), [action, config]);
   const description = useMemo(

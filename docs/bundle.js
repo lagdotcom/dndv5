@@ -3181,14 +3181,13 @@
       let healAmount = 0;
       const breakdown = /* @__PURE__ */ new Map();
       for (const [damageType, raw] of damage) {
-        const collector = this.calculateDamageResponse(
+        const { response, amount } = this.calculateDamageResponse(
           damageType,
           raw,
           target,
           baseMultiplier,
           attack
         );
-        const { response, amount } = collector;
         if (response === "absorb") {
           healAmount += raw;
         } else {
@@ -3221,7 +3220,7 @@
     }
     calculateDamageAmount(raw, response, baseMultiplier) {
       let amount = raw;
-      if (response === "absorb") {
+      if (response === "absorb" || response === "immune") {
         amount = 0;
       } else {
         let multiplier = baseMultiplier;
@@ -3289,6 +3288,9 @@
         await who.addEffect(Stable, { duration: Infinity });
       }
     }
+    getAttackOutcome(ac, roll, total) {
+      return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
+    }
     async attack(e) {
       const pre = await this.resolve(
         new BeforeAttackEvent({
@@ -3319,7 +3321,7 @@
           roll,
           total,
           ac,
-          outcome: roll.value === 1 ? "miss" : roll.value === 20 ? "critical" : total >= ac ? "hit" : "miss",
+          outcome: this.getAttackOutcome(ac, roll.value, total),
           forced: false,
           // TODO
           interrupt: new InterruptionCollector()
@@ -3854,6 +3856,12 @@
     "Antimagic Prodigy",
     `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
     (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new AntimagicProdigyAction(g, me, 15, new SuccessResponseCollector())
+          );
+      });
       g.events.on(
         "SpellCast",
         ({ detail: { who: target, interrupt, success } }) => {
@@ -3917,6 +3925,10 @@
     "Hellish Rebuke",
     `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
     (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new HellishRebukeAction(g, me, 15));
+      });
       g.events.on(
         "CombatantDamaged",
         ({ detail: { who, attacker, interrupt } }) => {
@@ -4544,6 +4556,10 @@
     "Fighting Style: Protection",
     `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
     (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new ProtectionAction(g, me, new DiceTypeCollector()));
+      });
       g.events.on(
         "BeforeAttack",
         ({ detail: { who, target, interrupt, diceType } }) => {
@@ -5199,7 +5215,7 @@
         {},
         {
           time: "reaction",
-          description: `Teleport to a spot within ${distance2} ft. that you can see.`
+          description: `When an enemy moves within 5 ft., you may teleport to a spot within ${distance2} ft. that you can see.`
         }
       );
       this.distance = distance2;
@@ -5216,6 +5232,10 @@
     "Dancing Step",
     "Reaction: When an enemy moves within 5 ft., Yulash teleports to a spot within 20 ft. that she can see.",
     (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new DancingStepAction(g, me));
+      });
       g.events.on(
         "CombatantMoved",
         ({ detail: { who, position, interrupt } }) => {
@@ -5645,7 +5665,11 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         "Steady Aim",
         "implemented",
         {},
-        { icon: SteadyAimIcon, time: "bonus action" }
+        {
+          icon: SteadyAimIcon,
+          time: "bonus action",
+          description: `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`
+        }
       );
       this.subIcon = RogueIcon;
     }
@@ -5743,6 +5767,10 @@ In addition, you understand a set of secret signs and symbols used to convey sho
     "Uncanny Dodge",
     `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
     (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (me === who)
+          actions.push(new UncannyDodgeAction(g, me, new MultiplierCollector()));
+      });
       g.events.on(
         "GatherDamage",
         ({ detail: { target, attack, interrupt, multiplier } }) => {
@@ -5842,31 +5870,32 @@ Once you use this feature, you can't use it again until you finish a short or lo
 
   // src/classes/rogue/Scout/index.ts
   var SkirmisherAction = class extends AbstractAction {
-    constructor(g, actor, other) {
+    constructor(g, actor) {
       super(
         g,
         actor,
         "Skirmisher",
         "implemented",
-        {},
+        { target: new TargetResolver(g, 5) },
         {
           time: "reaction",
           description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
         }
       );
-      this.other = other;
     }
-    check(config, ec) {
-      if (this.actor.side === this.other.side)
-        ec.add("same side", this);
-      if (distance(this.g, this.actor, this.other) > MapSquareSize)
-        ec.add("not close enough", this);
+    check({ target }, ec) {
+      if (target) {
+        if (this.actor.side === target.side)
+          ec.add("same side", this);
+        if (distance(this.g, this.actor, target) > MapSquareSize)
+          ec.add("not close enough", this);
+      }
       if (this.actor.speed <= 0)
         ec.add("cannot move", this);
-      return super.check(config, ec);
+      return super.check({ target }, ec);
     }
-    async apply() {
-      await super.apply({});
+    async apply({ target }) {
+      await super.apply({ target });
       await this.g.applyBoundedMove(
         this.actor,
         new BoundedMove(Skirmisher, round(this.actor.speed / 2, MapSquareSize), {
@@ -5879,8 +5908,13 @@ Once you use this feature, you can't use it again until you finish a short or lo
     "Skirmisher",
     `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
     (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new SkirmisherAction(g, me));
+      });
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-        const action = new SkirmisherAction(g, me, who);
+        const action = new SkirmisherAction(g, me);
+        const config = { target: who };
         if (checkConfig(g, action, {}))
           interrupt.add(
             new YesNoChoice(
@@ -5888,7 +5922,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
               Skirmisher,
               "Skirmisher",
               `Use ${me.name}'s reaction to move half their speed?`,
-              async () => await action.apply()
+              async () => await action.apply(config)
             )
           );
       });
@@ -6525,7 +6559,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me) {
             for (const spell of me.preparedSpells) {
-              if (spell.time !== "reaction" && this.canCast(spell, who))
+              if (this.canCast(spell, who))
                 actions.push(new CastSpell(g, me, this, spell));
             }
           }
@@ -7518,20 +7552,86 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var shield_default = "./shield-O4MYNFME.svg";
 
   // src/spells/level1/Shield.ts
+  var ShieldIcon = makeIcon(shield_default);
+  var ShieldEffect = new Effect(
+    "Shield",
+    "turnStart",
+    (g) => {
+      const check = (message, who, interrupt, after = async () => {
+      }) => {
+        const shield = g.getActions(who).filter((a) => a instanceof CastSpell && a.spell === Shield2);
+        if (!shield.length)
+          return;
+        interrupt.add(
+          new PickFromListChoice(
+            who,
+            Shield2,
+            "Shield",
+            `${message} Cast Shield as a reaction?`,
+            shield.map((value) => ({ value, label: value.name })),
+            async (action) => {
+              await action.apply({});
+              await after();
+            },
+            true
+          )
+        );
+      };
+      g.events.on("Attack", ({ detail }) => {
+        const { target, who, bonus } = detail.pre;
+        if (!target.hasEffect(ShieldEffect) && detail.outcome === "hit")
+          check(
+            `${who.name} hit ${target.name} with an attack.`,
+            target,
+            detail.interrupt,
+            async () => {
+              const ac = await g.getAC(target, detail.pre);
+              const roll = detail.roll.value;
+              detail.outcome = g.getAttackOutcome(ac, roll, roll + bonus.result);
+            }
+          );
+      });
+      g.events.on(
+        "SpellCast",
+        ({ detail: { who, spell, targets, interrupt } }) => {
+          if (spell !== MagicMissile_default)
+            return;
+          for (const target of targets) {
+            if (!target.hasEffect(ShieldEffect))
+              check(
+                `${who.name} is casting Magic Missile on ${target.name}.`,
+                target,
+                interrupt
+              );
+          }
+        }
+      );
+      g.events.on("GetAC", ({ detail: { who, bonus } }) => {
+        if (who.hasEffect(ShieldEffect))
+          bonus.add(5, ShieldEffect);
+      });
+      g.events.on("GatherDamage", ({ detail: { target, spell, multiplier } }) => {
+        if (target.hasEffect(ShieldEffect) && spell === MagicMissile_default)
+          multiplier.add("zero", ShieldEffect);
+      });
+    },
+    { icon: ShieldIcon }
+  );
   var Shield2 = simpleSpell({
+    status: "implemented",
     name: "Shield",
-    icon: makeIcon(shield_default),
+    icon: ShieldIcon,
     level: 1,
     school: "Abjuration",
     time: "reaction",
-    // TODO which you take when you are hit by an attack or targeted by the magic missile spell
     v: true,
     s: true,
     lists: ["Sorcerer", "Wizard"],
     description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
     getConfig: () => ({}),
     getTargets: (g, caster) => [caster],
-    async apply(g, caster, method, config) {
+    async apply(g, caster) {
+      await caster.addEffect(ShieldEffect, { duration: 1 });
     }
   });
   var Shield_default = Shield2;
@@ -12947,10 +13047,11 @@ The creature is aware of this effect before it makes its attack against you.`
     (0, import_hooks9.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
     }, [action, activeCombatant.value, config]);
-    const errors = (0, import_hooks9.useMemo)(
-      () => getConfigErrors(g, action, config).messages,
-      [g, action, config]
-    );
+    const errors = (0, import_hooks9.useMemo)(() => {
+      if (action.getTime(config) === "reaction")
+        return ["reaction only"];
+      return getConfigErrors(g, action, config).messages;
+    }, [g, action, config]);
     const disabled = (0, import_hooks9.useMemo)(() => errors.length > 0, [errors]);
     const damage = (0, import_hooks9.useMemo)(() => action.getDamage(config), [action, config]);
     const description = (0, import_hooks9.useMemo)(

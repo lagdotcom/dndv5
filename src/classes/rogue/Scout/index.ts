@@ -1,29 +1,27 @@
 import AbstractAction from "../../../actions/AbstractAction";
 import ErrorCollector from "../../../collectors/ErrorCollector";
+import { HasTarget } from "../../../configs";
 import Engine from "../../../Engine";
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
 import { MapSquareSize } from "../../../MapSquare";
 import { BoundedMove } from "../../../movement";
+import TargetResolver from "../../../resolvers/TargetResolver";
 import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
 import { checkConfig } from "../../../utils/config";
 import { round } from "../../../utils/numbers";
 import { distance } from "../../../utils/units";
 
-class SkirmisherAction extends AbstractAction {
-  constructor(
-    g: Engine,
-    actor: Combatant,
-    private other: Combatant,
-  ) {
+class SkirmisherAction extends AbstractAction<HasTarget> {
+  constructor(g: Engine, actor: Combatant) {
     super(
       g,
       actor,
       "Skirmisher",
       "implemented",
-      {},
+      { target: new TargetResolver(g, 5) },
       {
         time: "reaction",
         description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
@@ -31,16 +29,19 @@ class SkirmisherAction extends AbstractAction {
     );
   }
 
-  check(config: never, ec: ErrorCollector) {
-    if (this.actor.side === this.other.side) ec.add("same side", this);
-    if (distance(this.g, this.actor, this.other) > MapSquareSize)
-      ec.add("not close enough", this);
+  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
+    if (target) {
+      if (this.actor.side === target.side) ec.add("same side", this);
+      if (distance(this.g, this.actor, target) > MapSquareSize)
+        ec.add("not close enough", this);
+    }
     if (this.actor.speed <= 0) ec.add("cannot move", this);
-    return super.check(config, ec);
+
+    return super.check({ target }, ec);
   }
 
-  async apply() {
-    await super.apply({});
+  async apply({ target }: HasTarget) {
+    await super.apply({ target });
     await this.g.applyBoundedMove(
       this.actor,
       new BoundedMove(Skirmisher, round(this.actor.speed / 2, MapSquareSize), {
@@ -54,8 +55,13 @@ const Skirmisher = new SimpleFeature(
   "Skirmisher",
   `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
   (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new SkirmisherAction(g, me));
+    });
+
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-      const action = new SkirmisherAction(g, me, who);
+      const action = new SkirmisherAction(g, me);
+      const config = { target: who };
       if (checkConfig(g, action, {}))
         interrupt.add(
           new YesNoChoice(
@@ -63,7 +69,7 @@ const Skirmisher = new SimpleFeature(
             Skirmisher,
             "Skirmisher",
             `Use ${me.name}'s reaction to move half their speed?`,
-            async () => await action.apply(),
+            async () => await action.apply(config),
           ),
         );
     });

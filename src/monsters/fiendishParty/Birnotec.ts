@@ -181,6 +181,13 @@ const AntimagicProdigy = new SimpleFeature(
   "Antimagic Prodigy",
   `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
   (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me)
+        actions.push(
+          new AntimagicProdigyAction(g, me, 15, new SuccessResponseCollector()),
+        );
+    });
+
     g.events.on(
       "SpellCast",
       ({ detail: { who: target, interrupt, success } }) => {
@@ -253,6 +260,10 @@ const HellishRebuke = new SimpleFeature(
   "Hellish Rebuke",
   `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
   (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new HellishRebukeAction(g, me, 15));
+    });
+
     g.events.on(
       "CombatantDamaged",
       ({ detail: { who, attacker, interrupt } }) => {

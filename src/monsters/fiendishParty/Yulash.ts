@@ -277,7 +277,7 @@ class DancingStepAction extends AbstractAction {
       {},
       {
         time: "reaction",
-        description: `Teleport to a spot within ${distance} ft. that you can see.`,
+        description: `When an enemy moves within 5 ft., you may teleport to a spot within ${distance} ft. that you can see.`,
       },
     );
   }
@@ -295,6 +295,10 @@ const DancingStep = new SimpleFeature(
   "Dancing Step",
   "Reaction: When an enemy moves within 5 ft., Yulash teleports to a spot within 20 ft. that she can see.",
   (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new DancingStepAction(g, me));
+    });
+
     g.events.on(
       "CombatantMoved",
       ({ detail: { who, position, interrupt } }) => {

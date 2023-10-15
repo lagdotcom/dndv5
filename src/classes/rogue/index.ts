@@ -100,6 +100,11 @@ const UncannyDodge = new SimpleFeature(
   "Uncanny Dodge",
   `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
   (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (me === who)
+        actions.push(new UncannyDodgeAction(g, me, new MultiplierCollector()));
+    });
+
     g.events.on(
       "GatherDamage",
       ({ detail: { target, attack, interrupt, multiplier } }) => {

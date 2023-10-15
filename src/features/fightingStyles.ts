@@ -46,6 +46,11 @@ export const FightingStyleProtection = new SimpleFeature(
   "Fighting Style: Protection",
   `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
   (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me)
+        actions.push(new ProtectionAction(g, me, new DiceTypeCollector()));
+    });
+
     g.events.on(
       "BeforeAttack",
       ({ detail: { who, target, interrupt, diceType } }) => {

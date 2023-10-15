@@ -455,15 +455,13 @@ export default class Engine {
     const breakdown = new Map<DamageType, DamageBreakdown>();
 
     for (const [damageType, raw] of damage) {
-      const collector = this.calculateDamageResponse(
+      const { response, amount } = this.calculateDamageResponse(
         damageType,
         raw,
         target,
         baseMultiplier,
         attack,
       );
-
-      const { response, amount } = collector;
 
       if (response === "absorb") {
         healAmount += raw;
@@ -516,7 +514,7 @@ export default class Engine {
   ) {
     let amount = raw;
 
-    if (response === "absorb") {
+    if (response === "absorb" || response === "immune") {
       amount = 0;
     } else {
       let multiplier = baseMultiplier;
@@ -601,6 +599,16 @@ export default class Engine {
     }
   }
 
+  getAttackOutcome(ac: number, roll: number, total: number) {
+    return roll === 1
+      ? "miss"
+      : roll === 20
+      ? "critical"
+      : total >= ac
+      ? "hit"
+      : "miss";
+  }
+
   async attack(
     e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt" | "success">,
   ) {
@@ -637,14 +645,7 @@ export default class Engine {
         roll,
         total,
         ac,
-        outcome:
-          roll.value === 1
-            ? "miss"
-            : roll.value === 20
-            ? "critical"
-            : total >= ac
-            ? "hit"
-            : "miss",
+        outcome: this.getAttackOutcome(ac, roll.value, total),
         forced: false, // TODO
         interrupt: new InterruptionCollector(),
       }),

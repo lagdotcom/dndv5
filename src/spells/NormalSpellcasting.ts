@@ -105,7 +105,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
           // TODO [RITUAL]
 
           for (const spell of me.preparedSpells) {
-            if (spell.time !== "reaction" && this.canCast(spell, who))
+            if (this.canCast(spell, who))
               actions.push(new CastSpell(g, me, this, spell));
           }
         }
