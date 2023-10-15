@@ -1,5 +1,8 @@
+import proneUrl from "@img/act/prone.svg";
+
 import DropProneAction from "./actions/DropProneAction";
 import StandUpAction from "./actions/StandUpAction";
+import { makeIcon } from "./colours";
 import Effect from "./Effect";
 import EvaluateLater from "./interruptions/EvaluateLater";
 import { svSet } from "./types/SaveTag";
@@ -83,31 +86,37 @@ export const UsedAttackAction = new Effect(
   { quiet: true },
 );
 
-export const Prone = new Effect("Prone", "turnEnd", (g) => {
-  g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-    if (who.hasEffect(Prone)) conditions.add("Prone", Prone);
-  });
+export const Prone = new Effect(
+  "Prone",
+  "turnEnd",
+  (g) => {
+    g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(Prone)) conditions.add("Prone", Prone);
+    });
 
-  g.events.on("GetActions", ({ detail: { who, actions } }) => {
-    actions.push(
-      who.conditions.has("Prone")
-        ? new StandUpAction(g, who)
-        : new DropProneAction(g, who),
-    );
-  });
+    // A prone creature's only movement option is to crawl...
+    g.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Prone")) multiplier.add("double", Prone);
+    });
+    // ...unless it stands up and thereby ends the condition.
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      actions.push(
+        who.conditions.has("Prone")
+          ? new StandUpAction(g, who)
+          : new DropProneAction(g, who),
+      );
+    });
 
-  g.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
-    if (who.conditions.has("Prone")) multiplier.add("double", Prone);
-  });
+    g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+      // The creature has disadvantage on attack rolls.
+      if (who.conditions.has("Prone")) diceType.add("disadvantage", Prone);
 
-  g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-    // The creature has disadvantage on attack rolls.
-    if (who.conditions.has("Prone")) diceType.add("disadvantage", Prone);
-
-    // An attack roll against the creature has advantage if the attacker is within 5 feet of the creature. Otherwise, the attack roll has disadvantage.
-    if (target.conditions.has("Prone")) {
-      const d = distance(g, who, target);
-      diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
-    }
-  });
-});
+      // An attack roll against the creature has advantage if the attacker is within 5 feet of the creature. Otherwise, the attack roll has disadvantage.
+      if (target.conditions.has("Prone")) {
+        const d = distance(g, who, target);
+        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
+      }
+    });
+  },
+  { icon: makeIcon(proneUrl) },
+);

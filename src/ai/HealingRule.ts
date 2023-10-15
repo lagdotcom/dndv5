@@ -4,6 +4,7 @@ import { allyOf } from "../processors";
 import Action from "../types/Action";
 import AIRule from "../types/AIRule";
 import Combatant from "../types/Combatant";
+import { checkConfig } from "../utils/config";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
 import { HealAllies, HealSelf, OverHealAllies } from "./coefficients";
@@ -16,7 +17,7 @@ export default class HealingRule implements AIRule {
 
       return action
         .generateHealingConfigs(allies)
-        .filter((config) => g.check(action, config).result)
+        .filter((config) => checkConfig(g, action, config))
         .map((config) => {
           const amounts = action.getHeal(config);
           if (!amounts) return;

@@ -6,6 +6,7 @@ import Engine from "../Engine";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
+import { checkConfig } from "../utils/config";
 import SimpleFeature from "./SimpleFeature";
 
 class ProtectionAction extends AbstractAction<HasTarget> {
@@ -52,7 +53,7 @@ export const FightingStyleProtection = new SimpleFeature(
 
         const action = new ProtectionAction(g, me, diceType);
         const config = { target };
-        if (g.check(action, config).result)
+        if (checkConfig(g, action, config))
           interrupt.add(
             new YesNoChoice(
               me,

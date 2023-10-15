@@ -12,7 +12,17 @@ const DropProneIcon = makeIcon(iconUrl);
 
 export default class DropProneAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Drop Prone", "implemented", {}, { icon: DropProneIcon });
+    super(
+      g,
+      actor,
+      "Drop Prone",
+      "implemented",
+      {},
+      {
+        icon: DropProneIcon,
+        description: `You can drop prone without using any of your speed.`,
+      },
+    );
   }
 
   check(config: never, ec: ErrorCollector) {

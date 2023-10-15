@@ -36,7 +36,10 @@ export default class AbstractAttackAction<
   async apply(config: T) {
     await super.apply(config);
 
-    this.actor.attacksSoFar.push(this);
-    await this.actor.addEffect(UsedAttackAction, { duration: 1 });
+    // a subclass might override this (e.g. OpportunityAttack)
+    if (this.isAttack) {
+      this.actor.attacksSoFar.push(this);
+      await this.actor.addEffect(UsedAttackAction, { duration: 1 });
+    }
   }
 }

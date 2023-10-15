@@ -21,6 +21,7 @@ import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { svSet } from "../../types/SaveTag";
+import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 
 function getArea(g: Engine, target: Combatant): SpecifiedWithin {
@@ -184,14 +185,15 @@ const AntimagicProdigy = new SimpleFeature(
       "SpellCast",
       ({ detail: { who: target, interrupt, success } }) => {
         const action = new AntimagicProdigyAction(g, me, 15, success);
-        if (g.check(action, { target }).result)
+        const config = { target };
+        if (checkConfig(g, action, config))
           interrupt.add(
             new YesNoChoice(
               me,
               AntimagicProdigy,
               "Antimagic Prodigy",
               `Use ${me.name}'s reaction to attempt to counter the spell?`,
-              async () => await action.apply({ target }),
+              async () => await action.apply(config),
             ),
           );
       },
@@ -257,7 +259,7 @@ const HellishRebuke = new SimpleFeature(
         if (who === me) {
           const action = new HellishRebukeAction(g, me, 15);
           const config = { target: attacker };
-          if (g.check(action, config).result)
+          if (checkConfig(g, action, config))
             interrupt.add(
               new YesNoChoice(
                 me,

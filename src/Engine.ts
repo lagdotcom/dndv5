@@ -697,6 +697,7 @@ export default class Engine {
     });
   }
 
+  /** @deprecated use `checkConfig` or `getConfigErrors` instead */
   check<T extends object>(action: Action<T>, config: Partial<T>) {
     const error = new ErrorCollector();
     this.fire(new CheckActionEvent({ action, config, error }));

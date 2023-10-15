@@ -5,14 +5,21 @@ import OpportunityAttack from "./actions/OpportunityAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
+import AttackEvent from "./events/AttackEvent";
+import BeforeAttackEvent from "./events/BeforeAttackEvent";
+import BeforeCheckEvent from "./events/BeforeCheckEvent";
+import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import EvaluateLater from "./interruptions/EvaluateLater";
 import PickFromListChoice from "./interruptions/PickFromListChoice";
 import PointSet from "./PointSet";
 import { ResourceRegistry } from "./resources";
+import AbilityName from "./types/AbilityName";
 import Combatant from "./types/Combatant";
+import ConditionName from "./types/ConditionName";
 import Item from "./types/Item";
 import Point from "./types/Point";
 import { resolveArea } from "./utils/areas";
+import { checkConfig } from "./utils/config";
 import { getValidAmmunition } from "./utils/items";
 import { compareDistances, distance, getSquares } from "./utils/units";
 
@@ -58,13 +65,22 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
 });
 
 export const BlindedRule = new DndRule("Blinded", (g) => {
+  // TODO A blinded creature can't see and automatically fails any ability check that requires sight.
+
   g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
-    if (who.conditions.has("Blinded"))
-      diceType.add("disadvantage", BlindedRule);
+    // Attack rolls against the creature have advantage...
     if (target.conditions.has("Blinded"))
       diceType.add("advantage", BlindedRule);
+    // ...and the creature's attack rolls have disadvantage.
+    if (who.conditions.has("Blinded"))
+      diceType.add("disadvantage", BlindedRule);
   });
 });
+
+/* TODO Charmed
+- A charmed creature can't attack the charmer or target the charmer with harmful abilities or magical effects.
+- The charmer has advantage on any ability check to interact socially with the creature.
+*/
 
 export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
   g.events.on("GetActions", ({ detail: { who, actions } }) => {
@@ -73,6 +89,8 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
     actions.push(new DodgeAction(g, who));
   });
 });
+
+// TODO Deafened: A deafened creature can't hear and automatically fails any ability check that requires hearing.
 
 export const DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
   const isDifficultTerrainAnywhere = (squares: PointSet) => {
@@ -104,15 +122,19 @@ export const EffectsRule = new DndRule("Effects", (g) => {
 });
 
 export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
+  // Level 1: Disadvantage on ability checks
   g.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
     if (who.exhaustion >= 1) diceType.add("disadvantage", ExhaustionRule);
   });
 
+  // Level 2: Speed halved
+  // Level 5: Speed reduced to 0
   g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
     if (who.exhaustion >= 2) multiplier.add("half", ExhaustionRule);
     if (who.exhaustion >= 5) multiplier.add("zero", ExhaustionRule);
   });
 
+  // Level 3: Disadvantage on attack rolls and saving throws
   g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
     if (who.exhaustion >= 3) diceType.add("disadvantage", ExhaustionRule);
   });
@@ -120,10 +142,12 @@ export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
     if (who.exhaustion >= 3) diceType.add("disadvantage", ExhaustionRule);
   });
 
+  // Level 4: Hit point maximum halved
   g.events.on("GetMaxHP", ({ detail: { who, multiplier } }) => {
     if (who.exhaustion >= 4) multiplier.add("half", ExhaustionRule);
   });
 
+  // Level 6: Death
   g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
     if (who.exhaustion >= 6)
       interrupt.add(
@@ -132,7 +156,19 @@ export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
   });
 });
 
+/* TODO Frightened
+- A frightened creature has disadvantage on ability checks and attack rolls while the source of its fear is within line of sight.
+- The creature can't willingly move closer to the source of its fear.
+*/
+
+/* TODO Grappled
+- A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.
+- The condition ends if the grappler is incapacitated.
+- The condition also ends if an effect removes the grappled creature from the reach of the grappler or grappling effect, such as when a creature is hurled away by the thunderwave spell.
+*/
+
 export const IncapacitatedRule = new DndRule("Incapacitated", (g) => {
+  // An incapacitated creature can't take actions or reactions.
   g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
     if (
       action.actor.conditions.has("Incapacitated") &&
@@ -141,6 +177,11 @@ export const IncapacitatedRule = new DndRule("Incapacitated", (g) => {
       error.add("incapacitated", IncapacitatedRule);
   });
 });
+
+/* TODO Invisible
+- An invisible creature is impossible to see without the aid of magic or a special sense. For the purpose of hiding, the creature is heavily obscured. The creature's location can be detected by any noise it makes or any tracks it leaves.
+- Attack rolls against the creature have disadvantage, and the creature's attack rolls have advantage.
+*/
 
 export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
   g.events.on(
@@ -213,7 +254,7 @@ function getValidOpportunityAttacks(
       return oldDistance <= range && newDistance > range;
     })
     .map((weapon) => new OpportunityAttack(g, attacker, weapon))
-    .filter((opportunity) => g.check(opportunity, { target }).result);
+    .filter((opportunity) => checkConfig(g, opportunity, { target }));
 }
 
 export const OpportunityAttacksRule = new DndRule(
@@ -258,42 +299,75 @@ export const OpportunityAttacksRule = new DndRule(
   },
 );
 
-export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
-  g.events.on("BeforeMove", ({ detail: { who, error } }) => {
-    if (who.conditions.has("Paralyzed")) error.add("paralyzed", ParalyzedRule);
-  });
-
-  g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (action.actor.conditions.has("Paralyzed") && action.vocal)
-      error.add("paralyzed", ParalyzedRule);
-  });
-
-  g.events.on("BeforeSave", ({ detail: { ability, who, successResponse } }) => {
-    if (
-      who.conditions.has("Paralyzed") &&
-      (ability === "str" || ability === "dex")
-    )
-      successResponse.add("fail", ParalyzedRule);
-  });
-
-  g.events.on("BeforeAttack", ({ detail }) => {
-    if (detail.target.conditions.has("Paralyzed"))
-      detail.diceType.add("advantage", ParalyzedRule);
-  });
-
-  g.events.on("Attack", ({ detail }) => {
+const autoFail =
+  (condition: ConditionName, rule: DndRule, abilities: AbilityName[]) =>
+  ({ detail: { ability, who, successResponse } }: BeforeSaveEvent) => {
+    if (who.conditions.has(condition) && ability && abilities.includes(ability))
+      successResponse.add("fail", rule);
+  };
+const autoCrit =
+  (g: Engine, condition: ConditionName, rule: DndRule, maxRange = 5) =>
+  ({ detail }: AttackEvent) => {
     const { who, target } = detail.pre;
 
     if (
-      target.conditions.has("Paralyzed") &&
-      distance(g, who, target) <= 5 &&
+      target.conditions.has(condition) &&
+      distance(g, who, target) <= maxRange &&
       detail.outcome === "hit"
     ) {
       // TODO is this completely safe?
       detail.forced = true;
       detail.outcome = "critical";
     }
+  };
+
+export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
+  // ...and can't move
+  g.events.on("BeforeMove", ({ detail: { who, error } }) => {
+    if (who.conditions.has("Paralyzed")) error.add("paralyzed", ParalyzedRule);
   });
+  // ...or speak.
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (action.actor.conditions.has("Paralyzed") && action.vocal)
+      error.add("paralyzed", ParalyzedRule);
+  });
+
+  // The creature automatically fails Strength and Dexterity saving throws.
+  g.events.on(
+    "BeforeSave",
+    autoFail("Paralyzed", ParalyzedRule, ["str", "dex"]),
+  );
+
+  // Attack rolls against the creature have advantage.
+  g.events.on("BeforeAttack", ({ detail }) => {
+    if (detail.target.conditions.has("Paralyzed"))
+      detail.diceType.add("advantage", ParalyzedRule);
+  });
+
+  // Any attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature.
+  g.events.on("Attack", autoCrit(g, "Paralyzed", ParalyzedRule));
+});
+
+/* TODO Petrified
+- A petrified creature is transformed, along with any nonmagical object it is wearing or carrying, into a solid inanimate substance (usually stone). Its weight increases by a factor of ten, and it ceases aging.
+- The creature is incapacitated, can't move or speak, and is unaware of its surroundings.
+- Attack rolls against the creature have advantage.
+- The creature automatically fails Strength and Dexterity saving throws.
+- The creature has resistance to all damage.
+- The creature is immune to poison and disease, although a poison or disease already in its system is suspended, not neutralized.
+*/
+
+export const PoisonedRule = new DndRule("Poisoned", (g) => {
+  // A poisoned creature has disadvantage on attack rolls and ability checks.
+  const poisonCheck = ({
+    detail: { who, diceType },
+  }: BeforeAttackEvent | BeforeCheckEvent) => {
+    if (who.conditions.has("Poisoned"))
+      diceType.add("disadvantage", PoisonedRule);
+  };
+
+  g.events.on("BeforeAttack", poisonCheck);
+  g.events.on("BeforeCheck", poisonCheck);
 });
 
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
@@ -325,24 +399,67 @@ export const ResourcesRule = new DndRule("Resources", (g) => {
 });
 
 export const RestrainedRule = new DndRule("Restrained", (g) => {
+  // A restrained creature's speed becomes 0...
   g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
     if (who.conditions.has("Restrained"))
       multiplier.add("zero", RestrainedRule);
+
+    // TODO ...and it can't benefit from any bonus to its speed.
   });
+
   g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
-    if (who.conditions.has("Restrained"))
-      diceType.add("disadvantage", RestrainedRule);
+    // Attack rolls against the creature have advantage...
     if (target.conditions.has("Restrained"))
       diceType.add("advantage", RestrainedRule);
+    // ...and the creature's attack rolls have disadvantage.
+    if (who.conditions.has("Restrained"))
+      diceType.add("disadvantage", RestrainedRule);
   });
+
+  // The creature has disadvantage on Dexterity saving throws.
   g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
     if (who.conditions.has("Restrained") && ability === "dex")
       diceType.add("disadvantage", RestrainedRule);
   });
 });
 
+export const StunnedRule = new DndRule("Stunned", (g) => {
+  // ...can't move...
+  g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+    if (who.conditions.has("Stunned")) multiplier.add("zero", StunnedRule);
+  });
+
+  // TODO ...and can speak only falteringly.
+
+  // The creature automatically fails Strength and Dexterity saving throws.
+  g.events.on("BeforeSave", autoFail("Stunned", StunnedRule, ["str", "dex"]));
+
+  // Attack rolls against the creature have advantage.
+  g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
+    if (target.conditions.has("Stunned"))
+      diceType.add("advantage", StunnedRule);
+  });
+});
+
 export const TurnTimeRule = new DndRule("Turn Time", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
+});
+
+export const UnconsciousRule = new DndRule("Unconscious", (g) => {
+  // The creature automatically fails Strength and Dexterity saving throws.
+  g.events.on(
+    "BeforeSave",
+    autoFail("Unconscious", UnconsciousRule, ["str", "dex"]),
+  );
+
+  // Attack rolls against the creature have advantage.
+  g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+    if (target.conditions.has("Unconscious"))
+      diceType.add("advantage", UnconsciousRule);
+  });
+
+  // Any attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature.
+  g.events.on("Attack", autoCrit(g, "Unconscious", UnconsciousRule));
 });
 
 export const WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {

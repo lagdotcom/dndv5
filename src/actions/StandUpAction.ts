@@ -6,6 +6,7 @@ import { Prone } from "../effects";
 import Engine from "../Engine";
 import { MapSquareSize } from "../MapSquare";
 import Combatant from "../types/Combatant";
+import Empty from "../types/Empty";
 import { round } from "../utils/numbers";
 import AbstractAction from "./AbstractAction";
 
@@ -13,14 +14,24 @@ const StandUpIcon = makeIcon(iconUrl);
 
 export default class StandUpAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
-    super(g, actor, "Stand Up", "implemented", {}, { icon: StandUpIcon });
+    super(
+      g,
+      actor,
+      "Stand Up",
+      "implemented",
+      {},
+      {
+        icon: StandUpIcon,
+        description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`,
+      },
+    );
   }
 
   get cost() {
     return round(this.actor.speed / 2, MapSquareSize);
   }
 
-  check(config: never, ec: ErrorCollector) {
+  check(config: Empty, ec: ErrorCollector) {
     if (!this.actor.conditions.has("Prone")) ec.add("not prone", this);
 
     const speed = this.actor.speed;

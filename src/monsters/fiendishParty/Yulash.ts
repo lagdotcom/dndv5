@@ -19,6 +19,7 @@ import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import { svSet } from "../../types/SaveTag";
+import { checkConfig } from "../../utils/config";
 import { getSaveDC } from "../../utils/dnd";
 import { getWeaponAbility } from "../../utils/items";
 import { getDistanceBetween } from "../../utils/units";
@@ -308,7 +309,7 @@ const DancingStep = new SimpleFeature(
 
         if (distance <= 5) {
           const step = new DancingStepAction(g, me);
-          if (g.check(step, {}).result)
+          if (checkConfig(g, step, {}))
             interrupt.add(
               new YesNoChoice(
                 me,

@@ -8,6 +8,7 @@ import { MapSquareSize } from "../../../MapSquare";
 import { BoundedMove } from "../../../movement";
 import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
+import { checkConfig } from "../../../utils/config";
 import { round } from "../../../utils/numbers";
 import { distance } from "../../../utils/units";
 
@@ -55,7 +56,7 @@ const Skirmisher = new SimpleFeature(
   (g, me) => {
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       const action = new SkirmisherAction(g, me, who);
-      if (g.check(action, {}).result)
+      if (checkConfig(g, action, {}))
         interrupt.add(
           new YesNoChoice(
             me,

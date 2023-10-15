@@ -10,6 +10,7 @@ import TargetResolver from "../resolvers/TargetResolver";
 import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
 import { svSet } from "../types/SaveTag";
+import { checkConfig } from "../utils/config";
 import { getSaveDC } from "../utils/dnd";
 import { round } from "../utils/numbers";
 import SimpleFeature from "./SimpleFeature";
@@ -59,7 +60,7 @@ class HissAction extends AbstractAction<HasTarget> {
     const { g, actor } = this;
 
     const action = new HissFleeAction(g, target, actor);
-    if (g.check(action, {}).result) {
+    if (checkConfig(g, action, {})) {
       const dc = getSaveDC(actor, "cha");
       const save = await g.savingThrow(dc, {
         who: target,

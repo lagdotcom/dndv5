@@ -13,6 +13,7 @@ import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
+import { checkConfig } from "../../utils/config";
 import { makeASI } from "../common";
 import { RogueIcon } from "./common";
 import Evasion from "./Evasion";
@@ -104,7 +105,7 @@ const UncannyDodge = new SimpleFeature(
       ({ detail: { target, attack, interrupt, multiplier } }) => {
         if (attack && target === me) {
           const action = new UncannyDodgeAction(g, me, multiplier);
-          if (g.check(action, {}).result)
+          if (checkConfig(g, action, {}))
             interrupt.add(
               new YesNoChoice(
                 me,

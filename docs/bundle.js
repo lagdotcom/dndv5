@@ -1754,7 +1754,17 @@
   var DropProneIcon = makeIcon(prone_default);
   var DropProneAction = class extends AbstractAction {
     constructor(g, actor) {
-      super(g, actor, "Drop Prone", "implemented", {}, { icon: DropProneIcon });
+      super(
+        g,
+        actor,
+        "Drop Prone",
+        "implemented",
+        {},
+        {
+          icon: DropProneIcon,
+          description: `You can drop prone without using any of your speed.`
+        }
+      );
     }
     check(config, ec) {
       if (this.actor.conditions.has("Prone"))
@@ -1777,7 +1787,17 @@
   var StandUpIcon = makeIcon(stand_default);
   var StandUpAction = class extends AbstractAction {
     constructor(g, actor) {
-      super(g, actor, "Stand Up", "implemented", {}, { icon: StandUpIcon });
+      super(
+        g,
+        actor,
+        "Stand Up",
+        "implemented",
+        {},
+        {
+          icon: StandUpIcon,
+          description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`
+        }
+      );
     }
     get cost() {
       return round(this.actor.speed / 2, MapSquareSize);
@@ -1887,29 +1907,34 @@
     void 0,
     { quiet: true }
   );
-  var Prone = new Effect("Prone", "turnEnd", (g) => {
-    g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-      if (who.hasEffect(Prone))
-        conditions.add("Prone", Prone);
-    });
-    g.events.on("GetActions", ({ detail: { who, actions } }) => {
-      actions.push(
-        who.conditions.has("Prone") ? new StandUpAction(g, who) : new DropProneAction(g, who)
-      );
-    });
-    g.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
-      if (who.conditions.has("Prone"))
-        multiplier.add("double", Prone);
-    });
-    g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-      if (who.conditions.has("Prone"))
-        diceType.add("disadvantage", Prone);
-      if (target.conditions.has("Prone")) {
-        const d = distance(g, who, target);
-        diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
-      }
-    });
-  });
+  var Prone = new Effect(
+    "Prone",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(Prone))
+          conditions.add("Prone", Prone);
+      });
+      g.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
+        if (who.conditions.has("Prone"))
+          multiplier.add("double", Prone);
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        actions.push(
+          who.conditions.has("Prone") ? new StandUpAction(g, who) : new DropProneAction(g, who)
+        );
+      });
+      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+        if (who.conditions.has("Prone"))
+          diceType.add("disadvantage", Prone);
+        if (target.conditions.has("Prone")) {
+          const d = distance(g, who, target);
+          diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
+        }
+      });
+    },
+    { icon: makeIcon(prone_default) }
+  );
 
   // src/actions/AbstractAttackAction.ts
   var AbstractAttackAction = class extends AbstractAction {
@@ -1927,8 +1952,10 @@
     }
     async apply(config) {
       await super.apply(config);
-      this.actor.attacksSoFar.push(this);
-      await this.actor.addEffect(UsedAttackAction, { duration: 1 });
+      if (this.isAttack) {
+        this.actor.attacksSoFar.push(this);
+        await this.actor.addEffect(UsedAttackAction, { duration: 1 });
+      }
     }
   };
 
@@ -2063,21 +2090,9 @@
       return "reaction";
     }
     check(config, ec) {
-      super.check(config, ec);
       if (this.weapon.rangeCategory !== "melee")
         ec.add("can only make opportunity attacks with melee weapons", this);
-      return ec;
-    }
-    async apply({ target }) {
-      this.actor.useTime("reaction");
-      await doStandardAttack(this.g, {
-        ability: this.ability,
-        ammo: this.ammo,
-        attacker: this.actor,
-        source: this,
-        target,
-        weapon: this.weapon
-      });
+      return super.check(config, ec);
     }
   };
 
@@ -2223,6 +2238,19 @@
     }
   };
 
+  // src/utils/config.ts
+  function getConfigErrors(g, action, config) {
+    const ec = g.check(action, config);
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
+      const value = config[key];
+      resolver.check(value, action, ec);
+    }
+    return ec;
+  }
+  function checkConfig(g, action, config) {
+    return getConfigErrors(g, action, config).result;
+  }
+
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g) => {
     g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
@@ -2262,10 +2290,10 @@
   });
   var BlindedRule = new DndRule("Blinded", (g) => {
     g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
-      if (who.conditions.has("Blinded"))
-        diceType.add("disadvantage", BlindedRule);
       if (target.conditions.has("Blinded"))
         diceType.add("advantage", BlindedRule);
+      if (who.conditions.has("Blinded"))
+        diceType.add("disadvantage", BlindedRule);
     });
   });
   var CombatActionsRule = new DndRule("Combat Actions", (g) => {
@@ -2387,7 +2415,7 @@
     return attacker.weapons.filter((weapon) => weapon.rangeCategory === "melee").filter((weapon) => {
       const range = attacker.reach + weapon.reach;
       return oldDistance <= range && newDistance > range;
-    }).map((weapon) => new OpportunityAttack(g, attacker, weapon)).filter((opportunity) => g.check(opportunity, { target }).result);
+    }).map((weapon) => new OpportunityAttack(g, attacker, weapon)).filter((opportunity) => checkConfig(g, opportunity, { target }));
   }
   var OpportunityAttacksRule = new DndRule(
     "Opportunity Attacks",
@@ -2430,6 +2458,17 @@
       );
     }
   );
+  var autoFail = (condition, rule, abilities) => ({ detail: { ability, who, successResponse } }) => {
+    if (who.conditions.has(condition) && ability && abilities.includes(ability))
+      successResponse.add("fail", rule);
+  };
+  var autoCrit = (g, condition, rule, maxRange = 5) => ({ detail }) => {
+    const { who, target } = detail.pre;
+    if (target.conditions.has(condition) && distance(g, who, target) <= maxRange && detail.outcome === "hit") {
+      detail.forced = true;
+      detail.outcome = "critical";
+    }
+  };
   var ParalyzedRule = new DndRule("Paralyzed", (g) => {
     g.events.on("BeforeMove", ({ detail: { who, error } }) => {
       if (who.conditions.has("Paralyzed"))
@@ -2439,21 +2478,25 @@
       if (action.actor.conditions.has("Paralyzed") && action.vocal)
         error.add("paralyzed", ParalyzedRule);
     });
-    g.events.on("BeforeSave", ({ detail: { ability, who, successResponse } }) => {
-      if (who.conditions.has("Paralyzed") && (ability === "str" || ability === "dex"))
-        successResponse.add("fail", ParalyzedRule);
-    });
+    g.events.on(
+      "BeforeSave",
+      autoFail("Paralyzed", ParalyzedRule, ["str", "dex"])
+    );
     g.events.on("BeforeAttack", ({ detail }) => {
       if (detail.target.conditions.has("Paralyzed"))
         detail.diceType.add("advantage", ParalyzedRule);
     });
-    g.events.on("Attack", ({ detail }) => {
-      const { who, target } = detail.pre;
-      if (target.conditions.has("Paralyzed") && distance(g, who, target) <= 5 && detail.outcome === "hit") {
-        detail.forced = true;
-        detail.outcome = "critical";
-      }
-    });
+    g.events.on("Attack", autoCrit(g, "Paralyzed", ParalyzedRule));
+  });
+  var PoisonedRule = new DndRule("Poisoned", (g) => {
+    const poisonCheck = ({
+      detail: { who, diceType }
+    }) => {
+      if (who.conditions.has("Poisoned"))
+        diceType.add("disadvantage", PoisonedRule);
+    };
+    g.events.on("BeforeAttack", poisonCheck);
+    g.events.on("BeforeCheck", poisonCheck);
   });
   var ProficiencyRule = new DndRule("Proficiency", (g) => {
     g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
@@ -2488,18 +2531,40 @@
         multiplier.add("zero", RestrainedRule);
     });
     g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
-      if (who.conditions.has("Restrained"))
-        diceType.add("disadvantage", RestrainedRule);
       if (target.conditions.has("Restrained"))
         diceType.add("advantage", RestrainedRule);
+      if (who.conditions.has("Restrained"))
+        diceType.add("disadvantage", RestrainedRule);
     });
     g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (who.conditions.has("Restrained") && ability === "dex")
         diceType.add("disadvantage", RestrainedRule);
     });
   });
+  var StunnedRule = new DndRule("Stunned", (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Stunned"))
+        multiplier.add("zero", StunnedRule);
+    });
+    g.events.on("BeforeSave", autoFail("Stunned", StunnedRule, ["str", "dex"]));
+    g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
+      if (target.conditions.has("Stunned"))
+        diceType.add("advantage", StunnedRule);
+    });
+  });
   var TurnTimeRule = new DndRule("Turn Time", (g) => {
     g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
+  });
+  var UnconsciousRule = new DndRule("Unconscious", (g) => {
+    g.events.on(
+      "BeforeSave",
+      autoFail("Unconscious", UnconsciousRule, ["str", "dex"])
+    );
+    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+      if (target.conditions.has("Unconscious"))
+        diceType.add("advantage", UnconsciousRule);
+    });
+    g.events.on("Attack", autoCrit(g, "Unconscious", UnconsciousRule));
   });
   var WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
     g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
@@ -3294,6 +3359,7 @@
         multiplier: multiplier.result
       });
     }
+    /** @deprecated use `checkConfig` or `getConfigErrors` instead */
     check(action, config) {
       const error = new ErrorCollector();
       this.fire(new CheckActionEvent({ action, config, error }));
@@ -3749,35 +3815,104 @@
       });
     }
   );
+  var AntimagicProdigyAction = class extends AbstractAction {
+    constructor(g, actor, dc, success) {
+      super(
+        g,
+        actor,
+        "Antimagic Prodigy",
+        "implemented",
+        { target: new TargetResolver(g, Infinity) },
+        {
+          time: "reaction",
+          description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`
+        }
+      );
+      this.dc = dc;
+      this.success = success;
+    }
+    check({ target }, ec) {
+      if ((target == null ? void 0 : target.side) === this.actor.side)
+        ec.add("enemy only", this);
+      return super.check({ target }, ec);
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor, dc, success } = this;
+      const save = await g.abilityCheck(dc, {
+        who: target,
+        attacker: actor,
+        skill: "Arcana",
+        ability: "int",
+        tags: chSet("counterspell")
+      });
+      if (save.outcome === "fail")
+        success.add("fail", AntimagicProdigy);
+    }
+  };
   var AntimagicProdigy = new SimpleFeature(
     "Antimagic Prodigy",
     `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
     (g, me) => {
-      g.events.on("SpellCast", ({ detail: { who, interrupt, success } }) => {
-        if (me.hasTime("reaction") && who.side !== me.side)
-          interrupt.add(
-            new YesNoChoice(
-              me,
-              AntimagicProdigy,
-              "Antimagic Prodigy",
-              `Use ${me.name}'s reaction to attempt to counter the spell?`,
-              async () => {
-                me.useTime("reaction");
-                const save = await g.abilityCheck(15, {
-                  who,
-                  attacker: me,
-                  skill: "Arcana",
-                  ability: "int",
-                  tags: chSet("counterspell")
-                });
-                if (save.outcome === "fail")
-                  success.add("fail", AntimagicProdigy);
-              }
-            )
-          );
-      });
+      g.events.on(
+        "SpellCast",
+        ({ detail: { who: target, interrupt, success } }) => {
+          const action = new AntimagicProdigyAction(g, me, 15, success);
+          const config = { target };
+          if (checkConfig(g, action, config))
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                AntimagicProdigy,
+                "Antimagic Prodigy",
+                `Use ${me.name}'s reaction to attempt to counter the spell?`,
+                async () => await action.apply(config)
+              )
+            );
+        }
+      );
     }
   );
+  var HellishRebukeAction = class extends AbstractAction {
+    constructor(g, actor, dc) {
+      super(
+        g,
+        actor,
+        "Hellish Rebuke",
+        "implemented",
+        { target: new TargetResolver(g, Infinity) },
+        {
+          time: "reaction",
+          description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`
+        }
+      );
+      this.dc = dc;
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor, dc } = this;
+      const damage = await g.rollDamage(2, {
+        source: HellishRebuke,
+        size: 10,
+        attacker: actor,
+        target,
+        damageType: "fire"
+      });
+      const save = await g.savingThrow(dc, {
+        who: target,
+        attacker: actor,
+        ability: "dex",
+        tags: svSet()
+      });
+      await g.damage(
+        HellishRebuke,
+        "fire",
+        { attacker: actor, target },
+        [["fire", damage]],
+        save.damageResponse
+      );
+    }
+  };
   var HellishRebuke = new SimpleFeature(
     "Hellish Rebuke",
     `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
@@ -3785,38 +3920,20 @@
       g.events.on(
         "CombatantDamaged",
         ({ detail: { who, attacker, interrupt } }) => {
-          if (who === me && me.hasTime("reaction"))
-            interrupt.add(
-              new YesNoChoice(
-                me,
-                HellishRebuke,
-                "Hellish Rebuke",
-                `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                async () => {
-                  me.useTime("reaction");
-                  const damage = await g.rollDamage(2, {
-                    source: HellishRebuke,
-                    size: 10,
-                    attacker: me,
-                    target: attacker,
-                    damageType: "fire"
-                  });
-                  const save = await g.savingThrow(15, {
-                    who: attacker,
-                    attacker: me,
-                    ability: "dex",
-                    tags: svSet()
-                  });
-                  await g.damage(
-                    HellishRebuke,
-                    "fire",
-                    { attacker: me, target: attacker },
-                    [["fire", damage]],
-                    save.damageResponse
-                  );
-                }
-              )
-            );
+          if (who === me) {
+            const action = new HellishRebukeAction(g, me, 15);
+            const config = { target: attacker };
+            if (checkConfig(g, action, config))
+              interrupt.add(
+                new YesNoChoice(
+                  me,
+                  HellishRebuke,
+                  "Hellish Rebuke",
+                  `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
+                  async () => await action.apply(config)
+                )
+              );
+          }
         }
       );
     }
@@ -4397,6 +4514,34 @@
   }
 
   // src/features/fightingStyles.ts
+  var ProtectionAction = class extends AbstractAction {
+    constructor(g, actor, diceType) {
+      super(
+        g,
+        actor,
+        "Fighting Style: Protection",
+        "implemented",
+        { target: new TargetResolver(g, 5) },
+        {
+          time: "reaction",
+          description: `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`
+        }
+      );
+      this.diceType = diceType;
+    }
+    // TODO [SIGHT] creature you can see
+    check({ target }, ec) {
+      if (target && target.side !== this.actor.side)
+        ec.add("only allies", this);
+      if (!this.actor.shield)
+        ec.add("need shield", this);
+      return super.check({ target }, ec);
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      this.diceType.add("disadvantage", this);
+    }
+  };
   var FightingStyleProtection = new SimpleFeature(
     "Fighting Style: Protection",
     `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
@@ -4404,17 +4549,18 @@
       g.events.on(
         "BeforeAttack",
         ({ detail: { who, target, interrupt, diceType } }) => {
-          if (who !== me && target !== me && target.side === me.side && me.hasTime("reaction") && me.shield && distance(g, me, target) <= 5)
+          if (who !== me)
+            return;
+          const action = new ProtectionAction(g, me, diceType);
+          const config = { target };
+          if (checkConfig(g, action, config))
             interrupt.add(
               new YesNoChoice(
                 me,
                 FightingStyleProtection,
                 "Fighting Style: Protection",
                 `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
-                async () => {
-                  me.hasTime("reaction");
-                  diceType.add("disadvantage", FightingStyleProtection);
-                }
+                async () => await action.apply(config)
               )
             );
         }
@@ -4866,14 +5012,13 @@
       );
     }
     check({ target }, ec) {
-      super.check({ target }, ec);
       if (target) {
         if (target.side !== this.actor.side)
           ec.add("must target ally", this);
         if (!this.getValidAttacks(target).length)
           ec.add("no valid attack", this);
       }
-      return ec;
+      return super.check({ target }, ec);
     }
     getValidAttacks(attacker) {
       return getMeleeAttackOptions(
@@ -4933,7 +5078,6 @@
       );
     }
     check({ target }, ec) {
-      super.check({ target }, ec);
       if (target) {
         if (target.side === this.actor.side)
           ec.add("must target enemy", this);
@@ -4942,7 +5086,7 @@
         if (!this.getValidAttacks(target).length)
           ec.add("no valid attack", this);
       }
-      return ec;
+      return super.check({ target }, ec);
     }
     getValidAttacks(attacker) {
       return getMeleeAttackOptions(
@@ -5007,10 +5151,9 @@
       );
     }
     check({ target }, ec) {
-      super.check({ target }, ec);
       if (target && target.concentratingOn.size < 1)
         ec.add("Target is not concentrating", this);
-      return ec;
+      return super.check({ target }, ec);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -5088,7 +5231,7 @@
           );
           if (distance2 <= 5) {
             const step = new DancingStepAction(g, me);
-            if (g.check(step, {}).result)
+            if (checkConfig(g, step, {}))
               interrupt.add(
                 new YesNoChoice(
                   me,
@@ -5203,10 +5346,9 @@
       );
     }
     check(config, ec) {
-      super.check(config, ec);
       if (this.actor.speed <= 0)
         ec.add("cannot move", this);
-      return ec;
+      return super.check(config, ec);
     }
     async apply() {
       await super.apply({});
@@ -5578,6 +5720,27 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       });
     }
   );
+  var UncannyDodgeAction = class extends AbstractAction {
+    constructor(g, actor, multiplier) {
+      super(
+        g,
+        actor,
+        "Uncanny Dodge",
+        "implemented",
+        {},
+        {
+          description: `when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+          time: "reaction"
+        }
+      );
+      this.multiplier = multiplier;
+    }
+    // TODO [SIGHT] ... when an attacker that you can see ...
+    async apply() {
+      await super.apply({});
+      this.multiplier.add("half", this);
+    }
+  };
   var UncannyDodge = new SimpleFeature(
     "Uncanny Dodge",
     `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
@@ -5585,19 +5748,19 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       g.events.on(
         "GatherDamage",
         ({ detail: { target, attack, interrupt, multiplier } }) => {
-          if (attack && target === me && me.hasTime("reaction"))
-            interrupt.add(
-              new YesNoChoice(
-                me,
-                UncannyDodge,
-                "Uncanny Dodge",
-                `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                async () => {
-                  me.useTime("reaction");
-                  multiplier.add("half", UncannyDodge);
-                }
-              )
-            );
+          if (attack && target === me) {
+            const action = new UncannyDodgeAction(g, me, multiplier);
+            if (checkConfig(g, action, {}))
+              interrupt.add(
+                new YesNoChoice(
+                  me,
+                  UncannyDodge,
+                  "Uncanny Dodge",
+                  `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
+                  async () => await action.apply()
+                )
+              );
+          }
         }
       );
     }
@@ -5680,29 +5843,54 @@ Once you use this feature, you can't use it again until you finish a short or lo
   var rogue_default2 = Rogue;
 
   // src/classes/rogue/Scout/index.ts
+  var SkirmisherAction = class extends AbstractAction {
+    constructor(g, actor, other) {
+      super(
+        g,
+        actor,
+        "Skirmisher",
+        "implemented",
+        {},
+        {
+          time: "reaction",
+          description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
+        }
+      );
+      this.other = other;
+    }
+    check(config, ec) {
+      if (this.actor.side === this.other.side)
+        ec.add("same side", this);
+      if (distance(this.g, this.actor, this.other) > MapSquareSize)
+        ec.add("not close enough", this);
+      if (this.actor.speed <= 0)
+        ec.add("cannot move", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      await this.g.applyBoundedMove(
+        this.actor,
+        new BoundedMove(Skirmisher, round(this.actor.speed / 2, MapSquareSize), {
+          provokesOpportunityAttacks: false
+        })
+      );
+    }
+  };
   var Skirmisher = new SimpleFeature(
     "Skirmisher",
     `Starting at 3rd level, you are difficult to pin down during a fight. You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
     (g, me) => {
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-        if (who.side !== me.side && me.hasTime("reaction") && distance(g, me, who) <= 5)
+        const action = new SkirmisherAction(g, me, who);
+        if (checkConfig(g, action, {}))
           interrupt.add(
             new YesNoChoice(
               me,
               Skirmisher,
               "Skirmisher",
               `Use ${me.name}'s reaction to move half their speed?`,
-              async () => {
-                me.useTime("reaction");
-                return g.applyBoundedMove(
-                  me,
-                  new BoundedMove(
-                    Skirmisher,
-                    round(me.speed / 2, MapSquareSize),
-                    { provokesOpportunityAttacks: false }
-                  )
-                );
-              }
+              async () => await action.apply()
             )
           );
       });
@@ -5920,6 +6108,23 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/features/boons.ts
   var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
+  var HissFleeAction = class extends AbstractAction {
+    constructor(g, actor, other) {
+      super(g, actor, "Flee from Hiss", "implemented", {}, { time: "reaction" });
+      this.other = other;
+    }
+    async apply() {
+      await super.apply({});
+      await this.g.applyBoundedMove(
+        this.actor,
+        new BoundedMove(this, round(this.actor.speed / 2, MapSquareSize), {
+          cannotApproach: [this.other],
+          mustUseAll: true,
+          provokesOpportunityAttacks: false
+        })
+      );
+    }
+  };
   var HissAction = class extends AbstractAction {
     constructor(g, actor) {
       super(
@@ -5938,7 +6143,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor } = this;
-      if (target.hasTime("reaction")) {
+      const action = new HissFleeAction(g, target, actor);
+      if (checkConfig(g, action, {})) {
         const dc = getSaveDC(actor, "cha");
         const save = await g.savingThrow(dc, {
           who: target,
@@ -5946,17 +6152,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
           ability: "wis",
           tags: svSet("frightened", "forced movement")
         });
-        if (save.outcome === "fail") {
-          target.useTime("reaction");
-          await g.applyBoundedMove(
-            target,
-            new BoundedMove(this, round(target.speed / 2, MapSquareSize), {
-              cannotApproach: [actor],
-              mustUseAll: true,
-              provokesOpportunityAttacks: false
-            })
-          );
-        }
+        if (save.outcome === "fail")
+          await action.apply();
       }
     }
   };
@@ -9173,14 +9370,14 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     "Rage",
     "turnStart",
     (g) => {
-      g.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
+      const rageAdvantage = ({
+        detail: { who, ability, diceType }
+      }) => {
         if (isRaging(who) && ability === "str")
           diceType.add("advantage", RageEffect);
-      });
-      g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-        if (isRaging(who) && ability === "str")
-          diceType.add("advantage", RageEffect);
-      });
+      };
+      g.events.on("BeforeCheck", rageAdvantage);
+      g.events.on("BeforeSave", rageAdvantage);
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, ability, bonus } }) => {
@@ -9257,7 +9454,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         g,
         actor,
         "Rage",
-        "incomplete",
+        "implemented",
         {},
         {
           icon: RageIcon,
@@ -11643,19 +11840,6 @@ The creature is aware of this effect before it makes its attack against you.`
   // src/ui/App.tsx
   var import_signals2 = __toESM(require_signals());
   var import_hooks17 = __toESM(require_hooks());
-
-  // src/utils/config.ts
-  function getConfigErrors(g, action, config) {
-    const ec = g.check(action, config);
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-      const value = config[key];
-      resolver.check(value, action, ec);
-    }
-    return ec;
-  }
-  function checkConfig(g, action, config) {
-    return getConfigErrors(g, action, config).result;
-  }
 
   // src/ui/common.module.scss
   var common_module_default = {

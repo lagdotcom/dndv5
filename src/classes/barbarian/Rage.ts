@@ -6,6 +6,8 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
+import BeforeCheckEvent from "../../events/BeforeCheckEvent";
+import BeforeSaveEvent from "../../events/BeforeSaveEvent";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { LongRestResource } from "../../resources";
@@ -74,14 +76,14 @@ export const RageEffect = new Effect(
   "turnStart",
   (g) => {
     // You have advantage on Strength checks and Strength saving throws.
-    g.events.on("BeforeCheck", ({ detail: { who, ability, diceType } }) => {
+    const rageAdvantage = ({
+      detail: { who, ability, diceType },
+    }: BeforeCheckEvent | BeforeSaveEvent) => {
       if (isRaging(who) && ability === "str")
         diceType.add("advantage", RageEffect);
-    });
-    g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-      if (isRaging(who) && ability === "str")
-        diceType.add("advantage", RageEffect);
-    });
+    };
+    g.events.on("BeforeCheck", rageAdvantage);
+    g.events.on("BeforeSave", rageAdvantage);
 
     // When you make a melee weapon attack using Strength, you gain a +2 bonus to the damage roll. This bonus increases as you level.
     g.events.on(
@@ -114,7 +116,7 @@ export const RageEffect = new Effect(
         error.add("cannot cast spells", RageEffect);
     });
 
-    // It ends early if you are knocked unconscious
+    // It ends early if you are knocked unconscious...
     g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
       if (isRaging(who) && who.conditions.has("Unconscious"))
         interrupt.add(
@@ -159,6 +161,7 @@ export const RageEffect = new Effect(
       }
     });
 
+    // You can also end your rage on your turn as a bonus action.
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who.hasEffect(RageEffect)) actions.push(new EndRageAction(g, who));
     });
@@ -172,7 +175,7 @@ export class RageAction extends AbstractAction {
       g,
       actor,
       "Rage",
-      "incomplete",
+      "implemented",
       {},
       {
         icon: RageIcon,
