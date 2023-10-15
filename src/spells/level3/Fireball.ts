@@ -9,7 +9,7 @@ import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getArea = (centre: Point): SpecifiedSphere => ({
+const getFireballArea = (centre: Point): SpecifiedSphere => ({
   type: "sphere",
   centre,
   radius: 20,
@@ -32,9 +32,9 @@ const Fireball = scalingSpell<HasPoint>({
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-  getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
+  getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
   getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot ?? 3), 6, "fire")],
-  getTargets: (g, caster, { point }) => g.getInside(getArea(point)),
+  getTargets: (g, caster, { point }) => g.getInside(getFireballArea(point)),
 
   async apply(g, attacker, method, { point, slot }) {
     const damage = await g.rollDamage(5 + slot, {
@@ -49,7 +49,7 @@ const Fireball = scalingSpell<HasPoint>({
 
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside(getArea(point))) {
+    for (const target of g.getInside(getFireballArea(point))) {
       const save = await g.savingThrow(dc, {
         attacker,
         ability: "dex",

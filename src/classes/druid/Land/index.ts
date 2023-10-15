@@ -21,11 +21,8 @@ import WaterWalk from "../../../spells/level3/WaterWalk";
 import ControlWater from "../../../spells/level4/ControlWater";
 import FreedomOfMovement from "../../../spells/level4/FreedomOfMovement";
 import IceStorm from "../../../spells/level4/IceStorm";
-import StoneShape from "../../../spells/level4/StoneShape";
 import Stoneskin from "../../../spells/level4/Stoneskin";
-import CommuneWithNature from "../../../spells/level5/CommuneWithNature";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
-import ConjureElemental from "../../../spells/level5/ConjureElemental";
 import PCSubclass from "../../../types/PCSubclass";
 import Spell from "../../../types/Spell";
 import { DruidSpellcasting } from "..";
@@ -63,7 +60,7 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     { level: 5, spell: Slow },
     { level: 7, spell: FreedomOfMovement },
     { level: 7, spell: IceStorm },
-    { level: 9, spell: CommuneWithNature },
+    // { level: 9, spell: CommuneWithNature },
     { level: 9, spell: ConeOfCold },
   ],
   coast: [
@@ -73,7 +70,7 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     { level: 5, spell: WaterWalk },
     { level: 7, spell: ControlWater },
     { level: 7, spell: FreedomOfMovement },
-    { level: 9, spell: ConjureElemental },
+    // { level: 9, spell: ConjureElemental },
     // { level: 9, spell: Scrying },
   ],
   desert: [
@@ -93,7 +90,7 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     // { level: 5, spell: PlantGrowth },
     // { level: 7, spell: Divination },
     { level: 7, spell: FreedomOfMovement },
-    { level: 9, spell: CommuneWithNature },
+    // { level: 9, spell: CommuneWithNature },
     // { level: 9, spell: TreeStride },
   ],
   grassland: [
@@ -111,7 +108,7 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     { level: 3, spell: SpikeGrowth },
     { level: 5, spell: LightningBolt },
     { level: 5, spell: MeldIntoStone },
-    { level: 7, spell: StoneShape },
+    // { level: 7, spell: StoneShape },
     { level: 7, spell: Stoneskin },
     // { level: 9, spell: Passwall },
     // { level: 9, spell: WallOfStone },

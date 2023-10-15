@@ -24,14 +24,15 @@ import { svSet } from "../../types/SaveTag";
 import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 
-function getArea(g: Engine, target: Combatant): SpecifiedWithin {
-  return {
-    type: "within",
-    radius: 5,
-    target,
-    position: g.getState(target).position,
-  };
-}
+const getEldritchBurstArea = (
+  g: Engine,
+  target: Combatant,
+): SpecifiedWithin => ({
+  type: "within",
+  radius: 5,
+  target,
+  position: g.getState(target).position,
+});
 
 const BurstIcon = makeIcon(burstUrl, DamageColours.force);
 
@@ -44,7 +45,8 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   lists: ["Warlock"],
 
   getConfig: (g) => ({ target: new TargetResolver(g, 120) }),
-  getAffectedArea: (g, caster, { target }) => target && [getArea(g, target)],
+  getAffectedArea: (g, caster, { target }) =>
+    target && [getEldritchBurstArea(g, target)],
   getDamage: () => [_dd(2, 10, "force")],
   getTargets: (g, caster, { target }) => [target],
 
@@ -72,7 +74,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
       attack.critical,
     );
 
-    for (const other of g.getInside(getArea(g, target))) {
+    for (const other of g.getInside(getEldritchBurstArea(g, target))) {
       if (other === target) continue;
 
       const save = await g.savingThrow(

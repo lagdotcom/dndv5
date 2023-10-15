@@ -11,7 +11,7 @@ import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
+const getIceKnifeArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
   type: "within",
   target,
   position: g.getState(target).position,
@@ -33,13 +33,15 @@ const IceKnife = scalingSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
 
-  getAffectedArea: (g, caster, { target }) => target && [getArea(g, target)],
+  getAffectedArea: (g, caster, { target }) =>
+    target && [getIceKnifeArea(g, target)],
 
   getDamage: (g, caster, method, { slot }) => [
     _dd(1, 10, "piercing"),
     _dd(1 + (slot ?? 1), 6, "cold"),
   ],
-  getTargets: (g, caster, { target }) => g.getInside(getArea(g, target)),
+  getTargets: (g, caster, { target }) =>
+    g.getInside(getIceKnifeArea(g, target)),
 
   async apply(g, attacker, method, { slot, target }) {
     const { attack, hit, critical } = await g.attack({
@@ -84,7 +86,7 @@ const IceKnife = scalingSpell<HasTarget>({
     });
     const dc = method.getSaveDC(attacker, IceKnife, slot);
 
-    for (const victim of g.getInside(getArea(g, target))) {
+    for (const victim of g.getInside(getIceKnifeArea(g, target))) {
       const save = await g.savingThrow(
         dc,
         {

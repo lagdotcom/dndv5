@@ -59,10 +59,10 @@ export default class Beldalynn extends PC {
     this.inventory.add(new Dagger(g, 1));
 
     // this.addKnownSpells(
-    //   TODO ComprehendLanguages,
-    //   TODO FindFamiliar,
-    //   TODO FloatingDisk,
-    //   TODO Identify
+    //   ComprehendLanguages,
+    //   FindFamiliar,
+    //   FloatingDisk,
+    //   Identify
     // );
 
     this.addPreparedSpells(

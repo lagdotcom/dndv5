@@ -3,7 +3,6 @@ import iconUrl from "@img/spl/erupting-earth.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
-import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -11,7 +10,7 @@ import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getArea = (g: Engine, centre: Point): SpecifiedCube => ({
+const getEruptingEarthArea = (centre: Point): SpecifiedCube => ({
   type: "cube",
   length: 20,
   centre,
@@ -32,7 +31,8 @@ const EruptingEarth = scalingSpell<HasPoint>({
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.`,
 
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-  getAffectedArea: (g, caster, { point }) => point && [getArea(g, point)],
+  getAffectedArea: (g, caster, { point }) =>
+    point && [getEruptingEarthArea(point)],
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 3, 12, "bludgeoning"),
   ],
@@ -49,7 +49,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
     });
     const dc = method.getSaveDC(attacker, EruptingEarth, slot);
 
-    const shape = getArea(g, point);
+    const shape = getEruptingEarthArea(g, point);
     for (const target of g.getInside(shape)) {
       const save = await g.savingThrow(dc, {
         attacker,

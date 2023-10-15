@@ -10,7 +10,7 @@ import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
+const getEarthTremorArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
   type: "within",
   radius: 10,
   target: caster,
@@ -31,7 +31,7 @@ const EarthTremor = scalingSpell({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
   getConfig: () => ({}),
-  getAffectedArea: (g, caster) => [getArea(g, caster)],
+  getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 1, 6, "bludgeoning"),
   ],
@@ -48,7 +48,7 @@ const EarthTremor = scalingSpell({
     });
     const dc = method.getSaveDC(attacker, EarthTremor, slot);
 
-    const shape = getArea(g, attacker);
+    const shape = getEarthTremorArea(g, attacker);
     for (const target of g.getInside(shape, [attacker])) {
       const save = await g.savingThrow(
         dc,

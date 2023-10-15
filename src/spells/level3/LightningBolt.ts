@@ -11,11 +11,8 @@ import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-function getArea(g: Engine, actor: Combatant, point: Point) {
-  const position = g.getState(actor).position;
-  const size = actor.sizeInUnits;
-  return aimLine(position, size, point, 100, 5);
-}
+const getLightningBoltArea = (g: Engine, actor: Combatant, point: Point) =>
+  aimLine(g.getState(actor).position, actor.sizeInUnits, point, 100, 5);
 
 const LightningBolt = scalingSpell<HasPoint>({
   status: "implemented",
@@ -38,8 +35,9 @@ const LightningBolt = scalingSpell<HasPoint>({
     _dd((slot ?? 3) + 5, 6, "lightning"),
   ],
   getAffectedArea: (g, caster, { point }) =>
-    point && [getArea(g, caster, point)],
-  getTargets: (g, caster, { point }) => g.getInside(getArea(g, caster, point)),
+    point && [getLightningBoltArea(g, caster, point)],
+  getTargets: (g, caster, { point }) =>
+    g.getInside(getLightningBoltArea(g, caster, point)),
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(5 + slot, {
@@ -54,7 +52,9 @@ const LightningBolt = scalingSpell<HasPoint>({
 
     // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside(getArea(g, attacker, point))) {
+    for (const target of g.getInside(
+      getLightningBoltArea(g, attacker, point),
+    )) {
       const save = await g.savingThrow(dc, {
         attacker,
         ability: "dex",

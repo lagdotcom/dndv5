@@ -20,7 +20,7 @@ import { scalingSpell } from "../common";
 
 const MoonbeamIcon = makeIcon(iconUrl, DamageColours.radiant);
 
-const getArea = (centre: Point): SpecifiedCylinder => ({
+const getMoonbeamArea = (centre: Point): SpecifiedCylinder => ({
   type: "cylinder",
   centre,
   height: 40,
@@ -47,7 +47,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
   }
 
   getAffectedArea({ point }: Partial<HasPoint>) {
-    if (point) return [getArea(point)];
+    if (point) return [getMoonbeamArea(point)];
   }
 
   async apply({ point }: HasPoint) {
@@ -70,7 +70,7 @@ class MoonbeamController {
     public centre: Point,
     public slot: number,
   ) {
-    this.shape = getArea(centre);
+    this.shape = getMoonbeamArea(centre);
     this.area = new ActiveEffectArea(
       "Moonbeam",
       this.shape,
@@ -184,7 +184,7 @@ const Moonbeam = scalingSpell<HasPoint>({
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.`,
 
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-  getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
+  getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
   getDamage: (g, caster, method, { slot }) => [_dd(slot ?? 2, 10, "radiant")],
   getTargets: () => [],
 

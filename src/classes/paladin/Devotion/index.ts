@@ -5,7 +5,6 @@ import {
 import ProtectionFromEvilAndGood from "../../../spells/level1/ProtectionFromEvilAndGood";
 import Sanctuary from "../../../spells/level1/Sanctuary";
 import LesserRestoration from "../../../spells/level2/LesserRestoration";
-import ZoneOfTruth from "../../../spells/level2/ZoneOfTruth";
 import PCSubclass from "../../../types/PCSubclass";
 import { PaladinSpellcasting } from "../common";
 import SacredWeapon from "./SacredWeapon";
@@ -53,7 +52,7 @@ const OathSpells = bonusSpellsFeature(
     { level: 3, spell: ProtectionFromEvilAndGood },
     { level: 3, spell: Sanctuary },
     { level: 5, spell: LesserRestoration },
-    { level: 5, spell: ZoneOfTruth },
+    // TODO { level: 5, spell: ZoneOfTruth },
     // TODO { level: 9, spell: BeaconOfHope },
     // TODO { level: 9, spell: DispelMagic },
     // TODO { level: 13, spell: FreedomOfMovement },

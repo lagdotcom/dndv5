@@ -5,7 +5,7 @@ import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getArea = (centre: Point): SpecifiedCylinder => ({
+const getIceStormArea = (centre: Point): SpecifiedCylinder => ({
   type: "cylinder",
   centre,
   radius: 20,
@@ -27,8 +27,8 @@ const IceStorm = scalingSpell<HasPoint>({
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
 
   getConfig: (g) => ({ point: new PointResolver(g, 300) }),
-  getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
-  getTargets: (g, caster, { point }) => g.getInside(getArea(point)),
+  getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
+  getTargets: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
   getDamage: (g, caster, method, { slot }) => [
     _dd((slot ?? 4) - 2, 8, "bludgeoning"),
     _dd(4, 6, "cold"),

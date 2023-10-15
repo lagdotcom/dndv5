@@ -3717,14 +3717,12 @@
   }
 
   // src/monsters/fiendishParty/Birnotec.ts
-  function getArea(g, target) {
-    return {
-      type: "within",
-      radius: 5,
-      target,
-      position: g.getState(target).position
-    };
-  }
+  var getEldritchBurstArea = (g, target) => ({
+    type: "within",
+    radius: 5,
+    target,
+    position: g.getState(target).position
+  });
   var BurstIcon = makeIcon(eldritch_burst_default, DamageColours.force);
   var EldritchBurstSpell = simpleSpell({
     status: "implemented",
@@ -3734,7 +3732,7 @@
     school: "Evocation",
     lists: ["Warlock"],
     getConfig: (g) => ({ target: new TargetResolver(g, 120) }),
-    getAffectedArea: (g, caster, { target }) => target && [getArea(g, target)],
+    getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(g, target)],
     getDamage: () => [_dd(2, 10, "force")],
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
@@ -3758,7 +3756,7 @@
         { size: 10, source: this, attacker: caster, damageType: "force" },
         attack.critical
       );
-      for (const other of g.getInside(getArea(g, target))) {
+      for (const other of g.getInside(getEldritchBurstArea(g, target))) {
         if (other === target)
           continue;
         const save = await g.savingThrow(
@@ -7356,7 +7354,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var ice_knife_default = "./ice-knife-4B5PYKBA.svg";
 
   // src/spells/level1/IceKnife.ts
-  var getArea2 = (g, target) => ({
+  var getIceKnifeArea = (g, target) => ({
     type: "within",
     target,
     position: g.getState(target).position,
@@ -7375,12 +7373,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
-    getAffectedArea: (g, caster, { target }) => target && [getArea2(g, target)],
+    getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(g, target)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(1, 10, "piercing"),
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
-    getTargets: (g, caster, { target }) => g.getInside(getArea2(g, target)),
+    getTargets: (g, caster, { target }) => g.getInside(getIceKnifeArea(g, target)),
     async apply(g, attacker, method, { slot, target }) {
       const { attack, hit, critical } = await g.attack({
         who: attacker,
@@ -7420,7 +7418,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         damageType: "cold"
       });
       const dc = method.getSaveDC(attacker, IceKnife, slot);
-      for (const victim of g.getInside(getArea2(g, target))) {
+      for (const victim of g.getInside(getIceKnifeArea(g, target))) {
         const save = await g.savingThrow(
           dc,
           {
@@ -7782,7 +7780,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var fireball_default = "./fireball-GYKJUQJQ.svg";
 
   // src/spells/level3/Fireball.ts
-  var getArea3 = (centre) => ({
+  var getFireballArea = (centre) => ({
     type: "sphere",
     centre,
     radius: 20
@@ -7803,9 +7801,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-    getAffectedArea: (g, caster, { point }) => point && [getArea3(point)],
+    getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
-    getTargets: (g, caster, { point }) => g.getInside(getArea3(point)),
+    getTargets: (g, caster, { point }) => g.getInside(getFireballArea(point)),
     async apply(g, attacker, method, { point, slot }) {
       const damage = await g.rollDamage(5 + slot, {
         source: Fireball,
@@ -7816,7 +7814,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         attacker
       });
       const dc = method.getSaveDC(attacker, Fireball, slot);
-      for (const target of g.getInside(getArea3(point))) {
+      for (const target of g.getInside(getFireballArea(point))) {
         const save = await g.savingThrow(dc, {
           attacker,
           ability: "dex",
@@ -8737,30 +8735,6 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   });
   var LesserRestoration_default = LesserRestoration;
 
-  // src/spells/level2/ZoneOfTruth.ts
-  var getArea4 = (centre) => ({
-    type: "sphere",
-    centre,
-    radius: 15
-  });
-  var ZoneOfTruth = simpleSpell({
-    name: "Zone of Truth",
-    level: 2,
-    school: "Enchantment",
-    v: true,
-    s: true,
-    lists: ["Bard", "Cleric", "Paladin"],
-    description: `You create a magical zone that guards against deception in a 15-foot-radius sphere centered on a point of your choice within range. Until the spell ends, a creature that enters the spell's area for the first time on a turn or starts its turn there must make a Charisma saving throw. On a failed save, a creature can't speak a deliberate lie while in the radius. You know whether each creature succeeds or fails on its saving throw.
-
-  An affected creature is aware of the spell and can thus avoid answering questions to which it would normally respond with a lie. Such creatures can be evasive in its answers as long as it remains within the boundaries of the truth.`,
-    getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-    getAffectedArea: (g, caster, { point }) => point && [getArea4(point)],
-    getTargets: () => [],
-    async apply(g, caster, method, config) {
-    }
-  });
-  var ZoneOfTruth_default = ZoneOfTruth;
-
   // src/classes/paladin/Devotion/SacredWeapon.ts
   var SacredWeaponEffect = new Effect(
     "Sacred Weapon",
@@ -8854,8 +8828,8 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     [
       { level: 3, spell: ProtectionFromEvilAndGood_default },
       { level: 3, spell: Sanctuary_default },
-      { level: 5, spell: LesserRestoration_default },
-      { level: 5, spell: ZoneOfTruth_default }
+      { level: 5, spell: LesserRestoration_default }
+      // TODO { level: 5, spell: ZoneOfTruth },
       // TODO { level: 9, spell: BeaconOfHope },
       // TODO { level: 9, spell: DispelMagic },
       // TODO { level: 13, spell: FreedomOfMovement },
@@ -10607,11 +10581,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var lightning_bolt_default = "./lightning-bolt-MGFW7XHW.svg";
 
   // src/spells/level3/LightningBolt.ts
-  function getArea5(g, actor, point) {
-    const position = g.getState(actor).position;
-    const size = actor.sizeInUnits;
-    return aimLine(position, size, point, 100, 5);
-  }
+  var getLightningBoltArea = (g, actor, point) => aimLine(g.getState(actor).position, actor.sizeInUnits, point, 100, 5);
   var LightningBolt = scalingSpell({
     status: "implemented",
     name: "Lightning Bolt",
@@ -10631,8 +10601,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
     ],
-    getAffectedArea: (g, caster, { point }) => point && [getArea5(g, caster, point)],
-    getTargets: (g, caster, { point }) => g.getInside(getArea5(g, caster, point)),
+    getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(g, caster, point)],
+    getTargets: (g, caster, { point }) => g.getInside(getLightningBoltArea(g, caster, point)),
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(5 + slot, {
         source: LightningBolt,
@@ -10643,7 +10613,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         attacker
       });
       const dc = method.getSaveDC(attacker, LightningBolt, slot);
-      for (const target of g.getInside(getArea5(g, attacker, point))) {
+      for (const target of g.getInside(
+        getLightningBoltArea(g, attacker, point)
+      )) {
         const save = await g.savingThrow(dc, {
           attacker,
           ability: "dex",
@@ -10822,7 +10794,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var FreedomOfMovement_default = FreedomOfMovement;
 
   // src/spells/level4/IceStorm.ts
-  var getArea6 = (centre) => ({
+  var getIceStormArea = (centre) => ({
     type: "cylinder",
     centre,
     radius: 20,
@@ -10842,8 +10814,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
     getConfig: (g) => ({ point: new PointResolver(g, 300) }),
-    getAffectedArea: (g, caster, { point }) => point && [getArea6(point)],
-    getTargets: (g, caster, { point }) => g.getInside(getArea6(point)),
+    getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
+    getTargets: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
@@ -10852,23 +10824,6 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }
   });
   var IceStorm_default = IceStorm;
-
-  // src/spells/level4/StoneShape.ts
-  var StoneShape = simpleSpell({
-    name: "Stone Shape",
-    level: 4,
-    school: "Transmutation",
-    v: true,
-    s: true,
-    m: "soft clay, which must be worked into roughly the desired shape of the stone object",
-    lists: ["Artificer", "Cleric", "Druid", "Wizard"],
-    description: `You touch a stone object of Medium size or smaller or a section of stone no more than 5 feet in any dimension and form it into any shape that suits your purpose. So, for example, you could shape a large rock into a weapon, idol, or coffer, or make a small passage through a wall, as long as the wall is less than 5 feet thick. You could also shape a stone door or its frame to seal the door shut. The object you create can have up to two hinges and a latch, but finer mechanical detail isn't possible.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    async apply(g, caster, method, config) {
-    }
-  });
-  var StoneShape_default = StoneShape;
 
   // src/spells/level4/Stoneskin.ts
   var StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
@@ -10909,36 +10864,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var Stoneskin_default = Stoneskin;
 
-  // src/spells/level5/CommuneWithNature.ts
-  var CommuneWithNature = simpleSpell({
-    name: "Commune with Nature",
-    level: 5,
-    ritual: true,
-    school: "Divination",
-    time: "long",
-    v: true,
-    s: true,
-    lists: ["Druid", "Ranger"],
-    description: `You briefly become one with nature and gain knowledge of the surrounding territory. In the outdoors, the spell gives you knowledge of the land within 3 miles of you. In caves and other natural underground settings, the radius is limited to 300 feet. The spell doesn't function where nature has been replaced by construction, such as in dungeons and towns.
-
-  You instantly gain knowledge of up to three facts of your choice about any of the following subjects as they relate to the area:
-
-  - terrain and bodies of water
-  - prevalent plants, minerals, animals, or peoples
-  - powerful celestials, fey, fiends, elementals, or undead
-  - influence from other planes of existence
-  - buildings
-
-  For example, you could determine the location of powerful undead in the area, the location of major sources of safe drinking water, and the location of any nearby towns.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    async apply(g, caster, method) {
-    }
-  });
-  var CommuneWithNature_default = CommuneWithNature;
-
   // src/spells/level5/ConeOfCold.ts
-  var getArea7 = (g, caster, target) => ({
+  var getConeOfColdArea = (g, caster, target) => ({
     type: "cone",
     radius: 60,
     centre: g.getState(caster).position,
@@ -10960,8 +10887,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.`,
     getConfig: (g) => ({ point: new PointResolver(g, 60) }),
     getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
-    getAffectedArea: (g, caster, { point }) => point && [getArea7(g, caster, point)],
-    getTargets: (g, caster, { point }) => g.getInside(getArea7(g, caster, point)),
+    getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(g, caster, point)],
+    getTargets: (g, caster, { point }) => g.getInside(getConeOfColdArea(g, caster, point)),
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(3 + slot, {
         source: ConeOfCold,
@@ -10972,7 +10899,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         attacker
       });
       const dc = method.getSaveDC(attacker, ConeOfCold, slot);
-      for (const target of g.getInside(getArea7(g, attacker, point))) {
+      for (const target of g.getInside(getConeOfColdArea(g, attacker, point))) {
         const save = await g.savingThrow(dc, {
           attacker,
           ability: "con",
@@ -10992,33 +10919,6 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }
   });
   var ConeOfCold_default = ConeOfCold;
-
-  // src/spells/level5/ConjureElemental.ts
-  var ConjureElemental = scalingSpell({
-    name: "Conjure Elemental",
-    level: 5,
-    school: "Conjuration",
-    concentration: true,
-    time: "long",
-    v: true,
-    s: true,
-    m: "burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water",
-    lists: ["Druid", "Wizard"],
-    description: `You call forth an elemental servant. Choose an area of air, earth, fire, or water that fills a 10-foot cube within range. An elemental of challenge rating 5 or lower appropriate to the area you chose appears in an unoccupied space within 10 feet of it. For example, a fire elemental emerges from a bonfire, and an earth elemental rises up from the ground. The elemental disappears when it drops to 0 hit points or when the spell ends.
-
-  The elemental is friendly to you and your companions for the duration. Roll initiative for the elemental, which has its own turns. It obeys any verbal commands that you issue to it (no action required by you). If you don't issue any commands to the elemental, it defends itself from hostile creatures but otherwise takes no actions.
-
-  If your concentration is broken, the elemental doesn't disappear. Instead, you lose control of the elemental, it becomes hostile toward you and your companions, and it might attack. An uncontrolled elemental can't be dismissed by you, and it disappears 1 hour after you summoned it.
-
-  The DM has the elemental's statistics.
-
-  At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the challenge rating increases by 1 for each slot level above 5th.`,
-    getConfig: (g) => ({ point: new PointResolver(g, 90) }),
-    getTargets: () => [],
-    async apply(g, caster, method, config) {
-    }
-  });
-  var ConjureElemental_default = ConjureElemental;
 
   // src/classes/druid/Land/index.ts
   var BonusCantrip = new ConfiguredFeature(
@@ -11042,7 +10942,7 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 5, spell: Slow_default },
       { level: 7, spell: FreedomOfMovement_default },
       { level: 7, spell: IceStorm_default },
-      { level: 9, spell: CommuneWithNature_default },
+      // { level: 9, spell: CommuneWithNature },
       { level: 9, spell: ConeOfCold_default }
     ],
     coast: [
@@ -11051,8 +10951,8 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 5, spell: WaterBreathing_default },
       { level: 5, spell: WaterWalk_default },
       { level: 7, spell: ControlWater_default },
-      { level: 7, spell: FreedomOfMovement_default },
-      { level: 9, spell: ConjureElemental_default }
+      { level: 7, spell: FreedomOfMovement_default }
+      // { level: 9, spell: ConjureElemental },
       // { level: 9, spell: Scrying },
     ],
     desert: [
@@ -11071,8 +10971,8 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       // { level: 5, spell: CallLightning },
       // { level: 5, spell: PlantGrowth },
       // { level: 7, spell: Divination },
-      { level: 7, spell: FreedomOfMovement_default },
-      { level: 9, spell: CommuneWithNature_default }
+      { level: 7, spell: FreedomOfMovement_default }
+      // { level: 9, spell: CommuneWithNature },
       // { level: 9, spell: TreeStride },
     ],
     grassland: [
@@ -11090,7 +10990,7 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 3, spell: SpikeGrowth_default },
       { level: 5, spell: LightningBolt_default },
       { level: 5, spell: MeldIntoStone_default },
-      { level: 7, spell: StoneShape_default },
+      // { level: 7, spell: StoneShape },
       { level: 7, spell: Stoneskin_default }
       // { level: 9, spell: Passwall },
       // { level: 9, spell: WallOfStone },
@@ -11464,7 +11364,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var earth_tremor_default = "./earth-tremor-EZT5PRHJ.svg";
 
   // src/spells/level1/EarthTremor.ts
-  var getArea8 = (g, caster) => ({
+  var getEarthTremorArea = (g, caster) => ({
     type: "within",
     radius: 10,
     target: caster,
@@ -11483,7 +11383,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
     getConfig: () => ({}),
-    getAffectedArea: (g, caster) => [getArea8(g, caster)],
+    getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 1, 6, "bludgeoning")
     ],
@@ -11498,7 +11398,7 @@ The creature is aware of this effect before it makes its attack against you.`
         attacker
       });
       const dc = method.getSaveDC(attacker, EarthTremor, slot);
-      const shape = getArea8(g, attacker);
+      const shape = getEarthTremorArea(g, attacker);
       for (const target of g.getInside(shape, [attacker])) {
         const save = await g.savingThrow(
           dc,
@@ -11563,7 +11463,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/spells/level2/Moonbeam.ts
   var MoonbeamIcon = makeIcon(moonbeam_default, DamageColours.radiant);
-  var getArea9 = (centre) => ({
+  var getMoonbeamArea = (centre) => ({
     type: "cylinder",
     centre,
     height: 40,
@@ -11587,7 +11487,7 @@ The creature is aware of this effect before it makes its attack against you.`
     }
     getAffectedArea({ point }) {
       if (point)
-        return [getArea9(point)];
+        return [getMoonbeamArea(point)];
     }
     async apply({ point }) {
       await super.apply({ point });
@@ -11606,7 +11506,7 @@ The creature is aware of this effect before it makes its attack against you.`
         for (const cleanup of this.subscriptions)
           cleanup();
       };
-      this.shape = getArea9(centre);
+      this.shape = getMoonbeamArea(centre);
       this.area = new ActiveEffectArea(
         "Moonbeam",
         this.shape,
@@ -11702,7 +11602,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.`,
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-    getAffectedArea: (g, caster, { point }) => point && [getArea9(point)],
+    getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
     getTargets: () => [],
     async apply(g, caster, method, { point, slot }) {
@@ -11720,7 +11620,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var erupting_earth_default = "./erupting-earth-NCHHCQWD.svg";
 
   // src/spells/level3/EruptingEarth.ts
-  var getArea10 = (g, centre) => ({
+  var getEruptingEarthArea = (centre) => ({
     type: "cube",
     length: 20,
     centre
@@ -11739,7 +11639,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.`,
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-    getAffectedArea: (g, caster, { point }) => point && [getArea10(g, point)],
+    getAffectedArea: (g, caster, { point }) => point && [getEruptingEarthArea(point)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
@@ -11754,7 +11654,7 @@ The creature is aware of this effect before it makes its attack against you.`
         attacker
       });
       const dc = method.getSaveDC(attacker, EruptingEarth, slot);
-      const shape = getArea10(g, point);
+      const shape = getEruptingEarthArea(g, point);
       for (const target of g.getInside(shape)) {
         const save = await g.savingThrow(dc, {
           attacker,
