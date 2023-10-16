@@ -1,4 +1,5 @@
 import { HasTarget } from "../../configs";
+import { canSee } from "../../filters";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../common";
@@ -22,7 +23,7 @@ const EnlargeReduce = simpleSpell<Config>({
   Reduce. The target's size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category—from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage (this can't reduce the damage below 1).`,
 
   getConfig: (g) => ({
-    target: new TargetResolver(g, 30, true),
+    target: new TargetResolver(g, 30, [canSee]),
     mode: new ChoiceResolver(g, [
       { label: "enlarge", value: "enlarge" },
       { label: "reduce", value: "reduce" },

@@ -20,9 +20,9 @@ export const DodgeEffect = new Effect(
   "Dodge",
   "turnStart",
   (g) => {
-    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
-      // TODO [SIGHT] if you can see the attacker
-      if (canDodge(target)) diceType.add("disadvantage", DodgeEffect);
+    g.events.on("BeforeAttack", ({ detail: { target, diceType, who } }) => {
+      if (canDodge(target) && g.canSee(target, who))
+        diceType.add("disadvantage", DodgeEffect);
     });
 
     g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {

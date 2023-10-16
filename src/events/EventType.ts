@@ -11,6 +11,7 @@ import BeforeMoveEvent from "./BeforeMoveEvent";
 import BeforeSaveEvent from "./BeforeSaveEvent";
 import BoundedMoveEvent from "./BoundedMoveEvent";
 import CheckActionEvent from "./CheckActionEvent";
+import CheckVisionEvent from "./CheckVisionEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
 import CombatantHealedEvent from "./CombatantHealedEvent";
@@ -54,6 +55,7 @@ export type EventTypes = {
   BeforeSave: BeforeSaveEvent;
   BoundedMove: BoundedMoveEvent;
   CheckAction: CheckActionEvent;
+  CheckVision: CheckVisionEvent;
   CombatantDamaged: CombatantDamagedEvent;
   CombatantDied: CombatantDiedEvent;
   CombatantHealed: CombatantHealedEvent;

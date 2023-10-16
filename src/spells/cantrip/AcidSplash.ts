@@ -5,6 +5,7 @@ import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
+import { canSee } from "../../filters";
 import { isCombatantArray } from "../../utils/types";
 import { distance } from "../../utils/units";
 import { getCantripDice, simpleSpell } from "../common";
@@ -22,7 +23,9 @@ const AcidSplash = simpleSpell<HasTargets>({
 
   This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
-  getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 2, 60) }),
+  getConfig: (g) => ({
+    targets: new MultiTargetResolver(g, 1, 2, 60, [canSee]),
+  }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
   getTargets: (g, caster, { targets }) => targets,
 

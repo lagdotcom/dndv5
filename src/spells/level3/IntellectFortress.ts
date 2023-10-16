@@ -2,6 +2,7 @@ import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { abSet } from "../../types/AbilityName";
+import { canSee } from "../../filters";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -44,7 +45,7 @@ const IntellectFortress = scalingSpell<HasTargets>({
 
   // TODO  The creatures must be within 30 feet of each other when you target them.
   getConfig: (g, caster, method, { slot }) => ({
-    targets: new MultiTargetResolver(g, 1, (slot ?? 3) - 2, 30, true),
+    targets: new MultiTargetResolver(g, 1, (slot ?? 3) - 2, 30, [canSee]),
   }),
   getTargets: (g, caster, { targets }) => targets,
 

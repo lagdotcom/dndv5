@@ -13,6 +13,7 @@ import TargetResolver from "../../../resolvers/TargetResolver";
 import AbilityName from "../../../types/AbilityName";
 import Combatant from "../../../types/Combatant";
 import { WeaponItem } from "../../../types/Item";
+import { notSelf } from "../../../filters";
 import { getWeaponAbility } from "../../../utils/items";
 import { minutes } from "../../../utils/time";
 import { RageAction, RageEffect } from "../Rage";
@@ -32,7 +33,7 @@ class FrenzyAttack extends AbstractAction<HasTarget> {
       actor,
       `${weapon.name} (Frenzy)`,
       "implemented",
-      { target: new TargetResolver(g, actor.reach + weapon.reach) },
+      { target: new TargetResolver(g, actor.reach + weapon.reach, [notSelf]) },
       { icon: weapon.icon, damage: [weapon.damage], time: "bonus action" },
     );
 

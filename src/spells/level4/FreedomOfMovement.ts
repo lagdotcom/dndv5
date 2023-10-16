@@ -1,4 +1,5 @@
 import { HasTarget } from "../../configs";
+import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../common";
 
@@ -14,7 +15,9 @@ const FreedomOfMovement = simpleSpell<HasTarget>({
 
   The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.`,
 
-  getConfig: (g, caster) => ({ target: new TargetResolver(g, caster.reach) }),
+  getConfig: (g, caster) => ({
+    target: new TargetResolver(g, caster.reach, [isAlly]),
+  }),
   getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {

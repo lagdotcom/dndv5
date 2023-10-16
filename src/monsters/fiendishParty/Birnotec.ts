@@ -3,12 +3,12 @@ import tokenUrl from "@img/tok/boss/birnotec.png";
 
 import AbstractAction from "../../actions/AbstractAction";
 import CastSpell from "../../actions/CastSpell";
-import ErrorCollector from "../../collectors/ErrorCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import Monster from "../../Monster";
@@ -44,7 +44,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   school: "Evocation",
   lists: ["Warlock"],
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 120) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
   getAffectedArea: (g, caster, { target }) =>
     target && [getEldritchBurstArea(g, target)],
   getDamage: () => [_dd(2, 10, "force")],
@@ -150,17 +150,12 @@ class AntimagicProdigyAction extends AbstractAction<HasTarget> {
       actor,
       "Antimagic Prodigy",
       "implemented",
-      { target: new TargetResolver(g, Infinity) },
+      { target: new TargetResolver(g, Infinity, [isEnemy]) },
       {
         time: "reaction",
         description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
       },
     );
-  }
-
-  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    if (target?.side === this.actor.side) ec.add("enemy only", this);
-    return super.check({ target }, ec);
   }
 
   async apply({ target }: HasTarget) {
@@ -194,7 +189,7 @@ const AntimagicProdigy = new SimpleFeature(
       "SpellCast",
       ({ detail: { who: target, interrupt, success } }) => {
         const action = new AntimagicProdigyAction(g, me, 15, success);
-        const config = { target };
+        const config: HasTarget = { target };
         if (checkConfig(g, action, config))
           interrupt.add(
             new YesNoChoice(
@@ -202,7 +197,9 @@ const AntimagicProdigy = new SimpleFeature(
               AntimagicProdigy,
               "Antimagic Prodigy",
               `Use ${me.name}'s reaction to attempt to counter the spell?`,
-              async () => await action.apply(config),
+              async () => {
+                await g.act(action, config);
+              },
             ),
           );
       },
@@ -221,7 +218,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
       actor,
       "Hellish Rebuke",
       "implemented",
-      { target: new TargetResolver(g, Infinity) },
+      { target: new TargetResolver(g, Infinity, [isEnemy]) },
       {
         time: "reaction",
         description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
@@ -271,7 +268,7 @@ const HellishRebuke = new SimpleFeature(
       ({ detail: { who, attacker, interrupt } }) => {
         if (who === me) {
           const action = new HellishRebukeAction(g, me, 15);
-          const config = { target: attacker };
+          const config: HasTarget = { target: attacker };
           if (checkConfig(g, action, config))
             interrupt.add(
               new YesNoChoice(
@@ -279,7 +276,9 @@ const HellishRebuke = new SimpleFeature(
                 HellishRebuke,
                 "Hellish Rebuke",
                 `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                async () => await action.apply(config),
+                async () => {
+                  await g.act(action, config);
+                },
               ),
             );
         }

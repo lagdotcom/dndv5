@@ -4,6 +4,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
+import { canSee, notSelf } from "../../filters";
 import { getCantripDice, simpleSpell } from "../common";
 
 const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
@@ -32,7 +33,7 @@ const MindSliver = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
   getTargets: (g, caster, { target }) => [target],
 

@@ -4,6 +4,7 @@ import Engine from "../Engine";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
+import { ErrorFilter } from "../filters";
 import { distance } from "../utils/units";
 
 export default class TargetResolver implements Resolver<Combatant> {
@@ -12,7 +13,7 @@ export default class TargetResolver implements Resolver<Combatant> {
   constructor(
     public g: Engine,
     public maxRange: number,
-    public allowSelf = false,
+    public filters: ErrorFilter<Combatant>[],
   ) {
     this.type = "Combatant";
   }
@@ -21,18 +22,23 @@ export default class TargetResolver implements Resolver<Combatant> {
     const clauses: string[] = [];
     if (this.maxRange < Infinity)
       clauses.push(`target within ${this.maxRange}'`);
-    if (!this.allowSelf) clauses.push("not self");
+    clauses.push(...this.filters.map((f) => f.name));
 
     return clauses.length ? clauses.join(", ") : "any target";
   }
 
   check(value: unknown, action: Action, ec: ErrorCollector) {
-    if (!(value instanceof AbstractCombatant)) ec.add("No target", this);
-    else {
-      if (!this.allowSelf && value === action.actor)
-        ec.add("Cannot target self", this);
-      if (distance(this.g, action.actor, value) > this.maxRange)
-        ec.add("Out of range", this);
+    if (!(value instanceof AbstractCombatant)) {
+      ec.add("No target", this);
+    } else {
+      const isOutOfRange =
+        distance(this.g, action.actor, value) > this.maxRange;
+      const filterErrors = this.filters
+        .filter((filter) => !filter.check(this.g, action, value))
+        .map((filter) => filter.message);
+
+      if (isOutOfRange) ec.add("Out of range", this);
+      for (const error of filterErrors) ec.add(error, this);
     }
 
     return ec;

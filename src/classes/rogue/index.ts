@@ -2,11 +2,14 @@ import AbstractAction from "../../actions/AbstractAction";
 import DashAction from "../../actions/DashAction";
 import DisengageAction from "../../actions/DisengageAction";
 import MultiplierCollector from "../../collectors/MultiplierCollector";
+import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
+import { canSee } from "../../filters";
 import YesNoChoice from "../../interruptions/YesNoChoice";
+import TargetResolver from "../../resolvers/TargetResolver";
 import { abSet } from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
 import { acSet, wcSet } from "../../types/Item";
@@ -69,7 +72,7 @@ const CunningAction = new SimpleFeature(
   },
 );
 
-class UncannyDodgeAction extends AbstractAction {
+class UncannyDodgeAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -80,18 +83,16 @@ class UncannyDodgeAction extends AbstractAction {
       actor,
       "Uncanny Dodge",
       "implemented",
-      {},
+      { target: new TargetResolver(g, Infinity, [canSee]) },
       {
-        description: `when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+        description: `When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
         time: "reaction",
       },
     );
   }
 
-  // TODO [SIGHT] ... when an attacker that you can see ...
-
-  async apply() {
-    await super.apply({});
+  async apply({ target }: HasTarget) {
+    await super.apply({ target });
     this.multiplier.add("half", this);
   }
 }
@@ -107,17 +108,20 @@ const UncannyDodge = new SimpleFeature(
 
     g.events.on(
       "GatherDamage",
-      ({ detail: { target, attack, interrupt, multiplier } }) => {
+      ({ detail: { target, attack, interrupt, multiplier, attacker } }) => {
         if (attack && target === me) {
           const action = new UncannyDodgeAction(g, me, multiplier);
-          if (checkConfig(g, action, {}))
+          const config: HasTarget = { target: attacker };
+          if (checkConfig(g, action, config))
             interrupt.add(
               new YesNoChoice(
                 me,
                 UncannyDodge,
                 "Uncanny Dodge",
                 `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                async () => await action.apply(),
+                async () => {
+                  await g.act(action, config);
+                },
               ),
             );
         }

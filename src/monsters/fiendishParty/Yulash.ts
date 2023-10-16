@@ -7,6 +7,7 @@ import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
+import { isAlly, isConcentrating, isEnemy } from "../../filters";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { LeatherArmor } from "../../items/armor";
@@ -62,7 +63,7 @@ class CheerAction extends AbstractAction<HasTarget> {
       actor,
       "Cheer",
       "implemented",
-      { target: new TargetResolver(g, 30) },
+      { target: new TargetResolver(g, 30, [isAlly]) },
       {
         time: "action",
         description: `One ally within 30 ft. may make a melee attack against an enemy in range.`,
@@ -71,11 +72,8 @@ class CheerAction extends AbstractAction<HasTarget> {
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    if (target) {
-      if (target.side !== this.actor.side) ec.add("must target ally", this);
-
-      if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
-    }
+    if (target && !this.getValidAttacks(target).length)
+      ec.add("no valid attack", this);
 
     return super.check({ target }, ec);
   }
@@ -133,7 +131,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
       actor,
       "Discord",
       "implemented",
-      { target: new TargetResolver(g, 30) },
+      { target: new TargetResolver(g, 30, [isEnemy]) },
       {
         time: "action",
         description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`,
@@ -143,8 +141,6 @@ class DiscordAction extends AbstractAction<HasTarget> {
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
     if (target) {
-      if (target.side === this.actor.side) ec.add("must target enemy", this);
-
       if (!target.hasTime("reaction")) ec.add("no reaction left", this);
 
       if (!this.getValidAttacks(target).length) ec.add("no valid attack", this);
@@ -214,15 +210,9 @@ class IrritationAction extends AbstractAction<HasTarget> {
       actor,
       "Irritation",
       "implemented",
-      { target: new TargetResolver(g, 30) },
+      { target: new TargetResolver(g, 30, [isEnemy, isConcentrating]) },
       { time: "action" },
     );
-  }
-
-  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    if (target && target.concentratingOn.size < 1)
-      ec.add("Target is not concentrating", this);
-    return super.check({ target }, ec);
   }
 
   async apply({ target }: HasTarget) {
@@ -263,7 +253,7 @@ const Spellcasting = bonusSpellsFeature(
   [{ level: 1, spell: HealingWord }],
 );
 
-class DancingStepAction extends AbstractAction {
+class DancingStepAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -274,7 +264,7 @@ class DancingStepAction extends AbstractAction {
       actor,
       "Dancing Step",
       "implemented",
-      {},
+      { target: new TargetResolver(g, 5, [isEnemy]) },
       {
         time: "reaction",
         description: `When an enemy moves within 5 ft., you may teleport to a spot within ${distance} ft. that you can see.`,
@@ -282,8 +272,8 @@ class DancingStepAction extends AbstractAction {
     );
   }
 
-  async apply() {
-    await super.apply({});
+  async apply(config: HasTarget) {
+    await super.apply(config);
     await this.g.applyBoundedMove(
       this.actor,
       getTeleportation(this.distance, "Dancing Step"),
@@ -299,35 +289,23 @@ const DancingStep = new SimpleFeature(
       if (who === me) actions.push(new DancingStepAction(g, me));
     });
 
-    g.events.on(
-      "CombatantMoved",
-      ({ detail: { who, position, interrupt } }) => {
-        if (who.side === me.side) return;
+    g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
+      const step = new DancingStepAction(g, me);
+      const config: HasTarget = { target: who };
 
-        const distance = getDistanceBetween(
-          position,
-          who.sizeInUnits,
-          g.getState(me).position,
-          me.sizeInUnits,
+      if (checkConfig(g, step, config))
+        interrupt.add(
+          new YesNoChoice(
+            me,
+            DancingStep,
+            "Dancing Step",
+            `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
+            async () => {
+              await g.act(step, config);
+            },
+          ),
         );
-
-        if (distance <= 5) {
-          const step = new DancingStepAction(g, me);
-          if (checkConfig(g, step, {}))
-            interrupt.add(
-              new YesNoChoice(
-                me,
-                DancingStep,
-                "Dancing Step",
-                `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
-                async () => {
-                  await g.act(step, {});
-                },
-              ),
-            );
-        }
-      },
-    );
+    });
   },
 );
 

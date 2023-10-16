@@ -34,7 +34,7 @@ const ShieldEffect = new Effect(
           `${message} Cast Shield as a reaction?`,
           shield.map((value) => ({ value, label: value.name })),
           async (action) => {
-            await action.apply({});
+            await g.act(action, {});
             await after();
           },
           true,

@@ -1,5 +1,6 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
+import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { hours } from "../../utils/time";
@@ -32,7 +33,7 @@ const Stoneskin = simpleSpell<HasTarget>({
   description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
 
   getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, true),
+    target: new TargetResolver(g, caster.reach, [isAlly]),
   }),
   getTargets: (g, caster, { target }) => [target],
 

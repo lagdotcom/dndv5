@@ -1,6 +1,7 @@
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
+import { notSelf } from "../filters";
 import TargetResolver from "../resolvers/TargetResolver";
 import AbilityName from "../types/AbilityName";
 import AttackTag from "../types/AttackTag";
@@ -26,7 +27,9 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       actor,
       ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
       weapon.properties.has("thrown") ? "incomplete" : "implemented",
-      { target: new TargetResolver(g, getWeaponRange(actor, weapon)) },
+      {
+        target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf]),
+      },
     );
     this.ability = getWeaponAbility(actor, weapon);
     this.icon = weapon.icon;

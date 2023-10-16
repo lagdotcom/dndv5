@@ -1,4 +1,5 @@
 import { HasTarget } from "../../configs";
+import { canSee, notOfCreatureType } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { scalingSpell } from "../common";
@@ -22,7 +23,10 @@ const HealingWord = scalingSpell<HasTarget>({
   },
 
   getConfig: (g) => ({
-    target: new TargetResolver(g, 60, true),
+    target: new TargetResolver(g, 60, [
+      canSee,
+      notOfCreatureType("undead", "construct"),
+    ]),
   }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: slot ?? 1, size: 4 } },

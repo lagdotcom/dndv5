@@ -23,6 +23,7 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import { getSaveDC } from "../../utils/dnd";
+import { isEnemy } from "../../filters";
 import { distance } from "../../utils/units";
 import { FiendishParty } from "./common";
 
@@ -84,7 +85,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       actor,
       "Shield Bash",
       "implemented",
-      { target: new TargetResolver(g, actor.reach) },
+      { target: new TargetResolver(g, actor.reach, [isEnemy]) },
       { icon: ShieldBashIcon, time: "action" },
     );
   }

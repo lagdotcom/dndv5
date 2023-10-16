@@ -4,6 +4,7 @@ import AbstractAction from "../actions/AbstractAction";
 import { makeIcon } from "../colours";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
+import { isEnemy } from "../filters";
 import { MapSquareSize } from "../MapSquare";
 import { BoundedMove } from "../movement";
 import TargetResolver from "../resolvers/TargetResolver";
@@ -46,7 +47,7 @@ class HissAction extends AbstractAction<HasTarget> {
       actor,
       "Hiss (Boon of Vassetri)",
       "implemented",
-      { target: new TargetResolver(g, 5) },
+      { target: new TargetResolver(g, 5, [isEnemy]) },
       {
         icon: makeIcon(hissIconUrl),
         time: "bonus action",
@@ -68,7 +69,7 @@ class HissAction extends AbstractAction<HasTarget> {
         ability: "wis",
         tags: svSet("frightened", "forced movement"),
       });
-      if (save.outcome === "fail") await action.apply();
+      if (save.outcome === "fail") await g.act(action, {});
     }
   }
 }

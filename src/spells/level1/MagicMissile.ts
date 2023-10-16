@@ -2,6 +2,7 @@ import iconUrl from "@img/spl/magic-missile.svg";
 
 import { DamageColours, makeIcon } from "../../colours";
 import { HasAllocations } from "../../configs";
+import { canSee } from "../../filters";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import DamageAmount from "../../types/DamageAmount";
 import { _dd } from "../../utils/dice";
@@ -32,6 +33,7 @@ const MagicMissile = scalingSpell<HasAllocations>({
       (slot ?? 1) + 2,
       (slot ?? 1) + 2,
       120,
+      [canSee],
     ),
   }),
   getDamage: (g, caster, method, { slot }) => getDamage(slot ?? 1),

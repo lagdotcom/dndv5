@@ -11,6 +11,7 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
+import { notSelf } from "../../filters";
 import { simpleSpell } from "../common";
 
 const MagicStoneIcon = makeIcon(iconUrl, DamageColours.bludgeoning);
@@ -29,7 +30,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
       actor,
       "Throw Magic Stone",
       "incomplete",
-      { target: new TargetResolver(g, 60) },
+      { target: new TargetResolver(g, 60, [notSelf]) },
       {
         icon: MagicStoneIcon,
         damage: [_dd(1, 6, "bludgeoning")],

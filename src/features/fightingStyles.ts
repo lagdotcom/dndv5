@@ -3,13 +3,16 @@ import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import ErrorCollector from "../collectors/ErrorCollector";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
+import { canSee, isAlly, isEnemy } from "../filters";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
 import { checkConfig } from "../utils/config";
 import SimpleFeature from "./SimpleFeature";
 
-class ProtectionAction extends AbstractAction<HasTarget> {
+type Config = HasTarget & { attacker: Combatant };
+
+class ProtectionAction extends AbstractAction<Config> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -20,7 +23,10 @@ class ProtectionAction extends AbstractAction<HasTarget> {
       actor,
       "Fighting Style: Protection",
       "implemented",
-      { target: new TargetResolver(g, 5) },
+      {
+        target: new TargetResolver(g, 5, [isAlly]),
+        attacker: new TargetResolver(g, Infinity, [isEnemy, canSee]),
+      },
       {
         time: "reaction",
         description: `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
@@ -28,16 +34,13 @@ class ProtectionAction extends AbstractAction<HasTarget> {
     );
   }
 
-  // TODO [SIGHT] creature you can see
-  check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    if (target && target.side !== this.actor.side) ec.add("only allies", this);
+  check(config: Partial<Config>, ec: ErrorCollector) {
     if (!this.actor.shield) ec.add("need shield", this);
-
-    return super.check({ target }, ec);
+    return super.check(config, ec);
   }
 
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async apply({ attacker, target }: Config) {
+    await super.apply({ attacker, target });
     this.diceType.add("disadvantage", this);
   }
 }
@@ -54,18 +57,20 @@ export const FightingStyleProtection = new SimpleFeature(
     g.events.on(
       "BeforeAttack",
       ({ detail: { who, target, interrupt, diceType } }) => {
-        if (who !== me) return;
+        if (who === me) return;
 
         const action = new ProtectionAction(g, me, diceType);
-        const config = { target };
+        const config: Config = { attacker: who, target };
         if (checkConfig(g, action, config))
           interrupt.add(
             new YesNoChoice(
               me,
               FightingStyleProtection,
               "Fighting Style: Protection",
-              `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
-              async () => await action.apply(config),
+              `${target.name} is being attacked by ${who.name}. Use ${me.name}'s reaction to impose disadvantage?`,
+              async () => {
+                await g.act(action, config);
+              },
             ),
           );
       },

@@ -1,4 +1,5 @@
 import { HasTarget } from "../../configs";
+import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../common";
 
@@ -14,7 +15,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   description: `Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.`,
 
   getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, true),
+    target: new TargetResolver(g, caster.reach, [isAlly]),
   }),
   getTargets: (g, caster, { target }) => [target],
 

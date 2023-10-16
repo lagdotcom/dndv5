@@ -37,7 +37,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
       }
 
     return {
-      target: new TargetResolver(g, caster.reach, true),
+      target: new TargetResolver(g, caster.reach, []),
       effect: new ChoiceResolver(
         g,
         effectTypes.map((value) => ({

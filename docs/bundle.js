@@ -468,6 +468,47 @@
     }
   };
 
+  // src/filters.ts
+  var makeFilter = ({
+    name,
+    message = name,
+    check
+  }) => ({ name, message, check });
+  var canSee = makeFilter({
+    name: "can see",
+    message: "not visible",
+    check: (g, action, value) => g.canSee(action.actor, value)
+  });
+  var isAlly = makeFilter({
+    name: "ally",
+    message: "must target ally",
+    check: (g, action, value) => action.actor.side === value.side
+  });
+  var isConcentrating = makeFilter({
+    name: "concentrating",
+    message: "target must be concentrating",
+    check: (g, action, value) => value.concentratingOn.size > 0
+  });
+  var isEnemy = makeFilter({
+    name: "enemy",
+    message: "must target enemy",
+    check: (g, action, value) => action.actor.side !== value.side
+  });
+  var notSelf = makeFilter({
+    name: "not self",
+    check: (g, action, value) => action.actor !== value
+  });
+  var ofCreatureType = (...types) => makeFilter({
+    name: types.join("/"),
+    message: "wrong creature type",
+    check: (g, action, value) => types.includes(value.type)
+  });
+  var notOfCreatureType = (...types) => makeFilter({
+    name: `not ${types.join("/")}`,
+    message: "wrong creature type",
+    check: (g, action, value) => !types.includes(value.type)
+  });
+
   // src/types/AbilityName.ts
   var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
   var abSet = (...items) => new Set(items);
@@ -1668,28 +1709,29 @@
 
   // src/resolvers/TargetResolver.ts
   var TargetResolver = class {
-    constructor(g, maxRange, allowSelf = false) {
+    constructor(g, maxRange, filters) {
       this.g = g;
       this.maxRange = maxRange;
-      this.allowSelf = allowSelf;
+      this.filters = filters;
       this.type = "Combatant";
     }
     get name() {
       const clauses = [];
       if (this.maxRange < Infinity)
         clauses.push(`target within ${this.maxRange}'`);
-      if (!this.allowSelf)
-        clauses.push("not self");
+      clauses.push(...this.filters.map((f) => f.name));
       return clauses.length ? clauses.join(", ") : "any target";
     }
     check(value, action, ec) {
-      if (!(value instanceof AbstractCombatant))
+      if (!(value instanceof AbstractCombatant)) {
         ec.add("No target", this);
-      else {
-        if (!this.allowSelf && value === action.actor)
-          ec.add("Cannot target self", this);
-        if (distance(this.g, action.actor, value) > this.maxRange)
+      } else {
+        const isOutOfRange = distance(this.g, action.actor, value) > this.maxRange;
+        const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
+        if (isOutOfRange)
           ec.add("Out of range", this);
+        for (const error of filterErrors)
+          ec.add(error, this);
       }
       return ec;
     }
@@ -1967,7 +2009,9 @@
         actor,
         ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
         weapon.properties.has("thrown") ? "incomplete" : "implemented",
-        { target: new TargetResolver(g, getWeaponRange(actor, weapon)) }
+        {
+          target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf])
+        }
       );
       this.weapon = weapon;
       this.ammo = ammo;
@@ -2135,8 +2179,8 @@
     "Dodge",
     "turnStart",
     (g) => {
-      g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
-        if (canDodge(target))
+      g.events.on("BeforeAttack", ({ detail: { target, diceType, who } }) => {
+        if (canDodge(target) && g.canSee(target, who))
           diceType.add("disadvantage", DodgeEffect);
       });
       g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
@@ -2289,6 +2333,14 @@
     });
   });
   var BlindedRule = new DndRule("Blinded", (g) => {
+    g.events.on("CheckVision", ({ detail: { who, error } }) => {
+      if (who.conditions.has("Blinded"))
+        error.add("cannot see", BlindedRule);
+    });
+    g.events.on("BeforeCheck", ({ detail }) => {
+      if (detail.who.conditions.has("Blinded") && detail.tags.has("sight"))
+        detail.successResponse.add("fail", BlindedRule);
+    });
     g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
       if (target.conditions.has("Blinded"))
         diceType.add("advantage", BlindedRule);
@@ -2669,6 +2721,13 @@
   var CheckActionEvent = class extends CustomEvent {
     constructor(detail) {
       super("CheckAction", { detail });
+    }
+  };
+
+  // src/events/CheckVisionEvent.ts
+  var CheckVisionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CheckVision", { detail });
     }
   };
 
@@ -3499,6 +3558,11 @@
       who.temporaryHP = count;
       who.temporaryHPSource = source;
     }
+    canSee(who, target) {
+      return this.fire(
+        new CheckVisionEvent({ who, target, error: new ErrorCollector() })
+      ).detail.error.result;
+    }
   };
 
   // src/img/act/eldritch-burst.svg
@@ -3731,7 +3795,7 @@
     level: 0,
     school: "Evocation",
     lists: ["Warlock"],
-    getConfig: (g) => ({ target: new TargetResolver(g, 120) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
     getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(g, target)],
     getDamage: () => [_dd(2, 10, "force")],
     getTargets: (g, caster, { target }) => [target],
@@ -3822,7 +3886,7 @@
         actor,
         "Antimagic Prodigy",
         "implemented",
-        { target: new TargetResolver(g, Infinity) },
+        { target: new TargetResolver(g, Infinity, [isEnemy]) },
         {
           time: "reaction",
           description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`
@@ -3830,11 +3894,6 @@
       );
       this.dc = dc;
       this.success = success;
-    }
-    check({ target }, ec) {
-      if ((target == null ? void 0 : target.side) === this.actor.side)
-        ec.add("enemy only", this);
-      return super.check({ target }, ec);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -3872,7 +3931,9 @@
                 AntimagicProdigy,
                 "Antimagic Prodigy",
                 `Use ${me.name}'s reaction to attempt to counter the spell?`,
-                async () => await action.apply(config)
+                async () => {
+                  await g.act(action, config);
+                }
               )
             );
         }
@@ -3886,7 +3947,7 @@
         actor,
         "Hellish Rebuke",
         "implemented",
-        { target: new TargetResolver(g, Infinity) },
+        { target: new TargetResolver(g, Infinity, [isEnemy]) },
         {
           time: "reaction",
           description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`
@@ -3940,7 +4001,9 @@
                   HellishRebuke,
                   "Hellish Rebuke",
                   `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                  async () => await action.apply(config)
+                  async () => {
+                    await g.act(action, config);
+                  }
                 )
               );
           }
@@ -4529,7 +4592,10 @@
         actor,
         "Fighting Style: Protection",
         "implemented",
-        { target: new TargetResolver(g, 5) },
+        {
+          target: new TargetResolver(g, 5, [isAlly]),
+          attacker: new TargetResolver(g, Infinity, [isEnemy, canSee])
+        },
         {
           time: "reaction",
           description: `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`
@@ -4537,16 +4603,13 @@
       );
       this.diceType = diceType;
     }
-    // TODO [SIGHT] creature you can see
-    check({ target }, ec) {
-      if (target && target.side !== this.actor.side)
-        ec.add("only allies", this);
+    check(config, ec) {
       if (!this.actor.shield)
         ec.add("need shield", this);
-      return super.check({ target }, ec);
+      return super.check(config, ec);
     }
-    async apply({ target }) {
-      await super.apply({ target });
+    async apply({ attacker, target }) {
+      await super.apply({ attacker, target });
       this.diceType.add("disadvantage", this);
     }
   };
@@ -4561,18 +4624,20 @@
       g.events.on(
         "BeforeAttack",
         ({ detail: { who, target, interrupt, diceType } }) => {
-          if (who !== me)
+          if (who === me)
             return;
           const action = new ProtectionAction(g, me, diceType);
-          const config = { target };
+          const config = { attacker: who, target };
           if (checkConfig(g, action, config))
             interrupt.add(
               new YesNoChoice(
                 me,
                 FightingStyleProtection,
                 "Fighting Style: Protection",
-                `${target.name} is being attacked. Use ${me.name}'s reaction to impose disadvantage?`,
-                async () => await action.apply(config)
+                `${target.name} is being attacked by ${who.name}. Use ${me.name}'s reaction to impose disadvantage?`,
+                async () => {
+                  await g.act(action, config);
+                }
               )
             );
         }
@@ -4604,7 +4669,7 @@
     description: `A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 120) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
     getDamage: (_2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
     ],
@@ -4625,30 +4690,35 @@
 
   // src/resolvers/MultiTargetResolver.ts
   var MultiTargetResolver = class {
-    constructor(g, minimum, maximum, maxRange, allowSelf = false) {
+    constructor(g, minimum, maximum, maxRange, filters) {
       this.g = g;
       this.minimum = minimum;
       this.maximum = maximum;
       this.maxRange = maxRange;
-      this.allowSelf = allowSelf;
+      this.filters = filters;
       this.type = "Combatants";
     }
     get name() {
-      return `${describeRange(this.minimum, this.maximum)} targets${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}${this.allowSelf ? "" : ", not self"}`;
+      let name = `${describeRange(this.minimum, this.maximum)} targets${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+      for (const filter of this.filters)
+        name += `, ${filter.name}`;
+      return name;
     }
     check(value, action, ec) {
-      if (!isCombatantArray(value))
+      if (!isCombatantArray(value)) {
         ec.add("No target", this);
-      else {
+      } else {
         if (value.length < this.minimum)
           ec.add(`At least ${this.minimum} targets`, this);
         if (value.length > this.maximum)
           ec.add(`At most ${this.maximum} targets`, this);
         for (const who of value) {
-          if (!this.allowSelf && who === action.actor)
-            ec.add("Cannot target self", this);
-          if (distance(this.g, action.actor, who) > this.maxRange)
-            ec.add("Out of range", this);
+          const isOutOfRange = distance(this.g, action.actor, who) > this.maxRange;
+          const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
+          if (isOutOfRange)
+            ec.add(`${who.name}: Out of range`, this);
+          for (const error of filterErrors)
+            ec.add(`${who.name}: ${error}`, this);
         }
       }
       return ec;
@@ -4705,7 +4775,7 @@
       ).map((targets) => ({ targets }));
     },
     getConfig: (g) => ({
-      targets: new MultiTargetResolver(g, 1, 6, 60, true)
+      targets: new MultiTargetResolver(g, 1, 6, 60, [])
     }),
     getHeal: (g, caster, method, { slot }) => [
       { type: "dice", amount: { count: (slot != null ? slot : 3) - 2, size: 4 } },
@@ -4794,7 +4864,7 @@
         actor,
         "Shield Bash",
         "implemented",
-        { target: new TargetResolver(g, actor.reach) },
+        { target: new TargetResolver(g, actor.reach, [isEnemy]) },
         { icon: ShieldBashIcon, time: "action" }
       );
       this.ability = ability;
@@ -4951,7 +5021,10 @@
       return targets.map((target) => ({ target }));
     },
     getConfig: (g) => ({
-      target: new TargetResolver(g, 60, true)
+      target: new TargetResolver(g, 60, [
+        canSee,
+        notOfCreatureType("undead", "construct")
+      ])
     }),
     getHeal: (g, caster, method, { slot }) => [
       { type: "dice", amount: { count: slot != null ? slot : 1, size: 4 } },
@@ -5016,7 +5089,7 @@
         actor,
         "Cheer",
         "implemented",
-        { target: new TargetResolver(g, 30) },
+        { target: new TargetResolver(g, 30, [isAlly]) },
         {
           time: "action",
           description: `One ally within 30 ft. may make a melee attack against an enemy in range.`
@@ -5024,12 +5097,8 @@
       );
     }
     check({ target }, ec) {
-      if (target) {
-        if (target.side !== this.actor.side)
-          ec.add("must target ally", this);
-        if (!this.getValidAttacks(target).length)
-          ec.add("no valid attack", this);
-      }
+      if (target && !this.getValidAttacks(target).length)
+        ec.add("no valid attack", this);
       return super.check({ target }, ec);
     }
     getValidAttacks(attacker) {
@@ -5082,7 +5151,7 @@
         actor,
         "Discord",
         "implemented",
-        { target: new TargetResolver(g, 30) },
+        { target: new TargetResolver(g, 30, [isEnemy]) },
         {
           time: "action",
           description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`
@@ -5091,8 +5160,6 @@
     }
     check({ target }, ec) {
       if (target) {
-        if (target.side === this.actor.side)
-          ec.add("must target enemy", this);
         if (!target.hasTime("reaction"))
           ec.add("no reaction left", this);
         if (!this.getValidAttacks(target).length)
@@ -5158,14 +5225,9 @@
         actor,
         "Irritation",
         "implemented",
-        { target: new TargetResolver(g, 30) },
+        { target: new TargetResolver(g, 30, [isEnemy, isConcentrating]) },
         { time: "action" }
       );
-    }
-    check({ target }, ec) {
-      if (target && target.concentratingOn.size < 1)
-        ec.add("Target is not concentrating", this);
-      return super.check({ target }, ec);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -5210,7 +5272,7 @@
         actor,
         "Dancing Step",
         "implemented",
-        {},
+        { target: new TargetResolver(g, 5, [isEnemy]) },
         {
           time: "reaction",
           description: `When an enemy moves within 5 ft., you may teleport to a spot within ${distance2} ft. that you can see.`
@@ -5218,8 +5280,8 @@
       );
       this.distance = distance2;
     }
-    async apply() {
-      await super.apply({});
+    async apply(config) {
+      await super.apply(config);
       await this.g.applyBoundedMove(
         this.actor,
         getTeleportation(this.distance, "Dancing Step")
@@ -5234,34 +5296,22 @@
         if (who === me)
           actions.push(new DancingStepAction(g, me));
       });
-      g.events.on(
-        "CombatantMoved",
-        ({ detail: { who, position, interrupt } }) => {
-          if (who.side === me.side)
-            return;
-          const distance2 = getDistanceBetween(
-            position,
-            who.sizeInUnits,
-            g.getState(me).position,
-            me.sizeInUnits
+      g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
+        const step = new DancingStepAction(g, me);
+        const config = { target: who };
+        if (checkConfig(g, step, config))
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              DancingStep,
+              "Dancing Step",
+              `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
+              async () => {
+                await g.act(step, config);
+              }
+            )
           );
-          if (distance2 <= 5) {
-            const step = new DancingStepAction(g, me);
-            if (checkConfig(g, step, {}))
-              interrupt.add(
-                new YesNoChoice(
-                  me,
-                  DancingStep,
-                  "Dancing Step",
-                  `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
-                  async () => {
-                    await g.act(step, {});
-                  }
-                )
-              );
-          }
-        }
-      );
+      });
     }
   );
   var Yulash = class extends Monster {
@@ -5747,17 +5797,16 @@ In addition, you understand a set of secret signs and symbols used to convey sho
         actor,
         "Uncanny Dodge",
         "implemented",
-        {},
+        { target: new TargetResolver(g, Infinity, [canSee]) },
         {
-          description: `when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+          description: `When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
           time: "reaction"
         }
       );
       this.multiplier = multiplier;
     }
-    // TODO [SIGHT] ... when an attacker that you can see ...
-    async apply() {
-      await super.apply({});
+    async apply({ target }) {
+      await super.apply({ target });
       this.multiplier.add("half", this);
     }
   };
@@ -5771,17 +5820,20 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       });
       g.events.on(
         "GatherDamage",
-        ({ detail: { target, attack, interrupt, multiplier } }) => {
+        ({ detail: { target, attack, interrupt, multiplier, attacker } }) => {
           if (attack && target === me) {
             const action = new UncannyDodgeAction(g, me, multiplier);
-            if (checkConfig(g, action, {}))
+            const config = { target: attacker };
+            if (checkConfig(g, action, config))
               interrupt.add(
                 new YesNoChoice(
                   me,
                   UncannyDodge,
                   "Uncanny Dodge",
                   `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                  async () => await action.apply()
+                  async () => {
+                    await g.act(action, config);
+                  }
                 )
               );
           }
@@ -5874,7 +5926,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
         actor,
         "Skirmisher",
         "implemented",
-        { target: new TargetResolver(g, 5) },
+        { target: new TargetResolver(g, 5, [isEnemy]) },
         {
           time: "reaction",
           description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
@@ -5882,12 +5934,6 @@ Once you use this feature, you can't use it again until you finish a short or lo
       );
     }
     check({ target }, ec) {
-      if (target) {
-        if (this.actor.side === target.side)
-          ec.add("same side", this);
-        if (distance(this.g, this.actor, target) > MapSquareSize)
-          ec.add("not close enough", this);
-      }
       if (this.actor.speed <= 0)
         ec.add("cannot move", this);
       return super.check({ target }, ec);
@@ -5913,14 +5959,16 @@ Once you use this feature, you can't use it again until you finish a short or lo
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
         const action = new SkirmisherAction(g, me);
         const config = { target: who };
-        if (checkConfig(g, action, {}))
+        if (checkConfig(g, action, config))
           interrupt.add(
             new YesNoChoice(
               me,
               Skirmisher,
               "Skirmisher",
               `Use ${me.name}'s reaction to move half their speed?`,
-              async () => await action.apply(config)
+              async () => {
+                await g.act(action, config);
+              }
             )
           );
       });
@@ -6162,7 +6210,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         actor,
         "Hiss (Boon of Vassetri)",
         "implemented",
-        { target: new TargetResolver(g, 5) },
+        { target: new TargetResolver(g, 5, [isEnemy]) },
         {
           icon: makeIcon(hiss_default),
           time: "bonus action",
@@ -6183,7 +6231,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
           tags: svSet("frightened", "forced movement")
         });
         if (save.outcome === "fail")
-          await action.apply();
+          await g.act(action, {});
       }
     }
   };
@@ -6388,7 +6436,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   The target can move only by pushing or pulling against a fixed object or surface within reach (such as a wall or a ceiling), which allows it to move as if it were climbing. You can change the target's altitude by up to 20 feet in either direction on your turn. If you are the target, you can move up or down as part of your move. Otherwise, you can use your action to move the target, which must remain within the spell's range.
 
   When the spell ends, the target floats gently to the ground if it is still aloft.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, true) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
     }
@@ -7158,7 +7206,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You hurl a bubble of acid. Choose one creature you can see within range, or choose two creatures you can see within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.
 
   This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
-    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 2, 60) }),
+    getConfig: (g) => ({
+      targets: new MultiTargetResolver(g, 1, 2, 60, [canSee])
+    }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g, caster, { targets }) => targets,
     check(g, { targets }, ec) {
@@ -7220,7 +7270,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { target }) {
@@ -7259,7 +7309,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { target }) {
@@ -7334,7 +7384,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { target }) {
@@ -7372,7 +7422,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 cold damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(g, target)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(1, 10, "piercing"),
@@ -7460,20 +7510,23 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return true;
   }
   var AllocationResolver = class {
-    constructor(g, rangeName, minimum, maximum, maxRange, allowSelf = false) {
+    constructor(g, rangeName, minimum, maximum, maxRange, filters) {
       this.g = g;
       this.rangeName = rangeName;
       this.minimum = minimum;
       this.maximum = maximum;
       this.maxRange = maxRange;
-      this.allowSelf = allowSelf;
+      this.filters = filters;
       this.type = "Allocations";
     }
     get name() {
-      return `${this.rangeName}: ${describeRange(
+      let name = `${this.rangeName}: ${describeRange(
         this.minimum,
         this.maximum
-      )} allocations${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}${this.allowSelf ? "" : ", not self"}`;
+      )} allocations${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+      for (const filter of this.filters)
+        name += `, ${filter.name}`;
+      return name;
     }
     check(value, action, ec) {
       if (!isAllocationArray(value))
@@ -7485,10 +7538,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if (total > this.maximum)
           ec.add(`At most ${this.maximum} allocations`, this);
         for (const { who } of value) {
-          if (!this.allowSelf && who === action.actor)
-            ec.add("Cannot target self", this);
-          if (distance(this.g, action.actor, who) > this.maxRange)
-            ec.add("Out of range", this);
+          const isOutOfRange = distance(this.g, action.actor, who) > this.maxRange;
+          const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
+          if (isOutOfRange)
+            ec.add(`${who.name}: Out of range`, this);
+          for (const error of filterErrors)
+            ec.add(`${who.name}: ${error}`, this);
         }
       }
       return ec;
@@ -7518,7 +7573,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "Missiles",
         (slot != null ? slot : 1) + 2,
         (slot != null ? slot : 1) + 2,
-        120
+        120,
+        [canSee]
       )
     }),
     getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
@@ -7568,7 +7624,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             `${message} Cast Shield as a reaction?`,
             shield.map((value) => ({ value, label: value.name })),
             async (action) => {
-              await action.apply({});
+              await g.act(action, {});
               await after();
             },
             true
@@ -7674,7 +7730,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   Enlarge. The target's size doubles in all dimensions, and its weight is multiplied by eight. This growth increases its size by one category\u2014from Medium to Large, for example. If there isn't enough room for the target to double its size, the creature or object attains the maximum possible size in the space available. Until the spell ends, the target also has advantage on Strength checks and Strength saving throws. The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
   Reduce. The target's size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category\u2014from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage (this can't reduce the damage below 1).`,
     getConfig: (g) => ({
-      target: new TargetResolver(g, 30, true),
+      target: new TargetResolver(g, 30, [canSee]),
       mode: new ChoiceResolver(g, [
         { label: "enlarge", value: "enlarge" },
         { label: "reduce", value: "reduce" }
@@ -7732,7 +7788,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.`,
     getConfig: (g, actor, method, { slot }) => ({
-      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 2) - 1, 60)
+      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 2) - 1, 60, [
+        canSee,
+        ofCreatureType("humanoid")
+      ])
     }),
     getTargets: (g, caster, { targets }) => targets,
     check(g, { targets }, ec) {
@@ -7867,7 +7926,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them.`,
     // TODO  The creatures must be within 30 feet of each other when you target them.
     getConfig: (g, caster, method, { slot }) => ({
-      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 3) - 2, 30, true)
+      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 3) - 2, 30, [canSee])
     }),
     getTargets: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { targets }) {
@@ -8297,7 +8356,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "implemented",
         {
           cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
-          target: new TargetResolver(g, actor.reach, true)
+          target: new TargetResolver(g, actor.reach, [])
         },
         { icon: LayOnHandsIcon, time: "action" }
       );
@@ -8313,7 +8372,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       const resourceMax = this.actor.getResource(LayOnHandsResource);
       return {
         cost: new NumberRangeResolver(this.g, "Spend", 1, resourceMax),
-        target: new TargetResolver(this.g, this.actor.reach, true)
+        target: new TargetResolver(this.g, this.actor.reach, [])
       };
     }
     getHeal({ cost }) {
@@ -8625,7 +8684,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
 
   The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.`,
     getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, true)
+      target: new TargetResolver(g, caster.reach, [])
     }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
@@ -8677,7 +8736,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     description: `You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball.
 
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 30, true) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
       await target.addEffect(
@@ -8713,7 +8772,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
             effectTypes.push(type);
         }
       return {
-        target: new TargetResolver(g, caster.reach, true),
+        target: new TargetResolver(g, caster.reach, []),
         effect: new ChoiceResolver(
           g,
           effectTypes.map((value) => ({
@@ -8762,7 +8821,12 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
             actor.weapons.filter((weapon) => weapon.category !== "natural").map((value) => ({ label: value.name, value }))
           )
         },
-        { time: "action", resources: [[ChannelDivinityResource, 1]] }
+        {
+          time: "action",
+          resources: [[ChannelDivinityResource, 1]],
+          description: `As an action, you can imbue one weapon that you are holding with positive energy, using your Channel Divinity. For 1 minute, you add your Charisma modifier to attack rolls made with that weapon (with a minimum bonus of +1). The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that. If the weapon is not already magical, it becomes magical for the duration.
+      You can end this effect on your turn as part of any other action. If you are no longer holding or carrying this weapon, or if you fall unconscious, this effect ends.`
+        }
       );
       this.subIcon = PaladinIcon;
     }
@@ -9097,7 +9161,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
     getConfig: (g, caster, method, { slot }) => ({
-      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, true)
+      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, [])
     }),
     getTargets: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { targets }) {
@@ -9197,7 +9261,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     m: "a small parchment with a bit of holy text written on it",
     lists: ["Cleric", "Paladin"],
     description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, true) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
       await target.addEffect(
@@ -9246,7 +9310,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     description: `Your spell bolsters your allies with toughness and resolve. Choose up to three creatures within range. Each target's hit point maximum and current hit points increase by 5 for the duration.
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
-    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, true) }),
+    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, []) }),
     getTargets: (g, caster, { targets }) => targets,
     async apply(g, actor, method, { slot, targets }) {
       const amount = (slot - 1) * 5;
@@ -9846,7 +9910,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
         actor,
         `${weapon.name} (Frenzy)`,
         "implemented",
-        { target: new TargetResolver(g, actor.reach + weapon.reach) },
+        { target: new TargetResolver(g, actor.reach + weapon.reach, [notSelf]) },
         { icon: weapon.icon, damage: [weapon.damage], time: "bonus action" }
       );
       this.weapon = weapon;
@@ -10501,7 +10565,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Artificer", "Sorcerer", "Warlock", "Wizard"],
     description: `Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.`,
     getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, true)
+      target: new TargetResolver(g, caster.reach, [isAlly])
     }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
@@ -10697,7 +10761,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   If the creature attempts to cast a spell with a casting time of 1 action, roll a d20. On an 11 or higher, the spell doesn't take effect until the creature's next turn, and the creature must use its action on that turn to complete the spell. If it can't, the spell is wasted.
 
   A creature affected by this spell makes another Wisdom saving throw at the end of each of its turns. On a successful save, the effect ends for it.`,
-    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120) }),
+    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120, []) }),
     getTargets: (g, caster, { targets }) => targets,
     check(g, config, ec) {
       return ec;
@@ -10718,7 +10782,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "a short reed or piece of straw",
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
     description: `This spell grants up to ten willing creatures you can see within range the ability to breathe underwater until the spell ends. Affected creatures also retain their normal mode of respiration.`,
-    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 10, 30) }),
+    getConfig: (g) => ({
+      targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
+    }),
     getTargets: (g, caster, { targets }) => targets,
     async apply(g, caster, method, config) {
     }
@@ -10738,7 +10804,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `This spell grants the ability to move across any liquid surface\u2014such as water, acid, mud, snow, quicksand, or lava\u2014as if it were harmless solid ground (creatures crossing molten lava can still take damage from the heat). Up to ten willing creatures you can see within range gain this ability for the duration.
 
   If you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.`,
-    getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 10, 30) }),
+    getConfig: (g) => ({
+      targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
+    }),
     getTargets: (g, caster, { targets }) => targets,
     async apply(g, caster, method, config) {
     }
@@ -10786,7 +10854,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     description: `You touch a willing creature. For the duration, the target's movement is unaffected by difficult terrain, and spells and other magical effects can neither reduce the target's speed nor cause the target to be paralyzed or restrained.
 
   The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.`,
-    getConfig: (g, caster) => ({ target: new TargetResolver(g, caster.reach) }),
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [isAlly])
+    }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
     }
@@ -10847,7 +10917,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
     description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
     getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, true)
+      target: new TargetResolver(g, caster.reach, [isAlly])
     }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
@@ -11277,7 +11347,7 @@ The creature is aware of this effect before it makes its attack against you.`
         actor,
         "Throw Magic Stone",
         "incomplete",
-        { target: new TargetResolver(g, 60) },
+        { target: new TargetResolver(g, 60, [notSelf]) },
         {
           icon: MagicStoneIcon,
           damage: [_dd(1, 6, "bludgeoning")],
@@ -12544,8 +12614,11 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
-    "warning": "_warning_1fks4_1",
-    "description": "_description_1fks4_10"
+    "warning": "_warning_15trd_1",
+    "description": "_description_15trd_10",
+    "namePanel": "_namePanel_15trd_19",
+    "name": "_name_15trd_19",
+    "time": "_time_15trd_25"
   };
 
   // src/ui/CombatantRef.module.scss
@@ -12947,11 +13020,10 @@ The creature is aware of this effect before it makes its attack against you.`
     (0, import_hooks9.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
     }, [action, activeCombatant.value, config]);
-    const errors = (0, import_hooks9.useMemo)(() => {
-      if (action.getTime(config) === "reaction")
-        return ["reaction only"];
-      return getConfigErrors(g, action, config).messages;
-    }, [g, action, config]);
+    const errors = (0, import_hooks9.useMemo)(
+      () => getConfigErrors(g, action, config).messages,
+      [g, action, config]
+    );
     const disabled = (0, import_hooks9.useMemo)(() => errors.length > 0, [errors]);
     const damage = (0, import_hooks9.useMemo)(() => action.getDamage(config), [action, config]);
     const description = (0, import_hooks9.useMemo)(
@@ -12959,6 +13031,8 @@ The creature is aware of this effect before it makes its attack against you.`
       [action, config]
     );
     const heal = (0, import_hooks9.useMemo)(() => action.getHeal(config), [action, config]);
+    const time = (0, import_hooks9.useMemo)(() => action.getTime(config), [action, config]);
+    const isReaction = time === "reaction";
     const execute = (0, import_hooks9.useCallback)(() => {
       if (checkConfig(g, action, config))
         onExecute(action, config);
@@ -13002,7 +13076,10 @@ The creature is aware of this effect before it makes its attack against you.`
     );
     const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
     return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
-      /* @__PURE__ */ o("div", { children: action.name }),
+      /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.namePanel, children: [
+        /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.name, children: action.name }),
+        /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.time, children: action.isAttack ? "attack" : time != null ? time : "no cost" })
+      ] }),
       statusWarning,
       description && /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, i) => /* @__PURE__ */ o("p", { children: p }, i)) }),
       damage && /* @__PURE__ */ o("div", { children: [
@@ -13027,10 +13104,12 @@ The creature is aware of this effect before it makes its attack against you.`
           ")"
         ] })
       ] }),
-      /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
-      /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
-      /* @__PURE__ */ o("div", { children: elements }),
-      errors.length > 0 && /* @__PURE__ */ o(Labelled, { label: "Errors", children: errors.map((msg, i) => /* @__PURE__ */ o("div", { children: msg }, i)) })
+      !isReaction && /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+        /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
+        /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
+        /* @__PURE__ */ o("div", { children: elements }),
+        errors.length > 0 && /* @__PURE__ */ o(Labelled, { label: "Errors", children: errors.map((msg, i) => /* @__PURE__ */ o("div", { children: msg }, i)) })
+      ] })
     ] });
   }
 

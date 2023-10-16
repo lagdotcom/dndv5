@@ -4,6 +4,7 @@ import { HasTarget } from "../../../configs";
 import Engine from "../../../Engine";
 import { notImplementedFeature } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
+import { isEnemy } from "../../../filters";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
 import { MapSquareSize } from "../../../MapSquare";
 import { BoundedMove } from "../../../movement";
@@ -12,7 +13,6 @@ import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
 import { checkConfig } from "../../../utils/config";
 import { round } from "../../../utils/numbers";
-import { distance } from "../../../utils/units";
 
 class SkirmisherAction extends AbstractAction<HasTarget> {
   constructor(g: Engine, actor: Combatant) {
@@ -21,7 +21,7 @@ class SkirmisherAction extends AbstractAction<HasTarget> {
       actor,
       "Skirmisher",
       "implemented",
-      { target: new TargetResolver(g, 5) },
+      { target: new TargetResolver(g, 5, [isEnemy]) },
       {
         time: "reaction",
         description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`,
@@ -30,13 +30,7 @@ class SkirmisherAction extends AbstractAction<HasTarget> {
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
-    if (target) {
-      if (this.actor.side === target.side) ec.add("same side", this);
-      if (distance(this.g, this.actor, target) > MapSquareSize)
-        ec.add("not close enough", this);
-    }
     if (this.actor.speed <= 0) ec.add("cannot move", this);
-
     return super.check({ target }, ec);
   }
 
@@ -61,15 +55,17 @@ const Skirmisher = new SimpleFeature(
 
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       const action = new SkirmisherAction(g, me);
-      const config = { target: who };
-      if (checkConfig(g, action, {}))
+      const config: HasTarget = { target: who };
+      if (checkConfig(g, action, config))
         interrupt.add(
           new YesNoChoice(
             me,
             Skirmisher,
             "Skirmisher",
             `Use ${me.name}'s reaction to move half their speed?`,
-            async () => await action.apply(config),
+            async () => {
+              await g.act(action, config);
+            },
           ),
         );
     });

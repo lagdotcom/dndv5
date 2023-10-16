@@ -1,5 +1,6 @@
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { canSee } from "../../filters";
 import { simpleSpell } from "../common";
 
 const WaterWalk = simpleSpell<HasTargets>({
@@ -15,7 +16,9 @@ const WaterWalk = simpleSpell<HasTargets>({
 
   If you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.`,
 
-  getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 10, 30) }),
+  getConfig: (g) => ({
+    targets: new MultiTargetResolver(g, 1, 10, 30, [canSee]),
+  }),
   getTargets: (g, caster, { targets }) => targets,
 
   async apply(g, caster, method, config) {

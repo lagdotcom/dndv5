@@ -1,6 +1,5 @@
 import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
-import { allyOf } from "../processors";
 import Action from "../types/Action";
 import AIRule from "../types/AIRule";
 import Combatant from "../types/Combatant";
@@ -11,9 +10,10 @@ import { HealAllies, HealSelf, OverHealAllies } from "./coefficients";
 
 export default class HealingRule implements AIRule {
   evaluate(g: Engine, me: Combatant, actions: Action[]) {
-    const myAlly = allyOf(me);
     return actions.flatMap((action) => {
-      const allies = Array.from(g.combatants.keys()).filter(myAlly);
+      const allies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side === me.side,
+      );
 
       return action
         .generateHealingConfigs(allies)

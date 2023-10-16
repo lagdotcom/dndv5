@@ -1,4 +1,5 @@
 import { HasTarget } from "../../configs";
+import { notOfCreatureType } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { scalingSpell } from "../common";
@@ -18,7 +19,9 @@ const CureWounds = scalingSpell<HasTarget>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
 
   getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, true),
+    target: new TargetResolver(g, caster.reach, [
+      notOfCreatureType("undead", "construct"),
+    ]),
   }),
   getHeal: (g, caster, method, { slot }) => {
     const modifier = method.ability ? caster[method.ability].modifier : 0;
@@ -30,12 +33,6 @@ const CureWounds = scalingSpell<HasTarget>({
     ];
   },
   getTargets: (g, caster, { target }) => [target],
-
-  check(g, { target }, ec) {
-    if (target && cannotHeal.has(target.type))
-      ec.add(`Cannot heal a ${target.type}`, CureWounds);
-    return ec;
-  },
 
   async apply(g, actor, method, { slot, target }) {
     if (cannotHeal.has(target.type)) return;

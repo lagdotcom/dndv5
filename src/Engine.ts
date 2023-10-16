@@ -28,6 +28,7 @@ import BeforeMoveEvent from "./events/BeforeMoveEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import StartBoundedMoveEvent from "./events/BoundedMoveEvent";
 import CheckActionEvent from "./events/CheckActionEvent";
+import CheckVisionEvent from "./events/CheckVisionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
 import CombatantHealedEvent from "./events/CombatantHealedEvent";
@@ -872,6 +873,12 @@ export default class Engine {
   private setTemporaryHP(who: Combatant, count: number, source?: Source) {
     who.temporaryHP = count;
     who.temporaryHPSource = source;
+  }
+
+  canSee(who: Combatant, target: Combatant) {
+    return this.fire(
+      new CheckVisionEvent({ who, target, error: new ErrorCollector() }),
+    ).detail.error.result;
   }
 }
 

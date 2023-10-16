@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import { ErrorFilter } from "../filters";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
@@ -36,18 +37,20 @@ export default class AllocationResolver implements Resolver<Allocation[]> {
     public minimum: number,
     public maximum: number,
     public maxRange: number,
-    public allowSelf = false,
+    public filters: ErrorFilter<Combatant>[],
   ) {
     this.type = "Allocations";
   }
 
   get name() {
-    return `${this.rangeName}: ${describeRange(
+    let name = `${this.rangeName}: ${describeRange(
       this.minimum,
       this.maximum,
     )} allocations${
       this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""
-    }${this.allowSelf ? "" : ", not self"}`;
+    }`;
+    for (const filter of this.filters) name += `, ${filter.name}`;
+    return name;
   }
 
   check(value: unknown, action: Action<object>, ec: ErrorCollector) {
@@ -60,10 +63,14 @@ export default class AllocationResolver implements Resolver<Allocation[]> {
         ec.add(`At most ${this.maximum} allocations`, this);
 
       for (const { who } of value) {
-        if (!this.allowSelf && who === action.actor)
-          ec.add("Cannot target self", this);
-        if (distance(this.g, action.actor, who) > this.maxRange)
-          ec.add("Out of range", this);
+        const isOutOfRange =
+          distance(this.g, action.actor, who) > this.maxRange;
+        const filterErrors = this.filters
+          .filter((filter) => !filter.check(this.g, action, who))
+          .map((filter) => filter.message);
+
+        if (isOutOfRange) ec.add(`${who.name}: Out of range`, this);
+        for (const error of filterErrors) ec.add(`${who.name}: ${error}`, this);
       }
     }
 

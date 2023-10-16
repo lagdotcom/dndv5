@@ -17,3 +17,22 @@
     margin: 0.5em 0;
   }
 }
+
+.namePanel {
+  display: flex;
+
+  .name {
+    flex-grow: 1;
+  }
+  .time {
+    &:before {
+      content: "(";
+    }
+    &:after {
+      content: ")";
+    }
+
+    flex-grow: 0;
+    font-size: 0.9em;
+  }
+}

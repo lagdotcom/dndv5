@@ -28,7 +28,7 @@ class LayOnHandsHealAction extends AbstractAction<HasCost & HasTarget> {
       "implemented",
       {
         cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
-        target: new TargetResolver(g, actor.reach, true),
+        target: new TargetResolver(g, actor.reach, []),
       },
       { icon: LayOnHandsIcon, time: "action" },
     );
@@ -49,7 +49,7 @@ class LayOnHandsHealAction extends AbstractAction<HasCost & HasTarget> {
 
     return {
       cost: new NumberRangeResolver(this.g, "Spend", 1, resourceMax),
-      target: new TargetResolver(this.g, this.actor.reach, true),
+      target: new TargetResolver(this.g, this.actor.reach, []),
     };
   }
 

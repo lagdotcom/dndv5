@@ -33,7 +33,7 @@ const ShieldOfFaith = simpleSpell<HasTarget>({
   lists: ["Cleric", "Paladin"],
   description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60, true) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
   getTargets: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {

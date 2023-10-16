@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/ice-knife.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
+import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
@@ -31,7 +32,7 @@ const IceKnife = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
 
   getAffectedArea: (g, caster, { target }) =>
     target && [getIceKnifeArea(g, target)],

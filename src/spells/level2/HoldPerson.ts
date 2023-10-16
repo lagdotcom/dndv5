@@ -6,6 +6,7 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
+import { canSee, ofCreatureType } from "../../filters";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -63,7 +64,10 @@ const HoldPerson = scalingSpell<HasTargets>({
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.`,
 
   getConfig: (g, actor, method, { slot }) => ({
-    targets: new MultiTargetResolver(g, 1, (slot ?? 2) - 1, 60),
+    targets: new MultiTargetResolver(g, 1, (slot ?? 2) - 1, 60, [
+      canSee,
+      ofCreatureType("humanoid"),
+    ]),
   }),
   getTargets: (g, caster, { targets }) => targets,
 

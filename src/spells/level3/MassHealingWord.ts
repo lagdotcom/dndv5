@@ -30,7 +30,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
   },
 
   getConfig: (g) => ({
-    targets: new MultiTargetResolver(g, 1, 6, 60, true),
+    targets: new MultiTargetResolver(g, 1, 6, 60, []),
   }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot ?? 3) - 2, size: 4 } },

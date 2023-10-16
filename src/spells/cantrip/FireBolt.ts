@@ -4,6 +4,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
+import { notSelf } from "../../filters";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
@@ -20,7 +21,7 @@ const FireBolt = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
   getTargets: (g, caster, { target }) => [target],
 

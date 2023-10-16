@@ -442,10 +442,10 @@ export default function ChooseActionConfigPanel<T extends object>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action, activeCombatant.value, config]);
 
-  const errors = useMemo(() => {
-    if (action.getTime(config) === "reaction") return ["reaction only"];
-    return getConfigErrors(g, action, config).messages;
-  }, [g, action, config]);
+  const errors = useMemo(
+    () => getConfigErrors(g, action, config).messages,
+    [g, action, config],
+  );
   const disabled = useMemo(() => errors.length > 0, [errors]);
   const damage = useMemo(() => action.getDamage(config), [action, config]);
   const description = useMemo(
@@ -453,6 +453,8 @@ export default function ChooseActionConfigPanel<T extends object>({
     [action, config],
   );
   const heal = useMemo(() => action.getHeal(config), [action, config]);
+  const time = useMemo(() => action.getTime(config), [action, config]);
+  const isReaction = time === "reaction";
 
   const execute = useCallback(() => {
     if (checkConfig(g, action, config)) onExecute(action, config);
@@ -510,7 +512,12 @@ export default function ChooseActionConfigPanel<T extends object>({
 
   return (
     <aside className={commonStyles.panel} aria-label="Action Options">
-      <div>{action.name}</div>
+      <div className={styles.namePanel}>
+        <div className={styles.name}>{action.name}</div>
+        <div className={styles.time}>
+          {action.isAttack ? "attack" : time ?? "no cost"}
+        </div>
+      </div>
       {statusWarning}
       {description && (
         <div className={styles.description}>
@@ -541,17 +548,21 @@ export default function ChooseActionConfigPanel<T extends object>({
           </div>
         </div>
       )}
-      <button disabled={disabled} onClick={execute}>
-        Execute
-      </button>
-      <button onClick={onCancel}>Cancel</button>
-      <div>{elements}</div>
-      {errors.length > 0 && (
-        <Labelled label="Errors">
-          {errors.map((msg, i) => (
-            <div key={i}>{msg}</div>
-          ))}
-        </Labelled>
+      {!isReaction && (
+        <>
+          <button disabled={disabled} onClick={execute}>
+            Execute
+          </button>
+          <button onClick={onCancel}>Cancel</button>
+          <div>{elements}</div>
+          {errors.length > 0 && (
+            <Labelled label="Errors">
+              {errors.map((msg, i) => (
+                <div key={i}>{msg}</div>
+              ))}
+            </Labelled>
+          )}
+        </>
       )}
     </aside>
   );

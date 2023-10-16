@@ -5,6 +5,7 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
+import { notSelf } from "../../filters";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
@@ -28,7 +29,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 8, "cold")],
   getTargets: (g, caster, { target }) => [target],
 

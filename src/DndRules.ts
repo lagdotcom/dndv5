@@ -65,7 +65,15 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
 });
 
 export const BlindedRule = new DndRule("Blinded", (g) => {
-  // TODO A blinded creature can't see and automatically fails any ability check that requires sight.
+  // A blinded creature can't see...
+  g.events.on("CheckVision", ({ detail: { who, error } }) => {
+    if (who.conditions.has("Blinded")) error.add("cannot see", BlindedRule);
+  });
+  // ...and automatically fails any ability check that requires sight.
+  g.events.on("BeforeCheck", ({ detail }) => {
+    if (detail.who.conditions.has("Blinded") && detail.tags.has("sight"))
+      detail.successResponse.add("fail", BlindedRule);
+  });
 
   g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
     // Attack rolls against the creature have advantage...
