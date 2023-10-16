@@ -1,4 +1,6 @@
 import burstUrl from "@img/act/eldritch-burst.svg";
+import counterspellUrl from "@img/spl/counterspell.svg";
+import rebukeUrl from "@img/spl/hellish-rebuke.svg";
 import tokenUrl from "@img/tok/boss/birnotec.png";
 
 import AbstractAction from "../../actions/AbstractAction";
@@ -43,6 +45,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   level: 0,
   school: "Evocation",
   lists: ["Warlock"],
+  description: `Make a ranged spell attack against the target. On a hit, the target takes 2d10 force damage. All other creatures within 5 ft. must make a Dexterity save or take 1d10 force damage.`,
 
   getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
   getAffectedArea: (g, caster, { target }) =>
@@ -138,6 +141,8 @@ const ArmorOfAgathys = new SimpleFeature(
   },
 );
 
+const AntimagicIcon = makeIcon(counterspellUrl);
+
 class AntimagicProdigyAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,
@@ -153,6 +158,7 @@ class AntimagicProdigyAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, Infinity, [isEnemy]) },
       {
         time: "reaction",
+        icon: AntimagicIcon,
         description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
       },
     );
@@ -207,6 +213,8 @@ const AntimagicProdigy = new SimpleFeature(
   },
 );
 
+const RebukeIcon = makeIcon(rebukeUrl, DamageColours.fire);
+
 class HellishRebukeAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,
@@ -221,6 +229,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, Infinity, [isEnemy]) },
       {
         time: "reaction",
+        icon: RebukeIcon,
         description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
       },
     );

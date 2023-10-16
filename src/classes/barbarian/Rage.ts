@@ -1,4 +1,3 @@
-import endRageIconUrl from "@img/act/end-rage.svg";
 import rageIconUrl from "@img/act/rage.svg";
 
 import AbstractAction from "../../actions/AbstractAction";
@@ -15,9 +14,10 @@ import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
+import { BarbarianIcon } from "./common";
 
-const RageIcon = makeIcon(rageIconUrl);
-const EndRageIcon = makeIcon(endRageIconUrl);
+const RageIcon = makeIcon(rageIconUrl, "red");
+const EndRageIcon = makeIcon(rageIconUrl, "silver");
 
 function getRageCount(level: number) {
   if (level < 3) return 2;
@@ -44,14 +44,18 @@ export class EndRageAction extends AbstractAction {
       "End Rage",
       "implemented",
       {},
-      { icon: EndRageIcon, time: "bonus action" },
+      {
+        icon: EndRageIcon,
+        time: "bonus action",
+        description: `You can end your rage on your turn as a bonus action.`,
+      },
     );
+    this.subIcon = BarbarianIcon;
   }
 
   check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasEffect(RageEffect)) ec.add("Not raging", this);
-
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply() {
@@ -194,6 +198,7 @@ If you are able to cast spells, you can't cast them or concentrate on them while
 Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`,
       },
     );
+    this.subIcon = BarbarianIcon;
   }
 
   async apply() {

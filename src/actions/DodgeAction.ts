@@ -38,7 +38,7 @@ export default class DodgeAction extends AbstractAction {
       g,
       actor,
       "Dodge",
-      "incomplete",
+      "implemented",
       {},
       {
         icon: DodgeIcon,

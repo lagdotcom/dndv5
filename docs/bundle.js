@@ -468,6 +468,9 @@
     }
   };
 
+  // src/img/act/disengage.svg
+  var disengage_default = "./disengage-7WZ2C2CM.svg";
+
   // src/filters.ts
   var makeFilter = ({
     name,
@@ -1786,6 +1789,9 @@
     return { average, list };
   }
 
+  // src/img/act/dying.svg
+  var dying_default = "./dying-OMHSKQST.svg";
+
   // src/img/act/prone.svg
   var prone_default = "./prone-ZBMZRVQM.svg";
 
@@ -1875,42 +1881,50 @@
   var svSet = (...items) => new Set(items);
 
   // src/effects.ts
-  var Dying = new Effect("Dying", "turnStart", (g) => {
-    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-      if (who.hasEffect(Dying)) {
-        conditions.add("Incapacitated", Dying);
-        conditions.add("Prone", Dying);
-        conditions.add("Unconscious", Dying);
-      }
-    });
-    g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
-      if (who.hasEffect(Dying))
-        interrupt.add(
-          new EvaluateLater(who, Dying, async () => {
-            const result = await g.savingThrow(10, { who, tags: svSet("death") });
-            if (result.roll.value === 20)
-              await g.heal(Dying, 1, { target: who });
-            else if (result.roll.value === 1)
-              await g.failDeathSave(who, 2);
-            else if (result.outcome === "fail")
-              await g.failDeathSave(who);
-            else
-              await g.succeedDeathSave(who);
-          })
-        );
-    });
-    g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
-      if (who.hasEffect(Dying))
-        interrupt.add(
-          new EvaluateLater(who, Dying, async () => {
-            who.deathSaveFailures = 0;
-            who.deathSaveSuccesses = 0;
-            await who.removeEffect(Dying);
-            await who.addEffect(Prone, { duration: Infinity });
-          })
-        );
-    });
-  });
+  var Dying = new Effect(
+    "Dying",
+    "turnStart",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+        if (who.hasEffect(Dying)) {
+          conditions.add("Incapacitated", Dying);
+          conditions.add("Prone", Dying);
+          conditions.add("Unconscious", Dying);
+        }
+      });
+      g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(Dying))
+          interrupt.add(
+            new EvaluateLater(who, Dying, async () => {
+              const result = await g.savingThrow(10, {
+                who,
+                tags: svSet("death")
+              });
+              if (result.roll.value === 20)
+                await g.heal(Dying, 1, { target: who });
+              else if (result.roll.value === 1)
+                await g.failDeathSave(who, 2);
+              else if (result.outcome === "fail")
+                await g.failDeathSave(who);
+              else
+                await g.succeedDeathSave(who);
+            })
+          );
+      });
+      g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(Dying))
+          interrupt.add(
+            new EvaluateLater(who, Dying, async () => {
+              who.deathSaveFailures = 0;
+              who.deathSaveSuccesses = 0;
+              await who.removeEffect(Dying);
+              await who.addEffect(Prone, { duration: Infinity });
+            })
+          );
+      });
+    },
+    { icon: makeIcon(dying_default, "red") }
+  );
   var Stable = new Effect("Stable", "turnStart", (g) => {
     g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
       if (who.hasEffect(Stable)) {
@@ -2141,22 +2155,29 @@
   };
 
   // src/actions/DisengageAction.ts
-  var DisengageEffect = new Effect("Disengage", "turnEnd", (g) => {
-    g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-      if (action instanceof OpportunityAttack && config.target.hasEffect(DisengageEffect))
-        error.add("target used Disengage", DisengageEffect);
-    });
-  });
+  var DisengageIcon = makeIcon(disengage_default, "darkgrey");
+  var DisengageEffect = new Effect(
+    "Disengage",
+    "turnEnd",
+    (g) => {
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        if (action instanceof OpportunityAttack && config.target.hasEffect(DisengageEffect))
+          error.add("target used Disengage", DisengageEffect);
+      });
+    },
+    { icon: DisengageIcon }
+  );
   var DisengageAction = class extends AbstractAction {
     constructor(g, actor) {
       super(
         g,
         actor,
         "Disengage",
-        "missing",
+        "implemented",
         {},
         {
           time: "action",
+          icon: DisengageIcon,
           description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`
         }
       );
@@ -2196,7 +2217,7 @@
         g,
         actor,
         "Dodge",
-        "incomplete",
+        "implemented",
         {},
         {
           icon: DodgeIcon,
@@ -3568,6 +3589,12 @@
   // src/img/act/eldritch-burst.svg
   var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
 
+  // src/img/spl/counterspell.svg
+  var counterspell_default = "./counterspell-M3AYEKY7.svg";
+
+  // src/img/spl/hellish-rebuke.svg
+  var hellish_rebuke_default = "./hellish-rebuke-LKQR2ION.svg";
+
   // src/img/tok/boss/birnotec.png
   var birnotec_default = "./birnotec-JGKE3FD4.png";
 
@@ -3625,12 +3652,16 @@
     }
   };
 
+  // src/img/spl/armor-of-agathys.svg
+  var armor_of_agathys_default = "./armor-of-agathys-JEP4EVNV.svg";
+
   // src/utils/time.ts
   var TURNS_PER_MINUTE = 10;
   var minutes = (n) => n * TURNS_PER_MINUTE;
   var hours = (n) => minutes(n * 60);
 
   // src/spells/level1/ArmorOfAgathys.ts
+  var ArmorOfAgathysIcon = makeIcon(armor_of_agathys_default, DamageColours.cold);
   var ArmorOfAgathysEffect = new Effect(
     "Armor of Agathys",
     "turnStart",
@@ -3660,11 +3691,13 @@
             );
         }
       );
-    }
+    },
+    { icon: ArmorOfAgathysIcon }
   );
   var ArmorOfAgathys = scalingSpell({
     status: "implemented",
     name: "Armor of Agathys",
+    icon: ArmorOfAgathysIcon,
     level: 1,
     school: "Abjuration",
     v: true,
@@ -3795,6 +3828,7 @@
     level: 0,
     school: "Evocation",
     lists: ["Warlock"],
+    description: `Make a ranged spell attack against the target. On a hit, the target takes 2d10 force damage. All other creatures within 5 ft. must make a Dexterity save or take 1d10 force damage.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
     getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(g, target)],
     getDamage: () => [_dd(2, 10, "force")],
@@ -3879,6 +3913,7 @@
       });
     }
   );
+  var AntimagicIcon = makeIcon(counterspell_default);
   var AntimagicProdigyAction = class extends AbstractAction {
     constructor(g, actor, dc, success) {
       super(
@@ -3889,6 +3924,7 @@
         { target: new TargetResolver(g, Infinity, [isEnemy]) },
         {
           time: "reaction",
+          icon: AntimagicIcon,
           description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`
         }
       );
@@ -3940,6 +3976,7 @@
       );
     }
   );
+  var RebukeIcon = makeIcon(hellish_rebuke_default, DamageColours.fire);
   var HellishRebukeAction = class extends AbstractAction {
     constructor(g, actor, dc) {
       super(
@@ -3950,6 +3987,7 @@
         { target: new TargetResolver(g, Infinity, [isEnemy]) },
         {
           time: "reaction",
+          icon: RebukeIcon,
           description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`
         }
       );
@@ -4032,6 +4070,9 @@
       this.addFeature(HellishRebuke);
     }
   };
+
+  // src/img/act/wreathed-in-shadow.svg
+  var wreathed_in_shadow_default = "./wreathed-in-shadow-DFCHPKIO.svg";
 
   // src/img/tok/boss/kay.png
   var kay_default = "./kay-LUSXSSD5.png";
@@ -4462,7 +4503,8 @@
             })
           );
       });
-    }
+    },
+    { icon: makeIcon(wreathed_in_shadow_default) }
   );
   var WreathedInShadow = new SimpleFeature(
     "Wreathed in Shadow",
@@ -4584,7 +4626,11 @@
     });
   }
 
+  // src/img/act/protection.svg
+  var protection_default = "./protection-JHQ3GBTR.svg";
+
   // src/features/fightingStyles.ts
+  var ProtectionIcon = makeIcon(protection_default);
   var ProtectionAction = class extends AbstractAction {
     constructor(g, actor, diceType) {
       super(
@@ -4593,11 +4639,12 @@
         "Fighting Style: Protection",
         "implemented",
         {
-          target: new TargetResolver(g, 5, [isAlly]),
+          target: new TargetResolver(g, 5, [isAlly, notSelf]),
           attacker: new TargetResolver(g, Infinity, [isEnemy, canSee])
         },
         {
           time: "reaction",
+          icon: ProtectionIcon,
           description: `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`
         }
       );
@@ -4940,6 +4987,9 @@
     }
   };
 
+  // src/img/act/song.svg
+  var song_default = "./song-VSC3JBXD.svg";
+
   // src/img/tok/boss/yulash.png
   var yulash_default = "./yulash-YXCZ3ZVJ.png";
 
@@ -5082,6 +5132,9 @@
     }
     return options;
   }
+  var cheerIcon = makeIcon(song_default, "green");
+  var discordIcon = makeIcon(song_default, "red");
+  var irritationIcon = makeIcon(song_default, "purple");
   var CheerAction = class extends AbstractAction {
     constructor(g, actor) {
       super(
@@ -5092,6 +5145,7 @@
         { target: new TargetResolver(g, 30, [isAlly]) },
         {
           time: "action",
+          icon: cheerIcon,
           description: `One ally within 30 ft. may make a melee attack against an enemy in range.`
         }
       );
@@ -5154,6 +5208,7 @@
         { target: new TargetResolver(g, 30, [isEnemy]) },
         {
           time: "action",
+          icon: discordIcon,
           description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`
         }
       );
@@ -5226,7 +5281,11 @@
         "Irritation",
         "implemented",
         { target: new TargetResolver(g, 30, [isEnemy, isConcentrating]) },
-        { time: "action" }
+        {
+          time: "action",
+          icon: irritationIcon,
+          description: `One enemy within 30ft. must make a Constitution check or lose concentration.`
+        }
       );
     }
     async apply({ target }) {
@@ -8271,7 +8330,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           resources: [
             [ChannelDivinityResource, 1],
             [HarnessDivinePowerResource, 1]
-          ]
+          ],
+          description: `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`
         }
       );
       this.subIcon = PaladinIcon;
@@ -8794,7 +8854,11 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   });
   var LesserRestoration_default = LesserRestoration;
 
+  // src/img/act/sacred-weapon.svg
+  var sacred_weapon_default = "./sacred-weapon-IVBS7HAL.svg";
+
   // src/classes/paladin/Devotion/SacredWeapon.ts
+  var SacredWeaponIcon = makeIcon(sacred_weapon_default, DamageColours.radiant);
   var SacredWeaponEffect = new Effect(
     "Sacred Weapon",
     "turnStart",
@@ -8806,7 +8870,8 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
           tags.add("magical");
         }
       });
-    }
+    },
+    { icon: SacredWeaponIcon }
   );
   var SacredWeaponAction = class extends AbstractAction {
     constructor(g, actor) {
@@ -8824,6 +8889,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         {
           time: "action",
           resources: [[ChannelDivinityResource, 1]],
+          icon: SacredWeaponIcon,
           description: `As an action, you can imbue one weapon that you are holding with positive energy, using your Channel Divinity. For 1 minute, you add your Charisma modifier to attack rolls made with that weapon (with a minimum bonus of +1). The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that. If the weapon is not already magical, it becomes magical for the duration.
       You can end this effect on your turn as part of any other action. If you are no longer holding or carrying this weapon, or if you fall unconscious, this effect ends.`
         }
@@ -8833,7 +8899,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     check(config, ec) {
       if (this.actor.hasEffect(SacredWeaponEffect))
         ec.add("already active", this);
-      return ec;
+      return super.check(config, ec);
     }
     async apply({ weapon }) {
       await super.apply({ weapon });
@@ -9441,15 +9507,18 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   // src/img/tok/pc/hagrond.png
   var hagrond_default = "./hagrond-SXREGQ37.png";
 
-  // src/img/act/end-rage.svg
-  var end_rage_default = "./end-rage-BCM52AKW.svg";
-
   // src/img/act/rage.svg
-  var rage_default = "./rage-N4H3NAED.svg";
+  var rage_default = "./rage-UMTXPIH4.svg";
+
+  // src/img/class/barbarian.svg
+  var barbarian_default = "./barbarian-5EZH7XQL.svg";
+
+  // src/classes/barbarian/common.ts
+  var BarbarianIcon = makeIcon(barbarian_default, ClassColours.Barbarian);
 
   // src/classes/barbarian/Rage.ts
-  var RageIcon = makeIcon(rage_default);
-  var EndRageIcon = makeIcon(end_rage_default);
+  var RageIcon = makeIcon(rage_default, "red");
+  var EndRageIcon = makeIcon(rage_default, "silver");
   function getRageCount(level) {
     if (level < 3)
       return 2;
@@ -9479,13 +9548,18 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         "End Rage",
         "implemented",
         {},
-        { icon: EndRageIcon, time: "bonus action" }
+        {
+          icon: EndRageIcon,
+          time: "bonus action",
+          description: `You can end your rage on your turn as a bonus action.`
+        }
       );
+      this.subIcon = BarbarianIcon;
     }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
         ec.add("Not raging", this);
-      return ec;
+      return super.check(config, ec);
     }
     async apply() {
       await super.apply({});
@@ -9609,6 +9683,7 @@ If you are able to cast spells, you can't cast them or concentrate on them while
 Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`
         }
       );
+      this.subIcon = BarbarianIcon;
     }
     async apply() {
       await super.apply({});
@@ -9645,22 +9720,31 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   );
   var Rage_default = Rage;
 
+  // src/img/act/reckless-attack.svg
+  var reckless_attack_default = "./reckless-attack-IKQDCDTX.svg";
+
   // src/classes/barbarian/RecklessAttack.ts
+  var RecklessAttackIcon = makeIcon(reckless_attack_default);
   var RecklessAttackResource = new TurnResource("Reckless Attack", 1);
   function canBeReckless(who, tags, ability) {
     return who.hasEffect(RecklessAttackEffect) && hasAll(tags, ["melee", "weapon"]) && ability === "str";
   }
-  var RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g) => {
-    g.events.on(
-      "BeforeAttack",
-      ({ detail: { who, target, diceType, ability, tags } }) => {
-        if (canBeReckless(who, tags, ability))
-          diceType.add("advantage", RecklessAttackEffect);
-        if (target.hasEffect(RecklessAttackEffect))
-          diceType.add("advantage", RecklessAttackEffect);
-      }
-    );
-  });
+  var RecklessAttackEffect = new Effect(
+    "Reckless Attack",
+    "turnStart",
+    (g) => {
+      g.events.on(
+        "BeforeAttack",
+        ({ detail: { who, target, diceType, ability, tags } }) => {
+          if (canBeReckless(who, tags, ability))
+            diceType.add("advantage", RecklessAttackEffect);
+          if (target.hasEffect(RecklessAttackEffect))
+            diceType.add("advantage", RecklessAttackEffect);
+        }
+      );
+    },
+    { icon: RecklessAttackIcon }
+  );
   var RecklessAttack = new SimpleFeature(
     "Reckless Attack",
     `Starting at 2nd level, you can throw aside all concern for defense to attack with fierce desperation. When you make your first attack on your turn, you can decide to attack recklessly. Doing so gives you advantage on melee weapon attack rolls using Strength during this turn, but attack rolls against you have advantage until your next turn.`,
@@ -9896,7 +9980,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       [20, [PrimalChampion]]
     ])
   };
-  var barbarian_default = Barbarian;
+  var barbarian_default2 = Barbarian;
 
   // src/img/act/frenzy.svg
   var frenzy_default = "./frenzy-XYJEPIJ4.svg";
@@ -10148,13 +10232,13 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       this.setAbilityScores(15, 15, 13, 10, 8, 10);
       this.setRace(StoutHalfling);
       this.addSubclass(Berserker_default);
-      this.addClassLevel(barbarian_default);
-      this.addClassLevel(barbarian_default);
-      this.addClassLevel(barbarian_default);
-      this.addClassLevel(barbarian_default);
-      this.addClassLevel(barbarian_default);
-      this.addClassLevel(barbarian_default);
-      this.addClassLevel(barbarian_default);
+      this.addClassLevel(barbarian_default2);
+      this.addClassLevel(barbarian_default2);
+      this.addClassLevel(barbarian_default2);
+      this.addClassLevel(barbarian_default2);
+      this.addClassLevel(barbarian_default2);
+      this.addClassLevel(barbarian_default2);
+      this.addClassLevel(barbarian_default2);
       this.setConfig(ASI44, { type: "ability", abilities: ["str", "con"] });
       this.setConfig(PrimalKnowledge, ["Perception"]);
       this.skills.set("Intimidation", 1);
@@ -13775,10 +13859,11 @@ The creature is aware of this effect before it makes its attack against you.`
             const config = action2.getConfig(testConfig);
             const needsTarget = "target" in config || me.who === who;
             const needsPoint = "point" in config;
+            const isReaction = action2.getTime(testConfig) === "reaction";
             return {
               label: action2.name,
               value: action2,
-              disabled: invalidConfig || !needsTarget && !needsPoint
+              disabled: invalidConfig || isReaction || !needsTarget && !needsPoint
             };
           }).filter((item) => !item.disabled);
           setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });

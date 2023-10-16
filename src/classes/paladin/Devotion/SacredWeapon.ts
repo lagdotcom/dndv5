@@ -1,5 +1,8 @@
+import iconUrl from "@img/act/sacred-weapon.svg";
+
 import AbstractAction from "../../../actions/AbstractAction";
 import ErrorCollector from "../../../collectors/ErrorCollector";
+import { DamageColours, makeIcon } from "../../../colours";
 import { HasWeapon } from "../../../configs";
 import Effect from "../../../Effect";
 import Engine from "../../../Engine";
@@ -8,6 +11,8 @@ import ChoiceResolver from "../../../resolvers/ChoiceResolver";
 import Combatant from "../../../types/Combatant";
 import { minutes } from "../../../utils/time";
 import { ChannelDivinityResource, PaladinIcon } from "../common";
+
+const SacredWeaponIcon = makeIcon(iconUrl, DamageColours.radiant);
 
 const SacredWeaponEffect = new Effect<HasWeapon>(
   "Sacred Weapon",
@@ -21,6 +26,7 @@ const SacredWeaponEffect = new Effect<HasWeapon>(
       }
     });
   },
+  { icon: SacredWeaponIcon },
 );
 
 class SacredWeaponAction extends AbstractAction<HasWeapon> {
@@ -41,6 +47,7 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
       {
         time: "action",
         resources: [[ChannelDivinityResource, 1]],
+        icon: SacredWeaponIcon,
         description: `As an action, you can imbue one weapon that you are holding with positive energy, using your Channel Divinity. For 1 minute, you add your Charisma modifier to attack rolls made with that weapon (with a minimum bonus of +1). The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that. If the weapon is not already magical, it becomes magical for the duration.
       You can end this effect on your turn as part of any other action. If you are no longer holding or carrying this weapon, or if you fall unconscious, this effect ends.`,
       },
@@ -52,8 +59,7 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
   check(config: never, ec: ErrorCollector) {
     if (this.actor.hasEffect(SacredWeaponEffect))
       ec.add("already active", this);
-
-    return ec;
+    return super.check(config, ec);
   }
 
   async apply({ weapon }: HasWeapon) {

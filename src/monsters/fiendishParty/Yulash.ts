@@ -1,8 +1,10 @@
+import songUrl from "@img/act/song.svg";
 import tokenUrl from "@img/tok/boss/yulash.png";
 
 import AbstractAction from "../../actions/AbstractAction";
 import { doStandardAttack } from "../../actions/WeaponAttack";
 import ErrorCollector from "../../collectors/ErrorCollector";
+import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
@@ -56,6 +58,10 @@ function getMeleeAttackOptions(
   return options;
 }
 
+const cheerIcon = makeIcon(songUrl, "green");
+const discordIcon = makeIcon(songUrl, "red");
+const irritationIcon = makeIcon(songUrl, "purple");
+
 class CheerAction extends AbstractAction<HasTarget> {
   constructor(g: Engine, actor: Combatant) {
     super(
@@ -66,6 +72,7 @@ class CheerAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, 30, [isAlly]) },
       {
         time: "action",
+        icon: cheerIcon,
         description: `One ally within 30 ft. may make a melee attack against an enemy in range.`,
       },
     );
@@ -134,6 +141,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, 30, [isEnemy]) },
       {
         time: "action",
+        icon: discordIcon,
         description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`,
       },
     );
@@ -211,7 +219,11 @@ class IrritationAction extends AbstractAction<HasTarget> {
       "Irritation",
       "implemented",
       { target: new TargetResolver(g, 30, [isEnemy, isConcentrating]) },
-      { time: "action" },
+      {
+        time: "action",
+        icon: irritationIcon,
+        description: `One enemy within 30ft. must make a Constitution check or lose concentration.`,
+      },
     );
   }
 

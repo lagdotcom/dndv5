@@ -1,7 +1,12 @@
+import iconUrl from "@img/spl/armor-of-agathys.svg";
+
+import { DamageColours, makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+
+const ArmorOfAgathysIcon = makeIcon(iconUrl, DamageColours.cold);
 
 const ArmorOfAgathysEffect = new Effect<{ count: number }>(
   "Armor of Agathys",
@@ -39,6 +44,7 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
       },
     );
   },
+  { icon: ArmorOfAgathysIcon },
 );
 
 /* A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
@@ -47,6 +53,7 @@ At Higher Levels. When you cast this spell using a spell slot of 2nd level or hi
 const ArmorOfAgathys = scalingSpell({
   status: "implemented",
   name: "Armor of Agathys",
+  icon: ArmorOfAgathysIcon,
   level: 1,
   school: "Abjuration",
   v: true,

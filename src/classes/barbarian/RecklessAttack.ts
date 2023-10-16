@@ -1,3 +1,6 @@
+import recklessAttackUrl from "@img/act/reckless-attack.svg";
+
+import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
@@ -7,6 +10,7 @@ import AttackTag from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { hasAll } from "../../utils/set";
 
+const RecklessAttackIcon = makeIcon(recklessAttackUrl);
 const RecklessAttackResource = new TurnResource("Reckless Attack", 1);
 
 function canBeReckless(
@@ -21,18 +25,23 @@ function canBeReckless(
   );
 }
 
-const RecklessAttackEffect = new Effect("Reckless Attack", "turnStart", (g) => {
-  g.events.on(
-    "BeforeAttack",
-    ({ detail: { who, target, diceType, ability, tags } }) => {
-      if (canBeReckless(who, tags, ability))
-        diceType.add("advantage", RecklessAttackEffect);
+const RecklessAttackEffect = new Effect(
+  "Reckless Attack",
+  "turnStart",
+  (g) => {
+    g.events.on(
+      "BeforeAttack",
+      ({ detail: { who, target, diceType, ability, tags } }) => {
+        if (canBeReckless(who, tags, ability))
+          diceType.add("advantage", RecklessAttackEffect);
 
-      if (target.hasEffect(RecklessAttackEffect))
-        diceType.add("advantage", RecklessAttackEffect);
-    },
-  );
-});
+        if (target.hasEffect(RecklessAttackEffect))
+          diceType.add("advantage", RecklessAttackEffect);
+      },
+    );
+  },
+  { icon: RecklessAttackIcon },
+);
 
 export const RecklessAttack = new SimpleFeature(
   "Reckless Attack",

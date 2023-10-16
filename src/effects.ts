@@ -1,3 +1,4 @@
+import dyingUrl from "@img/act/dying.svg";
 import proneUrl from "@img/act/prone.svg";
 
 import DropProneAction from "./actions/DropProneAction";
@@ -8,41 +9,50 @@ import EvaluateLater from "./interruptions/EvaluateLater";
 import { svSet } from "./types/SaveTag";
 import { distance } from "./utils/units";
 
-export const Dying = new Effect("Dying", "turnStart", (g) => {
-  g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-    if (who.hasEffect(Dying)) {
-      conditions.add("Incapacitated", Dying);
-      conditions.add("Prone", Dying);
-      conditions.add("Unconscious", Dying);
-    }
-  });
+export const Dying = new Effect(
+  "Dying",
+  "turnStart",
+  (g) => {
+    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+      if (who.hasEffect(Dying)) {
+        conditions.add("Incapacitated", Dying);
+        conditions.add("Prone", Dying);
+        conditions.add("Unconscious", Dying);
+      }
+    });
 
-  g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
-    if (who.hasEffect(Dying))
-      interrupt.add(
-        new EvaluateLater(who, Dying, async () => {
-          const result = await g.savingThrow(10, { who, tags: svSet("death") });
+    g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(Dying))
+        interrupt.add(
+          new EvaluateLater(who, Dying, async () => {
+            const result = await g.savingThrow(10, {
+              who,
+              tags: svSet("death"),
+            });
 
-          if (result.roll.value === 20) await g.heal(Dying, 1, { target: who });
-          else if (result.roll.value === 1) await g.failDeathSave(who, 2);
-          else if (result.outcome === "fail") await g.failDeathSave(who);
-          else await g.succeedDeathSave(who);
-        }),
-      );
-  });
+            if (result.roll.value === 20)
+              await g.heal(Dying, 1, { target: who });
+            else if (result.roll.value === 1) await g.failDeathSave(who, 2);
+            else if (result.outcome === "fail") await g.failDeathSave(who);
+            else await g.succeedDeathSave(who);
+          }),
+        );
+    });
 
-  g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
-    if (who.hasEffect(Dying))
-      interrupt.add(
-        new EvaluateLater(who, Dying, async () => {
-          who.deathSaveFailures = 0;
-          who.deathSaveSuccesses = 0;
-          await who.removeEffect(Dying);
-          await who.addEffect(Prone, { duration: Infinity });
-        }),
-      );
-  });
-});
+    g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(Dying))
+        interrupt.add(
+          new EvaluateLater(who, Dying, async () => {
+            who.deathSaveFailures = 0;
+            who.deathSaveSuccesses = 0;
+            await who.removeEffect(Dying);
+            await who.addEffect(Prone, { duration: Infinity });
+          }),
+        );
+    });
+  },
+  { icon: makeIcon(dyingUrl, "red") },
+);
 
 export const Stable = new Effect("Stable", "turnStart", (g) => {
   g.events.on("GetConditions", ({ detail: { conditions, who } }) => {

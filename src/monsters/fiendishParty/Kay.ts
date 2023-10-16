@@ -1,6 +1,8 @@
+import wreathedInShadowUrl from "@img/act/wreathed-in-shadow.svg";
 import tokenUrl from "@img/tok/boss/kay.png";
 
 import Evasion from "../../classes/rogue/Evasion";
+import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -63,6 +65,7 @@ const WreathedInShadowEffect = new Effect(
         );
     });
   },
+  { icon: makeIcon(wreathedInShadowUrl) },
 );
 
 const WreathedInShadow = new SimpleFeature(

@@ -252,11 +252,13 @@ export default function App({ g, onMount }: Props) {
             const config = action.getConfig(testConfig);
             const needsTarget = "target" in config || me.who === who;
             const needsPoint = "point" in config;
+            const isReaction = action.getTime(testConfig) === "reaction";
 
             return {
               label: action.name,
               value: action,
-              disabled: invalidConfig || (!needsTarget && !needsPoint),
+              disabled:
+                invalidConfig || isReaction || (!needsTarget && !needsPoint),
             };
           })
           // TODO would this be useful at some point?
