@@ -6,6 +6,7 @@ import AllocationResolver, {
   Allocation,
 } from "../resolvers/AllocationResolver";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
+import MultiChoiceResolver from "../resolvers/MultiChoiceResolver";
 import MultiPointResolver from "../resolvers/MultiPointResolver";
 import MultiTargetResolver from "../resolvers/MultiTargetResolver";
 import NumberRangeResolver from "../resolvers/NumberRangeResolver";
@@ -289,6 +290,59 @@ function ChooseText<T>({
   );
 }
 
+function ChooseMany<T>({
+  field,
+  resolver,
+  value,
+  onChange,
+}: ChooserProps<T[], MultiChoiceResolver<T>>) {
+  const [labels, setLabels] = useState<string[]>([]);
+
+  const add = useCallback(
+    (ch: PickChoice<T>) => {
+      if (!(value ?? []).find((x) => x === ch)) {
+        onChange(field, (value ?? []).concat(ch.value));
+        setLabels((old) => old.concat(ch.label));
+      }
+    },
+    [field, onChange, value],
+  );
+
+  const remove = useCallback(
+    (ch: PickChoice<T>) => {
+      onChange(
+        field,
+        (value ?? []).filter((x) => x !== ch.value),
+      );
+      setLabels((old) => old.filter((x) => x !== ch.label));
+    },
+    [field, onChange, value],
+  );
+
+  return (
+    <div>
+      <div>Choice: {labels.length ? labels.join(", ") : "NONE"}</div>
+      <div>
+        {resolver.entries.map((e) => {
+          const selected = (value ?? []).includes(e.value);
+          const full = (value ?? []).length > resolver.maximum;
+          return (
+            <button
+              key={e.label}
+              className={classnames({ [buttonStyles.active]: selected })}
+              aria-pressed={selected}
+              onClick={selected ? () => remove(e) : () => add(e)}
+              disabled={e.disabled || full}
+            >
+              {e.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ChooseNumber({
   field,
   resolver,
@@ -319,7 +373,7 @@ function ChooseAllocations({
   const addTarget = useCallback(
     (who?: Combatant) => {
       if (who && !(value ?? []).find((e) => e.who === who))
-        onChange(field, (value ?? []).concat({ amount: 0, who }));
+        onChange(field, (value ?? []).concat({ amount: 1, who }));
       wantsCombatant.value = undefined;
     },
     [field, onChange, value],
@@ -489,6 +543,8 @@ export default function ChooseActionConfigPanel<T extends object>({
           return <ChooseSlot {...subProps} />;
         else if (resolver instanceof ChoiceResolver)
           return <ChooseText {...subProps} />;
+        else if (resolver instanceof MultiChoiceResolver)
+          return <ChooseMany {...subProps} />;
         else if (resolver instanceof NumberRangeResolver)
           return <ChooseNumber {...subProps} />;
         else if (resolver instanceof AllocationResolver)

@@ -8453,6 +8453,35 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/img/act/lay-on-hands.svg
   var lay_on_hands_default = "./lay-on-hands-F5ZGB5B6.svg";
 
+  // src/resolvers/MultiChoiceResolver.ts
+  var MultiChoiceResolver = class {
+    constructor(g, entries, minimum, maximum) {
+      this.g = g;
+      this.entries = entries;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.type = "Choices";
+    }
+    get name() {
+      if (this.entries.length === 0)
+        return "empty";
+      return `${describeRange(this.minimum, this.maximum)}: ${this.entries.map((e) => e.label).join(", ")}`;
+    }
+    check(value, action, ec) {
+      if (this.entries.length === 0)
+        ec.add("No valid choices", this);
+      if (!Array.isArray(value))
+        ec.add("No choices", this);
+      else {
+        if (value.length < this.minimum)
+          ec.add(`At least ${this.minimum} choices`, this);
+        if (value.length > this.maximum)
+          ec.add(`At most ${this.maximum} choices`, this);
+      }
+      return ec;
+    }
+  };
+
   // src/resolvers/NumberRangeResolver.ts
   var NumberRangeResolver = class {
     constructor(g, rangeName, min, max) {
@@ -8482,8 +8511,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   };
 
   // src/classes/paladin/LayOnHands.ts
-  var LayOnHandsIcon = makeIcon(lay_on_hands_default, Heal);
+  var LayOnHandsCureIcon = makeIcon(lay_on_hands_default);
+  var LayOnHandsHealIcon = makeIcon(lay_on_hands_default, Heal);
   var LayOnHandsResource = new LongRestResource("Lay on Hands", 5);
+  var isHealable = notOfCreatureType("undead", "construct");
   var LayOnHandsHealAction = class extends AbstractAction {
     constructor(g, actor) {
       super(
@@ -8493,9 +8524,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "implemented",
         {
           cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
-          target: new TargetResolver(g, actor.reach, [])
+          target: new TargetResolver(g, actor.reach, [isHealable])
         },
-        { icon: LayOnHandsIcon, time: "action" }
+        { icon: LayOnHandsHealIcon, time: "action" }
       );
       this.subIcon = PaladinIcon;
     }
@@ -8531,6 +8562,59 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       });
     }
   };
+  function isCurable(e) {
+    return e.tags.has("disease") || e.tags.has("poison");
+  }
+  function getCurableEffects(who) {
+    const effects = [];
+    for (const [effect] of who.effects)
+      if (isCurable(effect))
+        effects.push({ value: effect, label: effect.name });
+    return effects;
+  }
+  var LayOnHandsCureAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Lay on Hands (Cure)",
+        "implemented",
+        {
+          target: new TargetResolver(g, actor.reach, [isHealable]),
+          effects: new MultiChoiceResolver(g, [], 1, Infinity)
+        },
+        { icon: LayOnHandsCureIcon }
+      );
+    }
+    getConfig({ target }) {
+      const valid = target ? getCurableEffects(target) : [];
+      return {
+        target: new TargetResolver(this.g, this.actor.reach, [isHealable]),
+        effects: new MultiChoiceResolver(this.g, valid, 1, Infinity)
+      };
+    }
+    check({ target, effects }, ec) {
+      if (target && effects) {
+        const cost = effects.length * 5;
+        if (!this.actor.hasResource(LayOnHandsResource, cost))
+          ec.add("not enough healing left", this);
+        for (const effect of effects) {
+          if (!isCurable(effect))
+            ec.add(`not valid: ${effect.name}`, this);
+          if (!target.hasEffect(effect))
+            ec.add(`not present: ${effect.name}`, this);
+        }
+      }
+      return super.check({ target }, ec);
+    }
+    async apply({ target, effects }) {
+      await super.apply({ target, effects });
+      const cost = effects.length * 5;
+      this.actor.spendResource(LayOnHandsResource, cost);
+      for (const effect of effects)
+        await target.removeEffect(effect);
+    }
+  };
   var LayOnHands = new SimpleFeature(
     "Lay on Hands",
     `Your blessed touch can heal wounds. You have a pool of healing power that replenishes when you take a long rest. With that pool, you can restore a total number of hit points equal to your paladin level \xD7 5.
@@ -8542,12 +8626,14 @@ Alternatively, you can expend 5 hit points from your pool of healing to cure the
 This feature has no effect on undead and constructs.`,
     (g, me) => {
       var _a;
-      console.warn(`[Feature Not Complete] Lay on Hands (on ${me.name})`);
       const max = ((_a = me.classLevels.get("Paladin")) != null ? _a : 1) * 5;
       me.initResource(LayOnHandsResource, max, max);
       g.events.on("GetActions", ({ detail: { actions, who } }) => {
         if (who === me)
-          actions.push(new LayOnHandsHealAction(g, me));
+          actions.push(
+            new LayOnHandsHealAction(g, me),
+            new LayOnHandsCureAction(g, me)
+          );
       });
     }
   );
@@ -13052,6 +13138,54 @@ The creature is aware of this effect before it makes its attack against you.`
       )) })
     ] });
   }
+  function ChooseMany({
+    field,
+    resolver,
+    value,
+    onChange
+  }) {
+    const [labels, setLabels] = (0, import_hooks9.useState)([]);
+    const add = (0, import_hooks9.useCallback)(
+      (ch) => {
+        if (!(value != null ? value : []).find((x) => x === ch)) {
+          onChange(field, (value != null ? value : []).concat(ch.value));
+          setLabels((old) => old.concat(ch.label));
+        }
+      },
+      [field, onChange, value]
+    );
+    const remove = (0, import_hooks9.useCallback)(
+      (ch) => {
+        onChange(
+          field,
+          (value != null ? value : []).filter((x) => x !== ch.value)
+        );
+        setLabels((old) => old.filter((x) => x !== ch.label));
+      },
+      [field, onChange, value]
+    );
+    return /* @__PURE__ */ o("div", { children: [
+      /* @__PURE__ */ o("div", { children: [
+        "Choice: ",
+        labels.length ? labels.join(", ") : "NONE"
+      ] }),
+      /* @__PURE__ */ o("div", { children: resolver.entries.map((e) => {
+        const selected = (value != null ? value : []).includes(e.value);
+        const full = (value != null ? value : []).length > resolver.maximum;
+        return /* @__PURE__ */ o(
+          "button",
+          {
+            className: classnames({ [button_module_default.active]: selected }),
+            "aria-pressed": selected,
+            onClick: selected ? () => remove(e) : () => add(e),
+            disabled: e.disabled || full,
+            children: e.label
+          },
+          e.label
+        );
+      }) })
+    ] });
+  }
   function ChooseNumber({
     field,
     resolver,
@@ -13084,7 +13218,7 @@ The creature is aware of this effect before it makes its attack against you.`
     const addTarget = (0, import_hooks9.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).find((e) => e.who === who))
-          onChange(field, (value != null ? value : []).concat({ amount: 0, who }));
+          onChange(field, (value != null ? value : []).concat({ amount: 1, who }));
         wantsCombatant.value = void 0;
       },
       [field, onChange, value]
@@ -13215,6 +13349,8 @@ The creature is aware of this effect before it makes its attack against you.`
           return /* @__PURE__ */ o(ChooseSlot, { ...subProps });
         else if (resolver instanceof ChoiceResolver)
           return /* @__PURE__ */ o(ChooseText, { ...subProps });
+        else if (resolver instanceof MultiChoiceResolver)
+          return /* @__PURE__ */ o(ChooseMany, { ...subProps });
         else if (resolver instanceof NumberRangeResolver)
           return /* @__PURE__ */ o(ChooseNumber, { ...subProps });
         else if (resolver instanceof AllocationResolver)
