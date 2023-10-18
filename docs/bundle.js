@@ -7849,8 +7849,110 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   };
 
+  // src/types/SizeCategory.ts
+  var SizeCategories = [
+    "tiny",
+    "small",
+    "medium",
+    "large",
+    "huge",
+    "gargantuan"
+  ];
+
   // src/spells/level2/EnlargeReduce.ts
+  var EnlargeEffect = new Effect("Enlarge", "turnStart", (g) => {
+    const giveAdvantage = ({
+      detail: { who, ability, diceType }
+    }) => {
+      if (who.hasEffect(EnlargeEffect) && ability === "str")
+        diceType.add("advantage", EnlargeEffect);
+    };
+    g.events.on("BeforeCheck", giveAdvantage);
+    g.events.on("BeforeSave", giveAdvantage);
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
+        if (attacker.hasEffect(EnlargeEffect) && weapon)
+          interrupt.add(
+            new EvaluateLater(attacker, EnlargeEffect, async () => {
+              const amount = await g.rollDamage(
+                1,
+                { source: EnlargeEffect, attacker, size: 4 },
+                critical
+              );
+              bonus.add(amount, EnlargeEffect);
+            })
+          );
+      }
+    );
+  });
+  var ReduceEffect = new Effect("Reduce", "turnStart", (g) => {
+    const giveDisadvantage = ({
+      detail: { who, ability, diceType }
+    }) => {
+      if (who.hasEffect(ReduceEffect) && ability === "str")
+        diceType.add("disadvantage", ReduceEffect);
+    };
+    g.events.on("BeforeCheck", giveDisadvantage);
+    g.events.on("BeforeSave", giveDisadvantage);
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
+        if (attacker.hasEffect(ReduceEffect) && weapon)
+          interrupt.add(
+            new EvaluateLater(attacker, ReduceEffect, async () => {
+              const amount = await g.rollDamage(
+                1,
+                { source: ReduceEffect, attacker, size: 4 },
+                critical
+              );
+              bonus.add(-amount, ReduceEffect);
+            })
+          );
+      }
+    );
+  });
+  function applySizeChange(size, change) {
+    const index = SizeCategories.indexOf(size) + change;
+    if (index < 0 || index >= SizeCategories.length)
+      return void 0;
+    return SizeCategories[index];
+  }
+  var EnlargeReduceController = class {
+    constructor(caster, effect, config, victim, sizeChange = effect === EnlargeEffect ? 1 : -1) {
+      this.caster = caster;
+      this.effect = effect;
+      this.config = config;
+      this.victim = victim;
+      this.sizeChange = sizeChange;
+      this.applied = false;
+    }
+    async apply() {
+      const { effect, config, victim, sizeChange } = this;
+      if (!await victim.addEffect(effect, config))
+        return;
+      const newSize = applySizeChange(victim.size, sizeChange);
+      if (newSize) {
+        this.applied = true;
+        victim.size = newSize;
+      }
+      this.caster.concentrateOn({
+        duration: config.duration,
+        spell: EnlargeReduce,
+        onSpellEnd: this.remove.bind(this)
+      });
+    }
+    async remove() {
+      if (this.applied) {
+        const oldSize = applySizeChange(this.victim.size, -this.sizeChange);
+        if (oldSize)
+          this.victim.size = oldSize;
+      }
+      await this.victim.removeEffect(this.effect);
+    }
+  };
   var EnlargeReduce = simpleSpell({
+    status: "implemented",
     name: "Enlarge/Reduce",
     level: 2,
     school: "Transmutation",
@@ -7863,8 +7965,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   If the target is a creature, everything it is wearing and carrying changes size with it. Any item dropped by an affected creature returns to normal size at once.
 
-  Enlarge. The target's size doubles in all dimensions, and its weight is multiplied by eight. This growth increases its size by one category\u2014from Medium to Large, for example. If there isn't enough room for the target to double its size, the creature or object attains the maximum possible size in the space available. Until the spell ends, the target also has advantage on Strength checks and Strength saving throws. The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
-  Reduce. The target's size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category\u2014from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage (this can't reduce the damage below 1).`,
+  - Enlarge. The target's size doubles in all dimensions, and its weight is multiplied by eight. This growth increases its size by one category\u2014from Medium to Large, for example. If there isn't enough room for the target to double its size, the creature or object attains the maximum possible size in the space available. Until the spell ends, the target also has advantage on Strength checks and Strength saving throws. The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
+  - Reduce. The target's size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category\u2014from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage (this can't reduce the damage below 1).`,
     getConfig: (g) => ({
       target: new TargetResolver(g, 30, [canSee]),
       mode: new ChoiceResolver(g, [
@@ -7874,6 +7976,30 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }),
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { mode, target }) {
+      const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;
+      const config = { duration: minutes(1) };
+      if (target.side !== caster.side) {
+        const { outcome } = await g.save({
+          source: EnlargeReduce,
+          type: method.getSaveType(caster, EnlargeReduce),
+          attacker: caster,
+          who: target,
+          ability: "con",
+          spell: EnlargeReduce,
+          method,
+          effect,
+          config
+        });
+        if (outcome === "success")
+          return;
+      }
+      const controller = new EnlargeReduceController(
+        caster,
+        effect,
+        config,
+        target
+      );
+      await controller.apply();
     }
   });
   var EnlargeReduce_default = EnlargeReduce;
@@ -8585,6 +8711,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         },
         { icon: LayOnHandsCureIcon }
       );
+      this.subIcon = PaladinIcon;
     }
     getConfig({ target }) {
       const valid = target ? getCurableEffects(target) : [];

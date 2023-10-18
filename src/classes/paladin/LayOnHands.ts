@@ -39,7 +39,6 @@ class LayOnHandsHealAction extends AbstractAction<HealConfig> {
       },
       { icon: LayOnHandsHealIcon, time: "action" },
     );
-
     this.subIcon = PaladinIcon;
   }
 
@@ -109,6 +108,7 @@ class LayOnHandsCureAction extends AbstractAction<CureConfig> {
       },
       { icon: LayOnHandsCureIcon },
     );
+    this.subIcon = PaladinIcon;
   }
 
   getConfig({ target }: Partial<CureConfig>) {
