@@ -2,6 +2,7 @@ import AbilityName from "./AbilityName";
 import Combatant from "./Combatant";
 import Icon from "./Icon";
 import Resource from "./Resource";
+import SaveType from "./SaveType";
 import Source from "./Source";
 import Spell from "./Spell";
 
@@ -17,5 +18,5 @@ export default interface SpellcastingMethod extends Source {
     level: number,
     caster: Combatant,
   ): Resource | undefined;
-  getSaveDC(caster: Combatant, spell: Spell, level?: number): number;
+  getSaveType(caster: Combatant, spell: Spell, level?: number): SaveType;
 }

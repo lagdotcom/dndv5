@@ -3,6 +3,7 @@ import iconUrl from "@img/eq/hood.svg";
 import AbstractAction from "../actions/AbstractAction";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
+import { isEquipmentAttuned } from "../utils/items";
 import { AbstractWondrous } from "./wondrous";
 
 class CloakHoodAction extends AbstractAction {
@@ -38,10 +39,7 @@ export default class CloakOfElvenkind extends AbstractWondrous {
     this.rarity = "Uncommon";
 
     const cloaked = (who?: Combatant) =>
-      who &&
-      who.equipment.has(this) &&
-      who.attunements.has(this) &&
-      this.hoodUp;
+      isEquipmentAttuned(this, who) && this.hoodUp;
 
     g.events.on(
       "BeforeCheck",
@@ -55,7 +53,7 @@ export default class CloakOfElvenkind extends AbstractWondrous {
     );
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
-      if (who.equipment.has(this) && who.attunements.has(this))
+      if (isEquipmentAttuned(this, who))
         actions.push(new CloakHoodAction(g, who, this));
     });
   }

@@ -3,9 +3,9 @@ import iconUrl from "@img/spl/ray-of-frost.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
+import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { _dd } from "../../utils/dice";
-import { notSelf } from "../../filters";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 

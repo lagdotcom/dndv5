@@ -6,7 +6,6 @@ import { Prone } from "../../effects";
 import Engine from "../../Engine";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -46,22 +45,20 @@ const EarthTremor = scalingSpell({
       damageType: "bludgeoning",
       attacker,
     });
-    const dc = method.getSaveDC(attacker, EarthTremor, slot);
 
     const shape = getEarthTremorArea(g, attacker);
     for (const target of g.getInside(shape, [attacker])) {
-      const save = await g.savingThrow(
-        dc,
-        {
-          attacker,
-          ability: "dex",
-          spell: EarthTremor,
-          method,
-          who: target,
-          tags: svSet(),
-        },
-        { fail: "normal", save: "zero" },
-      );
+      const save = await g.save({
+        source: EarthTremor,
+        type: method.getSaveType(attacker, EarthTremor, slot),
+        attacker,
+        ability: "dex",
+        spell: EarthTremor,
+        method,
+        who: target,
+        fail: "normal",
+        save: "zero",
+      });
 
       if (save.damageResponse !== "zero") {
         await g.damage(

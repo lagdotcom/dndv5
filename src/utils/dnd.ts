@@ -37,10 +37,6 @@ export function getProficiencyType(thing: Item | AbilityName | SkillName) {
     return { type: "armor" as const, category: thing.category };
 }
 
-export function getSaveDC(who: Combatant, ability: AbilityName) {
-  return 8 + who.pb + who[ability].modifier;
-}
-
 export const getNaturalArmourMethod = (
   who: Combatant,
   naturalAC: number,

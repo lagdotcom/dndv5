@@ -18,9 +18,7 @@ import { SpecifiedEffectShape } from "../types/EffectArea";
 import ImplementationStatus from "../types/ImplementationStatus";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
-import { svSet } from "../types/SaveTag";
 import { _dd } from "../utils/dice";
-import { getSaveDC } from "../utils/dnd";
 import { resistanceFeature } from "./common";
 
 const MetallicDragonborn: PCRace = {
@@ -80,14 +78,14 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       size: 10,
       damageType,
     });
-    const dc = 8 + attacker.con.modifier + attacker.pb;
 
     for (const target of g.getInside(getBreathArea(g, attacker, point))) {
-      const save = await g.savingThrow(dc, {
+      const save = await g.save({
+        source: this,
+        type: { type: "ability", ability: "con" },
         attacker,
         who: target,
         ability: "dex",
-        tags: svSet(),
       });
 
       await g.damage(
@@ -165,17 +163,17 @@ class EnervatingBreathAction extends MetallicBreathAction {
     await super.apply({ point });
 
     const { g, actor } = this;
-    const dc = getSaveDC(actor, "con");
     const config = { conditions: coSet("Incapacitated"), duration: 2 };
 
     for (const target of g.getInside(getBreathArea(g, actor, point))) {
-      const save = await g.savingThrow(dc, {
+      const save = await g.save({
+        source: this,
+        type: { type: "ability", ability: "con" },
         attacker: actor,
         ability: "con",
         who: target,
         effect: EnervatingBreathEffect,
         config,
-        tags: svSet(),
       });
 
       if (!save) await target.addEffect(EnervatingBreathEffect, config, actor);
@@ -195,26 +193,25 @@ class RepulsionBreathAction extends MetallicBreathAction {
     );
   }
 
-  async apply(config: HasPoint) {
-    await super.apply(config);
+  async apply({ point }: HasPoint) {
+    await super.apply({ point });
     const { g, actor } = this;
-    const dc = getSaveDC(actor, "con");
-
-    for (const target of g.getInside(
-      getBreathArea(this.g, actor, config.point),
-    )) {
-      const save = await g.savingThrow(dc, {
+    for (const target of g.getInside(getBreathArea(this.g, actor, point))) {
+      const config = { duration: Infinity };
+      const save = await g.save({
+        source: this,
+        type: { type: "ability", ability: "con" },
         attacker: actor,
         ability: "str",
         who: target,
         effect: Prone,
-        tags: svSet(),
+        config,
       });
 
       if (!save) {
         // TODO [FORCEMOVE] pushed 20 feet away from you
 
-        await target.addEffect(Prone, { duration: Infinity });
+        await target.addEffect(Prone, config);
       }
     }
   }

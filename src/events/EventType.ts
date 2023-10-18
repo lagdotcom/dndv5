@@ -31,6 +31,7 @@ import GetDamageResponseEvent from "./GetDamageResponseEvent";
 import GetInitiativeEvent from "./GetInitiativeEvent";
 import GetMaxHPEvent from "./GetMaxHPEvent";
 import GetMoveCostEvent from "./GetMoveCostEvent";
+import GetSaveDCEvent from "./GetSaveDCEvent";
 import GetSpeedEvent from "./GetSpeedEvent";
 import ListChoiceEvent from "./ListChoiceEvent";
 import MultiListChoiceEvent from "./MultiListChoiceEvent";
@@ -75,6 +76,7 @@ export type EventTypes = {
   GetInitiative: GetInitiativeEvent;
   GetMaxHP: GetMaxHPEvent;
   GetMoveCost: GetMoveCostEvent;
+  GetSaveDC: GetSaveDCEvent;
   GetSpeed: GetSpeedEvent;
   ListChoice: ListChoiceEvent;
   MultiListChoice: MultiListChoiceEvent;

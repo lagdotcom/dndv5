@@ -5,13 +5,13 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
+import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { TemporaryResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
-import { notSelf } from "../../filters";
 import { simpleSpell } from "../common";
 
 const MagicStoneIcon = makeIcon(iconUrl, DamageColours.bludgeoning);

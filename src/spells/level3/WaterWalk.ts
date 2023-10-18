@@ -1,6 +1,6 @@
 import { HasTargets } from "../../configs";
-import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { canSee } from "../../filters";
+import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { simpleSpell } from "../common";
 
 const WaterWalk = simpleSpell<HasTargets>({

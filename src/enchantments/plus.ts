@@ -1,6 +1,6 @@
 import { ItemRarityColours } from "../colours";
 import Engine from "../Engine";
-import { EventListener } from "../events/Dispatcher";
+import { Listener } from "../events/Dispatcher";
 import Enchantment from "../types/Enchantment";
 import { AmmoItem, ItemRarity, WeaponItem } from "../types/Item";
 import Source from "../types/Source";
@@ -9,7 +9,7 @@ export function getWeaponPlusHandler(
   item: WeaponItem | AmmoItem,
   value: number,
   source: Source,
-): EventListener<"BeforeAttack" | "GatherDamage"> {
+): Listener<"BeforeAttack" | "GatherDamage"> {
   return ({ detail: { weapon, ammo, bonus } }) => {
     if (weapon === item || ammo === item) bonus.add(value, source);
   };

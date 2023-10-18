@@ -2,10 +2,9 @@ import iconUrl from "@img/spl/acid-splash.svg";
 
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
-import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
-import { svSet } from "../../types/SaveTag";
-import { _dd } from "../../utils/dice";
 import { canSee } from "../../filters";
+import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { _dd } from "../../utils/dice";
 import { isCombatantArray } from "../../utils/types";
 import { distance } from "../../utils/units";
 import { getCantripDice, simpleSpell } from "../common";
@@ -52,25 +51,24 @@ const AcidSplash = simpleSpell<HasTargets>({
     });
 
     for (const target of targets) {
-      const save = await g.savingThrow(
-        method.getSaveDC(attacker, AcidSplash),
-        {
-          who: target,
-          attacker,
-          ability: "dex",
-          spell: AcidSplash,
-          method,
-          tags: svSet(),
-        },
-        { fail: "normal", save: "zero" },
-      );
+      const { damageResponse } = await g.save({
+        source: AcidSplash,
+        type: method.getSaveType(attacker, AcidSplash),
+        who: target,
+        attacker,
+        ability: "dex",
+        spell: AcidSplash,
+        method,
+        fail: "normal",
+        save: "zero",
+      });
 
       await g.damage(
         AcidSplash,
         "acid",
         { attacker, target, spell: AcidSplash, method },
         [["acid", damage]],
-        save.damageResponse,
+        damageResponse,
       );
     }
   },

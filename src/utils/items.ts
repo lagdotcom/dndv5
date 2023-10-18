@@ -52,3 +52,7 @@ export function enchant<T extends ItemType>(
     item.addEnchantment(enchantment as Enchantment<never>);
   return item;
 }
+
+export function isEquipmentAttuned(item: Item, who?: Combatant) {
+  return who?.equipment.has(item) && who.attunements.has(item);
+}

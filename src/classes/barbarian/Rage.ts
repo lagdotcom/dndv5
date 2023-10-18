@@ -5,8 +5,7 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
-import BeforeCheckEvent from "../../events/BeforeCheckEvent";
-import BeforeSaveEvent from "../../events/BeforeSaveEvent";
+import { Listener } from "../../events/Dispatcher";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { LongRestResource } from "../../resources";
@@ -80,9 +79,9 @@ export const RageEffect = new Effect(
   "turnStart",
   (g) => {
     // You have advantage on Strength checks and Strength saving throws.
-    const rageAdvantage = ({
+    const rageAdvantage: Listener<"BeforeCheck" | "BeforeSave"> = ({
       detail: { who, ability, diceType },
-    }: BeforeCheckEvent | BeforeSaveEvent) => {
+    }) => {
       if (isRaging(who) && ability === "str")
         diceType.add("advantage", RageEffect);
     };

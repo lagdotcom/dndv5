@@ -1,12 +1,11 @@
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
+import { canSee, ofCreatureType } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
-import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
-import { canSee, ofCreatureType } from "../../filters";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -23,20 +22,20 @@ const HoldPersonEffect = new Effect<{
   g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
     const config = who.getEffectConfig(HoldPersonEffect);
     if (config) {
-      const dc = config.method.getSaveDC(config.caster, HoldPerson);
       interrupt.add(
         new EvaluateLater(who, HoldPersonEffect, async () => {
-          const save = await g.savingThrow(dc, {
+          const { outcome } = await g.save({
+            source: HoldPersonEffect,
+            type: config.method.getSaveType(config.caster, HoldPerson),
             who,
             attacker: config.caster,
             ability: "wis",
             spell: HoldPerson,
             effect: HoldPersonEffect,
             config,
-            tags: svSet(),
           });
 
-          if (save.outcome === "success") {
+          if (outcome === "success") {
             await who.removeEffect(HoldPersonEffect);
 
             config.affected.delete(who);
@@ -78,7 +77,6 @@ const HoldPerson = scalingSpell<HasTargets>({
   },
 
   async apply(g, caster, method, { targets }) {
-    const dc = method.getSaveDC(caster, HoldPerson);
     const affected = new Set<Combatant>();
     const duration = minutes(1);
     const conditions = coSet("Paralyzed");
@@ -92,18 +90,19 @@ const HoldPerson = scalingSpell<HasTargets>({
         conditions,
       };
 
-      const save = await g.savingThrow(dc, {
+      const { outcome } = await g.save({
+        source: HoldPerson,
+        type: method.getSaveType(caster, HoldPerson),
         who: target,
         attacker: caster,
         ability: "wis",
         spell: HoldPerson,
         effect: HoldPersonEffect,
         config,
-        tags: svSet(),
       });
 
       if (
-        save.outcome === "fail" &&
+        outcome === "fail" &&
         (await target.addEffect(HoldPersonEffect, config))
       )
         affected.add(target);

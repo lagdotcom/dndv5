@@ -14,7 +14,6 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -45,8 +44,9 @@ class BreakFreeFromWebAction extends AbstractAction {
   async apply() {
     await super.apply({});
 
-    const dc = this.method.getSaveDC(this.caster, Web);
-    const result = await this.g.abilityCheck(dc, {
+    const type = this.method.getSaveType(this.caster, Web);
+    const dc = await this.g.getSaveDC({ source: Web, type });
+    const result = await this.g.abilityCheck(dc.bonus.result, {
       ability: "str",
       who: this.actor,
       tags: chSet(),
@@ -118,23 +118,23 @@ class WebController {
   }
 
   getWebber(target: Combatant) {
-    const { caster, method } = this;
+    const { g, caster, method } = this;
 
     return new EvaluateLater(target, Web, async () => {
       if (this.affectedThisTurn.has(target)) return;
       this.affectedThisTurn.add(target);
 
-      const dc = this.method.getSaveDC(this.caster, Web);
-      const result = await this.g.savingThrow(dc, {
+      const { outcome } = await g.save({
+        source: Web,
+        type: this.method.getSaveType(this.caster, Web),
         ability: "dex",
         attacker: caster,
         method,
         spell: Web,
         who: target,
-        tags: svSet(),
       });
 
-      if (result.outcome === "fail")
+      if (outcome === "fail")
         await target.addEffect(Webbed, {
           caster,
           method,

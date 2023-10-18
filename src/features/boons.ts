@@ -10,9 +10,7 @@ import { BoundedMove } from "../movement";
 import TargetResolver from "../resolvers/TargetResolver";
 import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
-import { svSet } from "../types/SaveTag";
 import { checkConfig } from "../utils/config";
-import { getSaveDC } from "../utils/dnd";
 import { round } from "../utils/numbers";
 import SimpleFeature from "./SimpleFeature";
 
@@ -62,14 +60,15 @@ class HissAction extends AbstractAction<HasTarget> {
 
     const action = new HissFleeAction(g, target, actor);
     if (checkConfig(g, action, {})) {
-      const dc = getSaveDC(actor, "cha");
-      const save = await g.savingThrow(dc, {
-        who: target,
+      const { outcome } = await g.save({
+        source: this,
+        type: { type: "ability", ability: "cha" },
         attacker: actor,
+        who: target,
         ability: "wis",
-        tags: svSet("frightened", "forced movement"),
+        tags: ["frightened", "forced movement"],
       });
-      if (save.outcome === "fail") await g.act(action, {});
+      if (outcome === "fail") await g.act(action, {});
     }
   }
 }

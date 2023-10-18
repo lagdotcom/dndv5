@@ -6,7 +6,6 @@ import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -47,17 +46,17 @@ const EruptingEarth = scalingSpell<HasPoint>({
       damageType: "bludgeoning",
       attacker,
     });
-    const dc = method.getSaveDC(attacker, EruptingEarth, slot);
 
-    const shape = getEruptingEarthArea(g, point);
+    const shape = getEruptingEarthArea(point);
     for (const target of g.getInside(shape)) {
-      const save = await g.savingThrow(dc, {
+      const save = await g.save({
+        source: EruptingEarth,
+        type: method.getSaveType(attacker, EruptingEarth, slot),
         attacker,
         ability: "dex",
         spell: EruptingEarth,
         method,
         who: target,
-        tags: svSet(),
       });
 
       await g.damage(

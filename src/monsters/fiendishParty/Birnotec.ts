@@ -22,7 +22,6 @@ import SpellAttack from "../../spells/SpellAttack";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
-import { svSet } from "../../types/SaveTag";
 import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 
@@ -80,24 +79,23 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
     for (const other of g.getInside(getEldritchBurstArea(g, target))) {
       if (other === target) continue;
 
-      const save = await g.savingThrow(
-        15,
-        {
-          attacker: caster,
-          who: other,
-          ability: "dex",
-          spell: EldritchBurstSpell,
-          method,
-          tags: svSet(),
-        },
-        { fail: "normal", save: "zero" },
-      );
+      const { damageResponse } = await g.save({
+        source: EldritchBurstSpell,
+        type: { type: "flat", dc: 15 },
+        attacker: caster,
+        who: other,
+        ability: "dex",
+        spell: EldritchBurstSpell,
+        method,
+        fail: "normal",
+        save: "zero",
+      });
       await g.damage(
         this,
         "force",
         { attacker: caster, target: other, spell: EldritchBurstSpell, method },
         [["force", damage]],
-        save.damageResponse,
+        damageResponse,
       );
     }
   },
@@ -237,29 +235,30 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
 
   async apply({ target }: HasTarget) {
     await super.apply({ target });
-    const { g, actor, dc } = this;
+    const { g, actor: attacker, dc } = this;
 
     const damage = await g.rollDamage(2, {
       source: HellishRebuke,
       size: 10,
-      attacker: actor,
+      attacker,
       target,
       damageType: "fire",
     });
 
-    const save = await g.savingThrow(dc, {
+    const { damageResponse } = await g.save({
+      source: HellishRebuke,
+      type: { type: "flat", dc },
       who: target,
-      attacker: actor,
+      attacker,
       ability: "dex",
-      tags: svSet(),
     });
 
     await g.damage(
       HellishRebuke,
       "fire",
-      { attacker: actor, target },
+      { attacker, target },
       [["fire", damage]],
-      save.damageResponse,
+      damageResponse,
     );
   }
 }

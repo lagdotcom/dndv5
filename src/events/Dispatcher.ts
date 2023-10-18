@@ -1,6 +1,6 @@
 import EventType, { EventTypes } from "./EventType";
 
-export type EventListener<T extends EventType> = (e: EventTypes[T]) => void;
+export type Listener<T extends EventType> = (e: EventTypes[T]) => void;
 
 export type Unsubscribe = () => void;
 
@@ -28,7 +28,7 @@ export default class Dispatcher {
 
   on<T extends EventType>(
     type: T,
-    callback: EventListener<T> | null,
+    callback: Listener<T> | null,
     options?: boolean | AddEventListenerOptions | undefined,
   ): Unsubscribe {
     this.target.addEventListener(
@@ -44,7 +44,7 @@ export default class Dispatcher {
 
   off<T extends EventType>(
     type: T,
-    callback: EventListener<T> | null,
+    callback: Listener<T> | null,
     options?: boolean | EventListenerOptions | undefined,
   ) {
     return this.target.removeEventListener(

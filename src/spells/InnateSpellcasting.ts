@@ -1,10 +1,9 @@
 import AbilityName from "../types/AbilityName";
-import Combatant from "../types/Combatant";
 import Icon from "../types/Icon";
 import Resource from "../types/Resource";
+import SaveType from "../types/SaveType";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
-import { getSaveDC } from "../utils/dnd";
 
 export default class InnateSpellcasting implements SpellcastingMethod {
   constructor(
@@ -28,7 +27,7 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     return spell.level;
   }
 
-  getSaveDC(caster: Combatant): number {
-    return getSaveDC(caster, this.ability);
+  getSaveType(): SaveType {
+    return { type: "ability", ability: this.ability };
   }
 }

@@ -1,10 +1,10 @@
 import AbstractCombatant from "../AbstractCombatant";
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import { ErrorFilter } from "../filters";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
-import { ErrorFilter } from "../filters";
 import { distance } from "../utils/units";
 
 export default class TargetResolver implements Resolver<Combatant> {

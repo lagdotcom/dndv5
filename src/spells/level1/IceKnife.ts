@@ -8,7 +8,6 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -85,27 +84,24 @@ const IceKnife = scalingSpell<HasTarget>({
       method,
       damageType: "cold",
     });
-    const dc = method.getSaveDC(attacker, IceKnife, slot);
-
     for (const victim of g.getInside(getIceKnifeArea(g, target))) {
-      const save = await g.savingThrow(
-        dc,
-        {
-          attacker,
-          ability: "dex",
-          spell: IceKnife,
-          method,
-          who: victim,
-          tags: svSet(),
-        },
-        { fail: "normal", save: "zero" },
-      );
+      const { damageResponse } = await g.save({
+        source: IceKnife,
+        type: method.getSaveType(attacker, IceKnife, slot),
+        attacker,
+        ability: "dex",
+        spell: IceKnife,
+        method,
+        who: victim,
+        fail: "normal",
+        save: "zero",
+      });
       await g.damage(
         IceKnife,
         "cold",
         { attacker, target: victim, spell: IceKnife, method },
         [["cold", damage]],
-        save.damageResponse,
+        damageResponse,
       );
     }
   },

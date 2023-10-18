@@ -5,6 +5,7 @@ import PickFromListChoice, {
 import { TurnResource } from "../resources";
 import DamageType from "../types/DamageType";
 import Enchantment from "../types/Enchantment";
+import { isEquipmentAttuned } from "../utils/items";
 import { weaponPlus1 } from "./plus";
 
 const ChaoticBurstResource = new TurnResource("Chaotic Burst", 1);
@@ -34,8 +35,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
     if (item.icon) item.icon.colour = ItemRarityColours.Rare;
 
     g.events.on("TurnStarted", ({ detail: { who } }) => {
-      if (who.equipment.has(item) && who.attunements.has(item))
-        who.initResource(ChaoticBurstResource);
+      if (isEquipmentAttuned(item, who)) who.initResource(ChaoticBurstResource);
     });
 
     g.events.on(
@@ -43,8 +43,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
       ({ detail: { attacker, critical, interrupt, map } }) => {
         if (
           critical &&
-          attacker.equipment.has(item) &&
-          attacker.attunements.has(item) &&
+          isEquipmentAttuned(item, attacker) &&
           attacker.hasResource(ChaoticBurstResource)
         ) {
           attacker.spendResource(ChaoticBurstResource);

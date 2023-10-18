@@ -4,7 +4,6 @@ import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedCone } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -50,16 +49,16 @@ const ConeOfCold = scalingSpell<HasPoint>({
       damageType: "cold",
       attacker,
     });
-    const dc = method.getSaveDC(attacker, ConeOfCold, slot);
 
     for (const target of g.getInside(getConeOfColdArea(g, attacker, point))) {
-      const save = await g.savingThrow(dc, {
+      const save = await g.save({
+        source: ConeOfCold,
+        type: method.getSaveType(attacker, ConeOfCold, slot),
         attacker,
         ability: "con",
         spell: ConeOfCold,
         method,
         who: target,
-        tags: svSet(),
       });
 
       await g.damage(

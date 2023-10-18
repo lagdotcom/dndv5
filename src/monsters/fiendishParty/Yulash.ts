@@ -21,9 +21,7 @@ import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
-import { svSet } from "../../types/SaveTag";
 import { checkConfig } from "../../utils/config";
-import { getSaveDC } from "../../utils/dnd";
 import { getWeaponAbility } from "../../utils/items";
 import { getDistanceBetween } from "../../utils/units";
 
@@ -168,14 +166,15 @@ class DiscordAction extends AbstractAction<HasTarget> {
   async apply({ target: attacker }: HasTarget) {
     await super.apply({ target: attacker });
 
-    const dc = getSaveDC(this.actor, "cha");
-    const result = await this.g.savingThrow(dc, {
-      ability: "cha",
+    const { outcome } = await this.g.save({
+      source: this,
+      type: { type: "ability", ability: "cha" },
       attacker: this.actor,
       who: attacker,
-      tags: svSet("charm"),
+      ability: "cha",
+      tags: ["charm"],
     });
-    if (result.outcome === "success") return;
+    if (outcome === "success") return;
 
     const attacks = this.getValidAttacks(attacker);
     const choice = new PickFromListChoice(
@@ -230,16 +229,15 @@ class IrritationAction extends AbstractAction<HasTarget> {
   async apply({ target }: HasTarget) {
     await super.apply({ target });
 
-    const { g, actor } = this;
-    const dc = getSaveDC(actor, "cha");
-    const result = await g.savingThrow(dc, {
-      ability: "con",
-      attacker: actor,
-      tags: svSet("concentration"),
+    const { outcome } = await this.g.save({
+      source: this,
+      type: { type: "ability", ability: "cha" },
+      attacker: this.actor,
       who: target,
+      ability: "con",
+      tags: ["concentration"],
     });
-
-    if (result.outcome === "fail") await target.endConcentration();
+    if (outcome === "fail") await target.endConcentration();
   }
 }
 const Irritation = new SimpleFeature(

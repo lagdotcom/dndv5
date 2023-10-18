@@ -5,7 +5,6 @@ import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -45,18 +44,18 @@ const Fireball = scalingSpell<HasPoint>({
       damageType: "fire",
       attacker,
     });
-    const dc = method.getSaveDC(attacker, Fireball, slot);
 
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
     for (const target of g.getInside(getFireballArea(point))) {
-      const save = await g.savingThrow(dc, {
+      const save = await g.save({
+        source: Fireball,
+        type: method.getSaveType(attacker, Fireball, slot),
         attacker,
         ability: "dex",
         spell: Fireball,
         method,
         who: target,
-        tags: svSet(),
       });
 
       await g.damage(

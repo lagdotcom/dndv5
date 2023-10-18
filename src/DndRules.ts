@@ -5,10 +5,7 @@ import OpportunityAttack from "./actions/OpportunityAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
-import AttackEvent from "./events/AttackEvent";
-import BeforeAttackEvent from "./events/BeforeAttackEvent";
-import BeforeCheckEvent from "./events/BeforeCheckEvent";
-import BeforeSaveEvent from "./events/BeforeSaveEvent";
+import { Listener } from "./events/Dispatcher";
 import EvaluateLater from "./interruptions/EvaluateLater";
 import PickFromListChoice from "./interruptions/PickFromListChoice";
 import PointSet from "./PointSet";
@@ -40,6 +37,11 @@ export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
 
   g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
     bonus.add(who.dex.modifier, AbilityScoreRule);
+  });
+
+  g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
+    if (type.type === "ability" && who)
+      bonus.add(who[type.ability].modifier, AbilityScoreRule);
   });
 });
 
@@ -308,14 +310,23 @@ export const OpportunityAttacksRule = new DndRule(
 );
 
 const autoFail =
-  (condition: ConditionName, rule: DndRule, abilities: AbilityName[]) =>
-  ({ detail: { ability, who, successResponse } }: BeforeSaveEvent) => {
+  (
+    condition: ConditionName,
+    rule: DndRule,
+    abilities: AbilityName[],
+  ): Listener<"BeforeSave"> =>
+  ({ detail: { ability, who, successResponse } }) => {
     if (who.conditions.has(condition) && ability && abilities.includes(ability))
       successResponse.add("fail", rule);
   };
 const autoCrit =
-  (g: Engine, condition: ConditionName, rule: DndRule, maxRange = 5) =>
-  ({ detail }: AttackEvent) => {
+  (
+    g: Engine,
+    condition: ConditionName,
+    rule: DndRule,
+    maxRange = 5,
+  ): Listener<"Attack"> =>
+  ({ detail }) => {
     const { who, target } = detail.pre;
 
     if (
@@ -367,9 +378,9 @@ export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
 
 export const PoisonedRule = new DndRule("Poisoned", (g) => {
   // A poisoned creature has disadvantage on attack rolls and ability checks.
-  const poisonCheck = ({
+  const poisonCheck: Listener<"BeforeAttack" | "BeforeCheck"> = ({
     detail: { who, diceType },
-  }: BeforeAttackEvent | BeforeCheckEvent) => {
+  }) => {
     if (who.conditions.has("Poisoned"))
       diceType.add("disadvantage", PoisonedRule);
   };
@@ -394,6 +405,9 @@ export const ProficiencyRule = new DndRule("Proficiency", (g) => {
       const mul = who.getProficiencyMultiplier(ability);
       bonus.add(who.pb * mul, ProficiencyRule);
     }
+  });
+  g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
+    if (type.type === "ability" && who) bonus.add(who.pb, ProficiencyRule);
   });
 });
 

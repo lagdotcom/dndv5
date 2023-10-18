@@ -6,6 +6,7 @@ import { ItemRarity } from "../types/Item";
 import Resource from "../types/Resource";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
+import { isEquipmentAttuned } from "../utils/items";
 import { AbstractWondrous } from "./wondrous";
 
 class AbstractWand extends AbstractWondrous {
@@ -21,7 +22,7 @@ class AbstractWand extends AbstractWondrous {
     public method: SpellcastingMethod = {
       name,
       getResourceForSpell: () => resource,
-      getSaveDC: () => saveDC,
+      getSaveType: () => ({ type: "flat", dc: saveDC }),
     },
   ) {
     super(g, name, 1);
@@ -29,7 +30,7 @@ class AbstractWand extends AbstractWondrous {
     this.rarity = rarity;
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
-      if (who.equipment.has(this) && who.attunements.has(this)) {
+      if (isEquipmentAttuned(this, who)) {
         who.initResource(resource, charges, maxCharges);
         actions.push(new CastSpell(g, who, method, spell));
       }

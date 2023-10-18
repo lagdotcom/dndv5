@@ -11,7 +11,7 @@ import MoveHandler from "../../types/MoveHandler";
 import Point from "../../types/Point";
 import { UnitData } from "./types";
 
-export type Listener<T> = (point?: T) => void;
+export type Wants<T> = (point?: T) => void;
 
 export const actionAreas = signal<SpecifiedEffectShape[] | undefined>(
   undefined,
@@ -53,11 +53,9 @@ export const showSideHP = signal<number[]>([0]);
 
 export const teleportInfo = signal<SpecifiedEffectShape | undefined>(undefined);
 
-export const wantsCombatant = signal<Listener<Combatant> | undefined>(
-  undefined,
-);
+export const wantsCombatant = signal<Wants<Combatant> | undefined>(undefined);
 
-export const wantsPoint = signal<Listener<Point> | undefined>(undefined);
+export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).state = {

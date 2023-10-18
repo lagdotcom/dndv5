@@ -1,9 +1,9 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import { ErrorFilter } from "../filters";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
-import { ErrorFilter } from "../filters";
 import { describeRange } from "../utils/text";
 import { isCombatantArray } from "../utils/types";
 import { distance } from "../utils/units";

@@ -13,6 +13,7 @@ import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules from "./DndRules";
+import Effect from "./Effect";
 import { Dead, Dying, Stable } from "./effects";
 import AbilityCheckEvent from "./events/AbilityCheckEvent";
 import AfterActionEvent from "./events/AfterActionEvent";
@@ -46,6 +47,7 @@ import GetActionsEvent from "./events/GetActionsEvent";
 import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import GetMoveCostEvent from "./events/GetMoveCostEvent";
+import GetSaveDCEvent, { GetSaveDCDetail } from "./events/GetSaveDCEvent";
 import SaveEvent from "./events/SaveEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnSkippedEvent from "./events/TurnSkippedEvent";
@@ -53,6 +55,7 @@ import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoice from "./interruptions/YesNoChoice";
 import { MapSquareSize } from "./MapSquare";
 import PointSet from "./PointSet";
+import AbilityName from "./types/AbilityName";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CombatantState from "./types/CombatantState";
@@ -61,6 +64,7 @@ import DamageResponse from "./types/DamageResponse";
 import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
+import { EffectConfig } from "./types/EffectType";
 import MoveDirection from "./types/MoveDirection";
 import MoveHandler from "./types/MoveHandler";
 import MovementType from "./types/MovementType";
@@ -72,8 +76,11 @@ import RollType, {
   SavingThrow,
 } from "./types/RollType";
 import SaveDamageResponse from "./types/SaveDamageResponse";
-import { svSet } from "./types/SaveTag";
+import SaveTag, { svSet } from "./types/SaveTag";
+import SaveType from "./types/SaveType";
 import Source from "./types/Source";
+import Spell from "./types/Spell";
+import SpellcastingMethod from "./types/SpellcastingMethod";
 import { resolveArea } from "./utils/areas";
 import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
@@ -167,7 +174,7 @@ export default class Engine {
     return roll.value + gi.detail.bonus.result;
   }
 
-  async savingThrow<T = object>(
+  private async savingThrow<T = object>(
     dc: number,
     e: Omit<SavingThrow<T>, "dc" | "type">,
     { save, fail }: { save: SaveDamageResponse; fail: SaveDamageResponse } = {
@@ -879,6 +886,79 @@ export default class Engine {
     return this.fire(
       new CheckVisionEvent({ who, target, error: new ErrorCollector() }),
     ).detail.error.result;
+  }
+
+  async getSaveDC(e: Omit<GetSaveDCDetail, "bonus" | "interrupt">) {
+    const bonus = new BonusCollector();
+    const interrupt = new InterruptionCollector();
+
+    switch (e.type.type) {
+      case "ability":
+        bonus.add(8, e.source);
+        break;
+      case "flat":
+        bonus.add(e.type.dc, e.source);
+        break;
+    }
+
+    const result = await this.resolve(
+      new GetSaveDCEvent({ ...e, bonus, interrupt }),
+    );
+    return result.detail;
+  }
+
+  async save<E extends object>({
+    source,
+    type,
+    attacker,
+    who,
+    ability,
+    spell,
+    method,
+    effect,
+    config,
+    tags,
+    save = "half",
+    fail = "normal",
+  }: {
+    source: Source;
+    type: SaveType;
+    attacker?: Combatant;
+    who: Combatant;
+    ability?: AbilityName;
+    spell?: Spell;
+    method?: SpellcastingMethod;
+    effect?: Effect<E>;
+    config?: EffectConfig<E>;
+    tags?: SaveTag[];
+    save?: SaveDamageResponse;
+    fail?: SaveDamageResponse;
+  }) {
+    const dcRoll = await this.getSaveDC({
+      type,
+      source,
+      who: attacker,
+      target: who,
+      ability,
+      spell,
+      method,
+    });
+    const result = await this.savingThrow(
+      dcRoll.bonus.result,
+      {
+        who,
+        attacker,
+        ability,
+        spell,
+        method,
+        effect,
+        config,
+        tags: new Set(tags),
+      },
+      { save, fail },
+    );
+
+    return { ...result, dcRoll };
   }
 }
 

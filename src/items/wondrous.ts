@@ -1,5 +1,7 @@
 import Engine from "../Engine";
+import { Listener } from "../events/Dispatcher";
 import { ItemRarity, WondrousItem } from "../types/Item";
+import { isEquipmentAttuned } from "../utils/items";
 import AbstractItem from "./AbstractItem";
 
 export class AbstractWondrous
@@ -22,8 +24,7 @@ export class BracersOfTheArbalest extends AbstractWondrous {
     // ... you gain a +2 bonus to damage rolls on ranged attacks made with such weapons.
     g.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
       if (
-        attacker.equipment.has(this) &&
-        attacker.attunements.has(this) &&
+        isEquipmentAttuned(this, attacker) &&
         weapon?.ammunitionTag === "crossbow"
       )
         bonus.add(2, this);
@@ -40,11 +41,7 @@ export class BootsOfTheWinterlands extends AbstractWondrous {
     g.events.on(
       "GetDamageResponse",
       ({ detail: { who, damageType, response } }) => {
-        if (
-          who.equipment.has(this) &&
-          who.attunements.has(this) &&
-          damageType === "cold"
-        )
+        if (isEquipmentAttuned(this, who) && damageType === "cold")
           response.add("resist", this);
       },
     );
@@ -62,7 +59,7 @@ export class CloakOfProtection extends AbstractWondrous {
     this.rarity = "Uncommon";
 
     g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
-      if (who.equipment.has(this) && who.attunements.has(this))
+      if (isEquipmentAttuned(this, who))
         for (const method of methods) {
           method.ac++;
           method.uses.add(this);
@@ -70,8 +67,7 @@ export class CloakOfProtection extends AbstractWondrous {
     });
 
     g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-      if (who.equipment.has(this) && who.attunements.has(this))
-        bonus.add(1, this);
+      if (isEquipmentAttuned(this, who)) bonus.add(1, this);
     });
   }
 }
@@ -91,8 +87,7 @@ export class DragonTouchedFocus extends AbstractWondrous {
     this.rarity = "Uncommon";
     // TODO [FOCUS] While you are holding the focus, it can function as a spellcasting focus for all your spells.
     g.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
-      if (who.equipment.has(this) && who.attunements.has(this))
-        diceType.add("advantage", this);
+      if (isEquipmentAttuned(this, who)) diceType.add("advantage", this);
     });
   }
 }
@@ -156,8 +151,15 @@ export class SilverShiningAmulet extends AbstractWondrous {
     this.attunement = true;
     this.rarity = "Rare";
 
-    // TODO [GETSAVEDC] While you wear the holy symbol, you gain a +1 bonus to spell attack rolls and the saving throw DCs of your spells.
+    const giveBonus: Listener<"BeforeAttack" | "GetSaveDC"> = ({
+      detail: { who, spell, bonus },
+    }) => {
+      if (isEquipmentAttuned(this, who) && spell) bonus.add(1, this);
+    };
+    g.events.on("BeforeAttack", giveBonus);
+    g.events.on("GetSaveDC", giveBonus);
 
     // TODO While you wear this amulet, you can use your Channel Divinity feature without expending one of the feature's uses. Once this property is used, it can't be used again until the next dawn.
+    // TODO The amulet sheds bright light in a 5-foot radius and dim light for an additional 5 feet. You may use a bonus action to change both of these radii to 30 feet, or to restore the original size. This light stays in effect as long as you remain within 100 feet of the amulet.
   }
 }

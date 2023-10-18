@@ -12,7 +12,6 @@ import PointToPointResolver from "../../resolvers/PointToPointResolver";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedCylinder } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
@@ -107,42 +106,39 @@ class MoonbeamController {
   }
 
   getDamager(target: Combatant) {
-    return new EvaluateLater(target, Moonbeam, async () => {
-      if (this.hurtThisTurn.has(target)) return;
-      this.hurtThisTurn.add(target);
+    const { hurtThisTurn, g, slot, caster: attacker, method } = this;
 
-      const damage = await this.g.rollDamage(this.slot, {
-        attacker: this.caster,
+    return new EvaluateLater(target, Moonbeam, async () => {
+      if (hurtThisTurn.has(target)) return;
+      hurtThisTurn.add(target);
+
+      const damage = await g.rollDamage(slot, {
+        attacker,
         damageType: "radiant",
-        method: this.method,
+        method,
         size: 10,
         source: Moonbeam,
         spell: Moonbeam,
         target,
       });
-      const dc = this.method.getSaveDC(this.caster, Moonbeam);
 
       // TODO A shapechanger makes its saving throw with disadvantage.
-      const result = await this.g.savingThrow(dc, {
+      const { damageResponse } = await g.save({
+        source: Moonbeam,
+        type: method.getSaveType(attacker, Moonbeam),
         ability: "con",
-        attacker: this.caster,
-        method: this.method,
+        attacker,
+        method,
         spell: Moonbeam,
         who: target,
-        tags: svSet(),
       });
 
-      await this.g.damage(
+      await g.damage(
         Moonbeam,
         "radiant",
-        {
-          attacker: this.caster,
-          method: this.method,
-          spell: Moonbeam,
-          target: target,
-        },
+        { attacker, method, spell: Moonbeam, target },
         [["radiant", damage]],
-        result.damageResponse,
+        damageResponse,
       );
 
       // TODO If it fails, it also instantly reverts to its original form and can't assume a different form until it leaves the spell's light.

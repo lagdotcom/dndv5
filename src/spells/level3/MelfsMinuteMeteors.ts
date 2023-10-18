@@ -8,7 +8,6 @@ import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Resource from "../../types/Resource";
-import { svSet } from "../../types/SaveTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
@@ -36,21 +35,20 @@ async function fireMeteors(
     method,
     damageType: "fire",
   });
-  const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
-
   for (const point of points) {
     for (const target of g.getInside({
       type: "sphere",
       centre: point,
       radius: 5,
     })) {
-      const save = await g.savingThrow(dc, {
+      const { damageResponse } = await g.save({
+        source: MelfsMinuteMeteors,
+        type: method.getSaveType(attacker, MelfsMinuteMeteors),
         ability: "dex",
         attacker,
         spell: MelfsMinuteMeteors,
         method,
         who: target,
-        tags: svSet(),
       });
 
       await g.damage(
@@ -58,7 +56,7 @@ async function fireMeteors(
         "fire",
         { attacker, target, spell: MelfsMinuteMeteors, method },
         [["fire", damage]],
-        save.damageResponse,
+        damageResponse,
       );
     }
   }

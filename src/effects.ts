@@ -6,7 +6,6 @@ import StandUpAction from "./actions/StandUpAction";
 import { makeIcon } from "./colours";
 import Effect from "./Effect";
 import EvaluateLater from "./interruptions/EvaluateLater";
-import { svSet } from "./types/SaveTag";
 import { distance } from "./utils/units";
 
 export const Dying = new Effect(
@@ -25,15 +24,16 @@ export const Dying = new Effect(
       if (who.hasEffect(Dying))
         interrupt.add(
           new EvaluateLater(who, Dying, async () => {
-            const result = await g.savingThrow(10, {
+            const { outcome, roll } = await g.save({
+              source: Dying,
+              type: { type: "flat", dc: 10 },
               who,
-              tags: svSet("death"),
+              tags: ["death"],
             });
 
-            if (result.roll.value === 20)
-              await g.heal(Dying, 1, { target: who });
-            else if (result.roll.value === 1) await g.failDeathSave(who, 2);
-            else if (result.outcome === "fail") await g.failDeathSave(who);
+            if (roll.value === 20) await g.heal(Dying, 1, { target: who });
+            else if (roll.value === 1) await g.failDeathSave(who, 2);
+            else if (outcome === "fail") await g.failDeathSave(who);
             else await g.succeedDeathSave(who);
           }),
         );

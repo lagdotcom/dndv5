@@ -920,9 +920,6 @@
     if (thing.itemType === "armor")
       return { type: "armor", category: thing.category };
   }
-  function getSaveDC(who, ability) {
-    return 8 + who.pb + who[ability].modifier;
-  }
   var getNaturalArmourMethod = (who, naturalAC) => {
     const uses = /* @__PURE__ */ new Set();
     let ac = naturalAC + who.dex.modifier;
@@ -1312,6 +1309,9 @@
     for (const enchantment of enchantments)
       item.addEnchantment(enchantment);
     return item;
+  }
+  function isEquipmentAttuned(item, who) {
+    return (who == null ? void 0 : who.equipment.has(item)) && who.attunements.has(item);
   }
 
   // src/AbstractCombatant.ts
@@ -1877,9 +1877,6 @@
     }
   };
 
-  // src/types/SaveTag.ts
-  var svSet = (...items) => new Set(items);
-
   // src/effects.ts
   var Dying = new Effect(
     "Dying",
@@ -1896,15 +1893,17 @@
         if (who.hasEffect(Dying))
           interrupt.add(
             new EvaluateLater(who, Dying, async () => {
-              const result = await g.savingThrow(10, {
+              const { outcome, roll } = await g.save({
+                source: Dying,
+                type: { type: "flat", dc: 10 },
                 who,
-                tags: svSet("death")
+                tags: ["death"]
               });
-              if (result.roll.value === 20)
+              if (roll.value === 20)
                 await g.heal(Dying, 1, { target: who });
-              else if (result.roll.value === 1)
+              else if (roll.value === 1)
                 await g.failDeathSave(who, 2);
-              else if (result.outcome === "fail")
+              else if (outcome === "fail")
                 await g.failDeathSave(who);
               else
                 await g.succeedDeathSave(who);
@@ -2336,6 +2335,10 @@
     g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
       bonus.add(who.dex.modifier, AbilityScoreRule);
     });
+    g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
+      if (type.type === "ability" && who)
+        bonus.add(who[type.ability].modifier, AbilityScoreRule);
+    });
   });
   var ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
     g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
@@ -2587,6 +2590,10 @@
         const mul = who.getProficiencyMultiplier(ability);
         bonus.add(who.pb * mul, ProficiencyRule);
       }
+    });
+    g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
+      if (type.type === "ability" && who)
+        bonus.add(who.pb, ProficiencyRule);
     });
   });
   var ResourcesRule = new DndRule("Resources", (g) => {
@@ -2886,6 +2893,13 @@
     }
   };
 
+  // src/events/GetSaveDCEvent.ts
+  var GetSaveDCEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSaveDC", { detail });
+    }
+  };
+
   // src/events/SaveEvent.ts
   var SaveEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2944,6 +2958,9 @@
       return choice;
     }
   };
+
+  // src/types/SaveTag.ts
+  var svSet = (...items) => new Set(items);
 
   // src/utils/map.ts
   function orderedKeys(map, comparator) {
@@ -3584,6 +3601,61 @@
         new CheckVisionEvent({ who, target, error: new ErrorCollector() })
       ).detail.error.result;
     }
+    async getSaveDC(e) {
+      const bonus = new BonusCollector();
+      const interrupt = new InterruptionCollector();
+      switch (e.type.type) {
+        case "ability":
+          bonus.add(8, e.source);
+          break;
+        case "flat":
+          bonus.add(e.type.dc, e.source);
+          break;
+      }
+      const result = await this.resolve(
+        new GetSaveDCEvent({ ...e, bonus, interrupt })
+      );
+      return result.detail;
+    }
+    async save({
+      source,
+      type,
+      attacker,
+      who,
+      ability,
+      spell,
+      method,
+      effect,
+      config,
+      tags,
+      save = "half",
+      fail = "normal"
+    }) {
+      const dcRoll = await this.getSaveDC({
+        type,
+        source,
+        who: attacker,
+        target: who,
+        ability,
+        spell,
+        method
+      });
+      const result = await this.savingThrow(
+        dcRoll.bonus.result,
+        {
+          who,
+          attacker,
+          ability,
+          spell,
+          method,
+          effect,
+          config,
+          tags: new Set(tags)
+        },
+        { save, fail }
+      );
+      return { ...result, dcRoll };
+    }
   };
 
   // src/img/act/eldritch-burst.svg
@@ -3647,8 +3719,8 @@
     getMaxSlot(spell) {
       return spell.level;
     }
-    getSaveDC(caster) {
-      return getSaveDC(caster, this.ability);
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
     }
   };
 
@@ -3857,24 +3929,23 @@
       for (const other of g.getInside(getEldritchBurstArea(g, target))) {
         if (other === target)
           continue;
-        const save = await g.savingThrow(
-          15,
-          {
-            attacker: caster,
-            who: other,
-            ability: "dex",
-            spell: EldritchBurstSpell,
-            method,
-            tags: svSet()
-          },
-          { fail: "normal", save: "zero" }
-        );
+        const { damageResponse } = await g.save({
+          source: EldritchBurstSpell,
+          type: { type: "flat", dc: 15 },
+          attacker: caster,
+          who: other,
+          ability: "dex",
+          spell: EldritchBurstSpell,
+          method,
+          fail: "normal",
+          save: "zero"
+        });
         await g.damage(
           this,
           "force",
           { attacker: caster, target: other, spell: EldritchBurstSpell, method },
           [["force", damage]],
-          save.damageResponse
+          damageResponse
         );
       }
     }
@@ -3995,26 +4066,27 @@
     }
     async apply({ target }) {
       await super.apply({ target });
-      const { g, actor, dc } = this;
+      const { g, actor: attacker, dc } = this;
       const damage = await g.rollDamage(2, {
         source: HellishRebuke,
         size: 10,
-        attacker: actor,
+        attacker,
         target,
         damageType: "fire"
       });
-      const save = await g.savingThrow(dc, {
+      const { damageResponse } = await g.save({
+        source: HellishRebuke,
+        type: { type: "flat", dc },
         who: target,
-        attacker: actor,
-        ability: "dex",
-        tags: svSet()
+        attacker,
+        ability: "dex"
       });
       await g.damage(
         HellishRebuke,
         "fire",
-        { attacker: actor, target },
+        { attacker, target },
         [["fire", damage]],
-        save.damageResponse
+        damageResponse
       );
     }
   };
@@ -4919,15 +4991,15 @@
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor, ability } = this;
-      const dc = getSaveDC(actor, ability);
       const config = { conditions: coSet("Stunned"), duration: 1 };
-      const { outcome } = await g.savingThrow(dc, {
-        ability: "con",
+      const { outcome } = await g.save({
+        source: this,
+        type: { type: "ability", ability },
         attacker: actor,
-        effect: ShieldBashEffect,
-        config,
         who: target,
-        tags: svSet()
+        ability: "con",
+        effect: ShieldBashEffect,
+        config
       });
       if (outcome === "fail")
         await target.addEffect(ShieldBashEffect, config, actor);
@@ -5231,14 +5303,15 @@
     }
     async apply({ target: attacker }) {
       await super.apply({ target: attacker });
-      const dc = getSaveDC(this.actor, "cha");
-      const result = await this.g.savingThrow(dc, {
-        ability: "cha",
+      const { outcome } = await this.g.save({
+        source: this,
+        type: { type: "ability", ability: "cha" },
         attacker: this.actor,
         who: attacker,
-        tags: svSet("charm")
+        ability: "cha",
+        tags: ["charm"]
       });
-      if (result.outcome === "success")
+      if (outcome === "success")
         return;
       const attacks = this.getValidAttacks(attacker);
       const choice = new PickFromListChoice(
@@ -5290,15 +5363,15 @@
     }
     async apply({ target }) {
       await super.apply({ target });
-      const { g, actor } = this;
-      const dc = getSaveDC(actor, "cha");
-      const result = await g.savingThrow(dc, {
+      const { outcome } = await this.g.save({
+        source: this,
+        type: { type: "ability", ability: "cha" },
+        attacker: this.actor,
+        who: target,
         ability: "con",
-        attacker: actor,
-        tags: svSet("concentration"),
-        who: target
+        tags: ["concentration"]
       });
-      if (result.outcome === "fail")
+      if (outcome === "fail")
         await target.endConcentration();
     }
   };
@@ -5512,19 +5585,18 @@
       await Promise.all(promises);
     }
     async knockOver(who) {
-      const { g, actor } = this;
-      const dc = getSaveDC(actor, "str");
       const config = { duration: Infinity, conditions: coSet("Prone") };
-      const result = await g.savingThrow(dc, {
+      const { outcome } = await this.g.save({
+        source: this,
+        type: { type: "ability", ability: "str" },
+        attacker: this.actor,
+        who,
         ability: "dex",
-        attacker: actor,
         effect: Prone,
-        config,
-        tags: svSet(),
-        who
+        config
       });
-      if (result.outcome === "fail")
-        await who.addEffect(Prone, config, actor);
+      if (outcome === "fail")
+        await who.addEffect(Prone, config, this.actor);
     }
   };
   var BullRush = new SimpleFeature(
@@ -6131,13 +6203,13 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       if (item.icon)
         item.icon.colour = ItemRarityColours.Rare;
       g.events.on("TurnStarted", ({ detail: { who } }) => {
-        if (who.equipment.has(item) && who.attunements.has(item))
+        if (isEquipmentAttuned(item, who))
           who.initResource(ChaoticBurstResource);
       });
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, critical, interrupt, map } }) => {
-          if (critical && attacker.equipment.has(item) && attacker.attunements.has(item) && attacker.hasResource(ChaoticBurstResource)) {
+          if (critical && isEquipmentAttuned(item, attacker) && attacker.hasResource(ChaoticBurstResource)) {
             attacker.spendResource(ChaoticBurstResource);
             const a = g.dice.roll({
               source: chaoticBurst,
@@ -6282,14 +6354,15 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       const { g, actor } = this;
       const action = new HissFleeAction(g, target, actor);
       if (checkConfig(g, action, {})) {
-        const dc = getSaveDC(actor, "cha");
-        const save = await g.savingThrow(dc, {
-          who: target,
+        const { outcome } = await g.save({
+          source: this,
+          type: { type: "ability", ability: "cha" },
           attacker: actor,
+          who: target,
           ability: "wis",
-          tags: svSet("frightened", "forced movement")
+          tags: ["frightened", "forced movement"]
         });
-        if (save.outcome === "fail")
+        if (outcome === "fail")
           await g.act(action, {});
       }
     }
@@ -6322,7 +6395,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.attunement = true;
       this.rarity = "Uncommon";
       g.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
-        if (attacker.equipment.has(this) && attacker.attunements.has(this) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
+        if (isEquipmentAttuned(this, attacker) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
           bonus.add(2, this);
       });
     }
@@ -6335,7 +6408,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, response } }) => {
-          if (who.equipment.has(this) && who.attunements.has(this) && damageType === "cold")
+          if (isEquipmentAttuned(this, who) && damageType === "cold")
             response.add("resist", this);
         }
       );
@@ -6347,14 +6420,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.attunement = true;
       this.rarity = "Uncommon";
       g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
-        if (who.equipment.has(this) && who.attunements.has(this))
+        if (isEquipmentAttuned(this, who))
           for (const method of methods) {
             method.ac++;
             method.uses.add(this);
           }
       });
       g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-        if (who.equipment.has(this) && who.attunements.has(this))
+        if (isEquipmentAttuned(this, who))
           bonus.add(1, this);
       });
     }
@@ -6365,7 +6438,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.attunement = true;
       this.rarity = "Uncommon";
       g.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
-        if (who.equipment.has(this) && who.attunements.has(this))
+        if (isEquipmentAttuned(this, who))
           diceType.add("advantage", this);
       });
     }
@@ -6400,6 +6473,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       super(g, "Silver Shining Amulet", 0);
       this.attunement = true;
       this.rarity = "Rare";
+      const giveBonus = ({
+        detail: { who, spell, bonus }
+      }) => {
+        if (isEquipmentAttuned(this, who) && spell)
+          bonus.add(1, this);
+      };
+      g.events.on("BeforeAttack", giveBonus);
+      g.events.on("GetSaveDC", giveBonus);
     }
   };
 
@@ -6710,8 +6791,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       const { resources } = this.getEntry(who);
       return resources[level - 1];
     }
-    getSaveDC(who) {
-      return getSaveDC(who, this.ability);
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
     }
   };
 
@@ -7070,13 +7151,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         size: 10,
         damageType
       });
-      const dc = 8 + attacker.con.modifier + attacker.pb;
       for (const target of g.getInside(getBreathArea(g, attacker, point))) {
-        const save = await g.savingThrow(dc, {
+        const save = await g.save({
+          source: this,
+          type: { type: "ability", ability: "con" },
           attacker,
           who: target,
-          ability: "dex",
-          tags: svSet()
+          ability: "dex"
         });
         await g.damage(
           this,
@@ -7143,16 +7224,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     async apply({ point }) {
       await super.apply({ point });
       const { g, actor } = this;
-      const dc = getSaveDC(actor, "con");
       const config = { conditions: coSet("Incapacitated"), duration: 2 };
       for (const target of g.getInside(getBreathArea(g, actor, point))) {
-        const save = await g.savingThrow(dc, {
+        const save = await g.save({
+          source: this,
+          type: { type: "ability", ability: "con" },
           attacker: actor,
           ability: "con",
           who: target,
           effect: EnervatingBreathEffect,
-          config,
-          tags: svSet()
+          config
         });
         if (!save)
           await target.addEffect(EnervatingBreathEffect, config, actor);
@@ -7170,22 +7251,22 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`
       );
     }
-    async apply(config) {
-      await super.apply(config);
+    async apply({ point }) {
+      await super.apply({ point });
       const { g, actor } = this;
-      const dc = getSaveDC(actor, "con");
-      for (const target of g.getInside(
-        getBreathArea(this.g, actor, config.point)
-      )) {
-        const save = await g.savingThrow(dc, {
+      for (const target of g.getInside(getBreathArea(this.g, actor, point))) {
+        const config = { duration: Infinity };
+        const save = await g.save({
+          source: this,
+          type: { type: "ability", ability: "con" },
           attacker: actor,
           ability: "str",
           who: target,
           effect: Prone,
-          tags: svSet()
+          config
         });
         if (!save) {
-          await target.addEffect(Prone, { duration: Infinity });
+          await target.addEffect(Prone, config);
         }
       }
     }
@@ -7289,24 +7370,23 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         damageType: "acid"
       });
       for (const target of targets) {
-        const save = await g.savingThrow(
-          method.getSaveDC(attacker, AcidSplash),
-          {
-            who: target,
-            attacker,
-            ability: "dex",
-            spell: AcidSplash,
-            method,
-            tags: svSet()
-          },
-          { fail: "normal", save: "zero" }
-        );
+        const { damageResponse } = await g.save({
+          source: AcidSplash,
+          type: method.getSaveType(attacker, AcidSplash),
+          who: target,
+          attacker,
+          ability: "dex",
+          spell: AcidSplash,
+          method,
+          fail: "normal",
+          save: "zero"
+        });
         await g.damage(
           AcidSplash,
           "acid",
           { attacker, target, spell: AcidSplash, method },
           [["acid", damage]],
-          save.damageResponse
+          damageResponse
         );
       }
     }
@@ -7381,26 +7461,25 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         size: 6,
         damageType: "psychic"
       });
-      const save = await g.savingThrow(
-        method.getSaveDC(attacker, MindSliver),
-        {
-          who: target,
-          attacker,
-          ability: "int",
-          spell: MindSliver,
-          method,
-          tags: svSet()
-        },
-        { fail: "normal", save: "zero" }
-      );
+      const { damageResponse, outcome } = await g.save({
+        source: MindSliver,
+        type: method.getSaveType(attacker, MindSliver),
+        who: target,
+        attacker,
+        ability: "int",
+        spell: MindSliver,
+        method,
+        fail: "normal",
+        save: "zero"
+      });
       await g.damage(
         MindSliver,
         "psychic",
         { attacker, target, spell: MindSliver, method },
         [["psychic", damage]],
-        save.damageResponse
+        damageResponse
       );
-      if (save.outcome === "fail") {
+      if (outcome === "fail") {
         let endCounter = 2;
         const removeTurnTracker = g.events.on(
           "TurnEnded",
@@ -7526,26 +7605,24 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         method,
         damageType: "cold"
       });
-      const dc = method.getSaveDC(attacker, IceKnife, slot);
       for (const victim of g.getInside(getIceKnifeArea(g, target))) {
-        const save = await g.savingThrow(
-          dc,
-          {
-            attacker,
-            ability: "dex",
-            spell: IceKnife,
-            method,
-            who: victim,
-            tags: svSet()
-          },
-          { fail: "normal", save: "zero" }
-        );
+        const { damageResponse } = await g.save({
+          source: IceKnife,
+          type: method.getSaveType(attacker, IceKnife, slot),
+          attacker,
+          ability: "dex",
+          spell: IceKnife,
+          method,
+          who: victim,
+          fail: "normal",
+          save: "zero"
+        });
         await g.damage(
           IceKnife,
           "cold",
           { attacker, target: victim, spell: IceKnife, method },
           [["cold", damage]],
-          save.damageResponse
+          damageResponse
         );
       }
     }
@@ -7810,19 +7887,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       const config = who.getEffectConfig(HoldPersonEffect);
       if (config) {
-        const dc = config.method.getSaveDC(config.caster, HoldPerson);
         interrupt.add(
           new EvaluateLater(who, HoldPersonEffect, async () => {
-            const save = await g.savingThrow(dc, {
+            const { outcome } = await g.save({
+              source: HoldPersonEffect,
+              type: config.method.getSaveType(config.caster, HoldPerson),
               who,
               attacker: config.caster,
               ability: "wis",
               spell: HoldPerson,
               effect: HoldPersonEffect,
-              config,
-              tags: svSet()
+              config
             });
-            if (save.outcome === "success") {
+            if (outcome === "success") {
               await who.removeEffect(HoldPersonEffect);
               config.affected.delete(who);
               if (config.affected.size < 1)
@@ -7857,7 +7934,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return ec;
     },
     async apply(g, caster, method, { targets }) {
-      const dc = method.getSaveDC(caster, HoldPerson);
       const affected = /* @__PURE__ */ new Set();
       const duration = minutes(1);
       const conditions = coSet("Paralyzed");
@@ -7869,16 +7945,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           duration,
           conditions
         };
-        const save = await g.savingThrow(dc, {
+        const { outcome } = await g.save({
+          source: HoldPerson,
+          type: method.getSaveType(caster, HoldPerson),
           who: target,
           attacker: caster,
           ability: "wis",
           spell: HoldPerson,
           effect: HoldPersonEffect,
-          config,
-          tags: svSet()
+          config
         });
-        if (save.outcome === "fail" && await target.addEffect(HoldPersonEffect, config))
+        if (outcome === "fail" && await target.addEffect(HoldPersonEffect, config))
           affected.add(target);
       }
       if (affected.size > 0)
@@ -7931,15 +8008,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         damageType: "fire",
         attacker
       });
-      const dc = method.getSaveDC(attacker, Fireball, slot);
       for (const target of g.getInside(getFireballArea(point))) {
-        const save = await g.savingThrow(dc, {
+        const save = await g.save({
+          source: Fireball,
+          type: method.getSaveType(attacker, Fireball, slot),
           attacker,
           ability: "dex",
           spell: Fireball,
           method,
-          who: target,
-          tags: svSet()
+          who: target
         });
         await g.damage(
           Fireball,
@@ -8050,27 +8127,27 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       method,
       damageType: "fire"
     });
-    const dc = method.getSaveDC(attacker, MelfsMinuteMeteors);
     for (const point of points) {
       for (const target of g.getInside({
         type: "sphere",
         centre: point,
         radius: 5
       })) {
-        const save = await g.savingThrow(dc, {
+        const { damageResponse } = await g.save({
+          source: MelfsMinuteMeteors,
+          type: method.getSaveType(attacker, MelfsMinuteMeteors),
           ability: "dex",
           attacker,
           spell: MelfsMinuteMeteors,
           method,
-          who: target,
-          tags: svSet()
+          who: target
         });
         await g.damage(
           MelfsMinuteMeteors,
           "fire",
           { attacker, target, spell: MelfsMinuteMeteors, method },
           [["fire", damage]],
-          save.damageResponse
+          damageResponse
         );
       }
     }
@@ -9005,8 +9082,9 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     }
     async apply() {
       await super.apply({});
-      const dc = this.method.getSaveDC(this.caster, Web);
-      const result = await this.g.abilityCheck(dc, {
+      const type = this.method.getSaveType(this.caster, Web);
+      const dc = await this.g.getSaveDC({ source: Web, type });
+      const result = await this.g.abilityCheck(dc.bonus.result, {
         ability: "str",
         who: this.actor,
         tags: chSet()
@@ -9072,21 +9150,21 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       );
     }
     getWebber(target) {
-      const { caster, method } = this;
+      const { g, caster, method } = this;
       return new EvaluateLater(target, Web, async () => {
         if (this.affectedThisTurn.has(target))
           return;
         this.affectedThisTurn.add(target);
-        const dc = this.method.getSaveDC(this.caster, Web);
-        const result = await this.g.savingThrow(dc, {
+        const { outcome } = await g.save({
+          source: Web,
+          type: this.method.getSaveType(this.caster, Web),
           ability: "dex",
           attacker: caster,
           method,
           spell: Web,
-          who: target,
-          tags: svSet()
+          who: target
         });
-        if (result.outcome === "fail")
+        if (outcome === "fail")
           await target.addEffect(Webbed, {
             caster,
             method,
@@ -9135,7 +9213,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     constructor(g, name, rarity, charges, maxCharges, resource, spell, saveDC, method = {
       name,
       getResourceForSpell: () => resource,
-      getSaveDC: () => saveDC
+      getSaveType: () => ({ type: "flat", dc: saveDC })
     }) {
       super(g, name, 1);
       this.charges = charges;
@@ -9147,7 +9225,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       this.attunement = true;
       this.rarity = rarity;
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who.equipment.has(this) && who.attunements.has(this)) {
+        if (isEquipmentAttuned(this, who)) {
           who.initResource(resource, charges, maxCharges);
           actions.push(new CastSpell(g, who, method, spell));
         }
@@ -10760,17 +10838,17 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         damageType: "lightning",
         attacker
       });
-      const dc = method.getSaveDC(attacker, LightningBolt, slot);
       for (const target of g.getInside(
         getLightningBoltArea(g, attacker, point)
       )) {
-        const save = await g.savingThrow(dc, {
+        const save = await g.save({
+          source: LightningBolt,
+          type: method.getSaveType(attacker, LightningBolt, slot),
           attacker,
           ability: "dex",
           spell: LightningBolt,
           method,
-          who: target,
-          tags: svSet()
+          who: target
         });
         await g.damage(
           LightningBolt,
@@ -11052,15 +11130,15 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         damageType: "cold",
         attacker
       });
-      const dc = method.getSaveDC(attacker, ConeOfCold, slot);
       for (const target of g.getInside(getConeOfColdArea(g, attacker, point))) {
-        const save = await g.savingThrow(dc, {
+        const save = await g.save({
+          source: ConeOfCold,
+          type: method.getSaveType(attacker, ConeOfCold, slot),
           attacker,
           ability: "con",
           spell: ConeOfCold,
           method,
-          who: target,
-          tags: svSet()
+          who: target
         });
         await g.damage(
           ConeOfCold,
@@ -11261,7 +11339,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.hoodUp = hoodUp;
       this.attunement = true;
       this.rarity = "Uncommon";
-      const cloaked = (who) => who && who.equipment.has(this) && who.attunements.has(this) && this.hoodUp;
+      const cloaked = (who) => isEquipmentAttuned(this, who) && this.hoodUp;
       g.events.on(
         "BeforeCheck",
         ({ detail: { who, target, skill, diceType } }) => {
@@ -11272,7 +11350,7 @@ The creature is aware of this effect before it makes its attack against you.`
         }
       );
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who.equipment.has(this) && who.attunements.has(this))
+        if (isEquipmentAttuned(this, who))
           actions.push(new CloakHoodAction(g, who, this));
       });
     }
@@ -11551,21 +11629,19 @@ The creature is aware of this effect before it makes its attack against you.`
         damageType: "bludgeoning",
         attacker
       });
-      const dc = method.getSaveDC(attacker, EarthTremor, slot);
       const shape = getEarthTremorArea(g, attacker);
       for (const target of g.getInside(shape, [attacker])) {
-        const save = await g.savingThrow(
-          dc,
-          {
-            attacker,
-            ability: "dex",
-            spell: EarthTremor,
-            method,
-            who: target,
-            tags: svSet()
-          },
-          { fail: "normal", save: "zero" }
-        );
+        const save = await g.save({
+          source: EarthTremor,
+          type: method.getSaveType(attacker, EarthTremor, slot),
+          attacker,
+          ability: "dex",
+          spell: EarthTremor,
+          method,
+          who: target,
+          fail: "normal",
+          save: "zero"
+        });
         if (save.damageResponse !== "zero") {
           await g.damage(
             EarthTremor,
@@ -11692,39 +11768,35 @@ The creature is aware of this effect before it makes its attack against you.`
       );
     }
     getDamager(target) {
+      const { hurtThisTurn, g, slot, caster: attacker, method } = this;
       return new EvaluateLater(target, Moonbeam, async () => {
-        if (this.hurtThisTurn.has(target))
+        if (hurtThisTurn.has(target))
           return;
-        this.hurtThisTurn.add(target);
-        const damage = await this.g.rollDamage(this.slot, {
-          attacker: this.caster,
+        hurtThisTurn.add(target);
+        const damage = await g.rollDamage(slot, {
+          attacker,
           damageType: "radiant",
-          method: this.method,
+          method,
           size: 10,
           source: Moonbeam,
           spell: Moonbeam,
           target
         });
-        const dc = this.method.getSaveDC(this.caster, Moonbeam);
-        const result = await this.g.savingThrow(dc, {
+        const { damageResponse } = await g.save({
+          source: Moonbeam,
+          type: method.getSaveType(attacker, Moonbeam),
           ability: "con",
-          attacker: this.caster,
-          method: this.method,
+          attacker,
+          method,
           spell: Moonbeam,
-          who: target,
-          tags: svSet()
+          who: target
         });
-        await this.g.damage(
+        await g.damage(
           Moonbeam,
           "radiant",
-          {
-            attacker: this.caster,
-            method: this.method,
-            spell: Moonbeam,
-            target
-          },
+          { attacker, method, spell: Moonbeam, target },
           [["radiant", damage]],
-          result.damageResponse
+          damageResponse
         );
       });
     }
@@ -11807,16 +11879,16 @@ The creature is aware of this effect before it makes its attack against you.`
         damageType: "bludgeoning",
         attacker
       });
-      const dc = method.getSaveDC(attacker, EruptingEarth, slot);
-      const shape = getEruptingEarthArea(g, point);
+      const shape = getEruptingEarthArea(point);
       for (const target of g.getInside(shape)) {
-        const save = await g.savingThrow(dc, {
+        const save = await g.save({
+          source: EruptingEarth,
+          type: method.getSaveType(attacker, EruptingEarth, slot),
           attacker,
           ability: "dex",
           spell: EruptingEarth,
           method,
-          who: target,
-          tags: svSet()
+          who: target
         });
         await g.damage(
           EruptingEarth,
@@ -12187,9 +12259,7 @@ The creature is aware of this effect before it makes its attack against you.`
   var scale = (0, import_signals.signal)(20);
   var showSideHP = (0, import_signals.signal)([0]);
   var teleportInfo = (0, import_signals.signal)(void 0);
-  var wantsCombatant = (0, import_signals.signal)(
-    void 0
-  );
+  var wantsCombatant = (0, import_signals.signal)(void 0);
   var wantsPoint = (0, import_signals.signal)(void 0);
   window.state = {
     actionAreas,

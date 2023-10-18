@@ -7,7 +7,6 @@ import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -48,20 +47,20 @@ const LightningBolt = scalingSpell<HasPoint>({
       damageType: "lightning",
       attacker,
     });
-    const dc = method.getSaveDC(attacker, LightningBolt, slot);
 
     // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.
 
     for (const target of g.getInside(
       getLightningBoltArea(g, attacker, point),
     )) {
-      const save = await g.savingThrow(dc, {
+      const save = await g.save({
+        source: LightningBolt,
+        type: method.getSaveType(attacker, LightningBolt, slot),
         attacker,
         ability: "dex",
         spell: LightningBolt,
         method,
         who: target,
-        tags: svSet(),
       });
 
       await g.damage(

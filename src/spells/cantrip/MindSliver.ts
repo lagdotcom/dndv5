@@ -1,10 +1,9 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
+import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { svSet } from "../../types/SaveTag";
 import { _dd } from "../../utils/dice";
-import { canSee, notSelf } from "../../filters";
 import { getCantripDice, simpleSpell } from "../common";
 
 const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
@@ -48,27 +47,26 @@ const MindSliver = simpleSpell<HasTarget>({
       damageType: "psychic",
     });
 
-    const save = await g.savingThrow(
-      method.getSaveDC(attacker, MindSliver),
-      {
-        who: target,
-        attacker,
-        ability: "int",
-        spell: MindSliver,
-        method,
-        tags: svSet(),
-      },
-      { fail: "normal", save: "zero" },
-    );
+    const { damageResponse, outcome } = await g.save({
+      source: MindSliver,
+      type: method.getSaveType(attacker, MindSliver),
+      who: target,
+      attacker,
+      ability: "int",
+      spell: MindSliver,
+      method,
+      fail: "normal",
+      save: "zero",
+    });
     await g.damage(
       MindSliver,
       "psychic",
       { attacker, target, spell: MindSliver, method },
       [["psychic", damage]],
-      save.damageResponse,
+      damageResponse,
     );
 
-    if (save.outcome === "fail") {
+    if (outcome === "fail") {
       let endCounter = 2;
       const removeTurnTracker = g.events.on(
         "TurnEnded",

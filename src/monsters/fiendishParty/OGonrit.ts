@@ -10,6 +10,7 @@ import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
 import { FightingStyleProtection } from "../../features/fightingStyles";
 import SimpleFeature from "../../features/SimpleFeature";
+import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { Shield, SplintArmor } from "../../items/armor";
 import { Mace } from "../../items/weapons";
@@ -21,9 +22,6 @@ import MassHealingWord from "../../spells/level3/MassHealingWord";
 import AbilityName from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
-import { svSet } from "../../types/SaveTag";
-import { getSaveDC } from "../../utils/dnd";
-import { isEnemy } from "../../filters";
 import { distance } from "../../utils/units";
 import { FiendishParty } from "./common";
 
@@ -94,17 +92,16 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
     await super.apply({ target });
 
     const { g, actor, ability } = this;
-    const dc = getSaveDC(actor, ability);
     const config = { conditions: coSet("Stunned"), duration: 1 };
-    const { outcome } = await g.savingThrow(dc, {
-      ability: "con",
+    const { outcome } = await g.save({
+      source: this,
+      type: { type: "ability", ability },
       attacker: actor,
-      effect: ShieldBashEffect,
-      config,
       who: target,
-      tags: svSet(),
+      ability: "con",
+      effect: ShieldBashEffect,
+      config: config,
     });
-
     if (outcome === "fail")
       await target.addEffect(ShieldBashEffect, config, actor);
   }

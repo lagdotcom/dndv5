@@ -6,9 +6,9 @@ import Combatant from "../types/Combatant";
 import Icon from "../types/Icon";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
+import SaveType from "../types/SaveType";
 import Spell, { SpellList } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
-import { getSaveDC } from "../utils/dnd";
 import { enumerate } from "../utils/numbers";
 
 type SpellcastingStrength = "full" | "half";
@@ -161,7 +161,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     return resources[level - 1];
   }
 
-  getSaveDC(who: Combatant) {
-    return getSaveDC(who, this.ability);
+  getSaveType(): SaveType {
+    return { type: "ability", ability: this.ability };
   }
 }

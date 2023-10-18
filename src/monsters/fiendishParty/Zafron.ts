@@ -7,7 +7,7 @@ import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
 import Engine from "../../Engine";
-import { EventListener } from "../../events/Dispatcher";
+import { Listener } from "../../events/Dispatcher";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
@@ -21,8 +21,6 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { WeaponItem } from "../../types/Item";
-import { svSet } from "../../types/SaveTag";
-import { getSaveDC } from "../../utils/dnd";
 import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
 
@@ -130,19 +128,17 @@ class BullRushAction extends AbstractAction {
   }
 
   async knockOver(who: Combatant) {
-    const { g, actor } = this;
-
-    const dc = getSaveDC(actor, "str");
     const config = { duration: Infinity, conditions: coSet("Prone") };
-    const result = await g.savingThrow(dc, {
+    const { outcome } = await this.g.save({
+      source: this,
+      type: { type: "ability", ability: "str" },
+      attacker: this.actor,
+      who: who,
       ability: "dex",
-      attacker: actor,
       effect: Prone,
-      config,
-      tags: svSet(),
-      who,
+      config: config,
     });
-    if (result.outcome === "fail") await who.addEffect(Prone, config, actor);
+    if (outcome === "fail") await who.addEffect(Prone, config, this.actor);
   }
 }
 
@@ -162,7 +158,7 @@ const SurvivalReflex = new SimpleFeature(
   (g, me) => {
     let activated = false;
 
-    const useReflex: EventListener<"BeforeCheck" | "BeforeSave"> = ({
+    const useReflex: Listener<"BeforeCheck" | "BeforeSave"> = ({
       detail: { who, interrupt, diceType },
     }) => {
       // TODO make this into an actual reaction?
