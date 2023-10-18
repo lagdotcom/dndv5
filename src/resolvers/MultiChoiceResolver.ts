@@ -26,8 +26,7 @@ export default class MultiChoiceResolver<T> implements Resolver<T[]> {
 
   check(value: unknown, action: Action, ec: ErrorCollector) {
     if (this.entries.length === 0) ec.add("No valid choices", this);
-
-    if (!Array.isArray(value)) ec.add("No choices", this);
+    else if (!Array.isArray(value)) ec.add("No choices", this);
     else {
       if (value.length < this.minimum)
         ec.add(`At least ${this.minimum} choices`, this);
