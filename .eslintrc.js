@@ -33,6 +33,7 @@ module.exports = {
     "plugin:sonarjs/recommended",
   ],
   rules: {
+    "object-shorthand": ["error", "always"],
     "prettier/prettier": ["error", { endOfLine: "crlf" }],
     "simple-import-sort/imports": "error",
     "simple-import-sort/exports": "error",

@@ -133,10 +133,10 @@ class BullRushAction extends AbstractAction {
       source: this,
       type: { type: "ability", ability: "str" },
       attacker: this.actor,
-      who: who,
+      who,
       ability: "dex",
       effect: Prone,
-      config: config,
+      config,
     });
     if (outcome === "fail") await who.addEffect(Prone, config, this.actor);
   }

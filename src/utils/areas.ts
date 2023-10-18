@@ -53,10 +53,10 @@ export function getRectangleAsPolygon(
   height: number,
 ): Point[] {
   return [
-    { x: x, y: y },
+    { x, y },
     { x: x + width, y },
     { x: x + width, y: y + height },
-    { x: x, y: y + height },
+    { x, y: y + height },
   ];
 }
 

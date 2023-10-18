@@ -100,7 +100,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       who: target,
       ability: "con",
       effect: ShieldBashEffect,
-      config: config,
+      config,
     });
     if (outcome === "fail")
       await target.addEffect(ShieldBashEffect, config, actor);
