@@ -1,3 +1,4 @@
+import AttackOutcomeCollector from "../collectors/AttackOutcomeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import { AttackRoll } from "../types/RollType";
 import { BeforeAttackDetail } from "./BeforeAttackEvent";
@@ -8,8 +9,7 @@ export interface AttackDetail {
   roll: DiceRolledDetail<AttackRoll>;
   total: number;
   ac: number;
-  outcome: "critical" | "hit" | "miss";
-  forced: boolean;
+  outcome: AttackOutcomeCollector;
   interrupt: InterruptionCollector;
 }
 

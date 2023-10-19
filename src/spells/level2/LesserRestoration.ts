@@ -1,17 +1,12 @@
 import { HasTarget } from "../../configs";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
-import ConditionName from "../../types/ConditionName";
+import { coSet } from "../../types/ConditionName";
 import EffectType from "../../types/EffectType";
 import { intersects } from "../../utils/set";
 import { simpleSpell } from "../common";
 
-const validConditions = new Set<ConditionName>([
-  "Blinded",
-  "Deafened",
-  "Paralyzed",
-  "Poisoned",
-]);
+const validConditions = coSet("Blinded", "Deafened", "Paralyzed", "Poisoned");
 
 type HasEffect = { effect: EffectType };
 

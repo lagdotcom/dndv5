@@ -1,8 +1,10 @@
 import { HalfSquareSize } from "./MapSquare";
 import Point from "./types/Point";
-import { mapSet } from "./utils/set";
+import { mapSet, SetInitialiser } from "./utils/set";
 
-function asPoint(tag: string): Point {
+type PointTag = string;
+
+function asPoint(tag: PointTag): Point {
   const [x, y] = tag.split(",").map(Number);
   return { x, y };
 }
@@ -10,9 +12,9 @@ function asPoint(tag: string): Point {
 const asTag = ({ x, y }: Point) => `${x},${y}`;
 
 export default class PointSet {
-  set: Set<string>;
+  set: Set<PointTag>;
 
-  constructor(points: Iterable<Point> = []) {
+  constructor(points: SetInitialiser<Point> = []) {
     this.set = new Set(mapSet(points, asTag));
   }
 

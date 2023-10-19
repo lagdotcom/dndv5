@@ -3,12 +3,13 @@ import Engine from "./Engine";
 import { EffectTag } from "./types/EffectTag";
 import EffectType, { EffectDurationTimer } from "./types/EffectType";
 import Icon from "./types/Icon";
+import { SetInitialiser } from "./utils/set";
 
 interface EffectConfig {
   durationTimer?: EffectDurationTimer;
   quiet?: boolean;
   icon?: Icon;
-  tags?: EffectTag[];
+  tags?: SetInitialiser<EffectTag>;
 }
 
 export default class Effect<T = object> implements EffectType<T> {
@@ -22,7 +23,7 @@ export default class Effect<T = object> implements EffectType<T> {
     public name: string,
     public durationTimer: EffectDurationTimer,
     setup?: (g: Engine) => void,
-    { quiet = false, icon, tags = [] }: EffectConfig = {},
+    { quiet = false, icon, tags }: EffectConfig = {},
   ) {
     this.quiet = quiet;
     this.icon = icon;

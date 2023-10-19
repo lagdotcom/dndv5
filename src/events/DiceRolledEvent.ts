@@ -1,4 +1,5 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import ValueCollector from "../collectors/ValueCollector";
 import DiceType from "../types/DiceType";
 import RollType from "../types/RollType";
 
@@ -6,8 +7,7 @@ export interface DiceRolledDetail<T extends RollType> {
   type: T;
   diceType: DiceType;
   size: number;
-  value: number;
-  otherValues: number[];
+  values: ValueCollector;
   interrupt: InterruptionCollector;
 }
 

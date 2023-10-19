@@ -91,6 +91,31 @@
     }
   };
 
+  // src/collectors/AttackOutcomeCollector.ts
+  var AttackOutcomeCollector = class extends AbstractSumCollector {
+    setDefaultGetter(getter) {
+      this.defaultGet = getter;
+      return this;
+    }
+    getDefaultResult() {
+      if (this.defaultGet)
+        return this.defaultGet();
+      throw new Error("AttackOutcomeCollector.setDefaultGetter() not called");
+    }
+    getSum(values) {
+      if (values.includes("miss"))
+        return "miss";
+      if (values.includes("critical"))
+        return "critical";
+      if (values.includes("hit"))
+        return "hit";
+      return this.getDefaultResult();
+    }
+    get hits() {
+      return this.result !== "miss";
+    }
+  };
+
   // src/collectors/BonusCollector.ts
   var BonusCollector = class extends AbstractSumCollector {
     getSum(values) {
@@ -222,6 +247,26 @@
     }
   };
 
+  // src/collectors/ValueCollector.ts
+  var comparators = {
+    higher: (o2, n) => n > o2,
+    lower: (o2, n) => n < o2
+  };
+  var ValueCollector = class {
+    constructor(final) {
+      this.final = final;
+      this.others = [];
+    }
+    add(value, prefer) {
+      const comparator = comparators[prefer];
+      if (comparator(this.final, value)) {
+        this.others.push(this.final);
+        this.final = value;
+      } else
+        this.others.push(value);
+    }
+  };
+
   // src/DiceBag.ts
   function matches(rt, m) {
     for (const [field, value] of Object.entries(m)) {
@@ -264,17 +309,14 @@
     roll(rt, dt = "normal") {
       var _a, _b;
       const size = sizeOfDice(rt);
-      let value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
-      const otherValues = [];
+      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
+      const values = new ValueCollector(value);
       if (dt !== "normal") {
         const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
-        if (dt === "advantage" && second > value || dt === "disadvantage" && value > second) {
-          otherValues.push(value);
-          value = second;
-        } else
-          otherValues.push(second);
+        const prefer = dt === "advantage" ? "higher" : "lower";
+        values.add(second, prefer);
       }
-      return { size, value, otherValues };
+      return { size, values };
     }
   };
 
@@ -337,7 +379,7 @@
 
   // src/Effect.ts
   var Effect = class {
-    constructor(name, durationTimer, setup, { quiet = false, icon, tags = [] } = {}) {
+    constructor(name, durationTimer, setup, { quiet = false, icon, tags } = {}) {
       this.name = name;
       this.durationTimer = durationTimer;
       this.quiet = quiet;
@@ -587,8 +629,9 @@
       yield fn(item, index++, values);
   }
   function mergeSets(destination, source) {
-    for (const item of source != null ? source : [])
-      destination.add(item);
+    if (source)
+      for (const item of source)
+        destination.add(item);
   }
 
   // src/PointSet.ts
@@ -1351,9 +1394,9 @@
       strScore = 10,
       wisScore = 10,
       naturalAC = 10,
-      rules = [],
-      coefficients = [],
-      groups = []
+      rules,
+      coefficients,
+      groups
     }) {
       this.g = g;
       this.name = name;
@@ -1893,15 +1936,18 @@
         if (who.hasEffect(Dying))
           interrupt.add(
             new EvaluateLater(who, Dying, async () => {
-              const { outcome, roll } = await g.save({
+              const {
+                outcome,
+                roll: { values }
+              } = await g.save({
                 source: Dying,
                 type: { type: "flat", dc: 10 },
                 who,
                 tags: ["death"]
               });
-              if (roll.value === 20)
+              if (values.final === 20)
                 await g.heal(Dying, 1, { target: who });
-              else if (roll.value === 1)
+              else if (values.final === 1)
                 await g.failDeathSave(who, 2);
               else if (outcome === "fail")
                 await g.failDeathSave(who);
@@ -2361,9 +2407,9 @@
       if (who.conditions.has("Blinded"))
         error.add("cannot see", BlindedRule);
     });
-    g.events.on("BeforeCheck", ({ detail }) => {
-      if (detail.who.conditions.has("Blinded") && detail.tags.has("sight"))
-        detail.successResponse.add("fail", BlindedRule);
+    g.events.on("BeforeCheck", ({ detail: { who, tags, successResponse } }) => {
+      if (who.conditions.has("Blinded") && tags.has("sight"))
+        successResponse.add("fail", BlindedRule);
     });
     g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
       if (target.conditions.has("Blinded"))
@@ -2538,12 +2584,14 @@
     if (who.conditions.has(condition) && ability && abilities.includes(ability))
       successResponse.add("fail", rule);
   };
-  var autoCrit = (g, condition, rule, maxRange = 5) => ({ detail }) => {
-    const { who, target } = detail.pre;
-    if (target.conditions.has(condition) && distance(g, who, target) <= maxRange && detail.outcome === "hit") {
-      detail.forced = true;
-      detail.outcome = "critical";
+  var autoCrit = (g, condition, rule, maxRange = 5) => ({
+    detail: {
+      pre: { who, target },
+      outcome
     }
+  }) => {
+    if (target.conditions.has(condition) && distance(g, who, target) <= maxRange)
+      outcome.add("critical", rule);
   };
   var ParalyzedRule = new DndRule("Paralyzed", (g) => {
     g.events.on("BeforeMove", ({ detail: { who, error } }) => {
@@ -2558,9 +2606,9 @@
       "BeforeSave",
       autoFail("Paralyzed", ParalyzedRule, ["str", "dex"])
     );
-    g.events.on("BeforeAttack", ({ detail }) => {
-      if (detail.target.conditions.has("Paralyzed"))
-        detail.diceType.add("advantage", ParalyzedRule);
+    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+      if (target.conditions.has("Paralyzed"))
+        diceType.add("advantage", ParalyzedRule);
     });
     g.events.on("Attack", autoCrit(g, "Paralyzed", ParalyzedRule));
   });
@@ -2777,6 +2825,13 @@
   var CombatantHealedEvent = class extends CustomEvent {
     constructor(detail) {
       super("CombatantHealed", { detail });
+    }
+  };
+
+  // src/events/CombatantInitiativeEvent.ts
+  var CombatantInitiativeEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantInitiative", { detail });
     }
   };
 
@@ -3031,7 +3086,7 @@
       const rolls = await Promise.all(
         Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e))
       );
-      return rolls.reduce((acc, roll) => acc + roll.value, 0);
+      return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
     }
     async rollDamage(count, e, critical = false) {
       return this.rollMany(count, { ...e, type: "damage" }, critical);
@@ -3048,11 +3103,11 @@
           interrupt: new InterruptionCollector()
         })
       );
-      const roll = await this.roll(
-        { type: "initiative", who },
-        gi.detail.diceType.result
-      );
-      return roll.value + gi.detail.bonus.result;
+      const diceType = gi.detail.diceType.result;
+      const roll = await this.roll({ type: "initiative", who }, diceType);
+      const value = roll.values.final + gi.detail.bonus.result;
+      this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
+      return value;
     }
     async savingThrow(dc, e, { save, fail } = {
       save: "half",
@@ -3078,7 +3133,7 @@
       let forced = false;
       let success = false;
       const roll = await this.roll({ type: "save", ...e }, diceType.result);
-      const total = roll.value + bonus.result;
+      const total = roll.values.final + bonus.result;
       if (successResponse.result !== "normal") {
         success = successResponse.result === "success";
         forced = true;
@@ -3121,7 +3176,7 @@
       let forced = false;
       let success = false;
       const roll = await this.roll({ type: "check", ...e }, diceType.result);
-      const total = roll.value + bonus.result;
+      const total = roll.values.final + bonus.result;
       if (successResponse.result !== "normal") {
         success = successResponse.result === "success";
         forced = true;
@@ -3411,20 +3466,25 @@
         },
         pre.detail.diceType.result
       );
-      const total = roll.value + pre.detail.bonus.result;
-      const attack = await this.resolve(
-        new AttackEvent({
-          pre: pre.detail,
-          roll,
-          total,
-          ac,
-          outcome: this.getAttackOutcome(ac, roll.value, total),
-          forced: false,
-          // TODO
-          interrupt: new InterruptionCollector()
-        })
+      const total = roll.values.final + pre.detail.bonus.result;
+      const outcomeCollector = new AttackOutcomeCollector();
+      const event = new AttackEvent({
+        pre: pre.detail,
+        roll,
+        total,
+        ac,
+        outcome: outcomeCollector,
+        interrupt: new InterruptionCollector()
+      });
+      outcomeCollector.setDefaultGetter(
+        () => this.getAttackOutcome(
+          event.detail.ac,
+          event.detail.roll.values.final,
+          event.detail.total
+        )
       );
-      const { outcome } = attack.detail;
+      const attack = await this.resolve(event);
+      const outcome = outcomeCollector.result;
       return {
         outcome,
         attack: attack.detail,
@@ -4286,7 +4346,7 @@
 
   // src/items/weapons.ts
   var AbstractWeapon = class extends AbstractItem {
-    constructor(g, name, category, rangeCategory, damage, properties = [], iconUrl, shortRange, longRange) {
+    constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange) {
       super(g, "weapon", name, 1, iconUrl);
       this.g = g;
       this.category = category;
@@ -5106,7 +5166,7 @@
   });
   var BoundedMove = class {
     constructor(source, maximum, {
-      cannotApproach = [],
+      cannotApproach,
       mustUseAll = false,
       provokesOpportunityAttacks = true,
       teleportation = false
@@ -6216,13 +6276,13 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
               type: "damage",
               attacker,
               size: 8
-            }).value;
+            }).values.final;
             const b = g.dice.roll({
               source: chaoticBurst,
               type: "damage",
               attacker,
               size: 8
-            }).value;
+            }).values.final;
             const addBurst = (type) => map.add(type, a + b);
             if (a === b)
               addBurst(chaoticBurstTypes[a - 1]);
@@ -6251,7 +6311,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       if (item.icon)
         item.icon.colour = ItemRarityColours.Rare;
       g.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
-        if (weapon === item && (attack == null ? void 0 : attack.roll.value) === 20)
+        if (weapon === item && (attack == null ? void 0 : attack.roll.values.final) === 20)
           bonus.add(7, vicious);
       });
     }
@@ -6264,7 +6324,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       new YesNoChoice(who, Lucky, "Lucky", message, async () => {
         who.spendResource(LuckPoint);
         const nr = await g.roll({ type: "luck", who });
-        callback(nr.value);
+        callback(nr.values.final);
       })
     );
   }
@@ -6277,35 +6337,22 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 - You regain your expended luck points when you finish a long rest.`,
     (g, me) => {
       me.initResource(LuckPoint);
-      g.events.on("DiceRolled", ({ detail }) => {
-        const { type, interrupt, value } = detail;
+      g.events.on("DiceRolled", ({ detail: { type, interrupt, values } }) => {
         if ((type.type === "attack" || type.type === "check" || type.type === "save") && type.who === me && me.hasResource(LuckPoint))
           addLuckyOpportunity(
             g,
             me,
-            `${me.name} got ${value} on a ${type.type} roll. Use a Luck point to re-roll?`,
+            `${me.name} got ${values.final} on a ${type.type} roll. Use a Luck point to re-roll?`,
             interrupt,
-            (roll) => {
-              if (roll > value) {
-                detail.otherValues.push(value);
-                detail.value = roll;
-              } else
-                detail.otherValues.push(roll);
-            }
+            (roll) => values.add(roll, "higher")
           );
         if (type.type === "attack" && type.target === me && me.hasResource(LuckPoint))
           addLuckyOpportunity(
             g,
             me,
-            `${type.who.name} got ${value} on an attack roll against ${me.name}. Use a Luck point to re-roll?`,
+            `${type.who.name} got ${values.final} on an attack roll against ${me.name}. Use a Luck point to re-roll?`,
             interrupt,
-            (roll) => {
-              if (roll < value) {
-                detail.otherValues.push(value);
-                detail.value = roll;
-              } else
-                detail.otherValues.push(roll);
-            }
+            (roll) => values.add(roll, "lower")
           );
       });
     }
@@ -7428,8 +7475,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
     g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
       if (who.hasEffect(MindSliverEffect)) {
-        const { value } = g.dice.roll({ type: "bane", who });
-        bonus.add(-value, MindSliver);
+        const { values } = g.dice.roll({ type: "bane", who });
+        bonus.add(-values.final, MindSliver);
         interrupt.add(
           new EvaluateLater(who, MindSliverEffect, async () => {
             who.removeEffect(MindSliverEffect);
@@ -7768,16 +7815,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         );
       };
       g.events.on("Attack", ({ detail }) => {
-        const { target, who, bonus } = detail.pre;
-        if (!target.hasEffect(ShieldEffect) && detail.outcome === "hit")
+        const { target, who } = detail.pre;
+        if (!target.hasEffect(ShieldEffect) && detail.outcome.hits)
           check(
             `${who.name} hit ${target.name} with an attack.`,
             target,
             detail.interrupt,
             async () => {
               const ac = await g.getAC(target, detail.pre);
-              const roll = detail.roll.value;
-              detail.outcome = g.getAttackOutcome(ac, roll, roll + bonus.result);
+              detail.ac = ac;
             }
           );
       });
@@ -9099,12 +9145,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var Sanctuary_default = Sanctuary;
 
   // src/spells/level2/LesserRestoration.ts
-  var validConditions = /* @__PURE__ */ new Set([
-    "Blinded",
-    "Deafened",
-    "Paralyzed",
-    "Poisoned"
-  ]);
+  var validConditions = coSet("Blinded", "Deafened", "Paralyzed", "Poisoned");
   var LesserRestoration = simpleSpell({
     status: "implemented",
     name: "Lesser Restoration",
@@ -9484,8 +9525,8 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   var BlessIcon = makeIcon(bless_default);
   function applyBless(g, who, bonus) {
     if (who.hasEffect(BlessEffect)) {
-      const dr = g.dice.roll({ type: "bless", who });
-      bonus.add(dr.value, BlessEffect);
+      const { values } = g.dice.roll({ type: "bless", who });
+      bonus.add(values.final, BlessEffect);
     }
   }
   var BlessEffect = new Effect(
@@ -10083,11 +10124,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
       });
     }
   );
-  var dangerSenseConditions = /* @__PURE__ */ new Set([
-    "Blinded",
-    "Deafened",
-    "Incapacitated"
-  ]);
+  var dangerSenseConditions = coSet("Blinded", "Deafened", "Incapacitated");
   var DangerSense = new SimpleFeature(
     "Danger Sense",
     `At 2nd level, you gain an uncanny sense of when things nearby aren't as they should be, giving you an edge when you dodge away from danger. You have advantage on Dexterity saving throws against effects that you can see, such as traps and spells. To gain this benefit, you can't be blinded, deafened, or incapacitated.`,
@@ -10459,8 +10496,8 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`,
     (g, me) => {
       g.events.on("DiceRolled", ({ detail }) => {
-        const { otherValues, type: t, value, interrupt } = detail;
-        if ((t.type === "attack" || t.type === "check" || t.type === "save") && t.who === me && value === 1)
+        const { type: t, values, interrupt } = detail;
+        if ((t.type === "attack" || t.type === "check" || t.type === "save") && t.who === me && values.final === 1)
           interrupt.add(
             new YesNoChoice(
               me,
@@ -10468,9 +10505,8 @@ If the creature succeeds on its saving throw, you can't use this feature on that
               "Lucky",
               `${me.name} rolled a 1 on a ${t.type} check. Reroll it?`,
               async () => {
-                const newRoll = g.dice.roll(t).value;
-                otherValues.push(value);
-                detail.value = newRoll;
+                const newRoll = g.dice.roll(t).values.final;
+                values.add(newRoll, "higher");
               }
             )
           );
@@ -10627,9 +10663,9 @@ If the creature succeeds on its saving throw, you can't use this feature on that
           }
         }),
         // You can't cast spells
-        g.events.on("CheckAction", ({ detail }) => {
-          if (detail.action.actor === me && detail.action.isSpell)
-            detail.error.add("cannot cast spells", WildShape);
+        g.events.on("CheckAction", ({ detail: { action, error } }) => {
+          if (action.actor === me && action.isSpell)
+            error.add("cannot cast spells", WildShape);
         })
       );
     }
@@ -13613,7 +13649,7 @@ The creature is aware of this effect before it makes its attack against you.`
     outcome
   }) => [
     msgCombatant(who),
-    outcome === "miss" ? " misses " : outcome === "hit" ? " hits " : " CRITICALLY hits ",
+    outcome.result === "miss" ? " misses " : outcome.result === "hit" ? " hits " : " CRITICALLY hits ",
     msgCombatant(target, true),
     msgDiceType(roll.diceType),
     msgWeapon(weapon),
@@ -13670,10 +13706,10 @@ The creature is aware of this effect before it makes its attack against you.`
   ];
   var getInitiativeMessage = ({
     diceType,
-    type,
+    who,
     value
   }) => [
-    msgCombatant(type.who),
+    msgCombatant(who),
     ` gets a ${value}`,
     msgDiceType(diceType),
     " for initiative."
@@ -13708,6 +13744,17 @@ The creature is aware of this effect before it makes its attack against you.`
     `now has ${value ? value : "no"} exhaustion.`
   ];
 
+  // src/ui/utils/UIResponse.ts
+  var UISource = { name: "UI" };
+  var UIResponse = class {
+    constructor(who, apply) {
+      this.who = who;
+      this.apply = apply;
+      this.source = UISource;
+      this.priority = 0;
+    }
+  };
+
   // src/ui/EventLog.tsx
   function LogMessage({ message }) {
     const text = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.text).join("");
@@ -13730,7 +13777,12 @@ The creature is aware of this effect before it makes its attack against you.`
     (0, import_hooks11.useEffect)(() => {
       g.events.on(
         "Attack",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAttackMessage(detail) }))
+        ({ detail }) => detail.interrupt.add(
+          new UIResponse(
+            detail.pre.who,
+            async () => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAttackMessage(detail) }))
+          )
+        )
       );
       g.events.on(
         "CombatantDamaged",
@@ -13756,18 +13808,8 @@ The creature is aware of this effect before it makes its attack against you.`
         "SpellCast",
         ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getCastMessage(detail) }))
       );
-      g.events.on("DiceRolled", ({ detail }) => {
-        if (detail.type.type === "initiative")
-          addMessage(
-            /* @__PURE__ */ o(
-              LogMessage,
-              {
-                message: getInitiativeMessage(
-                  detail
-                )
-              }
-            )
-          );
+      g.events.on("CombatantInitiative", ({ detail }) => {
+        addMessage(/* @__PURE__ */ o(LogMessage, { message: getInitiativeMessage(detail) }));
       });
       g.events.on(
         "AbilityCheck",
@@ -13983,17 +14025,6 @@ The creature is aware of this effect before it makes its attack against you.`
       conditions
     };
   }
-
-  // src/ui/utils/UIResponse.ts
-  var UISource = { name: "UI" };
-  var UIResponse = class {
-    constructor(who, apply) {
-      this.who = who;
-      this.apply = apply;
-      this.source = UISource;
-      this.priority = 0;
-    }
-  };
 
   // src/ui/YesNoDialog.tsx
   var import_hooks16 = __toESM(require_hooks());

@@ -1,5 +1,6 @@
 import { MarkRequired } from "ts-essentials";
 
+import ValueCollector from "./collectors/ValueCollector";
 import DiceType from "./types/DiceType";
 import RollType from "./types/RollType";
 
@@ -54,21 +55,15 @@ export default class DiceBag {
 
   roll(rt: RollType, dt: DiceType = "normal") {
     const size = sizeOfDice(rt);
-    let value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
-    const otherValues: number[] = [];
+    const value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
+    const values = new ValueCollector(value);
 
     if (dt !== "normal") {
       const second = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
-
-      if (
-        (dt === "advantage" && second > value) ||
-        (dt === "disadvantage" && value > second)
-      ) {
-        otherValues.push(value);
-        value = second;
-      } else otherValues.push(second);
+      const prefer = dt === "advantage" ? "higher" : "lower";
+      values.add(second, prefer);
     }
 
-    return { size, value, otherValues };
+    return { size, values };
   }
 }

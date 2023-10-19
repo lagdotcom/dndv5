@@ -1,3 +1,5 @@
+export type SetInitialiser<T> = Iterable<T>;
+
 export function hasAll<T>(set: Set<T> | undefined, matches: Iterable<T>) {
   if (!set) return false;
 
@@ -26,5 +28,5 @@ export function* filterSet<T>(
 }
 
 export function mergeSets<T>(destination: Set<T>, source?: Set<T>) {
-  for (const item of source ?? []) destination.add(item);
+  if (source) for (const item of source) destination.add(item);
 }

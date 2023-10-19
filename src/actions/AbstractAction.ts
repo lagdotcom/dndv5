@@ -11,6 +11,7 @@ import Empty from "../types/Empty";
 import Icon from "../types/Icon";
 import ImplementationStatus from "../types/ImplementationStatus";
 import Resource from "../types/Resource";
+import { MapInitialiser } from "../utils/map";
 
 export interface AbstractActionOptions {
   area?: SpecifiedEffectShape[];
@@ -18,7 +19,7 @@ export interface AbstractActionOptions {
   description?: string;
   heal?: Amount[];
   icon?: Icon;
-  resources?: [Resource, number][];
+  resources?: MapInitialiser<Resource, number>;
   time?: ActionTime;
 }
 

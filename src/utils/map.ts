@@ -1,3 +1,5 @@
+export type MapInitialiser<K, V> = Iterable<[K, V]>;
+
 export function orderedKeys<K, V>(
   map: Map<K, V>,
   comparator: (a: [K, V], b: [K, V]) => number,

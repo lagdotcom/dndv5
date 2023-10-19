@@ -1,9 +1,11 @@
 import DamageType from "./types/DamageType";
+import { MapInitialiser } from "./utils/map";
 
-export type DamageInitialiser = [type: DamageType, amount: number][];
+// for simplicity's sake
+export type DamageInitialiser = [DamageType, number][];
 
 export default class DamageMap extends Map<DamageType, number> {
-  constructor(items: DamageInitialiser = []) {
+  constructor(items: MapInitialiser<DamageType, number> = []) {
     super(items);
   }
 

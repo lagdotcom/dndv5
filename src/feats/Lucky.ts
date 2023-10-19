@@ -19,7 +19,7 @@ function addLuckyOpportunity(
       who.spendResource(LuckPoint);
 
       const nr = await g.roll({ type: "luck", who });
-      callback(nr.value);
+      callback(nr.values.final);
     }),
   );
 }
@@ -34,9 +34,7 @@ const Lucky = new SimpleFeature(
   (g, me) => {
     me.initResource(LuckPoint);
 
-    g.events.on("DiceRolled", ({ detail }) => {
-      const { type, interrupt, value } = detail;
-
+    g.events.on("DiceRolled", ({ detail: { type, interrupt, values } }) => {
       if (
         (type.type === "attack" ||
           type.type === "check" ||
@@ -47,14 +45,9 @@ const Lucky = new SimpleFeature(
         addLuckyOpportunity(
           g,
           me,
-          `${me.name} got ${value} on a ${type.type} roll. Use a Luck point to re-roll?`,
+          `${me.name} got ${values.final} on a ${type.type} roll. Use a Luck point to re-roll?`,
           interrupt,
-          (roll) => {
-            if (roll > value) {
-              detail.otherValues.push(value);
-              detail.value = roll;
-            } else detail.otherValues.push(roll);
-          },
+          (roll) => values.add(roll, "higher"),
         );
 
       // TODO If more than one creature spends a luck point to influence the outcome of a roll, the points cancel each other out; no additional dice are rolled.
@@ -66,14 +59,9 @@ const Lucky = new SimpleFeature(
         addLuckyOpportunity(
           g,
           me,
-          `${type.who.name} got ${value} on an attack roll against ${me.name}. Use a Luck point to re-roll?`,
+          `${type.who.name} got ${values.final} on an attack roll against ${me.name}. Use a Luck point to re-roll?`,
           interrupt,
-          (roll) => {
-            if (roll < value) {
-              detail.otherValues.push(value);
-              detail.value = roll;
-            } else detail.otherValues.push(roll);
-          },
+          (roll) => values.add(roll, "lower"),
         );
     });
   },

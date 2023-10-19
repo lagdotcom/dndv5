@@ -5,7 +5,7 @@ import { AttackDetail } from "../../events/AttackEvent";
 import { CombatantDamagedDetail } from "../../events/CombatantDamagedEvent";
 import { CombatantDiedDetail } from "../../events/CombatantDiedEvent";
 import { CombatantHealedDetail } from "../../events/CombatantHealedEvent";
-import { DiceRolledDetail } from "../../events/DiceRolledEvent";
+import { CombatantInitiativeDetail } from "../../events/CombatantInitiativeEvent";
 import { EffectAddedDetail } from "../../events/EffectAddedEvent";
 import { EffectRemovedDetail } from "../../events/EffectRemovedEvent";
 import { ExhaustionDetail } from "../../events/ExhaustionEvent";
@@ -16,7 +16,6 @@ import DamageBreakdown from "../../types/DamageBreakdown";
 import DamageType from "../../types/DamageType";
 import DiceType from "../../types/DiceType";
 import { AmmoItem, WeaponItem } from "../../types/Item";
-import { InitiativeRoll } from "../../types/RollType";
 import Spell from "../../types/Spell";
 import { describeAbility } from "../../utils/text";
 import CombatantRef from "../CombatantRef";
@@ -83,9 +82,9 @@ export const getAttackMessage = ({
   outcome,
 }: AttackDetail) => [
   msgCombatant(who),
-  outcome === "miss"
+  outcome.result === "miss"
     ? " misses "
-    : outcome === "hit"
+    : outcome.result === "hit"
     ? " hits "
     : " CRITICALLY hits ",
   msgCombatant(target, true),
@@ -152,10 +151,10 @@ export const getAbilityCheckMessage = ({
 
 export const getInitiativeMessage = ({
   diceType,
-  type,
+  who,
   value,
-}: DiceRolledDetail<InitiativeRoll>) => [
-  msgCombatant(type.who),
+}: CombatantInitiativeDetail) => [
+  msgCombatant(who),
   ` gets a ${value}`,
   msgDiceType(diceType),
   " for initiative.",

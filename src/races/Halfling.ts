@@ -10,12 +10,12 @@ const Lucky = new SimpleFeature(
   `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`,
   (g, me) => {
     g.events.on("DiceRolled", ({ detail }) => {
-      const { otherValues, type: t, value, interrupt } = detail;
+      const { type: t, values, interrupt } = detail;
 
       if (
         (t.type === "attack" || t.type === "check" || t.type === "save") &&
         t.who === me &&
-        value === 1
+        values.final === 1
       )
         interrupt.add(
           new YesNoChoice(
@@ -24,9 +24,8 @@ const Lucky = new SimpleFeature(
             "Lucky",
             `${me.name} rolled a 1 on a ${t.type} check. Reroll it?`,
             async () => {
-              const newRoll = g.dice.roll(t).value;
-              otherValues.push(value);
-              detail.value = newRoll;
+              const newRoll = g.dice.roll(t).values.final;
+              values.add(newRoll, "higher");
             },
           ),
         );

@@ -72,9 +72,9 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
     if (who.conditions.has("Blinded")) error.add("cannot see", BlindedRule);
   });
   // ...and automatically fails any ability check that requires sight.
-  g.events.on("BeforeCheck", ({ detail }) => {
-    if (detail.who.conditions.has("Blinded") && detail.tags.has("sight"))
-      detail.successResponse.add("fail", BlindedRule);
+  g.events.on("BeforeCheck", ({ detail: { who, tags, successResponse } }) => {
+    if (who.conditions.has("Blinded") && tags.has("sight"))
+      successResponse.add("fail", BlindedRule);
   });
 
   g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
@@ -326,18 +326,17 @@ const autoCrit =
     rule: DndRule,
     maxRange = 5,
   ): Listener<"Attack"> =>
-  ({ detail }) => {
-    const { who, target } = detail.pre;
-
+  ({
+    detail: {
+      pre: { who, target },
+      outcome,
+    },
+  }) => {
     if (
       target.conditions.has(condition) &&
-      distance(g, who, target) <= maxRange &&
-      detail.outcome === "hit"
-    ) {
-      // TODO is this completely safe?
-      detail.forced = true;
-      detail.outcome = "critical";
-    }
+      distance(g, who, target) <= maxRange
+    )
+      outcome.add("critical", rule);
   };
 
 export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
@@ -358,9 +357,9 @@ export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
   );
 
   // Attack rolls against the creature have advantage.
-  g.events.on("BeforeAttack", ({ detail }) => {
-    if (detail.target.conditions.has("Paralyzed"))
-      detail.diceType.add("advantage", ParalyzedRule);
+  g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+    if (target.conditions.has("Paralyzed"))
+      diceType.add("advantage", ParalyzedRule);
   });
 
   // Any attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature.

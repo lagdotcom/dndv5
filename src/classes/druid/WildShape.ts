@@ -134,9 +134,9 @@ While you are transformed, the following rules apply:
       }),
 
       // You can't cast spells
-      g.events.on("CheckAction", ({ detail }) => {
-        if (detail.action.actor === me && detail.action.isSpell)
-          detail.error.add("cannot cast spells", WildShape);
+      g.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action.actor === me && action.isSpell)
+          error.add("cannot cast spells", WildShape);
       }),
     );
   }

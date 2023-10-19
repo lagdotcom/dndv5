@@ -24,15 +24,18 @@ export const Dying = new Effect(
       if (who.hasEffect(Dying))
         interrupt.add(
           new EvaluateLater(who, Dying, async () => {
-            const { outcome, roll } = await g.save({
+            const {
+              outcome,
+              roll: { values },
+            } = await g.save({
               source: Dying,
               type: { type: "flat", dc: 10 },
               who,
               tags: ["death"],
             });
 
-            if (roll.value === 20) await g.heal(Dying, 1, { target: who });
-            else if (roll.value === 1) await g.failDeathSave(who, 2);
+            if (values.final === 20) await g.heal(Dying, 1, { target: who });
+            else if (values.final === 1) await g.failDeathSave(who, 2);
             else if (outcome === "fail") await g.failDeathSave(who);
             else await g.succeedDeathSave(who);
           }),

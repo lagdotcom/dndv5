@@ -53,7 +53,9 @@ import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
 import { getNaturalArmourMethod, getProficiencyType } from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
+import { MapInitialiser } from "./utils/map";
 import { clamp } from "./utils/numbers";
+import { SetInitialiser } from "./utils/set";
 import { isDefined } from "./utils/types";
 import { convertSizeToUnit } from "./utils/units";
 
@@ -156,9 +158,9 @@ export default abstract class AbstractCombatant implements Combatant {
       strScore = 10,
       wisScore = 10,
       naturalAC = 10,
-      rules = [],
-      coefficients = [],
-      groups = [],
+      rules,
+      coefficients,
+      groups,
     }: {
       diesAtZero?: boolean;
       hands?: number;
@@ -178,9 +180,9 @@ export default abstract class AbstractCombatant implements Combatant {
       strScore?: number;
       wisScore?: number;
       naturalAC?: number;
-      rules?: AIRule[];
-      coefficients?: [AICoefficient, number][];
-      groups?: CombatantGroup[];
+      rules?: SetInitialiser<AIRule>;
+      coefficients?: MapInitialiser<AICoefficient, number>;
+      groups?: SetInitialiser<CombatantGroup>;
     },
   ) {
     this.id = g.nextId();

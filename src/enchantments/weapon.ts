@@ -53,13 +53,13 @@ export const chaoticBurst: Enchantment<"weapon"> = {
             type: "damage",
             attacker,
             size: 8,
-          }).value;
+          }).values.final;
           const b = g.dice.roll({
             source: chaoticBurst,
             type: "damage",
             attacker,
             size: 8,
-          }).value;
+          }).values.final;
           const addBurst = (type: DamageType) => map.add(type, a + b);
 
           if (a === b) addBurst(chaoticBurstTypes[a - 1]);
@@ -89,7 +89,8 @@ export const vicious: Enchantment<"weapon"> = {
     if (item.icon) item.icon.colour = ItemRarityColours.Rare;
 
     g.events.on("GatherDamage", ({ detail: { weapon, bonus, attack } }) => {
-      if (weapon === item && attack?.roll.value === 20) bonus.add(7, vicious);
+      if (weapon === item && attack?.roll.values.final === 20)
+        bonus.add(7, vicious);
     });
   },
 };

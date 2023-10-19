@@ -44,17 +44,16 @@ const ShieldEffect = new Effect(
 
     // ...which you take when you are hit by an attack...
     g.events.on("Attack", ({ detail }) => {
-      const { target, who, bonus } = detail.pre;
+      const { target, who } = detail.pre;
 
-      if (!target.hasEffect(ShieldEffect) && detail.outcome === "hit")
+      if (!target.hasEffect(ShieldEffect) && detail.outcome.hits)
         check(
           `${who.name} hit ${target.name} with an attack.`,
           target,
           detail.interrupt,
           async () => {
             const ac = await g.getAC(target, detail.pre);
-            const roll = detail.roll.value;
-            detail.outcome = g.getAttackOutcome(ac, roll, roll + bonus.result);
+            detail.ac = ac;
             // TODO [MESSAGE]
           },
         );

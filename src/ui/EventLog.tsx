@@ -2,8 +2,6 @@ import { VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import Engine from "../Engine";
-import { DiceRolledDetail } from "../events/DiceRolledEvent";
-import { InitiativeRoll } from "../types/RollType";
 import { isDefined } from "../utils/types";
 import styles from "./EventLog.module.scss";
 import useTimeout from "./hooks/useTimeout";
@@ -21,6 +19,7 @@ import {
   getSaveMessage,
   MessagePart,
 } from "./utils/messages";
+import UIResponse from "./utils/UIResponse";
 
 function LogMessage({ message }: { message: MessagePart[] }) {
   const text = message
@@ -56,7 +55,11 @@ export default function EventLog({ g }: { g: Engine }) {
 
   useEffect(() => {
     g.events.on("Attack", ({ detail }) =>
-      addMessage(<LogMessage message={getAttackMessage(detail)} />),
+      detail.interrupt.add(
+        new UIResponse(detail.pre.who, async () =>
+          addMessage(<LogMessage message={getAttackMessage(detail)} />),
+        ),
+      ),
     );
     g.events.on("CombatantDamaged", ({ detail }) =>
       addMessage(<LogMessage message={getDamageMessage(detail)} />),
@@ -78,15 +81,8 @@ export default function EventLog({ g }: { g: Engine }) {
     g.events.on("SpellCast", ({ detail }) =>
       addMessage(<LogMessage message={getCastMessage(detail)} />),
     );
-    g.events.on("DiceRolled", ({ detail }) => {
-      if (detail.type.type === "initiative")
-        addMessage(
-          <LogMessage
-            message={getInitiativeMessage(
-              detail as DiceRolledDetail<InitiativeRoll>,
-            )}
-          />,
-        );
+    g.events.on("CombatantInitiative", ({ detail }) => {
+      addMessage(<LogMessage message={getInitiativeMessage(detail)} />);
     });
     g.events.on("AbilityCheck", ({ detail }) =>
       addMessage(<LogMessage message={getAbilityCheckMessage(detail)} />),

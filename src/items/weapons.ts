@@ -20,6 +20,7 @@ import {
   WeaponRangeCategory,
 } from "../types/Item";
 import { _dd } from "../utils/dice";
+import { SetInitialiser } from "../utils/set";
 import { distance } from "../utils/units";
 import AbstractItem from "./AbstractItem";
 
@@ -39,7 +40,7 @@ export abstract class AbstractWeapon
     public category: WeaponCategory,
     public rangeCategory: WeaponRangeCategory,
     public damage: DamageAmount,
-    properties: Iterable<WeaponProperty> = [],
+    properties?: SetInitialiser<WeaponProperty>,
     iconUrl?: string,
     public shortRange?: number,
     public longRange?: number,

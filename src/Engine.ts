@@ -1,5 +1,6 @@
 import { MarkOptional } from "ts-essentials";
 
+import AttackOutcomeCollector from "./collectors/AttackOutcomeCollector";
 import BonusCollector from "./collectors/BonusCollector";
 import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DiceTypeCollector from "./collectors/DiceTypeCollector";
@@ -33,6 +34,7 @@ import CheckVisionEvent from "./events/CheckVisionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
 import CombatantHealedEvent from "./events/CombatantHealedEvent";
+import CombatantInitiativeEvent from "./events/CombatantInitiativeEvent";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import CombatantPlacedEvent from "./events/CombatantPlacedEvent";
 import DiceRolledEvent from "./events/DiceRolledEvent";
@@ -85,6 +87,7 @@ import { resolveArea } from "./utils/areas";
 import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
 import { movePoint } from "./utils/points";
+import { SetInitialiser } from "./utils/set";
 import { getSquares } from "./utils/units";
 
 export default class Engine {
@@ -142,7 +145,7 @@ export default class Engine {
         .map(async () => await this.roll(e)),
     );
 
-    return rolls.reduce((acc, roll) => acc + roll.value, 0);
+    return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
   }
 
   async rollDamage(
@@ -167,11 +170,12 @@ export default class Engine {
       }),
     );
 
-    const roll = await this.roll(
-      { type: "initiative", who },
-      gi.detail.diceType.result,
-    );
-    return roll.value + gi.detail.bonus.result;
+    const diceType = gi.detail.diceType.result;
+    const roll = await this.roll({ type: "initiative", who }, diceType);
+    const value = roll.values.final + gi.detail.bonus.result;
+
+    this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
+    return value;
   }
 
   private async savingThrow<T = object>(
@@ -204,7 +208,7 @@ export default class Engine {
     let forced = false;
     let success = false;
     const roll = await this.roll({ type: "save", ...e }, diceType.result);
-    const total = roll.value + bonus.result;
+    const total = roll.values.final + bonus.result;
     if (successResponse.result !== "normal") {
       success = successResponse.result === "success";
       forced = true;
@@ -254,7 +258,7 @@ export default class Engine {
     let forced = false;
     let success = false;
     const roll = await this.roll({ type: "check", ...e }, diceType.result);
-    const total = roll.value + bonus.result;
+    const total = roll.values.final + bonus.result;
     if (successResponse.result !== "normal") {
       success = successResponse.result === "success";
       forced = true;
@@ -645,20 +649,27 @@ export default class Engine {
       pre.detail.diceType.result,
     );
 
-    const total = roll.value + pre.detail.bonus.result;
-
-    const attack = await this.resolve(
-      new AttackEvent({
-        pre: pre.detail,
-        roll,
-        total,
-        ac,
-        outcome: this.getAttackOutcome(ac, roll.value, total),
-        forced: false, // TODO
-        interrupt: new InterruptionCollector(),
-      }),
+    const total = roll.values.final + pre.detail.bonus.result;
+    const outcomeCollector = new AttackOutcomeCollector();
+    const event = new AttackEvent({
+      pre: pre.detail,
+      roll,
+      total,
+      ac,
+      outcome: outcomeCollector,
+      interrupt: new InterruptionCollector(),
+    });
+    outcomeCollector.setDefaultGetter(() =>
+      this.getAttackOutcome(
+        event.detail.ac,
+        event.detail.roll.values.final,
+        event.detail.total,
+      ),
     );
-    const { outcome } = attack.detail;
+
+    const attack = await this.resolve(event);
+    const outcome = outcomeCollector.result;
+
     return {
       outcome,
       attack: attack.detail,
@@ -930,7 +941,7 @@ export default class Engine {
     method?: SpellcastingMethod;
     effect?: Effect<E>;
     config?: EffectConfig<E>;
-    tags?: SaveTag[];
+    tags?: SetInitialiser<SaveTag>;
     save?: SaveDamageResponse;
     fail?: SaveDamageResponse;
   }) {

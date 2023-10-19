@@ -9,8 +9,8 @@ import { getCantripDice, simpleSpell } from "../common";
 const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
   g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
     if (who.hasEffect(MindSliverEffect)) {
-      const { value } = g.dice.roll({ type: "bane", who });
-      bonus.add(-value, MindSliver);
+      const { values } = g.dice.roll({ type: "bane", who });
+      bonus.add(-values.final, MindSliver);
 
       interrupt.add(
         new EvaluateLater(who, MindSliverEffect, async () => {

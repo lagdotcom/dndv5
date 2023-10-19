@@ -2,6 +2,7 @@ import DndRule from "./DndRule";
 import Combatant from "./types/Combatant";
 import MoveHandler from "./types/MoveHandler";
 import Source from "./types/Source";
+import { SetInitialiser } from "./utils/set";
 import { compareDistances } from "./utils/units";
 
 export const getDefaultMovement = (who: Combatant): MoveHandler => ({
@@ -52,7 +53,7 @@ export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
 type BoundedMoveConfig = Omit<
   MoveHandler,
   "maximum" | "cannotApproach" | "onMove" | "name"
-> & { cannotApproach: Combatant[] };
+> & { cannotApproach: SetInitialiser<Combatant> };
 
 export class BoundedMove implements MoveHandler {
   name: string;
@@ -66,7 +67,7 @@ export class BoundedMove implements MoveHandler {
     public source: Source,
     public maximum: number,
     {
-      cannotApproach = [],
+      cannotApproach,
       mustUseAll = false,
       provokesOpportunityAttacks = true,
       teleportation = false,

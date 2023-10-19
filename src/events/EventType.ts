@@ -15,6 +15,7 @@ import CheckVisionEvent from "./CheckVisionEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
 import CombatantHealedEvent from "./CombatantHealedEvent";
+import CombatantInitiativeEvent from "./CombatantInitiativeEvent";
 import CombatantMovedEvent from "./CombatantMovedEvent";
 import CombatantPlacedEvent from "./CombatantPlacedEvent";
 import DiceRolledEvent from "./DiceRolledEvent";
@@ -60,6 +61,7 @@ export type EventTypes = {
   CombatantDamaged: CombatantDamagedEvent;
   CombatantDied: CombatantDiedEvent;
   CombatantHealed: CombatantHealedEvent;
+  CombatantInitiative: CombatantInitiativeEvent;
   CombatantMoved: CombatantMovedEvent;
   CombatantPlaced: CombatantPlacedEvent;
   DiceRolled: DiceRolledEvent;

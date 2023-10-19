@@ -7,7 +7,6 @@ import Engine from "../../Engine";
 import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
-import Resource from "../../types/Resource";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
@@ -99,7 +98,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
       );
   }
 
-  getResources({ points }: Partial<HasPoints>): Map<Resource, number> {
+  getResources({ points }: Partial<HasPoints>) {
     return new Map([[MeteorResource, points?.length ?? 1]]);
   }
 
