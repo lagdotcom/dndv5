@@ -8,6 +8,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -32,7 +33,10 @@ const IceKnife = scalingSpell<HasTarget>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
 
   generateAttackConfigs: (slot, targets) =>
-    targets.map((target) => ({ target })),
+    targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target)),
+    })),
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
 

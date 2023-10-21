@@ -8,8 +8,10 @@ import AttackTag from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Source from "../types/Source";
+import { poSet, poWithin } from "../utils/ai";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { describeDice } from "../utils/text";
+import { isDefined } from "../utils/types";
 import { distance } from "../utils/units";
 import AbstractAttackAction from "./AbstractAttackAction";
 
@@ -37,7 +39,16 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   }
 
   generateAttackConfigs(targets: Combatant[]) {
-    return targets.map((target) => ({ target }));
+    const ranges = [this.weapon.shortRange, this.weapon.longRange].filter(
+      isDefined,
+    );
+
+    return targets.flatMap((target) =>
+      ranges.map((range) => ({
+        config: { target },
+        positioning: poSet(poWithin(range, target)),
+      })),
+    );
   }
 
   getDamage() {

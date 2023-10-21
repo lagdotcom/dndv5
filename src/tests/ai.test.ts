@@ -127,12 +127,12 @@ describe("DamageRule", () => {
     const weaponName = "spear of the dark sun";
     const hitBadger = v.find(
       ({ action, config }) =>
-        (action as WeaponAttack).weapon.name === weaponName &&
+        (action as WeaponAttack).weapon?.name === weaponName &&
         (config as HasTarget).target === badger,
     );
     const hitFiend = v.find(
       ({ action, config }) =>
-        (action as WeaponAttack).weapon.name === weaponName &&
+        (action as WeaponAttack).weapon?.name === weaponName &&
         (config as HasTarget).target === oGonrit,
     );
     expect(hitBadger).toBeDefined();

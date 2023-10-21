@@ -22,6 +22,7 @@ import SpellAttack from "../../spells/SpellAttack";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import { poSet } from "../../utils/ai";
 import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 
@@ -234,7 +235,10 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
   }
 
   generateAttackConfigs(targets: Combatant[]) {
-    return targets.map((target) => ({ target }));
+    return targets.map((target) => ({
+      config: { target },
+      positioning: poSet(),
+    }));
   }
 
   getDamage() {

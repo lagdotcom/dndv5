@@ -15,6 +15,7 @@ import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import EffectType from "../../types/EffectType";
 import Resource from "../../types/Resource";
+import { poSet, poWithin } from "../../utils/ai";
 import { enumerate } from "../../utils/numbers";
 import { PaladinIcon } from "./common";
 
@@ -46,7 +47,10 @@ class LayOnHandsHealAction extends AbstractAction<HealConfig> {
     const resourceMax = this.actor.getResource(LayOnHandsResource);
 
     return targets.flatMap((target) =>
-      enumerate(1, resourceMax).map((cost) => ({ cost, target })),
+      enumerate(1, resourceMax).map((cost) => ({
+        config: { cost, target },
+        positioning: poSet(poWithin(this.actor.reach, target)),
+      })),
     );
   }
 

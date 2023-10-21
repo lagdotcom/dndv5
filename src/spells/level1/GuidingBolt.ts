@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 import SpellAttack from "../SpellAttack";
@@ -33,7 +34,10 @@ const GuidingBolt = scalingSpell<HasTarget>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
   generateAttackConfigs: (slot, targets) =>
-    targets.map((target) => ({ target })),
+    targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(120, target)),
+    })),
 
   getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
   getDamage: (_, caster, method, { slot }) => [

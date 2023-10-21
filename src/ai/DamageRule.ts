@@ -17,8 +17,8 @@ export default class DamageRule implements AIRule {
     return actions.flatMap((action) =>
       action
         .generateAttackConfigs(enemies)
-        .filter((config) => checkConfig(g, action, config))
-        .map((config) => {
+        .filter(({ config }) => checkConfig(g, action, config))
+        .map(({ config, positioning }) => {
           // TODO this is very inaccurate for WeaponAttack (UI has same issue)
           const amounts = action.getDamage(config);
           if (!amounts) return;
@@ -46,7 +46,7 @@ export default class DamageRule implements AIRule {
           score.addEval(me, overKill, OverKillEnemies);
           score.addEval(me, friendlyFire, DamageAllies);
 
-          return { action, config, score };
+          return { action, config, positioning, score };
         })
         .filter(isDefined),
     );

@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action from "../types/Action";
+import Action, { ConfigWithPositioning } from "../types/Action";
 import { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Amount from "../types/Amount";
@@ -62,12 +62,12 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  generateAttackConfigs(targets: Combatant[]): T[] {
+  generateAttackConfigs(targets: Combatant[]): ConfigWithPositioning<T>[] {
     return [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  generateHealingConfigs(targets: Combatant[]): T[] {
+  generateHealingConfigs(targets: Combatant[]): ConfigWithPositioning<T>[] {
     return [];
   }
 

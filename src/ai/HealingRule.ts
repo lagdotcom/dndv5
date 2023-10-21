@@ -17,8 +17,8 @@ export default class HealingRule implements AIRule {
     return actions.flatMap((action) =>
       action
         .generateHealingConfigs(allies)
-        .filter((config) => checkConfig(g, action, config))
-        .map((config) => {
+        .filter(({ config }) => checkConfig(g, action, config))
+        .map(({ config, positioning }) => {
           const amounts = action.getHeal(config);
           if (!amounts) return;
 
@@ -44,7 +44,7 @@ export default class HealingRule implements AIRule {
           score.addEval(me, effective, HealAllies);
           score.addEval(me, overHeal, OverHealAllies);
 
-          return { action, config, score };
+          return { action, config, positioning, score };
         })
         .filter(isDefined),
     );

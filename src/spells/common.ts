@@ -3,7 +3,7 @@ import { MarkOptional } from "ts-essentials";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SlotResolver from "../resolvers/SlotResolver";
-import { ActionConfig } from "../types/Action";
+import { ActionConfig, ConfigWithPositioning } from "../types/Action";
 import Combatant from "../types/Combatant";
 import Source from "../types/Source";
 import Spell from "../types/Spell";
@@ -93,7 +93,7 @@ type ConfigGenerator<T> = (
   g: Engine,
   caster: Combatant,
   method: SpellcastingMethod,
-) => T[];
+) => ConfigWithPositioning<T>[];
 
 export const scalingSpell = <T extends object>({
   name,
@@ -170,10 +170,12 @@ export const scalingSpell = <T extends object>({
     const minSlot = method.getMinSlot?.(this, caster) ?? level;
     const maxSlot = method.getMaxSlot?.(this, caster) ?? level;
     return enumerate(minSlot, maxSlot).flatMap((slot) =>
-      generateAttackConfigs(slot, targets, g, caster, method).map((config) => ({
-        ...config,
-        slot,
-      })),
+      generateAttackConfigs(slot, targets, g, caster, method).map(
+        ({ config, positioning }) => ({
+          config: { ...config, slot },
+          positioning,
+        }),
+      ),
     );
   },
   generateHealingConfigs(g, caster, method, targets) {
@@ -183,7 +185,10 @@ export const scalingSpell = <T extends object>({
     const maxSlot = method.getMaxSlot?.(this, caster) ?? level;
     return enumerate(minSlot, maxSlot).flatMap((slot) =>
       generateHealingConfigs(slot, targets, g, caster, method).map(
-        (config) => ({ ...config, slot }),
+        ({ config, positioning }) => ({
+          config: { ...config, slot },
+          positioning,
+        }),
       ),
     );
   },

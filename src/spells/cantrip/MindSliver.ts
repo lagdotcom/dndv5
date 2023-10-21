@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
@@ -33,7 +34,10 @@ const MindSliver = simpleSpell<HasTarget>({
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
   generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({ target })),
+    targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target)),
+    })),
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 6, "psychic")],

@@ -11,6 +11,7 @@ import { TemporaryResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
+import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
 
@@ -40,7 +41,10 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
   }
 
   generateAttackConfigs(targets: Combatant[]) {
-    return targets.map((target) => ({ target }));
+    return targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target)),
+    }));
   }
 
   async apply({ target }: HasTarget) {

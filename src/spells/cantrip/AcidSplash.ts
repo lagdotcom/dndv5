@@ -4,6 +4,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import { canSee } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { poWithin } from "../../utils/ai";
 import { combinationsMulti } from "../../utils/combinatorics";
 import { _dd } from "../../utils/dice";
 import { isCombatantArray } from "../../utils/types";
@@ -28,7 +29,10 @@ const AcidSplash = simpleSpell<HasTargets>({
       allTargets.filter((co) => co.side !== caster.side),
       1,
       2,
-    ).map((targets) => ({ targets })),
+    ).map((targets) => ({
+      config: { targets },
+      positioning: new Set(targets.map((target) => poWithin(60, target))),
+    })),
 
   getConfig: (g) => ({
     targets: new MultiTargetResolver(g, 1, 2, 60, [canSee]),

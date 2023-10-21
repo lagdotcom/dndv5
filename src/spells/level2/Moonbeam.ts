@@ -45,6 +45,8 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
     );
   }
 
+  // TODO generateAttackConfigs
+
   getAffectedArea({ point }: Partial<HasPoint>) {
     if (point) return [getMoonbeamArea(point)];
   }

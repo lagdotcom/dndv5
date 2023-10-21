@@ -1,6 +1,7 @@
 import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { ctSet } from "../../types/CreatureType";
+import { poWithin } from "../../utils/ai";
 import { combinationsMulti } from "../../utils/combinatorics";
 import { scalingSpell } from "../common";
 
@@ -23,7 +24,10 @@ const MassHealingWord = scalingSpell<HasTargets>({
       allTargets.filter((co) => co.side === caster.side),
       1,
       6,
-    ).map((targets) => ({ targets }));
+    ).map((targets) => ({
+      config: { targets },
+      positioning: new Set(targets.map((target) => poWithin(60, target))),
+    }));
   },
 
   getConfig: (g) => ({

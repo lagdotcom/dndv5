@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import { ActionConfig } from "./Action";
+import { ActionConfig, ConfigWithPositioning } from "./Action";
 import ActionTime from "./ActionTime";
 import Amount from "./Amount";
 import Combatant from "./Combatant";
@@ -93,11 +93,11 @@ export default interface Spell<T extends object = object> extends Source {
     caster: Combatant,
     method: SpellcastingMethod,
     targets: Combatant[],
-  ): T[];
+  ): ConfigWithPositioning<T>[];
   generateHealingConfigs(
     g: Engine,
     caster: Combatant,
     method: SpellcastingMethod,
     targets: Combatant[],
-  ): T[];
+  ): ConfigWithPositioning<T>[];
 }

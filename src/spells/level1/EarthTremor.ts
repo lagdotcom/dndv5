@@ -6,6 +6,7 @@ import { Prone } from "../../effects";
 import Engine from "../../Engine";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
+import { poSet } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -29,7 +30,7 @@ const EarthTremor = scalingSpell({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
-  generateAttackConfigs: () => [{}],
+  generateAttackConfigs: () => [{ config: {}, positioning: poSet() }],
 
   getConfig: () => ({}),
   getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
