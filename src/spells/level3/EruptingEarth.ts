@@ -29,13 +29,16 @@ const EruptingEarth = scalingSpell<HasPoint>({
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.`,
 
+  // TODO: generateAttackConfigs
+
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
   getAffectedArea: (g, caster, { point }) =>
     point && [getEruptingEarthArea(point)],
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 3, 12, "bludgeoning"),
   ],
-  getTargets: () => [],
+  getTargets: (g, caster, { point }) =>
+    g.getInside(getEruptingEarthArea(point)),
 
   async apply(g, attacker, method, { point, slot }) {
     const damage = await g.rollDamage(slot, {

@@ -31,5 +31,6 @@ export default interface Action<T extends object = object> extends Source {
   getTargets(config: T): Combatant[] | undefined;
   getTime(config: Partial<T>): ActionTime | undefined;
 
+  generateAttackConfigs(targets: Combatant[]): T[];
   generateHealingConfigs(targets: Combatant[]): T[];
 }

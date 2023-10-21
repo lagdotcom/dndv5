@@ -32,6 +32,9 @@ const MindSliver = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
+  generateAttackConfigs: (g, caster, method, targets) =>
+    targets.map((target) => ({ target })),
+
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
   getTargets: (g, caster, { target }) => [target],

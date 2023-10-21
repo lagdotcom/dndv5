@@ -32,6 +32,7 @@ export const simpleSpell = <T extends object>({
   icon,
   apply,
   check = (_g, _config, ec) => ec,
+  generateAttackConfigs = () => [],
   generateHealingConfigs = () => [],
   getAffectedArea = () => undefined,
   getConfig,
@@ -50,6 +51,7 @@ export const simpleSpell = <T extends object>({
     | "s"
     | "description"
     | "check"
+    | "generateAttackConfigs"
     | "generateHealingConfigs"
     | "getAffectedArea"
     | "getDamage"
@@ -73,6 +75,7 @@ export const simpleSpell = <T extends object>({
   icon,
   apply,
   check,
+  generateAttackConfigs,
   generateHealingConfigs,
   getAffectedArea,
   getConfig,
@@ -83,6 +86,14 @@ export const simpleSpell = <T extends object>({
   },
   getTargets,
 });
+
+type ConfigGenerator<T> = (
+  slot: number,
+  targets: Combatant[],
+  g: Engine,
+  caster: Combatant,
+  method: SpellcastingMethod,
+) => T[];
 
 export const scalingSpell = <T extends object>({
   name,
@@ -99,6 +110,7 @@ export const scalingSpell = <T extends object>({
   description,
   apply,
   check = (_g, _config, ec) => ec,
+  generateAttackConfigs,
   generateHealingConfigs,
   getAffectedArea = () => undefined,
   getConfig,
@@ -121,15 +133,14 @@ export const scalingSpell = <T extends object>({
     | "getDamage"
     | "getHeal"
   >,
-  "generateHealingConfigs" | "getConfig" | "getLevel" | "scaling"
+  | "generateAttackConfigs"
+  | "generateHealingConfigs"
+  | "getConfig"
+  | "getLevel"
+  | "scaling"
 > & {
-  generateHealingConfigs?: (
-    slot: number,
-    targets: Combatant[],
-    g: Engine,
-    caster: Combatant,
-    method: SpellcastingMethod,
-  ) => T[];
+  generateAttackConfigs?: ConfigGenerator<T>;
+  generateHealingConfigs?: ConfigGenerator<T>;
   getConfig: (
     g: Engine,
     actor: Combatant,
@@ -153,6 +164,18 @@ export const scalingSpell = <T extends object>({
   icon,
   apply,
   check,
+  generateAttackConfigs(g, caster, method, targets) {
+    if (!generateAttackConfigs) return [];
+
+    const minSlot = method.getMinSlot?.(this, caster) ?? level;
+    const maxSlot = method.getMaxSlot?.(this, caster) ?? level;
+    return enumerate(minSlot, maxSlot).flatMap((slot) =>
+      generateAttackConfigs(slot, targets, g, caster, method).map((config) => ({
+        ...config,
+        slot,
+      })),
+    );
+  },
   generateHealingConfigs(g, caster, method, targets) {
     if (!generateHealingConfigs) return [];
 

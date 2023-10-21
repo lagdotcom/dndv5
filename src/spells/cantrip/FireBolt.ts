@@ -21,6 +21,9 @@ const FireBolt = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
 
+  generateAttackConfigs: (g, caster, method, targets) =>
+    targets.map((target) => ({ target })),
+
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
   getTargets: (g, caster, { target }) => [target],

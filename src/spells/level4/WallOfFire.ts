@@ -33,6 +33,8 @@ const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
 
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d8 for each slot level above 4th.`,
 
+  // TODO: generateAttackConfigs
+
   // TODO choose dimensions of line wall
   getConfig: (g) => ({
     point: new PointResolver(g, 120),

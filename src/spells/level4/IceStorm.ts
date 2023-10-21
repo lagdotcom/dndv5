@@ -26,6 +26,8 @@ const IceStorm = scalingSpell<HasPoint>({
 
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
 
+  // TODO: generateAttackConfigs
+
   getConfig: (g) => ({ point: new PointResolver(g, 300) }),
   getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
   getTargets: (g, caster, { point }) => g.getInside(getIceStormArea(point)),

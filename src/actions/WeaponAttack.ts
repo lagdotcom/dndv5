@@ -36,6 +36,10 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     this.subIcon = ammo?.icon;
   }
 
+  generateAttackConfigs(targets: Combatant[]) {
+    return targets.map((target) => ({ target }));
+  }
+
   getDamage() {
     return [this.weapon.damage];
   }

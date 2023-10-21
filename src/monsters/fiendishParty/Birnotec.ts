@@ -233,6 +233,18 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
     );
   }
 
+  generateAttackConfigs(targets: Combatant[]) {
+    return targets.map((target) => ({ target }));
+  }
+
+  getDamage() {
+    return [_dd(2, 10, "fire")];
+  }
+
+  getTargets({ target }: HasTarget) {
+    return [target];
+  }
+
   async apply({ target }: HasTarget) {
     await super.apply({ target });
     const { g, actor: attacker, dc } = this;

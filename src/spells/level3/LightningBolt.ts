@@ -29,6 +29,8 @@ const LightningBolt = scalingSpell<HasPoint>({
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
 
+  // TODO: generateAttackConfigs
+
   getConfig: (g) => ({ point: new PointResolver(g, 100) }),
   getDamage: (g, caster, method, { slot }) => [
     _dd((slot ?? 3) + 5, 6, "lightning"),

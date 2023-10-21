@@ -39,6 +39,10 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
     );
   }
 
+  generateAttackConfigs(targets: Combatant[]) {
+    return targets.map((target) => ({ target }));
+  }
+
   async apply({ target }: HasTarget) {
     await super.apply({ target });
     const { g, actor, method } = this;

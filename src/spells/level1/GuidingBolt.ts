@@ -32,6 +32,9 @@ const GuidingBolt = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
+  generateAttackConfigs: (slot, targets) =>
+    targets.map((target) => ({ target })),
+
   getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
   getDamage: (_, caster, method, { slot }) => [
     _dd((slot ?? 1) + 3, 6, "radiant"),

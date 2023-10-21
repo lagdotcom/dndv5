@@ -6,20 +6,21 @@ import Combatant from "../types/Combatant";
 import { checkConfig } from "../utils/config";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
-import { HealAllies, HealSelf, OverHealAllies } from "./coefficients";
+import { DamageAllies, DamageEnemies, OverKillEnemies } from "./coefficients";
 
-export default class HealingRule implements AIRule {
+export default class DamageRule implements AIRule {
   evaluate(g: Engine, me: Combatant, actions: Action[]) {
-    const allies = Array.from(g.combatants.keys()).filter(
-      (who) => who.side === me.side,
+    const enemies = Array.from(g.combatants.keys()).filter(
+      (who) => who.side !== me.side,
     );
 
     return actions.flatMap((action) =>
       action
-        .generateHealingConfigs(allies)
+        .generateAttackConfigs(enemies)
         .filter((config) => checkConfig(g, action, config))
         .map((config) => {
-          const amounts = action.getHeal(config);
+          // TODO this is very inaccurate for WeaponAttack (UI has same issue)
+          const amounts = action.getDamage(config);
           if (!amounts) return;
 
           const targets = action.getTargets(config);
@@ -28,21 +29,22 @@ export default class HealingRule implements AIRule {
           const { average } = describeDice(amounts);
           const score = new EvaluationCollector();
 
-          let effectiveSelf = 0;
           let effective = 0;
-          let overHeal = 0;
+          let overKill = 0;
+          let friendlyFire = 0;
 
           for (const target of targets) {
-            const missing = target.hpMax - target.hp;
-            const heal = Math.min(average, missing);
-            if (target === me) effectiveSelf += heal;
-            else effective += heal;
-            overHeal += Math.max(average - missing, 0);
+            // TODO cheating
+            const remaining = target.hp;
+            const damage = Math.min(average, remaining);
+            if (target.side === me.side) friendlyFire += damage;
+            else effective += damage;
+            overKill += Math.max(average - remaining, 0);
           }
 
-          score.addEval(me, effectiveSelf, HealSelf);
-          score.addEval(me, effective, HealAllies);
-          score.addEval(me, overHeal, OverHealAllies);
+          score.addEval(me, effective, DamageEnemies);
+          score.addEval(me, overKill, OverKillEnemies);
+          score.addEval(me, friendlyFire, DamageAllies);
 
           return { action, config, score };
         })

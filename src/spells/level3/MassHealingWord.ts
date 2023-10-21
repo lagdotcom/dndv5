@@ -2,7 +2,6 @@ import { HasTargets } from "../../configs";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { combinationsMulti } from "../../utils/combinatorics";
-import { distance } from "../../utils/units";
 import { scalingSpell } from "../common";
 
 const cannotHeal = ctSet("undead", "construct");
@@ -21,9 +20,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
 
   generateHealingConfigs(slot, allTargets, g, caster) {
     return combinationsMulti(
-      allTargets.filter(
-        (co) => co.side === caster.side && distance(g, caster, co) <= 60,
-      ),
+      allTargets.filter((co) => co.side === caster.side),
       1,
       6,
     ).map((targets) => ({ targets }));

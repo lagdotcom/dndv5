@@ -49,6 +49,14 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
     if (point) return [getMoonbeamArea(point)];
   }
 
+  getDamage({ point }: Partial<HasPoint>) {
+    return point && [_dd(this.controller.slot, 10, "radiant")];
+  }
+
+  getTargets({ point }: HasPoint) {
+    return this.g.getInside(getMoonbeamArea(point));
+  }
+
   async apply({ point }: HasPoint) {
     await super.apply({ point });
     this.controller.move(point);
@@ -179,10 +187,12 @@ const Moonbeam = scalingSpell<HasPoint>({
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.`,
 
+  // TODO: generateAttackConfigs
+
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
   getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
   getDamage: (g, caster, method, { slot }) => [_dd(slot ?? 2, 10, "radiant")],
-  getTargets: () => [],
+  getTargets: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
 
   async apply(g, caster, method, { point, slot }) {
     const controller = new MoonbeamController(g, caster, method, point, slot);

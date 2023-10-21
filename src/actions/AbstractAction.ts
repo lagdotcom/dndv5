@@ -62,6 +62,11 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  generateAttackConfigs(targets: Combatant[]): T[] {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   generateHealingConfigs(targets: Combatant[]): T[] {
     return [];
   }

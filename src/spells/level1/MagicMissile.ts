@@ -26,6 +26,8 @@ const MagicMissile = scalingSpell<HasAllocations>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
 
+  // TODO: generateAttackConfigs
+
   getConfig: (g, caster, method, { slot }) => ({
     targets: new AllocationResolver(
       g,

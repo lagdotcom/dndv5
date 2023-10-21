@@ -415,6 +415,10 @@
       this.icon = icon;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    generateAttackConfigs(targets) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     generateHealingConfigs(targets) {
       return [];
     }
@@ -1092,6 +1096,14 @@
     get status() {
       return this.spell.status;
     }
+    generateAttackConfigs(targets) {
+      return this.spell.generateAttackConfigs(
+        this.g,
+        this.actor,
+        this.method,
+        targets
+      );
+    }
     generateHealingConfigs(targets) {
       return this.spell.generateHealingConfigs(
         this.g,
@@ -1219,6 +1231,7 @@
     icon,
     apply,
     check = (_g, _config, ec) => ec,
+    generateAttackConfigs = () => [],
     generateHealingConfigs = () => [],
     getAffectedArea = () => void 0,
     getConfig,
@@ -1243,6 +1256,7 @@
     icon,
     apply,
     check,
+    generateAttackConfigs,
     generateHealingConfigs,
     getAffectedArea,
     getConfig,
@@ -1268,6 +1282,7 @@
     description,
     apply,
     check = (_g, _config, ec) => ec,
+    generateAttackConfigs,
     generateHealingConfigs,
     getAffectedArea = () => void 0,
     getConfig,
@@ -1292,6 +1307,19 @@
     icon,
     apply,
     check,
+    generateAttackConfigs(g, caster, method, targets) {
+      var _a, _b, _c, _d;
+      if (!generateAttackConfigs)
+        return [];
+      const minSlot = (_b = (_a = method.getMinSlot) == null ? void 0 : _a.call(method, this, caster)) != null ? _b : level;
+      const maxSlot = (_d = (_c = method.getMaxSlot) == null ? void 0 : _c.call(method, this, caster)) != null ? _d : level;
+      return enumerate(minSlot, maxSlot).flatMap(
+        (slot) => generateAttackConfigs(slot, targets, g, caster, method).map((config) => ({
+          ...config,
+          slot
+        }))
+      );
+    },
     generateHealingConfigs(g, caster, method, targets) {
       var _a, _b, _c, _d;
       if (!generateHealingConfigs)
@@ -2077,6 +2105,9 @@
       this.ability = getWeaponAbility(actor, weapon);
       this.icon = weapon.icon;
       this.subIcon = ammo == null ? void 0 : ammo.icon;
+    }
+    generateAttackConfigs(targets) {
+      return targets.map((target) => ({ target }));
     }
     getDamage() {
       return [this.weapon.damage];
@@ -4124,6 +4155,15 @@
       );
       this.dc = dc;
     }
+    generateAttackConfigs(targets) {
+      return targets.map((target) => ({ target }));
+    }
+    getDamage() {
+      return [_dd(2, 10, "fire")];
+    }
+    getTargets({ target }) {
+      return [target];
+    }
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor: attacker, dc } = this;
@@ -4714,6 +4754,9 @@
   var HealSelf = makeAICo("HealSelf");
   var HealAllies = makeAICo("HealAllies");
   var OverHealAllies = makeAICo("OverHealAllies", -0.5);
+  var DamageEnemies = makeAICo("DamageEnemies");
+  var OverKillEnemies = makeAICo("OverKillEnemies", -0.5);
+  var DamageAllies = makeAICo("DamageAllies", -1);
 
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
@@ -4848,6 +4891,7 @@
     description: `A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
+    generateAttackConfigs: (slot, targets) => targets.map((target) => ({ target })),
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
     getDamage: (_2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
@@ -4946,9 +4990,7 @@
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the healing increases by 1d4 for each slot level above 3rd.`,
     generateHealingConfigs(slot, allTargets, g, caster) {
       return combinationsMulti(
-        allTargets.filter(
-          (co) => co.side === caster.side && distance(g, caster, co) <= 60
-        ),
+        allTargets.filter((co) => co.side === caster.side),
         1,
         6
       ).map((targets) => ({ targets }));
@@ -5199,9 +5241,7 @@
     description: `A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
-    generateHealingConfigs(slot, targets) {
-      return targets.map((target) => ({ target }));
-    },
+    generateHealingConfigs: (slot, targets) => targets.map((target) => ({ target })),
     getConfig: (g) => ({
       target: new TargetResolver(g, 60, [
         canSee,
@@ -7393,6 +7433,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You hurl a bubble of acid. Choose one creature you can see within range, or choose two creatures you can see within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.
 
   This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
+    generateAttackConfigs: (g, caster, method, allTargets) => combinationsMulti(
+      allTargets.filter((co) => co.side !== caster.side),
+      1,
+      2
+    ).map((targets) => ({ targets })),
     getConfig: (g) => ({
       targets: new MultiTargetResolver(g, 1, 2, 60, [canSee])
     }),
@@ -7456,6 +7501,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({ target })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g, caster, { target }) => [target],
@@ -7495,6 +7541,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({ target })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g, caster, { target }) => [target],
@@ -7569,6 +7616,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({ target })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g, caster, { target }) => [target],
@@ -7607,6 +7655,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 cold damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
+    generateAttackConfigs: (slot, targets) => targets.map((target) => ({ target })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(g, target)],
     getDamage: (g, caster, method, { slot }) => [
@@ -7750,6 +7799,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
+    // TODO: generateAttackConfigs
     getConfig: (g, caster, method, { slot }) => ({
       targets: new AllocationResolver(
         g,
@@ -8167,6 +8217,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
     getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
@@ -8286,11 +8337,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   };
 
   // src/spells/level3/MelfsMinuteMeteors.ts
-  var MelfsMinuteMeteorsIcon = makeIcon(melfs_minute_meteors_default, DamageColours.fire);
-  var MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
+  var MMMIcon = makeIcon(melfs_minute_meteors_default, DamageColours.fire);
+  var MMMResource = new TemporaryResource("Melf's Minute Meteors", 6);
   async function fireMeteors(g, attacker, method, { points }, spendMeteors = true) {
     if (spendMeteors)
-      attacker.spendResource(MeteorResource, points.length);
+      attacker.spendResource(MMMResource, points.length);
     const damage = await g.rollDamage(2, {
       source: MelfsMinuteMeteors,
       attacker,
@@ -8323,6 +8374,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         );
       }
     }
+    if (spendMeteors && attacker.getResource(MMMResource) <= 0)
+      await attacker.endConcentration();
   }
   var FireMeteorsAction = class extends AbstractAction {
     constructor(g, actor, method) {
@@ -8336,12 +8389,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           points: new MultiPointResolver(
             g,
             1,
-            Math.min(2, (_a = actor.resources.get(MeteorResource.name)) != null ? _a : 2),
+            Math.min(2, (_a = actor.resources.get(MMMResource.name)) != null ? _a : 2),
             120
           )
         },
         {
-          icon: MelfsMinuteMeteorsIcon,
+          icon: MMMIcon,
           time: "bonus action",
           damage: [_dd(2, 6, "fire")],
           description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`
@@ -8349,15 +8402,23 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       );
       this.method = method;
     }
+    // TODO: generateAttackConfigs
     getAffectedArea({ points }) {
       if (points)
         return points.map(
           (centre) => ({ type: "sphere", centre, radius: 5 })
         );
     }
+    getDamage() {
+      return [_dd(2, 6, "fire")];
+    }
     getResources({ points }) {
       var _a;
-      return /* @__PURE__ */ new Map([[MeteorResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
+      return /* @__PURE__ */ new Map([[MMMResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
+    }
+    getTargets(config) {
+      var _a, _b;
+      return (_b = (_a = this.getAffectedArea(config)) == null ? void 0 : _a.flatMap((area) => this.g.getInside(area))) != null ? _b : [];
     }
     async apply(config) {
       await super.apply(config);
@@ -8367,7 +8428,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MelfsMinuteMeteors = scalingSpell({
     status: "implemented",
     name: "Melf's Minute Meteors",
-    icon: MelfsMinuteMeteorsIcon,
+    icon: MMMIcon,
     level: 3,
     school: "Evocation",
     concentration: true,
@@ -8378,6 +8439,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell\u2014and as a bonus action on each of your turns thereafter\u2014you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({
       points: new MultiPointResolver(g, 1, 2, 120)
     }),
@@ -8388,7 +8450,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getDamage: () => [_dd(2, 6, "fire")],
     async apply(g, attacker, method, { points, slot }) {
       const meteors = slot * 2;
-      attacker.initResource(MeteorResource, meteors);
+      attacker.initResource(MMMResource, meteors);
       await fireMeteors(g, attacker, method, { points });
       let meteorActionEnabled = false;
       const removeMeteorAction = g.events.on(
@@ -8413,7 +8475,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         async onSpellEnd() {
           removeMeteorAction();
           removeTurnListener();
-          attacker.removeResource(MeteorResource);
+          attacker.removeResource(MMMResource);
         }
       });
     }
@@ -8445,6 +8507,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   One side of the wall, selected by you when you cast this spell, deals 5d8 fire damage to each creature that ends its turn within 10 feet of that side or inside the wall. A creature takes the same damage when it enters the wall for the first time on a turn or ends its turn there. The other side of the wall deals no damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d8 for each slot level above 4th.`,
+    // TODO: generateAttackConfigs
     // TODO choose dimensions of line wall
     getConfig: (g) => ({
       point: new PointResolver(g, 120),
@@ -11072,6 +11135,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   The lightning ignites flammable objects in the area that aren't being worn or carried.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 100) }),
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
@@ -11147,6 +11211,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   The ground in the area is covered with slick ice, making it difficult terrain. When a creature enters the spell's area for the first time on a turn or starts its turn there, it must make a Dexterity saving throw. On a failed save, it falls prone.
 
   If a creature starts its turn in the spell's area and is concentrating on a spell, the creature must make a successful Constitution saving throw against your spell save DC or lose concentration.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
     getAffectedArea: (g, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
     getTargets: () => [],
@@ -11294,6 +11359,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   Hailstones turn the storm's area of effect into difficult terrain until the end of your next turn.
 
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 300) }),
     getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
     getTargets: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
@@ -11366,6 +11432,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   A creature killed by this spell becomes a frozen statue until it thaws.
 
   At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 60) }),
     getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(g, caster, point)],
@@ -11768,6 +11835,9 @@ The creature is aware of this effect before it makes its attack against you.`
       this.method = method;
       this.unsubscribe = unsubscribe;
     }
+    generateAttackConfigs(targets) {
+      return targets.map((target) => ({ target }));
+    }
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor, method } = this;
@@ -11863,12 +11933,13 @@ The creature is aware of this effect before it makes its attack against you.`
     description: `You cause a tremor in the ground within range. Each creature other than you in that area must make a Dexterity saving throw. On a failed save, a creature takes 1d6 bludgeoning damage and is knocked prone. If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
+    generateAttackConfigs: () => [{}],
     getConfig: () => ({}),
     getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 1, 6, "bludgeoning")
     ],
-    getTargets: () => [],
+    getTargets: (g, caster) => g.getInside(getEarthTremorArea(g, caster), [caster]),
     async apply(g, attacker, method, { slot }) {
       const damage = await g.rollDamage(slot, {
         source: EarthTremor,
@@ -11967,6 +12038,12 @@ The creature is aware of this effect before it makes its attack against you.`
     getAffectedArea({ point }) {
       if (point)
         return [getMoonbeamArea(point)];
+    }
+    getDamage({ point }) {
+      return point && [_dd(this.controller.slot, 10, "radiant")];
+    }
+    getTargets({ point }) {
+      return this.g.getInside(getMoonbeamArea(point));
     }
     async apply({ point }) {
       await super.apply({ point });
@@ -12076,10 +12153,11 @@ The creature is aware of this effect before it makes its attack against you.`
   On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d10 for each slot level above 2nd.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
-    getTargets: () => [],
+    getTargets: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
     async apply(g, caster, method, { point, slot }) {
       const controller = new MoonbeamController(g, caster, method, point, slot);
       caster.concentrateOn({
@@ -12113,12 +12191,13 @@ The creature is aware of this effect before it makes its attack against you.`
     description: `Choose a point you can see on the ground within range. A fountain of churned earth and stone erupts in a 20-foot cube centered on that point. Each creature in that area must make a Dexterity saving throw. A creature takes 3d12 bludgeoning damage on a failed save, or half as much damage on a successful one. Additionally, the ground in that area becomes difficult terrain until cleared. Each 5-foot-square portion of the area requires at least 1 minute to clear by hand.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.`,
+    // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getEruptingEarthArea(point)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
-    getTargets: () => [],
+    getTargets: (g, caster, { point }) => g.getInside(getEruptingEarthArea(point)),
     async apply(g, attacker, method, { point, slot }) {
       const damage = await g.rollDamage(slot, {
         source: EruptingEarth,

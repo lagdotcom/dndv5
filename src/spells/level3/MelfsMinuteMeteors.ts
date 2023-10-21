@@ -12,9 +12,8 @@ import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
-const MelfsMinuteMeteorsIcon = makeIcon(iconUrl, DamageColours.fire);
-
-const MeteorResource = new TemporaryResource("Melf's Minute Meteors", 6);
+const MMMIcon = makeIcon(iconUrl, DamageColours.fire);
+const MMMResource = new TemporaryResource("Melf's Minute Meteors", 6);
 
 async function fireMeteors(
   g: Engine,
@@ -23,7 +22,7 @@ async function fireMeteors(
   { points }: HasPoints,
   spendMeteors = true,
 ) {
-  if (spendMeteors) attacker.spendResource(MeteorResource, points.length);
+  if (spendMeteors) attacker.spendResource(MMMResource, points.length);
 
   // TODO Sculpt Spells
   const damage = await g.rollDamage(2, {
@@ -60,7 +59,8 @@ async function fireMeteors(
     }
   }
 
-  // TODO stop concentrating if resource=0
+  if (spendMeteors && attacker.getResource(MMMResource) <= 0)
+    await attacker.endConcentration();
 }
 
 class FireMeteorsAction extends AbstractAction<HasPoints> {
@@ -78,18 +78,20 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
         points: new MultiPointResolver(
           g,
           1,
-          Math.min(2, actor.resources.get(MeteorResource.name) ?? 2),
+          Math.min(2, actor.resources.get(MMMResource.name) ?? 2),
           120,
         ),
       },
       {
-        icon: MelfsMinuteMeteorsIcon,
+        icon: MMMIcon,
         time: "bonus action",
         damage: [_dd(2, 6, "fire")],
         description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`,
       },
     );
   }
+
+  // TODO: generateAttackConfigs
 
   getAffectedArea({ points }: Partial<HasPoints>) {
     if (points)
@@ -98,8 +100,19 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
       );
   }
 
+  getDamage() {
+    return [_dd(2, 6, "fire")];
+  }
+
   getResources({ points }: Partial<HasPoints>) {
-    return new Map([[MeteorResource, points?.length ?? 1]]);
+    return new Map([[MMMResource, points?.length ?? 1]]);
+  }
+
+  getTargets(config: HasPoints) {
+    return (
+      this.getAffectedArea(config)?.flatMap((area) => this.g.getInside(area)) ??
+      []
+    );
   }
 
   async apply(config: HasPoints) {
@@ -111,7 +124,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
 const MelfsMinuteMeteors = scalingSpell<HasPoints>({
   status: "implemented",
   name: "Melf's Minute Meteors",
-  icon: MelfsMinuteMeteorsIcon,
+  icon: MMMIcon,
   level: 3,
   school: "Evocation",
   concentration: true,
@@ -122,6 +135,8 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
   description: `You create six tiny meteors in your space. They float in the air and orbit you for the spell's duration. When you cast the spell—and as a bonus action on each of your turns thereafter—you can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the number of meteors created increases by two for each slot level above 3rd.`,
+
+  // TODO: generateAttackConfigs
 
   getConfig: (g) => ({
     points: new MultiPointResolver(g, 1, 2, 120),
@@ -138,7 +153,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
 
   async apply(g, attacker, method, { points, slot }) {
     const meteors = slot * 2;
-    attacker.initResource(MeteorResource, meteors);
+    attacker.initResource(MMMResource, meteors);
 
     await fireMeteors(g, attacker, method, { points });
 
@@ -168,7 +183,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
       async onSpellEnd() {
         removeMeteorAction();
         removeTurnListener();
-        attacker.removeResource(MeteorResource);
+        attacker.removeResource(MMMResource);
       },
     });
   },

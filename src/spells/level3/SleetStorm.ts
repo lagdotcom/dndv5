@@ -17,6 +17,8 @@ const SleetStorm = simpleSpell<HasPoint>({
 
   If a creature starts its turn in the spell's area and is concentrating on a spell, the creature must make a successful Constitution saving throw against your spell save DC or lose concentration.`,
 
+  // TODO: generateAttackConfigs
+
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
   getAffectedArea: (g, caster, { point }) =>
     point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],

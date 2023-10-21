@@ -29,12 +29,15 @@ const EarthTremor = scalingSpell({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
+  generateAttackConfigs: () => [{}],
+
   getConfig: () => ({}),
   getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 1, 6, "bludgeoning"),
   ],
-  getTargets: () => [],
+  getTargets: (g, caster) =>
+    g.getInside(getEarthTremorArea(g, caster), [caster]),
 
   async apply(g, attacker, method, { slot }) {
     const damage = await g.rollDamage(slot, {

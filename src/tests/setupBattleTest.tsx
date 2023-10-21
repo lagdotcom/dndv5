@@ -32,6 +32,7 @@ export default async function setupBattleTest(...entries: BattleEntry[]) {
     const z = new constructor(g);
     g.place(z, x, y);
     g.dice.force(initiative, { type: "initiative", who: z });
+    g.dice.force(initiative, { type: "initiative", who: z }); // in case they have adv/dis
     return z;
   });
 
