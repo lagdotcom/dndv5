@@ -34,7 +34,7 @@ export default class MultiPointResolver implements Resolver<Point[]> {
         ec.add(`At most ${this.maximum} points`, this);
 
       for (const point of value) {
-        if (distanceTo(this.g, action.actor, point) > this.maxRange)
+        if (distanceTo(action.actor, point) > this.maxRange)
           ec.add("Out of range", this);
       }
     }

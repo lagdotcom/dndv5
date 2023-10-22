@@ -71,7 +71,7 @@ export default function App({ g, onMount }: Props) {
 
   const refreshUnits = useCallback(() => {
     const list: UnitData[] = [];
-    for (const [who, state] of g.combatants) list.push(getUnitData(who, state));
+    for (const who of g.combatants) list.push(getUnitData(who));
     allCombatants.value = list;
   }, [g]);
 
@@ -139,12 +139,11 @@ export default function App({ g, onMount }: Props) {
           movingCombatantId.value = who.id;
 
           if (handler.teleportation) {
-            const shape = {
+            const shape: SpecifiedEffectShape = {
               type: "within",
-              target: who,
-              position: g.getState(who).position,
+              who,
               radius: handler.maximum,
-            } as SpecifiedEffectShape;
+            };
             teleportInfo.value = shape;
             const area = resolveArea(shape);
 
@@ -199,7 +198,7 @@ export default function App({ g, onMount }: Props) {
       hideActionMenu();
       setAction(undefined);
 
-      const point = target ? g.getState(target).position : undefined;
+      const point = target?.position;
       const config = { target, point };
       if (checkConfig(g, action, config)) {
         onExecuteAction(action, config);
@@ -234,7 +233,7 @@ export default function App({ g, onMount }: Props) {
 
       const givePoint = wantsPoint.peek();
       if (givePoint) {
-        givePoint(g.getState(who).position);
+        givePoint(who.position);
         return;
       }
 
@@ -247,7 +246,7 @@ export default function App({ g, onMount }: Props) {
 
         const items = allActions.value
           .map((action) => {
-            const testConfig = { target: who, point: g.getState(who).position };
+            const testConfig = { target: who, point: who.position };
             const invalidConfig = !checkConfig(g, action, testConfig);
             const config = action.getConfig(testConfig);
             const needsTarget = "target" in config || me.who === who;

@@ -57,7 +57,7 @@ export function getFlanker(g: Engine, attacker: Combatant, target: Combatant) {
     if (flanker.side !== attacker.side) continue;
     if (flanker === attacker) continue;
     if (flanker.conditions.has("Incapacitated")) continue;
-    if (distance(g, flanker, target) > 5) continue;
+    if (distance(flanker, target) > 5) continue;
 
     return flanker;
   }

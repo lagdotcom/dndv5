@@ -3,18 +3,16 @@ import iconUrl from "@img/spl/earth-tremor.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
-import Engine from "../../Engine";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { poSet } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getEarthTremorArea = (g: Engine, caster: Combatant): SpecifiedWithin => ({
+const getEarthTremorArea = (who: Combatant): SpecifiedWithin => ({
   type: "within",
   radius: 10,
-  target: caster,
-  position: g.getState(caster).position,
+  who,
 });
 
 const EarthTremor = scalingSpell({
@@ -33,12 +31,11 @@ const EarthTremor = scalingSpell({
   generateAttackConfigs: () => [{ config: {}, positioning: poSet() }],
 
   getConfig: () => ({}),
-  getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
+  getAffectedArea: (g, caster) => [getEarthTremorArea(caster)],
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 1, 6, "bludgeoning"),
   ],
-  getTargets: (g, caster) =>
-    g.getInside(getEarthTremorArea(g, caster), [caster]),
+  getTargets: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
 
   async apply(g, attacker, method, { slot }) {
     const damage = await g.rollDamage(slot, {
@@ -50,7 +47,7 @@ const EarthTremor = scalingSpell({
       attacker,
     });
 
-    const shape = getEarthTremorArea(g, attacker);
+    const shape = getEarthTremorArea(attacker);
     for (const target of g.getInside(shape, [attacker])) {
       const save = await g.save({
         source: EarthTremor,

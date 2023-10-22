@@ -120,7 +120,7 @@ export async function doStandardAttack(
   const tags = new Set<AttackTag>();
   // TODO this should probably be a choice
   tags.add(
-    distance(g, attacker, target) > attacker.reach + weapon.reach
+    distance(attacker, target) > attacker.reach + weapon.reach
       ? "ranged"
       : "melee",
   );

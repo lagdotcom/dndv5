@@ -1,6 +1,5 @@
 import Effect from "../../Effect";
 import Combatant from "../../types/Combatant";
-import CombatantState from "../../types/CombatantState";
 import ConditionName from "../../types/ConditionName";
 import Icon from "../../types/Icon";
 import Point from "../../types/Point";
@@ -35,8 +34,7 @@ export interface UnitData {
   deathSaveSuccesses: number;
 }
 
-export function getUnitData(who: Combatant, state: CombatantState): UnitData {
-  const { position } = state;
+export function getUnitData(who: Combatant): UnitData {
   const {
     id,
     name,
@@ -72,7 +70,7 @@ export function getUnitData(who: Combatant, state: CombatantState): UnitData {
 
   return {
     who,
-    position,
+    position: who.position,
     id,
     name,
     img,

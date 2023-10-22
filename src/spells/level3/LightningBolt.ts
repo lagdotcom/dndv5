@@ -3,15 +3,14 @@ import iconUrl from "@img/spl/lightning-bolt.svg";
 import { aimLine } from "../../aim";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
-import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getLightningBoltArea = (g: Engine, actor: Combatant, point: Point) =>
-  aimLine(g.getState(actor).position, actor.sizeInUnits, point, 100, 5);
+const getLightningBoltArea = (actor: Combatant, point: Point) =>
+  aimLine(actor.position, actor.sizeInUnits, point, 100, 5);
 
 const LightningBolt = scalingSpell<HasPoint>({
   status: "implemented",
@@ -36,9 +35,9 @@ const LightningBolt = scalingSpell<HasPoint>({
     _dd((slot ?? 3) + 5, 6, "lightning"),
   ],
   getAffectedArea: (g, caster, { point }) =>
-    point && [getLightningBoltArea(g, caster, point)],
+    point && [getLightningBoltArea(caster, point)],
   getTargets: (g, caster, { point }) =>
-    g.getInside(getLightningBoltArea(g, caster, point)),
+    g.getInside(getLightningBoltArea(caster, point)),
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(5 + slot, {
@@ -52,9 +51,7 @@ const LightningBolt = scalingSpell<HasPoint>({
 
     // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside(
-      getLightningBoltArea(g, attacker, point),
-    )) {
+    for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
       const save = await g.save({
         source: LightningBolt,
         type: method.getSaveType(attacker, LightningBolt, slot),

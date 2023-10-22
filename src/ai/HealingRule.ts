@@ -3,13 +3,12 @@ import Engine from "../Engine";
 import Action from "../types/Action";
 import AIRule from "../types/AIRule";
 import Combatant from "../types/Combatant";
-import { checkConfig } from "../utils/config";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
 import { HealAllies, HealSelf, OverHealAllies } from "./coefficients";
 
 export default class HealingRule implements AIRule {
-  evaluate(g: Engine, me: Combatant, actions: Action[]) {
+  evaluateActions(g: Engine, me: Combatant, actions: Action[]) {
     const allies = Array.from(g.combatants.keys()).filter(
       (who) => who.side === me.side,
     );
@@ -17,7 +16,7 @@ export default class HealingRule implements AIRule {
     return actions.flatMap((action) =>
       action
         .generateHealingConfigs(allies)
-        .filter(({ config }) => checkConfig(g, action, config))
+        // .filter(({ config }) => checkConfig(g, action, config))
         .map(({ config, positioning }) => {
           const amounts = action.getHeal(config);
           if (!amounts) return;

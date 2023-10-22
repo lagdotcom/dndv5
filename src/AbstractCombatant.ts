@@ -43,6 +43,7 @@ import Item, {
 import LanguageName from "./types/LanguageName";
 import MovementType from "./types/MovementType";
 import PCClassName from "./types/PCClassName";
+import Point from "./types/Point";
 import Resource from "./types/Resource";
 import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
@@ -85,6 +86,9 @@ export default abstract class AbstractCombatant implements Combatant {
   hands: number;
   reach: number;
   level: number;
+
+  position: Point;
+  initiative: number;
 
   diesAtZero: boolean;
   hp: number;
@@ -186,6 +190,9 @@ export default abstract class AbstractCombatant implements Combatant {
     },
   ) {
     this.id = g.nextId();
+    this.position = { x: NaN, y: NaN };
+    this.initiative = NaN;
+
     this.diesAtZero = diesAtZero;
     this.hands = hands;
     this.hp = hp;

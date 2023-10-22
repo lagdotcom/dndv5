@@ -1,5 +1,6 @@
 import AbstractCombatant from "./AbstractCombatant";
 import Engine from "./Engine";
+import AIRule from "./types/AIRule";
 import CreatureType from "./types/CreatureType";
 import Item from "./types/Item";
 import SizeCategory from "./types/SizeCategory";
@@ -13,6 +14,7 @@ export default class Monster extends AbstractCombatant {
     size: SizeCategory,
     img: string,
     hpMax: number,
+    rules: AIRule[] = [],
   ) {
     super(g, name, {
       type,
@@ -20,6 +22,7 @@ export default class Monster extends AbstractCombatant {
       img,
       side: 1,
       hpMax,
+      rules,
     });
   }
 

@@ -134,7 +134,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
 
       area = new ActiveEffectArea(
         `Paladin Aura (${me.name})`,
-        { type: "within", radius, target: me, position },
+        { type: "within", radius, who: me },
         arSet("holy"),
         "yellow",
       );
@@ -145,7 +145,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       if (
         who.side === me.side &&
         !me.conditions.has("Unconscious") &&
-        distance(g, me, who) <= radius
+        distance(me, who) <= radius
       )
         bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
     });
@@ -162,10 +162,10 @@ At 18th level, the range of this aura increases to 30 feet.`,
     });
     g.events.on("EffectRemoved", ({ detail: { who } }) => {
       if (who === me && !me.conditions.has("Unconscious"))
-        updateAura(g.getState(me).position);
+        updateAura(me.position);
     });
 
-    updateAura(g.getState(me).position);
+    updateAura(me.position);
   },
 );
 
@@ -182,7 +182,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
         !me.conditions.has("Unconscious") &&
         config.conditions?.has("Frightened") &&
         who.side === me.side &&
-        distance(g, who, me) <= radius
+        distance(who, me) <= radius
       )
         success.add("fail", AuraOfCourage);
     });

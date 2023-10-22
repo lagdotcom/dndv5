@@ -52,8 +52,7 @@ it("can calculate a 5' within medium properly", () => {
   const actual = resolveArea({
     type: "within",
     radius: 5,
-    position: p(10, 5),
-    target: { sizeInUnits: 5 } as Combatant,
+    who: { position: p(10, 5), sizeInUnits: 5 } as Combatant,
   });
   expect(convertToShape(actual)).toEqual(within5m);
 });
@@ -67,8 +66,7 @@ it("can calculate a 5' within large properly", () => {
   const actual = resolveArea({
     type: "within",
     radius: 5,
-    position: p(10, 5),
-    target: { sizeInUnits: 10 } as Combatant,
+    who: { position: p(10, 5), sizeInUnits: 10 } as Combatant,
   });
   expect(convertToShape(actual)).toEqual(within5l);
 });

@@ -3,6 +3,7 @@ import ACMethod from "./ACMethod";
 import Action from "./Action";
 import ActionTime from "./ActionTime";
 import AICoefficient from "./AICoefficient";
+import AIRule from "./AIRule";
 import CombatantGroup from "./CombatantGroup";
 import CombatantScore from "./CombatantScore";
 import Concentration from "./Concentration";
@@ -22,6 +23,7 @@ import Item, {
 import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
 import PCClassName from "./PCClassName";
+import Point from "./Point";
 import Resource from "./Resource";
 import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
@@ -40,6 +42,9 @@ export default interface Combatant extends Source {
   side: number;
   hands: number;
   reach: number;
+
+  initiative: number;
+  position: Point;
 
   diesAtZero: boolean;
   level: number;
@@ -89,6 +94,7 @@ export default interface Combatant extends Source {
   deathSaveSuccesses: number;
   features: Map<string, Feature>;
   groups: Set<CombatantGroup>;
+  rules: Set<AIRule>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

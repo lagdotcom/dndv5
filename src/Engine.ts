@@ -60,7 +60,6 @@ import PointSet from "./PointSet";
 import AbilityName from "./types/AbilityName";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
-import CombatantState from "./types/CombatantState";
 import DamageBreakdown from "./types/DamageBreakdown";
 import DamageResponse from "./types/DamageResponse";
 import DamageType from "./types/DamageType";
@@ -84,14 +83,13 @@ import Source from "./types/Source";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import { resolveArea } from "./utils/areas";
-import { orderedKeys } from "./utils/map";
 import { modulo } from "./utils/numbers";
 import { movePoint } from "./utils/points";
 import { SetInitialiser } from "./utils/set";
 import { getSquares } from "./utils/units";
 
 export default class Engine {
-  combatants: Map<Combatant, CombatantState>;
+  combatants: Set<Combatant>;
   effects: Set<EffectArea>;
   private id: number;
   activeCombatant?: Combatant;
@@ -103,7 +101,7 @@ export default class Engine {
     public dice = new DiceBag(),
     public events = new Dispatcher(),
   ) {
-    this.combatants = new Map();
+    this.combatants = new Set();
     this.effects = new Set();
     this.id = 0;
     this.initiativeOrder = [];
@@ -117,19 +115,20 @@ export default class Engine {
 
   place(who: Combatant, x: number, y: number) {
     const position = { x, y };
-    this.combatants.set(who, { position, initiative: NaN });
+    who.position = position;
+    who.initiative = NaN;
+    this.combatants.add(who);
     this.fire(new CombatantPlacedEvent({ who, position }));
   }
 
   async start() {
-    for (const [c, cs] of this.combatants) {
-      c.finalise();
-      cs.initiative = await this.rollInitiative(c);
+    for (const co of this.combatants) {
+      co.finalise();
+      co.initiative = await this.rollInitiative(co);
     }
 
-    this.initiativeOrder = orderedKeys(
-      this.combatants,
-      ([, a], [, b]) => b.initiative - a.initiative,
+    this.initiativeOrder = Array.from(this.combatants).sort(
+      (a, b) => b.initiative - a.initiative,
     );
 
     await this.resolve(
@@ -341,8 +340,7 @@ export default class Engine {
     handler: MoveHandler,
     type: MovementType = "speed",
   ) {
-    const state = this.getState(who);
-    const old = state.position;
+    const old = who.position;
     const position = movePoint(old, direction);
 
     return this.move(who, position, handler, type);
@@ -354,8 +352,7 @@ export default class Engine {
     handler: MoveHandler,
     type: MovementType = "speed",
   ) {
-    const state = this.getState(who);
-    const old = state.position;
+    const old = who.position;
 
     const error = new ErrorCollector();
     const pre = await this.resolve(
@@ -386,7 +383,7 @@ export default class Engine {
       }),
     );
 
-    state.position = position;
+    who.position = position;
     const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
 
     await this.resolve(
@@ -792,15 +789,6 @@ export default class Engine {
     return e;
   }
 
-  getState(who: Combatant) {
-    return (
-      this.combatants.get(who) ?? {
-        initiative: NaN,
-        position: { x: NaN, y: NaN },
-      }
-    );
-  }
-
   addEffectArea(area: EffectArea) {
     area.id = this.nextId();
     this.effects.add(area);
@@ -816,9 +804,9 @@ export default class Engine {
     const points = resolveArea(area);
     const inside: Combatant[] = [];
 
-    for (const [combatant, state] of this.combatants) {
+    for (const combatant of this.combatants) {
       if (ignore.includes(combatant)) continue;
-      const squares = new PointSet(getSquares(combatant, state.position));
+      const squares = new PointSet(getSquares(combatant, combatant.position));
 
       if (points.overlaps(squares)) inside.push(combatant);
     }

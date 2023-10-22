@@ -1,7 +1,8 @@
-import BonusCollector from "../collectors/BonusCollector";
+import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
 import Action from "./Action";
 import Combatant from "./Combatant";
+import Point from "./Point";
 
 export type PositionConstraint = {
   type: "within";
@@ -9,13 +10,23 @@ export type PositionConstraint = {
   of: Combatant;
 };
 
-export interface AIEvaluation<T extends object = object> {
+export interface ActionEvaluation<T extends object = object> {
   action: Action<T>;
   config: T;
-  score: BonusCollector;
+  score: EvaluationCollector;
   positioning: Set<PositionConstraint>;
 }
 
 export default interface AIRule {
-  evaluate(g: Engine, me: Combatant, actions: Action[]): AIEvaluation[];
+  evaluateActions?: (
+    g: Engine,
+    me: Combatant,
+    actions: Action[],
+  ) => ActionEvaluation[];
+  evaluatePosition?: (
+    g: Engine,
+    me: Combatant,
+    score: EvaluationCollector,
+    position: Point,
+  ) => void;
 }

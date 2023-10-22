@@ -39,8 +39,7 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
         ec.add(`At most ${this.maximum} targets`, this);
 
       for (const who of value) {
-        const isOutOfRange =
-          distance(this.g, action.actor, who) > this.maxRange;
+        const isOutOfRange = distance(action.actor, who) > this.maxRange;
         const filterErrors = this.filters
           .filter((filter) => !filter.check(this.g, action, who))
           .map((filter) => filter.message);

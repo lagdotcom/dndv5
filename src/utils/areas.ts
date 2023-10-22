@@ -146,9 +146,9 @@ export function resolveArea(area: SpecifiedEffectShape) {
       return getTilesWithinCircle(area.centre, area.radius);
 
     case "within": {
-      const x = area.position.x - area.radius;
-      const y = area.position.y - area.radius;
-      const size = area.target.sizeInUnits + area.radius * 2;
+      const x = area.who.position.x - area.radius;
+      const y = area.who.position.y - area.radius;
+      const size = area.who.sizeInUnits + area.radius * 2;
       return getTilesWithinRectangle({ x, y }, size, size);
     }
 

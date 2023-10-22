@@ -26,14 +26,10 @@ import { poSet } from "../../utils/ai";
 import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 
-const getEldritchBurstArea = (
-  g: Engine,
-  target: Combatant,
-): SpecifiedWithin => ({
+const getEldritchBurstArea = (who: Combatant): SpecifiedWithin => ({
   type: "within",
   radius: 5,
-  target,
-  position: g.getState(target).position,
+  who,
 });
 
 const BurstIcon = makeIcon(burstUrl, DamageColours.force);
@@ -49,7 +45,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
   getAffectedArea: (g, caster, { target }) =>
-    target && [getEldritchBurstArea(g, target)],
+    target && [getEldritchBurstArea(target)],
   getDamage: () => [_dd(2, 10, "force")],
   getTargets: (g, caster, { target }) => [target],
 
@@ -77,7 +73,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
       attack.critical,
     );
 
-    for (const other of g.getInside(getEldritchBurstArea(g, target))) {
+    for (const other of g.getInside(getEldritchBurstArea(target))) {
       if (other === target) continue;
 
       const { damageResponse } = await g.save({

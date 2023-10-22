@@ -104,14 +104,8 @@ class BullRushAction extends AbstractAction {
       mustUseAll: false,
       teleportation: false,
       onMove: (who, cost) => {
-        const position = g.getState(who).position;
         for (const hit of g.getInside(
-          {
-            type: "within",
-            position,
-            target: actor,
-            radius: 0,
-          },
+          { type: "within", who, radius: 0 },
           affected,
         )) {
           // TODO [MESSAGE]

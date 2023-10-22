@@ -3,13 +3,12 @@ import Engine from "../Engine";
 import Action from "../types/Action";
 import AIRule from "../types/AIRule";
 import Combatant from "../types/Combatant";
-import { checkConfig } from "../utils/config";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
 import { DamageAllies, DamageEnemies, OverKillEnemies } from "./coefficients";
 
 export default class DamageRule implements AIRule {
-  evaluate(g: Engine, me: Combatant, actions: Action[]) {
+  evaluateActions(g: Engine, me: Combatant, actions: Action[]) {
     const enemies = Array.from(g.combatants.keys()).filter(
       (who) => who.side !== me.side,
     );
@@ -17,7 +16,7 @@ export default class DamageRule implements AIRule {
     return actions.flatMap((action) =>
       action
         .generateAttackConfigs(enemies)
-        .filter(({ config }) => checkConfig(g, action, config))
+        // .filter(({ config }) => checkConfig(g, action, config))
         .map(({ config, positioning }) => {
           // TODO this is very inaccurate for WeaponAttack (UI has same issue)
           const amounts = action.getDamage(config);

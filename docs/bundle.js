@@ -52,10 +52,10 @@
 
   // src/collectors/AbstractCollector.ts
   var AbstractCollector = class {
-    constructor() {
-      this.entries = /* @__PURE__ */ new Set();
-      this.ignoredSources = /* @__PURE__ */ new Set();
-      this.ignoredValues = /* @__PURE__ */ new Set();
+    constructor(entries, ignoredSources, ignoredValues) {
+      this.entries = new Set(entries);
+      this.ignoredSources = new Set(ignoredSources);
+      this.ignoredValues = new Set(ignoredValues);
     }
     add(value, source) {
       this.entries.add({ value, source });
@@ -783,9 +783,9 @@
       case "sphere":
         return getTilesWithinCircle(area.centre, area.radius);
       case "within": {
-        const x = area.position.x - area.radius;
-        const y = area.position.y - area.radius;
-        const size = area.target.sizeInUnits + area.radius * 2;
+        const x = area.who.position.x - area.radius;
+        const y = area.who.position.y - area.radius;
+        const size = area.who.sizeInUnits + area.radius * 2;
         return getTilesWithinRectangle({ x, y }, size, size);
       }
       case "cube": {
@@ -902,19 +902,16 @@
     const closest_y2 = Math.min(y1 + size1, y2 + size2);
     return Math.max(closest_x1 - closest_x2, closest_y1 - closest_y2) + MapSquareSize;
   }
-  function distance(g, a, b) {
-    const as = g.getState(a);
-    const bs = g.getState(b);
+  function distance(a, b) {
     return getDistanceBetween(
-      as.position,
+      a.position,
       a.sizeInUnits,
-      bs.position,
+      b.position,
       b.sizeInUnits
     );
   }
-  function distanceTo(g, who, to) {
-    const s = g.getState(who);
-    return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
+  function distanceTo(who, to) {
+    return getDistanceBetween(who.position, who.sizeInUnits, to, MapSquareSize);
   }
   function compareDistances(stationary, stationaryPosition, mover, oldPosition, newPosition) {
     const oldDistance = getDistanceBetween(
@@ -984,7 +981,7 @@
         continue;
       if (flanker.conditions.has("Incapacitated"))
         continue;
-      if (distance(g, flanker, target) > 5)
+      if (distance(flanker, target) > 5)
         continue;
       return flanker;
     }
@@ -1314,10 +1311,12 @@
       const minSlot = (_b = (_a = method.getMinSlot) == null ? void 0 : _a.call(method, this, caster)) != null ? _b : level;
       const maxSlot = (_d = (_c = method.getMaxSlot) == null ? void 0 : _c.call(method, this, caster)) != null ? _d : level;
       return enumerate(minSlot, maxSlot).flatMap(
-        (slot) => generateAttackConfigs(slot, targets, g, caster, method).map((config) => ({
-          ...config,
-          slot
-        }))
+        (slot) => generateAttackConfigs(slot, targets, g, caster, method).map(
+          ({ config, positioning }) => ({
+            config: { ...config, slot },
+            positioning
+          })
+        )
       );
     },
     generateHealingConfigs(g, caster, method, targets) {
@@ -1328,7 +1327,10 @@
       const maxSlot = (_d = (_c = method.getMaxSlot) == null ? void 0 : _c.call(method, this, caster)) != null ? _d : level;
       return enumerate(minSlot, maxSlot).flatMap(
         (slot) => generateHealingConfigs(slot, targets, g, caster, method).map(
-          (config) => ({ ...config, slot })
+          ({ config, positioning }) => ({
+            config: { ...config, slot },
+            positioning
+          })
         )
       );
     },
@@ -1429,6 +1431,8 @@
       this.g = g;
       this.name = name;
       this.id = g.nextId();
+      this.position = { x: NaN, y: NaN };
+      this.initiative = NaN;
       this.diesAtZero = diesAtZero;
       this.hands = hands;
       this.hp = hp;
@@ -1800,7 +1804,7 @@
       if (!(value instanceof AbstractCombatant)) {
         ec.add("No target", this);
       } else {
-        const isOutOfRange = distance(this.g, action.actor, value) > this.maxRange;
+        const isOutOfRange = distance(action.actor, value) > this.maxRange;
         const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
         if (isOutOfRange)
           ec.add("Out of range", this);
@@ -1810,6 +1814,27 @@
       return ec;
     }
   };
+
+  // src/utils/config.ts
+  function getConfigErrors(g, action, config) {
+    const ec = g.check(action, config);
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
+      const value = config[key];
+      resolver.check(value, action, ec);
+    }
+    return ec;
+  }
+  function checkConfig(g, action, config) {
+    return getConfigErrors(g, action, config).result;
+  }
+
+  // src/utils/ai.ts
+  var poSet = (...constraints) => new Set(constraints);
+  var poWithin = (range, of) => ({
+    type: "within",
+    range,
+    of
+  });
 
   // src/utils/text.ts
   var niceAbilityName = {
@@ -2057,7 +2082,7 @@
         if (who.conditions.has("Prone"))
           diceType.add("disadvantage", Prone);
         if (target.conditions.has("Prone")) {
-          const d = distance(g, who, target);
+          const d = distance(who, target);
           diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
         }
       });
@@ -2107,7 +2132,15 @@
       this.subIcon = ammo == null ? void 0 : ammo.icon;
     }
     generateAttackConfigs(targets) {
-      return targets.map((target) => ({ target }));
+      const ranges = [this.weapon.shortRange, this.weapon.longRange].filter(
+        isDefined
+      );
+      return targets.flatMap(
+        (target) => ranges.map((range) => ({
+          config: { target },
+          positioning: poSet(poWithin(range, target))
+        }))
+      );
     }
     getDamage() {
       return [this.weapon.damage];
@@ -2158,7 +2191,7 @@
   }) {
     const tags = /* @__PURE__ */ new Set();
     tags.add(
-      distance(g, attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
+      distance(attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
     );
     if (weapon.category !== "natural")
       tags.add("weapon");
@@ -2379,19 +2412,6 @@
     }
   };
 
-  // src/utils/config.ts
-  function getConfigErrors(g, action, config) {
-    const ec = g.check(action, config);
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-      const value = config[key];
-      resolver.check(value, action, ec);
-    }
-    return ec;
-  }
-  function checkConfig(g, action, config) {
-    return getConfigErrors(g, action, config).result;
-  }
-
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g) => {
     g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
@@ -2522,7 +2542,7 @@
     g.events.on(
       "BeforeAttack",
       ({ detail: { who, target, weapon, diceType } }) => {
-        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(g, who, target) > weapon.shortRange)
+        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(who, target) > weapon.shortRange)
           diceType.add("disadvantage", LongRangeAttacksRule);
       }
     );
@@ -2541,12 +2561,12 @@
       return false;
     };
     g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
-      const squares = getSquares(target, g.getState(target).position);
+      const squares = getSquares(target, target.position);
       if (isHeavilyObscuredAnywhere(squares))
         diceType.add("disadvantage", ObscuredRule);
     });
     g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-      const squares = getSquares(who, g.getState(who).position);
+      const squares = getSquares(who, who.position);
       if (isHeavilyObscuredAnywhere(squares))
         conditions.add("Blinded", ObscuredRule);
     });
@@ -2578,13 +2598,13 @@
         ({ detail: { handler, who, from, to, interrupt } }) => {
           if (!handler.provokesOpportunityAttacks)
             return;
-          for (const [attacker, { position }] of g.combatants) {
+          for (const attacker of g.combatants) {
             if (attacker.side === who.side)
               continue;
             const validActions = getValidOpportunityAttacks(
               g,
               attacker,
-              position,
+              attacker.position,
               who,
               from,
               to
@@ -2621,7 +2641,7 @@
       outcome
     }
   }) => {
-    if (target.conditions.has(condition) && distance(g, who, target) <= maxRange)
+    if (target.conditions.has(condition) && distance(who, target) <= maxRange)
       outcome.add("critical", rule);
   };
   var ParalyzedRule = new DndRule("Paralyzed", (g) => {
@@ -3048,15 +3068,6 @@
   // src/types/SaveTag.ts
   var svSet = (...items) => new Set(items);
 
-  // src/utils/map.ts
-  function orderedKeys(map, comparator) {
-    const entries = [];
-    for (const entry of map)
-      entries.push(entry);
-    entries.sort(comparator);
-    return entries.map(([k]) => k);
-  }
-
   // src/utils/points.ts
   var _p = (x, y) => ({ x, y });
   function addPoints(a, b) {
@@ -3084,7 +3095,7 @@
     constructor(dice = new DiceBag(), events = new Dispatcher()) {
       this.dice = dice;
       this.events = events;
-      this.combatants = /* @__PURE__ */ new Map();
+      this.combatants = /* @__PURE__ */ new Set();
       this.effects = /* @__PURE__ */ new Set();
       this.id = 0;
       this.initiativeOrder = [];
@@ -3096,17 +3107,18 @@
     }
     place(who, x, y) {
       const position = { x, y };
-      this.combatants.set(who, { position, initiative: NaN });
+      who.position = position;
+      who.initiative = NaN;
+      this.combatants.add(who);
       this.fire(new CombatantPlacedEvent({ who, position }));
     }
     async start() {
-      for (const [c, cs] of this.combatants) {
-        c.finalise();
-        cs.initiative = await this.rollInitiative(c);
+      for (const co of this.combatants) {
+        co.finalise();
+        co.initiative = await this.rollInitiative(co);
       }
-      this.initiativeOrder = orderedKeys(
-        this.combatants,
-        ([, a], [, b]) => b.initiative - a.initiative
+      this.initiativeOrder = Array.from(this.combatants).sort(
+        (a, b) => b.initiative - a.initiative
       );
       await this.resolve(
         new BattleStartedEvent({ interrupt: new InterruptionCollector() })
@@ -3270,14 +3282,12 @@
       );
     }
     async moveInDirection(who, direction, handler, type = "speed") {
-      const state = this.getState(who);
-      const old = state.position;
+      const old = who.position;
       const position = movePoint(old, direction);
       return this.move(who, position, handler, type);
     }
     async move(who, position, handler, type = "speed") {
-      const state = this.getState(who);
-      const old = state.position;
+      const old = who.position;
       const error = new ErrorCollector();
       const pre = await this.resolve(
         new BeforeMoveEvent({
@@ -3306,7 +3316,7 @@
           multiplier
         })
       );
-      state.position = position;
+      who.position = position;
       const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
       await this.resolve(
         new CombatantMovedEvent({
@@ -3607,13 +3617,6 @@
         await interruption.apply(this);
       return e;
     }
-    getState(who) {
-      var _a;
-      return (_a = this.combatants.get(who)) != null ? _a : {
-        initiative: NaN,
-        position: { x: NaN, y: NaN }
-      };
-    }
     addEffectArea(area) {
       area.id = this.nextId();
       this.effects.add(area);
@@ -3626,10 +3629,10 @@
     getInside(area, ignore = []) {
       const points = resolveArea(area);
       const inside = [];
-      for (const [combatant, state] of this.combatants) {
+      for (const combatant of this.combatants) {
         if (ignore.includes(combatant))
           continue;
-        const squares = new PointSet(getSquares(combatant, state.position));
+        const squares = new PointSet(getSquares(combatant, combatant.position));
         if (points.overlaps(squares))
           inside.push(combatant);
       }
@@ -3772,13 +3775,14 @@
 
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
-    constructor(g, name, cr, type, size, img, hpMax) {
+    constructor(g, name, cr, type, size, img, hpMax, rules = []) {
       super(g, name, {
         type,
         size,
         img,
         side: 1,
-        hpMax
+        hpMax,
+        rules
       });
       this.cr = cr;
     }
@@ -3977,11 +3981,10 @@
   }
 
   // src/monsters/fiendishParty/Birnotec.ts
-  var getEldritchBurstArea = (g, target) => ({
+  var getEldritchBurstArea = (who) => ({
     type: "within",
     radius: 5,
-    target,
-    position: g.getState(target).position
+    who
   });
   var BurstIcon = makeIcon(eldritch_burst_default, DamageColours.force);
   var EldritchBurstSpell = simpleSpell({
@@ -3993,7 +3996,7 @@
     lists: ["Warlock"],
     description: `Make a ranged spell attack against the target. On a hit, the target takes 2d10 force damage. All other creatures within 5 ft. must make a Dexterity save or take 1d10 force damage.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
-    getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(g, target)],
+    getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(target)],
     getDamage: () => [_dd(2, 10, "force")],
     getTargets: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
@@ -4017,7 +4020,7 @@
         { size: 10, source: this, attacker: caster, damageType: "force" },
         attack.critical
       );
-      for (const other of g.getInside(getEldritchBurstArea(g, target))) {
+      for (const other of g.getInside(getEldritchBurstArea(target))) {
         if (other === target)
           continue;
         const { damageResponse } = await g.save({
@@ -4156,7 +4159,10 @@
       this.dc = dc;
     }
     generateAttackConfigs(targets) {
-      return targets.map((target) => ({ target }));
+      return targets.map((target) => ({
+        config: { target },
+        positioning: poSet()
+      }));
     }
     getDamage() {
       return [_dd(2, 10, "fire")];
@@ -4755,8 +4761,115 @@
   var HealAllies = makeAICo("HealAllies");
   var OverHealAllies = makeAICo("OverHealAllies", -0.5);
   var DamageEnemies = makeAICo("DamageEnemies");
-  var OverKillEnemies = makeAICo("OverKillEnemies", -0.5);
+  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
   var DamageAllies = makeAICo("DamageAllies", -1);
+  var StayNearAllies = makeAICo("StayNearAllies");
+
+  // src/collectors/EvaluationCollector.ts
+  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
+    addEval(c, value, co) {
+      this.add(value * c.getCoefficient(co), co);
+    }
+    copy() {
+      return new _EvaluationCollector(
+        this.entries,
+        this.ignoredSources,
+        this.ignoredValues
+      );
+    }
+  };
+
+  // src/ai/DamageRule.ts
+  var DamageRule = class {
+    evaluateActions(g, me, actions) {
+      const enemies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side !== me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
+          const amounts = action.getDamage(config);
+          if (!amounts)
+            return;
+          const targets = action.getTargets(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effective = 0;
+          let overKill = 0;
+          let friendlyFire = 0;
+          for (const target of targets) {
+            const remaining = target.hp;
+            const damage = Math.min(average, remaining);
+            if (target.side === me.side)
+              friendlyFire += damage;
+            else
+              effective += damage;
+            overKill += Math.max(average - remaining, 0);
+          }
+          score.addEval(me, effective, DamageEnemies);
+          score.addEval(me, overKill, OverKillEnemies);
+          score.addEval(me, friendlyFire, DamageAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/HealingRule.ts
+  var HealingRule = class {
+    evaluateActions(g, me, actions) {
+      const allies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side === me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
+          const amounts = action.getHeal(config);
+          if (!amounts)
+            return;
+          const targets = action.getTargets(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effectiveSelf = 0;
+          let effective = 0;
+          let overHeal = 0;
+          for (const target of targets) {
+            const missing = target.hpMax - target.hp;
+            const heal = Math.min(average, missing);
+            if (target === me)
+              effectiveSelf += heal;
+            else
+              effective += heal;
+            overHeal += Math.max(average - missing, 0);
+          }
+          score.addEval(me, effectiveSelf, HealSelf);
+          score.addEval(me, effective, HealAllies);
+          score.addEval(me, overHeal, OverHealAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/StayNearAlliesRule.ts
+  var StayNearAlliesRule = class {
+    constructor(range) {
+      this.range = range;
+    }
+    evaluatePosition(g, me, score, position) {
+      const near = Array.from(g.combatants).filter(
+        (them) => them !== me && them.side === me.side && getDistanceBetween(
+          position,
+          me.sizeInUnits,
+          them.position,
+          them.sizeInUnits
+        ) <= this.range
+      );
+      score.addEval(me, near.length, StayNearAllies);
+    }
+  };
 
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
@@ -4891,7 +5004,10 @@
     description: `A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
-    generateAttackConfigs: (slot, targets) => targets.map((target) => ({ target })),
+    generateAttackConfigs: (slot, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(120, target))
+    })),
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
     getDamage: (_2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
@@ -4936,7 +5052,7 @@
         if (value.length > this.maximum)
           ec.add(`At most ${this.maximum} targets`, this);
         for (const who of value) {
-          const isOutOfRange = distance(this.g, action.actor, who) > this.maxRange;
+          const isOutOfRange = distance(action.actor, who) > this.maxRange;
           const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
           if (isOutOfRange)
             ec.add(`${who.name}: Out of range`, this);
@@ -4993,7 +5109,10 @@
         allTargets.filter((co) => co.side === caster.side),
         1,
         6
-      ).map((targets) => ({ targets }));
+      ).map((targets) => ({
+        config: { targets },
+        positioning: new Set(targets.map((target) => poWithin(60, target)))
+      }));
     },
     getConfig: (g) => ({
       targets: new MultiTargetResolver(g, 1, 6, 60, [])
@@ -5039,6 +5158,7 @@
   };
 
   // src/monsters/fiendishParty/OGonrit.ts
+  var FiendishMantleRange = 30;
   var FiendishMantle = new SimpleFeature(
     "Fiendish Mantle",
     "Whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
@@ -5046,7 +5166,7 @@
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
-          if (attacker.side === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(g, me, attacker) <= 30)
+          if (attacker.side === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
             interrupt.add(
               new EvaluateLater(attacker, FiendishMantle, async () => {
                 const amount = await g.rollDamage(
@@ -5134,7 +5254,11 @@
   );
   var OGonrit = class extends Monster {
     constructor(g) {
-      super(g, "O Gonrit", 5, "fiend", "medium", o_gonrit_default, 65);
+      super(g, "O Gonrit", 5, "fiend", "medium", o_gonrit_default, 65, [
+        new HealingRule(),
+        new DamageRule(),
+        new StayNearAlliesRule(FiendishMantleRange)
+      ]);
       this.coefficients.set(HealAllies, 1.2);
       this.groups.add(FiendishParty);
       this.diesAtZero = false;
@@ -5193,10 +5317,9 @@
     g.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
       var _a;
       for (const other of (_a = handler.cannotApproach) != null ? _a : []) {
-        const otherPos = g.getState(other).position;
         const { oldDistance, newDistance } = compareDistances(
           other,
-          otherPos,
+          other.position,
           who,
           from,
           to
@@ -5241,7 +5364,10 @@
     description: `A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
-    generateHealingConfigs: (slot, targets) => targets.map((target) => ({ target })),
+    generateHealingConfigs: (slot, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
     getConfig: (g) => ({
       target: new TargetResolver(g, 60, [
         canSee,
@@ -5285,20 +5411,14 @@
   // src/monsters/fiendishParty/Yulash.ts
   function getMeleeAttackOptions(g, attacker, filter) {
     const options = [];
-    const attackerPosition = g.getState(attacker).position;
     for (const weapon of attacker.weapons) {
       if (weapon.rangeCategory !== "melee")
         continue;
-      for (const [target, { position }] of g.combatants) {
+      for (const target of g.combatants) {
         if (target === attacker || !filter(target, weapon))
           continue;
         const reach = attacker.reach + weapon.reach;
-        if (reach >= getDistanceBetween(
-          attackerPosition,
-          attacker.sizeInUnits,
-          position,
-          target.sizeInUnits
-        ))
+        if (reach >= distance(attacker, target))
           options.push({ target, weapon });
       }
     }
@@ -5665,14 +5785,8 @@
         mustUseAll: false,
         teleportation: false,
         onMove: (who, cost) => {
-          const position = g.getState(who).position;
           for (const hit of g.getInside(
-            {
-              type: "within",
-              position,
-              target: actor,
-              radius: 0
-            },
+            { type: "within", who, radius: 0 },
             affected
           )) {
             affected.push(hit);
@@ -7153,7 +7267,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (!isPoint(value))
         ec.add("No target", this);
       else {
-        if (distanceTo(this.g, action.actor, value) > this.maxRange)
+        if (distanceTo(action.actor, value) > this.maxRange)
           ec.add("Out of range", this);
       }
       return ec;
@@ -7201,10 +7315,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Metallic Breath Weapon",
     1
   );
-  function getBreathArea(g, me, point) {
-    const position = g.getState(me).position;
+  function getBreathArea(me, point) {
     const size = me.sizeInUnits;
-    return aimCone(position, size, point, 15);
+    return aimCone(me.position, size, point, 15);
   }
   var BreathWeaponAction = class extends AbstractAttackAction {
     constructor(g, actor, damageType, damageDice) {
@@ -7227,7 +7340,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
     getAffectedArea({ point }) {
       if (point)
-        return [getBreathArea(this.g, this.actor, point)];
+        return [getBreathArea(this.actor, point)];
     }
     async apply({ point }) {
       await super.apply({ point });
@@ -7238,7 +7351,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         size: 10,
         damageType
       });
-      for (const target of g.getInside(getBreathArea(g, attacker, point))) {
+      for (const target of g.getInside(getBreathArea(attacker, point))) {
         const save = await g.save({
           source: this,
           type: { type: "ability", ability: "con" },
@@ -7284,7 +7397,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       point
     }) {
       if (point)
-        return [getBreathArea(this.g, this.actor, point)];
+        return [getBreathArea(this.actor, point)];
     }
   };
   var EnervatingBreathEffect = new Effect(
@@ -7312,7 +7425,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       await super.apply({ point });
       const { g, actor } = this;
       const config = { conditions: coSet("Incapacitated"), duration: 2 };
-      for (const target of g.getInside(getBreathArea(g, actor, point))) {
+      for (const target of g.getInside(getBreathArea(actor, point))) {
         const save = await g.save({
           source: this,
           type: { type: "ability", ability: "con" },
@@ -7341,7 +7454,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     async apply({ point }) {
       await super.apply({ point });
       const { g, actor } = this;
-      for (const target of g.getInside(getBreathArea(this.g, actor, point))) {
+      for (const target of g.getInside(getBreathArea(actor, point))) {
         const config = { duration: Infinity };
         const save = await g.save({
           source: this,
@@ -7437,7 +7550,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       allTargets.filter((co) => co.side !== caster.side),
       1,
       2
-    ).map((targets) => ({ targets })),
+    ).map((targets) => ({
+      config: { targets },
+      positioning: new Set(targets.map((target) => poWithin(60, target)))
+    })),
     getConfig: (g) => ({
       targets: new MultiTargetResolver(g, 1, 2, 60, [canSee])
     }),
@@ -7446,7 +7562,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     check(g, { targets }, ec) {
       if (isCombatantArray(targets) && targets.length === 2) {
         const [a, b] = targets;
-        if (distance(g, a, b) > 5)
+        if (distance(a, b) > 5)
           ec.add("Targets are not within 5 feet of each other", AcidSplash);
       }
       return ec;
@@ -7501,7 +7617,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({ target })),
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g, caster, { target }) => [target],
@@ -7541,7 +7660,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({ target })),
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g, caster, { target }) => [target],
@@ -7616,7 +7738,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({ target })),
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g, caster, { target }) => [target],
@@ -7637,10 +7762,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var ice_knife_default = "./ice-knife-4B5PYKBA.svg";
 
   // src/spells/level1/IceKnife.ts
-  var getIceKnifeArea = (g, target) => ({
+  var getIceKnifeArea = (who) => ({
     type: "within",
-    target,
-    position: g.getState(target).position,
+    who,
     radius: 5
   });
   var IceKnife = scalingSpell({
@@ -7655,14 +7779,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 cold damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
-    generateAttackConfigs: (slot, targets) => targets.map((target) => ({ target })),
+    generateAttackConfigs: (slot, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
-    getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(g, target)],
+    getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(target)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(1, 10, "piercing"),
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
-    getTargets: (g, caster, { target }) => g.getInside(getIceKnifeArea(g, target)),
+    getTargets: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
     async apply(g, attacker, method, { slot, target }) {
       const { attack, hit, critical } = await g.attack({
         who: attacker,
@@ -7701,7 +7828,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         method,
         damageType: "cold"
       });
-      for (const victim of g.getInside(getIceKnifeArea(g, target))) {
+      for (const victim of g.getInside(getIceKnifeArea(target))) {
         const { damageResponse } = await g.save({
           source: IceKnife,
           type: method.getSaveType(attacker, IceKnife, slot),
@@ -7770,7 +7897,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if (total > this.maximum)
           ec.add(`At most ${this.maximum} allocations`, this);
         for (const { who } of value) {
-          const isOutOfRange = distance(this.g, action.actor, who) > this.maxRange;
+          const isOutOfRange = distance(action.actor, who) > this.maxRange;
           const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
           if (isOutOfRange)
             ec.add(`${who.name}: Out of range`, this);
@@ -8328,7 +8455,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if (value.length > this.maximum)
           ec.add(`At most ${this.maximum} points`, this);
         for (const point of value) {
-          if (distanceTo(this.g, action.actor, point) > this.maxRange)
+          if (distanceTo(action.actor, point) > this.maxRange)
             ec.add("Out of range", this);
         }
       }
@@ -8768,7 +8895,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     generateHealingConfigs(targets) {
       const resourceMax = this.actor.getResource(LayOnHandsResource);
       return targets.flatMap(
-        (target) => enumerate(1, resourceMax).map((cost) => ({ cost, target }))
+        (target) => enumerate(1, resourceMax).map((cost) => ({
+          config: { cost, target },
+          positioning: poSet(poWithin(this.actor.reach, target))
+        }))
       );
     }
     getConfig() {
@@ -8971,14 +9101,14 @@ At 18th level, the range of this aura increases to 30 feet.`,
           g.removeEffectArea(area);
         area = new ActiveEffectArea(
           `Paladin Aura (${me.name})`,
-          { type: "within", radius, target: me, position },
+          { type: "within", radius, who: me },
           arSet("holy"),
           "yellow"
         );
         g.addEffectArea(area);
       };
       g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-        if (who.side === me.side && !me.conditions.has("Unconscious") && distance(g, me, who) <= radius)
+        if (who.side === me.side && !me.conditions.has("Unconscious") && distance(me, who) <= radius)
           bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
       });
       g.events.on("CombatantMoved", ({ detail: { who, position } }) => {
@@ -8993,9 +9123,9 @@ At 18th level, the range of this aura increases to 30 feet.`,
       });
       g.events.on("EffectRemoved", ({ detail: { who } }) => {
         if (who === me && !me.conditions.has("Unconscious"))
-          updateAura(g.getState(me).position);
+          updateAura(me.position);
       });
-      updateAura(g.getState(me).position);
+      updateAura(me.position);
     }
   );
   var AuraOfCourage = new SimpleFeature(
@@ -9008,7 +9138,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 10);
       g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
         var _a2;
-        if (!me.conditions.has("Unconscious") && ((_a2 = config.conditions) == null ? void 0 : _a2.has("Frightened")) && who.side === me.side && distance(g, who, me) <= radius)
+        if (!me.conditions.has("Unconscious") && ((_a2 = config.conditions) == null ? void 0 : _a2.has("Frightened")) && who.side === me.side && distance(who, me) <= radius)
           success.add("fail", AuraOfCourage);
       });
     }
@@ -10993,8 +11123,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       g.addEffectArea(area);
     }
     entirelyContains(who) {
-      const position = this.g.getState(who).position;
-      const squares = getSquares(who, position);
+      const squares = getSquares(who, who.position);
       for (const square of squares) {
         if (!this.squares.has(square))
           return false;
@@ -11119,7 +11248,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var lightning_bolt_default = "./lightning-bolt-MGFW7XHW.svg";
 
   // src/spells/level3/LightningBolt.ts
-  var getLightningBoltArea = (g, actor, point) => aimLine(g.getState(actor).position, actor.sizeInUnits, point, 100, 5);
+  var getLightningBoltArea = (actor, point) => aimLine(actor.position, actor.sizeInUnits, point, 100, 5);
   var LightningBolt = scalingSpell({
     status: "implemented",
     name: "Lightning Bolt",
@@ -11140,8 +11269,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
     ],
-    getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(g, caster, point)],
-    getTargets: (g, caster, { point }) => g.getInside(getLightningBoltArea(g, caster, point)),
+    getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(caster, point)],
+    getTargets: (g, caster, { point }) => g.getInside(getLightningBoltArea(caster, point)),
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(5 + slot, {
         source: LightningBolt,
@@ -11151,9 +11280,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         damageType: "lightning",
         attacker
       });
-      for (const target of g.getInside(
-        getLightningBoltArea(g, attacker, point)
-      )) {
+      for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
         const save = await g.save({
           source: LightningBolt,
           type: method.getSaveType(attacker, LightningBolt, slot),
@@ -11412,10 +11539,10 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var Stoneskin_default = Stoneskin;
 
   // src/spells/level5/ConeOfCold.ts
-  var getConeOfColdArea = (g, caster, target) => ({
+  var getConeOfColdArea = (caster, target) => ({
     type: "cone",
     radius: 60,
-    centre: g.getState(caster).position,
+    centre: caster.position,
     target
   });
   var ConeOfCold = scalingSpell({
@@ -11435,8 +11562,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 60) }),
     getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
-    getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(g, caster, point)],
-    getTargets: (g, caster, { point }) => g.getInside(getConeOfColdArea(g, caster, point)),
+    getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(caster, point)],
+    getTargets: (g, caster, { point }) => g.getInside(getConeOfColdArea(caster, point)),
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(3 + slot, {
         source: ConeOfCold,
@@ -11446,7 +11573,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         damageType: "cold",
         attacker
       });
-      for (const target of g.getInside(getConeOfColdArea(g, attacker, point))) {
+      for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
         const save = await g.save({
           source: ConeOfCold,
           type: method.getSaveType(attacker, ConeOfCold, slot),
@@ -11836,7 +11963,10 @@ The creature is aware of this effect before it makes its attack against you.`
       this.unsubscribe = unsubscribe;
     }
     generateAttackConfigs(targets) {
-      return targets.map((target) => ({ target }));
+      return targets.map((target) => ({
+        config: { target },
+        positioning: poSet(poWithin(60, target))
+      }));
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -11915,11 +12045,10 @@ The creature is aware of this effect before it makes its attack against you.`
   var earth_tremor_default = "./earth-tremor-EZT5PRHJ.svg";
 
   // src/spells/level1/EarthTremor.ts
-  var getEarthTremorArea = (g, caster) => ({
+  var getEarthTremorArea = (who) => ({
     type: "within",
     radius: 10,
-    target: caster,
-    position: g.getState(caster).position
+    who
   });
   var EarthTremor = scalingSpell({
     status: "incomplete",
@@ -11933,13 +12062,13 @@ The creature is aware of this effect before it makes its attack against you.`
     description: `You cause a tremor in the ground within range. Each creature other than you in that area must make a Dexterity saving throw. On a failed save, a creature takes 1d6 bludgeoning damage and is knocked prone. If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
-    generateAttackConfigs: () => [{}],
+    generateAttackConfigs: () => [{ config: {}, positioning: poSet() }],
     getConfig: () => ({}),
-    getAffectedArea: (g, caster) => [getEarthTremorArea(g, caster)],
+    getAffectedArea: (g, caster) => [getEarthTremorArea(caster)],
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 1, 6, "bludgeoning")
     ],
-    getTargets: (g, caster) => g.getInside(getEarthTremorArea(g, caster), [caster]),
+    getTargets: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
     async apply(g, attacker, method, { slot }) {
       const damage = await g.rollDamage(slot, {
         source: EarthTremor,
@@ -11949,7 +12078,7 @@ The creature is aware of this effect before it makes its attack against you.`
         damageType: "bludgeoning",
         attacker
       });
-      const shape = getEarthTremorArea(g, attacker);
+      const shape = getEarthTremorArea(attacker);
       for (const target of g.getInside(shape, [attacker])) {
         const save = await g.save({
           source: EarthTremor,
@@ -12035,6 +12164,7 @@ The creature is aware of this effect before it makes its attack against you.`
       );
       this.controller = controller;
     }
+    // TODO generateAttackConfigs
     getAffectedArea({ point }) {
       if (point)
         return [getMoonbeamArea(point)];
@@ -14050,8 +14180,7 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/utils/types.ts
-  function getUnitData(who, state) {
-    const { position } = state;
+  function getUnitData(who) {
     const {
       id,
       name,
@@ -14086,7 +14215,7 @@ The creature is aware of this effect before it makes its attack against you.`
       conditions.push(condition);
     return {
       who,
-      position,
+      position: who.position,
       id,
       name,
       img,
@@ -14143,8 +14272,8 @@ The creature is aware of this effect before it makes its attack against you.`
     );
     const refreshUnits = (0, import_hooks17.useCallback)(() => {
       const list = [];
-      for (const [who, state] of g.combatants)
-        list.push(getUnitData(who, state));
+      for (const who of g.combatants)
+        list.push(getUnitData(who));
       allCombatants.value = list;
     }, [g]);
     const refreshAreas = (0, import_hooks17.useCallback)(() => {
@@ -14205,8 +14334,7 @@ The creature is aware of this effect before it makes its attack against you.`
             if (handler.teleportation) {
               const shape = {
                 type: "within",
-                target: who,
-                position: g.getState(who).position,
+                who,
                 radius: handler.maximum
               };
               teleportInfo.value = shape;
@@ -14257,7 +14385,7 @@ The creature is aware of this effect before it makes its attack against you.`
       (action2) => {
         hideActionMenu();
         setAction(void 0);
-        const point = target ? g.getState(target).position : void 0;
+        const point = target == null ? void 0 : target.position;
         const config = { target, point };
         if (checkConfig(g, action2, config)) {
           onExecuteAction(action2, config);
@@ -14288,7 +14416,7 @@ The creature is aware of this effect before it makes its attack against you.`
         }
         const givePoint = wantsPoint.peek();
         if (givePoint) {
-          givePoint(g.getState(who).position);
+          givePoint(who.position);
           return;
         }
         setAction(void 0);
@@ -14297,7 +14425,7 @@ The creature is aware of this effect before it makes its attack against you.`
         if (me && !moveBounds.peek()) {
           setTarget(who);
           const items = allActions.value.map((action2) => {
-            const testConfig = { target: who, point: g.getState(who).position };
+            const testConfig = { target: who, point: who.position };
             const invalidConfig = !checkConfig(g, action2, testConfig);
             const config = action2.getConfig(testConfig);
             const needsTarget = "target" in config || me.who === who;

@@ -34,11 +34,9 @@ export const getTeleportation = (
 export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
   g.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
     for (const other of handler.cannotApproach ?? []) {
-      const otherPos = g.getState(other).position;
-
       const { oldDistance, newDistance } = compareDistances(
         other,
-        otherPos,
+        other.position,
         who,
         from,
         to,

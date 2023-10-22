@@ -54,8 +54,7 @@ class SilenceController {
   }
 
   entirelyContains(who: Combatant) {
-    const position = this.g.getState(who).position;
-    const squares = getSquares(who, position);
+    const squares = getSquares(who, who.position);
 
     for (const square of squares) {
       if (!this.squares.has(square)) return false;

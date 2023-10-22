@@ -1,4 +1,3 @@
-import Engine from "../Engine";
 import { enumerateMapSquares, MapSquareSize } from "../MapSquare";
 import PointSet from "../PointSet";
 import Combatant from "../types/Combatant";
@@ -35,22 +34,17 @@ export function getDistanceBetween(
   );
 }
 
-export function distance(g: Engine, a: Combatant, b: Combatant) {
-  const as = g.getState(a);
-  const bs = g.getState(b);
-
+export function distance(a: Combatant, b: Combatant) {
   return getDistanceBetween(
-    as.position,
+    a.position,
     a.sizeInUnits,
-    bs.position,
+    b.position,
     b.sizeInUnits,
   );
 }
 
-export function distanceTo(g: Engine, who: Combatant, to: Point) {
-  const s = g.getState(who);
-
-  return getDistanceBetween(s.position, who.sizeInUnits, to, MapSquareSize);
+export function distanceTo(who: Combatant, to: Point) {
+  return getDistanceBetween(who.position, who.sizeInUnits, to, MapSquareSize);
 }
 
 export function compareDistances(

@@ -2,18 +2,33 @@ import WeaponAttack from "../actions/WeaponAttack";
 import DamageRule from "../ai/DamageRule";
 import HealingRule from "../ai/HealingRule";
 import { HasTarget, HasTargets } from "../configs";
+import Engine from "../Engine";
 import Badger from "../monsters/Badger";
+import Kay from "../monsters/fiendishParty/Kay";
 import OGonrit from "../monsters/fiendishParty/OGonrit";
 import Yulash from "../monsters/fiendishParty/Yulash";
 import Zafron from "../monsters/fiendishParty/Zafron";
 import Aura from "../pcs/davies/Aura";
+import Beldalynn from "../pcs/davies/Beldalynn";
 import Hagrond from "../pcs/davies/Hagrond";
-import { AIEvaluation } from "../types/AIRule";
+import AIRule, { ActionEvaluation } from "../types/AIRule";
 import Combatant from "../types/Combatant";
+import { getAllEvaluations } from "../utils/ai";
+import { checkConfig } from "../utils/config";
 import { isCombatantArray } from "../utils/types";
+import { distanceTo } from "../utils/units";
 import setupBattleTest from "./setupBattleTest";
 
-function matchConfigTargets(evaluations: AIEvaluation[], targets: Combatant[]) {
+function getRuleActions(g: Engine, rule: AIRule, me: Combatant) {
+  return rule.evaluateActions!(g, me, g.getActions(me)).filter((o) =>
+    checkConfig(g, o.action, o.config),
+  );
+}
+
+function matchConfigTargets(
+  evaluations: ActionEvaluation[],
+  targets: Combatant[],
+) {
   return evaluations.find((e) => {
     const config = e.config as HasTargets;
 
@@ -26,7 +41,7 @@ function matchConfigTargets(evaluations: AIEvaluation[], targets: Combatant[]) {
   });
 }
 
-function matchConfigTarget(evaluations: AIEvaluation[], target: Combatant) {
+function matchConfigTarget(evaluations: ActionEvaluation[], target: Combatant) {
   return evaluations.find((e) => (e.config as HasTarget).target === target);
 }
 
@@ -39,7 +54,7 @@ describe("HealingRule", () => {
       combatants: [me],
     } = await setupBattleTest([OGonrit, 0, 0, 10]);
 
-    const v = R.evaluate(g, me, g.getActions(me));
+    const v = getRuleActions(g, R, me);
     expect(v).toHaveLength(1);
     expect(v[0].score.result).toBeLessThan(0);
   });
@@ -52,7 +67,7 @@ describe("HealingRule", () => {
     me.hp -= 20;
     ally.hp -= 30;
 
-    const v = R.evaluate(g, me, g.getActions(me));
+    const v = getRuleActions(g, R, me);
 
     const healMe = matchConfigTargets(v, [me]);
     const healBoth = matchConfigTargets(v, [me, ally]);
@@ -77,7 +92,7 @@ describe("HealingRule", () => {
     ally.hp -= 2;
     hurt.hp -= 20;
 
-    const v = R.evaluate(g, me, g.getActions(me));
+    const v = getRuleActions(g, R, me);
 
     const healLess = matchConfigTargets(v, [ally]);
     const healMore = matchConfigTargets(v, [hurt]);
@@ -104,7 +119,7 @@ describe("DamageRule", () => {
       [Hagrond, 10, 10, 1],
     );
 
-    const v = R.evaluate(g, me, g.getActions(me));
+    const v = getRuleActions(g, R, me);
 
     const hitAura = matchConfigTarget(v, far);
     const hitHagrond = matchConfigTarget(v, close);
@@ -121,8 +136,9 @@ describe("DamageRule", () => {
       [Badger, 5, 0, 1],
       [OGonrit, 0, 5, 1],
     );
+    me.movedSoFar = me.speed;
 
-    const v = R.evaluate(g, me, g.getActions(me));
+    const v = getRuleActions(g, R, me);
 
     const weaponName = "spear of the dark sun";
     const hitBadger = v.find(
@@ -139,5 +155,34 @@ describe("DamageRule", () => {
     expect(hitFiend).toBeDefined();
 
     expect(hitBadger!.score.result).toBeLessThan(hitFiend!.score.result);
+  });
+});
+
+describe("getAllEvaluations", () => {
+  it("O Gonrit wants to stay near allies", async () => {
+    const {
+      g,
+      combatants: [me, zafron, kay],
+    } = await setupBattleTest(
+      [OGonrit, 0, 0, 10],
+      [Zafron, 35, 0, 1],
+      [Kay, 60, 0, 1],
+      [Hagrond, 10, 0, 1],
+      [Beldalynn, 0, 10, 1],
+    );
+
+    const bestMove = Array.from(getAllEvaluations(g, me)).sort(
+      (a, b) => b.best - a.best,
+    )[0];
+
+    const set = bestMove.positionMap.get(bestMove.best);
+    expect(set).toBeDefined();
+
+    const allies = [zafron, kay];
+    for (const point of set!) {
+      for (const ally of allies) {
+        expect(distanceTo(ally, point)).toBeLessThanOrEqual(30);
+      }
+    }
   });
 });

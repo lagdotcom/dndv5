@@ -43,7 +43,7 @@ const AcidSplash = simpleSpell<HasTargets>({
   check(g, { targets }, ec) {
     if (isCombatantArray(targets) && targets.length === 2) {
       const [a, b] = targets;
-      if (distance(g, a, b) > 5)
+      if (distance(a, b) > 5)
         ec.add("Targets are not within 5 feet of each other", AcidSplash);
     }
 

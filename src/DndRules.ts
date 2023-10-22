@@ -199,7 +199,7 @@ export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
     ({ detail: { who, target, weapon, diceType } }) => {
       if (
         typeof weapon?.shortRange === "number" &&
-        distance(g, who, target) > weapon.shortRange
+        distance(who, target) > weapon.shortRange
       )
         diceType.add("disadvantage", LongRangeAttacksRule);
     },
@@ -222,13 +222,13 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
 
   // TODO [PROJECTILE] should really check anywhere along the path...
   g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
-    const squares = getSquares(target, g.getState(target).position);
+    const squares = getSquares(target, target.position);
     if (isHeavilyObscuredAnywhere(squares))
       diceType.add("disadvantage", ObscuredRule);
   });
 
   g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-    const squares = getSquares(who, g.getState(who).position);
+    const squares = getSquares(who, who.position);
     if (isHeavilyObscuredAnywhere(squares))
       conditions.add("Blinded", ObscuredRule);
   });
@@ -275,13 +275,13 @@ export const OpportunityAttacksRule = new DndRule(
       ({ detail: { handler, who, from, to, interrupt } }) => {
         if (!handler.provokesOpportunityAttacks) return;
 
-        for (const [attacker, { position }] of g.combatants) {
+        for (const attacker of g.combatants) {
           if (attacker.side === who.side) continue;
 
           const validActions = getValidOpportunityAttacks(
             g,
             attacker,
-            position,
+            attacker.position,
             who,
             from,
             to,
@@ -332,10 +332,7 @@ const autoCrit =
       outcome,
     },
   }) => {
-    if (
-      target.conditions.has(condition) &&
-      distance(g, who, target) <= maxRange
-    )
+    if (target.conditions.has(condition) && distance(who, target) <= maxRange)
       outcome.add("critical", rule);
   };
 

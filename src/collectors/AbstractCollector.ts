@@ -1,5 +1,6 @@
 import Collector from "../types/Collector";
 import Source from "../types/Source";
+import { SetInitialiser } from "../utils/set";
 
 interface CollectorEntry<T> {
   value: T;
@@ -11,10 +12,14 @@ abstract class AbstractCollector<T> {
   ignoredSources: Set<Source>;
   ignoredValues: Set<T>;
 
-  constructor() {
-    this.entries = new Set();
-    this.ignoredSources = new Set();
-    this.ignoredValues = new Set();
+  constructor(
+    entries?: SetInitialiser<CollectorEntry<T>>,
+    ignoredSources?: SetInitialiser<Source>,
+    ignoredValues?: SetInitialiser<T>,
+  ) {
+    this.entries = new Set(entries);
+    this.ignoredSources = new Set(ignoredSources);
+    this.ignoredValues = new Set(ignoredValues);
   }
 
   add(value: T, source: Source) {

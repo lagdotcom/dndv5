@@ -31,8 +31,7 @@ export default class TargetResolver implements Resolver<Combatant> {
     if (!(value instanceof AbstractCombatant)) {
       ec.add("No target", this);
     } else {
-      const isOutOfRange =
-        distance(this.g, action.actor, value) > this.maxRange;
+      const isOutOfRange = distance(action.actor, value) > this.maxRange;
       const filterErrors = this.filters
         .filter((filter) => !filter.check(this.g, action, value))
         .map((filter) => filter.message);

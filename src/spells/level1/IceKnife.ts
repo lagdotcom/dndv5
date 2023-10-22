@@ -2,7 +2,6 @@ import iconUrl from "@img/spl/ice-knife.svg";
 
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
-import Engine from "../../Engine";
 import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
@@ -12,10 +11,9 @@ import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getIceKnifeArea = (g: Engine, target: Combatant): SpecifiedWithin => ({
+const getIceKnifeArea = (who: Combatant): SpecifiedWithin => ({
   type: "within",
-  target,
-  position: g.getState(target).position,
+  who,
   radius: 5,
 });
 
@@ -41,14 +39,13 @@ const IceKnife = scalingSpell<HasTarget>({
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
 
   getAffectedArea: (g, caster, { target }) =>
-    target && [getIceKnifeArea(g, target)],
+    target && [getIceKnifeArea(target)],
 
   getDamage: (g, caster, method, { slot }) => [
     _dd(1, 10, "piercing"),
     _dd(1 + (slot ?? 1), 6, "cold"),
   ],
-  getTargets: (g, caster, { target }) =>
-    g.getInside(getIceKnifeArea(g, target)),
+  getTargets: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
 
   async apply(g, attacker, method, { slot, target }) {
     const { attack, hit, critical } = await g.attack({
@@ -91,7 +88,7 @@ const IceKnife = scalingSpell<HasTarget>({
       method,
       damageType: "cold",
     });
-    for (const victim of g.getInside(getIceKnifeArea(g, target))) {
+    for (const victim of g.getInside(getIceKnifeArea(target))) {
       const { damageResponse } = await g.save({
         source: IceKnife,
         type: method.getSaveType(attacker, IceKnife, slot),

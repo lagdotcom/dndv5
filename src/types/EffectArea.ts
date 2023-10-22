@@ -27,10 +27,7 @@ export type SpecifiedCube = CubeShape & { centre: Point };
 export type SpecifiedCylinder = CylinderShape & { centre: Point };
 export type SpecifiedLine = LineShape & { start: Point; target: Point };
 export type SpecifiedSphere = SphereShape & { centre: Point };
-export type SpecifiedWithin = WithinShape & {
-  target: Combatant;
-  position: Point;
-};
+export type SpecifiedWithin = WithinShape & { who: Combatant };
 export type SpecifiedEffectShape =
   | SpecifiedCone
   | SpecifiedCube

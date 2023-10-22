@@ -1,5 +1,4 @@
 import { HasPoint } from "../../configs";
-import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedCone } from "../../types/EffectArea";
@@ -8,13 +7,12 @@ import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
 const getConeOfColdArea = (
-  g: Engine,
   caster: Combatant,
   target: Point,
 ): SpecifiedCone => ({
   type: "cone",
   radius: 60,
-  centre: g.getState(caster).position,
+  centre: caster.position,
   target,
 });
 
@@ -38,9 +36,9 @@ const ConeOfCold = scalingSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 60) }),
   getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot ?? 5), 8, "cold")],
   getAffectedArea: (g, caster, { point }) =>
-    point && [getConeOfColdArea(g, caster, point)],
+    point && [getConeOfColdArea(caster, point)],
   getTargets: (g, caster, { point }) =>
-    g.getInside(getConeOfColdArea(g, caster, point)),
+    g.getInside(getConeOfColdArea(caster, point)),
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(3 + slot, {
@@ -52,7 +50,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
       attacker,
     });
 
-    for (const target of g.getInside(getConeOfColdArea(g, attacker, point))) {
+    for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
       const save = await g.save({
         source: ConeOfCold,
         type: method.getSaveType(attacker, ConeOfCold, slot),

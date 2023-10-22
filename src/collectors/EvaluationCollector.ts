@@ -6,4 +6,12 @@ export default class EvaluationCollector extends BonusCollector {
   addEval(c: Combatant, value: number, co: AICoefficient) {
     this.add(value * c.getCoefficient(co), co);
   }
+
+  copy() {
+    return new EvaluationCollector(
+      this.entries,
+      this.ignoredSources,
+      this.ignoredValues,
+    );
+  }
 }

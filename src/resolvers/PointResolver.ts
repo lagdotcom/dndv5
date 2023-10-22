@@ -24,7 +24,7 @@ export default class PointResolver implements Resolver<Point> {
   check(value: unknown, action: Action, ec: ErrorCollector) {
     if (!isPoint(value)) ec.add("No target", this);
     else {
-      if (distanceTo(this.g, action.actor, value) > this.maxRange)
+      if (distanceTo(action.actor, value) > this.maxRange)
         ec.add("Out of range", this);
     }
 

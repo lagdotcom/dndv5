@@ -23,7 +23,7 @@ import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility } from "../../utils/items";
-import { getDistanceBetween } from "../../utils/units";
+import { distance } from "../../utils/units";
 
 function getMeleeAttackOptions(
   g: Engine,
@@ -31,25 +31,15 @@ function getMeleeAttackOptions(
   filter: (target: Combatant, weapon: WeaponItem) => boolean,
 ) {
   const options = [];
-  const attackerPosition = g.getState(attacker).position;
 
   for (const weapon of attacker.weapons) {
     if (weapon.rangeCategory !== "melee") continue;
 
-    for (const [target, { position }] of g.combatants) {
+    for (const target of g.combatants) {
       if (target === attacker || !filter(target, weapon)) continue;
 
       const reach = attacker.reach + weapon.reach;
-      if (
-        reach >=
-        getDistanceBetween(
-          attackerPosition,
-          attacker.sizeInUnits,
-          position,
-          target.sizeInUnits,
-        )
-      )
-        options.push({ target, weapon });
+      if (reach >= distance(attacker, target)) options.push({ target, weapon });
     }
   }
 

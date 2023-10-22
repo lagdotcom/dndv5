@@ -3,6 +3,9 @@ import tokenUrl from "@img/tok/boss/o-gonrit.png";
 
 import AbstractAction from "../../actions/AbstractAction";
 import { HealAllies } from "../../ai/coefficients";
+import DamageRule from "../../ai/DamageRule";
+import HealingRule from "../../ai/HealingRule";
+import StayNearAlliesRule from "../../ai/StayNearAlliesRule";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
@@ -25,6 +28,7 @@ import { coSet } from "../../types/ConditionName";
 import { distance } from "../../utils/units";
 import { FiendishParty } from "./common";
 
+const FiendishMantleRange = 30;
 const FiendishMantle = new SimpleFeature(
   "Fiendish Mantle",
   "Whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
@@ -36,7 +40,7 @@ const FiendishMantle = new SimpleFeature(
           attacker.side === me.side &&
           attacker !== me &&
           attack?.pre.tags.has("weapon") &&
-          distance(g, me, attacker) <= 30
+          distance(me, attacker) <= FiendishMantleRange
         )
           interrupt.add(
             new EvaluateLater(attacker, FiendishMantle, async () => {
@@ -135,7 +139,11 @@ const Spellcasting = bonusSpellsFeature(
 
 export default class OGonrit extends Monster {
   constructor(g: Engine) {
-    super(g, "O Gonrit", 5, "fiend", "medium", tokenUrl, 65);
+    super(g, "O Gonrit", 5, "fiend", "medium", tokenUrl, 65, [
+      new HealingRule(),
+      new DamageRule(),
+      new StayNearAlliesRule(FiendishMantleRange),
+    ]);
     this.coefficients.set(HealAllies, 1.2);
     this.groups.add(FiendishParty);
     this.diesAtZero = false;

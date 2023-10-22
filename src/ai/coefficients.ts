@@ -12,3 +12,5 @@ export const OverHealAllies = makeAICo("OverHealAllies", -0.5);
 export const DamageEnemies = makeAICo("DamageEnemies");
 export const OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
 export const DamageAllies = makeAICo("DamageAllies", -1);
+
+export const StayNearAllies = makeAICo("StayNearAllies");

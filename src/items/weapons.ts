@@ -378,7 +378,7 @@ export class Lance extends AbstractWeapon {
     g.events.on(
       "BeforeAttack",
       ({ detail: { weapon, who, target, diceType } }) => {
-        if (weapon === this && distance(g, who, target) <= 5)
+        if (weapon === this && distance(who, target) <= 5)
           diceType.add("disadvantage", this);
       },
     );

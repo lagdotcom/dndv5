@@ -126,7 +126,7 @@ export const Prone = new Effect(
 
       // An attack roll against the creature has advantage if the attacker is within 5 feet of the creature. Otherwise, the attack roll has disadvantage.
       if (target.conditions.has("Prone")) {
-        const d = distance(g, who, target);
+        const d = distance(who, target);
         diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
       }
     });

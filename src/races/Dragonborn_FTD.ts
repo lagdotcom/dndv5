@@ -35,10 +35,9 @@ const MetallicBreathWeaponResource = new LongRestResource(
   1,
 );
 
-function getBreathArea(g: Engine, me: Combatant, point: Point) {
-  const position = g.getState(me).position;
+function getBreathArea(me: Combatant, point: Point) {
   const size = me.sizeInUnits;
-  return aimCone(position, size, point, 15);
+  return aimCone(me.position, size, point, 15);
 }
 
 class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
@@ -65,7 +64,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
   }
 
   getAffectedArea({ point }: Partial<HasPoint>) {
-    if (point) return [getBreathArea(this.g, this.actor, point)];
+    if (point) return [getBreathArea(this.actor, point)];
   }
 
   async apply({ point }: HasPoint) {
@@ -79,7 +78,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       damageType,
     });
 
-    for (const target of g.getInside(getBreathArea(g, attacker, point))) {
+    for (const target of g.getInside(getBreathArea(attacker, point))) {
       const save = await g.save({
         source: this,
         type: { type: "ability", ability: "con" },
@@ -132,7 +131,7 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
   getAffectedArea({
     point,
   }: Partial<HasPoint>): SpecifiedEffectShape[] | undefined {
-    if (point) return [getBreathArea(this.g, this.actor, point)];
+    if (point) return [getBreathArea(this.actor, point)];
   }
 }
 
@@ -165,7 +164,7 @@ class EnervatingBreathAction extends MetallicBreathAction {
     const { g, actor } = this;
     const config = { conditions: coSet("Incapacitated"), duration: 2 };
 
-    for (const target of g.getInside(getBreathArea(g, actor, point))) {
+    for (const target of g.getInside(getBreathArea(actor, point))) {
       const save = await g.save({
         source: this,
         type: { type: "ability", ability: "con" },
@@ -196,7 +195,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
   async apply({ point }: HasPoint) {
     await super.apply({ point });
     const { g, actor } = this;
-    for (const target of g.getInside(getBreathArea(this.g, actor, point))) {
+    for (const target of g.getInside(getBreathArea(actor, point))) {
       const config = { duration: Infinity };
       const save = await g.save({
         source: this,
