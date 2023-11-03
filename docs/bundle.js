@@ -6594,6 +6594,157 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   );
 
+  // src/img/class/paladin.svg
+  var paladin_default = "./paladin-QFY4DOD4.svg";
+
+  // src/spells/NormalSpellcasting.ts
+  var SpellSlots = {
+    full: [
+      [2],
+      [3],
+      [4, 2],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]
+    ],
+    half: [
+      [],
+      [2],
+      [3],
+      [4],
+      [4, 2],
+      [4, 2],
+      [4, 3],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2]
+    ]
+  };
+  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var SpellSlotResources = enumerate(0, 9).map(
+    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+  );
+  function getMaxSpellSlotAvailable(who) {
+    for (let level = 1; level <= 9; level++) {
+      const name = getSpellSlotResourceName(level);
+      if (!who.resources.has(name))
+        return level - 1;
+    }
+    return 9;
+  }
+  var NormalSpellcasting = class {
+    constructor(name, text, ability, strength, className, list, icon) {
+      this.name = name;
+      this.text = text;
+      this.ability = ability;
+      this.strength = strength;
+      this.className = className;
+      this.list = list;
+      this.icon = icon;
+      this.entries = /* @__PURE__ */ new Map();
+      this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
+        var _a;
+        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        me.spellcastingMethods.add(this);
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me) {
+            for (const spell of me.preparedSpells) {
+              if (this.canCast(spell, who))
+                actions.push(new CastSpell(g, me, this, spell));
+            }
+          }
+        });
+      });
+    }
+    getEntry(who) {
+      const entry = this.entries.get(who);
+      if (!entry)
+        throw new Error(
+          `${who.name} has not initialised their ${this.name} spellcasting method.`
+        );
+      return entry;
+    }
+    canCast(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      return spell.lists.includes(this.list) || spells.has(spell);
+    }
+    addCastableSpell(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      spells.add(spell);
+    }
+    initialise(who, casterLevel) {
+      const slots = SpellSlots[this.strength][casterLevel - 1];
+      const resources = [];
+      for (let i = 0; i < slots.length; i++) {
+        const resource = SpellSlotResources[i + 1];
+        who.initResource(resource, slots[i]);
+        resources.push(resource);
+      }
+      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell, who) {
+      if (!spell.scaling)
+        return spell.level;
+      const { resources } = this.getEntry(who);
+      return resources.length;
+    }
+    getResourceForSpell(spell, level, who) {
+      const { resources } = this.getEntry(who);
+      return resources[level - 1];
+    }
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
+    }
+  };
+
+  // src/classes/paladin/common.ts
+  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
+  var PaladinSpellcasting = new NormalSpellcasting(
+    "Paladin",
+    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
+    "cha",
+    "half",
+    "Paladin",
+    "Paladin",
+    PaladinIcon
+  );
+  var ChannelDivinityResource = new ShortRestResource(
+    "Channel Divinity",
+    1
+  );
+  function getPaladinAuraRadius(level) {
+    if (level < 18)
+      return 10;
+    return 30;
+  }
+
   // src/items/wondrous.ts
   var AbstractWondrous = class extends AbstractItem {
     constructor(g, name, hands = 0, iconUrl) {
@@ -6680,8 +6831,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
   var SilverShiningAmulet = class extends AbstractWondrous {
-    constructor(g) {
+    constructor(g, charged = true) {
       super(g, "Silver Shining Amulet", 0);
+      this.charged = charged;
       this.attunement = true;
       this.rarity = "Rare";
       const giveBonus = ({
@@ -6692,6 +6844,15 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       };
       g.events.on("BeforeAttack", giveBonus);
       g.events.on("GetSaveDC", giveBonus);
+      g.events.on("AfterAction", ({ detail: { action, config } }) => {
+        var _a;
+        const isAttuned = isEquipmentAttuned(this, action.actor);
+        const isChannel = (_a = action.getResources(config).get(ChannelDivinityResource)) != null ? _a : 0;
+        if (isAttuned && isChannel && this.charged) {
+          this.charged = false;
+          action.actor.giveResource(ChannelDivinityResource, 1);
+        }
+      });
     }
   };
 
@@ -6879,133 +7040,6 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/img/tok/pc/beldalynn.png
   var beldalynn_default = "./beldalynn-B47TNTON.png";
-
-  // src/spells/NormalSpellcasting.ts
-  var SpellSlots = {
-    full: [
-      [2],
-      [3],
-      [4, 2],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 2, 1, 1]
-    ],
-    half: [
-      [],
-      [2],
-      [3],
-      [4],
-      [4, 2],
-      [4, 2],
-      [4, 3],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2]
-    ]
-  };
-  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
-  var SpellSlotResources = enumerate(0, 9).map(
-    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
-  );
-  function getMaxSpellSlotAvailable(who) {
-    for (let level = 1; level <= 9; level++) {
-      const name = getSpellSlotResourceName(level);
-      if (!who.resources.has(name))
-        return level - 1;
-    }
-    return 9;
-  }
-  var NormalSpellcasting = class {
-    constructor(name, text, ability, strength, className, list, icon) {
-      this.name = name;
-      this.text = text;
-      this.ability = ability;
-      this.strength = strength;
-      this.className = className;
-      this.list = list;
-      this.icon = icon;
-      this.entries = /* @__PURE__ */ new Map();
-      this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
-        var _a;
-        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
-        me.spellcastingMethods.add(this);
-        g.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me) {
-            for (const spell of me.preparedSpells) {
-              if (this.canCast(spell, who))
-                actions.push(new CastSpell(g, me, this, spell));
-            }
-          }
-        });
-      });
-    }
-    getEntry(who) {
-      const entry = this.entries.get(who);
-      if (!entry)
-        throw new Error(
-          `${who.name} has not initialised their ${this.name} spellcasting method.`
-        );
-      return entry;
-    }
-    canCast(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      return spell.lists.includes(this.list) || spells.has(spell);
-    }
-    addCastableSpell(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      spells.add(spell);
-    }
-    initialise(who, casterLevel) {
-      const slots = SpellSlots[this.strength][casterLevel - 1];
-      const resources = [];
-      for (let i = 0; i < slots.length; i++) {
-        const resource = SpellSlotResources[i + 1];
-        who.initResource(resource, slots[i]);
-        resources.push(resource);
-      }
-      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
-    }
-    getMinSlot(spell) {
-      return spell.level;
-    }
-    getMaxSlot(spell, who) {
-      if (!spell.scaling)
-        return spell.level;
-      const { resources } = this.getEntry(who);
-      return resources.length;
-    }
-    getResourceForSpell(spell, level, who) {
-      const { resources } = this.getEntry(who);
-      return resources[level - 1];
-    }
-    getSaveType() {
-      return { type: "ability", ability: this.ability };
-    }
-  };
 
   // src/img/class/wizard.svg
   var wizard_default = "./wizard-FEOOHPRA.svg";
@@ -8723,30 +8757,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/types/EffectArea.ts
   var arSet = (...items) => new Set(items);
-
-  // src/img/class/paladin.svg
-  var paladin_default = "./paladin-QFY4DOD4.svg";
-
-  // src/classes/paladin/common.ts
-  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
-  var PaladinSpellcasting = new NormalSpellcasting(
-    "Paladin",
-    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-    "cha",
-    "half",
-    "Paladin",
-    "Paladin",
-    PaladinIcon
-  );
-  var ChannelDivinityResource = new ShortRestResource(
-    "Channel Divinity",
-    1
-  );
-  function getPaladinAuraRadius(level) {
-    if (level < 18)
-      return 10;
-    return 30;
-  }
 
   // src/classes/paladin/AuraOfProtection.ts
   var AuraOfProtection = new SimpleFeature(
