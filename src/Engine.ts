@@ -582,7 +582,7 @@ export default class Engine {
     });
 
     if (result.outcome === "fail") {
-      target.endConcentration();
+      await target.endConcentration();
     }
   }
 

@@ -3466,7 +3466,7 @@
         tags: svSet("concentration")
       });
       if (result.outcome === "fail") {
-        target.endConcentration();
+        await target.endConcentration();
       }
     }
     async kill(target, attacker) {
