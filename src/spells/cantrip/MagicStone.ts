@@ -70,10 +70,10 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
           size: 6,
           damageType: "bludgeoning",
           attacker: actor,
-          target,
-          ability: method.ability,
+          target: attack.pre.target,
+          ability: attack.pre.ability,
           spell: MagicStone,
-          method,
+          method: attack.pre.method,
         },
         critical,
       );
@@ -84,11 +84,11 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
         {
           attack,
           attacker: actor,
-          target,
-          ability: method.ability,
+          target: attack.pre.target,
+          ability: attack.pre.ability,
           critical,
           spell: MagicStone,
-          method,
+          method: attack.pre.method,
         },
         [["bludgeoning", amount]],
       );

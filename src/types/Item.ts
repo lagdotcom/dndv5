@@ -1,4 +1,5 @@
 import AbilityName from "./AbilityName";
+import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import Enchantment from "./Enchantment";
 import Source from "./Source";
@@ -14,6 +15,8 @@ export const ItemRarities = [
 export type ItemRarity = (typeof ItemRarities)[number];
 
 export interface BaseItem extends Source {
+  owner?: Combatant;
+  possessor?: Combatant;
   hands: number;
   rarity: ItemRarity;
   attunement?: boolean;

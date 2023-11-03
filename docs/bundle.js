@@ -2204,52 +2204,55 @@
       tags.add("weapon");
     if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
       tags.add("magical");
-    const e = await g.attack({
-      who: attacker,
-      tags,
-      target,
-      ability,
-      weapon,
-      ammo
-    });
+    return getAttackResult(
+      g,
+      source,
+      await g.attack({ who: attacker, tags, target, ability, weapon, ammo })
+    );
+  }
+  async function getAttackResult(g, source, e) {
     if (e.hit) {
+      const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
       if (ammo)
         ammo.quantity--;
-      const { damage } = weapon;
-      const baseDamage = [];
-      if (damage.type === "dice") {
-        const { count, size } = damage.amount;
-        const amount = await g.rollDamage(
-          count,
+      if (weapon) {
+        const { damage } = weapon;
+        const baseDamage = [];
+        if (damage.type === "dice") {
+          const { count, size } = damage.amount;
+          const amount = await g.rollDamage(
+            count,
+            {
+              source,
+              size,
+              damageType: damage.damageType,
+              attacker,
+              target,
+              ability,
+              weapon
+            },
+            e.critical
+          );
+          baseDamage.push([damage.damageType, amount]);
+        } else
+          baseDamage.push([damage.damageType, damage.amount]);
+        const e2 = await g.damage(
+          weapon,
+          weapon.damage.damageType,
           {
-            source,
-            size,
-            damageType: damage.damageType,
+            attack: e.attack,
             attacker,
             target,
             ability,
-            weapon
+            weapon,
+            ammo,
+            critical: e.critical
           },
-          e.critical
+          baseDamage
         );
-        baseDamage.push([damage.damageType, amount]);
-      } else
-        baseDamage.push([damage.damageType, damage.amount]);
-      const e2 = await g.damage(
-        weapon,
-        weapon.damage.damageType,
-        {
-          attack: e.attack,
-          attacker,
-          target,
-          ability,
-          weapon,
-          ammo,
-          critical: e.critical
-        },
-        baseDamage
-      );
-      return { type: "hit", attack: e, damage: e2 };
+        return { type: "hit", attack: e, damage: e2 };
+      }
+      return { type: "hit", attack: e };
     }
     return { type: "miss", attack: e };
   }
@@ -3123,6 +3126,11 @@
       for (const co of this.combatants) {
         co.finalise();
         co.initiative = await this.rollInitiative(co);
+        const items = [...co.inventory, ...co.equipment];
+        for (const item of items) {
+          item.owner = co;
+          item.possessor = co;
+        }
       }
       this.initiativeOrder = Array.from(this.combatants).sort(
         (a, b) => b.initiative - a.initiative
@@ -3492,29 +3500,27 @@
       return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
     }
     async attack(e) {
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const success = new SuccessResponseCollector();
       const pre = await this.resolve(
         new BeforeAttackEvent({
           ...e,
-          diceType: new DiceTypeCollector(),
-          bonus: new BonusCollector(),
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
+          bonus,
+          diceType,
+          success,
+          interrupt: new InterruptionCollector()
         })
       );
-      if (pre.detail.success.result === "fail")
+      if (success.result === "fail")
         return { outcome: "cancelled", hit: false };
-      const ac = await this.getAC(e.target, pre.detail);
+      const { target, who, ability } = pre.detail;
+      const ac = await this.getAC(target, pre.detail);
       const roll = await this.roll(
-        {
-          type: "attack",
-          who: e.who,
-          target: e.target,
-          ac,
-          ability: e.ability
-        },
-        pre.detail.diceType.result
+        { type: "attack", who, target, ac, ability },
+        diceType.result
       );
-      const total = roll.values.final + pre.detail.bonus.result;
+      const total = roll.values.final + bonus.result;
       const outcomeCollector = new AttackOutcomeCollector();
       const event = new AttackEvent({
         pre: pre.detail,
@@ -4015,20 +4021,21 @@
         "ranged",
         { target }
       );
-      const attack = await rsa.attack(target);
-      if (attack.outcome === "cancelled")
+      const { outcome, attack, hit, critical } = await rsa.attack(target);
+      if (outcome === "cancelled")
         return;
-      if (attack.hit) {
-        const damage2 = await rsa.getDamage(target);
-        await rsa.damage(target, damage2);
+      const { target: finalTarget } = attack.pre;
+      if (hit) {
+        const damage2 = await rsa.getDamage(finalTarget);
+        await rsa.damage(finalTarget, damage2);
       }
       const damage = await g.rollDamage(
         1,
         { size: 10, source: this, attacker: caster, damageType: "force" },
-        attack.critical
+        critical
       );
-      for (const other of g.getInside(getEldritchBurstArea(target))) {
-        if (other === target)
+      for (const other of g.getInside(getEldritchBurstArea(finalTarget))) {
+        if (other === finalTarget)
           continue;
         const { damageResponse } = await g.save({
           source: EldritchBurstSpell,
@@ -4364,8 +4371,8 @@
     }
   };
   var Shield = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "shield", "shield", 2);
+    constructor(g, iconUrl) {
+      super(g, "shield", "shield", 2, false, void 0, iconUrl);
       this.hands = 1;
     }
   };
@@ -5026,10 +5033,15 @@
         slot,
         target
       });
-      if ((await rsa.attack(target)).hit) {
-        const damage = await rsa.getDamage(target);
-        await rsa.damage(target, damage);
-        await target.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
+      const { hit, attack } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(attack.pre.target);
+        await rsa.damage(attack.pre.target, damage);
+        await attack.pre.target.addEffect(
+          GuidingBoltEffect,
+          { duration: 2 },
+          attacker
+        );
       }
     }
   });
@@ -7673,9 +7685,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
         target
       });
-      if ((await rsa.attack(target)).hit) {
-        const damage = await rsa.getDamage(target);
-        await rsa.damage(target, damage);
+      const { hit, attack } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(attack.pre.target);
+        await rsa.damage(attack.pre.target, damage);
       }
     }
   });
@@ -7794,10 +7807,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
         target
       });
-      if ((await rsa.attack(target)).hit) {
-        const damage = await rsa.getDamage(target);
-        await rsa.damage(target, damage);
-        await target.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
+      const { hit, attack } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(attack.pre.target);
+        await rsa.damage(attack.pre.target, damage);
+        await attack.pre.target.addEffect(
+          RayOfFrostEffect,
+          { duration: 2 },
+          attacker
+        );
       }
     }
   });
@@ -7851,9 +7869,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             source: IceKnife,
             size: 10,
             attacker,
-            target,
+            target: attack.pre.target,
             spell: IceKnife,
-            method,
+            method: attack.pre.method,
             damageType: "piercing"
           },
           critical
@@ -7861,7 +7879,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         await g.damage(
           IceKnife,
           "piercing",
-          { attack, attacker, target, spell: IceKnife, method, critical },
+          {
+            attack,
+            attacker,
+            target: attack.pre.target,
+            spell: IceKnife,
+            method: attack.pre.method,
+            critical
+          },
           [["piercing", damage2]]
         );
       }
@@ -11824,16 +11849,66 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
+  // src/img/eq/arrow-catching-shield.svg
+  var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
+
   // src/items/shields.ts
+  var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
+  var ArrowCatchingShieldAction = class extends AbstractAction {
+    constructor(g, actor, attack) {
+      super(
+        g,
+        actor,
+        "Arrow-Catching Shield",
+        "implemented",
+        { target: new TargetResolver(g, 5, [notSelf]) },
+        // TODO isAlly?
+        {
+          time: "reaction",
+          icon: acsIcon,
+          description: `Whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.`
+        }
+      );
+      this.attack = attack;
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      if (!this.attack)
+        throw new Error(`No attack to modify.`);
+      this.attack.target = this.actor;
+    }
+  };
   var ArrowCatchingShield = class extends Shield {
     constructor(g) {
-      super(g);
+      super(g, arrow_catching_shield_default);
       this.name = "Arrow-Catching Shield";
       this.attunement = true;
       this.rarity = "Rare";
       g.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
-        if (who.equipment.has(this) && (pre == null ? void 0 : pre.tags.has("ranged")))
+        if (isEquipmentAttuned(this, who) && (pre == null ? void 0 : pre.tags.has("ranged")))
           bonus.add(2, this);
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new ArrowCatchingShieldAction(g, who));
+      });
+      g.events.on("BeforeAttack", ({ detail }) => {
+        if (this.possessor && isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
+          const config = { target: detail.target };
+          const action = new ArrowCatchingShieldAction(g, this.possessor, detail);
+          if (checkConfig(g, action, config))
+            detail.interrupt.add(
+              new YesNoChoice(
+                this.possessor,
+                this,
+                this.name,
+                `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
+                async () => {
+                  await g.act(action, config);
+                }
+              )
+            );
+        }
       });
     }
   };
@@ -12014,10 +12089,10 @@ The creature is aware of this effect before it makes its attack against you.`
             size: 6,
             damageType: "bludgeoning",
             attacker: actor,
-            target,
-            ability: method.ability,
+            target: attack.pre.target,
+            ability: attack.pre.ability,
             spell: MagicStone,
-            method
+            method: attack.pre.method
           },
           critical
         );
@@ -12027,11 +12102,11 @@ The creature is aware of this effect before it makes its attack against you.`
           {
             attack,
             attacker: actor,
-            target,
-            ability: method.ability,
+            target: attack.pre.target,
+            ability: attack.pre.ability,
             critical,
             spell: MagicStone,
-            method
+            method: attack.pre.method
           },
           [["bludgeoning", amount]]
         );

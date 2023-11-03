@@ -1,6 +1,6 @@
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
-import Engine from "../Engine";
+import Engine, { EngineAttackResult } from "../Engine";
 import { notSelf } from "../filters";
 import TargetResolver from "../resolvers/TargetResolver";
 import AbilityName from "../types/AbilityName";
@@ -128,56 +128,66 @@ export async function doStandardAttack(
   if (weapon.category !== "natural") tags.add("weapon");
   if (weapon.magical || ammo?.magical) tags.add("magical");
 
-  const e = await g.attack({
-    who: attacker,
-    tags,
-    target,
-    ability,
-    weapon,
-    ammo,
-  });
+  return getAttackResult(
+    g,
+    source,
+    await g.attack({ who: attacker, tags, target, ability, weapon, ammo }),
+  );
+}
 
+async function getAttackResult(
+  g: Engine,
+  source: Source,
+  e: Awaited<EngineAttackResult>,
+) {
   if (e.hit) {
     // TODO [SPAWNITEMS] throwing
 
+    const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
     if (ammo) ammo.quantity--;
 
-    const { damage } = weapon;
-    const baseDamage: DamageInitialiser = [];
+    if (weapon) {
+      const { damage } = weapon;
 
-    if (damage.type === "dice") {
-      const { count, size } = damage.amount;
-      const amount = await g.rollDamage(
-        count,
+      const baseDamage: DamageInitialiser = [];
+
+      if (damage.type === "dice") {
+        const { count, size } = damage.amount;
+        const amount = await g.rollDamage(
+          count,
+          {
+            source,
+            size,
+            damageType: damage.damageType,
+            attacker,
+            target,
+            ability,
+            weapon,
+          },
+          e.critical,
+        );
+        baseDamage.push([damage.damageType, amount]);
+      } else baseDamage.push([damage.damageType, damage.amount]);
+
+      const e2 = await g.damage(
+        weapon,
+        weapon.damage.damageType,
         {
-          source,
-          size,
-          damageType: damage.damageType,
+          attack: e.attack,
           attacker,
           target,
           ability,
           weapon,
+          ammo,
+          critical: e.critical,
         },
-        e.critical,
+        baseDamage,
       );
-      baseDamage.push([damage.damageType, amount]);
-    } else baseDamage.push([damage.damageType, damage.amount]);
 
-    const e2 = await g.damage(
-      weapon,
-      weapon.damage.damageType,
-      {
-        attack: e.attack,
-        attacker,
-        target,
-        ability,
-        weapon,
-        ammo,
-        critical: e.critical,
-      },
-      baseDamage,
-    );
-    return { type: "hit", attack: e, damage: e2 } as const;
+      return { type: "hit", attack: e, damage: e2 } as const;
+    }
+
+    return { type: "hit", attack: e } as const;
   }
 
   return { type: "miss", attack: e } as const;

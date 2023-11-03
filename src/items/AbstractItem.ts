@@ -1,5 +1,6 @@
 import { ItemRarityColours } from "../colours";
 import Engine from "../Engine";
+import Combatant from "../types/Combatant";
 import Enchantment from "../types/Enchantment";
 import Icon from "../types/Icon";
 import { ItemByTypeKey, ItemRarity, ItemType } from "../types/Item";
@@ -9,6 +10,8 @@ export default abstract class AbstractItem<T extends ItemType> {
   magic?: boolean;
   enchantments: Set<Enchantment<T>>;
   rarity: ItemRarity;
+  owner?: Combatant;
+  possessor?: Combatant;
 
   constructor(
     public g: Engine,

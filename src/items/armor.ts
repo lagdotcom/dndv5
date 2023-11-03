@@ -92,8 +92,8 @@ export class PlateArmor extends AbstractArmor {
 }
 
 export class Shield extends AbstractArmor {
-  constructor(g: Engine) {
-    super(g, "shield", "shield", 2);
+  constructor(g: Engine, iconUrl?: string) {
+    super(g, "shield", "shield", 2, false, undefined, iconUrl);
     this.hands = 1;
   }
 }

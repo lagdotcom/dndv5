@@ -125,6 +125,12 @@ export default class Engine {
     for (const co of this.combatants) {
       co.finalise();
       co.initiative = await this.rollInitiative(co);
+
+      const items = [...co.inventory, ...co.equipment];
+      for (const item of items) {
+        item.owner = co;
+        item.possessor = co;
+      }
     }
 
     this.initiativeOrder = Array.from(this.combatants).sort(
@@ -621,32 +627,31 @@ export default class Engine {
   async attack(
     e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt" | "success">,
   ) {
+    const bonus = new BonusCollector();
+    const diceType = new DiceTypeCollector();
+    const success = new SuccessResponseCollector();
+
     const pre = await this.resolve(
       new BeforeAttackEvent({
         ...e,
-        diceType: new DiceTypeCollector(),
-        bonus: new BonusCollector(),
+        bonus,
+        diceType,
+        success,
         interrupt: new InterruptionCollector(),
-        success: new SuccessResponseCollector(),
       }),
     );
-    if (pre.detail.success.result === "fail")
+    if (success.result === "fail")
       return { outcome: "cancelled", hit: false } as const;
 
-    const ac = await this.getAC(e.target, pre.detail);
-
+    // these COULD be changed during the event
+    const { target, who, ability } = pre.detail;
+    const ac = await this.getAC(target, pre.detail);
     const roll = await this.roll(
-      {
-        type: "attack",
-        who: e.who,
-        target: e.target,
-        ac,
-        ability: e.ability,
-      },
-      pre.detail.diceType.result,
+      { type: "attack", who, target, ac, ability },
+      diceType.result,
     );
 
-    const total = roll.values.final + pre.detail.bonus.result;
+    const total = roll.values.final + bonus.result;
     const outcomeCollector = new AttackOutcomeCollector();
     const event = new AttackEvent({
       pre: pre.detail,
@@ -960,5 +965,7 @@ export default class Engine {
     return { ...result, dcRoll };
   }
 }
+
+export type EngineAttackResult = ReturnType<Engine["attack"]>;
 
 export type EngineMoveResult = ReturnType<Engine["move"]>;

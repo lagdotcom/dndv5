@@ -64,9 +64,9 @@ const IceKnife = scalingSpell<HasTarget>({
           source: IceKnife,
           size: 10,
           attacker,
-          target,
+          target: attack.pre.target,
           spell: IceKnife,
-          method,
+          method: attack.pre.method,
           damageType: "piercing",
         },
         critical,
@@ -75,7 +75,14 @@ const IceKnife = scalingSpell<HasTarget>({
       await g.damage(
         IceKnife,
         "piercing",
-        { attack, attacker, target, spell: IceKnife, method, critical },
+        {
+          attack,
+          attacker,
+          target: attack.pre.target,
+          spell: IceKnife,
+          method: attack.pre.method,
+          critical,
+        },
         [["piercing", damage]],
       );
     }
