@@ -38,7 +38,7 @@ import {
   wantsPoint,
 } from "./utils/state";
 import { SVGCacheContext } from "./utils/SVGCache";
-import { getUnitData, UnitData } from "./utils/types";
+import { getUnitData } from "./utils/types";
 import UIResponse from "./utils/UIResponse";
 import YesNoDialog from "./YesNoDialog";
 
@@ -70,9 +70,7 @@ export default function App({ g, onMount }: Props) {
   );
 
   const refreshUnits = useCallback(() => {
-    const list: UnitData[] = [];
-    for (const who of g.combatants) list.push(getUnitData(who));
-    allCombatants.value = list;
+    allCombatants.value = Array.from(g.combatants, getUnitData);
   }, [g]);
 
   const refreshAreas = useCallback(() => {
