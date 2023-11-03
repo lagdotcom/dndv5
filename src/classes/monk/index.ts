@@ -10,6 +10,7 @@ import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
 import { _dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
+import { getExecutionMode } from "../../utils/env";
 
 const UnarmoredDefense = new SimpleFeature(
   "Unarmored Defense",
@@ -92,7 +93,8 @@ You gain the following benefits while you are unarmed or wielding only monk weap
 
 Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
   (g, me) => {
-    console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
+    if (getExecutionMode() !== "test")
+      console.warn(`[Feature Not Complete] Martial Arts (on ${me.name})`);
     const diceSize = getMartialArtsDie(me.classLevels.get("Monk") ?? 0);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

@@ -4,7 +4,7 @@ import { build } from "esbuild";
 
 import getBuildConfig from "./buildConfig.mjs";
 
-const result = await build(getBuildConfig());
+const result = await build(getBuildConfig("build"));
 
 if (result.errors.length) {
   console.log("--- ERRORS ---");

@@ -19,6 +19,7 @@ import ImplementationStatus from "../types/ImplementationStatus";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
 import { _dd } from "../utils/dice";
+import { getExecutionMode } from "../utils/env";
 import { resistanceFeature } from "./common";
 
 const MetallicDragonborn: PCRace = {
@@ -255,10 +256,11 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
 
   Once you use your Metallic Breath Weapon, you can’t do so again until you finish a long rest.`,
     (g, me) => {
+      if (getExecutionMode() !== "test")
+        console.warn(
+          `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`,
+        );
       if (me.level < 5) return;
-      console.warn(
-        `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`,
-      );
 
       me.initResource(MetallicBreathWeaponResource);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {

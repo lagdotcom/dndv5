@@ -5,7 +5,7 @@ import { context } from "esbuild";
 import getBuildConfig from "./buildConfig.mjs";
 
 const ctx = await context(
-  getBuildConfig({
+  getBuildConfig("watch", {
     sourcemap: true,
     banner: {
       js: `new EventSource('/esbuild').addEventListener('change', () => location.reload())`,

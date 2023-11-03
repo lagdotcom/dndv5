@@ -1203,6 +1203,11 @@
     }
   };
 
+  // src/utils/env.ts
+  function getExecutionMode() {
+    return "build";
+  }
+
   // src/spells/common.ts
   function getCantripDice(who) {
     if (who.level < 5)
@@ -1349,6 +1354,8 @@
     getTargets
   });
   function spellImplementationWarning(spell, owner) {
+    if (getExecutionMode() === "test")
+      return;
     if (spell.status === "incomplete")
       console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
     else if (spell.status === "missing")
@@ -4910,7 +4917,8 @@
   }
   function notImplementedFeature(name, text) {
     return new SimpleFeature(name, text, (_2, me) => {
-      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+      if (getExecutionMode() !== "test")
+        console.warn(`[Feature Missing] ${name} (on ${me.name})`);
     });
   }
 
@@ -6121,7 +6129,8 @@ In addition, you understand a set of secret signs and symbols used to convey sho
     "Cunning Action",
     `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
     (g, me) => {
-      console.warn(`[Feature Not Complete] Cunning Action (on ${me.name})`);
+      if (getExecutionMode() !== "test")
+        console.warn(`[Feature Not Complete] Cunning Action (on ${me.name})`);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
           const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
@@ -6575,7 +6584,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   - You may cast the spell [speak with animals] at will, but it can only target snakes.
   - As a bonus action, you hiss threateningly at an enemy within 5 feet. If the enemy fails a Wisdom save, they must spend their reaction to move half of their speed away from you in any direction. The DC is 8 + your proficiency bonus + your Charisma modifier. You can only use this ability once per short or long rest, and only when you are able to speak.`,
     (g, me) => {
-      console.warn(`[Feature Not Complete] Boon of Vassetri (on ${me.name})`);
+      if (getExecutionMode() !== "test")
+        console.warn(`[Feature Not Complete] Boon of Vassetri (on ${me.name})`);
       me.initResource(HissResource);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -7507,11 +7517,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   Once you use your Metallic Breath Weapon, you can\u2019t do so again until you finish a long rest.`,
       (g, me) => {
+        if (getExecutionMode() !== "test")
+          console.warn(
+            `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`
+          );
         if (me.level < 5)
           return;
-        console.warn(
-          `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`
-        );
         me.initResource(MetallicBreathWeaponResource);
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me) {
@@ -8737,6 +8748,50 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return 30;
   }
 
+  // src/classes/paladin/AuraOfProtection.ts
+  var AuraOfProtection = new SimpleFeature(
+    "Aura of Protection",
+    `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
+
+At 18th level, the range of this aura increases to 30 feet.`,
+    (g, me) => {
+      var _a;
+      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 6);
+      let area;
+      const updateAura = () => {
+        if (area)
+          g.removeEffectArea(area);
+        area = new ActiveEffectArea(
+          `Paladin Aura (${me.name})`,
+          { type: "within", radius, who: me },
+          arSet("holy"),
+          "yellow"
+        );
+        g.addEffectArea(area);
+      };
+      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+        if (who.side === me.side && !me.conditions.has("Unconscious") && distance(me, who) <= radius)
+          bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
+      });
+      g.events.on("CombatantMoved", ({ detail: { who } }) => {
+        if (who === me && !me.conditions.has("Unconscious"))
+          updateAura();
+      });
+      g.events.on("EffectAdded", ({ detail: { who } }) => {
+        if (who === me && me.conditions.has("Unconscious") && area) {
+          g.removeEffectArea(area);
+          area = void 0;
+        }
+      });
+      g.events.on("EffectRemoved", ({ detail: { who } }) => {
+        if (who === me && !me.conditions.has("Unconscious"))
+          updateAura();
+      });
+      updateAura();
+    }
+  );
+  var AuraOfProtection_default = AuraOfProtection;
+
   // src/classes/paladin/HarnessDivinePower.ts
   var HarnessDivinePowerResource = new LongRestResource(
     "Harness Divine Power",
@@ -9087,47 +9142,6 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     "Extra Attack",
     `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
   );
-  var AuraOfProtection = new SimpleFeature(
-    "Aura of Protection",
-    `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
-
-At 18th level, the range of this aura increases to 30 feet.`,
-    (g, me) => {
-      var _a;
-      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 6);
-      let area;
-      const updateAura = (position) => {
-        if (area)
-          g.removeEffectArea(area);
-        area = new ActiveEffectArea(
-          `Paladin Aura (${me.name})`,
-          { type: "within", radius, who: me },
-          arSet("holy"),
-          "yellow"
-        );
-        g.addEffectArea(area);
-      };
-      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-        if (who.side === me.side && !me.conditions.has("Unconscious") && distance(me, who) <= radius)
-          bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
-      });
-      g.events.on("CombatantMoved", ({ detail: { who, position } }) => {
-        if (who === me && !me.conditions.has("Unconscious"))
-          updateAura(position);
-      });
-      g.events.on("EffectAdded", ({ detail: { who } }) => {
-        if (who === me && me.conditions.has("Unconscious") && area) {
-          g.removeEffectArea(area);
-          area = void 0;
-        }
-      });
-      g.events.on("EffectRemoved", ({ detail: { who } }) => {
-        if (who === me && !me.conditions.has("Unconscious"))
-          updateAura(me.position);
-      });
-      updateAura(me.position);
-    }
-  );
   var AuraOfCourage = new SimpleFeature(
     "Aura of Courage",
     `Starting at 10th level, you and friendly creatures within 10 feet of you can't be frightened while you are conscious.
@@ -9203,7 +9217,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       [3, [DivineHealth, ChannelDivinity, HarnessDivinePower_default]],
       [4, [ASI43, MartialVersatility]],
       [5, [ExtraAttack]],
-      [6, [AuraOfProtection]],
+      [6, [AuraOfProtection_default]],
       [8, [ASI83]],
       [10, [AuraOfCourage]],
       [11, [ImprovedDivineSmite]],
@@ -10911,7 +10925,8 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     "Wild Shape",
     `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
     (g, me, forms) => {
-      console.warn(`[Feature Not Complete] Wild Shape (on ${me.name})`);
+      if (getExecutionMode() !== "test")
+        console.warn(`[Feature Not Complete] Wild Shape (on ${me.name})`);
       me.initResource(WildShapeResource);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -12565,16 +12580,16 @@ The creature is aware of this effect before it makes its attack against you.`
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact2 = __toESM(require_preact());
   var import_preact3 = __toESM(require_preact());
-  var _ = 0;
+  var r = 0;
   function o(o2, e, n, t, f, l) {
-    var s, u, a = {};
-    for (u in e)
-      "ref" == u ? s = e[u] : a[u] = e[u];
-    var i = { type: o2, props: a, key: n, ref: s, __k: null, __: null, __b: 0, __e: null, __d: void 0, __c: null, __h: null, constructor: void 0, __v: --_, __source: f, __self: l };
+    var s, i, u = {};
+    for (i in e)
+      "ref" == i ? s = e[i] : u[i] = e[i];
+    var a = { type: o2, props: u, key: n, ref: s, __k: null, __: null, __b: 0, __e: null, __d: void 0, __c: null, __h: null, constructor: void 0, __v: --r, __i: -1, __source: f, __self: l };
     if ("function" == typeof o2 && (s = o2.defaultProps))
-      for (u in s)
-        void 0 === a[u] && (a[u] = s[u]);
-    return import_preact2.options.vnode && import_preact2.options.vnode(i), i;
+      for (i in s)
+        void 0 === u[i] && (u[i] = s[i]);
+    return import_preact2.options.vnode && import_preact2.options.vnode(a), a;
   }
 
   // src/ui/SVGIcon.tsx

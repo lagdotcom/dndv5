@@ -3,20 +3,22 @@ import DiceTypeCollector from "../../collectors/DiceTypeCollector";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
 import SaveDamageResponseCollector from "../../collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
+import { Dying } from "../../effects";
 import BeforeSaveEvent from "../../events/BeforeSaveEvent";
 import Aura from "../../pcs/davies/Aura";
 import Galilea from "../../pcs/davies/Galilea";
 import setupBattleTest from "../../tests/setupBattleTest";
 import { svSet } from "../../types/SaveTag";
+import AuraOfProtection from "./AuraOfProtection";
 
 describe("Aura of Protection", () => {
-  it("provides an effect", async () => {
+  it("provides an effect while conscious and in range", async () => {
     const {
       g,
-      combatants: [who],
-    } = await setupBattleTest([Aura, 30, 0, 10], [Galilea, 0, 0, 1]);
+      combatants: [who, paladin],
+    } = await setupBattleTest([Aura, 35, 0, 10], [Galilea, 0, 0, 1]);
 
-    const before = await g.resolve(
+    const outOfRange = await g.resolve(
       new BeforeSaveEvent({
         who,
         dc: 10,
@@ -29,10 +31,12 @@ describe("Aura of Protection", () => {
         interrupt: new InterruptionCollector(),
       }),
     );
+
+    expect(outOfRange.detail.bonus.isInvolved(AuraOfProtection)).toBeFalsy();
 
     who.position.x = 10;
 
-    const after = await g.resolve(
+    const inRange = await g.resolve(
       new BeforeSaveEvent({
         who,
         dc: 10,
@@ -46,6 +50,27 @@ describe("Aura of Protection", () => {
       }),
     );
 
-    expect(before.detail.bonus.result).toBeLessThan(after.detail.bonus.result);
+    expect(inRange.detail.bonus.isInvolved(AuraOfProtection)).toBeTruthy();
+    expect(outOfRange.detail.bonus.result).toBeLessThan(
+      inRange.detail.bonus.result,
+    );
+
+    paladin.effects.set(Dying, { duration: Infinity });
+
+    const unconscious = await g.resolve(
+      new BeforeSaveEvent({
+        who,
+        dc: 10,
+        diceType: new DiceTypeCollector(),
+        bonus: new BonusCollector(),
+        successResponse: new SuccessResponseCollector(),
+        saveDamageResponse: new SaveDamageResponseCollector("normal"),
+        failDamageResponse: new SaveDamageResponseCollector("normal"),
+        tags: svSet(),
+        interrupt: new InterruptionCollector(),
+      }),
+    );
+
+    expect(unconscious.detail.bonus.isInvolved(AuraOfProtection)).toBeFalsy();
   });
 });

@@ -5,16 +5,18 @@ import { postcssModules, sassPlugin } from "esbuild-sass-plugin";
 import CDNModule from "./CDNModule.mjs";
 
 /**
+ * @param {string} mode
  * @param {import('esbuild').BuildOptions} [options={}] custom options
  * @returns {import('esbuild').BuildOptions} combined options
  */
-export default function getBuildConfig(options = {}) {
+export default function getBuildConfig(mode, options = {}) {
   return {
     entryPoints: ["src/index.tsx"],
     bundle: true,
     outfile: "docs/bundle.js",
     target: "es2018",
     define: {
+      MODE: JSON.stringify(mode),
       [`process.env.APP_BUILD_VERSION`]: JSON.stringify(
         process.env.npm_package_version
       ),

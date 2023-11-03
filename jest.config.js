@@ -13,4 +13,5 @@ module.exports = {
   moduleNameMapper: {
     "@img/(.*)": "<rootDir>/src/img/$1",
   },
+  globals: { MODE: "test" },
 };

@@ -34,7 +34,7 @@ abstract class AbstractCollector<T> {
     this.ignoredValues.add(value);
   }
 
-  isInvolved(source: Source): boolean {
+  isInvolved(source: Source) {
     if (this.ignoredSources.has(source)) return false;
     for (const entry of this.entries)
       if (entry.source === source && !this.ignoredValues.has(entry.value))
