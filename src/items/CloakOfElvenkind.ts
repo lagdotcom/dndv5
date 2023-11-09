@@ -18,7 +18,11 @@ class CloakHoodAction extends AbstractAction {
       cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
       "incomplete",
       {},
-      { icon: cloak.icon, time: "action" },
+      {
+        icon: cloak.icon,
+        time: "action",
+        description: `While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak's color shifts to camouflage you.`,
+      },
     );
   }
 

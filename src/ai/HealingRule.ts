@@ -39,6 +39,8 @@ export default class HealingRule implements AIRule {
             overHeal += Math.max(average - missing, 0);
           }
 
+          if (effective <= 0) return;
+
           score.addEval(me, effectiveSelf, HealSelf);
           score.addEval(me, effective, HealAllies);
           score.addEval(me, overHeal, OverHealAllies);

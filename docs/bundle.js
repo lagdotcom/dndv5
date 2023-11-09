@@ -4858,6 +4858,8 @@
               effective += heal;
             overHeal += Math.max(average - missing, 0);
           }
+          if (effective <= 0)
+            return;
           score.addEval(me, effectiveSelf, HealSelf);
           score.addEval(me, effective, HealAllies);
           score.addEval(me, overHeal, OverHealAllies);
@@ -8978,7 +8980,11 @@ At 18th level, the range of this aura increases to 30 feet.`,
           cost: new NumberRangeResolver(g, "Spend", 1, Infinity),
           target: new TargetResolver(g, actor.reach, [isHealable])
         },
-        { icon: LayOnHandsHealIcon, time: "action" }
+        {
+          icon: LayOnHandsHealIcon,
+          time: "action",
+          description: `As an action, you can touch a creature and draw power from the pool to restore a number of hit points to that creature, up to the maximum amount remaining in your pool.`
+        }
       );
       this.subIcon = PaladinIcon;
     }
@@ -9038,7 +9044,11 @@ At 18th level, the range of this aura increases to 30 feet.`,
           target: new TargetResolver(g, actor.reach, [isHealable]),
           effects: new MultiChoiceResolver(g, [], 1, Infinity)
         },
-        { icon: LayOnHandsCureIcon }
+        {
+          icon: LayOnHandsCureIcon,
+          time: "action",
+          description: `As an action, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.`
+        }
       );
       this.subIcon = PaladinIcon;
     }
@@ -11817,7 +11827,11 @@ The creature is aware of this effect before it makes its attack against you.`
         cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
         "incomplete",
         {},
-        { icon: cloak.icon, time: "action" }
+        {
+          icon: cloak.icon,
+          time: "action",
+          description: `While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak's color shifts to camouflage you.`
+        }
       );
       this.cloak = cloak;
     }
@@ -12841,16 +12855,49 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/ui/ActiveUnitPanel.tsx
+  var ActionTypes = [
+    "Attacks",
+    "Actions",
+    "Bonus Actions",
+    "Other Actions",
+    "Reactions",
+    "Out of Combat Actions"
+  ];
+  var niceTime = {
+    action: "Actions",
+    "bonus action": "Bonus Actions",
+    long: "Out of Combat Actions",
+    reaction: "Reactions"
+  };
+  function splitActions(actionList) {
+    var _a;
+    const categories = /* @__PURE__ */ new Map();
+    for (const action of actionList) {
+      const time = action.getTime({});
+      const label = action.isAttack ? "Attacks" : time ? niceTime[time] : "Other Actions";
+      const category = (_a = categories.get(label)) != null ? _a : [];
+      category.push(action);
+      if (!categories.has(label))
+        categories.set(label, category);
+    }
+    return Array.from(categories, ([label, actions]) => ({
+      label,
+      actions
+    })).sort(
+      (a, b) => ActionTypes.indexOf(a.label) - ActionTypes.indexOf(b.label)
+    );
+  }
   function ActiveUnitPanel({
     onChooseAction,
     onPass,
     who
   }) {
+    const actionCategories = splitActions(allActions.value);
     return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Active Unit", children: [
       /* @__PURE__ */ o(Labelled, { label: "Current Turn", children: who.name }),
       /* @__PURE__ */ o("button", { onClick: onPass, children: "End Turn" }),
       /* @__PURE__ */ o("hr", {}),
-      /* @__PURE__ */ o(Labelled, { label: "Actions", children: allActions.value.map(
+      actionCategories.map(({ label, actions }) => /* @__PURE__ */ o(Labelled, { label, children: actions.map(
         (action) => action.icon ? /* @__PURE__ */ o(
           IconButton,
           {
@@ -12861,7 +12908,7 @@ The creature is aware of this effect before it makes its attack against you.`
           },
           action.name
         ) : /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)
-      ) })
+      ) }, label))
     ] });
   }
 
