@@ -108,7 +108,15 @@ export function* getAllEvaluations(g: Engine, me: Combatant) {
         }
       }
 
-      if (positionMap.size) yield { ...o, positionMap, best, bestScore };
+      const bestPositions = positionMap.get(best);
+      if (bestPositions)
+        yield {
+          ...o,
+          positionMap,
+          best,
+          bestPositions,
+          bestScore,
+        };
     }
   }
 

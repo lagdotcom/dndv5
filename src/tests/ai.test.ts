@@ -171,15 +171,12 @@ describe("getAllEvaluations", () => {
       [Beldalynn, 0, 10, 1],
     );
 
-    const bestMove = Array.from(getAllEvaluations(g, me)).sort(
+    const { bestPositions } = Array.from(getAllEvaluations(g, me)).sort(
       (a, b) => b.best - a.best,
     )[0];
 
-    const set = bestMove.positionMap.get(bestMove.best);
-    expect(set).toBeDefined();
-
     const allies = [zafron, kay];
-    for (const point of set!) {
+    for (const point of bestPositions) {
       for (const ally of allies) {
         expect(distanceTo(ally, point)).toBeLessThanOrEqual(30);
       }
