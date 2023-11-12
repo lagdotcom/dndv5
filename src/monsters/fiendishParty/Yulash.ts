@@ -131,6 +131,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
         time: "action",
         icon: discordIcon,
         description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`,
+        isHarmful: true,
       },
     );
   }
@@ -212,6 +213,7 @@ class IrritationAction extends AbstractAction<HasTarget> {
         time: "action",
         icon: irritationIcon,
         description: `One enemy within 30ft. must make a Constitution check or lose concentration.`,
+        isHarmful: true,
       },
     );
   }

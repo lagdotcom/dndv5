@@ -1,6 +1,6 @@
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
-import { canSee } from "../../filters";
+import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { abSet } from "../../types/AbilityName";
 import { hours } from "../../utils/time";
@@ -32,7 +32,7 @@ const IntellectFortressEffect = new Effect(
 );
 
 const IntellectFortress = scalingSpell<HasTargets>({
-  status: "incomplete",
+  status: "implemented",
   name: "Intellect Fortress",
   level: 3,
   school: "Abjuration",
@@ -43,9 +43,15 @@ const IntellectFortress = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them.`,
 
-  // TODO  The creatures must be within 30 feet of each other when you target them.
   getConfig: (g, caster, method, { slot }) => ({
-    targets: new MultiTargetResolver(g, 1, (slot ?? 3) - 2, 30, [canSee]),
+    targets: new MultiTargetResolver(
+      g,
+      1,
+      (slot ?? 3) - 2,
+      30,
+      [canSee],
+      [withinRangeOfEachOther(30)],
+    ),
   }),
   getTargets: (g, caster, { targets }) => targets,
 

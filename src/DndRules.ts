@@ -87,11 +87,6 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
   });
 });
 
-/* TODO Charmed
-- A charmed creature can't attack the charmer or target the charmer with harmful abilities or magical effects.
-- The charmer has advantage on any ability check to interact socially with the creature.
-*/
-
 export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
   g.events.on("GetActions", ({ detail: { who, actions } }) => {
     actions.push(new DashAction(g, who));

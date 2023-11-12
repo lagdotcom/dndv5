@@ -6,6 +6,8 @@ import StandUpAction from "./actions/StandUpAction";
 import { makeIcon } from "./colours";
 import Effect from "./Effect";
 import EvaluateLater from "./interruptions/EvaluateLater";
+import Combatant from "./types/Combatant";
+import { EffectConfig } from "./types/EffectType";
 import { distance } from "./utils/units";
 
 export const Dying = new Effect(
@@ -132,4 +134,35 @@ export const Prone = new Effect(
     });
   },
   { icon: makeIcon(proneUrl) },
+);
+
+export type CharmedConfig = EffectConfig<{ by: Combatant }>;
+
+export const Charmed = new Effect<{ by: Combatant }>(
+  "Charmed",
+  "turnEnd",
+  (g) => {
+    // A charmed creature can't attack the charmer or target the charmer with harmful abilities or magical effects.
+    g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+      const charm = action.actor.getEffectConfig(Charmed);
+      const targets = action.getTargets(config) ?? [];
+
+      if (charm?.by && targets.includes(charm.by) && action.isHarmful)
+        error.add(
+          "can't attack the charmer or target the charmer with harmful abilities or magical effects",
+          Charmed,
+        );
+    });
+
+    // The charmer has advantage on any ability check to interact socially with the creature.
+    g.events.on(
+      "BeforeCheck",
+      ({ detail: { target, who, tags, diceType } }) => {
+        const charm = target?.getEffectConfig(Charmed);
+
+        if (charm?.by === who && tags.has("social"))
+          diceType.add("advantage", Charmed);
+      },
+    );
+  },
 );

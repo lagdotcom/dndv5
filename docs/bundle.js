@@ -398,7 +398,9 @@
       description,
       heal,
       icon,
+      isHarmful,
       resources,
+      subIcon,
       time
     } = {}) {
       this.g = g;
@@ -409,10 +411,12 @@
       this.area = area;
       this.damage = damage;
       this.description = description;
+      this.isHarmful = isHarmful;
       this.heal = heal;
       this.resources = new Map(resources);
       this.time = time;
       this.icon = icon;
+      this.subIcon = subIcon;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     generateAttackConfigs(targets) {
@@ -517,76 +521,28 @@
   // src/img/act/disengage.svg
   var disengage_default = "./disengage-6XMY6V34.svg";
 
-  // src/filters.ts
-  var makeFilter = ({
-    name,
-    message = name,
-    check
-  }) => ({ name, message, check });
-  var canSee = makeFilter({
-    name: "can see",
-    message: "not visible",
-    check: (g, action, value) => g.canSee(action.actor, value)
-  });
-  var isAlly = makeFilter({
-    name: "ally",
-    message: "must target ally",
-    check: (g, action, value) => action.actor.side === value.side
-  });
-  var isConcentrating = makeFilter({
-    name: "concentrating",
-    message: "target must be concentrating",
-    check: (g, action, value) => value.concentratingOn.size > 0
-  });
-  var isEnemy = makeFilter({
-    name: "enemy",
-    message: "must target enemy",
-    check: (g, action, value) => action.actor.side !== value.side
-  });
-  var notSelf = makeFilter({
-    name: "not self",
-    check: (g, action, value) => action.actor !== value
-  });
-  var ofCreatureType = (...types) => makeFilter({
-    name: types.join("/"),
-    message: "wrong creature type",
-    check: (g, action, value) => types.includes(value.type)
-  });
-  var notOfCreatureType = (...types) => makeFilter({
-    name: `not ${types.join("/")}`,
-    message: "wrong creature type",
-    check: (g, action, value) => !types.includes(value.type)
-  });
-
-  // src/types/AbilityName.ts
-  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
-  var abSet = (...items) => new Set(items);
-
-  // src/utils/types.ts
-  function isDefined(value) {
-    return typeof value !== "undefined";
+  // src/utils/combinatorics.ts
+  function combinations(source, size) {
+    const results = [];
+    function backtrack(start, current) {
+      if (current.length === size) {
+        results.push([...current]);
+        return;
+      }
+      for (let i = start; i < source.length; i++) {
+        current.push(source[i]);
+        backtrack(i + 1, current);
+        current.pop();
+      }
+    }
+    backtrack(0, []);
+    return results;
   }
-  function isA(value, enumeration) {
-    return enumeration.includes(value);
-  }
-  function isCombatantArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const who of value)
-      if (!(who instanceof AbstractCombatant))
-        return false;
-    return true;
-  }
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
-  }
-  function isPointArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const point of value)
-      if (!isPoint(point))
-        return false;
-    return true;
+  function combinationsMulti(source, min, max) {
+    const v = [];
+    for (let l = min; l <= max; l++)
+      v.push(...combinations(source, l));
+    return v;
   }
 
   // src/Polygon.ts
@@ -939,6 +895,83 @@
     );
   }
 
+  // src/filters.ts
+  var makeFilter = ({
+    name,
+    message = name,
+    check
+  }) => ({ name, message, check });
+  var canSee = makeFilter({
+    name: "can see",
+    message: "not visible",
+    check: (g, action, value) => g.canSee(action.actor, value)
+  });
+  var isAlly = makeFilter({
+    name: "ally",
+    message: "must target ally",
+    check: (g, action, value) => action.actor.side === value.side
+  });
+  var isConcentrating = makeFilter({
+    name: "concentrating",
+    message: "target must be concentrating",
+    check: (g, action, value) => value.concentratingOn.size > 0
+  });
+  var isEnemy = makeFilter({
+    name: "enemy",
+    message: "must target enemy",
+    check: (g, action, value) => action.actor.side !== value.side
+  });
+  var notSelf = makeFilter({
+    name: "not self",
+    check: (g, action, value) => action.actor !== value
+  });
+  var ofCreatureType = (...types) => makeFilter({
+    name: types.join("/"),
+    message: "wrong creature type",
+    check: (g, action, value) => types.includes(value.type)
+  });
+  var notOfCreatureType = (...types) => makeFilter({
+    name: `not ${types.join("/")}`,
+    message: "wrong creature type",
+    check: (g, action, value) => !types.includes(value.type)
+  });
+  var withinRangeOfEachOther = (range) => makeFilter({
+    name: `within ${range}' of each other`,
+    message: `within ${range}' of each other`,
+    check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
+  });
+
+  // src/types/AbilityName.ts
+  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
+  var abSet = (...items) => new Set(items);
+
+  // src/utils/types.ts
+  function isDefined(value) {
+    return typeof value !== "undefined";
+  }
+  function isA(value, enumeration) {
+    return enumeration.includes(value);
+  }
+  function isCombatantArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const who of value)
+      if (!(who instanceof AbstractCombatant))
+        return false;
+    return true;
+  }
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  function isPointArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const point of value)
+      if (!isPoint(point))
+        return false;
+    return true;
+  }
+
   // src/utils/dnd.ts
   function getAbilityModifier(ability) {
     return Math.floor((ability - 10) / 2);
@@ -1089,6 +1122,7 @@
       this.icon = spell.icon;
       this.subIcon = method.icon;
       this.vocal = spell.v;
+      this.isHarmful = spell.isHarmful;
     }
     get status() {
       return this.spell.status;
@@ -1231,6 +1265,7 @@
     lists,
     description,
     icon,
+    isHarmful = false,
     apply,
     check = (_g, _config, ec) => ec,
     generateAttackConfigs = () => [],
@@ -1256,6 +1291,7 @@
     lists,
     description,
     icon,
+    isHarmful,
     apply,
     check,
     generateAttackConfigs,
@@ -1280,8 +1316,9 @@
     s = false,
     m,
     lists,
-    icon,
     description,
+    icon,
+    isHarmful = false,
     apply,
     check = (_g, _config, ec) => ec,
     generateAttackConfigs,
@@ -1307,6 +1344,7 @@
     lists,
     description,
     icon,
+    isHarmful,
     apply,
     check,
     generateAttackConfigs(g, caster, method, targets) {
@@ -2096,12 +2134,37 @@
     },
     { icon: makeIcon(prone_default) }
   );
+  var Charmed = new Effect(
+    "Charmed",
+    "turnEnd",
+    (g) => {
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        var _a;
+        const charm = action.actor.getEffectConfig(Charmed);
+        const targets = (_a = action.getTargets(config)) != null ? _a : [];
+        if ((charm == null ? void 0 : charm.by) && targets.includes(charm.by) && action.isHarmful)
+          error.add(
+            "can't attack the charmer or target the charmer with harmful abilities or magical effects",
+            Charmed
+          );
+      });
+      g.events.on(
+        "BeforeCheck",
+        ({ detail: { target, who, tags, diceType } }) => {
+          const charm = target == null ? void 0 : target.getEffectConfig(Charmed);
+          if ((charm == null ? void 0 : charm.by) === who && tags.has("social"))
+            diceType.add("advantage", Charmed);
+        }
+      );
+    }
+  );
 
   // src/actions/AbstractAttackAction.ts
   var AbstractAttackAction = class extends AbstractAction {
     constructor(g, actor, name, status, config, options = {}) {
       super(g, actor, name, status, config, options);
       this.isAttack = true;
+      this.isHarmful = true;
     }
     generateHealingConfigs() {
       return [];
@@ -2130,13 +2193,12 @@
         weapon.properties.has("thrown") ? "incomplete" : "implemented",
         {
           target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf])
-        }
+        },
+        { icon: weapon.icon, subIcon: ammo == null ? void 0 : ammo.icon }
       );
       this.weapon = weapon;
       this.ammo = ammo;
       this.ability = getWeaponAbility(actor, weapon);
-      this.icon = weapon.icon;
-      this.subIcon = ammo == null ? void 0 : ammo.icon;
     }
     generateAttackConfigs(targets) {
       const ranges = [this.weapon.shortRange, this.weapon.longRange].filter(
@@ -4167,7 +4229,8 @@
         {
           time: "reaction",
           icon: RebukeIcon,
-          description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`
+          description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
+          isHarmful: true
         }
       );
       this.dc = dc;
@@ -4858,7 +4921,7 @@
               effective += heal;
             overHeal += Math.max(average - missing, 0);
           }
-          if (effective <= 0)
+          if (effective + effectiveSelf <= 0)
             return;
           score.addEval(me, effectiveSelf, HealSelf);
           score.addEval(me, effective, HealAllies);
@@ -5018,6 +5081,7 @@
     v: true,
     s: true,
     lists: ["Cleric"],
+    isHarmful: true,
     description: `A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
@@ -5051,12 +5115,13 @@
 
   // src/resolvers/MultiTargetResolver.ts
   var MultiTargetResolver = class {
-    constructor(g, minimum, maximum, maxRange, filters) {
+    constructor(g, minimum, maximum, maxRange, filters, allFilters = []) {
       this.g = g;
       this.minimum = minimum;
       this.maximum = maximum;
       this.maxRange = maxRange;
       this.filters = filters;
+      this.allFilters = allFilters;
       this.type = "Combatants";
     }
     get name() {
@@ -5075,12 +5140,15 @@
           ec.add(`At most ${this.maximum} targets`, this);
         for (const who of value) {
           const isOutOfRange = distance(action.actor, who) > this.maxRange;
-          const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
+          const filterErrors2 = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
           if (isOutOfRange)
             ec.add(`${who.name}: Out of range`, this);
-          for (const error of filterErrors)
+          for (const error of filterErrors2)
             ec.add(`${who.name}: ${error}`, this);
         }
+        const filterErrors = this.allFilters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
+        for (const error of filterErrors)
+          ec.add(error, this);
       }
       return ec;
     }
@@ -5088,30 +5156,6 @@
 
   // src/types/CreatureType.ts
   var ctSet = (...items) => new Set(items);
-
-  // src/utils/combinatorics.ts
-  function combinations(source, size) {
-    const results = [];
-    function backtrack(start, current) {
-      if (current.length === size) {
-        results.push([...current]);
-        return;
-      }
-      for (let i = start; i < source.length; i++) {
-        current.push(source[i]);
-        backtrack(i + 1, current);
-        current.pop();
-      }
-    }
-    backtrack(0, []);
-    return results;
-  }
-  function combinationsMulti(source, min, max) {
-    const v = [];
-    for (let l = min; l <= max; l++)
-      v.push(...combinations(source, l));
-    return v;
-  }
 
   // src/spells/level3/MassHealingWord.ts
   var cannotHeal = ctSet("undead", "construct");
@@ -5228,7 +5272,7 @@
         "Shield Bash",
         "implemented",
         { target: new TargetResolver(g, actor.reach, [isEnemy]) },
-        { icon: ShieldBashIcon, time: "action" }
+        { icon: ShieldBashIcon, time: "action", isHarmful: true }
       );
       this.ability = ability;
     }
@@ -5523,7 +5567,8 @@
         {
           time: "action",
           icon: discordIcon,
-          description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`
+          description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`,
+          isHarmful: true
         }
       );
     }
@@ -5599,7 +5644,8 @@
         {
           time: "action",
           icon: irritationIcon,
-          description: `One enemy within 30ft. must make a Constitution check or lose concentration.`
+          description: `One enemy within 30ft. must make a Constitution check or lose concentration.`,
+          isHarmful: true
         }
       );
     }
@@ -5781,7 +5827,8 @@
         {
           icon: BullRushIcon,
           time: "action",
-          description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`
+          description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`,
+          isHarmful: true
         }
       );
     }
@@ -6082,11 +6129,11 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         {},
         {
           icon: SteadyAimIcon,
+          subIcon: RogueIcon,
           time: "bonus action",
           description: `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`
         }
       );
-      this.subIcon = RogueIcon;
     }
     check(config, ec) {
       if (this.actor.movedSoFar)
@@ -6569,9 +6616,13 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         {
           icon: makeIcon(hiss_default),
           time: "bonus action",
-          resources: [[HissResource, 1]]
+          resources: [[HissResource, 1]],
+          isHarmful: true
         }
       );
+    }
+    getTargets({ target }) {
+      return [target];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -7602,6 +7653,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You hurl a bubble of acid. Choose one creature you can see within range, or choose two creatures you can see within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.
 
   This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
@@ -7614,18 +7666,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       positioning: new Set(targets.map((target) => poWithin(60, target)))
     })),
     getConfig: (g) => ({
-      targets: new MultiTargetResolver(g, 1, 2, 60, [canSee])
+      targets: new MultiTargetResolver(
+        g,
+        1,
+        2,
+        60,
+        [canSee],
+        [withinRangeOfEachOther(5)]
+      )
     }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g, caster, { targets }) => targets,
-    check(g, { targets }, ec) {
-      if (isCombatantArray(targets) && targets.length === 2) {
-        const [a, b] = targets;
-        if (distance(a, b) > 5)
-          ec.add("Targets are not within 5 feet of each other", AcidSplash);
-      }
-      return ec;
-    },
     async apply(g, attacker, method, { targets }) {
       const count = getCantripDice(attacker);
       const damage = await g.rollDamage(count, {
@@ -7673,6 +7724,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
@@ -7717,6 +7769,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     school: "Enchantment",
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
+    isHarmful: true,
     description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
@@ -7795,6 +7848,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
@@ -7841,6 +7895,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a drop of water or piece of ice",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 cold damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
@@ -7995,6 +8050,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     v: true,
     s: true,
     lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
@@ -8256,6 +8312,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a pinch of powdered iron",
     lists: ["Artificer", "Sorcerer", "Wizard"],
+    isHarmful: true,
+    // TODO could be either
     description: `You cause a creature or an object you can see within range to grow larger or smaller for the duration. Choose either a creature or an object that is neither worn nor carried. If the target is unwilling, it can make a Constitution saving throw. On a success, the spell has no effect.
 
   If the target is a creature, everything it is wearing and carrying changes size with it. Any item dropped by an affected creature returns to normal size at once.
@@ -8332,7 +8390,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
   });
   var HoldPerson = scalingSpell({
-    status: "incomplete",
+    status: "implemented",
     name: "Hold Person",
     level: 2,
     school: "Enchantment",
@@ -8345,15 +8403,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.`,
     getConfig: (g, actor, method, { slot }) => ({
-      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 2) - 1, 60, [
-        canSee,
-        ofCreatureType("humanoid")
-      ])
+      targets: new MultiTargetResolver(
+        g,
+        1,
+        (slot != null ? slot : 2) - 1,
+        60,
+        [canSee, ofCreatureType("humanoid")],
+        [withinRangeOfEachOther(30)]
+      )
     }),
     getTargets: (g, caster, { targets }) => targets,
-    check(g, { targets }, ec) {
-      return ec;
-    },
     async apply(g, caster, method, { targets }) {
       const affected = /* @__PURE__ */ new Set();
       const duration = minutes(1);
@@ -8411,6 +8470,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     s: true,
     m: "a tiny ball of bat guano and sulfur",
     lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.
 
   The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
@@ -8472,7 +8532,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   );
   var IntellectFortress = scalingSpell({
-    status: "incomplete",
+    status: "implemented",
     name: "Intellect Fortress",
     level: 3,
     school: "Abjuration",
@@ -8482,9 +8542,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     description: `For the duration, you or one willing creature you can see within range has resistance to psychic damage, as well as advantage on Intelligence, Wisdom, and Charisma saving throws.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them.`,
-    // TODO  The creatures must be within 30 feet of each other when you target them.
     getConfig: (g, caster, method, { slot }) => ({
-      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 3) - 2, 30, [canSee])
+      targets: new MultiTargetResolver(
+        g,
+        1,
+        (slot != null ? slot : 3) - 2,
+        30,
+        [canSee],
+        [withinRangeOfEachOther(30)]
+      )
     }),
     getTargets: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { targets }) {
@@ -8596,7 +8662,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           icon: MMMIcon,
           time: "bonus action",
           damage: [_dd(2, 6, "fire")],
-          description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`
+          description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`,
+          isHarmful: true
         }
       );
       this.method = method;
@@ -8857,6 +8924,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
           )
         },
         {
+          subIcon: PaladinIcon,
           time: "bonus action",
           resources: [
             [ChannelDivinityResource, 1],
@@ -8865,7 +8933,6 @@ At 18th level, the range of this aura increases to 30 feet.`,
           description: `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`
         }
       );
-      this.subIcon = PaladinIcon;
     }
     check({ slot }, ec) {
       if (slot) {
@@ -8982,11 +9049,11 @@ At 18th level, the range of this aura increases to 30 feet.`,
         },
         {
           icon: LayOnHandsHealIcon,
+          subIcon: PaladinIcon,
           time: "action",
           description: `As an action, you can touch a creature and draw power from the pool to restore a number of hit points to that creature, up to the maximum amount remaining in your pool.`
         }
       );
-      this.subIcon = PaladinIcon;
     }
     generateHealingConfigs(targets) {
       const resourceMax = this.actor.getResource(LayOnHandsResource);
@@ -9046,11 +9113,11 @@ At 18th level, the range of this aura increases to 30 feet.`,
         },
         {
           icon: LayOnHandsCureIcon,
+          subIcon: PaladinIcon,
           time: "action",
           description: `As an action, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.`
         }
       );
-      this.subIcon = PaladinIcon;
     }
     getConfig({ target }) {
       const valid = target ? getCurableEffects(target) : [];
@@ -9473,11 +9540,11 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
           time: "action",
           resources: [[ChannelDivinityResource, 1]],
           icon: SacredWeaponIcon,
+          subIcon: PaladinIcon,
           description: `As an action, you can imbue one weapon that you are holding with positive energy, using your Channel Divinity. For 1 minute, you add your Charisma modifier to attack rolls made with that weapon (with a minimum bonus of +1). The weapon also emits bright light in a 20-foot radius and dim light 20 feet beyond that. If the weapon is not already magical, it becomes magical for the duration.
       You can end this effect on your turn as part of any other action. If you are no longer holding or carrying this weapon, or if you fall unconscious, this effect ends.`
         }
       );
-      this.subIcon = PaladinIcon;
     }
     check(config, ec) {
       if (this.actor.hasEffect(SacredWeaponEffect))
@@ -9513,11 +9580,20 @@ You can end this effect on your turn as part of any other action. If you are no 
 
 A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
   );
-  var AuraOfDevotion = notImplementedFeature(
+  var AuraOfDevotion = new SimpleFeature(
     "Aura of Devotion",
     `Starting at 7th level, you and friendly creatures within 10 feet of you can't be charmed while you are conscious.
 
-At 18th level, the range of this aura increases to 30 feet.`
+At 18th level, the range of this aura increases to 30 feet.`,
+    (g, me) => {
+      var _a;
+      const range = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 7);
+      g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
+        var _a2;
+        if (who.side === me.side && distance(me, who) <= range && ((_a2 = config == null ? void 0 : config.conditions) == null ? void 0 : _a2.has("Charmed")) && !me.conditions.has("Unconscious"))
+          success.add("fail", AuraOfDevotion);
+      });
+    }
   );
   var PurityOfSpirit = notImplementedFeature(
     "Purity of Spirit",
@@ -10134,11 +10210,11 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         {},
         {
           icon: EndRageIcon,
+          subIcon: BarbarianIcon,
           time: "bonus action",
           description: `You can end your rage on your turn as a bonus action.`
         }
       );
-      this.subIcon = BarbarianIcon;
     }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
@@ -10252,6 +10328,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         {},
         {
           icon: RageIcon,
+          subIcon: BarbarianIcon,
           time: "bonus action",
           resources: [[RageResource, 1]],
           description: `On your turn, you can enter a rage as a bonus action.
@@ -10267,7 +10344,6 @@ If you are able to cast spells, you can't cast them or concentrate on them while
 Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`
         }
       );
-      this.subIcon = BarbarianIcon;
     }
     async apply() {
       await super.apply({});
@@ -10575,11 +10651,16 @@ Each time you use this feature after the first, the DC increases by 5. When you 
         `${weapon.name} (Frenzy)`,
         "implemented",
         { target: new TargetResolver(g, actor.reach + weapon.reach, [notSelf]) },
-        { icon: weapon.icon, damage: [weapon.damage], time: "bonus action" }
+        {
+          icon: weapon.icon,
+          subIcon: FrenzyIcon,
+          damage: [weapon.damage],
+          time: "bonus action",
+          isHarmful: true
+        }
       );
       this.weapon = weapon;
       this.ability = getWeaponAbility(actor, weapon);
-      this.subIcon = FrenzyIcon;
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -11201,6 +11282,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     v: true,
     s: true,
     lists: ["Bard", "Cleric", "Ranger"],
+    isHarmful: true,
+    // TODO is it?
     description: `For the duration, no sound can be created within or pass through a 20-foot-radius sphere centered on a point you choose within range. Any creature or object entirely inside the sphere is immune to thunder damage, and creatures are deafened while entirely inside it. Casting a spell that includes a verbal component is impossible there.`,
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getSilenceArea(point)],
@@ -11251,6 +11334,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     m: "seven sharp thorns or seven small twigs, each sharpened to a point",
     concentration: true,
     lists: ["Druid", "Ranger"],
+    isHarmful: true,
     description: `The ground in a 20-foot radius centered on a point within range twists and sprouts hard spikes and thorns. The area becomes difficult terrain for the duration. When a creature moves into or within the area, it takes 2d4 piercing damage for every 5 feet it travels.
 
   The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it.`,
@@ -11319,6 +11403,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a bit of fur and a rod of amber, crystal, or glass",
     lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a Dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much damage on a successful one.
 
   The lightning ignites flammable objects in the area that aren't being worn or carried.
@@ -11393,6 +11478,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `Until the spell ends, freezing rain and sleet fall in a 20-foot-tall cylinder with a 40-foot radius centered on a point you choose within range. The area is heavily obscured, and exposed flames in the area are doused.
 
   The ground in the area is covered with slick ice, making it difficult terrain. When a creature enters the spell's area for the first time on a turn or starts its turn there, it must make a Dexterity saving throw. On a failed save, it falls prone.
@@ -11417,6 +11503,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a drop of molasses",
     lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You alter time around up to six creatures of your choice in a 40-foot cube within range. Each target must succeed on a Wisdom saving throw or be affected by this spell for the duration.
 
   An affected target's speed is halved, it takes a \u22122 penalty to AC and Dexterity saving throws, and it can't use reactions. On its turn, it can use either an action or a bonus action, not both. Regardless of the creature's abilities or magic items, it can't make more than one melee or ranged attack during its turn.
@@ -11541,6 +11628,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a pinch of dust and a few drops of water",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `A hail of rock-hard ice pounds to the ground in a 20-foot-radius, 40-foot-high cylinder centered on a point within range. Each creature in the cylinder must make a Dexterity saving throw. A creature takes 2d8 bludgeoning damage and 4d6 cold damage on a failed save, or half as much damage on a successful one.
 
   Hailstones turn the storm's area of effect into difficult terrain until the end of your next turn.
@@ -11614,6 +11702,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     s: true,
     m: "a small crystal or glass cone",
     lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `A blast of cold air erupts from your hands. Each creature in a 60-foot cone must make a Constitution saving throw. A creature takes 8d8 cold damage on a failed save, or half as much damage on a successful one.
 
   A creature killed by this spell becomes a frozen statue until it thaws.
@@ -11780,9 +11869,23 @@ Once you gain access to a circle spell, you always have it prepared, and it does
 
 In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`
   );
-  var NaturesWard = notImplementedFeature(
+  var wardTypes = ctSet("elemental", "fey");
+  var NaturesWard = new SimpleFeature(
     "Nature's Ward",
-    `When you reach 10th level, you can't be charmed or frightened by elementals or fey, and you are immune to poison and disease.`
+    `When you reach 10th level, you can't be charmed or frightened by elementals or fey, and you are immune to poison and disease.`,
+    (g, me) => {
+      g.events.on(
+        "BeforeEffect",
+        ({ detail: { config, effect, attacker, who, success } }) => {
+          var _a, _b, _c;
+          const isPoisonOrDisease = ((_a = config.conditions) == null ? void 0 : _a.has("Poisoned")) || effect.tags.has("poison") || effect.tags.has("disease");
+          const isCharmOrFrighten = ((_b = config.conditions) == null ? void 0 : _b.has("Charmed")) || ((_c = config.conditions) == null ? void 0 : _c.has("Frightened"));
+          const isElementalOrFey = (attacker == null ? void 0 : attacker.type) && wardTypes.has(attacker.type);
+          if (who === me && (isElementalOrFey && isCharmOrFrighten || isPoisonOrDisease))
+            success.add("fail", NaturesWard);
+        }
+      );
+    }
   );
   var NaturesSanctuary = notImplementedFeature(
     "Nature's Sanctuary",
@@ -12173,6 +12276,7 @@ The creature is aware of this effect before it makes its attack against you.`
     v: true,
     s: true,
     lists: ["Bard", "Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You cause a tremor in the ground within range. Each creature other than you in that area must make a Dexterity saving throw. On a failed save, a creature takes 1d6 bludgeoning damage and is knocked prone. If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
@@ -12273,7 +12377,8 @@ The creature is aware of this effect before it makes its attack against you.`
         {
           icon: MoonbeamIcon,
           time: "action",
-          description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`
+          description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
+          isHarmful: true
         }
       );
       this.controller = controller;
@@ -12388,6 +12493,7 @@ The creature is aware of this effect before it makes its attack against you.`
     s: true,
     m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
     lists: ["Druid"],
+    isHarmful: true,
     description: `A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high cylinder centered on a point within range. Until the spell ends, dim light fills the cylinder.
 
   When a creature enters the spell's area for the first time on a turn or starts its turn there, it is engulfed in ghostly flames that cause searing pain, and it must make a Constitution saving throw. It takes 2d10 radiant damage on a failed save, or half as much damage on a successful one.
@@ -12432,6 +12538,7 @@ The creature is aware of this effect before it makes its attack against you.`
     s: true,
     m: "a piece of obsidian",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `Choose a point you can see on the ground within range. A fountain of churned earth and stone erupts in a 20-foot cube centered on that point. Each creature in that area must make a Dexterity saving throw. A creature takes 3d12 bludgeoning damage on a failed save, or half as much damage on a successful one. Additionally, the ground in that area becomes difficult terrain until cleared. Each 5-foot-square portion of the area requires at least 1 minute to clear by hand.
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d12 for each slot level above 3rd.`,
@@ -12480,6 +12587,53 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   });
   var EruptingEarth_default = EruptingEarth;
+
+  // src/spells/level4/CharmMonster.ts
+  var CharmMonster = scalingSpell({
+    status: "implemented",
+    name: "Charm Monster",
+    level: 4,
+    school: "Enchantment",
+    v: true,
+    s: true,
+    lists: ["Bard", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    isHarmful: true,
+    description: `You attempt to charm a creature you can see within range. It must make a Wisdom saving throw, and it does so with advantage if you or your companions are fighting it. If it fails the saving throw, it is charmed by you until the spell ends or until you or your companions do anything harmful to it. The charmed creature is friendly to you. When the spell ends, the creature knows it was charmed by you.
+
+  At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, you can target one additional creature for each slot level above 4th. The creatures must be within 30 feet of each other when you target them.`,
+    getConfig: (g, actor, method, { slot }) => ({
+      targets: new MultiTargetResolver(
+        g,
+        1,
+        (slot != null ? slot : 4) - 3,
+        30,
+        [],
+        [withinRangeOfEachOther(30)]
+      )
+    }),
+    getTargets: (g, actor, { targets }) => targets,
+    async apply(g, caster, method, { slot, targets }) {
+      for (const target of targets) {
+        const config = {
+          conditions: coSet("Charmed"),
+          duration: hours(1),
+          by: caster
+        };
+        const { outcome } = await g.save({
+          source: CharmMonster,
+          type: method.getSaveType(caster, CharmMonster, slot),
+          who: target,
+          ability: "wis",
+          attacker: caster,
+          effect: Charmed,
+          config
+        });
+        if (outcome === "fail")
+          await target.addEffect(Charmed, config, caster);
+      }
+    }
+  });
+  var CharmMonster_default = CharmMonster;
 
   // src/spells/level4/GuardianOfNature.ts
   var PrimalBeast = "Primal Beast";
@@ -12627,7 +12781,7 @@ The creature is aware of this effect before it makes its attack against you.`
         // TODO LocateObject,
         Moonbeam_default,
         EruptingEarth_default,
-        // TODO CharmMonster,
+        CharmMonster_default,
         GuardianOfNature_default
       );
     }

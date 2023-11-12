@@ -1,6 +1,6 @@
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
-import { canSee, ofCreatureType } from "../../filters";
+import { canSee, ofCreatureType, withinRangeOfEachOther } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
@@ -49,7 +49,7 @@ const HoldPersonEffect = new Effect<{
 });
 
 const HoldPerson = scalingSpell<HasTargets>({
-  status: "incomplete",
+  status: "implemented",
   name: "Hold Person",
   level: 2,
   school: "Enchantment",
@@ -63,18 +63,16 @@ const HoldPerson = scalingSpell<HasTargets>({
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.`,
 
   getConfig: (g, actor, method, { slot }) => ({
-    targets: new MultiTargetResolver(g, 1, (slot ?? 2) - 1, 60, [
-      canSee,
-      ofCreatureType("humanoid"),
-    ]),
+    targets: new MultiTargetResolver(
+      g,
+      1,
+      (slot ?? 2) - 1,
+      60,
+      [canSee, ofCreatureType("humanoid")],
+      [withinRangeOfEachOther(30)],
+    ),
   }),
   getTargets: (g, caster, { targets }) => targets,
-
-  check(g, { targets }, ec) {
-    // TODO When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.
-
-    return ec;
-  },
 
   async apply(g, caster, method, { targets }) {
     const affected = new Set<Combatant>();

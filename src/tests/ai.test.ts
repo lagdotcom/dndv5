@@ -55,8 +55,7 @@ describe("HealingRule", () => {
     } = await setupBattleTest([OGonrit, 0, 0, 10]);
 
     const v = getRuleActions(g, R, me);
-    expect(v).toHaveLength(1);
-    expect(v[0].score.result).toBeLessThan(0);
+    expect(v).toHaveLength(0);
   });
 
   it("O Gonrit prefers healing others, or healing more", async () => {

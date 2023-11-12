@@ -45,11 +45,11 @@ export class EndRageAction extends AbstractAction {
       {},
       {
         icon: EndRageIcon,
+        subIcon: BarbarianIcon,
         time: "bonus action",
         description: `You can end your rage on your turn as a bonus action.`,
       },
     );
-    this.subIcon = BarbarianIcon;
   }
 
   check(config: never, ec: ErrorCollector) {
@@ -182,6 +182,7 @@ export class RageAction extends AbstractAction {
       {},
       {
         icon: RageIcon,
+        subIcon: BarbarianIcon,
         time: "bonus action",
         resources: [[RageResource, 1]],
         description: `On your turn, you can enter a rage as a bonus action.
@@ -197,7 +198,6 @@ If you are able to cast spells, you can't cast them or concentrate on them while
 Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`,
       },
     );
-    this.subIcon = BarbarianIcon;
   }
 
   async apply() {

@@ -23,6 +23,7 @@ export default interface Action<T extends object = object> extends Source {
   actor: Combatant;
   subIcon?: Icon;
   isAttack?: boolean;
+  isHarmful?: boolean;
   isSpell?: boolean;
   vocal?: boolean;
 

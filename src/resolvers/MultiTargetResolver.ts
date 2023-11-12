@@ -17,6 +17,7 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
     public maximum: number,
     public maxRange: number,
     public filters: ErrorFilter<Combatant>[],
+    public allFilters: ErrorFilter<Combatant[]>[] = [],
   ) {
     this.type = "Combatants";
   }
@@ -47,6 +48,11 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
         if (isOutOfRange) ec.add(`${who.name}: Out of range`, this);
         for (const error of filterErrors) ec.add(`${who.name}: ${error}`, this);
       }
+
+      const filterErrors = this.allFilters
+        .filter((filter) => !filter.check(this.g, action, value))
+        .map((filter) => filter.message);
+      for (const error of filterErrors) ec.add(error, this);
     }
 
     return ec;

@@ -51,8 +51,13 @@ class HissAction extends AbstractAction<HasTarget> {
         icon: makeIcon(hissIconUrl),
         time: "bonus action",
         resources: [[HissResource, 1]],
+        isHarmful: true,
       },
     );
+  }
+
+  getTargets({ target }: HasTarget) {
+    return [target];
   }
 
   async apply({ target }: HasTarget) {

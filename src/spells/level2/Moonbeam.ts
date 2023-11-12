@@ -41,6 +41,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
         icon: MoonbeamIcon,
         time: "action",
         description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
+        isHarmful: true,
       },
     );
   }
@@ -179,6 +180,7 @@ const Moonbeam = scalingSpell<HasPoint>({
   s: true,
   m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
   lists: ["Druid"],
+  isHarmful: true,
   description: `A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high cylinder centered on a point within range. Until the spell ends, dim light fills the cylinder.
 
   When a creature enters the spell's area for the first time on a turn or starts its turn there, it is engulfed in ghostly flames that cause searing pain, and it must make a Constitution saving throw. It takes 2d10 radiant damage on a failed save, or half as much damage on a successful one.

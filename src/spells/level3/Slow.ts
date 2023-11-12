@@ -11,6 +11,7 @@ const Slow = simpleSpell<HasTargets>({
   s: true,
   m: "a drop of molasses",
   lists: ["Sorcerer", "Wizard"],
+  isHarmful: true,
   description: `You alter time around up to six creatures of your choice in a 40-foot cube within range. Each target must succeed on a Wisdom saving throw or be affected by this spell for the duration.
 
   An affected target's speed is halved, it takes a −2 penalty to AC and Dexterity saving throws, and it can't use reactions. On its turn, it can use either an action or a bonus action, not both. Regardless of the creature's abilities or magic items, it can't make more than one melee or ranged attack during its turn.

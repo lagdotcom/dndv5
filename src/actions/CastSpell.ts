@@ -18,6 +18,7 @@ export default class CastSpell<T extends object> implements Action<T> {
   subIcon?: Icon;
   isSpell: true;
   vocal?: boolean;
+  isHarmful: boolean;
 
   constructor(
     public g: Engine,
@@ -31,6 +32,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     this.icon = spell.icon;
     this.subIcon = method.icon;
     this.vocal = spell.v;
+    this.isHarmful = spell.isHarmful;
   }
 
   get status() {

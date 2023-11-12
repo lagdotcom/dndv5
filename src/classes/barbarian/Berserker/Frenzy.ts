@@ -34,11 +34,16 @@ class FrenzyAttack extends AbstractAction<HasTarget> {
       `${weapon.name} (Frenzy)`,
       "implemented",
       { target: new TargetResolver(g, actor.reach + weapon.reach, [notSelf]) },
-      { icon: weapon.icon, damage: [weapon.damage], time: "bonus action" },
+      {
+        icon: weapon.icon,
+        subIcon: FrenzyIcon,
+        damage: [weapon.damage],
+        time: "bonus action",
+        isHarmful: true,
+      },
     );
 
     this.ability = getWeaponAbility(actor, weapon);
-    this.subIcon = FrenzyIcon;
   }
 
   async apply({ target }: HasTarget) {

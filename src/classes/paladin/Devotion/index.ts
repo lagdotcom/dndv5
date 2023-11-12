@@ -2,11 +2,13 @@ import {
   bonusSpellsFeature,
   notImplementedFeature,
 } from "../../../features/common";
+import SimpleFeature from "../../../features/SimpleFeature";
 import ProtectionFromEvilAndGood from "../../../spells/level1/ProtectionFromEvilAndGood";
 import Sanctuary from "../../../spells/level1/Sanctuary";
 import LesserRestoration from "../../../spells/level2/LesserRestoration";
 import PCSubclass from "../../../types/PCSubclass";
-import { PaladinSpellcasting } from "../common";
+import { distance } from "../../../utils/units";
+import { getPaladinAuraRadius, PaladinSpellcasting } from "../common";
 import SacredWeapon from "./SacredWeapon";
 
 // TODO
@@ -17,12 +19,24 @@ const TurnTheUnholy = notImplementedFeature(
 A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
 );
 
-// TODO
-const AuraOfDevotion = notImplementedFeature(
+const AuraOfDevotion = new SimpleFeature(
   "Aura of Devotion",
   `Starting at 7th level, you and friendly creatures within 10 feet of you can't be charmed while you are conscious.
 
 At 18th level, the range of this aura increases to 30 feet.`,
+  (g, me) => {
+    const range = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 7);
+
+    g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
+      if (
+        who.side === me.side &&
+        distance(me, who) <= range &&
+        config?.conditions?.has("Charmed") &&
+        !me.conditions.has("Unconscious")
+      )
+        success.add("fail", AuraOfDevotion);
+    });
+  },
 );
 
 // TODO

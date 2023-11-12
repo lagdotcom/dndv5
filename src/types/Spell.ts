@@ -50,6 +50,7 @@ export default interface Spell<T extends object = object> extends Source {
   lists: SpellList[];
   icon?: Icon;
   description?: string;
+  isHarmful: boolean;
 
   apply(
     g: Engine,

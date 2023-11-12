@@ -40,11 +40,11 @@ class LayOnHandsHealAction extends AbstractAction<HealConfig> {
       },
       {
         icon: LayOnHandsHealIcon,
+        subIcon: PaladinIcon,
         time: "action",
         description: `As an action, you can touch a creature and draw power from the pool to restore a number of hit points to that creature, up to the maximum amount remaining in your pool.`,
       },
     );
-    this.subIcon = PaladinIcon;
   }
 
   generateHealingConfigs(targets: Combatant[]) {
@@ -116,11 +116,11 @@ class LayOnHandsCureAction extends AbstractAction<CureConfig> {
       },
       {
         icon: LayOnHandsCureIcon,
+        subIcon: PaladinIcon,
         time: "action",
         description: `As an action, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.`,
       },
     );
-    this.subIcon = PaladinIcon;
   }
 
   getConfig({ target }: Partial<CureConfig>) {

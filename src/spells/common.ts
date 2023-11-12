@@ -31,6 +31,7 @@ export const simpleSpell = <T extends object>({
   lists,
   description,
   icon,
+  isHarmful = false,
   apply,
   check = (_g, _config, ec) => ec,
   generateAttackConfigs = () => [],
@@ -57,6 +58,7 @@ export const simpleSpell = <T extends object>({
     | "getAffectedArea"
     | "getDamage"
     | "getHeal"
+    | "isHarmful"
   >,
   "getLevel" | "scaling"
 >): Spell<T> => ({
@@ -74,6 +76,7 @@ export const simpleSpell = <T extends object>({
   lists,
   description,
   icon,
+  isHarmful,
   apply,
   check,
   generateAttackConfigs,
@@ -107,8 +110,9 @@ export const scalingSpell = <T extends object>({
   s = false,
   m,
   lists,
-  icon,
   description,
+  icon,
+  isHarmful = false,
   apply,
   check = (_g, _config, ec) => ec,
   generateAttackConfigs,
@@ -133,6 +137,7 @@ export const scalingSpell = <T extends object>({
     | "getAffectedArea"
     | "getDamage"
     | "getHeal"
+    | "isHarmful"
   >,
   | "generateAttackConfigs"
   | "generateHealingConfigs"
@@ -163,6 +168,7 @@ export const scalingSpell = <T extends object>({
   lists,
   description,
   icon,
+  isHarmful,
   apply,
   check,
   generateAttackConfigs(g, caster, method, targets) {

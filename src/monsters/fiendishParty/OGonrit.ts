@@ -88,7 +88,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       "Shield Bash",
       "implemented",
       { target: new TargetResolver(g, actor.reach, [isEnemy]) },
-      { icon: ShieldBashIcon, time: "action" },
+      { icon: ShieldBashIcon, time: "action", isHarmful: true },
     );
   }
 

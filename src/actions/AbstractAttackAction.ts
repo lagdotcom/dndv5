@@ -20,6 +20,7 @@ export default class AbstractAttackAction<
   ) {
     super(g, actor, name, status, config, options);
     this.isAttack = true;
+    this.isHarmful = true;
   }
 
   generateHealingConfigs() {

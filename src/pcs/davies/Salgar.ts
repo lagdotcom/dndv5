@@ -20,6 +20,7 @@ import HealingWord from "../../spells/level1/HealingWord";
 import LesserRestoration from "../../spells/level2/LesserRestoration";
 import Moonbeam from "../../spells/level2/Moonbeam";
 import EruptingEarth from "../../spells/level3/EruptingEarth";
+import CharmMonster from "../../spells/level4/CharmMonster";
 import GuardianOfNature from "../../spells/level4/GuardianOfNature";
 import { enchant } from "../../utils/items";
 
@@ -77,7 +78,7 @@ export default class Salgar extends PC {
 
       EruptingEarth,
 
-      // TODO CharmMonster,
+      CharmMonster,
       GuardianOfNature,
     );
   }

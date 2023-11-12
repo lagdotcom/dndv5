@@ -5,6 +5,7 @@ import {
   notImplementedFeature,
 } from "../../../features/common";
 import ConfiguredFeature from "../../../features/ConfiguredFeature";
+import SimpleFeature from "../../../features/SimpleFeature";
 import Blur from "../../../spells/level2/Blur";
 import HoldPerson from "../../../spells/level2/HoldPerson";
 import MirrorImage from "../../../spells/level2/MirrorImage";
@@ -23,6 +24,7 @@ import FreedomOfMovement from "../../../spells/level4/FreedomOfMovement";
 import IceStorm from "../../../spells/level4/IceStorm";
 import Stoneskin from "../../../spells/level4/Stoneskin";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
+import CreatureType, { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
 import Spell from "../../../types/Spell";
 import { DruidSpellcasting } from "..";
@@ -168,10 +170,31 @@ const LandsStride = notImplementedFeature(
 In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`,
 );
 
-// TODO
-const NaturesWard = notImplementedFeature(
+const wardTypes = ctSet("elemental", "fey");
+const NaturesWard = new SimpleFeature(
   "Nature's Ward",
   `When you reach 10th level, you can't be charmed or frightened by elementals or fey, and you are immune to poison and disease.`,
+  (g, me) => {
+    g.events.on(
+      "BeforeEffect",
+      ({ detail: { config, effect, attacker, who, success } }) => {
+        const isPoisonOrDisease =
+          config.conditions?.has("Poisoned") ||
+          effect.tags.has("poison") ||
+          effect.tags.has("disease");
+        const isCharmOrFrighten =
+          config.conditions?.has("Charmed") ||
+          config.conditions?.has("Frightened");
+        const isElementalOrFey = attacker?.type && wardTypes.has(attacker.type);
+
+        if (
+          who === me &&
+          ((isElementalOrFey && isCharmOrFrighten) || isPoisonOrDisease)
+        )
+          success.add("fail", NaturesWard);
+      },
+    );
+  },
 );
 
 // TODO

@@ -32,10 +32,9 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       {
         target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf]),
       },
+      { icon: weapon.icon, subIcon: ammo?.icon },
     );
     this.ability = getWeaponAbility(actor, weapon);
-    this.icon = weapon.icon;
-    this.subIcon = ammo?.icon;
   }
 
   generateAttackConfigs(targets: Combatant[]) {

@@ -2,6 +2,8 @@ import Engine from "./Engine";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CreatureType from "./types/CreatureType";
+import { combinations } from "./utils/combinatorics";
+import { distance } from "./utils/units";
 
 export type ErrorFilter<T> = {
   name: string;
@@ -60,4 +62,12 @@ export const notOfCreatureType = (...types: CreatureType[]) =>
     name: `not ${types.join("/")}`,
     message: "wrong creature type",
     check: (g, action, value) => !types.includes(value.type),
+  });
+
+export const withinRangeOfEachOther = (range: number) =>
+  makeFilter<Combatant[]>({
+    name: `within ${range}' of each other`,
+    message: `within ${range}' of each other`,
+    check: (g, action, value) =>
+      !combinations(value, 2).find(([a, b]) => distance(a, b) > range),
   });

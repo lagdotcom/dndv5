@@ -290,7 +290,6 @@ export default class Engine {
   async roll<T extends RollType>(type: T, diceType: DiceType = "normal") {
     const roll = this.dice.roll(type, diceType);
 
-    // TODO can a roll be cancelled?
     return (
       await this.resolve(
         new DiceRolledEvent({
