@@ -1,5 +1,6 @@
 import dyingUrl from "@img/act/dying.svg";
 import proneUrl from "@img/act/prone.svg";
+import charmedUrl from "@img/spl/charm-monster.svg";
 
 import DropProneAction from "./actions/DropProneAction";
 import StandUpAction from "./actions/StandUpAction";
@@ -165,4 +166,5 @@ export const Charmed = new Effect<{ by: Combatant }>(
       },
     );
   },
+  { icon: makeIcon(charmedUrl) },
 );

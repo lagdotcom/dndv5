@@ -39,7 +39,7 @@ it("can run a simple battle", async () => {
   await user.click(token("badger"));
 
   g.dice.force(19, { type: "attack", who: me });
-  await user.click(menuitem("mace"));
+  await user.click(menuitem("Attack (mace)"));
 
   expect(queryToken("badger")).not.toBeInTheDocument();
   expect(logMsg("badger dies!")).toBeVisible();
@@ -66,7 +66,7 @@ it("supports Fog Cloud", async () => {
   await user.click(token("Tethilssethanar"));
   g.dice.force(19, { type: "attack", who: enemy });
   g.dice.force(5, { type: "attack", who: enemy });
-  await user.click(menuitem("heavy crossbow (crossbow bolt)"));
+  await user.click(menuitem("Attack (heavy crossbow, crossbow bolt)"));
   expect(
     logMsg(
       "thug misses Tethilssethanar at disadvantage with heavy crossbow, firing crossbow bolt (7). (AC 14)",
@@ -77,7 +77,7 @@ it("supports Fog Cloud", async () => {
   // attacking into a heavily obscured area also counts as being blinded, so they cancel out
   await user.click(token("thug"));
   g.dice.force(5, { type: "attack", who: pc });
-  await user.click(menuitem("dart"));
+  await user.click(menuitem("Attack (dart)"));
   expect(
     logMsg("Tethilssethanar misses thug with dart (9). (AC 11)"),
   ).toBeVisible();
@@ -96,7 +96,7 @@ it("supports a typical Aura attack", async () => {
 
   await user.click(token("thug"));
   g.dice.force(1, { type: "attack", who: aura });
-  await user.click(menuitem("vicious light crossbow (crossbow bolt)"));
+  await user.click(menuitem("Attack (vicious light crossbow, crossbow bolt)"));
 
   expect(dialog("Lucky")).toBeVisible();
   g.dice.force(20, { type: "luck", who: aura });
@@ -154,7 +154,7 @@ it("supports a typical Galilea attack", async () => {
 
   g.dice.force(10, { type: "attack", who: galilea });
   g.dice.force(1, { type: "damage", attacker: galilea });
-  await user.click(menuitem("longsword"));
+  await user.click(menuitem("Attack (longsword)"));
   expect(dialog("Divine Smite")).toBeInTheDocument();
 
   g.dice.force(1, { type: "damage", attacker: galilea, source: DivineSmite });

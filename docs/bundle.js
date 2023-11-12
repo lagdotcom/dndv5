@@ -1936,6 +1936,9 @@
   // src/img/act/prone.svg
   var prone_default = "./prone-ZBMZRVQM.svg";
 
+  // src/img/spl/charm-monster.svg
+  var charm_monster_default = "./charm-monster-UW5QBALY.svg";
+
   // src/types/ConditionName.ts
   var coSet = (...items) => new Set(items);
 
@@ -2156,7 +2159,8 @@
             diceType.add("advantage", Charmed);
         }
       );
-    }
+    },
+    { icon: makeIcon(charm_monster_default) }
   );
 
   // src/actions/AbstractAttackAction.ts
@@ -2189,7 +2193,7 @@
       super(
         g,
         actor,
-        ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
+        ammo ? `Attack (${weapon.name}, ${ammo.name})` : `Attack (${weapon.name})`,
         weapon.properties.has("thrown") ? "incomplete" : "implemented",
         {
           target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf])
@@ -12593,6 +12597,7 @@ The creature is aware of this effect before it makes its attack against you.`
     status: "implemented",
     name: "Charm Monster",
     level: 4,
+    icon: makeIcon(charm_monster_default),
     school: "Enchantment",
     v: true,
     s: true,
@@ -13061,7 +13066,18 @@ The creature is aware of this effect before it makes its attack against you.`
             alt: action.name
           },
           action.name
-        ) : /* @__PURE__ */ o("button", { onClick: () => onChooseAction(action), children: action.name }, action.name)
+        ) : /* @__PURE__ */ o(
+          "button",
+          {
+            onClick: () => onChooseAction(action),
+            disabled: action.status === "missing",
+            style: {
+              borderColor: action.status === "incomplete" ? "red" : void 0
+            },
+            children: action.name
+          },
+          action.name
+        )
       ) }, label))
     ] });
   }

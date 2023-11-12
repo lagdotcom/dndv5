@@ -27,7 +27,9 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     super(
       g,
       actor,
-      ammo ? `${weapon.name} (${ammo.name})` : weapon.name,
+      ammo
+        ? `Attack (${weapon.name}, ${ammo.name})`
+        : `Attack (${weapon.name})`,
       weapon.properties.has("thrown") ? "incomplete" : "implemented",
       {
         target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf]),

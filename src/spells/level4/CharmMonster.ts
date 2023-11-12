@@ -1,3 +1,6 @@
+import iconUrl from "@img/spl/charm-monster.svg";
+
+import { makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import { Charmed, CharmedConfig } from "../../effects";
 import { withinRangeOfEachOther } from "../../filters";
@@ -10,6 +13,7 @@ const CharmMonster = scalingSpell<HasTargets>({
   status: "implemented",
   name: "Charm Monster",
   level: 4,
+  icon: makeIcon(iconUrl),
   school: "Enchantment",
   v: true,
   s: true,

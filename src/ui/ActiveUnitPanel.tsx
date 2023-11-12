@@ -1,5 +1,3 @@
-import { useMemo } from "preact/hooks";
-
 import Action from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import commonStyles from "./common.module.scss";
@@ -80,7 +78,15 @@ export default function ActiveUnitPanel({
                 alt={action.name}
               />
             ) : (
-              <button key={action.name} onClick={() => onChooseAction(action)}>
+              <button
+                key={action.name}
+                onClick={() => onChooseAction(action)}
+                disabled={action.status === "missing"}
+                style={{
+                  borderColor:
+                    action.status === "incomplete" ? "red" : undefined,
+                }}
+              >
                 {action.name}
               </button>
             ),
