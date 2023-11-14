@@ -53,7 +53,7 @@ const IntellectFortress = scalingSpell<HasTargets>({
       [withinRangeOfEachOther(30)],
     ),
   }),
-  getTargets: (g, caster, { targets }) => targets,
+  getTargets: (g, caster, { targets }) => targets ?? [],
 
   async apply(g, caster, method, { targets }) {
     const duration = hours(1);

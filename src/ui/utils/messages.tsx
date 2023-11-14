@@ -11,6 +11,7 @@ import { EffectRemovedDetail } from "../../events/EffectRemovedEvent";
 import { ExhaustionDetail } from "../../events/ExhaustionEvent";
 import { SaveEventDetail } from "../../events/SaveEvent";
 import { SpellCastDetail } from "../../events/SpellCastEvent";
+import MessageBuilder from "../../MessageBuilder";
 import Combatant from "../../types/Combatant";
 import DamageBreakdown from "../../types/DamageBreakdown";
 import DamageType from "../../types/DamageType";
@@ -23,8 +24,14 @@ import common from "../common.module.scss";
 
 export type MessagePart = { element: VNode; text: string } | string | undefined;
 
-const msgCombatant = (c: Combatant, space = false): MessagePart => ({
-  element: <CombatantRef who={c} spaceBefore={space} />,
+const msgCombatant = (
+  c: Combatant,
+  spaceBefore = false,
+  spaceAfter = true,
+): MessagePart => ({
+  element: (
+    <CombatantRef who={c} spaceBefore={spaceBefore} spaceAfter={spaceAfter} />
+  ),
   text: c.name,
 });
 
@@ -191,3 +198,15 @@ export const getExhaustionMessage = ({ who, value }: ExhaustionDetail) => [
   msgCombatant(who),
   `now has ${value ? value : "no"} exhaustion.`,
 ];
+
+export const getBuilderMessage = ({ data }: MessageBuilder) =>
+  data.map((part) => {
+    switch (part.type) {
+      case "combatant":
+        return msgCombatant(part.value, part.spaceBefore, part.spaceAfter);
+      case "item":
+        return part.value.name;
+      case "text":
+        return part.value;
+    }
+  });

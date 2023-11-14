@@ -15,6 +15,7 @@ import YesNoChoice from "../../interruptions/YesNoChoice";
 import { ScaleMailArmor } from "../../items/armor";
 import { Greataxe } from "../../items/weapons";
 import { MapSquareSize } from "../../MapSquare";
+import MessageBuilder from "../../MessageBuilder";
 import Monster from "../../Monster";
 import { BoundedMove } from "../../movement";
 import Combatant from "../../types/Combatant";
@@ -34,8 +35,10 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
         if (attacker === me && attack?.pre.weapon === weapon)
           interrupt.add(
             new EvaluateLater(me, LustForBattle, async () => {
-              // TODO [MESSAGE]
               await g.giveTemporaryHP(me, 5, LustForBattle);
+              g.text(
+                new MessageBuilder().co(me).text(" pulses with dark energy."),
+              );
             }),
           );
       },
@@ -109,7 +112,15 @@ class BullRushAction extends AbstractAction {
           { type: "within", who, radius: 0 },
           affected,
         )) {
-          // TODO [MESSAGE]
+          g.text(
+            new MessageBuilder()
+              .co(actor)
+              .text(" barrels into")
+              .sp()
+              .co(hit)
+              .text("."),
+          );
+
           affected.push(hit);
           promises.push(this.knockOver(hit));
         }

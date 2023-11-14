@@ -54,7 +54,6 @@ const ShieldEffect = new Effect(
           async () => {
             const ac = await g.getAC(target, detail.pre);
             detail.ac = ac;
-            // TODO [MESSAGE]
           },
         );
     });

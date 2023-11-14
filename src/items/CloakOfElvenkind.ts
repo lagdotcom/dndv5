@@ -2,6 +2,7 @@ import iconUrl from "@img/eq/hood.svg";
 
 import AbstractAction from "../actions/AbstractAction";
 import Engine from "../Engine";
+import MessageBuilder from "../MessageBuilder";
 import Combatant from "../types/Combatant";
 import { isEquipmentAttuned } from "../utils/items";
 import { AbstractWondrous } from "./wondrous";
@@ -29,7 +30,16 @@ class CloakHoodAction extends AbstractAction {
   async apply() {
     await super.apply({});
     this.cloak.hoodUp = !this.cloak.hoodUp;
-    // TODO [MESSAGES] announce it
+
+    this.g.text(
+      new MessageBuilder()
+        .co(this.actor)
+        .text(
+          this.cloak.hoodUp
+            ? " pulls the hood of their cloak up."
+            : " pulls the hood of their cloak down.",
+        ),
+    );
   }
 }
 

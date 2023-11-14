@@ -1109,6 +1109,43 @@
     }
   };
 
+  // src/MessageBuilder.ts
+  var MessageBuilder = class {
+    constructor() {
+      this.data = [];
+      this.spaceBeforeNext = false;
+    }
+    co(value, overrideName) {
+      this.data.push({
+        type: "combatant",
+        value,
+        overrideName,
+        spaceBefore: this.spaceBeforeNext,
+        spaceAfter: true
+      });
+      this.spaceBeforeNext = false;
+      return this;
+    }
+    sp() {
+      this.spaceBeforeNext = true;
+      return this;
+    }
+    nosp() {
+      const prev = this.data.at(-1);
+      if ((prev == null ? void 0 : prev.type) === "combatant")
+        prev.spaceAfter = false;
+      return this;
+    }
+    it(value) {
+      this.data.push({ type: "item", value });
+      return this;
+    }
+    text(value) {
+      this.data.push({ type: "text", value });
+      return this;
+    }
+  };
+
   // src/actions/CastSpell.ts
   var CastSpell = class {
     constructor(g, actor, method, spell) {
@@ -1198,8 +1235,11 @@
           success: new SuccessResponseCollector()
         })
       );
-      if (sc.detail.success.result === "fail")
-        return;
+      if (sc.detail.success.result === "fail") {
+        return g.text(
+          new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`)
+        );
+      }
       if (spell.concentration)
         await actor.endConcentration();
       return spell.apply(g, actor, method, config);
@@ -2008,6 +2048,7 @@
       await super.apply({});
       this.actor.movedSoFar += this.cost;
       await this.actor.removeEffect(Prone);
+      this.g.text(new MessageBuilder().co(this.actor).text(" stands up."));
     }
   };
 
@@ -2239,8 +2280,8 @@
         " or "
       )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
     }
-    getTargets(config) {
-      return [config.target];
+    getTargets({ target }) {
+      return target ? [target] : [];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -3089,6 +3130,13 @@
     }
   };
 
+  // src/events/TextEvent.ts
+  var TextEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Text", { detail });
+    }
+  };
+
   // src/events/TurnEndedEvent.ts
   var TurnEndedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -3829,6 +3877,9 @@
       );
       return { ...result, dcRoll };
     }
+    text(message) {
+      this.fire(new TextEvent({ message }));
+    }
   };
 
   // src/img/act/eldritch-burst.svg
@@ -4077,7 +4128,7 @@
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
     getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(target)],
     getDamage: () => [_dd(2, 10, "force")],
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? g.getInside(getEldritchBurstArea(target)) : [],
     async apply(g, caster, method, { target }) {
       const rsa = new SpellAttack(
         g,
@@ -4186,8 +4237,10 @@
         ability: "int",
         tags: chSet("counterspell")
       });
-      if (save.outcome === "fail")
+      if (save.outcome === "fail") {
         success.add("fail", AntimagicProdigy);
+        g.text(new MessageBuilder().co(actor).text(" counters the spell."));
+      }
     }
   };
   var AntimagicProdigy = new SimpleFeature(
@@ -4249,7 +4302,7 @@
       return [_dd(2, 10, "fire")];
     }
     getTargets({ target }) {
-      return [target];
+      return target ? [target] : [];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -5097,7 +5150,7 @@
     getDamage: (_2, caster, method, { slot }) => [
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
     ],
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, attacker, method, { slot, target }) {
       const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {
         slot,
@@ -5194,7 +5247,7 @@
         amount: method.ability ? caster[method.ability].modifier : 0
       }
     ],
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     check(g, { targets }, ec) {
       if (targets) {
         for (const target of targets)
@@ -5451,7 +5504,7 @@
         amount: method.ability ? caster[method.ability].modifier : 0
       }
     ],
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     check(g, { target }, ec) {
       if (target && cannotHeal2.has(target.type))
         ec.add(`Cannot heal a ${target.type}`, HealingWord);
@@ -5799,6 +5852,9 @@
             interrupt.add(
               new EvaluateLater(me, LustForBattle, async () => {
                 await g.giveTemporaryHP(me, 5, LustForBattle);
+                g.text(
+                  new MessageBuilder().co(me).text(" pulses with dark energy.")
+                );
               })
             );
         }
@@ -5862,6 +5918,9 @@
             { type: "within", who, radius: 0 },
             affected
           )) {
+            g.text(
+              new MessageBuilder().co(actor).text(" barrels into").sp().co(hit).text(".")
+            );
             affected.push(hit);
             promises.push(this.knockOver(hit));
           }
@@ -6626,7 +6685,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       );
     }
     getTargets({ target }) {
-      return [target];
+      return target ? [target] : [];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -6920,6 +6979,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         if (isAttuned && isChannel && this.charged) {
           this.charged = false;
           action.actor.giveResource(ChannelDivinityResource, 1);
+          g.text(
+            new MessageBuilder().co(action.actor).nosp().text("'s amulet shines briefly with divine light.")
+          );
         }
       });
     }
@@ -7018,7 +7080,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   When the spell ends, the target floats gently to the ground if it is still aloft.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
     }
   });
@@ -7680,7 +7742,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       )
     }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, attacker, method, { targets }) {
       const count = getCantripDice(attacker);
       const damage = await g.rollDamage(count, {
@@ -7738,7 +7800,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, attacker, method, { target }) {
       const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
         target
@@ -7783,7 +7845,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, attacker, method, { target }) {
       const damage = await g.rollDamage(getCantripDice(attacker), {
         source: MindSliver,
@@ -7862,7 +7924,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, attacker, method, { target }) {
       const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
         target
@@ -7913,7 +7975,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       _dd(1, 10, "piercing"),
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
-    getTargets: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
+    getTargets: (g, caster, { target }) => target ? g.getInside(getIceKnifeArea(target)) : [],
     async apply(g, attacker, method, { slot, target }) {
       const { attack, hit, critical } = await g.attack({
         who: attacker,
@@ -8070,7 +8132,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       )
     }),
     getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
-    getTargets: (g, caster, { targets }) => targets.map((e) => e.who),
+    getTargets: (g, caster, { targets }) => {
+      var _a;
+      return (_a = targets == null ? void 0 : targets.map((e) => e.who)) != null ? _a : [];
+    },
     async apply(g, attacker, method, { targets }) {
       const perBolt = await g.rollDamage(1, {
         source: MagicMissile,
@@ -8331,7 +8396,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { label: "reduce", value: "reduce" }
       ])
     }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { mode, target }) {
       const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;
       const config = { duration: minutes(1) };
@@ -8416,7 +8481,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         [withinRangeOfEachOther(30)]
       )
     }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, caster, method, { targets }) {
       const affected = /* @__PURE__ */ new Set();
       const duration = minutes(1);
@@ -8484,7 +8549,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
     getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
-    getTargets: (g, caster, { point }) => g.getInside(getFireballArea(point)),
+    getTargets: (g, caster, { point }) => point ? g.getInside(getFireballArea(point)) : [],
     async apply(g, attacker, method, { point, slot }) {
       const damage = await g.rollDamage(5 + slot, {
         source: Fireball,
@@ -8556,7 +8621,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         [withinRangeOfEachOther(30)]
       )
     }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, caster, method, { targets }) {
       const duration = hours(1);
       for (const target of targets)
@@ -8714,13 +8779,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       points: new MultiPointResolver(g, 1, 2, 120)
     }),
     getAffectedArea: (g, caster, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
-    getTargets: (g, caster, { points }) => points.flatMap(
-      (centre) => g.getInside({ type: "sphere", centre, radius: 5 })
-    ),
+    getTargets: (g, caster, { points }) => {
+      var _a;
+      return (_a = points == null ? void 0 : points.flatMap(
+        (centre) => g.getInside({ type: "sphere", centre, radius: 5 })
+      )) != null ? _a : [];
+    },
     getDamage: () => [_dd(2, 6, "fire")],
     async apply(g, attacker, method, { points, slot }) {
       const meteors = slot * 2;
       attacker.initResource(MMMResource, meteors);
+      g.text(
+        new MessageBuilder().co(attacker).text(` summons ${meteors} tiny meteors.`)
+      );
       await fireMeteors(g, attacker, method, { points });
       let meteorActionEnabled = false;
       const removeMeteorAction = g.events.on(
@@ -9405,7 +9476,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [])
     }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
       const duration = minutes(10);
       await target.addEffect(ProtectionEffect, { duration }, caster);
@@ -9456,7 +9527,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
 
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
       await target.addEffect(
         SanctuaryEffect,
@@ -9496,7 +9567,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         )
       };
     },
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     check(g, { effect, target }, ec) {
       if (target && effect && !target.hasEffect(effect))
         ec.add("target does not have chosen effect", LesserRestoration);
@@ -9557,6 +9628,9 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     }
     async apply({ weapon }) {
       await super.apply({ weapon });
+      this.g.text(
+        new MessageBuilder().co(this.actor).nosp().text("'s ").it(weapon).text(" glows with holy light.")
+      );
       await this.actor.addEffect(SacredWeaponEffect, {
         duration: minutes(1),
         weapon
@@ -9893,7 +9967,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     getConfig: (g, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, [])
     }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, caster, method, { targets }) {
       const duration = minutes(1);
       for (const target of targets)
@@ -9992,7 +10066,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     lists: ["Cleric", "Paladin"],
     description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
       await target.addEffect(
         ShieldOfFaithEffect,
@@ -10041,7 +10115,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
     getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, []) }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, actor, method, { slot, targets }) {
       const amount = (slot - 1) * 5;
       const duration = hours(8);
@@ -10078,6 +10152,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           this.item.icon.colour = this.oldColour;
         for (const cleanup of this.subscriptions)
           cleanup();
+        this.g.text(new MessageBuilder().it(this.item).text(" loses its shine."));
       };
       var _a;
       const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
@@ -10091,6 +10166,9 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       item.name = `${item.name} (Magic Weapon +${bonus})`;
       if (item.icon)
         item.icon.colour = "purple";
+      g.text(
+        new MessageBuilder().co(caster).nosp().text("'s ").it(item).text(" shines with magical light.")
+      );
     }
   };
   var MagicWeapon = scalingSpell({
@@ -10961,6 +11039,9 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     }
     async apply() {
       const { g, me, form } = this;
+      this.g.text(
+        new MessageBuilder().co(me, me.name).text(` transforms into a ${form.name}.`)
+      );
       me.name = `${form.name} (${me.name})`;
       me.img = form.img;
       me.type = form.type;
@@ -11007,7 +11088,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       );
     }
     remove() {
-      const { me, backup, str, dex, con, removeFeatures, subscriptions } = this;
+      const { me, backup, str, dex, con, removeFeatures, subscriptions, g } = this;
       Object.assign(me, backup);
       me.str.score = str;
       me.dex.score = dex;
@@ -11016,6 +11097,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
         me.features.delete(feature.name);
       for (const cleanup of subscriptions)
         cleanup();
+      g.text(new MessageBuilder().co(me).text(" returns to their normal form."));
     }
   };
   var RevertAction = class extends AbstractAction {
@@ -11317,7 +11399,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
     }
   });
@@ -11419,7 +11501,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
     ],
     getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(caster, point)],
-    getTargets: (g, caster, { point }) => g.getInside(getLightningBoltArea(caster, point)),
+    getTargets: (g, caster, { point }) => point ? g.getInside(getLightningBoltArea(caster, point)) : [],
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(5 + slot, {
         source: LightningBolt,
@@ -11516,7 +11598,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   A creature affected by this spell makes another Wisdom saving throw at the end of each of its turns. On a successful save, the effect ends for it.`,
     getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120, []) }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     check(g, config, ec) {
       return ec;
     },
@@ -11539,7 +11621,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g) => ({
       targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
     }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, caster, method, config) {
     }
   });
@@ -11561,7 +11643,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g) => ({
       targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
     }),
-    getTargets: (g, caster, { targets }) => targets,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     async apply(g, caster, method, config) {
     }
   });
@@ -11611,7 +11693,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
     }
   });
@@ -11641,7 +11723,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 300) }),
     getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
-    getTargets: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
+    getTargets: (g, caster, { point }) => point ? g.getInside(getIceStormArea(point)) : [],
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
@@ -11675,7 +11757,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
-    getTargets: (g, caster, { target }) => [target],
+    getTargets: (g, caster, { target }) => target ? [target] : [],
     async apply(g, caster, method, { target }) {
       const duration = hours(1);
       await target.addEffect(StoneskinEffect, { duration }, caster);
@@ -11716,7 +11798,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g) => ({ point: new PointResolver(g, 60) }),
     getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(caster, point)],
-    getTargets: (g, caster, { point }) => g.getInside(getConeOfColdArea(caster, point)),
+    getTargets: (g, caster, { point }) => point ? g.getInside(getConeOfColdArea(caster, point)) : [],
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(3 + slot, {
         source: ConeOfCold,
@@ -11945,6 +12027,11 @@ The creature is aware of this effect before it makes its attack against you.`
     async apply() {
       await super.apply({});
       this.cloak.hoodUp = !this.cloak.hoodUp;
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(
+          this.cloak.hoodUp ? " pulls the hood of their cloak up." : " pulls the hood of their cloak down."
+        )
+      );
     }
   };
   var CloakOfElvenkind = class extends AbstractWondrous {
@@ -11996,6 +12083,9 @@ The creature is aware of this effect before it makes its attack against you.`
       await super.apply({ target });
       if (!this.attack)
         throw new Error(`No attack to modify.`);
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(" redirects the attack on").sp().co(this.attack.target).text(" to themselves.")
+      );
       this.attack.target = this.actor;
     }
   };
@@ -12251,6 +12341,9 @@ The creature is aware of this effect before it makes its attack against you.`
     getTargets: (g, caster) => [caster],
     async apply(g, caster, method) {
       caster.initResource(MagicStoneResource);
+      g.text(
+        new MessageBuilder().co(caster).text(` creates ${MagicStoneResource.maximum} magic stones.`)
+      );
       const unsubscribe = g.events.on(
         "GetActions",
         ({ detail: { who, actions } }) => {
@@ -12396,7 +12489,7 @@ The creature is aware of this effect before it makes its attack against you.`
       return point && [_dd(this.controller.slot, 10, "radiant")];
     }
     getTargets({ point }) {
-      return this.g.getInside(getMoonbeamArea(point));
+      return point ? this.g.getInside(getMoonbeamArea(point)) : [];
     }
     async apply({ point }) {
       await super.apply({ point });
@@ -12511,7 +12604,7 @@ The creature is aware of this effect before it makes its attack against you.`
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
-    getTargets: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
+    getTargets: (g, caster, { point }) => point ? g.getInside(getMoonbeamArea(point)) : [],
     async apply(g, caster, method, { point, slot }) {
       const controller = new MoonbeamController(g, caster, method, point, slot);
       caster.concentrateOn({
@@ -12552,7 +12645,7 @@ The creature is aware of this effect before it makes its attack against you.`
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
-    getTargets: (g, caster, { point }) => g.getInside(getEruptingEarthArea(point)),
+    getTargets: (g, caster, { point }) => point ? g.getInside(getEruptingEarthArea(point)) : [],
     async apply(g, attacker, method, { point, slot }) {
       const damage = await g.rollDamage(slot, {
         source: EruptingEarth,
@@ -12616,7 +12709,7 @@ The creature is aware of this effect before it makes its attack against you.`
         [withinRangeOfEachOther(30)]
       )
     }),
-    getTargets: (g, actor, { targets }) => targets,
+    getTargets: (g, actor, { targets }) => targets != null ? targets : [],
     async apply(g, caster, method, { slot, targets }) {
       for (const target of targets) {
         const config = {
@@ -13552,18 +13645,25 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/CombatantRef.module.scss
   var CombatantRef_module_default = {
-    "main": "_main_1rqki_1",
-    "spaceBefore": "_spaceBefore_1rqki_5",
-    "icon": "_icon_1rqki_9",
-    "iconLabel": "_iconLabel_1rqki_15"
+    "main": "_main_g12vt_1",
+    "spaceBefore": "_spaceBefore_g12vt_5",
+    "spaceAfter": "_spaceAfter_g12vt_8",
+    "icon": "_icon_g12vt_12"
   };
 
   // src/ui/CombatantRef.tsx
-  function CombatantRef({ who, spaceBefore = false }) {
+  function CombatantRef({
+    who,
+    spaceBefore = false,
+    spaceAfter = true
+  }) {
     return /* @__PURE__ */ o(
       "div",
       {
-        className: classnames(CombatantRef_module_default.main, { [CombatantRef_module_default.spaceBefore]: spaceBefore }),
+        className: classnames(CombatantRef_module_default.main, {
+          [CombatantRef_module_default.spaceBefore]: spaceBefore,
+          [CombatantRef_module_default.spaceAfter]: spaceAfter
+        }),
         children: [
           /* @__PURE__ */ o("img", { className: CombatantRef_module_default.icon, src: who.img, alt: who.name }),
           /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
@@ -14131,8 +14231,8 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/ui/utils/messages.tsx
-  var msgCombatant = (c, space = false) => ({
-    element: /* @__PURE__ */ o(CombatantRef, { who: c, spaceBefore: space }),
+  var msgCombatant = (c, spaceBefore = false, spaceAfter = true) => ({
+    element: /* @__PURE__ */ o(CombatantRef, { who: c, spaceBefore, spaceAfter }),
     text: c.name
   });
   var msgDiceType = (dt) => dt !== "normal" ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
@@ -14269,6 +14369,16 @@ The creature is aware of this effect before it makes its attack against you.`
     msgCombatant(who),
     `now has ${value ? value : "no"} exhaustion.`
   ];
+  var getBuilderMessage = ({ data }) => data.map((part) => {
+    switch (part.type) {
+      case "combatant":
+        return msgCombatant(part.value, part.spaceBefore, part.spaceAfter);
+      case "item":
+        return part.value.name;
+      case "text":
+        return part.value;
+    }
+  });
 
   // src/ui/utils/UIResponse.ts
   var UISource = { name: "UI" };
@@ -14348,6 +14458,10 @@ The creature is aware of this effect before it makes its attack against you.`
       g.events.on(
         "Exhaustion",
         ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getExhaustionMessage(detail) }))
+      );
+      g.events.on(
+        "Text",
+        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getBuilderMessage(detail.message) }))
       );
     }, [addMessage, g]);
     return /* @__PURE__ */ o("div", { className: EventLog_module_default.container, children: [

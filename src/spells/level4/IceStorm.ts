@@ -31,7 +31,8 @@ const IceStorm = scalingSpell<HasPoint>({
 
   getConfig: (g) => ({ point: new PointResolver(g, 300) }),
   getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
-  getTargets: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
+  getTargets: (g, caster, { point }) =>
+    point ? g.getInside(getIceStormArea(point)) : [],
   getDamage: (g, caster, method, { slot }) => [
     _dd((slot ?? 4) - 2, 8, "bludgeoning"),
     _dd(4, 6, "cold"),

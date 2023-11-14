@@ -8,6 +8,7 @@ import useTimeout from "./hooks/useTimeout";
 import {
   getAbilityCheckMessage,
   getAttackMessage,
+  getBuilderMessage,
   getCastMessage,
   getDamageMessage,
   getDeathMessage,
@@ -92,6 +93,9 @@ export default function EventLog({ g }: { g: Engine }) {
     );
     g.events.on("Exhaustion", ({ detail }) =>
       addMessage(<LogMessage message={getExhaustionMessage(detail)} />),
+    );
+    g.events.on("Text", ({ detail }) =>
+      addMessage(<LogMessage message={getBuilderMessage(detail.message)} />),
     );
   }, [addMessage, g]);
 

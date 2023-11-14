@@ -7,6 +7,7 @@ import { HasWeapon } from "../../../configs";
 import Effect from "../../../Effect";
 import Engine from "../../../Engine";
 import SimpleFeature from "../../../features/SimpleFeature";
+import MessageBuilder from "../../../MessageBuilder";
 import ChoiceResolver from "../../../resolvers/ChoiceResolver";
 import Combatant from "../../../types/Combatant";
 import { minutes } from "../../../utils/time";
@@ -63,6 +64,16 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
 
   async apply({ weapon }: HasWeapon) {
     await super.apply({ weapon });
+
+    this.g.text(
+      new MessageBuilder()
+        .co(this.actor)
+        .nosp()
+        .text("'s ")
+        .it(weapon)
+        .text(" glows with holy light."),
+    );
+
     await this.actor.addEffect(SacredWeaponEffect, {
       duration: minutes(1),
       weapon,

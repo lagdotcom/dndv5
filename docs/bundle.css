@@ -262,19 +262,19 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/CombatantRef.module.scss */
-._main_1rqki_1 {
+._main_g12vt_1 {
   display: inline-flex;
   align-items: center;
 }
-._main_1rqki_1._spaceBefore_1rqki_5 {
+._main_g12vt_1._spaceBefore_g12vt_5 {
   margin-left: 4px;
 }
-._icon_1rqki_9 {
-  width: 20px;
-  height: 20px;
+._main_g12vt_1._spaceAfter_g12vt_8 {
   margin-right: 4px;
 }
-._iconLabel_1rqki_15 {
+._icon_g12vt_12 {
+  width: 20px;
+  height: 20px;
   margin-right: 4px;
 }
 

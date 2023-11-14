@@ -6,12 +6,20 @@ import { UnitData } from "./utils/types";
 interface Props {
   who: Combatant | UnitData;
   spaceBefore?: boolean;
+  spaceAfter?: boolean;
 }
 
-export default function CombatantRef({ who, spaceBefore = false }: Props) {
+export default function CombatantRef({
+  who,
+  spaceBefore = false,
+  spaceAfter = true,
+}: Props) {
   return (
     <div
-      className={classnames(styles.main, { [styles.spaceBefore]: spaceBefore })}
+      className={classnames(styles.main, {
+        [styles.spaceBefore]: spaceBefore,
+        [styles.spaceAfter]: spaceAfter,
+      })}
     >
       <img className={styles.icon} src={who.img} alt={who.name} />
       <span className={styles.iconLabel} aria-hidden="true">

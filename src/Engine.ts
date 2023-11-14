@@ -51,11 +51,13 @@ import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import GetMoveCostEvent from "./events/GetMoveCostEvent";
 import GetSaveDCEvent, { GetSaveDCDetail } from "./events/GetSaveDCEvent";
 import SaveEvent from "./events/SaveEvent";
+import TextEvent from "./events/TextEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnSkippedEvent from "./events/TurnSkippedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoice from "./interruptions/YesNoChoice";
 import { MapSquareSize } from "./MapSquare";
+import MessageBuilder from "./MessageBuilder";
 import PointSet from "./PointSet";
 import AbilityName from "./types/AbilityName";
 import Action from "./types/Action";
@@ -962,6 +964,10 @@ export default class Engine {
     );
 
     return { ...result, dcRoll };
+  }
+
+  text(message: MessageBuilder) {
+    this.fire(new TextEvent({ message }));
   }
 }
 

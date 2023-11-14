@@ -50,7 +50,7 @@ const Sanctuary = simpleSpell<HasTarget>({
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
 
   getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) => (target ? [target] : []),
 
   async apply(g, caster, method, { target }) {
     await target.addEffect(

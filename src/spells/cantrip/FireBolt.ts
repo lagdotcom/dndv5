@@ -31,7 +31,7 @@ const FireBolt = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) => (target ? [target] : []),
 
   async apply(g, attacker, method, { target }) {
     const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {

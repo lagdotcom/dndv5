@@ -4,6 +4,7 @@ import AbstractAction from "../../actions/AbstractAction";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoints } from "../../configs";
 import Engine from "../../Engine";
+import MessageBuilder from "../../MessageBuilder";
 import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import Combatant from "../../types/Combatant";
@@ -109,7 +110,7 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
     return new Map([[MMMResource, points?.length ?? 1]]);
   }
 
-  getTargets(config: HasPoints) {
+  getTargets(config: Partial<HasPoints>) {
     return (
       this.getAffectedArea(config)?.flatMap((area) => this.g.getInside(area)) ??
       []
@@ -146,15 +147,20 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
   getAffectedArea: (g, caster, { points }) =>
     points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
   getTargets: (g, caster, { points }) =>
-    points.flatMap((centre) =>
+    points?.flatMap((centre) =>
       g.getInside({ type: "sphere", centre, radius: 5 }),
-    ),
+    ) ?? [],
 
   getDamage: () => [_dd(2, 6, "fire")],
 
   async apply(g, attacker, method, { points, slot }) {
     const meteors = slot * 2;
     attacker.initResource(MMMResource, meteors);
+    g.text(
+      new MessageBuilder()
+        .co(attacker)
+        .text(` summons ${meteors} tiny meteors.`),
+    );
 
     await fireMeteors(g, attacker, method, { points });
 

@@ -39,7 +39,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) =>
     point && [getConeOfColdArea(caster, point)],
   getTargets: (g, caster, { point }) =>
-    g.getInside(getConeOfColdArea(caster, point)),
+    point ? g.getInside(getConeOfColdArea(caster, point)) : [],
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(3 + slot, {

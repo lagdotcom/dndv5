@@ -42,7 +42,7 @@ const MindSliver = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) => (target ? [target] : []),
 
   async apply(g, attacker, method, { target }) {
     const damage = await g.rollDamage(getCantripDice(attacker), {

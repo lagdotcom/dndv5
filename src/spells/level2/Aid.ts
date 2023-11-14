@@ -36,7 +36,7 @@ const Aid = scalingSpell<HasTargets>({
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, []) }),
-  getTargets: (g, caster, { targets }) => targets,
+  getTargets: (g, caster, { targets }) => targets ?? [],
 
   async apply(g, actor, method, { slot, targets }) {
     const amount = (slot - 1) * 5;

@@ -44,7 +44,7 @@ const AcidSplash = simpleSpell<HasTargets>({
     ),
   }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
-  getTargets: (g, caster, { targets }) => targets,
+  getTargets: (g, caster, { targets }) => targets ?? [],
 
   async apply(g, attacker, method, { targets }) {
     const count = getCantripDice(attacker);

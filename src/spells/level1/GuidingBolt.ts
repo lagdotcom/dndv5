@@ -44,7 +44,7 @@ const GuidingBolt = scalingSpell<HasTarget>({
   getDamage: (_, caster, method, { slot }) => [
     _dd((slot ?? 1) + 3, 6, "radiant"),
   ],
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) => (target ? [target] : []),
 
   async apply(g, attacker, method, { slot, target }) {
     const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {

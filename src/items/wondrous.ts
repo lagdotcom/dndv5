@@ -1,6 +1,7 @@
 import { ChannelDivinityResource } from "../classes/paladin/common";
 import Engine from "../Engine";
 import { Listener } from "../events/Dispatcher";
+import MessageBuilder from "../MessageBuilder";
 import { ItemRarity, WondrousItem } from "../types/Item";
 import { isEquipmentAttuned } from "../utils/items";
 import AbstractItem from "./AbstractItem";
@@ -172,9 +173,15 @@ export class SilverShiningAmulet extends AbstractWondrous {
         action.getResources(config).get(ChannelDivinityResource) ?? 0;
 
       if (isAttuned && isChannel && this.charged) {
-        // TODO [MESSAGE] tell somehow
         this.charged = false;
         action.actor.giveResource(ChannelDivinityResource, 1);
+
+        g.text(
+          new MessageBuilder()
+            .co(action.actor)
+            .nosp()
+            .text("'s amulet shines briefly with divine light."),
+        );
       }
     });
 

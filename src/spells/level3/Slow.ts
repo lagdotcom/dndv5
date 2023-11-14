@@ -21,7 +21,7 @@ const Slow = simpleSpell<HasTargets>({
   A creature affected by this spell makes another Wisdom saving throw at the end of each of its turns. On a successful save, the effect ends for it.`,
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120, []) }),
-  getTargets: (g, caster, { targets }) => targets,
+  getTargets: (g, caster, { targets }) => targets ?? [],
 
   check(g, config, ec) {
     // TODO You alter time around up to six creatures of your choice in a 40-foot cube within range.

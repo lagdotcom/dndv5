@@ -4,6 +4,7 @@ import { makeIcon } from "../../colours";
 import { getWeaponPlusHandler } from "../../enchantments/plus";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
+import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
@@ -40,6 +41,15 @@ class MagicWeaponController {
     item.magical = true;
     item.name = `${item.name} (Magic Weapon +${bonus})`;
     if (item.icon) item.icon.colour = "purple";
+
+    g.text(
+      new MessageBuilder()
+        .co(caster)
+        .nosp()
+        .text("'s ")
+        .it(item)
+        .text(" shines with magical light."),
+    );
   }
 
   onSpellEnd = async () => {
@@ -48,7 +58,7 @@ class MagicWeaponController {
     if (this.item.icon) this.item.icon.colour = this.oldColour;
     for (const cleanup of this.subscriptions) cleanup();
 
-    // TODO [MESSAGE]
+    this.g.text(new MessageBuilder().it(this.item).text(" loses its shine."));
   };
 }
 

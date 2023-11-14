@@ -6,6 +6,7 @@ import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
 import { notSelf } from "../../filters";
+import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { TemporaryResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
@@ -116,6 +117,12 @@ const MagicStone = simpleSpell({
 
   async apply(g, caster, method) {
     caster.initResource(MagicStoneResource);
+
+    g.text(
+      new MessageBuilder()
+        .co(caster)
+        .text(` creates ${MagicStoneResource.maximum} magic stones.`),
+    );
 
     // TODO if you cast it twice in a row this will not work well
     const unsubscribe = g.events.on(

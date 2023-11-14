@@ -13,6 +13,7 @@ import SimpleFeature from "../../features/SimpleFeature";
 import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
+import MessageBuilder from "../../MessageBuilder";
 import Monster from "../../Monster";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../../spells/common";
@@ -47,7 +48,8 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   getAffectedArea: (g, caster, { target }) =>
     target && [getEldritchBurstArea(target)],
   getDamage: () => [_dd(2, 10, "force")],
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) =>
+    target ? g.getInside(getEldritchBurstArea(target)) : [],
 
   async apply(g, caster, method, { target }) {
     const rsa = new SpellAttack(
@@ -172,8 +174,10 @@ class AntimagicProdigyAction extends AbstractAction<HasTarget> {
       tags: chSet("counterspell"),
     });
 
-    // TODO [MESSAGES]
-    if (save.outcome === "fail") success.add("fail", AntimagicProdigy);
+    if (save.outcome === "fail") {
+      success.add("fail", AntimagicProdigy);
+      g.text(new MessageBuilder().co(actor).text(" counters the spell."));
+    }
   }
 }
 
@@ -244,8 +248,8 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
     return [_dd(2, 10, "fire")];
   }
 
-  getTargets({ target }: HasTarget) {
-    return [target];
+  getTargets({ target }: Partial<HasTarget>) {
+    return target ? [target] : [];
   }
 
   async apply({ target }: HasTarget) {

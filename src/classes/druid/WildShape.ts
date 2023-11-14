@@ -2,6 +2,7 @@ import AbstractAction from "../../actions/AbstractAction";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
+import MessageBuilder from "../../MessageBuilder";
 import Monster from "../../Monster";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { ShortRestResource } from "../../resources";
@@ -80,7 +81,11 @@ class WildShapeController {
   async apply() {
     const { g, me, form } = this;
 
-    // TODO [MESSAGE]
+    this.g.text(
+      new MessageBuilder()
+        .co(me, me.name)
+        .text(` transforms into a ${form.name}.`),
+    );
 
     me.name = `${form.name} (${me.name})`;
     me.img = form.img;
@@ -143,7 +148,8 @@ While you are transformed, the following rules apply:
   }
 
   remove() {
-    const { me, backup, str, dex, con, removeFeatures, subscriptions } = this;
+    const { me, backup, str, dex, con, removeFeatures, subscriptions, g } =
+      this;
 
     Object.assign(me, backup);
 
@@ -155,7 +161,7 @@ While you are transformed, the following rules apply:
 
     for (const cleanup of subscriptions) cleanup();
 
-    // TODO [MESSAGE]
+    g.text(new MessageBuilder().co(me).text(" returns to their normal form."));
   }
 }
 

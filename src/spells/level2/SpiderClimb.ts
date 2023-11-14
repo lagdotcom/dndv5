@@ -17,7 +17,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, [isAlly]),
   }),
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) => (target ? [target] : []),
 
   async apply(g, caster, method, { target }) {
     // TODO [TERRAIN]

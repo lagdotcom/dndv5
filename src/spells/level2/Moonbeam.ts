@@ -56,8 +56,8 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
     return point && [_dd(this.controller.slot, 10, "radiant")];
   }
 
-  getTargets({ point }: HasPoint) {
-    return this.g.getInside(getMoonbeamArea(point));
+  getTargets({ point }: Partial<HasPoint>) {
+    return point ? this.g.getInside(getMoonbeamArea(point)) : [];
   }
 
   async apply({ point }: HasPoint) {
@@ -196,7 +196,8 @@ const Moonbeam = scalingSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
   getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
   getDamage: (g, caster, method, { slot }) => [_dd(slot ?? 2, 10, "radiant")],
-  getTargets: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
+  getTargets: (g, caster, { point }) =>
+    point ? g.getInside(getMoonbeamArea(point)) : [],
 
   async apply(g, caster, method, { point, slot }) {
     const controller = new MoonbeamController(g, caster, method, point, slot);

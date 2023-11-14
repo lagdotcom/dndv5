@@ -33,7 +33,7 @@ const CharmMonster = scalingSpell<HasTargets>({
       [withinRangeOfEachOther(30)],
     ),
   }),
-  getTargets: (g, actor, { targets }) => targets,
+  getTargets: (g, actor, { targets }) => targets ?? [],
 
   async apply(g, caster, method, { slot, targets }) {
     for (const target of targets) {

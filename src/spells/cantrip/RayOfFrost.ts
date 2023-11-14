@@ -39,7 +39,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
   getDamage: (_, caster) => [_dd(getCantripDice(caster), 8, "cold")],
-  getTargets: (g, caster, { target }) => [target],
+  getTargets: (g, caster, { target }) => (target ? [target] : []),
 
   async apply(g, attacker, method, { target }) {
     const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {

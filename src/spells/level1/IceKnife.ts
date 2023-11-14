@@ -46,7 +46,8 @@ const IceKnife = scalingSpell<HasTarget>({
     _dd(1, 10, "piercing"),
     _dd(1 + (slot ?? 1), 6, "cold"),
   ],
-  getTargets: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
+  getTargets: (g, caster, { target }) =>
+    target ? g.getInside(getIceKnifeArea(target)) : [],
 
   async apply(g, attacker, method, { slot, target }) {
     const { attack, hit, critical } = await g.attack({

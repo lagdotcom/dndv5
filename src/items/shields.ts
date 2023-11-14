@@ -7,6 +7,7 @@ import Engine from "../Engine";
 import { BeforeAttackDetail } from "../events/BeforeAttackEvent";
 import { notSelf } from "../filters";
 import YesNoChoice from "../interruptions/YesNoChoice";
+import MessageBuilder from "../MessageBuilder";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
 import { checkConfig } from "../utils/config";
@@ -40,7 +41,14 @@ class ArrowCatchingShieldAction extends AbstractAction<HasTarget> {
 
     if (!this.attack) throw new Error(`No attack to modify.`);
 
-    // TODO [MESSAGE]
+    this.g.text(
+      new MessageBuilder()
+        .co(this.actor)
+        .text(" redirects the attack on")
+        .sp()
+        .co(this.attack.target)
+        .text(" to themselves."),
+    );
     this.attack.target = this.actor;
   }
 }

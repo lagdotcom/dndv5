@@ -56,8 +56,8 @@ class HissAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: HasTarget) {
-    return [target];
+  getTargets({ target }: Partial<HasTarget>) {
+    return target ? [target] : [];
   }
 
   async apply({ target }: HasTarget) {

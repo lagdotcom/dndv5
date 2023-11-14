@@ -38,7 +38,7 @@ const LightningBolt = scalingSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) =>
     point && [getLightningBoltArea(caster, point)],
   getTargets: (g, caster, { point }) =>
-    g.getInside(getLightningBoltArea(caster, point)),
+    point ? g.getInside(getLightningBoltArea(caster, point)) : [],
 
   async apply(g, attacker, method, { slot, point }) {
     const damage = await g.rollDamage(5 + slot, {

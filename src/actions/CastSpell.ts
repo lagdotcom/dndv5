@@ -4,6 +4,7 @@ import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
+import MessageBuilder from "../MessageBuilder";
 import Action from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
@@ -90,7 +91,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     return new Map(resource ? [[resource, 1]] : undefined);
   }
 
-  getTargets(config: T) {
+  getTargets(config: Partial<T>) {
     return this.spell.getTargets(this.g, this.actor, config);
   }
 
@@ -127,8 +128,12 @@ export default class CastSpell<T extends object> implements Action<T> {
         success: new SuccessResponseCollector(),
       }),
     );
-    // TODO [MESSAGES] report this somehow
-    if (sc.detail.success.result === "fail") return;
+
+    if (sc.detail.success.result === "fail") {
+      return g.text(
+        new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`),
+      );
+    }
 
     // TODO should this be done here?
     // TODO also could have the ability to concentrate on multiple spells

@@ -5,6 +5,7 @@ import { makeIcon } from "../colours";
 import { Prone } from "../effects";
 import Engine from "../Engine";
 import { MapSquareSize } from "../MapSquare";
+import MessageBuilder from "../MessageBuilder";
 import Combatant from "../types/Combatant";
 import Empty from "../types/Empty";
 import { round } from "../utils/numbers";
@@ -47,7 +48,7 @@ export default class StandUpAction extends AbstractAction {
 
     this.actor.movedSoFar += this.cost;
 
-    // TODO [MESSAGES] report this somehow
     await this.actor.removeEffect(Prone);
+    this.g.text(new MessageBuilder().co(this.actor).text(" stands up."));
   }
 }
