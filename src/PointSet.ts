@@ -1,6 +1,6 @@
 import { HalfSquareSize } from "./MapSquare";
 import Point from "./types/Point";
-import { mapSet, SetInitialiser } from "./utils/set";
+import { SetInitialiser } from "./utils/set";
 
 type PointTag = string;
 
@@ -15,7 +15,7 @@ export default class PointSet {
   set: Set<PointTag>;
 
   constructor(points: SetInitialiser<Point> = []) {
-    this.set = new Set(mapSet(points, asTag));
+    this.set = new Set(Array.from(points, asTag));
   }
 
   add(p: Point) {

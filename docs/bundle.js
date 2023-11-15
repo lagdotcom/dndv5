@@ -580,32 +580,6 @@
     }
   };
 
-  // src/utils/set.ts
-  function hasAll(set, matches2) {
-    if (!set)
-      return false;
-    for (const item of matches2)
-      if (!set.has(item))
-        return false;
-    return true;
-  }
-  function intersects(a, b) {
-    for (const item of a)
-      if (b.has(item))
-        return true;
-    return false;
-  }
-  function* mapSet(values, fn) {
-    let index = 0;
-    for (const item of values)
-      yield fn(item, index++, values);
-  }
-  function mergeSets(destination, source) {
-    if (source)
-      for (const item of source)
-        destination.add(item);
-  }
-
   // src/PointSet.ts
   function asPoint(tag) {
     const [x, y] = tag.split(",").map(Number);
@@ -614,7 +588,7 @@
   var asTag = ({ x, y }) => `${x},${y}`;
   var PointSet = class {
     constructor(points = []) {
-      this.set = new Set(mapSet(points, asTag));
+      this.set = new Set(Array.from(points, asTag));
     }
     add(p) {
       return this.set.add(asTag(p));
@@ -1481,7 +1455,7 @@
     return item;
   }
   function isEquipmentAttuned(item, who) {
-    return (who == null ? void 0 : who.equipment.has(item)) && who.attunements.has(item);
+    return (who == null ? void 0 : who.equipment.has(item)) === true && who.attunements.has(item);
   }
 
   // src/AbstractCombatant.ts
@@ -7004,6 +6978,27 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   // src/img/eq/punch.svg
   var punch_default = "./punch-TEM63CHE.svg";
 
+  // src/utils/set.ts
+  function hasAll(set, matches2) {
+    if (!set)
+      return false;
+    for (const item of matches2)
+      if (!set.has(item))
+        return false;
+    return true;
+  }
+  function intersects(a, b) {
+    for (const item of a)
+      if (b.has(item))
+        return true;
+    return false;
+  }
+  function mergeSets(destination, source) {
+    if (source)
+      for (const item of source)
+        destination.add(item);
+  }
+
   // src/PC.ts
   var UnarmedStrike = class extends AbstractWeapon {
     constructor(g, owner) {
@@ -8676,7 +8671,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           ec.add(`At most ${this.maximum} points`, this);
         for (const point of value) {
           if (distanceTo(action.actor, point) > this.maxRange)
-            ec.add(`(${point.x},${point.y}): Out of range`, this);
+            ec.add(`(${describePoint(point)}): Out of range`, this);
         }
       }
       return ec;
@@ -12117,7 +12112,7 @@ The creature is aware of this effect before it makes its attack against you.`
           actions.push(new ArrowCatchingShieldAction(g, who));
       });
       g.events.on("BeforeAttack", ({ detail }) => {
-        if (this.possessor && isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
+        if (isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
           const config = { target: detail.target };
           const action = new ArrowCatchingShieldAction(g, this.possessor, detail);
           if (checkConfig(g, action, config))

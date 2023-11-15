@@ -73,7 +73,6 @@ export class ArrowCatchingShield extends Shield {
     });
     g.events.on("BeforeAttack", ({ detail }) => {
       if (
-        this.possessor &&
         isEquipmentAttuned(this, this.possessor) &&
         detail.tags.has("ranged")
       ) {

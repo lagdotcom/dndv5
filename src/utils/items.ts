@@ -53,6 +53,9 @@ export function enchant<T extends ItemType>(
   return item;
 }
 
-export function isEquipmentAttuned(item: Item, who?: Combatant) {
-  return who?.equipment.has(item) && who.attunements.has(item);
+export function isEquipmentAttuned(
+  item: Item,
+  who?: Combatant,
+): who is Combatant {
+  return who?.equipment.has(item) === true && who.attunements.has(item);
 }

@@ -12,21 +12,6 @@ export function intersects<T>(a: Set<T>, b: Set<T>) {
   return false;
 }
 
-export function* mapSet<T, V>(
-  values: Iterable<T>,
-  fn: (value: T, index: number, values: Iterable<T>) => V,
-) {
-  let index = 0;
-  for (const item of values) yield fn(item, index++, values);
-}
-
-export function* filterSet<T>(
-  values: Iterable<T>,
-  predicate: (value: T) => boolean,
-) {
-  for (const value of values) if (predicate(value)) yield value;
-}
-
 export function mergeSets<T>(destination: Set<T>, source?: Set<T>) {
   if (source) for (const item of source) destination.add(item);
 }

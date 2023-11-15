@@ -3,7 +3,7 @@ import Engine from "../Engine";
 import Action from "../types/Action";
 import Point from "../types/Point";
 import Resolver from "../types/Resolver";
-import { describeRange } from "../utils/text";
+import { describePoint, describeRange } from "../utils/text";
 import { isPointArray } from "../utils/types";
 import { distanceTo } from "../utils/units";
 
@@ -35,7 +35,7 @@ export default class MultiPointResolver implements Resolver<Point[]> {
 
       for (const point of value) {
         if (distanceTo(action.actor, point) > this.maxRange)
-          ec.add(`(${point.x},${point.y}): Out of range`, this);
+          ec.add(`(${describePoint(point)}): Out of range`, this);
       }
     }
 
