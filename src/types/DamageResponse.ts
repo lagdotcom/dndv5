@@ -2,8 +2,8 @@ export const DamageResponses = [
   "absorb",
   "immune",
   "resist",
-  "normal",
   "vulnerable",
+  "normal",
 ] as const;
 type DamageResponse = (typeof DamageResponses)[number];
 export default DamageResponse;

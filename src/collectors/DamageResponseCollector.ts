@@ -1,11 +1,9 @@
-import DamageResponse from "../types/DamageResponse";
+import DamageResponse, { DamageResponses } from "../types/DamageResponse";
 import { AbstractSumCollector } from "./AbstractCollector";
-
-const priority: DamageResponse[] = ["absorb", "immune", "resist", "vulnerable"];
 
 export default class DamageResponseCollector extends AbstractSumCollector<DamageResponse> {
   getSum(values: DamageResponse[]): DamageResponse {
-    for (const p of priority) {
+    for (const p of DamageResponses) {
       if (values.includes(p)) return p;
     }
     return "normal";

@@ -91,7 +91,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     public ability: AbilityName,
     public strength: SpellcastingStrength,
     public className: PCClassName,
-    public list: SpellList,
+    public spellList: SpellList,
     public icon?: Icon,
   ) {
     this.entries = new Map();
@@ -124,7 +124,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
 
   canCast(spell: Spell, caster: Combatant) {
     const { spells } = this.getEntry(caster);
-    return spell.lists.includes(this.list) || spells.has(spell);
+    return spell.lists.includes(this.spellList) || spells.has(spell);
   }
 
   addCastableSpell(spell: Spell, caster: Combatant) {

@@ -61,7 +61,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
       const resource = SpellSlotResources[slot];
 
       if (
-        this.actor.getResource(resource) === this.actor.getResourceMax(resource)
+        this.actor.getResource(resource) >= this.actor.getResourceMax(resource)
       )
         ec.add(`full on ${resource.name}`, this);
     }

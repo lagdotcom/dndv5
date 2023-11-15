@@ -16,12 +16,12 @@ import Salgar from "./pcs/davies/Salgar";
 import App from "./ui/App";
 import { FetchCache, SVGCacheContext } from "./ui/utils/SVGCache";
 
-const cache = new FetchCache();
+const svgCache = new FetchCache();
 const gInstance = new Engine();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).g = gInstance;
 render(
-  <SVGCacheContext.Provider value={cache}>
+  <SVGCacheContext.Provider value={svgCache}>
     <App
       g={gInstance}
       onMount={() => {

@@ -31,6 +31,11 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
   }
 
   check(value: unknown, action: Action, ec: ErrorCollector) {
+    const getErrors = <T>(filters: ErrorFilter<T>[], v: T) =>
+      filters
+        .filter((filter) => !filter.check(this.g, action, v))
+        .map((filter) => filter.message);
+
     if (!isCombatantArray(value)) {
       ec.add("No target", this);
     } else {
@@ -41,18 +46,15 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
 
       for (const who of value) {
         const isOutOfRange = distance(action.actor, who) > this.maxRange;
-        const filterErrors = this.filters
-          .filter((filter) => !filter.check(this.g, action, who))
-          .map((filter) => filter.message);
+        const errors = getErrors(this.filters, who).map(
+          (error) => `${who.name}: ${error}`,
+        );
 
         if (isOutOfRange) ec.add(`${who.name}: Out of range`, this);
-        for (const error of filterErrors) ec.add(`${who.name}: ${error}`, this);
+        ec.addMany(errors, this);
       }
 
-      const filterErrors = this.allFilters
-        .filter((filter) => !filter.check(this.g, action, value))
-        .map((filter) => filter.message);
-      for (const error of filterErrors) ec.add(error, this);
+      ec.addMany(getErrors(this.allFilters, value), this);
     }
 
     return ec;

@@ -15,6 +15,10 @@ export default class ErrorCollector {
     this.errors.add({ value, source });
   }
 
+  addMany(messages: string[], source: Source) {
+    for (const message of messages) this.add(message, source);
+  }
+
   ignore(source: Source) {
     this.ignored.add(source);
   }

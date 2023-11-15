@@ -10,6 +10,7 @@ import { BoundedMove } from "../movement";
 import TargetResolver from "../resolvers/TargetResolver";
 import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
+import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
 import { getExecutionMode } from "../utils/env";
 import { round } from "../utils/numbers";
@@ -57,7 +58,7 @@ class HissAction extends AbstractAction<HasTarget> {
   }
 
   getTargets({ target }: Partial<HasTarget>) {
-    return target ? [target] : [];
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

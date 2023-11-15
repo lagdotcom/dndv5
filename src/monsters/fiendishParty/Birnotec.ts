@@ -24,6 +24,7 @@ import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { poSet } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 
@@ -249,7 +250,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
   }
 
   getTargets({ target }: Partial<HasTarget>) {
-    return target ? [target] : [];
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

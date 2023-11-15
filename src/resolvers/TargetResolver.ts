@@ -32,12 +32,12 @@ export default class TargetResolver implements Resolver<Combatant> {
       ec.add("No target", this);
     } else {
       const isOutOfRange = distance(action.actor, value) > this.maxRange;
-      const filterErrors = this.filters
+      const errors = this.filters
         .filter((filter) => !filter.check(this.g, action, value))
         .map((filter) => filter.message);
 
       if (isOutOfRange) ec.add("Out of range", this);
-      for (const error of filterErrors) ec.add(error, this);
+      ec.addMany(errors, this);
     }
 
     return ec;

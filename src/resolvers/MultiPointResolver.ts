@@ -35,7 +35,7 @@ export default class MultiPointResolver implements Resolver<Point[]> {
 
       for (const point of value) {
         if (distanceTo(action.actor, point) > this.maxRange)
-          ec.add("Out of range", this);
+          ec.add(`(${point.x},${point.y}): Out of range`, this);
       }
     }
 

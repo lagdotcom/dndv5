@@ -24,7 +24,7 @@ import FreedomOfMovement from "../../../spells/level4/FreedomOfMovement";
 import IceStorm from "../../../spells/level4/IceStorm";
 import Stoneskin from "../../../spells/level4/Stoneskin";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
-import CreatureType, { ctSet } from "../../../types/CreatureType";
+import { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
 import Spell from "../../../types/Spell";
 import { DruidSpellcasting } from "..";

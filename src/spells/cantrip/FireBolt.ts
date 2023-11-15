@@ -5,6 +5,7 @@ import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
@@ -31,7 +32,7 @@ const FireBolt = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, attacker, method, { target }) {
     const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {

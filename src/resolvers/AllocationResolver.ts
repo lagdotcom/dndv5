@@ -64,12 +64,12 @@ export default class AllocationResolver implements Resolver<Allocation[]> {
 
       for (const { who } of value) {
         const isOutOfRange = distance(action.actor, who) > this.maxRange;
-        const filterErrors = this.filters
+        const errors = this.filters
           .filter((filter) => !filter.check(this.g, action, who))
-          .map((filter) => filter.message);
+          .map((filter) => `${who.name}: ${filter.message}`);
 
         if (isOutOfRange) ec.add(`${who.name}: Out of range`, this);
-        for (const error of filterErrors) ec.add(`${who.name}: ${error}`, this);
+        ec.addMany(errors, this);
       }
     }
 

@@ -9,6 +9,7 @@ import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Source from "../types/Source";
 import { poSet, poWithin } from "../utils/ai";
+import { sieve } from "../utils/array";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
@@ -84,7 +85,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   }
 
   getTargets({ target }: Partial<HasTarget>): Combatant[] {
-    return target ? [target] : [];
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

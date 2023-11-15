@@ -4,6 +4,7 @@ import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
@@ -41,8 +42,8 @@ const MindSliver = simpleSpell<HasTarget>({
     })),
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
-  getDamage: (_, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, attacker, method, { target }) {
     const damage = await g.rollDamage(getCantripDice(attacker), {

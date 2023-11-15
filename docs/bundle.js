@@ -123,11 +123,19 @@
     }
   };
 
+  // src/types/DamageResponse.ts
+  var DamageResponses = [
+    "absorb",
+    "immune",
+    "resist",
+    "vulnerable",
+    "normal"
+  ];
+
   // src/collectors/DamageResponseCollector.ts
-  var priority = ["absorb", "immune", "resist", "vulnerable"];
   var DamageResponseCollector = class extends AbstractSumCollector {
     getSum(values) {
-      for (const p of priority) {
+      for (const p of DamageResponses) {
         if (values.includes(p))
           return p;
       }
@@ -154,6 +162,10 @@
     }
     add(value, source) {
       this.errors.add({ value, source });
+    }
+    addMany(messages, source) {
+      for (const message of messages)
+        this.add(message, source);
     }
     ignore(source) {
       this.ignored.add(source);
@@ -1890,11 +1902,10 @@
         ec.add("No target", this);
       } else {
         const isOutOfRange = distance(action.actor, value) > this.maxRange;
-        const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
+        const errors = this.filters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
         if (isOutOfRange)
           ec.add("Out of range", this);
-        for (const error of filterErrors)
-          ec.add(error, this);
+        ec.addMany(errors, this);
       }
       return ec;
     }
@@ -1920,6 +1931,9 @@
     range,
     of
   });
+
+  // src/utils/array.ts
+  var sieve = (...items) => items.filter(isDefined);
 
   // src/utils/text.ts
   var niceAbilityName = {
@@ -2054,11 +2068,11 @@
 
   // src/interruptions/EvaluateLater.ts
   var EvaluateLater = class {
-    constructor(who, source, apply, priority2 = 5) {
+    constructor(who, source, apply, priority = 5) {
       this.who = who;
       this.source = source;
       this.apply = apply;
-      this.priority = priority2;
+      this.priority = priority;
     }
   };
 
@@ -2281,7 +2295,7 @@
       )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
     }
     getTargets({ target }) {
-      return target ? [target] : [];
+      return sieve(target);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -2467,7 +2481,7 @@
 
   // src/interruptions/PickFromListChoice.ts
   var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen, allowNone = false, priority2 = 10) {
+    constructor(who, source, title, text, items, chosen, allowNone = false, priority = 10) {
       this.who = who;
       this.source = source;
       this.title = title;
@@ -2475,7 +2489,7 @@
       this.items = items;
       this.chosen = chosen;
       this.allowNone = allowNone;
-      this.priority = priority2;
+      this.priority = priority;
     }
     async apply(g) {
       const choice = await new Promise(
@@ -3167,14 +3181,14 @@
 
   // src/interruptions/YesNoChoice.ts
   var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority2 = 10) {
+    constructor(who, source, title, text, yes, no, priority = 10) {
       this.who = who;
       this.source = source;
       this.title = title;
       this.text = text;
       this.yes = yes;
       this.no = no;
-      this.priority = priority2;
+      this.priority = priority;
     }
     async apply(g) {
       var _a, _b;
@@ -4302,7 +4316,7 @@
       return [_dd(2, 10, "fire")];
     }
     getTargets({ target }) {
-      return target ? [target] : [];
+      return sieve(target);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -5035,7 +5049,7 @@
     return new SimpleFeature(
       "Darkvision",
       `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can\u2019t discern color in darkness, only shades of gray.`,
-      (_2, me) => {
+      (g, me) => {
         me.senses.set("darkvision", range);
       }
     );
@@ -5045,7 +5059,7 @@
     });
   }
   function notImplementedFeature(name, text) {
-    return new SimpleFeature(name, text, (_2, me) => {
+    return new SimpleFeature(name, text, (g, me) => {
       if (getExecutionMode() !== "test")
         console.warn(`[Feature Missing] ${name} (on ${me.name})`);
     });
@@ -5147,10 +5161,10 @@
       positioning: poSet(poWithin(120, target))
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
-    getDamage: (_2, caster, method, { slot }) => [
+    getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
     ],
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, attacker, method, { slot, target }) {
       const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {
         slot,
@@ -5188,6 +5202,7 @@
       return name;
     }
     check(value, action, ec) {
+      const getErrors = (filters, v) => filters.filter((filter) => !filter.check(this.g, action, v)).map((filter) => filter.message);
       if (!isCombatantArray(value)) {
         ec.add("No target", this);
       } else {
@@ -5197,15 +5212,14 @@
           ec.add(`At most ${this.maximum} targets`, this);
         for (const who of value) {
           const isOutOfRange = distance(action.actor, who) > this.maxRange;
-          const filterErrors2 = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
+          const errors = getErrors(this.filters, who).map(
+            (error) => `${who.name}: ${error}`
+          );
           if (isOutOfRange)
             ec.add(`${who.name}: Out of range`, this);
-          for (const error of filterErrors2)
-            ec.add(`${who.name}: ${error}`, this);
+          ec.addMany(errors, this);
         }
-        const filterErrors = this.allFilters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
-        for (const error of filterErrors)
-          ec.add(error, this);
+        ec.addMany(getErrors(this.allFilters, value), this);
       }
       return ec;
     }
@@ -5504,7 +5518,7 @@
         amount: method.ability ? caster[method.ability].modifier : 0
       }
     ],
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     check(g, { target }, ec) {
       if (target && cannotHeal2.has(target.type))
         ec.add(`Cannot heal a ${target.type}`, HealingWord);
@@ -6685,7 +6699,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       );
     }
     getTargets({ target }) {
-      return target ? [target] : [];
+      return sieve(target);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -6785,13 +6799,13 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     return 9;
   }
   var NormalSpellcasting = class {
-    constructor(name, text, ability, strength, className, list, icon) {
+    constructor(name, text, ability, strength, className, spellList, icon) {
       this.name = name;
       this.text = text;
       this.ability = ability;
       this.strength = strength;
       this.className = className;
-      this.list = list;
+      this.spellList = spellList;
       this.icon = icon;
       this.entries = /* @__PURE__ */ new Map();
       this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
@@ -6818,7 +6832,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
     canCast(spell, caster) {
       const { spells } = this.getEntry(caster);
-      return spell.lists.includes(this.list) || spells.has(spell);
+      return spell.lists.includes(this.spellList) || spells.has(spell);
     }
     addCastableSpell(spell, caster) {
       const { spells } = this.getEntry(caster);
@@ -7080,7 +7094,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   When the spell ends, the target floats gently to the ground if it is still aloft.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
     }
   });
@@ -7260,7 +7274,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
 
   // src/interruptions/MultiListChoice.ts
   var MultiListChoice = class {
-    constructor(who, source, title, text, items, minimum, maximum = items.length, chosen, priority2 = 10) {
+    constructor(who, source, title, text, items, minimum, maximum = items.length, chosen, priority = 10) {
       this.who = who;
       this.source = source;
       this.title = title;
@@ -7269,7 +7283,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.minimum = minimum;
       this.maximum = maximum;
       this.chosen = chosen;
-      this.priority = priority2;
+      this.priority = priority;
     }
     async apply(g) {
       const choice = await new Promise(
@@ -7800,7 +7814,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, attacker, method, { target }) {
       const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
         target
@@ -7844,8 +7858,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       positioning: poSet(poWithin(60, target))
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
-    getDamage: (_2, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, attacker, method, { target }) {
       const damage = await g.rollDamage(getCantripDice(attacker), {
         source: MindSliver,
@@ -7923,8 +7937,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       positioning: poSet(poWithin(60, target))
     })),
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
-    getDamage: (_2, caster) => [_dd(getCantripDice(caster), 8, "cold")],
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "cold")],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, attacker, method, { target }) {
       const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
         target
@@ -8091,11 +8105,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           ec.add(`At most ${this.maximum} allocations`, this);
         for (const { who } of value) {
           const isOutOfRange = distance(action.actor, who) > this.maxRange;
-          const filterErrors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => filter.message);
+          const errors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => `${who.name}: ${filter.message}`);
           if (isOutOfRange)
             ec.add(`${who.name}: Out of range`, this);
-          for (const error of filterErrors)
-            ec.add(`${who.name}: ${error}`, this);
+          ec.addMany(errors, this);
         }
       }
       return ec;
@@ -8396,7 +8409,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         { label: "reduce", value: "reduce" }
       ])
     }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { mode, target }) {
       const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;
       const config = { duration: minutes(1) };
@@ -8663,7 +8676,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           ec.add(`At most ${this.maximum} points`, this);
         for (const point of value) {
           if (distanceTo(action.actor, point) > this.maxRange)
-            ec.add("Out of range", this);
+            ec.add(`(${point.x},${point.y}): Out of range`, this);
         }
       }
       return ec;
@@ -9012,7 +9025,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
     check({ slot }, ec) {
       if (slot) {
         const resource = SpellSlotResources[slot];
-        if (this.actor.getResource(resource) === this.actor.getResourceMax(resource))
+        if (this.actor.getResource(resource) >= this.actor.getResourceMax(resource))
           ec.add(`full on ${resource.name}`, this);
       }
       return super.check({ slot }, ec);
@@ -9476,7 +9489,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [])
     }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
       const duration = minutes(10);
       await target.addEffect(ProtectionEffect, { duration }, caster);
@@ -9527,7 +9540,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
 
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
       await target.addEffect(
         SanctuaryEffect,
@@ -9567,7 +9580,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         )
       };
     },
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     check(g, { effect, target }, ec) {
       if (target && effect && !target.hasEffect(effect))
         ec.add("target does not have chosen effect", LesserRestoration);
@@ -10066,7 +10079,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     lists: ["Cleric", "Paladin"],
     description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
       await target.addEffect(
         ShieldOfFaithEffect,
@@ -11399,7 +11412,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
     }
   });
@@ -11693,7 +11706,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
     }
   });
@@ -11757,7 +11770,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g, caster) => ({
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
-    getTargets: (g, caster, { target }) => target ? [target] : [],
+    getTargets: (g, caster, { target }) => sieve(target),
     async apply(g, caster, method, { target }) {
       const duration = hours(1);
       await target.addEffect(StoneskinEffect, { duration }, caster);
@@ -12945,15 +12958,15 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/SVGIcon.tsx
   function SVGIcon({ className, color, size, src }) {
-    const cache2 = (0, import_hooks.useContext)(SVGCacheContext);
+    const cache = (0, import_hooks.useContext)(SVGCacheContext);
     const ref = (0, import_hooks.useRef)(null);
     (0, import_hooks.useEffect)(() => {
-      void cache2.get(src).then((html) => {
+      void cache.get(src).then((html) => {
         if (ref.current)
           ref.current.innerHTML = html;
         return html;
       });
-    }, [cache2, src]);
+    }, [cache, src]);
     return /* @__PURE__ */ o(
       "div",
       {
@@ -13993,7 +14006,7 @@ The creature is aware of this effect before it makes its attack against you.`
           min: resolver.min,
           max: resolver.max,
           value: value != null ? value : 0,
-          onChange: (value2) => onChange(field, value2)
+          onChange: (v) => onChange(field, v)
         }
       )
     ] });
@@ -14688,7 +14701,7 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/ui/App.tsx
   function App({ g, onMount }) {
-    const cache2 = (0, import_hooks17.useContext)(SVGCacheContext);
+    const cache = (0, import_hooks17.useContext)(SVGCacheContext);
     const [target, setTarget] = (0, import_hooks17.useState)();
     const [action, setAction] = (0, import_hooks17.useState)();
     const [actionMenu, setActionMenu] = (0, import_hooks17.useState)({
@@ -14782,13 +14795,13 @@ The creature is aware of this effect before it makes its attack against you.`
       ];
       onMount == null ? void 0 : onMount(g);
       for (const iconUrl of getAllIcons(g))
-        cache2.get(iconUrl);
+        cache.get(iconUrl);
       return () => {
         for (const cleanup of subscriptions)
           cleanup();
       };
     }, [
-      cache2,
+      cache,
       g,
       hideActionMenu,
       onMount,
@@ -14938,11 +14951,11 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/index.tsx
-  var cache = new FetchCache();
+  var svgCache = new FetchCache();
   var gInstance = new Engine();
   window.g = gInstance;
   (0, import_preact4.render)(
-    /* @__PURE__ */ o(SVGCacheContext.Provider, { value: cache, children: /* @__PURE__ */ o(
+    /* @__PURE__ */ o(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ o(
       App,
       {
         g: gInstance,

@@ -8,6 +8,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { EffectConfig } from "../../types/EffectType";
 import SizeCategory, { SizeCategories } from "../../types/SizeCategory";
+import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -146,7 +147,7 @@ const EnlargeReduce = simpleSpell<Config>({
       { label: "reduce", value: "reduce" },
     ]),
   }),
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, caster, method, { mode, target }) {
     const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;

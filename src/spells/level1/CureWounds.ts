@@ -2,6 +2,7 @@ import { HasTarget } from "../../configs";
 import { notOfCreatureType } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
+import { sieve } from "../../utils/array";
 import { scalingSpell } from "../common";
 
 const cannotHeal = ctSet("undead", "construct");
@@ -32,7 +33,7 @@ const CureWounds = scalingSpell<HasTarget>({
       { type: "flat", amount: modifier },
     ];
   },
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, actor, method, { slot, target }) {
     if (cannotHeal.has(target.type)) return;

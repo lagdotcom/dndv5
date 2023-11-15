@@ -4,6 +4,7 @@ import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { canSee } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { sieve } from "../../utils/array";
 import { simpleSpell } from "../common";
 
 const Levitate = simpleSpell<HasTarget>({
@@ -23,7 +24,7 @@ const Levitate = simpleSpell<HasTarget>({
   When the spell ends, the target floats gently to the ground if it is still aloft.`,
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, caster, method, { target }) {
     /* TODO [HEIGHT] [CANCELMOVE] */

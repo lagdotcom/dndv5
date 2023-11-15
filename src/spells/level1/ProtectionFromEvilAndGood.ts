@@ -7,6 +7,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { ctSet } from "../../types/CreatureType";
 import { EffectConfig } from "../../types/EffectType";
+import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -82,7 +83,7 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, []),
   }),
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, caster, method, { target }) {
     const duration = minutes(10);

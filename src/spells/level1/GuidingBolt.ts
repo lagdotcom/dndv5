@@ -4,6 +4,7 @@ import { notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 import SpellAttack from "../SpellAttack";
@@ -41,10 +42,10 @@ const GuidingBolt = scalingSpell<HasTarget>({
     })),
 
   getConfig: (g) => ({ target: new TargetResolver(g, 120, [notSelf]) }),
-  getDamage: (_, caster, method, { slot }) => [
+  getDamage: (g, caster, method, { slot }) => [
     _dd((slot ?? 1) + 3, 6, "radiant"),
   ],
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, attacker, method, { slot, target }) {
     const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {

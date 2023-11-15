@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import { sieve } from "../../utils/array";
 import { hours } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -35,7 +36,7 @@ const Stoneskin = simpleSpell<HasTarget>({
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, [isAlly]),
   }),
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, caster, method, { target }) {
     const duration = hours(1);

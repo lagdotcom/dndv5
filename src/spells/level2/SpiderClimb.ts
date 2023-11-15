@@ -1,6 +1,7 @@
 import { HasTarget } from "../../configs";
 import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { sieve } from "../../utils/array";
 import { simpleSpell } from "../common";
 
 const SpiderClimb = simpleSpell<HasTarget>({
@@ -17,7 +18,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   getConfig: (g, caster) => ({
     target: new TargetResolver(g, caster.reach, [isAlly]),
   }),
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   async apply(g, caster, method, { target }) {
     // TODO [TERRAIN]

@@ -3,6 +3,7 @@ import { canSee, notOfCreatureType } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { scalingSpell } from "../common";
 
 const cannotHeal = ctSet("undead", "construct");
@@ -38,7 +39,7 @@ const HealingWord = scalingSpell<HasTarget>({
       amount: method.ability ? caster[method.ability].modifier : 0,
     },
   ],
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   check(g, { target }, ec) {
     if (target && cannotHeal.has(target.type))

@@ -358,7 +358,7 @@ function ChooseNumber({
         min={resolver.min}
         max={resolver.max}
         value={value ?? 0}
-        onChange={(value) => onChange(field, value)}
+        onChange={(v) => onChange(field, v)}
       />
     </div>
   );

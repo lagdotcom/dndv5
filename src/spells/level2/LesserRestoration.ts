@@ -3,6 +3,7 @@ import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { coSet } from "../../types/ConditionName";
 import EffectType from "../../types/EffectType";
+import { sieve } from "../../utils/array";
 import { intersects } from "../../utils/set";
 import { simpleSpell } from "../common";
 
@@ -42,7 +43,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
       ),
     };
   },
-  getTargets: (g, caster, { target }) => (target ? [target] : []),
+  getTargets: (g, caster, { target }) => sieve(target),
 
   check(g, { effect, target }, ec) {
     if (target && effect && !target.hasEffect(effect))
