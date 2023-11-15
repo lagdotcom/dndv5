@@ -29,6 +29,7 @@ export default interface Action<T extends object = object> extends Source {
 
   apply(config: T): Promise<void>;
   check(config: Partial<T>, collector: ErrorCollector): ErrorCollector;
+  getAffected(config: T): Combatant[];
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape[] | undefined;
   getConfig(config: Partial<T>): ActionConfig<T>;
   getDamage(config: Partial<T>): DamageAmount[] | undefined;

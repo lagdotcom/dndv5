@@ -24,6 +24,7 @@ const ControlWater = simpleSpell({
 
   getConfig: () => ({}),
   getTargets: () => [],
+  getAffected: () => [],
 
   async apply(g, caster, method, config) {
     // TODO [FORCEMOVE] [TERRAIN] [CANCELMOVE]

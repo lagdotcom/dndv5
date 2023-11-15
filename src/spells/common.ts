@@ -36,6 +36,7 @@ export const simpleSpell = <T extends object>({
   check = (_g, _config, ec) => ec,
   generateAttackConfigs = () => [],
   generateHealingConfigs = () => [],
+  getAffected,
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
@@ -81,6 +82,7 @@ export const simpleSpell = <T extends object>({
   check,
   generateAttackConfigs,
   generateHealingConfigs,
+  getAffected,
   getAffectedArea,
   getConfig,
   getDamage,
@@ -117,6 +119,7 @@ export const scalingSpell = <T extends object>({
   check = (_g, _config, ec) => ec,
   generateAttackConfigs,
   generateHealingConfigs,
+  getAffected,
   getAffectedArea = () => undefined,
   getConfig,
   getDamage = () => undefined,
@@ -199,6 +202,7 @@ export const scalingSpell = <T extends object>({
       ),
     );
   },
+  getAffected,
   getAffectedArea,
   getConfig(g, actor, method, config) {
     return {

@@ -22,7 +22,7 @@ export default class DamageRule implements AIRule {
           const amounts = action.getDamage(config);
           if (!amounts) return;
 
-          const targets = action.getTargets(config);
+          const targets = action.getAffected(config);
           if (!targets) return;
 
           const { average } = describeDice(amounts);

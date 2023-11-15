@@ -1,6 +1,15 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { SpecifiedCylinder } from "../../types/EffectArea";
+import Point from "../../types/Point";
 import { simpleSpell } from "../common";
+
+const getSleetStormArea = (centre: Point): SpecifiedCylinder => ({
+  type: "cylinder",
+  centre,
+  radius: 40,
+  height: 20,
+});
 
 const SleetStorm = simpleSpell<HasPoint>({
   name: "Sleet Storm",
@@ -22,8 +31,9 @@ const SleetStorm = simpleSpell<HasPoint>({
 
   getConfig: (g) => ({ point: new PointResolver(g, 150) }),
   getAffectedArea: (g, caster, { point }) =>
-    point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
+    point && [getSleetStormArea(point)],
   getTargets: () => [],
+  getAffected: (g, caster, { point }) => g.getInside(getSleetStormArea(point)),
 
   async apply(g, caster, method, { point }) {
     // TODO [TERRAIN]

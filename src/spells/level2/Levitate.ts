@@ -25,6 +25,7 @@ const Levitate = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     /* TODO [HEIGHT] [CANCELMOVE] */

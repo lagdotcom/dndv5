@@ -84,6 +84,11 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getAffected(config: T) {
+    return [this.actor];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getConfig(config: Partial<T>) {
     return this.config;
   }
@@ -110,7 +115,7 @@ export default abstract class AbstractAction<T extends object = Empty>
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getTargets(config: Partial<T>) {
-    return [this.actor];
+    return [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

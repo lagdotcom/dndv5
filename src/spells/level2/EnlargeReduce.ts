@@ -148,6 +148,7 @@ const EnlargeReduce = simpleSpell<Config>({
     ]),
   }),
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { mode, target }) {
     const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;

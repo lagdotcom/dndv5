@@ -42,7 +42,8 @@ const DivineFavor = simpleSpell({
   description: `Your prayer empowers you with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit.`,
 
   getConfig: () => ({}),
-  getTargets: (g, caster) => [caster],
+  getTargets: () => [],
+  getAffected: (g, caster) => [caster],
 
   async apply(g, caster) {
     const duration = minutes(1);

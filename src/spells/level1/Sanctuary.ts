@@ -52,6 +52,7 @@ const Sanctuary = simpleSpell<HasTarget>({
 
   getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     await target.addEffect(

@@ -86,6 +86,7 @@ const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
     ),
   }),
   getTargets: (g, caster) => [caster],
+  getAffected: (g, caster) => [caster],
 
   async apply(g, caster, method, { slot, item }) {
     const controller = new MagicWeaponController(g, caster, slot, item);

@@ -22,6 +22,7 @@ const Slow = simpleSpell<HasTargets>({
 
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120, []) }),
   getTargets: (g, caster, { targets }) => targets ?? [],
+  getAffected: (g, caster, { targets }) => targets,
 
   check(g, config, ec) {
     // TODO You alter time around up to six creatures of your choice in a 40-foot cube within range.

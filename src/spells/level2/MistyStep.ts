@@ -14,7 +14,8 @@ const MistyStep = simpleSpell<HasPoint>({
   description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
 
   getConfig: (g) => ({ point: new PointResolver(g, 30) }),
-  getTargets: (g, caster) => [caster],
+  getTargets: () => [],
+  getAffected: (g, caster) => [caster],
 
   async apply(g, caster, method, { point }) {
     await g.move(caster, point, getTeleportation(30, "Misty Step"));

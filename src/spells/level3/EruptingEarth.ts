@@ -38,8 +38,9 @@ const EruptingEarth = scalingSpell<HasPoint>({
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 3, 12, "bludgeoning"),
   ],
-  getTargets: (g, caster, { point }) =>
-    point ? g.getInside(getEruptingEarthArea(point)) : [],
+  getTargets: () => [],
+  getAffected: (g, caster, { point }) =>
+    g.getInside(getEruptingEarthArea(point)),
 
   async apply(g, attacker, method, { point, slot }) {
     const damage = await g.rollDamage(slot, {

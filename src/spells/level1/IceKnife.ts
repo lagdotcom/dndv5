@@ -8,6 +8,7 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
@@ -46,8 +47,8 @@ const IceKnife = scalingSpell<HasTarget>({
     _dd(1, 10, "piercing"),
     _dd(1 + (slot ?? 1), 6, "cold"),
   ],
-  getTargets: (g, caster, { target }) =>
-    target ? g.getInside(getIceKnifeArea(target)) : [],
+  getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
 
   async apply(g, attacker, method, { slot, target }) {
     const { attack, hit, critical } = await g.attack({

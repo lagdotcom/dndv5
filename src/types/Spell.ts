@@ -88,6 +88,7 @@ export default interface Spell<T extends object = object> extends Source {
   ): Amount[] | undefined;
   getLevel(config: T): number;
   getTargets(g: Engine, caster: Combatant, config: Partial<T>): Combatant[];
+  getAffected(g: Engine, caster: Combatant, config: T): Combatant[];
 
   generateAttackConfigs(
     g: Engine,

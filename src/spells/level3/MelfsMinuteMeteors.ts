@@ -110,7 +110,11 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
     return new Map([[MMMResource, points?.length ?? 1]]);
   }
 
-  getTargets(config: Partial<HasPoints>) {
+  getTargets() {
+    return [];
+  }
+
+  getAffected(config: HasPoints) {
     return (
       this.getAffectedArea(config)?.flatMap((area) => this.g.getInside(area)) ??
       []
@@ -146,10 +150,11 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
 
   getAffectedArea: (g, caster, { points }) =>
     points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
-  getTargets: (g, caster, { points }) =>
-    points?.flatMap((centre) =>
+  getTargets: () => [],
+  getAffected: (g, caster, { points }) =>
+    points.flatMap((centre) =>
       g.getInside({ type: "sphere", centre, radius: 5 }),
-    ) ?? [],
+    ),
 
   getDamage: () => [_dd(2, 6, "fire")],
 

@@ -65,7 +65,8 @@ const ArmorOfAgathys = scalingSpell({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
 
   getConfig: () => ({}),
-  getTargets: (g, caster) => [caster],
+  getTargets: () => [],
+  getAffected: (g, caster) => [caster],
 
   async apply(g, caster, method, { slot }) {
     const count = slot * 5;

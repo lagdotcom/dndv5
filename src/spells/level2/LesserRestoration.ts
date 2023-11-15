@@ -44,6 +44,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
     };
   },
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   check(g, { effect, target }, ec) {
     if (target && effect && !target.hasEffect(effect))

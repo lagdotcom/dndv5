@@ -106,7 +106,8 @@ const GuardianOfNature = simpleSpell<{ form: Form }>({
   - While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.`,
 
   getConfig: (g) => ({ form: new ChoiceResolver(g, FormChoices) }),
-  getTargets: (g, caster) => [caster],
+  getTargets: () => [],
+  getAffected: (g, caster) => [caster],
 
   async apply(g, caster, method, { form }) {
     const duration = minutes(1);

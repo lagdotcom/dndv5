@@ -36,7 +36,8 @@ const EarthTremor = scalingSpell({
   getDamage: (g, caster, method, { slot }) => [
     _dd(slot ?? 1, 6, "bludgeoning"),
   ],
-  getTargets: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
+  getTargets: () => [],
+  getAffected: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
 
   async apply(g, attacker, method, { slot }) {
     const damage = await g.rollDamage(slot, {

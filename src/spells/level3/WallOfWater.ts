@@ -29,6 +29,7 @@ const WallOfWater = simpleSpell<HasPoint & { shape: Shape }>({
     shape: new ChoiceResolver(g, shapeChoices),
   }),
   getTargets: () => [],
+  getAffected: () => [],
 
   async apply(g, caster, method, { point, shape }) {
     // TODO [TERRAIN] [PROJECTILE]

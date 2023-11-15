@@ -85,6 +85,7 @@ const Silence = simpleSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
   getAffectedArea: (g, caster, { point }) => point && [getSilenceArea(point)],
   getTargets: () => [],
+  getAffected: (g, caster, { point }) => g.getInside(getSilenceArea(point)),
 
   async apply(g, caster, method, { point }) {
     const controller = new SilenceController(g, point);

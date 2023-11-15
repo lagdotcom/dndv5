@@ -41,6 +41,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
     },
   ],
   getTargets: (g, caster, { targets }) => targets ?? [],
+  getAffected: (g, caster, { targets }) => targets,
 
   check(g, { targets }, ec) {
     if (targets) {

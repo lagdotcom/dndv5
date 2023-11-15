@@ -73,6 +73,7 @@ const HoldPerson = scalingSpell<HasTargets>({
     ),
   }),
   getTargets: (g, caster, { targets }) => targets ?? [],
+  getAffected: (g, caster, { targets }) => targets,
 
   async apply(g, caster, method, { targets }) {
     const affected = new Set<Combatant>();

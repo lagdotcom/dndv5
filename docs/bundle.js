@@ -443,6 +443,10 @@
       return this.area;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffected(config) {
+      return [this.actor];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getConfig(config) {
       return this.config;
     }
@@ -464,7 +468,7 @@
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getTargets(config) {
-      return [this.actor];
+      return [];
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getTime(config) {
@@ -1194,6 +1198,9 @@
     getTargets(config) {
       return this.spell.getTargets(this.g, this.actor, config);
     }
+    getAffected(config) {
+      return this.spell.getAffected(this.g, this.actor, config);
+    }
     getTime() {
       return this.time;
     }
@@ -1216,7 +1223,7 @@
           spell,
           method,
           level: spell.getLevel(config),
-          targets: new Set(spell.getTargets(g, actor, config)),
+          targets: new Set(spell.getAffected(g, actor, config)),
           interrupt: new InterruptionCollector(),
           success: new SuccessResponseCollector()
         })
@@ -1296,6 +1303,7 @@
     check = (_g, _config, ec) => ec,
     generateAttackConfigs = () => [],
     generateHealingConfigs = () => [],
+    getAffected,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage: getDamage2 = () => void 0,
@@ -1322,6 +1330,7 @@
     check,
     generateAttackConfigs,
     generateHealingConfigs,
+    getAffected,
     getAffectedArea,
     getConfig,
     getDamage: getDamage2,
@@ -1349,6 +1358,7 @@
     check = (_g, _config, ec) => ec,
     generateAttackConfigs,
     generateHealingConfigs,
+    getAffected,
     getAffectedArea = () => void 0,
     getConfig,
     getDamage: getDamage2 = () => void 0,
@@ -1403,6 +1413,7 @@
         )
       );
     },
+    getAffected,
     getAffectedArea,
     getConfig(g, actor, method, config) {
       return {
@@ -2270,6 +2281,9 @@
     }
     getTargets({ target }) {
       return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -3993,7 +4007,8 @@
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
     getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method, { slot }) {
       const count = slot * 5;
       if (await g.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
@@ -4116,7 +4131,8 @@
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
     getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(target)],
     getDamage: () => [_dd(2, 10, "force")],
-    getTargets: (g, caster, { target }) => target ? g.getInside(getEldritchBurstArea(target)) : [],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => g.getInside(getEldritchBurstArea(target)),
     async apply(g, caster, method, { target }) {
       const rsa = new SpellAttack(
         g,
@@ -4131,8 +4147,8 @@
         return;
       const { target: finalTarget } = attack.pre;
       if (hit) {
-        const damage2 = await rsa.getDamage(finalTarget);
-        await rsa.damage(finalTarget, damage2);
+        const hitDamage = await rsa.getDamage(finalTarget);
+        await rsa.damage(finalTarget, hitDamage);
       }
       const damage = await g.rollDamage(
         1,
@@ -4912,7 +4928,7 @@
           const amounts = action.getDamage(config);
           if (!amounts)
             return;
-          const targets = action.getTargets(config);
+          const targets = action.getAffected(config);
           if (!targets)
             return;
           const { average } = describeDice(amounts);
@@ -4949,7 +4965,7 @@
           const amounts = action.getHeal(config);
           if (!amounts)
             return;
-          const targets = action.getTargets(config);
+          const targets = action.getAffected(config);
           if (!targets)
             return;
           const { average } = describeDice(amounts);
@@ -5139,6 +5155,7 @@
       _dd((slot != null ? slot : 1) + 3, 6, "radiant")
     ],
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { slot, target }) {
       const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {
         slot,
@@ -5236,6 +5253,7 @@
       }
     ],
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     check(g, { targets }, ec) {
       if (targets) {
         for (const target of targets)
@@ -5493,6 +5511,7 @@
       }
     ],
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     check(g, { target }, ec) {
       if (target && cannotHeal2.has(target.type))
         ec.add(`Cannot heal a ${target.type}`, HealingWord);
@@ -7090,6 +7109,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   When the spell ends, the target floats gently to the ground if it is still aloft.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
     }
   });
@@ -7752,6 +7772,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, attacker, method, { targets }) {
       const count = getCantripDice(attacker);
       const damage = await g.rollDamage(count, {
@@ -7810,6 +7831,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { target }) {
       const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
         target
@@ -7855,6 +7877,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { target }) {
       const damage = await g.rollDamage(getCantripDice(attacker), {
         source: MindSliver,
@@ -7934,6 +7957,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, attacker, method, { target }) {
       const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
         target
@@ -7984,7 +8008,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       _dd(1, 10, "piercing"),
       _dd(1 + (slot != null ? slot : 1), 6, "cold")
     ],
-    getTargets: (g, caster, { target }) => target ? g.getInside(getIceKnifeArea(target)) : [],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
     async apply(g, attacker, method, { slot, target }) {
       const { attack, hit, critical } = await g.attack({
         who: attacker,
@@ -8144,6 +8169,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       var _a;
       return (_a = targets == null ? void 0 : targets.map((e) => e.who)) != null ? _a : [];
     },
+    getAffected: (g, caster, { targets }) => targets.map((e) => e.who),
     async apply(g, attacker, method, { targets }) {
       const perBolt = await g.rollDamage(1, {
         source: MagicMissile,
@@ -8247,7 +8273,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     lists: ["Sorcerer", "Wizard"],
     description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
     getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster) {
       await caster.addEffect(ShieldEffect, { duration: 1 });
     }
@@ -8405,6 +8432,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       ])
     }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { mode, target }) {
       const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;
       const config = { duration: minutes(1) };
@@ -8490,6 +8518,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       )
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { targets }) {
       const affected = /* @__PURE__ */ new Set();
       const duration = minutes(1);
@@ -8557,7 +8586,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
     getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
-    getTargets: (g, caster, { point }) => point ? g.getInside(getFireballArea(point)) : [],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getFireballArea(point)),
     async apply(g, attacker, method, { point, slot }) {
       const damage = await g.rollDamage(5 + slot, {
         source: Fireball,
@@ -8630,6 +8660,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       )
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { targets }) {
       const duration = hours(1);
       for (const target of targets)
@@ -8759,7 +8790,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       var _a;
       return /* @__PURE__ */ new Map([[MMMResource, (_a = points == null ? void 0 : points.length) != null ? _a : 1]]);
     }
-    getTargets(config) {
+    getTargets() {
+      return [];
+    }
+    getAffected(config) {
       var _a, _b;
       return (_b = (_a = this.getAffectedArea(config)) == null ? void 0 : _a.flatMap((area) => this.g.getInside(area))) != null ? _b : [];
     }
@@ -8787,12 +8821,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       points: new MultiPointResolver(g, 1, 2, 120)
     }),
     getAffectedArea: (g, caster, { points }) => points && points.map((centre) => ({ type: "sphere", centre, radius: 5 })),
-    getTargets: (g, caster, { points }) => {
-      var _a;
-      return (_a = points == null ? void 0 : points.flatMap(
-        (centre) => g.getInside({ type: "sphere", centre, radius: 5 })
-      )) != null ? _a : [];
-    },
+    getTargets: () => [],
+    getAffected: (g, caster, { points }) => points.flatMap(
+      (centre) => g.getInside({ type: "sphere", centre, radius: 5 })
+    ),
     getDamage: () => [_dd(2, 6, "fire")],
     async apply(g, attacker, method, { points, slot }) {
       const meteors = slot * 2;
@@ -8863,6 +8895,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       shape: new ChoiceResolver(g, shapeChoices)
     }),
     getTargets: () => [],
+    getAffected: () => [],
     getDamage: (g, caster, method, { slot }) => [_dd((slot != null ? slot : 4) + 1, 8, "fire")],
     async apply(g, caster, method, { point, shape }) {
     }
@@ -9485,6 +9518,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       target: new TargetResolver(g, caster.reach, [])
     }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
       const duration = minutes(10);
       await target.addEffect(ProtectionEffect, { duration }, caster);
@@ -9536,6 +9570,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
       await target.addEffect(
         SanctuaryEffect,
@@ -9576,6 +9611,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       };
     },
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     check(g, { effect, target }, ec) {
       if (target && effect && !target.hasEffect(effect))
         ec.add("target does not have chosen effect", LesserRestoration);
@@ -9865,6 +9901,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     getConfig: (g) => ({ point: new PointResolver(g, 60) }),
     getTargets: () => [],
     getAffectedArea: (g, caster, { point }) => point && [getWebArea(point)],
+    getAffected: (g, caster, { point }) => g.getInside(getWebArea(point)),
     async apply(g, caster, method, { point }) {
       const controller = new WebController(g, caster, method, point);
       caster.concentrateOn({
@@ -9976,6 +10013,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, [])
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { targets }) {
       const duration = minutes(1);
       for (const target of targets)
@@ -10030,7 +10068,8 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     lists: ["Paladin"],
     description: `Your prayer empowers you with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit.`,
     getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster) {
       const duration = minutes(1);
       await caster.addEffect(DivineFavorEffect, { duration }, caster);
@@ -10075,6 +10114,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
       await target.addEffect(
         ShieldOfFaithEffect,
@@ -10124,6 +10164,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
     getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, []) }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, actor, method, { slot, targets }) {
       const amount = (slot - 1) * 5;
       const duration = hours(8);
@@ -10200,6 +10241,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       )
     }),
     getTargets: (g, caster) => [caster],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method, { slot, item }) {
       const controller = new MagicWeaponController(g, caster, slot, item);
       caster.concentrateOn({
@@ -11258,7 +11300,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Artificer", "Sorcerer", "Wizard"],
     description: `Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.`,
     getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster) {
       const duration = minutes(1);
       await caster.addEffect(BlurEffect, { duration }, caster);
@@ -11291,7 +11334,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
     getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method, config) {
     }
   });
@@ -11308,7 +11352,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     lists: ["Sorcerer", "Warlock", "Wizard"],
     description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
     getConfig: (g) => ({ point: new PointResolver(g, 30) }),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method, { point }) {
       await g.move(caster, point, getTeleportation(30, "Misty Step"));
     }
@@ -11382,6 +11427,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getSilenceArea(point)],
     getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getSilenceArea(point)),
     async apply(g, caster, method, { point }) {
       const controller = new SilenceController(g, point);
       await caster.concentrateOn({
@@ -11408,6 +11454,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
     }
   });
@@ -11417,6 +11464,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var spike_growth_default = "./spike-growth-DJJYBBWC.svg";
 
   // src/spells/level2/SpikeGrowth.ts
+  var getSpikeGrowthArea = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 20
+  });
   var SpikeGrowth = simpleSpell({
     status: "incomplete",
     name: "Spike Growth",
@@ -11433,12 +11485,13 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it.`,
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-    getAffectedArea: (g, caster, { point }) => point && [{ type: "sphere", centre: point, radius: 20 }],
+    getAffectedArea: (g, caster, { point }) => point && [getSpikeGrowthArea(point)],
     getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getSpikeGrowthArea(point)),
     async apply(g, attacker, method, { point }) {
       const area = new ActiveEffectArea(
         "Spike Growth",
-        { type: "sphere", centre: point, radius: 20 },
+        getSpikeGrowthArea(point),
         arSet("difficult terrain", "plants"),
         "green"
       );
@@ -11509,7 +11562,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       _dd((slot != null ? slot : 3) + 5, 6, "lightning")
     ],
     getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(caster, point)],
-    getTargets: (g, caster, { point }) => point ? g.getInside(getLightningBoltArea(caster, point)) : [],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getLightningBoltArea(caster, point)),
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(5 + slot, {
         source: LightningBolt,
@@ -11556,13 +11610,20 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
 
   Minor physical damage to the stone doesn't harm you, but its partial destruction or a change in its shape (to the extent that you no longer fit within it) expels you and deals 6d6 bludgeoning damage to you. The stone's complete destruction (or transmutation into a different substance) expels you and deals 50 bludgeoning damage to you. If expelled, you fall prone in an unoccupied space closest to where you first entered.`,
     getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method, config) {
     }
   });
   var MeldIntoStone_default = MeldIntoStone;
 
   // src/spells/level3/SleetStorm.ts
+  var getSleetStormArea = (centre) => ({
+    type: "cylinder",
+    centre,
+    radius: 40,
+    height: 20
+  });
   var SleetStorm = simpleSpell({
     name: "Sleet Storm",
     level: 3,
@@ -11580,8 +11641,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   If a creature starts its turn in the spell's area and is concentrating on a spell, the creature must make a successful Constitution saving throw against your spell save DC or lose concentration.`,
     // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-    getAffectedArea: (g, caster, { point }) => point && [{ type: "cylinder", centre: point, radius: 40, height: 20 }],
+    getAffectedArea: (g, caster, { point }) => point && [getSleetStormArea(point)],
     getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getSleetStormArea(point)),
     async apply(g, caster, method, { point }) {
     }
   });
@@ -11607,6 +11669,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   A creature affected by this spell makes another Wisdom saving throw at the end of each of its turns. On a successful save, the effect ends for it.`,
     getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 6, 120, []) }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     check(g, config, ec) {
       return ec;
     },
@@ -11630,6 +11693,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, caster, method, config) {
     }
   });
@@ -11652,6 +11716,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, caster, method, config) {
     }
   });
@@ -11681,6 +11746,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   The first time each turn that an object enters the vortex, the object takes 2d8 bludgeoning damage; this damage occurs each round it remains in the vortex.`,
     getConfig: () => ({}),
     getTargets: () => [],
+    getAffected: () => [],
     async apply(g, caster, method, config) {
     }
   });
@@ -11702,6 +11768,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
     }
   });
@@ -11731,7 +11798,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 300) }),
     getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
-    getTargets: (g, caster, { point }) => point ? g.getInside(getIceStormArea(point)) : [],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
@@ -11766,6 +11834,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       target: new TargetResolver(g, caster.reach, [isAlly])
     }),
     getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
       const duration = hours(1);
       await target.addEffect(StoneskinEffect, { duration }, caster);
@@ -11806,7 +11875,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: (g) => ({ point: new PointResolver(g, 60) }),
     getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
     getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(caster, point)],
-    getTargets: (g, caster, { point }) => point ? g.getInside(getConeOfColdArea(caster, point)) : [],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getConeOfColdArea(caster, point)),
     async apply(g, attacker, method, { slot, point }) {
       const damage = await g.rollDamage(3 + slot, {
         source: ConeOfCold,
@@ -12347,6 +12417,7 @@ The creature is aware of this effect before it makes its attack against you.`
   If you cast this spell again, the spell ends on any pebbles still affected by your previous casting.`,
     getConfig: () => ({}),
     getTargets: (g, caster) => [caster],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method) {
       caster.initResource(MagicStoneResource);
       g.text(
@@ -12391,7 +12462,8 @@ The creature is aware of this effect before it makes its attack against you.`
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 1, 6, "bludgeoning")
     ],
-    getTargets: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
+    getTargets: () => [],
+    getAffected: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
     async apply(g, attacker, method, { slot }) {
       const damage = await g.rollDamage(slot, {
         source: EarthTremor,
@@ -12496,8 +12568,11 @@ The creature is aware of this effect before it makes its attack against you.`
     getDamage({ point }) {
       return point && [_dd(this.controller.slot, 10, "radiant")];
     }
-    getTargets({ point }) {
-      return point ? this.g.getInside(getMoonbeamArea(point)) : [];
+    getTargets() {
+      return [];
+    }
+    getAffected({ point }) {
+      return this.g.getInside(getMoonbeamArea(point));
     }
     async apply({ point }) {
       await super.apply({ point });
@@ -12612,7 +12687,8 @@ The creature is aware of this effect before it makes its attack against you.`
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
     getDamage: (g, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
-    getTargets: (g, caster, { point }) => point ? g.getInside(getMoonbeamArea(point)) : [],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
     async apply(g, caster, method, { point, slot }) {
       const controller = new MoonbeamController(g, caster, method, point, slot);
       caster.concentrateOn({
@@ -12653,7 +12729,8 @@ The creature is aware of this effect before it makes its attack against you.`
     getDamage: (g, caster, method, { slot }) => [
       _dd(slot != null ? slot : 3, 12, "bludgeoning")
     ],
-    getTargets: (g, caster, { point }) => point ? g.getInside(getEruptingEarthArea(point)) : [],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getEruptingEarthArea(point)),
     async apply(g, attacker, method, { point, slot }) {
       const damage = await g.rollDamage(slot, {
         source: EruptingEarth,
@@ -12718,6 +12795,7 @@ The creature is aware of this effect before it makes its attack against you.`
       )
     }),
     getTargets: (g, actor, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
     async apply(g, caster, method, { slot, targets }) {
       for (const target of targets) {
         const config = {
@@ -12823,7 +12901,8 @@ The creature is aware of this effect before it makes its attack against you.`
   - You make Dexterity- and Wisdom-based attack rolls with advantage.
   - While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.`,
     getConfig: (g) => ({ form: new ChoiceResolver(g, FormChoices) }),
-    getTargets: (g, caster) => [caster],
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
     async apply(g, caster, method, { form }) {
       const duration = minutes(1);
       let effect = PrimalBeastEffect;

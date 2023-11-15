@@ -52,6 +52,7 @@ const Bless = scalingSpell<HasTargets>({
     targets: new MultiTargetResolver(g, 1, (slot ?? 1) + 2, 30, []),
   }),
   getTargets: (g, caster, { targets }) => targets ?? [],
+  getAffected: (g, caster, { targets }) => targets,
 
   async apply(g, caster, method, { targets }) {
     const duration = minutes(1);

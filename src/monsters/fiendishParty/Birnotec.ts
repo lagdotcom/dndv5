@@ -49,8 +49,9 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   getAffectedArea: (g, caster, { target }) =>
     target && [getEldritchBurstArea(target)],
   getDamage: () => [_dd(2, 10, "force")],
-  getTargets: (g, caster, { target }) =>
-    target ? g.getInside(getEldritchBurstArea(target)) : [],
+  getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) =>
+    g.getInside(getEldritchBurstArea(target)),
 
   async apply(g, caster, method, { target }) {
     const rsa = new SpellAttack(
@@ -68,8 +69,8 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
     const { target: finalTarget } = attack.pre;
 
     if (hit) {
-      const damage = await rsa.getDamage(finalTarget);
-      await rsa.damage(finalTarget, damage);
+      const hitDamage = await rsa.getDamage(finalTarget);
+      await rsa.damage(finalTarget, hitDamage);
     }
 
     const damage = await g.rollDamage(

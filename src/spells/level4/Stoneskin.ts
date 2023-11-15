@@ -37,6 +37,7 @@ const Stoneskin = simpleSpell<HasTarget>({
     target: new TargetResolver(g, caster.reach, [isAlly]),
   }),
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   async apply(g, caster, method, { target }) {
     const duration = hours(1);

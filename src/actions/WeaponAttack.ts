@@ -84,8 +84,12 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
   }
 
-  getTargets({ target }: Partial<HasTarget>): Combatant[] {
+  getTargets({ target }: Partial<HasTarget>) {
     return sieve(target);
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
   }
 
   async apply({ target }: HasTarget) {

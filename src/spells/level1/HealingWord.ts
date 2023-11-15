@@ -40,6 +40,7 @@ const HealingWord = scalingSpell<HasTarget>({
     },
   ],
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   check(g, { target }, ec) {
     if (target && cannotHeal.has(target.type))

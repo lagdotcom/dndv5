@@ -18,7 +18,8 @@ const MirrorImage = simpleSpell({
   A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
 
   getConfig: () => ({}),
-  getTargets: (g, caster) => [caster],
+  getTargets: () => [],
+  getAffected: (g, caster) => [caster],
 
   async apply(g, caster, method, config) {
     /* TODO [CANCELATTACK] */

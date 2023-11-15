@@ -95,6 +95,10 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.getTargets(this.g, this.actor, config);
   }
 
+  getAffected(config: T) {
+    return this.spell.getAffected(this.g, this.actor, config);
+  }
+
   getTime() {
     return this.time;
   }
@@ -123,7 +127,7 @@ export default class CastSpell<T extends object> implements Action<T> {
         spell,
         method,
         level: spell.getLevel(config),
-        targets: new Set(spell.getTargets(g, actor, config)),
+        targets: new Set(spell.getAffected(g, actor, config)),
         interrupt: new InterruptionCollector(),
         success: new SuccessResponseCollector(),
       }),

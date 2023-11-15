@@ -21,7 +21,7 @@ export default class HealingRule implements AIRule {
           const amounts = action.getHeal(config);
           if (!amounts) return;
 
-          const targets = action.getTargets(config);
+          const targets = action.getAffected(config);
           if (!targets) return;
 
           const { average } = describeDice(amounts);

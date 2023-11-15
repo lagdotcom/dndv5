@@ -34,6 +34,7 @@ const CureWounds = scalingSpell<HasTarget>({
     ];
   },
   getTargets: (g, caster, { target }) => sieve(target),
+  getAffected: (g, caster, { target }) => [target],
 
   async apply(g, actor, method, { slot, target }) {
     if (cannotHeal.has(target.type)) return;

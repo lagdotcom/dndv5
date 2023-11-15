@@ -174,6 +174,7 @@ const Web = simpleSpell<HasPoint>({
   getConfig: (g) => ({ point: new PointResolver(g, 60) }),
   getTargets: () => [],
   getAffectedArea: (g, caster, { point }) => point && [getWebArea(point)],
+  getAffected: (g, caster, { point }) => g.getInside(getWebArea(point)),
 
   async apply(g, caster, method, { point }) {
     // TODO [TERRAIN] If the webs aren't anchored between two solid masses (such as walls or trees) or layered across a floor, wall, or ceiling, the conjured web collapses on itself, and the spell ends at the start of your next turn. Webs layered over a flat surface have a depth of 5 feet.
