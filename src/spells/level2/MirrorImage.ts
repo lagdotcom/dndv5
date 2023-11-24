@@ -21,7 +21,7 @@ const MirrorImage = simpleSpell({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster, method, config) {
+  async apply() {
     /* TODO [CANCELATTACK] */
   },
 });

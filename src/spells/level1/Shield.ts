@@ -1,12 +1,13 @@
 import iconUrl from "@img/spl/shield.svg";
 
-import CastSpell from "../../actions/CastSpell";
+import { isCastSpell } from "../../actions/CastSpell";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import Combatant from "../../types/Combatant";
 import { efSet } from "../../types/EffectTag";
+import { checkConfig } from "../../utils/config";
 import { simpleSpell } from "../common";
 import MagicMissile from "./MagicMissile";
 
@@ -24,7 +25,7 @@ const ShieldEffect = new Effect(
     ) => {
       const shield = g
         .getActions(who)
-        .filter((a) => a instanceof CastSpell && a.spell === Shield);
+        .filter((a) => isCastSpell(a, Shield) && checkConfig(g, a, {}));
       if (!shield.length) return;
 
       interrupt.add(

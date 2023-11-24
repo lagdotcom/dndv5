@@ -38,7 +38,7 @@ const IceStorm = scalingSpell<HasPoint>({
     _dd(4, 6, "cold"),
   ],
 
-  async apply(g, caster, method, config) {
+  async apply() {
     // TODO [TERRAIN]
   },
 });

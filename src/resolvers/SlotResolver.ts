@@ -1,4 +1,4 @@
-import CastSpell from "../actions/CastSpell";
+import { isCastSpell } from "../actions/CastSpell";
 import ErrorCollector from "../collectors/ErrorCollector";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
@@ -27,7 +27,7 @@ export default class SlotResolver implements Resolver<number> {
   }
 
   check(value: unknown, action: Action, ec: ErrorCollector) {
-    if (action instanceof CastSpell) this.method = action.method;
+    if (isCastSpell(action)) this.method = action.method;
 
     if (typeof value !== "number") ec.add("No spell level chosen", this);
     else {

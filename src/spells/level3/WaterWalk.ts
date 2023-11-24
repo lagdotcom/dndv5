@@ -22,7 +22,7 @@ const WaterWalk = simpleSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, caster, method, config) {
+  async apply() {
     // TODO [TERRAIN]
   },
 });

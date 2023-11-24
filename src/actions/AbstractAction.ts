@@ -114,7 +114,7 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getTargets(config: Partial<T>) {
+  getTargets(config: Partial<T>): Combatant[] {
     return [];
   }
 

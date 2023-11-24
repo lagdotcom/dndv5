@@ -148,3 +148,10 @@ export default class CastSpell<T extends object> implements Action<T> {
     return spell.apply(g, actor, method, config);
   }
 }
+
+export function isCastSpell<T extends object>(
+  a: Action,
+  sp?: Spell<T>,
+): a is CastSpell<T> {
+  return a instanceof CastSpell && (!sp || a.spell === sp);
+}

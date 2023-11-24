@@ -23,7 +23,7 @@ const GustOfWind = simpleSpell<HasPoint>({
   getTargets: () => [],
   getAffected: () => [],
 
-  async apply(g, caster, method, { point }) {
+  async apply() {
     /* TODO [FORCEMOVE] [GETMOVECOST] [DISPERSAL] [FLAMMABLE] */
   },
 });

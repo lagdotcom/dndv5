@@ -35,7 +35,7 @@ const SleetStorm = simpleSpell<HasPoint>({
   getTargets: () => [],
   getAffected: (g, caster, { point }) => g.getInside(getSleetStormArea(point)),
 
-  async apply(g, caster, method, { point }) {
+  async apply() {
     // TODO [TERRAIN]
   },
 });

@@ -1223,7 +1223,8 @@
           spell,
           method,
           level: spell.getLevel(config),
-          targets: new Set(spell.getAffected(g, actor, config)),
+          targets: new Set(spell.getTargets(g, actor, config)),
+          affected: new Set(spell.getAffected(g, actor, config)),
           interrupt: new InterruptionCollector(),
           success: new SuccessResponseCollector()
         })
@@ -1238,6 +1239,9 @@
       return spell.apply(g, actor, method, config);
     }
   };
+  function isCastSpell(a, sp) {
+    return a instanceof CastSpell && (!sp || a.spell === sp);
+  }
 
   // src/resolvers/SlotResolver.ts
   var SlotResolver = class {
@@ -1256,7 +1260,7 @@
       return (_c = (_b = (_a = this.method).getMaxSlot) == null ? void 0 : _b.call(_a, this.spell, who)) != null ? _c : this.spell.level;
     }
     check(value, action, ec) {
-      if (action instanceof CastSpell)
+      if (isCastSpell(action))
         this.method = action.method;
       if (typeof value !== "number")
         ec.add("No spell level chosen", this);
@@ -3954,6 +3958,9 @@
   // src/img/spl/armor-of-agathys.svg
   var armor_of_agathys_default = "./armor-of-agathys-V2ZDSJZ3.svg";
 
+  // src/types/EffectTag.ts
+  var efSet = (...items) => new Set(items);
+
   // src/utils/time.ts
   var TURNS_PER_MINUTE = 10;
   var minutes = (n) => n * TURNS_PER_MINUTE;
@@ -3991,7 +3998,7 @@
         }
       );
     },
-    { icon: ArmorOfAgathysIcon }
+    { icon: ArmorOfAgathysIcon, tags: efSet("magic") }
   );
   var ArmorOfAgathys = scalingSpell({
     status: "implemented",
@@ -5122,18 +5129,26 @@
   );
 
   // src/spells/level1/GuidingBolt.ts
-  var GuidingBoltEffect = new Effect("Guiding Bolt", "turnEnd", (g) => {
-    g.events.on("BeforeAttack", ({ detail: { target, diceType, interrupt } }) => {
-      if (target.hasEffect(GuidingBoltEffect)) {
-        diceType.add("advantage", GuidingBoltEffect);
-        interrupt.add(
-          new EvaluateLater(target, GuidingBoltEffect, async () => {
-            await target.removeEffect(GuidingBoltEffect);
-          })
-        );
-      }
-    });
-  });
+  var GuidingBoltEffect = new Effect(
+    "Guiding Bolt",
+    "turnEnd",
+    (g) => {
+      g.events.on(
+        "BeforeAttack",
+        ({ detail: { target, diceType, interrupt } }) => {
+          if (target.hasEffect(GuidingBoltEffect)) {
+            diceType.add("advantage", GuidingBoltEffect);
+            interrupt.add(
+              new EvaluateLater(target, GuidingBoltEffect, async () => {
+                await target.removeEffect(GuidingBoltEffect);
+              })
+            );
+          }
+        }
+      );
+    },
+    { tags: efSet("magic") }
+  );
   var GuidingBolt = scalingSpell({
     status: "implemented",
     name: "Guiding Bolt",
@@ -7110,7 +7125,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply() {
     }
   });
   var Levitate_default = Levitate;
@@ -7319,7 +7334,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     (g, me) => {
       g.events.on(
         "SpellCast",
-        ({ detail: { who, spell, level, targets, interrupt } }) => {
+        ({ detail: { who, spell, level, affected, interrupt } }) => {
           if (who === me && spell.school === "Evocation")
             interrupt.add(
               new MultiListChoice(
@@ -7327,7 +7342,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
                 SculptSpells,
                 "Sculpt Spells",
                 `Pick combatants who will be somewhat protected from your spell.`,
-                Array.from(targets, (value) => ({
+                Array.from(affected, (value) => ({
                   value,
                   label: value.name
                 })),
@@ -7846,19 +7861,24 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var FireBolt_default = FireBolt;
 
   // src/spells/cantrip/MindSliver.ts
-  var MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
-    g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
-      if (who.hasEffect(MindSliverEffect)) {
-        const { values } = g.dice.roll({ type: "bane", who });
-        bonus.add(-values.final, MindSliver);
-        interrupt.add(
-          new EvaluateLater(who, MindSliverEffect, async () => {
-            who.removeEffect(MindSliverEffect);
-          })
-        );
-      }
-    });
-  });
+  var MindSliverEffect = new Effect(
+    "Mind Sliver",
+    "turnStart",
+    (g) => {
+      g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
+        if (who.hasEffect(MindSliverEffect)) {
+          const { values } = g.dice.roll({ type: "bane", who });
+          bonus.add(-values.final, MindSliver);
+          interrupt.add(
+            new EvaluateLater(who, MindSliverEffect, async () => {
+              who.removeEffect(MindSliverEffect);
+            })
+          );
+        }
+      });
+    },
+    { tags: efSet("magic") }
+  );
   var MindSliver = simpleSpell({
     status: "implemented",
     name: "Mind Sliver",
@@ -7931,12 +7951,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var ray_of_frost_default = "./ray-of-frost-5EAHUBPB.svg";
 
   // src/spells/cantrip/RayOfFrost.ts
-  var RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {
-    g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
-      if (who.hasEffect(RayOfFrostEffect))
-        bonus.add(-10, RayOfFrostEffect);
-    });
-  });
+  var RayOfFrostEffect = new Effect(
+    "Ray of Frost",
+    "turnStart",
+    (g) => {
+      g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
+        if (who.hasEffect(RayOfFrostEffect))
+          bonus.add(-10, RayOfFrostEffect);
+      });
+    },
+    { tags: efSet("magic") }
+  );
   var RayOfFrost = simpleSpell({
     status: "implemented",
     name: "Ray of Frost",
@@ -8204,7 +8229,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     (g) => {
       const check = (message, who, interrupt, after = async () => {
       }) => {
-        const shield = g.getActions(who).filter((a) => a instanceof CastSpell && a.spell === Shield2);
+        const shield = g.getActions(who).filter((a) => isCastSpell(a, Shield2) && checkConfig(g, a, {}));
         if (!shield.length)
           return;
         interrupt.add(
@@ -8237,10 +8262,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       });
       g.events.on(
         "SpellCast",
-        ({ detail: { who, spell, targets, interrupt } }) => {
+        ({ detail: { who, spell, affected, interrupt } }) => {
           if (spell !== MagicMissile_default)
             return;
-          for (const target of targets) {
+          for (const target of affected) {
             if (!target.hasEffect(ShieldEffect))
               check(
                 `${who.name} is casting Magic Missile on ${target.name}.`,
@@ -8259,7 +8284,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           multiplier.add("zero", ShieldEffect);
       });
     },
-    { icon: ShieldIcon }
+    { icon: ShieldIcon, tags: efSet("magic") }
   );
   var Shield2 = simpleSpell({
     status: "implemented",
@@ -8315,58 +8340,68 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   ];
 
   // src/spells/level2/EnlargeReduce.ts
-  var EnlargeEffect = new Effect("Enlarge", "turnStart", (g) => {
-    const giveAdvantage = ({
-      detail: { who, ability, diceType }
-    }) => {
-      if (who.hasEffect(EnlargeEffect) && ability === "str")
-        diceType.add("advantage", EnlargeEffect);
-    };
-    g.events.on("BeforeCheck", giveAdvantage);
-    g.events.on("BeforeSave", giveAdvantage);
-    g.events.on(
-      "GatherDamage",
-      ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-        if (attacker.hasEffect(EnlargeEffect) && weapon)
-          interrupt.add(
-            new EvaluateLater(attacker, EnlargeEffect, async () => {
-              const amount = await g.rollDamage(
-                1,
-                { source: EnlargeEffect, attacker, size: 4 },
-                critical
-              );
-              bonus.add(amount, EnlargeEffect);
-            })
-          );
-      }
-    );
-  });
-  var ReduceEffect = new Effect("Reduce", "turnStart", (g) => {
-    const giveDisadvantage = ({
-      detail: { who, ability, diceType }
-    }) => {
-      if (who.hasEffect(ReduceEffect) && ability === "str")
-        diceType.add("disadvantage", ReduceEffect);
-    };
-    g.events.on("BeforeCheck", giveDisadvantage);
-    g.events.on("BeforeSave", giveDisadvantage);
-    g.events.on(
-      "GatherDamage",
-      ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-        if (attacker.hasEffect(ReduceEffect) && weapon)
-          interrupt.add(
-            new EvaluateLater(attacker, ReduceEffect, async () => {
-              const amount = await g.rollDamage(
-                1,
-                { source: ReduceEffect, attacker, size: 4 },
-                critical
-              );
-              bonus.add(-amount, ReduceEffect);
-            })
-          );
-      }
-    );
-  });
+  var EnlargeEffect = new Effect(
+    "Enlarge",
+    "turnStart",
+    (g) => {
+      const giveAdvantage = ({
+        detail: { who, ability, diceType }
+      }) => {
+        if (who.hasEffect(EnlargeEffect) && ability === "str")
+          diceType.add("advantage", EnlargeEffect);
+      };
+      g.events.on("BeforeCheck", giveAdvantage);
+      g.events.on("BeforeSave", giveAdvantage);
+      g.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
+          if (attacker.hasEffect(EnlargeEffect) && weapon)
+            interrupt.add(
+              new EvaluateLater(attacker, EnlargeEffect, async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  { source: EnlargeEffect, attacker, size: 4 },
+                  critical
+                );
+                bonus.add(amount, EnlargeEffect);
+              })
+            );
+        }
+      );
+    },
+    { tags: efSet("magic") }
+  );
+  var ReduceEffect = new Effect(
+    "Reduce",
+    "turnStart",
+    (g) => {
+      const giveDisadvantage = ({
+        detail: { who, ability, diceType }
+      }) => {
+        if (who.hasEffect(ReduceEffect) && ability === "str")
+          diceType.add("disadvantage", ReduceEffect);
+      };
+      g.events.on("BeforeCheck", giveDisadvantage);
+      g.events.on("BeforeSave", giveDisadvantage);
+      g.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
+          if (attacker.hasEffect(ReduceEffect) && weapon)
+            interrupt.add(
+              new EvaluateLater(attacker, ReduceEffect, async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  { source: ReduceEffect, attacker, size: 4 },
+                  critical
+                );
+                bonus.add(-amount, ReduceEffect);
+              })
+            );
+        }
+      );
+    },
+    { tags: efSet("magic") }
+  );
   function applySizeChange(size, change) {
     const index = SizeCategories.indexOf(size) + change;
     if (index < 0 || index >= SizeCategories.length)
@@ -8463,37 +8498,42 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var EnlargeReduce_default = EnlargeReduce;
 
   // src/spells/level2/HoldPerson.ts
-  var HoldPersonEffect = new Effect("Hold Person", "turnStart", (g) => {
-    g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-      if (who.hasEffect(HoldPersonEffect))
-        conditions.add("Paralyzed", HoldPersonEffect);
-    });
-    g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-      const config = who.getEffectConfig(HoldPersonEffect);
-      if (config) {
-        interrupt.add(
-          new EvaluateLater(who, HoldPersonEffect, async () => {
-            const { outcome } = await g.save({
-              source: HoldPersonEffect,
-              type: config.method.getSaveType(config.caster, HoldPerson),
-              who,
-              attacker: config.caster,
-              ability: "wis",
-              spell: HoldPerson,
-              effect: HoldPersonEffect,
-              config
-            });
-            if (outcome === "success") {
-              await who.removeEffect(HoldPersonEffect);
-              config.affected.delete(who);
-              if (config.affected.size < 1)
-                await config.caster.endConcentration();
-            }
-          })
-        );
-      }
-    });
-  });
+  var HoldPersonEffect = new Effect(
+    "Hold Person",
+    "turnStart",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(HoldPersonEffect))
+          conditions.add("Paralyzed", HoldPersonEffect);
+      });
+      g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        const config = who.getEffectConfig(HoldPersonEffect);
+        if (config) {
+          interrupt.add(
+            new EvaluateLater(who, HoldPersonEffect, async () => {
+              const { outcome } = await g.save({
+                source: HoldPersonEffect,
+                type: config.method.getSaveType(config.caster, HoldPerson),
+                who,
+                attacker: config.caster,
+                ability: "wis",
+                spell: HoldPerson,
+                effect: HoldPersonEffect,
+                config
+              });
+              if (outcome === "success") {
+                await who.removeEffect(HoldPersonEffect);
+                config.affected.delete(who);
+                if (config.affected.size < 1)
+                  await config.caster.endConcentration();
+              }
+            })
+          );
+        }
+      });
+    },
+    { tags: efSet("magic") }
+  );
   var HoldPerson = scalingSpell({
     status: "implemented",
     name: "Hold Person",
@@ -8636,7 +8676,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if (who.hasEffect(IntellectFortressEffect) && ability && mental.has(ability))
           diceType.add("advantage", IntellectFortressEffect);
       });
-    }
+    },
+    { tags: efSet("magic") }
   );
   var IntellectFortress = scalingSpell({
     status: "implemented",
@@ -8897,7 +8938,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getTargets: () => [],
     getAffected: () => [],
     getDamage: (g, caster, method, { slot }) => [_dd((slot != null ? slot : 4) + 1, 8, "fire")],
-    async apply(g, caster, method, { point, shape }) {
+    async apply() {
     }
   });
   var WallOfFire_default = WallOfFire;
@@ -9498,7 +9539,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         }
       );
     },
-    { icon: ProtectionEvilGoodIcon }
+    { icon: ProtectionEvilGoodIcon, tags: efSet("magic") }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
     status: "implemented",
@@ -9534,29 +9575,81 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var ProtectionFromEvilAndGood_default = ProtectionFromEvilAndGood;
 
   // src/spells/level1/Sanctuary.ts
-  var SanctuaryEffect = new Effect("Sanctuary", "turnStart", (g) => {
-    const getRemover = (who) => new EvaluateLater(who, SanctuaryEffect, async () => {
-      await who.removeEffect(SanctuaryEffect);
-    });
-    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-      if (pre.who.hasEffect(SanctuaryEffect))
-        interrupt.add(getRemover(pre.who));
-    });
-    g.events.on("SpellCast", ({ detail: { who, targets, interrupt } }) => {
-      if (who.hasEffect(SanctuaryEffect))
+  var sanctuaryEffects = /* @__PURE__ */ new Map();
+  var getSanctuaryEffects = (attacker) => {
+    var _a;
+    const set = (_a = sanctuaryEffects.get(attacker.id)) != null ? _a : /* @__PURE__ */ new Set();
+    if (!sanctuaryEffects.has(attacker.id))
+      sanctuaryEffects.set(attacker.id, set);
+    return set;
+  };
+  var SanctuaryEffect = new Effect(
+    "Sanctuary",
+    "turnStart",
+    (g) => {
+      g.events.on("BattleStarted", () => {
+        sanctuaryEffects.clear();
+      });
+      g.events.on(
+        "TurnStarted",
+        ({ detail: { who } }) => getSanctuaryEffects(who).clear()
+      );
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        var _a, _b;
+        if (!action.isHarmful)
+          return;
+        const effects = getSanctuaryEffects(action.actor);
+        const targets = (_b = (_a = action.getTargets(config)) == null ? void 0 : _a.filter((who) => who.hasEffect(SanctuaryEffect))) != null ? _b : [];
         for (const target of targets) {
-          if (target.side !== who.side) {
-            interrupt.add(getRemover(target));
-            return;
-          }
+          if (effects.has(target.id))
+            error.add("in Sanctuary", SanctuaryEffect);
         }
-    });
-    g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
-      if (attacker.hasEffect(SanctuaryEffect))
-        interrupt.add(getRemover(attacker));
-    });
-  });
+      });
+      g.events.on("BeforeAttack", ({ detail: { target, interrupt, who } }) => {
+        const config = target.getEffectConfig(SanctuaryEffect);
+        if (config)
+          interrupt.add(
+            new EvaluateLater(who, SanctuaryEffect, async (g2) => {
+              const { outcome } = await g2.save({
+                source: SanctuaryEffect,
+                type: config.method.getSaveType(config.caster, Sanctuary),
+                who,
+                ability: "wis"
+              });
+              if (outcome === "fail") {
+                g2.text(
+                  new MessageBuilder().co(who).text(" fails to break ").co(target).nosp().text("'s Sanctuary.")
+                );
+                getSanctuaryEffects(who).add(target.id);
+              }
+            })
+          );
+      });
+      const getRemover = (who) => new EvaluateLater(who, SanctuaryEffect, async () => {
+        await who.removeEffect(SanctuaryEffect);
+      });
+      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+        if (pre.who.hasEffect(SanctuaryEffect))
+          interrupt.add(getRemover(pre.who));
+      });
+      g.events.on("SpellCast", ({ detail: { who, affected, interrupt } }) => {
+        if (who.hasEffect(SanctuaryEffect))
+          for (const target of affected) {
+            if (target.side !== who.side) {
+              interrupt.add(getRemover(target));
+              return;
+            }
+          }
+      });
+      g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
+        if (attacker.hasEffect(SanctuaryEffect))
+          interrupt.add(getRemover(attacker));
+      });
+    },
+    { tags: efSet("magic") }
+  );
   var Sanctuary = simpleSpell({
+    status: "incomplete",
     name: "Sanctuary",
     level: 1,
     school: "Abjuration",
@@ -9813,7 +9906,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           conditions.add("Restrained", Webbed);
       });
     },
-    { icon: WebIcon }
+    { icon: WebIcon, tags: efSet("magic") }
   );
   var getWebArea = (centre) => ({
     type: "cube",
@@ -9993,7 +10086,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         ({ detail: { bonus, who } }) => applyBless(g, who, bonus)
       );
     },
-    { icon: BlessIcon }
+    { icon: BlessIcon, tags: efSet("magic") }
   );
   var Bless = scalingSpell({
     status: "implemented",
@@ -10031,31 +10124,36 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   var Bless_default = Bless;
 
   // src/spells/level1/DivineFavor.ts
-  var DivineFavorEffect = new Effect("Divine Favor", "turnEnd", (g) => {
-    g.events.on(
-      "GatherDamage",
-      ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
-        if (attacker.hasEffect(DivineFavorEffect) && weapon)
-          interrupt.add(
-            new EvaluateLater(attacker, DivineFavorEffect, async () => {
-              map.add(
-                "radiant",
-                await g.rollDamage(
-                  1,
-                  {
-                    source: DivineFavor,
-                    size: 4,
-                    attacker,
-                    damageType: "radiant"
-                  },
-                  critical
-                )
-              );
-            })
-          );
-      }
-    );
-  });
+  var DivineFavorEffect = new Effect(
+    "Divine Favor",
+    "turnEnd",
+    (g) => {
+      g.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
+          if (attacker.hasEffect(DivineFavorEffect) && weapon)
+            interrupt.add(
+              new EvaluateLater(attacker, DivineFavorEffect, async () => {
+                map.add(
+                  "radiant",
+                  await g.rollDamage(
+                    1,
+                    {
+                      source: DivineFavor,
+                      size: 4,
+                      attacker,
+                      damageType: "radiant"
+                    },
+                    critical
+                  )
+                );
+              })
+            );
+        }
+      );
+    },
+    { tags: efSet("magic") }
+  );
   var DivineFavor = simpleSpell({
     status: "implemented",
     name: "Divine Favor",
@@ -10098,7 +10196,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           bonus.add(2, ShieldOfFaith);
       });
     },
-    { icon: ShieldOfFaithIcon }
+    { icon: ShieldOfFaithIcon, tags: efSet("magic") }
   );
   var ShieldOfFaith = simpleSpell({
     status: "implemented",
@@ -10147,7 +10245,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           bonus.add(config.amount, AidEffect);
       });
     },
-    { icon: AidIcon }
+    { icon: AidIcon, tags: efSet("magic") }
   );
   var Aid = scalingSpell({
     status: "implemented",
@@ -11284,12 +11382,17 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   var druid_default2 = Druid;
 
   // src/spells/level2/Blur.ts
-  var BlurEffect = new Effect("Blur", "turnStart", (g) => {
-    g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-      if (who.hasEffect(BlurEffect))
-        diceType.add("disadvantage", BlurEffect);
-    });
-  });
+  var BlurEffect = new Effect(
+    "Blur",
+    "turnStart",
+    (g) => {
+      g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+        if (who.hasEffect(BlurEffect))
+          diceType.add("disadvantage", BlurEffect);
+      });
+    },
+    { tags: efSet("magic") }
+  );
   var Blur = simpleSpell({
     status: "incomplete",
     name: "Blur",
@@ -11336,7 +11439,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, config) {
+    async apply() {
     }
   });
   var MirrorImage_default = MirrorImage;
@@ -11396,7 +11499,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
             conditions.add("Deafened", Silence);
         }),
         g.events.on("CheckAction", ({ detail: { action, error } }) => {
-          if (action instanceof CastSpell && action.spell.v)
+          if (isCastSpell(action) && action.spell.v)
             error.add("silenced", Silence);
         })
       ];
@@ -11455,7 +11558,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply() {
     }
   });
   var SpiderClimb_default = SpiderClimb;
@@ -11612,7 +11715,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, config) {
+    async apply() {
     }
   });
   var MeldIntoStone_default = MeldIntoStone;
@@ -11644,7 +11747,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getAffectedArea: (g, caster, { point }) => point && [getSleetStormArea(point)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getSleetStormArea(point)),
-    async apply(g, caster, method, { point }) {
+    async apply() {
     }
   });
   var SleetStorm_default = SleetStorm;
@@ -11673,7 +11776,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     check(g, config, ec) {
       return ec;
     },
-    async apply(g, caster, method, { targets }) {
+    async apply() {
     }
   });
   var Slow_default = Slow;
@@ -11694,7 +11797,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, config) {
+    async apply() {
     }
   });
   var WaterBreathing_default = WaterBreathing;
@@ -11717,7 +11820,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, config) {
+    async apply() {
     }
   });
   var WaterWalk_default = WaterWalk;
@@ -11747,7 +11850,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: () => [],
-    async apply(g, caster, method, config) {
+    async apply() {
     }
   });
   var ControlWater_default = ControlWater;
@@ -11769,7 +11872,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply() {
     }
   });
   var FreedomOfMovement_default = FreedomOfMovement;
@@ -11804,21 +11907,26 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
       _dd(4, 6, "cold")
     ],
-    async apply(g, caster, method, config) {
+    async apply() {
     }
   });
   var IceStorm_default = IceStorm;
 
   // src/spells/level4/Stoneskin.ts
-  var StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
-    g.events.on(
-      "GetDamageResponse",
-      ({ detail: { who, damageType, response, attack } }) => {
-        if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && MundaneDamageTypes.includes(damageType))
-          response.add("resist", StoneskinEffect);
-      }
-    );
-  });
+  var StoneskinEffect = new Effect(
+    "Stoneskin",
+    "turnStart",
+    (g) => {
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response, attack } }) => {
+          if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && MundaneDamageTypes.includes(damageType))
+            response.add("resist", StoneskinEffect);
+        }
+      );
+    },
+    { tags: efSet("magic") }
+  );
   var Stoneskin = simpleSpell({
     status: "implemented",
     name: "Stoneskin",
@@ -12861,7 +12969,7 @@ The creature is aware of this effect before it makes its attack against you.`
         }
       );
     },
-    { tags: ["shapechange"] }
+    { tags: ["magic", "shapechange"] }
   );
   var GreatTreeEffect = new Effect(
     GreatTree,
@@ -12876,7 +12984,7 @@ The creature is aware of this effect before it makes its attack against you.`
           diceType.add("advantage", GreatTreeEffect);
       });
     },
-    { tags: ["shapechange"] }
+    { tags: ["magic", "shapechange"] }
   );
   var GuardianOfNature = simpleSpell({
     status: "incomplete",

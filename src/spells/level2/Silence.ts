@@ -1,4 +1,4 @@
-import CastSpell from "../../actions/CastSpell";
+import { isCastSpell } from "../../actions/CastSpell";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
@@ -45,7 +45,7 @@ class SilenceController {
         if (this.entirelyContains(who)) conditions.add("Deafened", Silence);
       }),
       g.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action instanceof CastSpell && action.spell.v)
+        if (isCastSpell(action) && action.spell.v)
           error.add("silenced", Silence);
       }),
     ];

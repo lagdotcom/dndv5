@@ -31,7 +31,7 @@ const WallOfWater = simpleSpell<HasPoint & { shape: Shape }>({
   getTargets: () => [],
   getAffected: () => [],
 
-  async apply(g, caster, method, { point, shape }) {
+  async apply() {
     // TODO [TERRAIN] [PROJECTILE]
   },
 });

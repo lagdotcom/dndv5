@@ -44,7 +44,7 @@ const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
   getAffected: () => [],
   getDamage: (g, caster, method, { slot }) => [_dd((slot ?? 4) + 1, 8, "fire")],
 
-  async apply(g, caster, method, { point, shape }) {
+  async apply() {
     // TODO [SIGHT]
   },
 });

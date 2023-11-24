@@ -21,7 +21,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
+  async apply() {
     // TODO [TERRAIN]
   },
 });

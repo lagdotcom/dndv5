@@ -30,7 +30,7 @@ const Slow = simpleSpell<HasTargets>({
     return ec;
   },
 
-  async apply(g, caster, method, { targets }) {
+  async apply() {
     // TODO [GETAC] [ACTIONEVENT]
   },
 });
