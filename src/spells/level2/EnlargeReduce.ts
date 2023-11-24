@@ -6,72 +6,83 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
+import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
 import SizeCategory, { SizeCategories } from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-const EnlargeEffect = new Effect("Enlarge", "turnStart", (g) => {
-  // Until the spell ends, the target also has advantage on Strength checks and Strength saving throws.
-  const giveAdvantage: Listener<"BeforeCheck" | "BeforeSave"> = ({
-    detail: { who, ability, diceType },
-  }) => {
-    if (who.hasEffect(EnlargeEffect) && ability === "str")
-      diceType.add("advantage", EnlargeEffect);
-  };
-  g.events.on("BeforeCheck", giveAdvantage);
-  g.events.on("BeforeSave", giveAdvantage);
+const EnlargeEffect = new Effect(
+  "Enlarge",
+  "turnStart",
+  (g) => {
+    // Until the spell ends, the target also has advantage on Strength checks and Strength saving throws.
+    const giveAdvantage: Listener<"BeforeCheck" | "BeforeSave"> = ({
+      detail: { who, ability, diceType },
+    }) => {
+      if (who.hasEffect(EnlargeEffect) && ability === "str")
+        diceType.add("advantage", EnlargeEffect);
+    };
+    g.events.on("BeforeCheck", giveAdvantage);
+    g.events.on("BeforeSave", giveAdvantage);
 
-  // The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
-  g.events.on(
-    "GatherDamage",
-    ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-      if (attacker.hasEffect(EnlargeEffect) && weapon)
-        interrupt.add(
-          new EvaluateLater(attacker, EnlargeEffect, async () => {
-            const amount = await g.rollDamage(
-              1,
-              { source: EnlargeEffect, attacker, size: 4 },
-              critical,
-            );
-            bonus.add(amount, EnlargeEffect);
-          }),
-        );
-    },
-  );
-});
+    // The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
+        if (attacker.hasEffect(EnlargeEffect) && weapon)
+          interrupt.add(
+            new EvaluateLater(attacker, EnlargeEffect, async () => {
+              const amount = await g.rollDamage(
+                1,
+                { source: EnlargeEffect, attacker, size: 4 },
+                critical,
+              );
+              bonus.add(amount, EnlargeEffect);
+            }),
+          );
+      },
+    );
+  },
+  { tags: efSet("magic") },
+);
 
-const ReduceEffect = new Effect("Reduce", "turnStart", (g) => {
-  // Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws.
-  const giveDisadvantage: Listener<"BeforeCheck" | "BeforeSave"> = ({
-    detail: { who, ability, diceType },
-  }) => {
-    if (who.hasEffect(ReduceEffect) && ability === "str")
-      diceType.add("disadvantage", ReduceEffect);
-  };
-  g.events.on("BeforeCheck", giveDisadvantage);
-  g.events.on("BeforeSave", giveDisadvantage);
+const ReduceEffect = new Effect(
+  "Reduce",
+  "turnStart",
+  (g) => {
+    // Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws.
+    const giveDisadvantage: Listener<"BeforeCheck" | "BeforeSave"> = ({
+      detail: { who, ability, diceType },
+    }) => {
+      if (who.hasEffect(ReduceEffect) && ability === "str")
+        diceType.add("disadvantage", ReduceEffect);
+    };
+    g.events.on("BeforeCheck", giveDisadvantage);
+    g.events.on("BeforeSave", giveDisadvantage);
 
-  // The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage.
-  // TODO (this can't reduce the damage below 1)
-  g.events.on(
-    "GatherDamage",
-    ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-      if (attacker.hasEffect(ReduceEffect) && weapon)
-        interrupt.add(
-          new EvaluateLater(attacker, ReduceEffect, async () => {
-            const amount = await g.rollDamage(
-              1,
-              { source: ReduceEffect, attacker, size: 4 },
-              critical,
-            );
-            bonus.add(-amount, ReduceEffect);
-          }),
-        );
-    },
-  );
-});
+    // The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage.
+    // TODO (this can't reduce the damage below 1)
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
+        if (attacker.hasEffect(ReduceEffect) && weapon)
+          interrupt.add(
+            new EvaluateLater(attacker, ReduceEffect, async () => {
+              const amount = await g.rollDamage(
+                1,
+                { source: ReduceEffect, attacker, size: 4 },
+                critical,
+              );
+              bonus.add(-amount, ReduceEffect);
+            }),
+          );
+      },
+    );
+  },
+  { tags: efSet("magic") },
+);
 
 function applySizeChange(size: SizeCategory, change: number) {
   const index = SizeCategories.indexOf(size) + change;

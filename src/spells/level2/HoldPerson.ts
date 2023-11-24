@@ -5,6 +5,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
+import { efSet } from "../../types/EffectTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
@@ -13,40 +14,45 @@ const HoldPersonEffect = new Effect<{
   affected: Set<Combatant>;
   caster: Combatant;
   method: SpellcastingMethod;
-}>("Hold Person", "turnStart", (g) => {
-  g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-    if (who.hasEffect(HoldPersonEffect))
-      conditions.add("Paralyzed", HoldPersonEffect);
-  });
+}>(
+  "Hold Person",
+  "turnStart",
+  (g) => {
+    g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+      if (who.hasEffect(HoldPersonEffect))
+        conditions.add("Paralyzed", HoldPersonEffect);
+    });
 
-  g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
-    const config = who.getEffectConfig(HoldPersonEffect);
-    if (config) {
-      interrupt.add(
-        new EvaluateLater(who, HoldPersonEffect, async () => {
-          const { outcome } = await g.save({
-            source: HoldPersonEffect,
-            type: config.method.getSaveType(config.caster, HoldPerson),
-            who,
-            attacker: config.caster,
-            ability: "wis",
-            spell: HoldPerson,
-            effect: HoldPersonEffect,
-            config,
-          });
+    g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+      const config = who.getEffectConfig(HoldPersonEffect);
+      if (config) {
+        interrupt.add(
+          new EvaluateLater(who, HoldPersonEffect, async () => {
+            const { outcome } = await g.save({
+              source: HoldPersonEffect,
+              type: config.method.getSaveType(config.caster, HoldPerson),
+              who,
+              attacker: config.caster,
+              ability: "wis",
+              spell: HoldPerson,
+              effect: HoldPersonEffect,
+              config,
+            });
 
-          if (outcome === "success") {
-            await who.removeEffect(HoldPersonEffect);
+            if (outcome === "success") {
+              await who.removeEffect(HoldPersonEffect);
 
-            config.affected.delete(who);
-            if (config.affected.size < 1)
-              await config.caster.endConcentration();
-          }
-        }),
-      );
-    }
-  });
-});
+              config.affected.delete(who);
+              if (config.affected.size < 1)
+                await config.caster.endConcentration();
+            }
+          }),
+        );
+      }
+    });
+  },
+  { tags: efSet("magic") },
+);
 
 const HoldPerson = scalingSpell<HasTargets>({
   status: "implemented",

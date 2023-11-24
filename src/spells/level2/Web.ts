@@ -13,6 +13,7 @@ import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
+import { efSet } from "../../types/EffectTag";
 import Point from "../../types/Point";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
@@ -72,7 +73,7 @@ const Webbed = new Effect<{ caster: Combatant; method: SpellcastingMethod }>(
       if (who.hasEffect(Webbed)) conditions.add("Restrained", Webbed);
     });
   },
-  { icon: WebIcon },
+  { icon: WebIcon, tags: efSet("magic") },
 );
 
 const getWebArea = (centre: Point): SpecifiedCube => ({

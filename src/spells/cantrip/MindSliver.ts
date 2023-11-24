@@ -3,25 +3,31 @@ import Effect from "../../Effect";
 import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { efSet } from "../../types/EffectTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 
-const MindSliverEffect = new Effect("Mind Sliver", "turnStart", (g) => {
-  g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
-    if (who.hasEffect(MindSliverEffect)) {
-      const { values } = g.dice.roll({ type: "bane", who });
-      bonus.add(-values.final, MindSliver);
+const MindSliverEffect = new Effect(
+  "Mind Sliver",
+  "turnStart",
+  (g) => {
+    g.events.on("BeforeSave", ({ detail: { who, bonus, interrupt } }) => {
+      if (who.hasEffect(MindSliverEffect)) {
+        const { values } = g.dice.roll({ type: "bane", who });
+        bonus.add(-values.final, MindSliver);
 
-      interrupt.add(
-        new EvaluateLater(who, MindSliverEffect, async () => {
-          who.removeEffect(MindSliverEffect);
-        }),
-      );
-    }
-  });
-});
+        interrupt.add(
+          new EvaluateLater(who, MindSliverEffect, async () => {
+            who.removeEffect(MindSliverEffect);
+          }),
+        );
+      }
+    });
+  },
+  { tags: efSet("magic") },
+);
 
 const MindSliver = simpleSpell<HasTarget>({
   status: "implemented",

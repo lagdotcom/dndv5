@@ -3,23 +3,29 @@ import Effect from "../../Effect";
 import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import { efSet } from "../../types/EffectTag";
 import { sieve } from "../../utils/array";
 import { hours } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-const StoneskinEffect = new Effect("Stoneskin", "turnStart", (g) => {
-  g.events.on(
-    "GetDamageResponse",
-    ({ detail: { who, damageType, response, attack } }) => {
-      if (
-        who.hasEffect(StoneskinEffect) &&
-        !attack?.pre.tags.has("magical") &&
-        MundaneDamageTypes.includes(damageType)
-      )
-        response.add("resist", StoneskinEffect);
-    },
-  );
-});
+const StoneskinEffect = new Effect(
+  "Stoneskin",
+  "turnStart",
+  (g) => {
+    g.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, response, attack } }) => {
+        if (
+          who.hasEffect(StoneskinEffect) &&
+          !attack?.pre.tags.has("magical") &&
+          MundaneDamageTypes.includes(damageType)
+        )
+          response.add("resist", StoneskinEffect);
+      },
+    );
+  },
+  { tags: efSet("magic") },
+);
 
 const Stoneskin = simpleSpell<HasTarget>({
   status: "implemented",

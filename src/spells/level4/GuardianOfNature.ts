@@ -57,7 +57,7 @@ const PrimalBeastEffect = new Effect(
       },
     );
   },
-  { tags: ["shapechange"] },
+  { tags: ["magic", "shapechange"] },
 );
 
 const GreatTreeEffect = new Effect(
@@ -79,7 +79,7 @@ const GreatTreeEffect = new Effect(
 
     // TODO While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.
   },
-  { tags: ["shapechange"] },
+  { tags: ["magic", "shapechange"] },
 );
 
 const GuardianOfNature = simpleSpell<{ form: Form }>({

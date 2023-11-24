@@ -3,24 +3,33 @@ import Effect from "../../Effect";
 import { notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { efSet } from "../../types/EffectTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
-const GuidingBoltEffect = new Effect("Guiding Bolt", "turnEnd", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { target, diceType, interrupt } }) => {
-    if (target.hasEffect(GuidingBoltEffect)) {
-      diceType.add("advantage", GuidingBoltEffect);
-      interrupt.add(
-        new EvaluateLater(target, GuidingBoltEffect, async () => {
-          await target.removeEffect(GuidingBoltEffect);
-        }),
-      );
-    }
-  });
-});
+const GuidingBoltEffect = new Effect(
+  "Guiding Bolt",
+  "turnEnd",
+  (g) => {
+    g.events.on(
+      "BeforeAttack",
+      ({ detail: { target, diceType, interrupt } }) => {
+        if (target.hasEffect(GuidingBoltEffect)) {
+          diceType.add("advantage", GuidingBoltEffect);
+          interrupt.add(
+            new EvaluateLater(target, GuidingBoltEffect, async () => {
+              await target.removeEffect(GuidingBoltEffect);
+            }),
+          );
+        }
+      },
+    );
+  },
+  { tags: efSet("magic") },
+);
 
 const GuidingBolt = scalingSpell<HasTarget>({
   status: "implemented",

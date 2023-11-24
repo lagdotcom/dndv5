@@ -4,6 +4,7 @@ import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { efSet } from "../../types/EffectTag";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -18,7 +19,7 @@ const ShieldOfFaithEffect = new Effect(
       if (who.hasEffect(ShieldOfFaithEffect)) bonus.add(2, ShieldOfFaith);
     });
   },
-  { icon: ShieldOfFaithIcon },
+  { icon: ShieldOfFaithIcon, tags: efSet("magic") },
 );
 
 const ShieldOfFaith = simpleSpell<HasTarget>({

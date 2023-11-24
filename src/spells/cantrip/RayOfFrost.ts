@@ -5,6 +5,7 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { efSet } from "../../types/EffectTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -12,11 +13,16 @@ import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
-const RayOfFrostEffect = new Effect("Ray of Frost", "turnStart", (g) => {
-  g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
-    if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
-  });
-});
+const RayOfFrostEffect = new Effect(
+  "Ray of Frost",
+  "turnStart",
+  (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
+      if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
+    });
+  },
+  { tags: efSet("magic") },
+);
 
 const RayOfFrost = simpleSpell<HasTarget>({
   status: "implemented",

@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { abSet } from "../../types/AbilityName";
+import { efSet } from "../../types/EffectTag";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -29,6 +30,7 @@ const IntellectFortressEffect = new Effect(
         diceType.add("advantage", IntellectFortressEffect);
     });
   },
+  { tags: efSet("magic") },
 );
 
 const IntellectFortress = scalingSpell<HasTargets>({

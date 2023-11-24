@@ -6,6 +6,7 @@ import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { ctSet } from "../../types/CreatureType";
+import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
@@ -62,7 +63,7 @@ const ProtectionEffect = new Effect(
       },
     );
   },
-  { icon: ProtectionEvilGoodIcon },
+  { icon: ProtectionEvilGoodIcon, tags: efSet("magic") },
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({

@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/armor-of-agathys.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import { efSet } from "../../types/EffectTag";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -44,7 +45,7 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
       },
     );
   },
-  { icon: ArmorOfAgathysIcon },
+  { icon: ArmorOfAgathysIcon, tags: efSet("magic") },
 );
 
 /* A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.

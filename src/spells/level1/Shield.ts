@@ -6,6 +6,7 @@ import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import Combatant from "../../types/Combatant";
+import { efSet } from "../../types/EffectTag";
 import { simpleSpell } from "../common";
 import MagicMissile from "./MagicMissile";
 
@@ -60,10 +61,10 @@ const ShieldEffect = new Effect(
     // ...or targeted by the magic missile spell
     g.events.on(
       "SpellCast",
-      ({ detail: { who, spell, targets, interrupt } }) => {
+      ({ detail: { who, spell, affected, interrupt } }) => {
         if (spell !== MagicMissile) return;
 
-        for (const target of targets) {
+        for (const target of affected) {
           if (!target.hasEffect(ShieldEffect))
             check(
               `${who.name} is casting Magic Missile on ${target.name}.`,
@@ -84,7 +85,7 @@ const ShieldEffect = new Effect(
         multiplier.add("zero", ShieldEffect);
     });
   },
-  { icon: ShieldIcon },
+  { icon: ShieldIcon, tags: efSet("magic") },
 );
 
 const Shield = simpleSpell({

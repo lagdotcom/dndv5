@@ -1,43 +1,113 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
-import Combatant from "../../types/Combatant";
+import Combatant, { CombatantID } from "../../types/Combatant";
+import { efSet } from "../../types/EffectTag";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
+const sanctuaryEffects = new Map<CombatantID, Set<CombatantID>>();
+
+const getSanctuaryEffects = (attacker: Combatant) => {
+  const set = sanctuaryEffects.get(attacker.id) ?? new Set();
+  if (!sanctuaryEffects.has(attacker.id))
+    sanctuaryEffects.set(attacker.id, set);
+  return set;
+};
+
 const SanctuaryEffect = new Effect<{
   caster: Combatant;
   method: SpellcastingMethod;
-}>("Sanctuary", "turnStart", (g) => {
-  /* TODO [CANCELATTACK] Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball. */
-
-  // If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.
-  const getRemover = (who: Combatant) =>
-    new EvaluateLater(who, SanctuaryEffect, async () => {
-      await who.removeEffect(SanctuaryEffect);
+}>(
+  "Sanctuary",
+  "turnStart",
+  (g) => {
+    g.events.on("BattleStarted", () => {
+      sanctuaryEffects.clear();
     });
-  g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-    if (pre.who.hasEffect(SanctuaryEffect)) interrupt.add(getRemover(pre.who));
-  });
-  g.events.on("SpellCast", ({ detail: { who, targets, interrupt } }) => {
-    if (who.hasEffect(SanctuaryEffect))
+
+    /* TODO [CANCELATTACK] Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball. */
+
+    g.events.on("TurnStarted", ({ detail: { who } }) =>
+      getSanctuaryEffects(who).clear(),
+    );
+
+    g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+      if (!action.isHarmful) return;
+
+      const effects = getSanctuaryEffects(action.actor);
+      const targets =
+        action
+          .getTargets(config)
+          ?.filter((who) => who.hasEffect(SanctuaryEffect)) ?? [];
       for (const target of targets) {
-        if (target.side !== who.side) {
-          interrupt.add(getRemover(target));
-          return;
-        }
+        if (effects.has(target.id)) error.add("in Sanctuary", SanctuaryEffect);
       }
-  });
-  g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
-    if (attacker.hasEffect(SanctuaryEffect))
-      interrupt.add(getRemover(attacker));
-  });
-});
+    });
+
+    g.events.on("BeforeAttack", ({ detail: { target, interrupt, who } }) => {
+      const config = target.getEffectConfig(SanctuaryEffect);
+
+      if (config)
+        interrupt.add(
+          new EvaluateLater(who, SanctuaryEffect, async (g) => {
+            const { outcome } = await g.save({
+              source: SanctuaryEffect,
+              type: config.method.getSaveType(config.caster, Sanctuary),
+              who,
+              ability: "wis",
+            });
+
+            if (outcome === "fail") {
+              g.text(
+                new MessageBuilder()
+                  .co(who)
+                  .text(" fails to break ")
+                  .co(target)
+                  .nosp()
+                  .text("'s Sanctuary."),
+              );
+
+              getSanctuaryEffects(who).add(target.id);
+
+              // TODO [ROLLBACKATTACK] ...the creature must choose a new target or lose the attack or spell.
+            }
+          }),
+        );
+    });
+
+    // If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.
+    const getRemover = (who: Combatant) =>
+      new EvaluateLater(who, SanctuaryEffect, async () => {
+        await who.removeEffect(SanctuaryEffect);
+      });
+    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+      if (pre.who.hasEffect(SanctuaryEffect))
+        interrupt.add(getRemover(pre.who));
+    });
+    g.events.on("SpellCast", ({ detail: { who, affected, interrupt } }) => {
+      if (who.hasEffect(SanctuaryEffect))
+        for (const target of affected) {
+          if (target.side !== who.side) {
+            interrupt.add(getRemover(target));
+            return;
+          }
+        }
+    });
+    g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
+      if (attacker.hasEffect(SanctuaryEffect))
+        interrupt.add(getRemover(attacker));
+    });
+  },
+  { tags: efSet("magic") },
+);
 
 const Sanctuary = simpleSpell<HasTarget>({
+  status: "incomplete",
   name: "Sanctuary",
   level: 1,
   school: "Abjuration",

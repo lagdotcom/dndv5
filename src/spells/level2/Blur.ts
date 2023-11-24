@@ -1,13 +1,19 @@
 import Effect from "../../Effect";
+import { efSet } from "../../types/EffectTag";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-const BlurEffect = new Effect("Blur", "turnStart", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-    // TODO [SIGHT] An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.
-    if (who.hasEffect(BlurEffect)) diceType.add("disadvantage", BlurEffect);
-  });
-});
+const BlurEffect = new Effect(
+  "Blur",
+  "turnStart",
+  (g) => {
+    g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+      // TODO [SIGHT] An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.
+      if (who.hasEffect(BlurEffect)) diceType.add("disadvantage", BlurEffect);
+    });
+  },
+  { tags: efSet("magic") },
+);
 
 const Blur = simpleSpell({
   status: "incomplete",
