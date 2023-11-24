@@ -188,7 +188,15 @@ export default class Engine {
   private async savingThrow<T = object>(
     dc: number,
     e: Omit<SavingThrow<T>, "dc" | "type">,
-    { save, fail }: { save: SaveDamageResponse; fail: SaveDamageResponse } = {
+    {
+      diceType: baseDiceType,
+      save,
+      fail,
+    }: {
+      diceType?: DiceType;
+      save: SaveDamageResponse;
+      fail: SaveDamageResponse;
+    } = {
       save: "half",
       fail: "normal",
     },
@@ -198,6 +206,8 @@ export default class Engine {
     const diceType = new DiceTypeCollector();
     const saveDamageResponse = new SaveDamageResponseCollector(save);
     const failDamageResponse = new SaveDamageResponseCollector(fail);
+
+    if (baseDiceType) diceType.add(baseDiceType, { name: "Base" });
 
     const pre = await this.resolve(
       new BeforeSaveEvent({
@@ -925,6 +935,7 @@ export default class Engine {
     tags,
     save = "half",
     fail = "normal",
+    diceType,
   }: {
     source: Source;
     type: SaveType;
@@ -938,6 +949,7 @@ export default class Engine {
     tags?: SetInitialiser<SaveTag>;
     save?: SaveDamageResponse;
     fail?: SaveDamageResponse;
+    diceType?: DiceType;
   }) {
     const dcRoll = await this.getSaveDC({
       type,
@@ -960,7 +972,7 @@ export default class Engine {
         config,
         tags: new Set(tags),
       },
-      { save, fail },
+      { save, fail, diceType },
     );
 
     return { ...result, dcRoll };

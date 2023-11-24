@@ -1,3 +1,4 @@
+import Effect from "./Effect";
 import Engine from "./Engine";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
@@ -49,6 +50,17 @@ export const notSelf = makeFilter<Combatant>({
   name: "not self",
   check: (g, action, value) => action.actor !== value,
 });
+
+export const hasEffect = (
+  effect: Effect<unknown>,
+  name = effect.name,
+  message = "no effect",
+) =>
+  makeFilter<Combatant>({
+    name,
+    message,
+    check: (g, action, value) => value.hasEffect(effect),
+  });
 
 export const ofCreatureType = (...types: CreatureType[]) =>
   makeFilter<Combatant>({

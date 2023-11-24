@@ -803,6 +803,11 @@
     name: "not self",
     check: (g, action, value) => action.actor !== value
   });
+  var hasEffect = (effect, name = effect.name, message = "no effect") => makeFilter({
+    name,
+    message,
+    check: (g, action, value) => value.hasEffect(effect)
+  });
   var ofCreatureType = (...types) => makeFilter({
     name: types.join("/"),
     message: "wrong creature type",
@@ -1905,7 +1910,7 @@
         return amounts;
       }
     }
-    async damage(target, initialiser) {
+    async damage(target, initialiser, startingMultiplier) {
       if (!this.attackResult)
         throw new Error("Run .attack() first");
       const { attack, critical, hit } = this.attackResult;
@@ -1918,7 +1923,8 @@
         spell,
         baseDamageType,
         { attack, attacker, target, critical, spell, method },
-        initialiser
+        initialiser,
+        startingMultiplier
       );
     }
   };
@@ -12109,8 +12115,8 @@ The creature is aware of this effect before it makes its attack against you.`
         if (who === me && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")))
           diceType.add("advantage", FeyAncestry);
       });
-      g.events.on("BeforeEffect", ({ detail: { effect, success } }) => {
-        if (effect.tags.has("magic") && effect.tags.has("sleep"))
+      g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
+        if (who === me && effect.tags.has("magic") && effect.tags.has("sleep"))
           success.add("fail", FeyAncestry);
       });
     }
@@ -12317,6 +12323,283 @@ You learn two additional spells from any classes at 14th level and again at 18th
   };
   var bard_default = Bard;
 
+  // src/spells/cantrip/Thunderclap.ts
+  var getThunderclapArea = (who) => ({
+    type: "within",
+    who,
+    radius: 5
+  });
+  var Thunderclap = simpleSpell({
+    status: "implemented",
+    name: "Thunderclap",
+    level: 0,
+    school: "Evocation",
+    s: true,
+    lists: ["Artificer", "Bard", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    description: `You create a burst of thunderous sound that can be heard up to 100 feet away. Each creature within range, other than you, must make a Constitution saving throw or take 1d6 thunder damage.
+
+The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
+    isHarmful: true,
+    // TODO generateAttackConfigs
+    getConfig: () => ({}),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "thunder")],
+    getTargets: () => [],
+    getAffectedArea: (g, caster) => [getThunderclapArea(caster)],
+    getAffected: (g, caster) => g.getInside(getThunderclapArea(caster), [caster]),
+    async apply(g, attacker, method) {
+      const affected = g.getInside(getThunderclapArea(attacker), [attacker]);
+      const amount = await g.rollDamage(getCantripDice(attacker), {
+        size: 6,
+        damageType: "thunder",
+        attacker,
+        source: Thunderclap,
+        spell: Thunderclap,
+        method
+      });
+      for (const target of affected) {
+        const { outcome, damageResponse } = await g.save({
+          source: Thunderclap,
+          type: method.getSaveType(attacker, Thunderclap),
+          attacker,
+          who: target,
+          ability: "con",
+          spell: Thunderclap,
+          method,
+          save: "zero"
+        });
+        if (outcome === "fail")
+          await g.damage(
+            Thunderclap,
+            "thunder",
+            { attacker, target, spell: Thunderclap, method },
+            [["thunder", amount]],
+            damageResponse
+          );
+      }
+    }
+  });
+  var Thunderclap_default = Thunderclap;
+
+  // src/spells/level1/HideousLaughter.ts
+  var LaughterEffect = new Effect(
+    "Hideous Laughter",
+    "turnStart",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(LaughterEffect))
+          conditions.add("Incapacitated", LaughterEffect);
+      });
+      g.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action.actor.hasEffect(LaughterEffect) && action instanceof StandUpAction)
+          error.add("laughing too hard", LaughterEffect);
+      });
+      const resave = (i, who, config, diceType = "normal") => i.add(
+        new EvaluateLater(who, LaughterEffect, async () => {
+          const { caster, method } = config;
+          const { outcome } = await g.save({
+            source: HideousLaughter,
+            type: method.getSaveType(caster, HideousLaughter),
+            who,
+            ability: "wis",
+            attacker: caster,
+            effect: LaughterEffect,
+            config,
+            diceType,
+            spell: HideousLaughter,
+            method
+          });
+          if (outcome === "success")
+            await caster.endConcentration();
+        })
+      );
+      g.events.on("TurnEnded", ({ detail }) => {
+        const config = detail.who.getEffectConfig(LaughterEffect);
+        if (config)
+          resave(detail.interrupt, detail.who, config);
+      });
+      g.events.on("CombatantDamaged", ({ detail }) => {
+        const config = detail.who.getEffectConfig(LaughterEffect);
+        if (config)
+          resave(detail.interrupt, detail.who, config, "advantage");
+      });
+    },
+    { tags: efSet("magic") }
+  );
+  var HideousLaughter = simpleSpell({
+    status: "implemented",
+    name: "Hideous Laughter",
+    level: 1,
+    school: "Enchantment",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "tiny tarts and a feather that is waved in the air",
+    lists: ["Bard", "Wizard"],
+    description: `A creature of your choice that you can see within range perceives everything as hilariously funny and falls into fits of laughter if this spell affects it. The target must succeed on a Wisdom saving throw or fall prone, becoming incapacitated and unable to stand up for the duration. A creature with an Intelligence score of 4 or less isn't affected.
+
+At the end of each of its turns, and each time it takes damage, the target can make another Wisdom saving throw. The target has advantage on the saving throw if it's triggered by damage. On a success, the spell ends.`,
+    isHarmful: true,
+    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, caster, method, { target }) {
+      if (target.int.score <= 4) {
+        g.text(
+          new MessageBuilder().co(target).text(" is too dumb for the joke.")
+        );
+        return;
+      }
+      const effect = LaughterEffect;
+      const config = {
+        caster,
+        method,
+        conditions: coSet("Incapacitated"),
+        duration: minutes(1)
+      };
+      const { outcome } = await g.save({
+        source: HideousLaughter,
+        type: method.getSaveType(caster, HideousLaughter),
+        attacker: caster,
+        who: target,
+        ability: "wis",
+        spell: HideousLaughter,
+        method,
+        effect,
+        config
+      });
+      if (outcome === "fail") {
+        const success = await target.addEffect(effect, config, caster);
+        if (success) {
+          await target.addEffect(Prone, { duration: Infinity }, caster);
+          caster.concentrateOn({
+            spell: HideousLaughter,
+            duration: minutes(1),
+            async onSpellEnd() {
+              await target.removeEffect(effect);
+            }
+          });
+        }
+      }
+    }
+  });
+  var HideousLaughter_default = HideousLaughter;
+
+  // src/spells/level1/Sleep.ts
+  var SlapAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Shake/Slap Awake",
+        "implemented",
+        {
+          target: new TargetResolver(g, actor.reach, [
+            hasEffect(SleepEffect, "sleeping", "not sleeping")
+          ])
+        },
+        {
+          description: `Shaking or slapping the sleeper will awaken them.`,
+          time: "action"
+        }
+      );
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      await target.removeEffect(SleepEffect);
+    }
+  };
+  var SleepEffect = new Effect(
+    "Sleep",
+    "turnStart",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(SleepEffect))
+          conditions.add("Unconscious", SleepEffect);
+      });
+      g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(SleepEffect))
+          interrupt.add(
+            new EvaluateLater(who, SleepEffect, async () => {
+              await who.removeEffect(SleepEffect);
+            })
+          );
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        for (const target of g.combatants) {
+          if (!target.hasEffect(SleepEffect))
+            continue;
+          if (distance(who, target) <= 5) {
+            actions.push(new SlapAction(g, who));
+            return;
+          }
+        }
+      });
+    },
+    { tags: efSet("magic", "sleep") }
+  );
+  var getSleepArea = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 20
+  });
+  var Sleep = scalingSpell({
+    status: "implemented",
+    name: "Sleep",
+    level: 1,
+    school: "Enchantment",
+    v: true,
+    s: true,
+    m: "a pinch of fine sand, rose petals, or a cricket",
+    lists: ["Bard", "Sorcerer", "Wizard"],
+    description: `This spell sends creatures into a magical slumber. Roll 5d8; the total is how many hit points of creatures this spell can affect. Creatures within 20 feet of a point you choose within range are affected in ascending order of their current hit points (ignoring unconscious creatures).
+
+  Starting with the creature that has the lowest current hit points, each creature affected by this spell falls unconscious until the spell ends, the sleeper takes damage, or someone uses an action to shake or slap the sleeper awake. Subtract each creature's hit points from the total before moving on to the creature with the next lowest hit points. A creature's hit points must be equal to or less than the remaining total for that creature to be affected.
+  
+  Undead and creatures immune to being charmed aren't affected by this spell.
+  
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, roll an additional 2d8 for each slot level above 1st.`,
+    isHarmful: true,
+    getConfig: (g) => ({ point: new PointResolver(g, 90) }),
+    getAffectedArea: (g, caster, { point }) => point && [getSleepArea(point)],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getSleepArea(point)).filter((co) => !co.conditions.has("Unconscious")),
+    async apply(g, caster, method, { slot, point }) {
+      const dice = 3 + slot * 2;
+      let affectedHp = await g.rollMany(dice, {
+        type: "other",
+        source: Sleep,
+        who: caster,
+        size: 8
+      });
+      const affected = g.getInside(getSleepArea(point)).filter((co) => !co.conditions.has("Unconscious")).sort((a, b) => a.hp - b.hp);
+      for (const target of affected) {
+        if (target.hp > affectedHp)
+          return;
+        if (target.type === "undead") {
+          g.text(
+            new MessageBuilder().co(target).text(" is immune to sleep effects.")
+          );
+          continue;
+        }
+        affectedHp -= target.hp;
+        const success = await target.addEffect(
+          SleepEffect,
+          { conditions: coSet("Charmed", "Unconscious"), duration: minutes(1) },
+          caster
+        );
+        if (success)
+          await target.addEffect(Prone, { duration: Infinity }, caster);
+      }
+    }
+  });
+  var Sleep_default = Sleep;
+
   // src/pcs/glean/Shaira.ts
   var Shaira = class extends PC {
     constructor(g) {
@@ -12334,6 +12617,14 @@ You learn two additional spells from any classes at 14th level and again at 18th
       this.don(new LeatherArmor(g));
       this.don(new Rapier(g));
       this.inventory.add(new Dagger(g, 1));
+      this.addPreparedSpells(
+        // DancingLights,
+        Thunderclap_default,
+        // ComprehendLanguages,
+        HealingWord_default,
+        HideousLaughter_default,
+        Sleep_default
+      );
     }
   };
 
@@ -12512,6 +12803,7 @@ You learn two additional spells from any classes at 14th level and again at 18th
     switch (rt.type) {
       case "damage":
       case "heal":
+      case "other":
         return rt.size;
       case "bane":
       case "bless":
@@ -12897,7 +13189,11 @@ You learn two additional spells from any classes at 14th level and again at 18th
       this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
       return value;
     }
-    async savingThrow(dc, e, { save, fail } = {
+    async savingThrow(dc, e, {
+      diceType: baseDiceType,
+      save,
+      fail
+    } = {
       save: "half",
       fail: "normal"
     }) {
@@ -12906,6 +13202,8 @@ You learn two additional spells from any classes at 14th level and again at 18th
       const diceType = new DiceTypeCollector();
       const saveDamageResponse = new SaveDamageResponseCollector(save);
       const failDamageResponse = new SaveDamageResponseCollector(fail);
+      if (baseDiceType)
+        diceType.add(baseDiceType, { name: "Base" });
       const pre = await this.resolve(
         new BeforeSaveEvent({
           ...e,
@@ -13466,7 +13764,8 @@ You learn two additional spells from any classes at 14th level and again at 18th
       config,
       tags,
       save = "half",
-      fail = "normal"
+      fail = "normal",
+      diceType
     }) {
       const dcRoll = await this.getSaveDC({
         type,
@@ -13489,7 +13788,7 @@ You learn two additional spells from any classes at 14th level and again at 18th
           config,
           tags: new Set(tags)
         },
-        { save, fail }
+        { save, fail, diceType }
       );
       return { ...result, dcRoll };
     }

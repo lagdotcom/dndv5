@@ -11,6 +11,10 @@ import {
   LanguageChoice,
   SkillVersatility,
 } from "../../races/HalfElf";
+import Thunderclap from "../../spells/cantrip/Thunderclap";
+import HealingWord from "../../spells/level1/HealingWord";
+import HideousLaughter from "../../spells/level1/HideousLaughter";
+import Sleep from "../../spells/level1/Sleep";
 
 export default class Shaira extends PC {
   constructor(g: Engine) {
@@ -30,5 +34,15 @@ export default class Shaira extends PC {
     this.don(new LeatherArmor(g));
     this.don(new Rapier(g));
     this.inventory.add(new Dagger(g, 1));
+
+    this.addPreparedSpells(
+      // DancingLights,
+      Thunderclap,
+
+      // ComprehendLanguages,
+      HealingWord,
+      HideousLaughter,
+      Sleep,
+    );
   }
 }

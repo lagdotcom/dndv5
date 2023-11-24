@@ -1,3 +1,4 @@
+import { MultiplierType } from "../collectors/MultiplierCollector";
 import { DamageInitialiser } from "../DamageMap";
 import Engine from "../Engine";
 import { atSet } from "../types/AttackTag";
@@ -74,7 +75,11 @@ export default class SpellAttack<T extends object> {
     }
   }
 
-  async damage(target: Combatant, initialiser?: DamageInitialiser) {
+  async damage(
+    target: Combatant,
+    initialiser?: DamageInitialiser,
+    startingMultiplier?: MultiplierType,
+  ) {
     if (!this.attackResult) throw new Error("Run .attack() first");
     const { attack, critical, hit } = this.attackResult;
     if (!hit) return;
@@ -86,6 +91,7 @@ export default class SpellAttack<T extends object> {
       baseDamageType,
       { attack, attacker, target, critical, spell, method },
       initialiser,
+      startingMultiplier,
     );
   }
 }

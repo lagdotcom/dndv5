@@ -52,6 +52,12 @@ export type HealRoll = {
 };
 export type InitiativeRoll = { type: "initiative"; who: Combatant };
 export type LuckRoll = { type: "luck"; who: Combatant };
+export type OtherRoll = {
+  type: "other";
+  source: Source;
+  who: Combatant;
+  size: number;
+};
 export type SavingThrow<T = unknown> = {
   type: "save";
   who: Combatant;
@@ -72,5 +78,6 @@ type RollType =
   | HealRoll
   | InitiativeRoll
   | LuckRoll
+  | OtherRoll
   | SavingThrow;
 export default RollType;

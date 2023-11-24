@@ -19,6 +19,7 @@ function sizeOfDice(rt: RollType) {
   switch (rt.type) {
     case "damage":
     case "heal":
+    case "other":
       return rt.size;
 
     case "bane":

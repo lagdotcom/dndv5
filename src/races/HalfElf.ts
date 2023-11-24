@@ -17,8 +17,8 @@ const FeyAncestry = new SimpleFeature(
         diceType.add("advantage", FeyAncestry);
     });
 
-    g.events.on("BeforeEffect", ({ detail: { effect, success } }) => {
-      if (effect.tags.has("magic") && effect.tags.has("sleep"))
+    g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
+      if (who === me && effect.tags.has("magic") && effect.tags.has("sleep"))
         success.add("fail", FeyAncestry);
     });
   },
