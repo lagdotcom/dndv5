@@ -50,357 +50,17 @@
   // src/index.tsx
   var import_preact4 = __toESM(require_preact());
 
-  // src/collectors/AbstractCollector.ts
-  var AbstractCollector = class {
-    constructor(entries, ignoredSources, ignoredValues) {
-      this.entries = new Set(entries);
-      this.ignoredSources = new Set(ignoredSources);
-      this.ignoredValues = new Set(ignoredValues);
-    }
-    add(value, source) {
-      this.entries.add({ value, source });
-    }
-    ignore(source) {
-      this.ignoredSources.add(source);
-    }
-    ignoreValue(value) {
-      this.ignoredValues.add(value);
-    }
-    isInvolved(source) {
-      if (this.ignoredSources.has(source))
-        return false;
-      for (const entry of this.entries)
-        if (entry.source === source && !this.ignoredValues.has(entry.value))
-          return true;
-      return false;
-    }
-    getValidEntries() {
-      return Array.from(this.entries).filter(
-        (entry) => !(this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value))
-      ).map((entry) => entry.value);
-    }
-  };
-  var AbstractSumCollector = class extends AbstractCollector {
-    get result() {
-      return this.getSum(this.getValidEntries());
-    }
-  };
-  var SetCollector = class extends AbstractCollector {
-    get result() {
-      return new Set(this.getValidEntries());
-    }
-  };
+  // src/img/act/eldritch-burst.svg
+  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
 
-  // src/collectors/AttackOutcomeCollector.ts
-  var AttackOutcomeCollector = class extends AbstractSumCollector {
-    setDefaultGetter(getter) {
-      this.defaultGet = getter;
-      return this;
-    }
-    getDefaultResult() {
-      if (this.defaultGet)
-        return this.defaultGet();
-      throw new Error("AttackOutcomeCollector.setDefaultGetter() not called");
-    }
-    getSum(values) {
-      if (values.includes("miss"))
-        return "miss";
-      if (values.includes("critical"))
-        return "critical";
-      if (values.includes("hit"))
-        return "hit";
-      return this.getDefaultResult();
-    }
-    get hits() {
-      return this.result !== "miss";
-    }
-  };
+  // src/img/spl/counterspell.svg
+  var counterspell_default = "./counterspell-XBGTQHAN.svg";
 
-  // src/collectors/BonusCollector.ts
-  var BonusCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      return values.reduce((total, value) => total + value, 0);
-    }
-  };
+  // src/img/spl/hellish-rebuke.svg
+  var hellish_rebuke_default = "./hellish-rebuke-2F7LGW6H.svg";
 
-  // src/types/DamageResponse.ts
-  var DamageResponses = [
-    "absorb",
-    "immune",
-    "resist",
-    "vulnerable",
-    "normal"
-  ];
-
-  // src/collectors/DamageResponseCollector.ts
-  var DamageResponseCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      for (const p of DamageResponses) {
-        if (values.includes(p))
-          return p;
-      }
-      return "normal";
-    }
-  };
-
-  // src/collectors/DiceTypeCollector.ts
-  var DiceTypeCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      const hasAdvantage = values.includes("advantage");
-      const hasDisadvantage = values.includes("disadvantage");
-      if (hasAdvantage === hasDisadvantage)
-        return "normal";
-      return hasAdvantage ? "advantage" : "disadvantage";
-    }
-  };
-
-  // src/collectors/ErrorCollector.ts
-  var ErrorCollector = class {
-    constructor() {
-      this.errors = /* @__PURE__ */ new Set();
-      this.ignored = /* @__PURE__ */ new Set();
-    }
-    add(value, source) {
-      this.errors.add({ value, source });
-    }
-    addMany(messages, source) {
-      for (const message of messages)
-        this.add(message, source);
-    }
-    ignore(source) {
-      this.ignored.add(source);
-    }
-    get valid() {
-      return Array.from(this.errors).filter(
-        (entry) => !this.ignored.has(entry.source)
-      );
-    }
-    get messages() {
-      return this.valid.map((entry) => `${entry.value} (${entry.source.name})`);
-    }
-    get result() {
-      return this.valid.length === 0;
-    }
-  };
-
-  // src/collectors/InterruptionCollector.ts
-  var InterruptionCollector = class {
-    constructor() {
-      this.set = /* @__PURE__ */ new Set();
-    }
-    add(interrupt) {
-      this.set.add(interrupt);
-    }
-    *[Symbol.iterator]() {
-      const interruptions = [...this.set];
-      interruptions.sort((a, b) => b.priority - a.priority);
-      for (const i of interruptions)
-        yield i;
-    }
-  };
-
-  // src/collectors/MultiplierCollector.ts
-  var MultiplierCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      let power = 0;
-      for (const value of values) {
-        if (value === "double")
-          power++;
-        else if (value === "half")
-          power--;
-        else if (value === "zero")
-          return 0;
-      }
-      return 2 ** power;
-    }
-  };
-
-  // src/collectors/SaveDamageResponseCollector.ts
-  var SaveDamageResponseCollector = class extends AbstractSumCollector {
-    constructor(fallback) {
-      super();
-      this.fallback = fallback;
-    }
-    getSum(values) {
-      if (values.includes("zero"))
-        return "zero";
-      if (values.includes("half"))
-        return "half";
-      return this.fallback;
-    }
-  };
-
-  // src/collectors/SuccessResponseCollector.ts
-  var SuccessResponseCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      if (values.includes("success"))
-        return "success";
-      if (values.includes("fail"))
-        return "fail";
-      return "normal";
-    }
-  };
-
-  // src/DamageMap.ts
-  var DamageMap = class extends Map {
-    constructor(items = []) {
-      super(items);
-    }
-    get total() {
-      let total = 0;
-      for (const amount of this.values())
-        total += amount;
-      return total;
-    }
-    add(type, value) {
-      var _a;
-      const old = (_a = this.get(type)) != null ? _a : 0;
-      this.set(type, old + value);
-    }
-  };
-
-  // src/collectors/ValueCollector.ts
-  var comparators = {
-    higher: (o2, n) => n > o2,
-    lower: (o2, n) => n < o2
-  };
-  var ValueCollector = class {
-    constructor(final) {
-      this.final = final;
-      this.others = [];
-    }
-    add(value, prefer) {
-      const comparator = comparators[prefer];
-      if (comparator(this.final, value)) {
-        this.others.push(this.final);
-        this.final = value;
-      } else
-        this.others.push(value);
-    }
-  };
-
-  // src/DiceBag.ts
-  function matches(rt, m) {
-    for (const [field, value] of Object.entries(m)) {
-      if (rt[field] !== value)
-        return false;
-    }
-    return true;
-  }
-  function sizeOfDice(rt) {
-    switch (rt.type) {
-      case "damage":
-      case "heal":
-        return rt.size;
-      case "bane":
-      case "bless":
-        return 4;
-      case "attack":
-      case "check":
-      case "initiative":
-      case "luck":
-      case "save":
-        return 20;
-    }
-  }
-  var DiceBag = class {
-    constructor() {
-      this.forcedRolls = /* @__PURE__ */ new Set();
-    }
-    force(value, matcher) {
-      this.forcedRolls.add({ value, matcher });
-    }
-    getForcedRoll(rt) {
-      for (const fr of this.forcedRolls) {
-        if (matches(rt, fr.matcher)) {
-          this.forcedRolls.delete(fr);
-          return fr.value;
-        }
-      }
-    }
-    roll(rt, dt = "normal") {
-      var _a, _b;
-      const size = sizeOfDice(rt);
-      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
-      const values = new ValueCollector(value);
-      if (dt !== "normal") {
-        const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
-        const prefer = dt === "advantage" ? "higher" : "lower";
-        values.add(second, prefer);
-      }
-      return { size, values };
-    }
-  };
-
-  // src/img/act/dash.svg
-  var dash_default = "./dash-CNRMKC55.svg";
-
-  // src/colours.ts
-  var ClassColours = {
-    Barbarian: "#e7623e",
-    Bard: "#ab6dac",
-    Cleric: "#91a1b2",
-    Druid: "#7a853b",
-    Fighter: "#7f513e",
-    Monk: "#51a5c5",
-    Paladin: "#b59e54",
-    Ranger: "#507f62",
-    Rogue: "#555752",
-    Sorcerer: "#992e2e",
-    Warlock: "#7b469b",
-    Wizard: "#2a50a1"
-  };
-  var DamageColours = {
-    bludgeoning: "#8b0000",
-    piercing: "#4169e1",
-    slashing: "#ff8c00",
-    acid: "#32cd32",
-    cold: "#6699cc",
-    fire: "#ce2029",
-    force: "#800080",
-    lightning: "#ffd700",
-    necrotic: "#6a0dad",
-    poison: "#00ff00",
-    psychic: "#9966cc",
-    radiant: "#daa520",
-    thunder: "#1e90ff"
-  };
-  var Heal = "#50c878";
-  var ItemRarityColours = {
-    Common: "#242528",
-    Uncommon: "#1FC219",
-    Rare: "#4990E2",
-    "Very Rare": "#9810E0",
-    Legendary: "#FEA227",
-    Artifact: "#BE8972"
-  };
-  var makeIcon = (url, colour) => ({
-    url,
-    colour
-  });
-
-  // src/DndRule.ts
-  var RuleRepository = /* @__PURE__ */ new Set();
-  var DndRule = class {
-    constructor(name, setup) {
-      this.name = name;
-      this.setup = setup;
-      RuleRepository.add(this);
-    }
-  };
-
-  // src/Effect.ts
-  var Effect = class {
-    constructor(name, durationTimer, setup, { quiet = false, icon, tags } = {}) {
-      this.name = name;
-      this.durationTimer = durationTimer;
-      this.quiet = quiet;
-      this.icon = icon;
-      this.tags = new Set(tags);
-      if (setup)
-        this.rule = new DndRule(name, setup);
-    }
-  };
+  // src/img/tok/boss/birnotec.png
+  var birnotec_default = "./birnotec-JGKE3FD4.png";
 
   // src/actions/AbstractAction.ts
   var AbstractAction = class {
@@ -493,49 +153,277 @@
     }
   };
 
-  // src/actions/DashAction.ts
-  var DashIcon = makeIcon(dash_default);
-  var DashEffect = new Effect(
-    "Dash",
-    "turnEnd",
-    (g) => {
-      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-        if (who.hasEffect(DashEffect))
-          multiplier.add("double", DashEffect);
-      });
-    },
-    { icon: DashIcon }
-  );
-  var DashAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Dash",
-        "implemented",
-        {},
-        {
-          icon: DashIcon,
-          time: "action",
-          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
-
-        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
-        }
-      );
+  // src/collectors/InterruptionCollector.ts
+  var InterruptionCollector = class {
+    constructor() {
+      this.set = /* @__PURE__ */ new Set();
     }
-    check(config, ec) {
-      if (this.actor.speed <= 0)
-        ec.add("Zero speed", this);
-      return super.check(config, ec);
+    add(interrupt) {
+      this.set.add(interrupt);
     }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(DashEffect, { duration: 1 });
+    *[Symbol.iterator]() {
+      const interruptions = [...this.set];
+      interruptions.sort((a, b) => b.priority - a.priority);
+      for (const i of interruptions)
+        yield i;
     }
   };
 
-  // src/img/act/disengage.svg
-  var disengage_default = "./disengage-6XMY6V34.svg";
+  // src/collectors/AbstractCollector.ts
+  var AbstractCollector = class {
+    constructor(entries, ignoredSources, ignoredValues) {
+      this.entries = new Set(entries);
+      this.ignoredSources = new Set(ignoredSources);
+      this.ignoredValues = new Set(ignoredValues);
+    }
+    add(value, source) {
+      this.entries.add({ value, source });
+    }
+    ignore(source) {
+      this.ignoredSources.add(source);
+    }
+    ignoreValue(value) {
+      this.ignoredValues.add(value);
+    }
+    isInvolved(source) {
+      if (this.ignoredSources.has(source))
+        return false;
+      for (const entry of this.entries)
+        if (entry.source === source && !this.ignoredValues.has(entry.value))
+          return true;
+      return false;
+    }
+    getValidEntries() {
+      return Array.from(this.entries).filter(
+        (entry) => !(this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value))
+      ).map((entry) => entry.value);
+    }
+  };
+  var AbstractSumCollector = class extends AbstractCollector {
+    get result() {
+      return this.getSum(this.getValidEntries());
+    }
+  };
+  var SetCollector = class extends AbstractCollector {
+    get result() {
+      return new Set(this.getValidEntries());
+    }
+  };
+
+  // src/collectors/SuccessResponseCollector.ts
+  var SuccessResponseCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      if (values.includes("success"))
+        return "success";
+      if (values.includes("fail"))
+        return "fail";
+      return "normal";
+    }
+  };
+
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("SpellCast", { detail });
+    }
+  };
+
+  // src/MessageBuilder.ts
+  var MessageBuilder = class {
+    constructor() {
+      this.data = [];
+      this.spaceBeforeNext = false;
+    }
+    co(value, overrideName) {
+      this.data.push({
+        type: "combatant",
+        value,
+        overrideName,
+        spaceBefore: this.spaceBeforeNext,
+        spaceAfter: true
+      });
+      this.spaceBeforeNext = false;
+      return this;
+    }
+    sp() {
+      this.spaceBeforeNext = true;
+      return this;
+    }
+    nosp() {
+      const prev = this.data.at(-1);
+      if ((prev == null ? void 0 : prev.type) === "combatant")
+        prev.spaceAfter = false;
+      return this;
+    }
+    it(value) {
+      this.data.push({ type: "item", value });
+      return this;
+    }
+    text(value) {
+      this.data.push({ type: "text", value });
+      return this;
+    }
+  };
+
+  // src/actions/CastSpell.ts
+  var CastSpell = class {
+    constructor(g, actor, method, spell) {
+      this.g = g;
+      this.actor = actor;
+      this.method = method;
+      this.spell = spell;
+      this.name = `${spell.name} (${method.name})`;
+      this.isSpell = true;
+      this.time = spell.time;
+      this.icon = spell.icon;
+      this.subIcon = method.icon;
+      this.vocal = spell.v;
+      this.isHarmful = spell.isHarmful;
+    }
+    get status() {
+      return this.spell.status;
+    }
+    generateAttackConfigs(targets) {
+      return this.spell.generateAttackConfigs(
+        this.g,
+        this.actor,
+        this.method,
+        targets
+      );
+    }
+    generateHealingConfigs(targets) {
+      return this.spell.generateHealingConfigs(
+        this.g,
+        this.actor,
+        this.method,
+        targets
+      );
+    }
+    getConfig(config) {
+      return this.spell.getConfig(this.g, this.actor, this.method, config);
+    }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(this.g, this.actor, config);
+    }
+    getDamage(config) {
+      return this.spell.getDamage(this.g, this.actor, this.method, config);
+    }
+    getDescription() {
+      return this.spell.description;
+    }
+    getHeal(config) {
+      return this.spell.getHeal(this.g, this.actor, this.method, config);
+    }
+    getResources(config) {
+      var _a;
+      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      const resource = this.method.getResourceForSpell(
+        this.spell,
+        level,
+        this.actor
+      );
+      return new Map(resource ? [[resource, 1]] : void 0);
+    }
+    getTargets(config) {
+      return this.spell.getTargets(this.g, this.actor, config);
+    }
+    getAffected(config) {
+      return this.spell.getAffected(this.g, this.actor, config);
+    }
+    getTime() {
+      return this.time;
+    }
+    check(config, ec) {
+      if (!this.actor.hasTime(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      for (const [resource, amount] of this.getResources(config))
+        if (!this.actor.hasResource(resource, amount))
+          ec.add(`Not enough ${resource.name} left`, this.method);
+      return this.spell.check(this.g, config, ec);
+    }
+    async apply(config) {
+      const { actor, g, method, spell } = this;
+      actor.useTime(spell.time);
+      for (const [resource, amount] of this.getResources(config))
+        actor.spendResource(resource, amount);
+      const sc = await g.resolve(
+        new SpellCastEvent({
+          who: actor,
+          spell,
+          method,
+          level: spell.getLevel(config),
+          targets: new Set(spell.getTargets(g, actor, config)),
+          affected: new Set(spell.getAffected(g, actor, config)),
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (sc.detail.success.result === "fail") {
+        return g.text(
+          new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`)
+        );
+      }
+      if (spell.concentration)
+        await actor.endConcentration();
+      return spell.apply(g, actor, method, config);
+    }
+  };
+  function isCastSpell(a, sp) {
+    return a instanceof CastSpell && (!sp || a.spell === sp);
+  }
+
+  // src/colours.ts
+  var ClassColours = {
+    Barbarian: "#e7623e",
+    Bard: "#ab6dac",
+    Cleric: "#91a1b2",
+    Druid: "#7a853b",
+    Fighter: "#7f513e",
+    Monk: "#51a5c5",
+    Paladin: "#b59e54",
+    Ranger: "#507f62",
+    Rogue: "#555752",
+    Sorcerer: "#992e2e",
+    Warlock: "#7b469b",
+    Wizard: "#2a50a1"
+  };
+  var DamageColours = {
+    bludgeoning: "#8b0000",
+    piercing: "#4169e1",
+    slashing: "#ff8c00",
+    acid: "#32cd32",
+    cold: "#6699cc",
+    fire: "#ce2029",
+    force: "#800080",
+    lightning: "#ffd700",
+    necrotic: "#6a0dad",
+    poison: "#00ff00",
+    psychic: "#9966cc",
+    radiant: "#daa520",
+    thunder: "#1e90ff"
+  };
+  var Heal = "#50c878";
+  var ItemRarityColours = {
+    Common: "#242528",
+    Uncommon: "#1FC219",
+    Rare: "#4990E2",
+    "Very Rare": "#9810E0",
+    Legendary: "#FEA227",
+    Artifact: "#BE8972"
+  };
+  var makeIcon = (url, colour) => ({
+    url,
+    colour
+  });
+
+  // src/features/SimpleFeature.ts
+  var SimpleFeature = class {
+    constructor(name, text, setup) {
+      this.name = name;
+      this.text = text;
+      this.setup = setup;
+    }
+  };
 
   // src/utils/combinatorics.ts
   function combinations(source, size) {
@@ -931,6 +819,47 @@
     check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
   });
 
+  // src/interruptions/EvaluateLater.ts
+  var EvaluateLater = class {
+    constructor(who, source, apply, priority = 5) {
+      this.who = who;
+      this.source = source;
+      this.apply = apply;
+      this.priority = priority;
+    }
+  };
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no, priority = 10) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+      this.priority = priority;
+    }
+    async apply(g) {
+      var _a, _b;
+      const choice = await new Promise(
+        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        await ((_a = this.yes) == null ? void 0 : _a.call(this));
+      else
+        await ((_b = this.no) == null ? void 0 : _b.call(this));
+      return choice;
+    }
+  };
+
   // src/types/AbilityName.ts
   var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
   var abSet = (...items) => new Set(items);
@@ -1039,8 +968,31 @@
     }
   };
 
+  // src/collectors/BonusCollector.ts
+  var BonusCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      return values.reduce((total, value) => total + value, 0);
+    }
+  };
+
   // src/collectors/ConditionCollector.ts
   var ConditionCollector = class extends SetCollector {
+  };
+
+  // src/collectors/MultiplierCollector.ts
+  var MultiplierCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      let power = 0;
+      for (const value of values) {
+        if (value === "double")
+          power++;
+        else if (value === "half")
+          power--;
+        else if (value === "zero")
+          return 0;
+      }
+      return 2 ** power;
+    }
   };
 
   // src/events/BeforeEffectEvent.ts
@@ -1091,157 +1043,6 @@
       super("GetSpeed", { detail });
     }
   };
-
-  // src/events/SpellCastEvent.ts
-  var SpellCastEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("SpellCast", { detail });
-    }
-  };
-
-  // src/MessageBuilder.ts
-  var MessageBuilder = class {
-    constructor() {
-      this.data = [];
-      this.spaceBeforeNext = false;
-    }
-    co(value, overrideName) {
-      this.data.push({
-        type: "combatant",
-        value,
-        overrideName,
-        spaceBefore: this.spaceBeforeNext,
-        spaceAfter: true
-      });
-      this.spaceBeforeNext = false;
-      return this;
-    }
-    sp() {
-      this.spaceBeforeNext = true;
-      return this;
-    }
-    nosp() {
-      const prev = this.data.at(-1);
-      if ((prev == null ? void 0 : prev.type) === "combatant")
-        prev.spaceAfter = false;
-      return this;
-    }
-    it(value) {
-      this.data.push({ type: "item", value });
-      return this;
-    }
-    text(value) {
-      this.data.push({ type: "text", value });
-      return this;
-    }
-  };
-
-  // src/actions/CastSpell.ts
-  var CastSpell = class {
-    constructor(g, actor, method, spell) {
-      this.g = g;
-      this.actor = actor;
-      this.method = method;
-      this.spell = spell;
-      this.name = `${spell.name} (${method.name})`;
-      this.isSpell = true;
-      this.time = spell.time;
-      this.icon = spell.icon;
-      this.subIcon = method.icon;
-      this.vocal = spell.v;
-      this.isHarmful = spell.isHarmful;
-    }
-    get status() {
-      return this.spell.status;
-    }
-    generateAttackConfigs(targets) {
-      return this.spell.generateAttackConfigs(
-        this.g,
-        this.actor,
-        this.method,
-        targets
-      );
-    }
-    generateHealingConfigs(targets) {
-      return this.spell.generateHealingConfigs(
-        this.g,
-        this.actor,
-        this.method,
-        targets
-      );
-    }
-    getConfig(config) {
-      return this.spell.getConfig(this.g, this.actor, this.method, config);
-    }
-    getAffectedArea(config) {
-      return this.spell.getAffectedArea(this.g, this.actor, config);
-    }
-    getDamage(config) {
-      return this.spell.getDamage(this.g, this.actor, this.method, config);
-    }
-    getDescription() {
-      return this.spell.description;
-    }
-    getHeal(config) {
-      return this.spell.getHeal(this.g, this.actor, this.method, config);
-    }
-    getResources(config) {
-      var _a;
-      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
-      const resource = this.method.getResourceForSpell(
-        this.spell,
-        level,
-        this.actor
-      );
-      return new Map(resource ? [[resource, 1]] : void 0);
-    }
-    getTargets(config) {
-      return this.spell.getTargets(this.g, this.actor, config);
-    }
-    getAffected(config) {
-      return this.spell.getAffected(this.g, this.actor, config);
-    }
-    getTime() {
-      return this.time;
-    }
-    check(config, ec) {
-      if (!this.actor.hasTime(this.spell.time))
-        ec.add(`No ${this.spell.time} left`, this);
-      for (const [resource, amount] of this.getResources(config))
-        if (!this.actor.hasResource(resource, amount))
-          ec.add(`Not enough ${resource.name} left`, this.method);
-      return this.spell.check(this.g, config, ec);
-    }
-    async apply(config) {
-      const { actor, g, method, spell } = this;
-      actor.useTime(spell.time);
-      for (const [resource, amount] of this.getResources(config))
-        actor.spendResource(resource, amount);
-      const sc = await g.resolve(
-        new SpellCastEvent({
-          who: actor,
-          spell,
-          method,
-          level: spell.getLevel(config),
-          targets: new Set(spell.getTargets(g, actor, config)),
-          affected: new Set(spell.getAffected(g, actor, config)),
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
-        })
-      );
-      if (sc.detail.success.result === "fail") {
-        return g.text(
-          new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`)
-        );
-      }
-      if (spell.concentration)
-        await actor.endConcentration();
-      return spell.apply(g, actor, method, config);
-    }
-  };
-  function isCastSpell(a, sp) {
-    return a instanceof CastSpell && (!sp || a.spell === sp);
-  }
 
   // src/resolvers/SlotResolver.ts
   var SlotResolver = class {
@@ -1874,6 +1675,30 @@
     }
   };
 
+  // src/Monster.ts
+  var Monster = class extends AbstractCombatant {
+    constructor(g, name, cr, type, size, img, hpMax, rules = []) {
+      super(g, name, {
+        type,
+        size,
+        img,
+        side: 1,
+        hpMax,
+        rules
+      });
+      this.cr = cr;
+    }
+    don(item, giveProficiency = false) {
+      super.don(item);
+      if (giveProficiency) {
+        if (item.itemType === "weapon")
+          this.weaponProficiencies.add(item.weaponType);
+        else if (item.itemType === "armor")
+          this.armorProficiencies.add(item.category);
+      }
+    }
+  };
+
   // src/resolvers/TargetResolver.ts
   var TargetResolver = class {
     constructor(g, maxRange, filters) {
@@ -1903,2039 +1728,6 @@
     }
   };
 
-  // src/utils/config.ts
-  function getConfigErrors(g, action, config) {
-    const ec = g.check(action, config);
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-      const value = config[key];
-      resolver.check(value, action, ec);
-    }
-    return ec;
-  }
-  function checkConfig(g, action, config) {
-    return getConfigErrors(g, action, config).result;
-  }
-
-  // src/utils/ai.ts
-  var poSet = (...constraints) => new Set(constraints);
-  var poWithin = (range, of) => ({
-    type: "within",
-    range,
-    of
-  });
-
-  // src/utils/array.ts
-  var sieve = (...items) => items.filter(isDefined);
-
-  // src/utils/text.ts
-  var niceAbilityName = {
-    str: "Strength",
-    dex: "Dexterity",
-    con: "Constitution",
-    int: "Intelligence",
-    wis: "Wisdom",
-    cha: "Charisma"
-  };
-  function describeAbility(ability) {
-    return niceAbilityName[ability];
-  }
-  function describeRange(min, max) {
-    if (min === 0) {
-      if (max === Infinity)
-        return "any number of";
-      return `up to ${max}`;
-    }
-    if (max === Infinity)
-      return `${min}+`;
-    if (min === max)
-      return min.toString();
-    return `${min}-${max}`;
-  }
-  function describePoint(p) {
-    return p ? `${p.x},${p.y}` : "NONE";
-  }
-  function describeDice(amounts) {
-    let average = 0;
-    let flat = 0;
-    const dice = [];
-    for (const a of amounts) {
-      if (a.type === "flat") {
-        average += a.amount;
-        flat += a.amount;
-      } else {
-        const { count, size } = a.amount;
-        average += getDiceAverage(count, size);
-        dice.push(`${count}d${size}`);
-      }
-    }
-    let list = dice.join(" + ");
-    if (flat < 0)
-      list += ` - ${-flat}`;
-    else if (flat > 0)
-      list += ` + ${flat}`;
-    return { average, list };
-  }
-
-  // src/img/act/dying.svg
-  var dying_default = "./dying-YUO2NF73.svg";
-
-  // src/img/act/prone.svg
-  var prone_default = "./prone-ZBMZRVQM.svg";
-
-  // src/img/spl/charm-monster.svg
-  var charm_monster_default = "./charm-monster-UW5QBALY.svg";
-
-  // src/types/ConditionName.ts
-  var coSet = (...items) => new Set(items);
-
-  // src/actions/DropProneAction.ts
-  var DropProneIcon = makeIcon(prone_default);
-  var DropProneAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Drop Prone",
-        "implemented",
-        {},
-        {
-          icon: DropProneIcon,
-          description: `You can drop prone without using any of your speed.`
-        }
-      );
-    }
-    check(config, ec) {
-      if (this.actor.conditions.has("Prone"))
-        ec.add("already prone", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(Prone, {
-        conditions: coSet("Prone"),
-        duration: Infinity
-      });
-    }
-  };
-
-  // src/img/act/stand.svg
-  var stand_default = "./stand-L4X6POXJ.svg";
-
-  // src/actions/StandUpAction.ts
-  var StandUpIcon = makeIcon(stand_default);
-  var StandUpAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Stand Up",
-        "implemented",
-        {},
-        {
-          icon: StandUpIcon,
-          description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`
-        }
-      );
-    }
-    get cost() {
-      return round(this.actor.speed / 2, MapSquareSize);
-    }
-    check(config, ec) {
-      if (!this.actor.conditions.has("Prone"))
-        ec.add("not prone", this);
-      const speed = this.actor.speed;
-      if (speed <= 0)
-        ec.add("cannot move", this);
-      else if (this.actor.movedSoFar > this.cost)
-        ec.add("not enough movement", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      this.actor.movedSoFar += this.cost;
-      await this.actor.removeEffect(Prone);
-      this.g.text(new MessageBuilder().co(this.actor).text(" stands up."));
-    }
-  };
-
-  // src/interruptions/EvaluateLater.ts
-  var EvaluateLater = class {
-    constructor(who, source, apply, priority = 5) {
-      this.who = who;
-      this.source = source;
-      this.apply = apply;
-      this.priority = priority;
-    }
-  };
-
-  // src/effects.ts
-  var Dying = new Effect(
-    "Dying",
-    "turnStart",
-    (g) => {
-      g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-        if (who.hasEffect(Dying)) {
-          conditions.add("Incapacitated", Dying);
-          conditions.add("Prone", Dying);
-          conditions.add("Unconscious", Dying);
-        }
-      });
-      g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
-        if (who.hasEffect(Dying))
-          interrupt.add(
-            new EvaluateLater(who, Dying, async () => {
-              const {
-                outcome,
-                roll: { values }
-              } = await g.save({
-                source: Dying,
-                type: { type: "flat", dc: 10 },
-                who,
-                tags: ["death"]
-              });
-              if (values.final === 20)
-                await g.heal(Dying, 1, { target: who });
-              else if (values.final === 1)
-                await g.failDeathSave(who, 2);
-              else if (outcome === "fail")
-                await g.failDeathSave(who);
-              else
-                await g.succeedDeathSave(who);
-            })
-          );
-      });
-      g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
-        if (who.hasEffect(Dying))
-          interrupt.add(
-            new EvaluateLater(who, Dying, async () => {
-              who.deathSaveFailures = 0;
-              who.deathSaveSuccesses = 0;
-              await who.removeEffect(Dying);
-              await who.addEffect(Prone, { duration: Infinity });
-            })
-          );
-      });
-    },
-    { icon: makeIcon(dying_default, "red") }
-  );
-  var Stable = new Effect("Stable", "turnStart", (g) => {
-    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-      if (who.hasEffect(Stable)) {
-        conditions.add("Incapacitated", Stable);
-        conditions.add("Prone", Stable);
-        conditions.add("Unconscious", Stable);
-      }
-    });
-    g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
-      if (who.hasEffect(Stable))
-        interrupt.add(
-          new EvaluateLater(who, Stable, async () => {
-            await who.removeEffect(Stable);
-            await who.addEffect(Prone, { duration: Infinity });
-          })
-        );
-    });
-  });
-  var Dead = new Effect(
-    "Dead",
-    "turnStart",
-    (g) => {
-      g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-        if (who.hasEffect(Dead)) {
-          conditions.add("Incapacitated", Dead);
-          conditions.add("Prone", Dead);
-          conditions.add("Unconscious", Dead);
-        }
-      });
-    },
-    { quiet: true }
-  );
-  var UsedAttackAction = new Effect(
-    "Used Attack Action",
-    "turnStart",
-    void 0,
-    { quiet: true }
-  );
-  var Prone = new Effect(
-    "Prone",
-    "turnEnd",
-    (g) => {
-      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
-        if (who.hasEffect(Prone))
-          conditions.add("Prone", Prone);
-      });
-      g.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
-        if (who.conditions.has("Prone"))
-          multiplier.add("double", Prone);
-      });
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        actions.push(
-          who.conditions.has("Prone") ? new StandUpAction(g, who) : new DropProneAction(g, who)
-        );
-      });
-      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-        if (who.conditions.has("Prone"))
-          diceType.add("disadvantage", Prone);
-        if (target.conditions.has("Prone")) {
-          const d = distance(who, target);
-          diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
-        }
-      });
-    },
-    { icon: makeIcon(prone_default) }
-  );
-  var Charmed = new Effect(
-    "Charmed",
-    "turnEnd",
-    (g) => {
-      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-        var _a;
-        const charm = action.actor.getEffectConfig(Charmed);
-        const targets = (_a = action.getTargets(config)) != null ? _a : [];
-        if ((charm == null ? void 0 : charm.by) && targets.includes(charm.by) && action.isHarmful)
-          error.add(
-            "can't attack the charmer or target the charmer with harmful abilities or magical effects",
-            Charmed
-          );
-      });
-      g.events.on(
-        "BeforeCheck",
-        ({ detail: { target, who, tags, diceType } }) => {
-          const charm = target == null ? void 0 : target.getEffectConfig(Charmed);
-          if ((charm == null ? void 0 : charm.by) === who && tags.has("social"))
-            diceType.add("advantage", Charmed);
-        }
-      );
-    },
-    { icon: makeIcon(charm_monster_default) }
-  );
-
-  // src/actions/AbstractAttackAction.ts
-  var AbstractAttackAction = class extends AbstractAction {
-    constructor(g, actor, name, status, config, options = {}) {
-      super(g, actor, name, status, config, options);
-      this.isAttack = true;
-      this.isHarmful = true;
-    }
-    generateHealingConfigs() {
-      return [];
-    }
-    getTime() {
-      if (this.actor.hasEffect(UsedAttackAction))
-        return void 0;
-      return "action";
-    }
-    async apply(config) {
-      await super.apply(config);
-      if (this.isAttack) {
-        this.actor.attacksSoFar.push(this);
-        await this.actor.addEffect(UsedAttackAction, { duration: 1 });
-      }
-    }
-  };
-
-  // src/actions/WeaponAttack.ts
-  var WeaponAttack = class extends AbstractAttackAction {
-    constructor(g, actor, weapon, ammo) {
-      super(
-        g,
-        actor,
-        ammo ? `Attack (${weapon.name}, ${ammo.name})` : `Attack (${weapon.name})`,
-        weapon.properties.has("thrown") ? "incomplete" : "implemented",
-        {
-          target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf])
-        },
-        { icon: weapon.icon, subIcon: ammo == null ? void 0 : ammo.icon }
-      );
-      this.weapon = weapon;
-      this.ammo = ammo;
-      this.ability = getWeaponAbility(actor, weapon);
-    }
-    generateAttackConfigs(targets) {
-      const ranges = [this.weapon.shortRange, this.weapon.longRange].filter(
-        isDefined
-      );
-      return targets.flatMap(
-        (target) => ranges.map((range) => ({
-          config: { target },
-          positioning: poSet(poWithin(range, target))
-        }))
-      );
-    }
-    getDamage() {
-      return [this.weapon.damage];
-    }
-    getDescription() {
-      const { actor, weapon } = this;
-      const rangeCategories = [];
-      const ranges = [];
-      if (weapon.rangeCategory === "melee") {
-        rangeCategories.push("Melee");
-        ranges.push(`reach ${actor.reach + weapon.reach} ft.`);
-      }
-      if (weapon.rangeCategory === "ranged" || weapon.properties.has("thrown")) {
-        rangeCategories.push("Ranged");
-        ranges.push(`range ${weapon.shortRange}/${weapon.longRange} ft.`);
-      }
-      const bonus = "+?";
-      const { average, list } = describeDice([weapon.damage]);
-      const damageType = weapon.damage.damageType;
-      return `${rangeCategories.join(
-        " or "
-      )} Weapon Attack: ${bonus} to hit, ${ranges.join(
-        " or "
-      )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
-      await doStandardAttack(this.g, {
-        ability: this.ability,
-        ammo: this.ammo,
-        attacker: this.actor,
-        source: this,
-        target,
-        weapon: this.weapon
-      });
-    }
-  };
-  async function doStandardAttack(g, {
-    ability,
-    ammo,
-    attacker,
-    source,
-    target,
-    weapon
-  }) {
-    const tags = /* @__PURE__ */ new Set();
-    tags.add(
-      distance(attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
-    );
-    if (weapon.category !== "natural")
-      tags.add("weapon");
-    if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
-      tags.add("magical");
-    return getAttackResult(
-      g,
-      source,
-      await g.attack({ who: attacker, tags, target, ability, weapon, ammo })
-    );
-  }
-  async function getAttackResult(g, source, e) {
-    if (e.hit) {
-      const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
-      if (ammo)
-        ammo.quantity--;
-      if (weapon) {
-        const { damage } = weapon;
-        const baseDamage = [];
-        if (damage.type === "dice") {
-          const { count, size } = damage.amount;
-          const amount = await g.rollDamage(
-            count,
-            {
-              source,
-              size,
-              damageType: damage.damageType,
-              attacker,
-              target,
-              ability,
-              weapon
-            },
-            e.critical
-          );
-          baseDamage.push([damage.damageType, amount]);
-        } else
-          baseDamage.push([damage.damageType, damage.amount]);
-        const e2 = await g.damage(
-          weapon,
-          weapon.damage.damageType,
-          {
-            attack: e.attack,
-            attacker,
-            target,
-            ability,
-            weapon,
-            ammo,
-            critical: e.critical
-          },
-          baseDamage
-        );
-        return { type: "hit", attack: e, damage: e2 };
-      }
-      return { type: "hit", attack: e };
-    }
-    return { type: "miss", attack: e };
-  }
-
-  // src/actions/OpportunityAttack.ts
-  var OpportunityAttack = class extends WeaponAttack {
-    constructor(g, actor, weapon) {
-      super(g, actor, weapon);
-      this.isAttack = false;
-    }
-    getTime() {
-      return "reaction";
-    }
-    check(config, ec) {
-      if (this.weapon.rangeCategory !== "melee")
-        ec.add("can only make opportunity attacks with melee weapons", this);
-      return super.check(config, ec);
-    }
-  };
-
-  // src/actions/DisengageAction.ts
-  var DisengageIcon = makeIcon(disengage_default, "darkgrey");
-  var DisengageEffect = new Effect(
-    "Disengage",
-    "turnEnd",
-    (g) => {
-      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-        if (action instanceof OpportunityAttack && config.target.hasEffect(DisengageEffect))
-          error.add("target used Disengage", DisengageEffect);
-      });
-    },
-    { icon: DisengageIcon }
-  );
-  var DisengageAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Disengage",
-        "implemented",
-        {},
-        {
-          time: "action",
-          icon: DisengageIcon,
-          description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`
-        }
-      );
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(DisengageEffect, { duration: 1 });
-    }
-  };
-
-  // src/img/act/dodge.svg
-  var dodge_default = "./dodge-NSUUDBS5.svg";
-
-  // src/actions/DodgeAction.ts
-  var DodgeIcon = makeIcon(dodge_default);
-  function canDodge(who) {
-    return who.hasEffect(DodgeEffect) && who.speed > 0 && !who.conditions.has("Incapacitated");
-  }
-  var DodgeEffect = new Effect(
-    "Dodge",
-    "turnStart",
-    (g) => {
-      g.events.on("BeforeAttack", ({ detail: { target, diceType, who } }) => {
-        if (canDodge(target) && g.canSee(target, who))
-          diceType.add("disadvantage", DodgeEffect);
-      });
-      g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
-        if (canDodge(who))
-          diceType.add("advantage", DodgeEffect);
-      });
-    },
-    { icon: DodgeIcon }
-  );
-  var DodgeAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Dodge",
-        "implemented",
-        {},
-        {
-          icon: DodgeIcon,
-          time: "action",
-          description: `When you take the Dodge action, you focus entirely on avoiding attacks. Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage. You lose this benefit if you are incapacitated (as explained in the appendix) or if your speed drops to 0.`
-        }
-      );
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(DodgeEffect, { duration: 1 });
-    }
-  };
-
-  // src/events/ListChoiceEvent.ts
-  var ListChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("ListChoice", { detail });
-    }
-  };
-
-  // src/interruptions/PickFromListChoice.ts
-  var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen, allowNone = false, priority = 10) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.items = items;
-      this.chosen = chosen;
-      this.allowNone = allowNone;
-      this.priority = priority;
-    }
-    async apply(g) {
-      const choice = await new Promise(
-        (resolve) => g.fire(new ListChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        return this.chosen(choice);
-    }
-  };
-
-  // src/resources.ts
-  var ResourceRegistry = /* @__PURE__ */ new Map();
-  var DawnResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      ResourceRegistry.set(name, this);
-      this.refresh = "dawn";
-    }
-  };
-  var ShortRestResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      ResourceRegistry.set(name, this);
-      this.refresh = "shortRest";
-    }
-  };
-  var LongRestResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      ResourceRegistry.set(name, this);
-      this.refresh = "longRest";
-    }
-  };
-  var TemporaryResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      ResourceRegistry.set(name, this);
-      this.refresh = "never";
-    }
-  };
-  var TurnResource = class {
-    constructor(name, maximum) {
-      this.name = name;
-      this.maximum = maximum;
-      ResourceRegistry.set(name, this);
-      this.refresh = "turnStart";
-    }
-  };
-
-  // src/DndRules.ts
-  var AbilityScoreRule = new DndRule("Ability Score", (g) => {
-    g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-      if (ability)
-        bonus.add(who[ability].modifier, AbilityScoreRule);
-    });
-    g.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
-      bonus.add(who[ability].modifier, AbilityScoreRule);
-    });
-    g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
-      if (ability)
-        bonus.add(who[ability].modifier, AbilityScoreRule);
-    });
-    g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-      if (ability)
-        bonus.add(attacker[ability].modifier, AbilityScoreRule);
-    });
-    g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
-      bonus.add(who.dex.modifier, AbilityScoreRule);
-    });
-    g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
-      if (type.type === "ability" && who)
-        bonus.add(who[type.ability].modifier, AbilityScoreRule);
-    });
-  });
-  var ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
-    g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
-      var _a, _b;
-      const { armor, dex, shield } = who;
-      const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
-      const shieldAC = (_b = shield == null ? void 0 : shield.ac) != null ? _b : 0;
-      const uses = /* @__PURE__ */ new Set();
-      if (armor)
-        uses.add(armor);
-      if (shield)
-        uses.add(shield);
-      const name = armor ? `${armor.category} armor` : "unarmored";
-      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex.modifier, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex.modifier;
-      methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
-    });
-  });
-  var BlindedRule = new DndRule("Blinded", (g) => {
-    g.events.on("CheckVision", ({ detail: { who, error } }) => {
-      if (who.conditions.has("Blinded"))
-        error.add("cannot see", BlindedRule);
-    });
-    g.events.on("BeforeCheck", ({ detail: { who, tags, successResponse } }) => {
-      if (who.conditions.has("Blinded") && tags.has("sight"))
-        successResponse.add("fail", BlindedRule);
-    });
-    g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
-      if (target.conditions.has("Blinded"))
-        diceType.add("advantage", BlindedRule);
-      if (who.conditions.has("Blinded"))
-        diceType.add("disadvantage", BlindedRule);
-    });
-  });
-  var CombatActionsRule = new DndRule("Combat Actions", (g) => {
-    g.events.on("GetActions", ({ detail: { who, actions } }) => {
-      actions.push(new DashAction(g, who));
-      actions.push(new DisengageAction(g, who));
-      actions.push(new DodgeAction(g, who));
-    });
-  });
-  var DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
-    const isDifficultTerrainAnywhere = (squares) => {
-      for (const effect of g.effects) {
-        if (!effect.tags.has("difficult terrain"))
-          continue;
-        const area = resolveArea(effect.shape);
-        for (const square of squares) {
-          if (area.has(square))
-            return true;
-        }
-      }
-      return false;
-    };
-    g.events.on("GetMoveCost", ({ detail: { who, to, multiplier } }) => {
-      const squares = getSquares(who, to);
-      if (isDifficultTerrainAnywhere(squares))
-        multiplier.add("double", DifficultTerrainRule);
-    });
-  });
-  var EffectsRule = new DndRule("Effects", (g) => {
-    g.events.on(
-      "TurnStarted",
-      ({ detail: { who } }) => who.tickEffects("turnStart")
-    );
-    g.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
-  });
-  var ExhaustionRule = new DndRule("Exhaustion", (g) => {
-    g.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
-      if (who.exhaustion >= 1)
-        diceType.add("disadvantage", ExhaustionRule);
-    });
-    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-      if (who.exhaustion >= 2)
-        multiplier.add("half", ExhaustionRule);
-      if (who.exhaustion >= 5)
-        multiplier.add("zero", ExhaustionRule);
-    });
-    g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-      if (who.exhaustion >= 3)
-        diceType.add("disadvantage", ExhaustionRule);
-    });
-    g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
-      if (who.exhaustion >= 3)
-        diceType.add("disadvantage", ExhaustionRule);
-    });
-    g.events.on("GetMaxHP", ({ detail: { who, multiplier } }) => {
-      if (who.exhaustion >= 4)
-        multiplier.add("half", ExhaustionRule);
-    });
-    g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
-      if (who.exhaustion >= 6)
-        interrupt.add(
-          new EvaluateLater(who, ExhaustionRule, async () => g.kill(who))
-        );
-    });
-  });
-  var IncapacitatedRule = new DndRule("Incapacitated", (g) => {
-    g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-      if (action.actor.conditions.has("Incapacitated") && (action.isAttack || action.getTime(config)))
-        error.add("incapacitated", IncapacitatedRule);
-    });
-  });
-  var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
-    g.events.on(
-      "BeforeAttack",
-      ({ detail: { who, target, weapon, diceType } }) => {
-        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(who, target) > weapon.shortRange)
-          diceType.add("disadvantage", LongRangeAttacksRule);
-      }
-    );
-  });
-  var ObscuredRule = new DndRule("Obscured", (g) => {
-    const isHeavilyObscuredAnywhere = (squares) => {
-      for (const effect of g.effects) {
-        if (!effect.tags.has("heavily obscured"))
-          continue;
-        const area = resolveArea(effect.shape);
-        for (const square of squares) {
-          if (area.has(square))
-            return true;
-        }
-      }
-      return false;
-    };
-    g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
-      const squares = getSquares(target, target.position);
-      if (isHeavilyObscuredAnywhere(squares))
-        diceType.add("disadvantage", ObscuredRule);
-    });
-    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
-      const squares = getSquares(who, who.position);
-      if (isHeavilyObscuredAnywhere(squares))
-        conditions.add("Blinded", ObscuredRule);
-    });
-  });
-  var OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
-    g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.isAttack && action.actor.attacksSoFar.length)
-        error.add("No attacks left", OneAttackPerTurnRule);
-    });
-  });
-  function getValidOpportunityAttacks(g, attacker, position, target, from, to) {
-    const { oldDistance, newDistance } = compareDistances(
-      attacker,
-      position,
-      target,
-      from,
-      to
-    );
-    return attacker.weapons.filter((weapon) => weapon.rangeCategory === "melee").filter((weapon) => {
-      const range = attacker.reach + weapon.reach;
-      return oldDistance <= range && newDistance > range;
-    }).map((weapon) => new OpportunityAttack(g, attacker, weapon)).filter((opportunity) => checkConfig(g, opportunity, { target }));
-  }
-  var OpportunityAttacksRule = new DndRule(
-    "Opportunity Attacks",
-    (g) => {
-      g.events.on(
-        "BeforeMove",
-        ({ detail: { handler, who, from, to, interrupt } }) => {
-          if (!handler.provokesOpportunityAttacks)
-            return;
-          for (const attacker of g.combatants) {
-            if (attacker.side === who.side)
-              continue;
-            const validActions = getValidOpportunityAttacks(
-              g,
-              attacker,
-              attacker.position,
-              who,
-              from,
-              to
-            );
-            if (validActions.length)
-              interrupt.add(
-                new PickFromListChoice(
-                  attacker,
-                  OpportunityAttacksRule,
-                  "Opportunity Attack",
-                  `${who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
-                  validActions.map((value) => ({
-                    label: value.weapon.name,
-                    value
-                  })),
-                  async (opportunity) => {
-                    await g.act(opportunity, { target: who });
-                  },
-                  true
-                )
-              );
-          }
-        }
-      );
-    }
-  );
-  var autoFail = (condition, rule, abilities) => ({ detail: { ability, who, successResponse } }) => {
-    if (who.conditions.has(condition) && ability && abilities.includes(ability))
-      successResponse.add("fail", rule);
-  };
-  var autoCrit = (g, condition, rule, maxRange = 5) => ({
-    detail: {
-      pre: { who, target },
-      outcome
-    }
-  }) => {
-    if (target.conditions.has(condition) && distance(who, target) <= maxRange)
-      outcome.add("critical", rule);
-  };
-  var ParalyzedRule = new DndRule("Paralyzed", (g) => {
-    g.events.on("BeforeMove", ({ detail: { who, error } }) => {
-      if (who.conditions.has("Paralyzed"))
-        error.add("paralyzed", ParalyzedRule);
-    });
-    g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.actor.conditions.has("Paralyzed") && action.vocal)
-        error.add("paralyzed", ParalyzedRule);
-    });
-    g.events.on(
-      "BeforeSave",
-      autoFail("Paralyzed", ParalyzedRule, ["str", "dex"])
-    );
-    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
-      if (target.conditions.has("Paralyzed"))
-        diceType.add("advantage", ParalyzedRule);
-    });
-    g.events.on("Attack", autoCrit(g, "Paralyzed", ParalyzedRule));
-  });
-  var PoisonedRule = new DndRule("Poisoned", (g) => {
-    const poisonCheck = ({
-      detail: { who, diceType }
-    }) => {
-      if (who.conditions.has("Poisoned"))
-        diceType.add("disadvantage", PoisonedRule);
-    };
-    g.events.on("BeforeAttack", poisonCheck);
-    g.events.on("BeforeCheck", poisonCheck);
-  });
-  var ProficiencyRule = new DndRule("Proficiency", (g) => {
-    g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
-      const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
-      bonus.add(who.pb * mul, ProficiencyRule);
-    });
-    g.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
-      if (skill) {
-        const mul = who.getProficiencyMultiplier(skill);
-        bonus.add(who.pb * mul, ProficiencyRule);
-      }
-    });
-    g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
-      if (ability) {
-        const mul = who.getProficiencyMultiplier(ability);
-        bonus.add(who.pb * mul, ProficiencyRule);
-      }
-    });
-    g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
-      if (type.type === "ability" && who)
-        bonus.add(who.pb, ProficiencyRule);
-    });
-  });
-  var ResourcesRule = new DndRule("Resources", (g) => {
-    g.events.on("TurnStarted", ({ detail: { who } }) => {
-      for (const name of who.resources.keys()) {
-        const resource = ResourceRegistry.get(name);
-        if ((resource == null ? void 0 : resource.refresh) === "turnStart")
-          who.refreshResource(resource);
-      }
-    });
-  });
-  var RestrainedRule = new DndRule("Restrained", (g) => {
-    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-      if (who.conditions.has("Restrained"))
-        multiplier.add("zero", RestrainedRule);
-    });
-    g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
-      if (target.conditions.has("Restrained"))
-        diceType.add("advantage", RestrainedRule);
-      if (who.conditions.has("Restrained"))
-        diceType.add("disadvantage", RestrainedRule);
-    });
-    g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-      if (who.conditions.has("Restrained") && ability === "dex")
-        diceType.add("disadvantage", RestrainedRule);
-    });
-  });
-  var StunnedRule = new DndRule("Stunned", (g) => {
-    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-      if (who.conditions.has("Stunned"))
-        multiplier.add("zero", StunnedRule);
-    });
-    g.events.on("BeforeSave", autoFail("Stunned", StunnedRule, ["str", "dex"]));
-    g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
-      if (target.conditions.has("Stunned"))
-        diceType.add("advantage", StunnedRule);
-    });
-  });
-  var TurnTimeRule = new DndRule("Turn Time", (g) => {
-    g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
-  });
-  var UnconsciousRule = new DndRule("Unconscious", (g) => {
-    g.events.on(
-      "BeforeSave",
-      autoFail("Unconscious", UnconsciousRule, ["str", "dex"])
-    );
-    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
-      if (target.conditions.has("Unconscious"))
-        diceType.add("advantage", UnconsciousRule);
-    });
-    g.events.on("Attack", autoCrit(g, "Unconscious", UnconsciousRule));
-  });
-  var WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
-    g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
-      if (who !== target) {
-        for (const weapon of who.weapons) {
-          if (weapon.ammunitionTag) {
-            for (const ammo of getValidAmmunition(who, weapon)) {
-              actions.push(new WeaponAttack(g, who, weapon, ammo));
-            }
-          } else
-            actions.push(new WeaponAttack(g, who, weapon));
-        }
-      }
-    });
-  });
-  var DndRules = class {
-    constructor(g) {
-      this.g = g;
-      for (const rule of RuleRepository)
-        rule.setup(g);
-    }
-  };
-
-  // src/events/AbilityCheckEvent.ts
-  var AbilityCheckEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AbilityCheck", { detail });
-    }
-  };
-
-  // src/events/AfterActionEvent.ts
-  var AfterActionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AfterAction", { detail });
-    }
-  };
-
-  // src/events/AreaPlacedEvent.ts
-  var AreaPlacedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AreaPlaced", { detail });
-    }
-  };
-
-  // src/events/AreaRemovedEvent.ts
-  var AreaRemovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AreaRemoved", { detail });
-    }
-  };
-
-  // src/events/AttackEvent.ts
-  var AttackEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Attack", { detail });
-    }
-  };
-
-  // src/events/BattleStartedEvent.ts
-  var BattleStartedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BattleStarted", { detail });
-    }
-  };
-
-  // src/events/BeforeAttackEvent.ts
-  var BeforeAttackEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeAttack", { detail });
-    }
-  };
-
-  // src/events/BeforeCheckEvent.ts
-  var BeforeCheckEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeCheck", { detail });
-    }
-  };
-
-  // src/events/BeforeMoveEvent.ts
-  var BeforeMoveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeMove", { detail });
-    }
-  };
-
-  // src/events/BeforeSaveEvent.ts
-  var BeforeSaveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeSave", { detail });
-    }
-  };
-
-  // src/events/BoundedMoveEvent.ts
-  var BoundedMoveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BoundedMove", { detail });
-    }
-  };
-
-  // src/events/CheckActionEvent.ts
-  var CheckActionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CheckAction", { detail });
-    }
-  };
-
-  // src/events/CheckVisionEvent.ts
-  var CheckVisionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CheckVision", { detail });
-    }
-  };
-
-  // src/events/CombatantDamagedEvent.ts
-  var CombatantDamagedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantDamaged", { detail });
-    }
-  };
-
-  // src/events/CombatantDiedEvent.ts
-  var CombatantDiedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantDied", { detail });
-    }
-  };
-
-  // src/events/CombatantHealedEvent.ts
-  var CombatantHealedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantHealed", { detail });
-    }
-  };
-
-  // src/events/CombatantInitiativeEvent.ts
-  var CombatantInitiativeEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantInitiative", { detail });
-    }
-  };
-
-  // src/events/CombatantMovedEvent.ts
-  var CombatantMovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantMoved", { detail });
-    }
-  };
-
-  // src/events/CombatantPlacedEvent.ts
-  var CombatantPlacedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantPlaced", { detail });
-    }
-  };
-
-  // src/events/DiceRolledEvent.ts
-  var DiceRolledEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("DiceRolled", { detail });
-    }
-  };
-
-  // src/events/Dispatcher.ts
-  var Dispatcher = class {
-    constructor(debug = false, target = new EventTarget()) {
-      this.debug = debug;
-      this.target = target;
-      this.taps = /* @__PURE__ */ new Set();
-    }
-    tap(listener) {
-      this.taps.add(listener);
-      return () => this.taps.delete(listener);
-    }
-    fire(event) {
-      if (this.debug)
-        console.log("fire:", event);
-      return this.target.dispatchEvent(event);
-    }
-    on(type, callback, options) {
-      this.target.addEventListener(
-        type,
-        callback,
-        options
-      );
-      const cleanup = () => this.off(type, callback);
-      for (const tap of this.taps)
-        tap(cleanup);
-      return cleanup;
-    }
-    off(type, callback, options) {
-      return this.target.removeEventListener(
-        type,
-        callback,
-        options
-      );
-    }
-  };
-
-  // src/events/GatherDamageEvent.ts
-  var GatherDamageEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GatherDamage", { detail });
-    }
-  };
-
-  // src/events/GatherHealEvent.ts
-  var GatherHealEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GatherHeal", { detail });
-    }
-  };
-
-  // src/events/GetACEvent.ts
-  var GetACEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetAC", { detail });
-    }
-  };
-
-  // src/events/GetACMethodsEvent.ts
-  var GetACMethodsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetACMethods", { detail });
-    }
-  };
-
-  // src/events/GetActionsEvent.ts
-  var GetActionsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetActions", { detail });
-    }
-  };
-
-  // src/events/GetDamageResponseEvent.ts
-  var GetDamageResponseEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetDamageResponse", { detail });
-    }
-  };
-
-  // src/events/GetInitiativeEvent.ts
-  var GetInitiativeEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetInitiative", { detail });
-    }
-  };
-
-  // src/events/GetMoveCostEvent.ts
-  var GetMoveCostEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetMoveCost", { detail });
-    }
-  };
-
-  // src/events/GetSaveDCEvent.ts
-  var GetSaveDCEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetSaveDC", { detail });
-    }
-  };
-
-  // src/events/SaveEvent.ts
-  var SaveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Save", { detail });
-    }
-  };
-
-  // src/events/TextEvent.ts
-  var TextEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Text", { detail });
-    }
-  };
-
-  // src/events/TurnEndedEvent.ts
-  var TurnEndedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("TurnEnded", { detail });
-    }
-  };
-
-  // src/events/TurnSkippedEvent.ts
-  var TurnSkippedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("TurnSkipped", { detail });
-    }
-  };
-
-  // src/events/TurnStartedEvent.ts
-  var TurnStartedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("TurnStarted", { detail });
-    }
-  };
-
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority = 10) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
-      this.priority = priority;
-    }
-    async apply(g) {
-      var _a, _b;
-      const choice = await new Promise(
-        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        await ((_a = this.yes) == null ? void 0 : _a.call(this));
-      else
-        await ((_b = this.no) == null ? void 0 : _b.call(this));
-      return choice;
-    }
-  };
-
-  // src/types/SaveTag.ts
-  var svSet = (...items) => new Set(items);
-
-  // src/utils/points.ts
-  var _p = (x, y) => ({ x, y });
-  function addPoints(a, b) {
-    return _p(a.x + b.x, a.y + b.y);
-  }
-  function mulPoint(z, mul) {
-    return _p(z.x * mul, z.y * mul);
-  }
-  var moveOffsets = {
-    east: _p(MapSquareSize, 0),
-    southeast: _p(MapSquareSize, MapSquareSize),
-    south: _p(0, MapSquareSize),
-    southwest: _p(-MapSquareSize, MapSquareSize),
-    west: _p(-MapSquareSize, 0),
-    northwest: _p(-MapSquareSize, -MapSquareSize),
-    north: _p(0, -MapSquareSize),
-    northeast: _p(MapSquareSize, -MapSquareSize)
-  };
-  function movePoint(p, d) {
-    return addPoints(p, moveOffsets[d]);
-  }
-
-  // src/Engine.ts
-  var Engine = class {
-    constructor(dice = new DiceBag(), events = new Dispatcher()) {
-      this.dice = dice;
-      this.events = events;
-      this.combatants = /* @__PURE__ */ new Set();
-      this.effects = /* @__PURE__ */ new Set();
-      this.id = 0;
-      this.initiativeOrder = [];
-      this.initiativePosition = NaN;
-      this.rules = new DndRules(this);
-    }
-    nextId() {
-      return ++this.id;
-    }
-    place(who, x, y) {
-      const position = { x, y };
-      who.position = position;
-      who.initiative = NaN;
-      this.combatants.add(who);
-      this.fire(new CombatantPlacedEvent({ who, position }));
-    }
-    async start() {
-      for (const co of this.combatants) {
-        co.finalise();
-        co.initiative = await this.rollInitiative(co);
-        const items = [...co.inventory, ...co.equipment];
-        for (const item of items) {
-          item.owner = co;
-          item.possessor = co;
-        }
-      }
-      this.initiativeOrder = Array.from(this.combatants).sort(
-        (a, b) => b.initiative - a.initiative
-      );
-      await this.resolve(
-        new BattleStartedEvent({ interrupt: new InterruptionCollector() })
-      );
-      await this.nextTurn();
-    }
-    async rollMany(count, e, critical = false) {
-      const rolls = await Promise.all(
-        Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e))
-      );
-      return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
-    }
-    async rollDamage(count, e, critical = false) {
-      return this.rollMany(count, { ...e, type: "damage" }, critical);
-    }
-    async rollHeal(count, e, critical = false) {
-      return this.rollMany(count, { ...e, type: "heal" }, critical);
-    }
-    async rollInitiative(who) {
-      const gi = await this.resolve(
-        new GetInitiativeEvent({
-          who,
-          bonus: new BonusCollector(),
-          diceType: new DiceTypeCollector(),
-          interrupt: new InterruptionCollector()
-        })
-      );
-      const diceType = gi.detail.diceType.result;
-      const roll = await this.roll({ type: "initiative", who }, diceType);
-      const value = roll.values.final + gi.detail.bonus.result;
-      this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
-      return value;
-    }
-    async savingThrow(dc, e, { save, fail } = {
-      save: "half",
-      fail: "normal"
-    }) {
-      const successResponse = new SuccessResponseCollector();
-      const bonus = new BonusCollector();
-      const diceType = new DiceTypeCollector();
-      const saveDamageResponse = new SaveDamageResponseCollector(save);
-      const failDamageResponse = new SaveDamageResponseCollector(fail);
-      const pre = await this.resolve(
-        new BeforeSaveEvent({
-          ...e,
-          dc,
-          bonus,
-          diceType,
-          successResponse,
-          saveDamageResponse,
-          failDamageResponse,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      let forced = false;
-      let success = false;
-      const roll = await this.roll({ type: "save", ...e }, diceType.result);
-      const total = roll.values.final + bonus.result;
-      if (successResponse.result !== "normal") {
-        success = successResponse.result === "success";
-        forced = true;
-      } else {
-        success = total >= dc;
-      }
-      const outcome = success ? "success" : "fail";
-      this.fire(
-        new SaveEvent({
-          pre: pre.detail,
-          diceType: diceType.result,
-          roll,
-          dc,
-          outcome,
-          total,
-          forced
-        })
-      );
-      return {
-        roll,
-        outcome,
-        forced,
-        damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
-      };
-    }
-    async abilityCheck(dc, e) {
-      const successResponse = new SuccessResponseCollector();
-      const bonus = new BonusCollector();
-      const diceType = new DiceTypeCollector();
-      const pre = await this.resolve(
-        new BeforeCheckEvent({
-          ...e,
-          dc,
-          bonus,
-          diceType,
-          successResponse,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      let forced = false;
-      let success = false;
-      const roll = await this.roll({ type: "check", ...e }, diceType.result);
-      const total = roll.values.final + bonus.result;
-      if (successResponse.result !== "normal") {
-        success = successResponse.result === "success";
-        forced = true;
-      } else {
-        success = total >= dc;
-      }
-      const outcome = success ? "success" : "fail";
-      this.fire(
-        new AbilityCheckEvent({
-          pre: pre.detail,
-          diceType: diceType.result,
-          roll,
-          dc,
-          outcome,
-          total,
-          forced
-        })
-      );
-      return { outcome, forced };
-    }
-    async roll(type, diceType = "normal") {
-      const roll = this.dice.roll(type, diceType);
-      return (await this.resolve(
-        new DiceRolledEvent({
-          type,
-          diceType,
-          ...roll,
-          interrupt: new InterruptionCollector()
-        })
-      )).detail;
-    }
-    async nextTurn() {
-      if (this.activeCombatant)
-        await this.resolve(
-          new TurnEndedEvent({
-            who: this.activeCombatant,
-            interrupt: new InterruptionCollector()
-          })
-        );
-      let who = this.initiativeOrder[this.initiativePosition];
-      let scan = true;
-      while (scan) {
-        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
-        who = this.initiativeOrder[this.initiativePosition];
-        if (!who.conditions.has("Unconscious"))
-          scan = false;
-        else {
-          who.tickEffects("turnStart");
-          await this.resolve(
-            new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
-          );
-          who.tickEffects("turnEnd");
-        }
-      }
-      this.activeCombatant = who;
-      who.attacksSoFar = [];
-      who.movedSoFar = 0;
-      await this.resolve(
-        new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
-      );
-    }
-    async moveInDirection(who, direction, handler, type = "speed") {
-      const old = who.position;
-      const position = movePoint(old, direction);
-      return this.move(who, position, handler, type);
-    }
-    async move(who, position, handler, type = "speed") {
-      const old = who.position;
-      const error = new ErrorCollector();
-      const pre = await this.resolve(
-        new BeforeMoveEvent({
-          who,
-          from: old,
-          to: position,
-          handler,
-          type,
-          error,
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
-        })
-      );
-      if (pre.detail.success.result === "fail")
-        return { type: "prevented" };
-      if (!error.result)
-        return { type: "error", error };
-      const multiplier = new MultiplierCollector();
-      this.fire(
-        new GetMoveCostEvent({
-          who,
-          from: old,
-          to: position,
-          handler,
-          type,
-          multiplier
-        })
-      );
-      who.position = position;
-      const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
-      await this.resolve(
-        new CombatantMovedEvent({
-          who,
-          old,
-          position,
-          handler,
-          type,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      if (handlerDone)
-        return { type: "unbind" };
-      return { type: "ok" };
-    }
-    async applyDamage(damage, {
-      attack,
-      attacker,
-      multiplier: baseMultiplier = 1,
-      target
-    }) {
-      const { total, healAmount, breakdown } = this.calculateDamage(
-        damage,
-        target,
-        baseMultiplier,
-        attack
-      );
-      if (healAmount > 0) {
-        await this.applyHeal(target, healAmount, target);
-      }
-      if (total < 1)
-        return;
-      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(target, total);
-      await this.resolve(
-        new CombatantDamagedEvent({
-          who: target,
-          attack,
-          attacker,
-          total,
-          takenByTemporaryHP,
-          afterTemporaryHP,
-          temporaryHPSource,
-          breakdown,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      if (target.hp <= 0) {
-        await this.handleCombatantDeath(target, attacker);
-      } else if (target.concentratingOn.size) {
-        await this.handleConcentrationCheck(target, total);
-      }
-    }
-    calculateDamage(damage, target, baseMultiplier, attack) {
-      let total = 0;
-      let healAmount = 0;
-      const breakdown = /* @__PURE__ */ new Map();
-      for (const [damageType, raw] of damage) {
-        const { response, amount } = this.calculateDamageResponse(
-          damageType,
-          raw,
-          target,
-          baseMultiplier,
-          attack
-        );
-        if (response === "absorb") {
-          healAmount += raw;
-        } else {
-          total += amount;
-        }
-        breakdown.set(damageType, { response, raw, amount });
-      }
-      return { total, healAmount, breakdown };
-    }
-    calculateDamageResponse(damageType, raw, target, baseMultiplier, attack) {
-      const collector = new DamageResponseCollector();
-      const innateResponse = target.damageResponses.get(damageType);
-      if (innateResponse) {
-        collector.add(innateResponse, target);
-      }
-      this.fire(
-        new GetDamageResponseEvent({
-          attack,
-          who: target,
-          damageType,
-          response: collector
-        })
-      );
-      const { response, amount } = this.calculateDamageAmount(
-        raw,
-        collector.result,
-        baseMultiplier
-      );
-      return { response, amount };
-    }
-    calculateDamageAmount(raw, response, baseMultiplier) {
-      let amount = raw;
-      if (response === "absorb" || response === "immune") {
-        amount = 0;
-      } else {
-        let multiplier = baseMultiplier;
-        if (response === "resist") {
-          multiplier *= 0.5;
-        } else if (response === "vulnerable") {
-          multiplier *= 2;
-        }
-        amount = Math.ceil(raw * multiplier);
-      }
-      return { response, amount };
-    }
-    applyTemporaryHP(target, totalDamage) {
-      const takenByTemporaryHP = Math.min(totalDamage, target.temporaryHP);
-      target.temporaryHP -= takenByTemporaryHP;
-      const afterTemporaryHP = totalDamage - takenByTemporaryHP;
-      target.hp -= afterTemporaryHP;
-      const temporaryHPSource = target.temporaryHPSource;
-      if (target.temporaryHP <= 0) {
-        target.temporaryHPSource = void 0;
-      }
-      return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
-    }
-    async handleCombatantDeath(target, attacker) {
-      await target.endConcentration();
-      if (target.diesAtZero || target.hp <= -target.hpMax) {
-        await this.kill(target, attacker);
-      } else if (!target.hasEffect(Dying)) {
-        target.hp = 0;
-        await target.removeEffect(Stable);
-        await target.addEffect(Dying, { duration: Infinity });
-      } else {
-        target.hp = 0;
-        await this.failDeathSave(target);
-      }
-    }
-    async handleConcentrationCheck(target, totalDamage) {
-      const dc = Math.max(10, Math.floor(totalDamage / 2));
-      const result = await this.savingThrow(dc, {
-        attacker: target,
-        who: target,
-        ability: "con",
-        tags: svSet("concentration")
-      });
-      if (result.outcome === "fail") {
-        await target.endConcentration();
-      }
-    }
-    async kill(target, attacker) {
-      this.combatants.delete(target);
-      await target.addEffect(Dead, { duration: Infinity });
-      this.fire(new CombatantDiedEvent({ who: target, attacker }));
-    }
-    async failDeathSave(who, count = 1, attacker) {
-      who.deathSaveFailures += count;
-      if (who.deathSaveFailures >= 3)
-        await this.kill(who, attacker);
-    }
-    async succeedDeathSave(who) {
-      who.deathSaveSuccesses++;
-      if (who.deathSaveSuccesses >= 3) {
-        await who.removeEffect(Dying);
-        who.deathSaveFailures = 0;
-        who.deathSaveSuccesses = 0;
-        await who.addEffect(Stable, { duration: Infinity });
-      }
-    }
-    getAttackOutcome(ac, roll, total) {
-      return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
-    }
-    async attack(e) {
-      const bonus = new BonusCollector();
-      const diceType = new DiceTypeCollector();
-      const success = new SuccessResponseCollector();
-      const pre = await this.resolve(
-        new BeforeAttackEvent({
-          ...e,
-          bonus,
-          diceType,
-          success,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      if (success.result === "fail")
-        return { outcome: "cancelled", hit: false };
-      const { target, who, ability } = pre.detail;
-      const ac = await this.getAC(target, pre.detail);
-      const roll = await this.roll(
-        { type: "attack", who, target, ac, ability },
-        diceType.result
-      );
-      const total = roll.values.final + bonus.result;
-      const outcomeCollector = new AttackOutcomeCollector();
-      const event = new AttackEvent({
-        pre: pre.detail,
-        roll,
-        total,
-        ac,
-        outcome: outcomeCollector,
-        interrupt: new InterruptionCollector()
-      });
-      outcomeCollector.setDefaultGetter(
-        () => this.getAttackOutcome(
-          event.detail.ac,
-          event.detail.roll.values.final,
-          event.detail.total
-        )
-      );
-      const attack = await this.resolve(event);
-      const outcome = outcomeCollector.result;
-      return {
-        outcome,
-        attack: attack.detail,
-        hit: outcome === "hit" || outcome === "critical",
-        critical: outcome === "critical"
-      };
-    }
-    async damage(source, damageType, e, damageInitialiser = [], startingMultiplier) {
-      if (startingMultiplier === "zero")
-        return;
-      const map = new DamageMap(damageInitialiser);
-      const multiplier = new MultiplierCollector();
-      if (typeof startingMultiplier !== "undefined")
-        multiplier.add(startingMultiplier, source);
-      const gather = await this.resolve(
-        new GatherDamageEvent({
-          critical: false,
-          ...e,
-          map,
-          bonus: new BonusCollector(),
-          interrupt: new InterruptionCollector(),
-          multiplier
-        })
-      );
-      map.add(damageType, gather.detail.bonus.result);
-      return this.applyDamage(map, {
-        source,
-        attack: e.attack,
-        attacker: e.attacker,
-        target: e.target,
-        multiplier: multiplier.result
-      });
-    }
-    /** @deprecated use `checkConfig` or `getConfigErrors` instead */
-    check(action, config) {
-      const error = new ErrorCollector();
-      this.fire(new CheckActionEvent({ action, config, error }));
-      action.check(config, error);
-      return error;
-    }
-    async act(action, config) {
-      await action.apply(config);
-      return this.resolve(
-        new AfterActionEvent({
-          action,
-          config,
-          interrupt: new InterruptionCollector()
-        })
-      );
-    }
-    getActions(who, target) {
-      return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
-    }
-    getBestACMethod(who) {
-      return this.fire(
-        new GetACMethodsEvent({
-          who,
-          methods: [who.baseACMethod]
-        })
-      ).detail.methods.reduce(
-        (best, method) => method.ac > best.ac ? method : best,
-        who.baseACMethod
-      );
-    }
-    async getAC(who, pre) {
-      const method = this.getBestACMethod(who);
-      const e = await this.resolve(
-        new GetACEvent({
-          who,
-          method,
-          bonus: new BonusCollector(),
-          interrupt: new InterruptionCollector(),
-          pre
-        })
-      );
-      return method.ac + e.detail.bonus.result;
-    }
-    fire(e) {
-      if (e.detail.interrupt)
-        throw new Error(
-          `Use Engine.resolve() on an interruptible event type: ${e.type}`
-        );
-      this.events.fire(e);
-      return e;
-    }
-    async resolve(e) {
-      this.events.fire(e);
-      for (const interruption of e.detail.interrupt)
-        await interruption.apply(this);
-      return e;
-    }
-    addEffectArea(area) {
-      area.id = this.nextId();
-      this.effects.add(area);
-      this.fire(new AreaPlacedEvent({ area }));
-    }
-    removeEffectArea(area) {
-      this.effects.delete(area);
-      this.fire(new AreaRemovedEvent({ area }));
-    }
-    getInside(area, ignore = []) {
-      const points = resolveArea(area);
-      const inside = [];
-      for (const combatant of this.combatants) {
-        if (ignore.includes(combatant))
-          continue;
-        const squares = new PointSet(getSquares(combatant, combatant.position));
-        if (points.overlaps(squares))
-          inside.push(combatant);
-      }
-      return inside;
-    }
-    async applyBoundedMove(who, handler) {
-      return new Promise(
-        (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
-      );
-    }
-    async heal(source, amount, e, startingMultiplier) {
-      const bonus = new BonusCollector();
-      bonus.add(amount, source);
-      const multiplier = new MultiplierCollector();
-      if (typeof startingMultiplier !== "undefined")
-        multiplier.add(startingMultiplier, source);
-      const gather = await this.resolve(
-        new GatherHealEvent({
-          ...e,
-          bonus,
-          multiplier,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      const total = bonus.result * multiplier.result;
-      return this.applyHeal(gather.detail.target, total, gather.detail.actor);
-    }
-    async applyHeal(who, fullAmount, actor) {
-      const amount = Math.min(fullAmount, who.hpMax - who.hp);
-      who.hp += amount;
-      return this.resolve(
-        new CombatantHealedEvent({
-          who,
-          actor,
-          amount,
-          fullAmount,
-          interrupt: new InterruptionCollector()
-        })
-      );
-    }
-    async giveTemporaryHP(who, count, source) {
-      var _a;
-      if (who.temporaryHP > 0)
-        return new YesNoChoice(
-          who,
-          source,
-          `Replace Temporary HP?`,
-          `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
-          async () => this.setTemporaryHP(who, count, source)
-        ).apply(this);
-      this.setTemporaryHP(who, count, source);
-      return true;
-    }
-    setTemporaryHP(who, count, source) {
-      who.temporaryHP = count;
-      who.temporaryHPSource = source;
-    }
-    canSee(who, target) {
-      return this.fire(
-        new CheckVisionEvent({ who, target, error: new ErrorCollector() })
-      ).detail.error.result;
-    }
-    async getSaveDC(e) {
-      const bonus = new BonusCollector();
-      const interrupt = new InterruptionCollector();
-      switch (e.type.type) {
-        case "ability":
-          bonus.add(8, e.source);
-          break;
-        case "flat":
-          bonus.add(e.type.dc, e.source);
-          break;
-      }
-      const result = await this.resolve(
-        new GetSaveDCEvent({ ...e, bonus, interrupt })
-      );
-      return result.detail;
-    }
-    async save({
-      source,
-      type,
-      attacker,
-      who,
-      ability,
-      spell,
-      method,
-      effect,
-      config,
-      tags,
-      save = "half",
-      fail = "normal"
-    }) {
-      const dcRoll = await this.getSaveDC({
-        type,
-        source,
-        who: attacker,
-        target: who,
-        ability,
-        spell,
-        method
-      });
-      const result = await this.savingThrow(
-        dcRoll.bonus.result,
-        {
-          who,
-          attacker,
-          ability,
-          spell,
-          method,
-          effect,
-          config,
-          tags: new Set(tags)
-        },
-        { save, fail }
-      );
-      return { ...result, dcRoll };
-    }
-    text(message) {
-      this.fire(new TextEvent({ message }));
-    }
-  };
-
-  // src/img/act/eldritch-burst.svg
-  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
-
-  // src/img/spl/counterspell.svg
-  var counterspell_default = "./counterspell-XBGTQHAN.svg";
-
-  // src/img/spl/hellish-rebuke.svg
-  var hellish_rebuke_default = "./hellish-rebuke-2F7LGW6H.svg";
-
-  // src/img/tok/boss/birnotec.png
-  var birnotec_default = "./birnotec-JGKE3FD4.png";
-
-  // src/features/SimpleFeature.ts
-  var SimpleFeature = class {
-    constructor(name, text, setup) {
-      this.name = name;
-      this.text = text;
-      this.setup = setup;
-    }
-  };
-
-  // src/Monster.ts
-  var Monster = class extends AbstractCombatant {
-    constructor(g, name, cr, type, size, img, hpMax, rules = []) {
-      super(g, name, {
-        type,
-        size,
-        img,
-        side: 1,
-        hpMax,
-        rules
-      });
-      this.cr = cr;
-    }
-    don(item, giveProficiency = false) {
-      super.don(item);
-      if (giveProficiency) {
-        if (item.itemType === "weapon")
-          this.weaponProficiencies.add(item.weaponType);
-        else if (item.itemType === "armor")
-          this.armorProficiencies.add(item.category);
-      }
-    }
-  };
-
   // src/spells/InnateSpellcasting.ts
   var InnateSpellcasting = class {
     constructor(name, ability, getResourceForSpell, icon) {
@@ -3960,6 +1752,29 @@
 
   // src/img/spl/armor-of-agathys.svg
   var armor_of_agathys_default = "./armor-of-agathys-V2ZDSJZ3.svg";
+
+  // src/DndRule.ts
+  var RuleRepository = /* @__PURE__ */ new Set();
+  var DndRule = class {
+    constructor(name, setup) {
+      this.name = name;
+      this.setup = setup;
+      RuleRepository.add(this);
+    }
+  };
+
+  // src/Effect.ts
+  var Effect = class {
+    constructor(name, durationTimer, setup, { quiet = false, icon, tags } = {}) {
+      this.name = name;
+      this.durationTimer = durationTimer;
+      this.quiet = quiet;
+      this.icon = icon;
+      this.tags = new Set(tags);
+      if (setup)
+        this.rule = new DndRule(name, setup);
+    }
+  };
 
   // src/types/EffectTag.ts
   var efSet = (...items) => new Set(items);
@@ -4110,6 +1925,30 @@
 
   // src/types/CheckTag.ts
   var chSet = (...items) => new Set(items);
+
+  // src/utils/config.ts
+  function getConfigErrors(g, action, config) {
+    const ec = g.check(action, config);
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
+      const value = config[key];
+      resolver.check(value, action, ec);
+    }
+    return ec;
+  }
+  function checkConfig(g, action, config) {
+    return getConfigErrors(g, action, config).result;
+  }
+
+  // src/utils/ai.ts
+  var poSet = (...constraints) => new Set(constraints);
+  var poWithin = (range, of) => ({
+    type: "within",
+    range,
+    of
+  });
+
+  // src/utils/array.ts
+  var sieve = (...items) => items.filter(isDefined);
 
   // src/utils/dice.ts
   var _dd = (count, size, damage) => ({
@@ -4499,6 +2338,11 @@
       super(g, "scale mail armor", "medium", 14, true);
     }
   };
+  var ChainMailArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "chain mail armor", "heavy", 16, true, 13);
+    }
+  };
   var SplintArmor = class extends AbstractArmor {
     constructor(g) {
       super(g, "splint armor", "heavy", 17, true, 15);
@@ -4648,6 +2492,23 @@
       this.ammunitionTag = "crossbow";
     }
   };
+  var Shortbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "shortbow",
+        "simple",
+        "ranged",
+        _dd(1, 6, "piercing"),
+        ["ammunition", "two-handed"],
+        void 0,
+        // TODO [ICON]
+        80,
+        320
+      );
+      this.ammunitionTag = "bow";
+    }
+  };
   var Greataxe = class extends AbstractWeapon {
     constructor(g) {
       super(
@@ -4674,6 +2535,20 @@
       );
     }
   };
+  var Morningstar = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "morningstar",
+        "martial",
+        "melee",
+        _dd(1, 8, "piercing"),
+        void 0,
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
   var Rapier = class extends AbstractWeapon {
     constructor(g) {
       super(
@@ -4684,6 +2559,20 @@
         _dd(1, 8, "piercing"),
         ["finesse"],
         rapier_default
+      );
+    }
+  };
+  var Scimitar = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "scimitar",
+        "martial",
+        "melee",
+        _dd(1, 6, "slashing"),
+        ["finesse", "light"],
+        void 0
+        // TODO [ICON]
       );
     }
   };
@@ -4740,6 +2629,1024 @@
     "piercing",
     "slashing"
   ];
+
+  // src/utils/text.ts
+  var niceAbilityName = {
+    str: "Strength",
+    dex: "Dexterity",
+    con: "Constitution",
+    int: "Intelligence",
+    wis: "Wisdom",
+    cha: "Charisma"
+  };
+  function describeAbility(ability) {
+    return niceAbilityName[ability];
+  }
+  function describeRange(min, max) {
+    if (min === 0) {
+      if (max === Infinity)
+        return "any number of";
+      return `up to ${max}`;
+    }
+    if (max === Infinity)
+      return `${min}+`;
+    if (min === max)
+      return min.toString();
+    return `${min}-${max}`;
+  }
+  function describePoint(p) {
+    return p ? `${p.x},${p.y}` : "NONE";
+  }
+  function describeDice(amounts) {
+    let average = 0;
+    let flat = 0;
+    const dice = [];
+    for (const a of amounts) {
+      if (a.type === "flat") {
+        average += a.amount;
+        flat += a.amount;
+      } else {
+        const { count, size } = a.amount;
+        average += getDiceAverage(count, size);
+        dice.push(`${count}d${size}`);
+      }
+    }
+    let list = dice.join(" + ");
+    if (flat < 0)
+      list += ` - ${-flat}`;
+    else if (flat > 0)
+      list += ` + ${flat}`;
+    return { average, list };
+  }
+
+  // src/img/act/dying.svg
+  var dying_default = "./dying-YUO2NF73.svg";
+
+  // src/img/act/prone.svg
+  var prone_default = "./prone-ZBMZRVQM.svg";
+
+  // src/img/spl/charm-monster.svg
+  var charm_monster_default = "./charm-monster-UW5QBALY.svg";
+
+  // src/types/ConditionName.ts
+  var coSet = (...items) => new Set(items);
+
+  // src/actions/DropProneAction.ts
+  var DropProneIcon = makeIcon(prone_default);
+  var DropProneAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Drop Prone",
+        "implemented",
+        {},
+        {
+          icon: DropProneIcon,
+          description: `You can drop prone without using any of your speed.`
+        }
+      );
+    }
+    check(config, ec) {
+      if (this.actor.conditions.has("Prone"))
+        ec.add("already prone", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(Prone, {
+        conditions: coSet("Prone"),
+        duration: Infinity
+      });
+    }
+  };
+
+  // src/img/act/stand.svg
+  var stand_default = "./stand-L4X6POXJ.svg";
+
+  // src/actions/StandUpAction.ts
+  var StandUpIcon = makeIcon(stand_default);
+  var StandUpAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Stand Up",
+        "implemented",
+        {},
+        {
+          icon: StandUpIcon,
+          description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`
+        }
+      );
+    }
+    get cost() {
+      return round(this.actor.speed / 2, MapSquareSize);
+    }
+    check(config, ec) {
+      if (!this.actor.conditions.has("Prone"))
+        ec.add("not prone", this);
+      const speed = this.actor.speed;
+      if (speed <= 0)
+        ec.add("cannot move", this);
+      else if (this.actor.movedSoFar > this.cost)
+        ec.add("not enough movement", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      this.actor.movedSoFar += this.cost;
+      await this.actor.removeEffect(Prone);
+      this.g.text(new MessageBuilder().co(this.actor).text(" stands up."));
+    }
+  };
+
+  // src/effects.ts
+  var Dying = new Effect(
+    "Dying",
+    "turnStart",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+        if (who.hasEffect(Dying)) {
+          conditions.add("Incapacitated", Dying);
+          conditions.add("Prone", Dying);
+          conditions.add("Unconscious", Dying);
+        }
+      });
+      g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(Dying))
+          interrupt.add(
+            new EvaluateLater(who, Dying, async () => {
+              const {
+                outcome,
+                roll: { values }
+              } = await g.save({
+                source: Dying,
+                type: { type: "flat", dc: 10 },
+                who,
+                tags: ["death"]
+              });
+              if (values.final === 20)
+                await g.heal(Dying, 1, { target: who });
+              else if (values.final === 1)
+                await g.failDeathSave(who, 2);
+              else if (outcome === "fail")
+                await g.failDeathSave(who);
+              else
+                await g.succeedDeathSave(who);
+            })
+          );
+      });
+      g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(Dying))
+          interrupt.add(
+            new EvaluateLater(who, Dying, async () => {
+              who.deathSaveFailures = 0;
+              who.deathSaveSuccesses = 0;
+              await who.removeEffect(Dying);
+              await who.addEffect(Prone, { duration: Infinity });
+            })
+          );
+      });
+    },
+    { icon: makeIcon(dying_default, "red") }
+  );
+  var Stable = new Effect("Stable", "turnStart", (g) => {
+    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+      if (who.hasEffect(Stable)) {
+        conditions.add("Incapacitated", Stable);
+        conditions.add("Prone", Stable);
+        conditions.add("Unconscious", Stable);
+      }
+    });
+    g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(Stable))
+        interrupt.add(
+          new EvaluateLater(who, Stable, async () => {
+            await who.removeEffect(Stable);
+            await who.addEffect(Prone, { duration: Infinity });
+          })
+        );
+    });
+  });
+  var Dead = new Effect(
+    "Dead",
+    "turnStart",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+        if (who.hasEffect(Dead)) {
+          conditions.add("Incapacitated", Dead);
+          conditions.add("Prone", Dead);
+          conditions.add("Unconscious", Dead);
+        }
+      });
+    },
+    { quiet: true }
+  );
+  var UsedAttackAction = new Effect(
+    "Used Attack Action",
+    "turnStart",
+    void 0,
+    { quiet: true }
+  );
+  var Prone = new Effect(
+    "Prone",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(Prone))
+          conditions.add("Prone", Prone);
+      });
+      g.events.on("GetMoveCost", ({ detail: { who, multiplier } }) => {
+        if (who.conditions.has("Prone"))
+          multiplier.add("double", Prone);
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        actions.push(
+          who.conditions.has("Prone") ? new StandUpAction(g, who) : new DropProneAction(g, who)
+        );
+      });
+      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+        if (who.conditions.has("Prone"))
+          diceType.add("disadvantage", Prone);
+        if (target.conditions.has("Prone")) {
+          const d = distance(who, target);
+          diceType.add(d <= 5 ? "advantage" : "disadvantage", Prone);
+        }
+      });
+    },
+    { icon: makeIcon(prone_default) }
+  );
+  var Charmed = new Effect(
+    "Charmed",
+    "turnEnd",
+    (g) => {
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        var _a;
+        const charm = action.actor.getEffectConfig(Charmed);
+        const targets = (_a = action.getTargets(config)) != null ? _a : [];
+        if ((charm == null ? void 0 : charm.by) && targets.includes(charm.by) && action.isHarmful)
+          error.add(
+            "can't attack the charmer or target the charmer with harmful abilities or magical effects",
+            Charmed
+          );
+      });
+      g.events.on(
+        "BeforeCheck",
+        ({ detail: { target, who, tags, diceType } }) => {
+          const charm = target == null ? void 0 : target.getEffectConfig(Charmed);
+          if ((charm == null ? void 0 : charm.by) === who && tags.has("social"))
+            diceType.add("advantage", Charmed);
+        }
+      );
+    },
+    { icon: makeIcon(charm_monster_default) }
+  );
+
+  // src/actions/AbstractAttackAction.ts
+  var AbstractAttackAction = class extends AbstractAction {
+    constructor(g, actor, name, status, config, options = {}) {
+      super(g, actor, name, status, config, options);
+      this.isAttack = true;
+      this.isHarmful = true;
+    }
+    generateHealingConfigs() {
+      return [];
+    }
+    getTime() {
+      if (this.actor.hasEffect(UsedAttackAction))
+        return void 0;
+      return "action";
+    }
+    async apply(config) {
+      await super.apply(config);
+      if (this.isAttack) {
+        this.actor.attacksSoFar.push(this);
+        await this.actor.addEffect(UsedAttackAction, { duration: 1 });
+      }
+    }
+  };
+
+  // src/actions/WeaponAttack.ts
+  var WeaponAttack = class extends AbstractAttackAction {
+    constructor(g, actor, weapon, ammo) {
+      super(
+        g,
+        actor,
+        ammo ? `Attack (${weapon.name}, ${ammo.name})` : `Attack (${weapon.name})`,
+        weapon.properties.has("thrown") ? "incomplete" : "implemented",
+        {
+          target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf])
+        },
+        { icon: weapon.icon, subIcon: ammo == null ? void 0 : ammo.icon }
+      );
+      this.weapon = weapon;
+      this.ammo = ammo;
+      this.ability = getWeaponAbility(actor, weapon);
+    }
+    generateAttackConfigs(targets) {
+      const ranges = [this.weapon.shortRange, this.weapon.longRange].filter(
+        isDefined
+      );
+      return targets.flatMap(
+        (target) => ranges.map((range) => ({
+          config: { target },
+          positioning: poSet(poWithin(range, target))
+        }))
+      );
+    }
+    getDamage() {
+      return [this.weapon.damage];
+    }
+    getDescription() {
+      const { actor, weapon } = this;
+      const rangeCategories = [];
+      const ranges = [];
+      if (weapon.rangeCategory === "melee") {
+        rangeCategories.push("Melee");
+        ranges.push(`reach ${actor.reach + weapon.reach} ft.`);
+      }
+      if (weapon.rangeCategory === "ranged" || weapon.properties.has("thrown")) {
+        rangeCategories.push("Ranged");
+        ranges.push(`range ${weapon.shortRange}/${weapon.longRange} ft.`);
+      }
+      const bonus = "+?";
+      const { average, list } = describeDice([weapon.damage]);
+      const damageType = weapon.damage.damageType;
+      return `${rangeCategories.join(
+        " or "
+      )} Weapon Attack: ${bonus} to hit, ${ranges.join(
+        " or "
+      )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      await doStandardAttack(this.g, {
+        ability: this.ability,
+        ammo: this.ammo,
+        attacker: this.actor,
+        source: this,
+        target,
+        weapon: this.weapon
+      });
+    }
+  };
+  async function doStandardAttack(g, {
+    ability,
+    ammo,
+    attacker,
+    source,
+    target,
+    weapon
+  }) {
+    const tags = /* @__PURE__ */ new Set();
+    tags.add(
+      distance(attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
+    );
+    if (weapon.category !== "natural")
+      tags.add("weapon");
+    if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
+      tags.add("magical");
+    return getAttackResult(
+      g,
+      source,
+      await g.attack({ who: attacker, tags, target, ability, weapon, ammo })
+    );
+  }
+  async function getAttackResult(g, source, e) {
+    if (e.hit) {
+      const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
+      if (ammo)
+        ammo.quantity--;
+      if (weapon) {
+        const { damage } = weapon;
+        const baseDamage = [];
+        if (damage.type === "dice") {
+          const { count, size } = damage.amount;
+          const amount = await g.rollDamage(
+            count,
+            {
+              source,
+              size,
+              damageType: damage.damageType,
+              attacker,
+              target,
+              ability,
+              weapon
+            },
+            e.critical
+          );
+          baseDamage.push([damage.damageType, amount]);
+        } else
+          baseDamage.push([damage.damageType, damage.amount]);
+        const e2 = await g.damage(
+          weapon,
+          weapon.damage.damageType,
+          {
+            attack: e.attack,
+            attacker,
+            target,
+            ability,
+            weapon,
+            ammo,
+            critical: e.critical
+          },
+          baseDamage
+        );
+        return { type: "hit", attack: e, damage: e2 };
+      }
+      return { type: "hit", attack: e };
+    }
+    return { type: "miss", attack: e };
+  }
+
+  // src/img/act/dash.svg
+  var dash_default = "./dash-CNRMKC55.svg";
+
+  // src/actions/DashAction.ts
+  var DashIcon = makeIcon(dash_default);
+  var DashEffect = new Effect(
+    "Dash",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+        if (who.hasEffect(DashEffect))
+          multiplier.add("double", DashEffect);
+      });
+    },
+    { icon: DashIcon }
+  );
+  var DashAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Dash",
+        "implemented",
+        {},
+        {
+          icon: DashIcon,
+          time: "action",
+          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
+
+        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
+        }
+      );
+    }
+    check(config, ec) {
+      if (this.actor.speed <= 0)
+        ec.add("Zero speed", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(DashEffect, { duration: 1 });
+    }
+  };
+
+  // src/img/act/disengage.svg
+  var disengage_default = "./disengage-6XMY6V34.svg";
+
+  // src/actions/OpportunityAttack.ts
+  var OpportunityAttack = class extends WeaponAttack {
+    constructor(g, actor, weapon) {
+      super(g, actor, weapon);
+      this.isAttack = false;
+    }
+    getTime() {
+      return "reaction";
+    }
+    check(config, ec) {
+      if (this.weapon.rangeCategory !== "melee")
+        ec.add("can only make opportunity attacks with melee weapons", this);
+      return super.check(config, ec);
+    }
+  };
+
+  // src/actions/DisengageAction.ts
+  var DisengageIcon = makeIcon(disengage_default, "darkgrey");
+  var DisengageEffect = new Effect(
+    "Disengage",
+    "turnEnd",
+    (g) => {
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        if (action instanceof OpportunityAttack && config.target.hasEffect(DisengageEffect))
+          error.add("target used Disengage", DisengageEffect);
+      });
+    },
+    { icon: DisengageIcon }
+  );
+  var DisengageAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Disengage",
+        "implemented",
+        {},
+        {
+          time: "action",
+          icon: DisengageIcon,
+          description: `If you take the Disengage action, your movement doesn't provoke opportunity attacks for the rest of the turn.`
+        }
+      );
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(DisengageEffect, { duration: 1 });
+    }
+  };
+
+  // src/img/act/dodge.svg
+  var dodge_default = "./dodge-NSUUDBS5.svg";
+
+  // src/actions/DodgeAction.ts
+  var DodgeIcon = makeIcon(dodge_default);
+  function canDodge(who) {
+    return who.hasEffect(DodgeEffect) && who.speed > 0 && !who.conditions.has("Incapacitated");
+  }
+  var DodgeEffect = new Effect(
+    "Dodge",
+    "turnStart",
+    (g) => {
+      g.events.on("BeforeAttack", ({ detail: { target, diceType, who } }) => {
+        if (canDodge(target) && g.canSee(target, who))
+          diceType.add("disadvantage", DodgeEffect);
+      });
+      g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+        if (canDodge(who))
+          diceType.add("advantage", DodgeEffect);
+      });
+    },
+    { icon: DodgeIcon }
+  );
+  var DodgeAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Dodge",
+        "implemented",
+        {},
+        {
+          icon: DodgeIcon,
+          time: "action",
+          description: `When you take the Dodge action, you focus entirely on avoiding attacks. Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage. You lose this benefit if you are incapacitated (as explained in the appendix) or if your speed drops to 0.`
+        }
+      );
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(DodgeEffect, { duration: 1 });
+    }
+  };
+
+  // src/events/ListChoiceEvent.ts
+  var ListChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("ListChoice", { detail });
+    }
+  };
+
+  // src/interruptions/PickFromListChoice.ts
+  var PickFromListChoice = class {
+    constructor(who, source, title, text, items, chosen, allowNone = false, priority = 10) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.items = items;
+      this.chosen = chosen;
+      this.allowNone = allowNone;
+      this.priority = priority;
+    }
+    async apply(g) {
+      const choice = await new Promise(
+        (resolve) => g.fire(new ListChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        return this.chosen(choice);
+    }
+  };
+
+  // src/resources.ts
+  var ResourceRegistry = /* @__PURE__ */ new Map();
+  var DawnResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "dawn";
+    }
+  };
+  var ShortRestResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "shortRest";
+    }
+  };
+  var LongRestResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "longRest";
+    }
+  };
+  var TemporaryResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "never";
+    }
+  };
+  var TurnResource = class {
+    constructor(name, maximum) {
+      this.name = name;
+      this.maximum = maximum;
+      ResourceRegistry.set(name, this);
+      this.refresh = "turnStart";
+    }
+  };
+
+  // src/DndRules.ts
+  var AbilityScoreRule = new DndRule("Ability Score", (g) => {
+    g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
+      if (ability)
+        bonus.add(who[ability].modifier, AbilityScoreRule);
+    });
+    g.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
+      bonus.add(who[ability].modifier, AbilityScoreRule);
+    });
+    g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
+      if (ability)
+        bonus.add(who[ability].modifier, AbilityScoreRule);
+    });
+    g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
+      if (ability)
+        bonus.add(attacker[ability].modifier, AbilityScoreRule);
+    });
+    g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
+      bonus.add(who.dex.modifier, AbilityScoreRule);
+    });
+    g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
+      if (type.type === "ability" && who)
+        bonus.add(who[type.ability].modifier, AbilityScoreRule);
+    });
+  });
+  var ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
+    g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
+      var _a, _b;
+      const { armor, dex, shield } = who;
+      const armorAC = (_a = armor == null ? void 0 : armor.ac) != null ? _a : 10;
+      const shieldAC = (_b = shield == null ? void 0 : shield.ac) != null ? _b : 0;
+      const uses = /* @__PURE__ */ new Set();
+      if (armor)
+        uses.add(armor);
+      if (shield)
+        uses.add(shield);
+      const name = armor ? `${armor.category} armor` : "unarmored";
+      const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex.modifier, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex.modifier;
+      methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
+    });
+  });
+  var BlindedRule = new DndRule("Blinded", (g) => {
+    g.events.on("CheckVision", ({ detail: { who, error } }) => {
+      if (who.conditions.has("Blinded"))
+        error.add("cannot see", BlindedRule);
+    });
+    g.events.on("BeforeCheck", ({ detail: { who, tags, successResponse } }) => {
+      if (who.conditions.has("Blinded") && tags.has("sight"))
+        successResponse.add("fail", BlindedRule);
+    });
+    g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
+      if (target.conditions.has("Blinded"))
+        diceType.add("advantage", BlindedRule);
+      if (who.conditions.has("Blinded"))
+        diceType.add("disadvantage", BlindedRule);
+    });
+  });
+  var CloseCombatRule = new DndRule("Close Combat", (g) => {
+    g.events.on("BeforeAttack", ({ detail: { tags, who, diceType } }) => {
+      if (tags.has("ranged")) {
+        let threatened = false;
+        for (const co of g.combatants) {
+          if (co.side !== who.side && !co.conditions.has("Incapacitated") && distance(who, co) <= 5) {
+            threatened = true;
+            break;
+          }
+        }
+        if (threatened)
+          diceType.add("disadvantage", CloseCombatRule);
+      }
+    });
+  });
+  var CombatActionsRule = new DndRule("Combat Actions", (g) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      actions.push(new DashAction(g, who));
+      actions.push(new DisengageAction(g, who));
+      actions.push(new DodgeAction(g, who));
+    });
+  });
+  var DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
+    const isDifficultTerrainAnywhere = (squares) => {
+      for (const effect of g.effects) {
+        if (!effect.tags.has("difficult terrain"))
+          continue;
+        const area = resolveArea(effect.shape);
+        for (const square of squares) {
+          if (area.has(square))
+            return true;
+        }
+      }
+      return false;
+    };
+    g.events.on("GetMoveCost", ({ detail: { who, to, multiplier } }) => {
+      const squares = getSquares(who, to);
+      if (isDifficultTerrainAnywhere(squares))
+        multiplier.add("double", DifficultTerrainRule);
+    });
+  });
+  var EffectsRule = new DndRule("Effects", (g) => {
+    g.events.on(
+      "TurnStarted",
+      ({ detail: { who } }) => who.tickEffects("turnStart")
+    );
+    g.events.on("TurnEnded", ({ detail: { who } }) => who.tickEffects("turnEnd"));
+  });
+  var ExhaustionRule = new DndRule("Exhaustion", (g) => {
+    g.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
+      if (who.exhaustion >= 1)
+        diceType.add("disadvantage", ExhaustionRule);
+    });
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.exhaustion >= 2)
+        multiplier.add("half", ExhaustionRule);
+      if (who.exhaustion >= 5)
+        multiplier.add("zero", ExhaustionRule);
+    });
+    g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+      if (who.exhaustion >= 3)
+        diceType.add("disadvantage", ExhaustionRule);
+    });
+    g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+      if (who.exhaustion >= 3)
+        diceType.add("disadvantage", ExhaustionRule);
+    });
+    g.events.on("GetMaxHP", ({ detail: { who, multiplier } }) => {
+      if (who.exhaustion >= 4)
+        multiplier.add("half", ExhaustionRule);
+    });
+    g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
+      if (who.exhaustion >= 6)
+        interrupt.add(
+          new EvaluateLater(who, ExhaustionRule, async () => g.kill(who))
+        );
+    });
+  });
+  var IncapacitatedRule = new DndRule("Incapacitated", (g) => {
+    g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+      if (action.actor.conditions.has("Incapacitated") && (action.isAttack || action.getTime(config)))
+        error.add("incapacitated", IncapacitatedRule);
+    });
+  });
+  var LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
+    g.events.on(
+      "BeforeAttack",
+      ({ detail: { who, target, weapon, diceType } }) => {
+        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(who, target) > weapon.shortRange)
+          diceType.add("disadvantage", LongRangeAttacksRule);
+      }
+    );
+  });
+  var ObscuredRule = new DndRule("Obscured", (g) => {
+    const isHeavilyObscuredAnywhere = (squares) => {
+      for (const effect of g.effects) {
+        if (!effect.tags.has("heavily obscured"))
+          continue;
+        const area = resolveArea(effect.shape);
+        for (const square of squares) {
+          if (area.has(square))
+            return true;
+        }
+      }
+      return false;
+    };
+    g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
+      const squares = getSquares(target, target.position);
+      if (isHeavilyObscuredAnywhere(squares))
+        diceType.add("disadvantage", ObscuredRule);
+    });
+    g.events.on("GetConditions", ({ detail: { conditions, who } }) => {
+      const squares = getSquares(who, who.position);
+      if (isHeavilyObscuredAnywhere(squares))
+        conditions.add("Blinded", ObscuredRule);
+    });
+  });
+  var OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.isAttack && action.actor.attacksSoFar.length)
+        error.add("No attacks left", OneAttackPerTurnRule);
+    });
+  });
+  function getValidOpportunityAttacks(g, attacker, position, target, from, to) {
+    const { oldDistance, newDistance } = compareDistances(
+      attacker,
+      position,
+      target,
+      from,
+      to
+    );
+    return attacker.weapons.filter((weapon) => weapon.rangeCategory === "melee").filter((weapon) => {
+      const range = attacker.reach + weapon.reach;
+      return oldDistance <= range && newDistance > range;
+    }).map((weapon) => new OpportunityAttack(g, attacker, weapon)).filter((opportunity) => checkConfig(g, opportunity, { target }));
+  }
+  var OpportunityAttacksRule = new DndRule(
+    "Opportunity Attacks",
+    (g) => {
+      g.events.on(
+        "BeforeMove",
+        ({ detail: { handler, who, from, to, interrupt } }) => {
+          if (!handler.provokesOpportunityAttacks)
+            return;
+          for (const attacker of g.combatants) {
+            if (attacker.side === who.side)
+              continue;
+            const validActions = getValidOpportunityAttacks(
+              g,
+              attacker,
+              attacker.position,
+              who,
+              from,
+              to
+            );
+            if (validActions.length)
+              interrupt.add(
+                new PickFromListChoice(
+                  attacker,
+                  OpportunityAttacksRule,
+                  "Opportunity Attack",
+                  `${who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
+                  validActions.map((value) => ({
+                    label: value.weapon.name,
+                    value
+                  })),
+                  async (opportunity) => {
+                    await g.act(opportunity, { target: who });
+                  },
+                  true
+                )
+              );
+          }
+        }
+      );
+    }
+  );
+  var autoFail = (condition, rule, abilities) => ({ detail: { ability, who, successResponse } }) => {
+    if (who.conditions.has(condition) && ability && abilities.includes(ability))
+      successResponse.add("fail", rule);
+  };
+  var autoCrit = (g, condition, rule, maxRange = 5) => ({
+    detail: {
+      pre: { who, target },
+      outcome
+    }
+  }) => {
+    if (target.conditions.has(condition) && distance(who, target) <= maxRange)
+      outcome.add("critical", rule);
+  };
+  var ParalyzedRule = new DndRule("Paralyzed", (g) => {
+    g.events.on("BeforeMove", ({ detail: { who, error } }) => {
+      if (who.conditions.has("Paralyzed"))
+        error.add("paralyzed", ParalyzedRule);
+    });
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.actor.conditions.has("Paralyzed") && action.vocal)
+        error.add("paralyzed", ParalyzedRule);
+    });
+    g.events.on(
+      "BeforeSave",
+      autoFail("Paralyzed", ParalyzedRule, ["str", "dex"])
+    );
+    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+      if (target.conditions.has("Paralyzed"))
+        diceType.add("advantage", ParalyzedRule);
+    });
+    g.events.on("Attack", autoCrit(g, "Paralyzed", ParalyzedRule));
+  });
+  var PoisonedRule = new DndRule("Poisoned", (g) => {
+    const poisonCheck = ({
+      detail: { who, diceType }
+    }) => {
+      if (who.conditions.has("Poisoned"))
+        diceType.add("disadvantage", PoisonedRule);
+    };
+    g.events.on("BeforeAttack", poisonCheck);
+    g.events.on("BeforeCheck", poisonCheck);
+  });
+  var ProficiencyRule = new DndRule("Proficiency", (g) => {
+    g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
+      const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
+      bonus.add(who.pb * mul, ProficiencyRule);
+    });
+    g.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
+      if (skill) {
+        const mul = who.getProficiencyMultiplier(skill);
+        bonus.add(who.pb * mul, ProficiencyRule);
+      }
+    });
+    g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
+      if (ability) {
+        const mul = who.getProficiencyMultiplier(ability);
+        bonus.add(who.pb * mul, ProficiencyRule);
+      }
+    });
+    g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
+      if (type.type === "ability" && who)
+        bonus.add(who.pb, ProficiencyRule);
+    });
+  });
+  var ResourcesRule = new DndRule("Resources", (g) => {
+    g.events.on("TurnStarted", ({ detail: { who } }) => {
+      for (const name of who.resources.keys()) {
+        const resource = ResourceRegistry.get(name);
+        if ((resource == null ? void 0 : resource.refresh) === "turnStart")
+          who.refreshResource(resource);
+      }
+    });
+  });
+  var RestrainedRule = new DndRule("Restrained", (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Restrained"))
+        multiplier.add("zero", RestrainedRule);
+    });
+    g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
+      if (target.conditions.has("Restrained"))
+        diceType.add("advantage", RestrainedRule);
+      if (who.conditions.has("Restrained"))
+        diceType.add("disadvantage", RestrainedRule);
+    });
+    g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
+      if (who.conditions.has("Restrained") && ability === "dex")
+        diceType.add("disadvantage", RestrainedRule);
+    });
+  });
+  var StunnedRule = new DndRule("Stunned", (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.conditions.has("Stunned"))
+        multiplier.add("zero", StunnedRule);
+    });
+    g.events.on("BeforeSave", autoFail("Stunned", StunnedRule, ["str", "dex"]));
+    g.events.on("BeforeAttack", ({ detail: { diceType, target } }) => {
+      if (target.conditions.has("Stunned"))
+        diceType.add("advantage", StunnedRule);
+    });
+  });
+  var TurnTimeRule = new DndRule("Turn Time", (g) => {
+    g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
+  });
+  var UnconsciousRule = new DndRule("Unconscious", (g) => {
+    g.events.on(
+      "BeforeSave",
+      autoFail("Unconscious", UnconsciousRule, ["str", "dex"])
+    );
+    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+      if (target.conditions.has("Unconscious"))
+        diceType.add("advantage", UnconsciousRule);
+    });
+    g.events.on("Attack", autoCrit(g, "Unconscious", UnconsciousRule));
+  });
+  var WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
+    g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
+      if (who !== target) {
+        for (const weapon of who.weapons) {
+          if (weapon.ammunitionTag) {
+            for (const ammo of getValidAmmunition(who, weapon)) {
+              actions.push(new WeaponAttack(g, who, weapon, ammo));
+            }
+          } else
+            actions.push(new WeaponAttack(g, who, weapon));
+        }
+      }
+    });
+  });
+  var DndRules = class {
+    constructor(g) {
+      this.g = g;
+      for (const rule of RuleRepository)
+        rule.setup(g);
+    }
+  };
 
   // src/monsters/common.ts
   var KeenHearing = new SimpleFeature(
@@ -5067,6 +3974,17 @@
 
   // src/img/act/protection.svg
   var protection_default = "./protection-NGWVG7SN.svg";
+
+  // src/collectors/DiceTypeCollector.ts
+  var DiceTypeCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      const hasAdvantage = values.includes("advantage");
+      const hasDisadvantage = values.includes("disadvantage");
+      if (hasAdvantage === hasDisadvantage)
+        return "normal";
+      return hasAdvantage ? "advantage" : "disadvantage";
+    }
+  };
 
   // src/features/fightingStyles/Protection.ts
   var ProtectionIcon = makeIcon(protection_default);
@@ -6057,6 +4975,57 @@
     }
   };
 
+  // src/img/tok/goblin.png
+  var goblin_default = "./goblin-KBFKWGXU.png";
+
+  // src/monsters/Goblin.ts
+  var NimbleEscape = new SimpleFeature(
+    "Nimble Escape",
+    `The goblin can take the Disengage or Hide action as a bonus action on each of its turns.`,
+    (g, me) => {
+      if (getExecutionMode() !== "test")
+        console.warn(`[Feature Not Complete] Nimble Escape (on ${me.name})`);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          const cunning = [new DisengageAction(g, who)];
+          for (const action of cunning) {
+            action.name += " (Nimble Escape)";
+            action.time = "bonus action";
+          }
+          actions.push(...cunning);
+        }
+      });
+    }
+  );
+  var Goblin = class extends Monster {
+    constructor(g, wieldingBow = false) {
+      super(g, "goblin", 0.25, "humanoid", "small", goblin_default, 7);
+      this.movement.set("speed", 30);
+      this.skills.set("Stealth", 2);
+      this.senses.set("darkvision", 60);
+      this.languages.add("Common");
+      this.languages.add("Goblin");
+      this.addFeature(NimbleEscape);
+      this.don(new LeatherArmor(g), true);
+      const shield = new Shield(g);
+      const scimitar = new Scimitar(g);
+      const bow = new Shortbow(g);
+      if (wieldingBow) {
+        this.don(bow, true);
+        this.inventory.add(scimitar);
+        this.weaponProficiencies.add("scimitar");
+        this.inventory.add(shield);
+        this.armorProficiencies.add("shield");
+      } else {
+        this.don(scimitar, true);
+        this.don(shield, true);
+        this.inventory.add(bow);
+        this.weaponProficiencies.add("shortbow");
+      }
+      this.inventory.add(new Arrow(g, 10));
+    }
+  };
+
   // src/img/tok/pc/aura.png
   var aura_default = "./aura-PXXTYCUY.png";
 
@@ -6065,6 +5034,26 @@
   var acSet = (...items) => new Set(items);
 
   // src/types/SkillName.ts
+  var SkillNames = [
+    "Acrobatics",
+    "Animal Handling",
+    "Arcana",
+    "Athletics",
+    "Deception",
+    "History",
+    "Insight",
+    "Intimidation",
+    "Investigation",
+    "Medicine",
+    "Nature",
+    "Perception",
+    "Performance",
+    "Persuasion",
+    "Religion",
+    "Sleight of Hand",
+    "Stealth",
+    "Survival"
+  ];
   var skSet = (...items) => new Set(items);
 
   // src/types/ToolName.ts
@@ -7420,6 +6409,28 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/img/act/special-breath.svg
   var special_breath_default = "./special-breath-PGWJ2QD5.svg";
+
+  // src/utils/points.ts
+  var _p = (x, y) => ({ x, y });
+  function addPoints(a, b) {
+    return _p(a.x + b.x, a.y + b.y);
+  }
+  function mulPoint(z, mul) {
+    return _p(z.x * mul, z.y * mul);
+  }
+  var moveOffsets = {
+    east: _p(MapSquareSize, 0),
+    southeast: _p(MapSquareSize, MapSquareSize),
+    south: _p(0, MapSquareSize),
+    southwest: _p(-MapSquareSize, MapSquareSize),
+    west: _p(-MapSquareSize, 0),
+    northwest: _p(-MapSquareSize, -MapSquareSize),
+    north: _p(0, -MapSquareSize),
+    northeast: _p(MapSquareSize, -MapSquareSize)
+  };
+  function movePoint(p, d) {
+    return addPoints(p, moveOffsets[d]);
+  }
 
   // src/aim.ts
   var eighth = Math.PI / 4;
@@ -13084,6 +12095,1409 @@ The creature is aware of this effect before it makes its attack against you.`
     }
   };
 
+  // src/img/tok/pc/marvoril.png
+  var marvoril_default = "./marvoril-LEL3VCQJ.png";
+
+  // src/races/HalfElf.ts
+  var Darkvision2 = darkvisionFeature(60);
+  var FeyAncestry = new SimpleFeature(
+    "Fey Ancestry",
+    `You have advantage on saving throws against being charmed, and magic can't put you to sleep.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
+        var _a;
+        if (who === me && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")))
+          diceType.add("advantage", FeyAncestry);
+      });
+      g.events.on("BeforeEffect", ({ detail: { effect, success } }) => {
+        if (effect.tags.has("magic") && effect.tags.has("sleep"))
+          success.add("fail", FeyAncestry);
+      });
+    }
+  );
+  var SkillVersatility = new ConfiguredFeature(
+    "Skill Versatility",
+    `You gain proficiency in two skills of your choice.`,
+    (g, me, skills) => {
+      for (const skill of skills)
+        me.skills.set(skill, 1);
+    }
+  );
+  var AbilityScoreBonus = new ConfiguredFeature(
+    "Ability Score Bonus",
+    ``,
+    (g, me, abilities) => {
+      for (const ability of abilities)
+        me[ability].score++;
+    }
+  );
+  var LanguageChoice = new ConfiguredFeature(
+    "Language Choice",
+    ``,
+    (g, me, language) => {
+      me.languages.add(language);
+    }
+  );
+  var HalfElf = {
+    name: "Half-Elf",
+    abilities: /* @__PURE__ */ new Map([["cha", 2]]),
+    size: "medium",
+    movement: /* @__PURE__ */ new Map([["speed", 30]]),
+    features: /* @__PURE__ */ new Set([
+      Darkvision2,
+      FeyAncestry,
+      SkillVersatility,
+      AbilityScoreBonus,
+      LanguageChoice
+    ]),
+    languages: laSet("Common", "Elvish")
+  };
+
+  // src/pcs/glean/Marvoril.ts
+  var Marvoril = class extends PC {
+    constructor(g) {
+      super(g, "Marvoril", marvoril_default);
+      this.setAbilityScores(15, 8, 13, 12, 10, 14);
+      this.setRace(HalfElf);
+      this.setConfig(AbilityScoreBonus, ["str", "con"]);
+      this.setConfig(SkillVersatility, ["Athletics", "Persuasion"]);
+      this.setConfig(LanguageChoice, "Dwarvish");
+      this.skills.set("Survival", 1);
+      this.skills.set("Investigation", 1);
+      this.languages.add("Primordial");
+      this.languages.add("Infernal");
+      this.addClassLevel(paladin_default2);
+      this.don(new ChainMailArmor(g));
+      this.don(new Morningstar(g));
+      this.don(new Shield(g));
+    }
+  };
+
+  // src/img/tok/pc/shaira.png
+  var shaira_default = "./shaira-FCUEHDNM.png";
+
+  // src/classes/bard/BardicInspiration.ts
+  var BardicInspirationResource = new LongRestResource(
+    "Bardic Inspiration",
+    1
+  );
+  var BardicInspiration = notImplementedFeature(
+    "Bardic Inspiration",
+    `You can inspire others through stirring words or music. To do so, you use a bonus action on your turn to choose one creature other than yourself within 60 feet of you who can hear you. That creature gains one Bardic Inspiration die, a d6.
+
+Once within the next 10 minutes, the creature can roll the die and add the number rolled to one ability check, attack roll, or saving throw it makes. The creature can wait until after it rolls the d20 before deciding to use the Bardic Inspiration die, but must decide before the DM says whether the roll succeeds or fails. Once the Bardic Inspiration die is rolled, it is lost. A creature can have only one Bardic Inspiration die at a time.
+
+You can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain any expended uses when you finish a long rest.
+
+Your Bardic Inspiration die changes when you reach certain levels in this class. The die becomes a d8 at 5th level, a d10 at 10th level, and a d12 at 15th level.`
+  );
+  var BardicInspiration_default = BardicInspiration;
+
+  // src/classes/bard/index.ts
+  var BardSpellcasting = new NormalSpellcasting(
+    "Bard",
+    `You have learned to untangle and reshape the fabric of reality in harmony with your wishes and music. Your spells are part of your vast repertoire, magic that you can tune to different situations.`,
+    "cha",
+    "full",
+    "Bard",
+    "Bard"
+  );
+  var JackOfAllTrades = new SimpleFeature(
+    "Jack of All Trades",
+    `Starting at 2nd level, you can add half your proficiency bonus, rounded down, to any ability check you make that doesn't already include your proficiency bonus.`,
+    (g, me) => {
+      const gain = Math.floor(me.pb / 2);
+      g.events.on("BeforeCheck", ({ detail: { who, bonus } }) => {
+        if (who === me && !bonus.isInvolved(ProficiencyRule))
+          bonus.add(gain, JackOfAllTrades);
+      });
+    }
+  );
+  var SongOfRest = nonCombatFeature(
+    "Song of Rest",
+    `Beginning at 2nd level, you can use soothing music or oration to help revitalize your wounded allies during a short rest. If you or any friendly creatures who can hear your performance regain hit points by spending Hit Dice at the end of the short rest, each of those creatures regains an extra 1d6 hit points.
+
+The extra hit points increase when you reach certain levels in this class: to 1d8 at 9th level, to 1d10 at 13th level, and to 1d12 at 17th level.`
+  );
+  var MagicalInspiration = notImplementedFeature(
+    "Magical Inspiration",
+    `If a creature has a Bardic Inspiration die from you and casts a spell that restores hit points or deals damage, the creature can roll that die and choose a target affected by the spell. Add the number rolled as a bonus to the hit points regained or the damage dealt. The Bardic Inspiration die is then lost.`
+  );
+  var Expertise2 = new ConfiguredFeature(
+    "Expertise",
+    `At 3rd level, choose two of your skill proficiencies. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies.
+
+  At 10th level, you can choose another two skill proficiencies to gain this benefit.`,
+    (g, me, config) => {
+      for (const entry of config) {
+        if (me.skills.has(entry))
+          me.skills.set(entry, 2);
+        else
+          console.warn(`Expertise in ${entry} without existing proficiency`);
+      }
+    }
+  );
+  var BardicVersatility = nonCombatFeature(
+    "Bardic Versatility",
+    `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can do one of the following, representing a change in focus as you use your skills and magic:
+
+Replace one of the skills you chose for the Expertise feature with one of your other skill proficiencies that isn't benefiting from Expertise.
+Replace one cantrip you learned from this class's Spellcasting feature with another cantrip from the bard spell list.`
+  );
+  var FontOfInspiration = nonCombatFeature(
+    "Font of Inspiration",
+    `Beginning when you reach 5th level, you regain all of your expended uses of Bardic Inspiration when you finish a short or long rest.`
+  );
+  var Countercharm = notImplementedFeature(
+    "Countercharm",
+    `At 6th level, you gain the ability to use musical notes or words of power to disrupt mind-influencing effects. As an action, you can start a performance that lasts until the end of your next turn. During that time, you and any friendly creatures within 30 feet of you have advantage on saving throws against being frightened or charmed. A creature must be able to hear you to gain this benefit. The performance ends early if you are incapacitated or silenced or if you voluntarily end it (no action required).`
+  );
+  var MagicalSecrets = new ConfiguredFeature(
+    "Magical Secrets",
+    `By 10th level, you have plundered magical knowledge from a wide spectrum of disciplines. Choose two spells from any classes, including this one. A spell you choose must be of a level you can cast, as shown on the Bard table, or a cantrip.
+
+The chosen spells count as bard spells for you and are included in the number in the Spells Known column of the Bard table.
+
+You learn two additional spells from any classes at 14th level and again at 18th level.`,
+    (g, me, spells) => {
+      for (const spell of spells) {
+        me.knownSpells.add(spell);
+        BardSpellcasting.addCastableSpell(spell, me);
+      }
+    }
+  );
+  var SuperiorInspiration = new SimpleFeature(
+    "Superior Inspiration",
+    `At 20th level, when you roll initiative and have no uses of Bardic Inspiration left, you regain one use.`,
+    (g, me) => {
+      g.events.on("GetInitiative", ({ detail }) => {
+        if (detail.who === me && me.getResource(BardicInspirationResource) < 1) {
+          g.text(
+            new MessageBuilder().co(me).text("recovers a use of Bardic Inspiration.")
+          );
+          me.giveResource(BardicInspirationResource, 1);
+        }
+      });
+    }
+  );
+  var ASI46 = makeASI("Bard", 4);
+  var ASI86 = makeASI("Bard", 8);
+  var ASI126 = makeASI("Bard", 12);
+  var ASI166 = makeASI("Bard", 16);
+  var ASI196 = makeASI("Bard", 19);
+  var Bard = {
+    name: "Bard",
+    hitDieSize: 8,
+    armorProficiencies: acSet("light"),
+    weaponCategoryProficiencies: wcSet("simple"),
+    weaponProficiencies: /* @__PURE__ */ new Set([
+      "hand crossbow",
+      "longsword",
+      "rapier",
+      "shortsword"
+    ]),
+    // TODO Tools: three musical instruments of your choice,
+    saveProficiencies: abSet("dex", "cha"),
+    skillChoices: 3,
+    skillProficiencies: skSet(...SkillNames),
+    features: /* @__PURE__ */ new Map([
+      [1, [BardicInspiration_default, BardSpellcasting.feature]],
+      [2, [JackOfAllTrades, SongOfRest, MagicalInspiration]],
+      [3, [Expertise2]],
+      [4, [ASI46, BardicVersatility]],
+      [5, [FontOfInspiration]],
+      [6, [Countercharm]],
+      [8, [ASI86]],
+      [10, [MagicalSecrets]],
+      [12, [ASI126]],
+      [16, [ASI166]],
+      [19, [ASI196]],
+      [20, [SuperiorInspiration]]
+    ])
+  };
+  var bard_default = Bard;
+
+  // src/pcs/glean/Shaira.ts
+  var Shaira = class extends PC {
+    constructor(g) {
+      super(g, "Shaira", shaira_default);
+      this.setAbilityScores(13, 10, 8, 14, 15, 12);
+      this.setRace(HalfElf);
+      this.setConfig(AbilityScoreBonus, ["int", "wis"]);
+      this.setConfig(SkillVersatility, ["Persuasion", "History"]);
+      this.setConfig(LanguageChoice, "Dwarvish");
+      this.skills.set("Deception", 1);
+      this.skills.set("Stealth", 1);
+      this.toolProficiencies.set("thieves' tools", 1);
+      this.toolProficiencies.set("playing card set", 1);
+      this.addClassLevel(bard_default);
+      this.don(new LeatherArmor(g));
+      this.don(new Rapier(g));
+      this.inventory.add(new Dagger(g, 1));
+    }
+  };
+
+  // src/data/templates.ts
+  function useTemplate(g, template2) {
+    for (const { combatant, side, x, y } of template2) {
+      const co = combatant(g);
+      if (typeof side === "number")
+        co.side = side;
+      g.place(co, x, y);
+    }
+    return g.start();
+  }
+  var bte = (combatant, x, y) => ({
+    combatant,
+    x,
+    y
+  });
+  var gleanVsGoblins = [
+    bte((g) => new Marvoril(g), 15, 30),
+    bte((g) => new Shaira(g), 10, 35),
+    bte((g) => new Goblin(g, true), 15, 0),
+    bte((g) => new Goblin(g, true), 25, 0),
+    bte((g) => new Goblin(g), 20, 5),
+    bte((g) => new Goblin(g), 25, 5)
+  ];
+  var daviesVsFiends = [
+    bte((g) => new Aura(g), 20, 20),
+    bte((g) => new Beldalynn(g), 10, 30),
+    bte((g) => new Galilea(g), 5, 0),
+    bte((g) => new Salgar(g), 15, 30),
+    bte((g) => new Hagrond(g), 0, 5),
+    bte((g) => new Birnotec(g), 15, 0),
+    bte((g) => new Kay(g), 20, 0),
+    bte((g) => new OGonrit(g), 10, 15),
+    bte((g) => new Yulash(g), 25, 10),
+    bte((g) => new Zafron(g), 10, 5)
+  ];
+
+  // src/collectors/AttackOutcomeCollector.ts
+  var AttackOutcomeCollector = class extends AbstractSumCollector {
+    setDefaultGetter(getter) {
+      this.defaultGet = getter;
+      return this;
+    }
+    getDefaultResult() {
+      if (this.defaultGet)
+        return this.defaultGet();
+      throw new Error("AttackOutcomeCollector.setDefaultGetter() not called");
+    }
+    getSum(values) {
+      if (values.includes("miss"))
+        return "miss";
+      if (values.includes("critical"))
+        return "critical";
+      if (values.includes("hit"))
+        return "hit";
+      return this.getDefaultResult();
+    }
+    get hits() {
+      return this.result !== "miss";
+    }
+  };
+
+  // src/types/DamageResponse.ts
+  var DamageResponses = [
+    "absorb",
+    "immune",
+    "resist",
+    "vulnerable",
+    "normal"
+  ];
+
+  // src/collectors/DamageResponseCollector.ts
+  var DamageResponseCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      for (const p of DamageResponses) {
+        if (values.includes(p))
+          return p;
+      }
+      return "normal";
+    }
+  };
+
+  // src/collectors/ErrorCollector.ts
+  var ErrorCollector = class {
+    constructor() {
+      this.errors = /* @__PURE__ */ new Set();
+      this.ignored = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.errors.add({ value, source });
+    }
+    addMany(messages, source) {
+      for (const message of messages)
+        this.add(message, source);
+    }
+    ignore(source) {
+      this.ignored.add(source);
+    }
+    get valid() {
+      return Array.from(this.errors).filter(
+        (entry) => !this.ignored.has(entry.source)
+      );
+    }
+    get messages() {
+      return this.valid.map((entry) => `${entry.value} (${entry.source.name})`);
+    }
+    get result() {
+      return this.valid.length === 0;
+    }
+  };
+
+  // src/collectors/SaveDamageResponseCollector.ts
+  var SaveDamageResponseCollector = class extends AbstractSumCollector {
+    constructor(fallback) {
+      super();
+      this.fallback = fallback;
+    }
+    getSum(values) {
+      if (values.includes("zero"))
+        return "zero";
+      if (values.includes("half"))
+        return "half";
+      return this.fallback;
+    }
+  };
+
+  // src/DamageMap.ts
+  var DamageMap = class extends Map {
+    constructor(items = []) {
+      super(items);
+    }
+    get total() {
+      let total = 0;
+      for (const amount of this.values())
+        total += amount;
+      return total;
+    }
+    add(type, value) {
+      var _a;
+      const old = (_a = this.get(type)) != null ? _a : 0;
+      this.set(type, old + value);
+    }
+  };
+
+  // src/collectors/ValueCollector.ts
+  var comparators = {
+    higher: (o2, n) => n > o2,
+    lower: (o2, n) => n < o2
+  };
+  var ValueCollector = class {
+    constructor(final) {
+      this.final = final;
+      this.others = [];
+    }
+    add(value, prefer) {
+      const comparator = comparators[prefer];
+      if (comparator(this.final, value)) {
+        this.others.push(this.final);
+        this.final = value;
+      } else
+        this.others.push(value);
+    }
+  };
+
+  // src/DiceBag.ts
+  function matches(rt, m) {
+    for (const [field, value] of Object.entries(m)) {
+      if (rt[field] !== value)
+        return false;
+    }
+    return true;
+  }
+  function sizeOfDice(rt) {
+    switch (rt.type) {
+      case "damage":
+      case "heal":
+        return rt.size;
+      case "bane":
+      case "bless":
+        return 4;
+      case "attack":
+      case "check":
+      case "initiative":
+      case "luck":
+      case "save":
+        return 20;
+    }
+  }
+  var DiceBag = class {
+    constructor() {
+      this.forcedRolls = /* @__PURE__ */ new Set();
+    }
+    force(value, matcher) {
+      this.forcedRolls.add({ value, matcher });
+    }
+    getForcedRoll(rt) {
+      for (const fr of this.forcedRolls) {
+        if (matches(rt, fr.matcher)) {
+          this.forcedRolls.delete(fr);
+          return fr.value;
+        }
+      }
+    }
+    roll(rt, dt = "normal") {
+      var _a, _b;
+      const size = sizeOfDice(rt);
+      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
+      const values = new ValueCollector(value);
+      if (dt !== "normal") {
+        const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
+        const prefer = dt === "advantage" ? "higher" : "lower";
+        values.add(second, prefer);
+      }
+      return { size, values };
+    }
+  };
+
+  // src/events/AbilityCheckEvent.ts
+  var AbilityCheckEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AbilityCheck", { detail });
+    }
+  };
+
+  // src/events/AfterActionEvent.ts
+  var AfterActionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AfterAction", { detail });
+    }
+  };
+
+  // src/events/AreaPlacedEvent.ts
+  var AreaPlacedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AreaPlaced", { detail });
+    }
+  };
+
+  // src/events/AreaRemovedEvent.ts
+  var AreaRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AreaRemoved", { detail });
+    }
+  };
+
+  // src/events/AttackEvent.ts
+  var AttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Attack", { detail });
+    }
+  };
+
+  // src/events/BattleStartedEvent.ts
+  var BattleStartedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BattleStarted", { detail });
+    }
+  };
+
+  // src/events/BeforeAttackEvent.ts
+  var BeforeAttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeAttack", { detail });
+    }
+  };
+
+  // src/events/BeforeCheckEvent.ts
+  var BeforeCheckEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeCheck", { detail });
+    }
+  };
+
+  // src/events/BeforeMoveEvent.ts
+  var BeforeMoveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeMove", { detail });
+    }
+  };
+
+  // src/events/BeforeSaveEvent.ts
+  var BeforeSaveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeSave", { detail });
+    }
+  };
+
+  // src/events/BoundedMoveEvent.ts
+  var BoundedMoveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BoundedMove", { detail });
+    }
+  };
+
+  // src/events/CheckActionEvent.ts
+  var CheckActionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CheckAction", { detail });
+    }
+  };
+
+  // src/events/CheckVisionEvent.ts
+  var CheckVisionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CheckVision", { detail });
+    }
+  };
+
+  // src/events/CombatantDamagedEvent.ts
+  var CombatantDamagedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantDamaged", { detail });
+    }
+  };
+
+  // src/events/CombatantDiedEvent.ts
+  var CombatantDiedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantDied", { detail });
+    }
+  };
+
+  // src/events/CombatantHealedEvent.ts
+  var CombatantHealedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantHealed", { detail });
+    }
+  };
+
+  // src/events/CombatantInitiativeEvent.ts
+  var CombatantInitiativeEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantInitiative", { detail });
+    }
+  };
+
+  // src/events/CombatantMovedEvent.ts
+  var CombatantMovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantMoved", { detail });
+    }
+  };
+
+  // src/events/CombatantPlacedEvent.ts
+  var CombatantPlacedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantPlaced", { detail });
+    }
+  };
+
+  // src/events/DiceRolledEvent.ts
+  var DiceRolledEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("DiceRolled", { detail });
+    }
+  };
+
+  // src/events/Dispatcher.ts
+  var Dispatcher = class {
+    constructor(debug = false, target = new EventTarget()) {
+      this.debug = debug;
+      this.target = target;
+      this.taps = /* @__PURE__ */ new Set();
+    }
+    tap(listener) {
+      this.taps.add(listener);
+      return () => this.taps.delete(listener);
+    }
+    fire(event) {
+      if (this.debug)
+        console.log("fire:", event);
+      return this.target.dispatchEvent(event);
+    }
+    on(type, callback, options) {
+      this.target.addEventListener(
+        type,
+        callback,
+        options
+      );
+      const cleanup = () => this.off(type, callback);
+      for (const tap of this.taps)
+        tap(cleanup);
+      return cleanup;
+    }
+    off(type, callback, options) {
+      return this.target.removeEventListener(
+        type,
+        callback,
+        options
+      );
+    }
+  };
+
+  // src/events/GatherDamageEvent.ts
+  var GatherDamageEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GatherDamage", { detail });
+    }
+  };
+
+  // src/events/GatherHealEvent.ts
+  var GatherHealEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GatherHeal", { detail });
+    }
+  };
+
+  // src/events/GetACEvent.ts
+  var GetACEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetAC", { detail });
+    }
+  };
+
+  // src/events/GetACMethodsEvent.ts
+  var GetACMethodsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetACMethods", { detail });
+    }
+  };
+
+  // src/events/GetActionsEvent.ts
+  var GetActionsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetActions", { detail });
+    }
+  };
+
+  // src/events/GetDamageResponseEvent.ts
+  var GetDamageResponseEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetDamageResponse", { detail });
+    }
+  };
+
+  // src/events/GetInitiativeEvent.ts
+  var GetInitiativeEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetInitiative", { detail });
+    }
+  };
+
+  // src/events/GetMoveCostEvent.ts
+  var GetMoveCostEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetMoveCost", { detail });
+    }
+  };
+
+  // src/events/GetSaveDCEvent.ts
+  var GetSaveDCEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSaveDC", { detail });
+    }
+  };
+
+  // src/events/SaveEvent.ts
+  var SaveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Save", { detail });
+    }
+  };
+
+  // src/events/TextEvent.ts
+  var TextEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Text", { detail });
+    }
+  };
+
+  // src/events/TurnEndedEvent.ts
+  var TurnEndedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnEnded", { detail });
+    }
+  };
+
+  // src/events/TurnSkippedEvent.ts
+  var TurnSkippedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnSkipped", { detail });
+    }
+  };
+
+  // src/events/TurnStartedEvent.ts
+  var TurnStartedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnStarted", { detail });
+    }
+  };
+
+  // src/types/SaveTag.ts
+  var svSet = (...items) => new Set(items);
+
+  // src/Engine.ts
+  var Engine = class {
+    constructor(dice = new DiceBag(), events = new Dispatcher()) {
+      this.dice = dice;
+      this.events = events;
+      this.combatants = /* @__PURE__ */ new Set();
+      this.effects = /* @__PURE__ */ new Set();
+      this.id = 0;
+      this.initiativeOrder = [];
+      this.initiativePosition = NaN;
+      this.rules = new DndRules(this);
+    }
+    nextId() {
+      return ++this.id;
+    }
+    place(who, x, y) {
+      const position = { x, y };
+      who.position = position;
+      who.initiative = NaN;
+      this.combatants.add(who);
+      this.fire(new CombatantPlacedEvent({ who, position }));
+    }
+    async start() {
+      for (const co of this.combatants) {
+        co.finalise();
+        co.initiative = await this.rollInitiative(co);
+        const items = [...co.inventory, ...co.equipment];
+        for (const item of items) {
+          item.owner = co;
+          item.possessor = co;
+        }
+      }
+      this.initiativeOrder = Array.from(this.combatants).sort(
+        (a, b) => b.initiative - a.initiative
+      );
+      await this.resolve(
+        new BattleStartedEvent({ interrupt: new InterruptionCollector() })
+      );
+      await this.nextTurn();
+    }
+    async rollMany(count, e, critical = false) {
+      const rolls = await Promise.all(
+        Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e))
+      );
+      return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
+    }
+    async rollDamage(count, e, critical = false) {
+      return this.rollMany(count, { ...e, type: "damage" }, critical);
+    }
+    async rollHeal(count, e, critical = false) {
+      return this.rollMany(count, { ...e, type: "heal" }, critical);
+    }
+    async rollInitiative(who) {
+      const gi = await this.resolve(
+        new GetInitiativeEvent({
+          who,
+          bonus: new BonusCollector(),
+          diceType: new DiceTypeCollector(),
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const diceType = gi.detail.diceType.result;
+      const roll = await this.roll({ type: "initiative", who }, diceType);
+      const value = roll.values.final + gi.detail.bonus.result;
+      this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
+      return value;
+    }
+    async savingThrow(dc, e, { save, fail } = {
+      save: "half",
+      fail: "normal"
+    }) {
+      const successResponse = new SuccessResponseCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const saveDamageResponse = new SaveDamageResponseCollector(save);
+      const failDamageResponse = new SaveDamageResponseCollector(fail);
+      const pre = await this.resolve(
+        new BeforeSaveEvent({
+          ...e,
+          dc,
+          bonus,
+          diceType,
+          successResponse,
+          saveDamageResponse,
+          failDamageResponse,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      let forced = false;
+      let success = false;
+      const roll = await this.roll({ type: "save", ...e }, diceType.result);
+      const total = roll.values.final + bonus.result;
+      if (successResponse.result !== "normal") {
+        success = successResponse.result === "success";
+        forced = true;
+      } else {
+        success = total >= dc;
+      }
+      const outcome = success ? "success" : "fail";
+      this.fire(
+        new SaveEvent({
+          pre: pre.detail,
+          diceType: diceType.result,
+          roll,
+          dc,
+          outcome,
+          total,
+          forced
+        })
+      );
+      return {
+        roll,
+        outcome,
+        forced,
+        damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
+      };
+    }
+    async abilityCheck(dc, e) {
+      const successResponse = new SuccessResponseCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const pre = await this.resolve(
+        new BeforeCheckEvent({
+          ...e,
+          dc,
+          bonus,
+          diceType,
+          successResponse,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      let forced = false;
+      let success = false;
+      const roll = await this.roll({ type: "check", ...e }, diceType.result);
+      const total = roll.values.final + bonus.result;
+      if (successResponse.result !== "normal") {
+        success = successResponse.result === "success";
+        forced = true;
+      } else {
+        success = total >= dc;
+      }
+      const outcome = success ? "success" : "fail";
+      this.fire(
+        new AbilityCheckEvent({
+          pre: pre.detail,
+          diceType: diceType.result,
+          roll,
+          dc,
+          outcome,
+          total,
+          forced
+        })
+      );
+      return { outcome, forced };
+    }
+    async roll(type, diceType = "normal") {
+      const roll = this.dice.roll(type, diceType);
+      return (await this.resolve(
+        new DiceRolledEvent({
+          type,
+          diceType,
+          ...roll,
+          interrupt: new InterruptionCollector()
+        })
+      )).detail;
+    }
+    async nextTurn() {
+      if (this.activeCombatant)
+        await this.resolve(
+          new TurnEndedEvent({
+            who: this.activeCombatant,
+            interrupt: new InterruptionCollector()
+          })
+        );
+      let who = this.initiativeOrder[this.initiativePosition];
+      let scan = true;
+      while (scan) {
+        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
+        who = this.initiativeOrder[this.initiativePosition];
+        if (!who.conditions.has("Unconscious"))
+          scan = false;
+        else {
+          who.tickEffects("turnStart");
+          await this.resolve(
+            new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
+          );
+          who.tickEffects("turnEnd");
+        }
+      }
+      this.activeCombatant = who;
+      who.attacksSoFar = [];
+      who.movedSoFar = 0;
+      await this.resolve(
+        new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
+      );
+    }
+    async moveInDirection(who, direction, handler, type = "speed") {
+      const old = who.position;
+      const position = movePoint(old, direction);
+      return this.move(who, position, handler, type);
+    }
+    async move(who, position, handler, type = "speed") {
+      const old = who.position;
+      const error = new ErrorCollector();
+      const pre = await this.resolve(
+        new BeforeMoveEvent({
+          who,
+          from: old,
+          to: position,
+          handler,
+          type,
+          error,
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (pre.detail.success.result === "fail")
+        return { type: "prevented" };
+      if (!error.result)
+        return { type: "error", error };
+      const multiplier = new MultiplierCollector();
+      this.fire(
+        new GetMoveCostEvent({
+          who,
+          from: old,
+          to: position,
+          handler,
+          type,
+          multiplier
+        })
+      );
+      who.position = position;
+      const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+      await this.resolve(
+        new CombatantMovedEvent({
+          who,
+          old,
+          position,
+          handler,
+          type,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (handlerDone)
+        return { type: "unbind" };
+      return { type: "ok" };
+    }
+    async applyDamage(damage, {
+      attack,
+      attacker,
+      multiplier: baseMultiplier = 1,
+      target
+    }) {
+      const { total, healAmount, breakdown } = this.calculateDamage(
+        damage,
+        target,
+        baseMultiplier,
+        attack
+      );
+      if (healAmount > 0) {
+        await this.applyHeal(target, healAmount, target);
+      }
+      if (total < 1)
+        return;
+      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(target, total);
+      await this.resolve(
+        new CombatantDamagedEvent({
+          who: target,
+          attack,
+          attacker,
+          total,
+          takenByTemporaryHP,
+          afterTemporaryHP,
+          temporaryHPSource,
+          breakdown,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (target.hp <= 0) {
+        await this.handleCombatantDeath(target, attacker);
+      } else if (target.concentratingOn.size) {
+        await this.handleConcentrationCheck(target, total);
+      }
+    }
+    calculateDamage(damage, target, baseMultiplier, attack) {
+      let total = 0;
+      let healAmount = 0;
+      const breakdown = /* @__PURE__ */ new Map();
+      for (const [damageType, raw] of damage) {
+        const { response, amount } = this.calculateDamageResponse(
+          damageType,
+          raw,
+          target,
+          baseMultiplier,
+          attack
+        );
+        if (response === "absorb") {
+          healAmount += raw;
+        } else {
+          total += amount;
+        }
+        breakdown.set(damageType, { response, raw, amount });
+      }
+      return { total, healAmount, breakdown };
+    }
+    calculateDamageResponse(damageType, raw, target, baseMultiplier, attack) {
+      const collector = new DamageResponseCollector();
+      const innateResponse = target.damageResponses.get(damageType);
+      if (innateResponse) {
+        collector.add(innateResponse, target);
+      }
+      this.fire(
+        new GetDamageResponseEvent({
+          attack,
+          who: target,
+          damageType,
+          response: collector
+        })
+      );
+      const { response, amount } = this.calculateDamageAmount(
+        raw,
+        collector.result,
+        baseMultiplier
+      );
+      return { response, amount };
+    }
+    calculateDamageAmount(raw, response, baseMultiplier) {
+      let amount = raw;
+      if (response === "absorb" || response === "immune") {
+        amount = 0;
+      } else {
+        let multiplier = baseMultiplier;
+        if (response === "resist") {
+          multiplier *= 0.5;
+        } else if (response === "vulnerable") {
+          multiplier *= 2;
+        }
+        amount = Math.ceil(raw * multiplier);
+      }
+      return { response, amount };
+    }
+    applyTemporaryHP(target, totalDamage) {
+      const takenByTemporaryHP = Math.min(totalDamage, target.temporaryHP);
+      target.temporaryHP -= takenByTemporaryHP;
+      const afterTemporaryHP = totalDamage - takenByTemporaryHP;
+      target.hp -= afterTemporaryHP;
+      const temporaryHPSource = target.temporaryHPSource;
+      if (target.temporaryHP <= 0) {
+        target.temporaryHPSource = void 0;
+      }
+      return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
+    }
+    async handleCombatantDeath(target, attacker) {
+      await target.endConcentration();
+      if (target.diesAtZero || target.hp <= -target.hpMax) {
+        await this.kill(target, attacker);
+      } else if (!target.hasEffect(Dying)) {
+        target.hp = 0;
+        await target.removeEffect(Stable);
+        await target.addEffect(Dying, { duration: Infinity });
+      } else {
+        target.hp = 0;
+        await this.failDeathSave(target);
+      }
+    }
+    async handleConcentrationCheck(target, totalDamage) {
+      const dc = Math.max(10, Math.floor(totalDamage / 2));
+      const result = await this.savingThrow(dc, {
+        attacker: target,
+        who: target,
+        ability: "con",
+        tags: svSet("concentration")
+      });
+      if (result.outcome === "fail") {
+        await target.endConcentration();
+      }
+    }
+    async kill(target, attacker) {
+      this.combatants.delete(target);
+      await target.addEffect(Dead, { duration: Infinity });
+      this.fire(new CombatantDiedEvent({ who: target, attacker }));
+    }
+    async failDeathSave(who, count = 1, attacker) {
+      who.deathSaveFailures += count;
+      if (who.deathSaveFailures >= 3)
+        await this.kill(who, attacker);
+    }
+    async succeedDeathSave(who) {
+      who.deathSaveSuccesses++;
+      if (who.deathSaveSuccesses >= 3) {
+        await who.removeEffect(Dying);
+        who.deathSaveFailures = 0;
+        who.deathSaveSuccesses = 0;
+        await who.addEffect(Stable, { duration: Infinity });
+      }
+    }
+    getAttackOutcome(ac, roll, total) {
+      return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
+    }
+    async attack(e) {
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const success = new SuccessResponseCollector();
+      const pre = await this.resolve(
+        new BeforeAttackEvent({
+          ...e,
+          bonus,
+          diceType,
+          success,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (success.result === "fail")
+        return { outcome: "cancelled", hit: false };
+      const { target, who, ability } = pre.detail;
+      const ac = await this.getAC(target, pre.detail);
+      const roll = await this.roll(
+        { type: "attack", who, target, ac, ability },
+        diceType.result
+      );
+      const total = roll.values.final + bonus.result;
+      const outcomeCollector = new AttackOutcomeCollector();
+      const event = new AttackEvent({
+        pre: pre.detail,
+        roll,
+        total,
+        ac,
+        outcome: outcomeCollector,
+        interrupt: new InterruptionCollector()
+      });
+      outcomeCollector.setDefaultGetter(
+        () => this.getAttackOutcome(
+          event.detail.ac,
+          event.detail.roll.values.final,
+          event.detail.total
+        )
+      );
+      const attack = await this.resolve(event);
+      const outcome = outcomeCollector.result;
+      return {
+        outcome,
+        attack: attack.detail,
+        hit: outcome === "hit" || outcome === "critical",
+        critical: outcome === "critical"
+      };
+    }
+    async damage(source, damageType, e, damageInitialiser = [], startingMultiplier) {
+      if (startingMultiplier === "zero")
+        return;
+      const map = new DamageMap(damageInitialiser);
+      const multiplier = new MultiplierCollector();
+      if (typeof startingMultiplier !== "undefined")
+        multiplier.add(startingMultiplier, source);
+      const gather = await this.resolve(
+        new GatherDamageEvent({
+          critical: false,
+          ...e,
+          map,
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          multiplier
+        })
+      );
+      map.add(damageType, gather.detail.bonus.result);
+      return this.applyDamage(map, {
+        source,
+        attack: e.attack,
+        attacker: e.attacker,
+        target: e.target,
+        multiplier: multiplier.result
+      });
+    }
+    /** @deprecated use `checkConfig` or `getConfigErrors` instead */
+    check(action, config) {
+      const error = new ErrorCollector();
+      this.fire(new CheckActionEvent({ action, config, error }));
+      action.check(config, error);
+      return error;
+    }
+    async act(action, config) {
+      await action.apply(config);
+      return this.resolve(
+        new AfterActionEvent({
+          action,
+          config,
+          interrupt: new InterruptionCollector()
+        })
+      );
+    }
+    getActions(who, target) {
+      return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
+    }
+    getBestACMethod(who) {
+      return this.fire(
+        new GetACMethodsEvent({
+          who,
+          methods: [who.baseACMethod]
+        })
+      ).detail.methods.reduce(
+        (best, method) => method.ac > best.ac ? method : best,
+        who.baseACMethod
+      );
+    }
+    async getAC(who, pre) {
+      const method = this.getBestACMethod(who);
+      const e = await this.resolve(
+        new GetACEvent({
+          who,
+          method,
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          pre
+        })
+      );
+      return method.ac + e.detail.bonus.result;
+    }
+    fire(e) {
+      if (e.detail.interrupt)
+        throw new Error(
+          `Use Engine.resolve() on an interruptible event type: ${e.type}`
+        );
+      this.events.fire(e);
+      return e;
+    }
+    async resolve(e) {
+      this.events.fire(e);
+      for (const interruption of e.detail.interrupt)
+        await interruption.apply(this);
+      return e;
+    }
+    addEffectArea(area) {
+      area.id = this.nextId();
+      this.effects.add(area);
+      this.fire(new AreaPlacedEvent({ area }));
+    }
+    removeEffectArea(area) {
+      this.effects.delete(area);
+      this.fire(new AreaRemovedEvent({ area }));
+    }
+    getInside(area, ignore = []) {
+      const points = resolveArea(area);
+      const inside = [];
+      for (const combatant of this.combatants) {
+        if (ignore.includes(combatant))
+          continue;
+        const squares = new PointSet(getSquares(combatant, combatant.position));
+        if (points.overlaps(squares))
+          inside.push(combatant);
+      }
+      return inside;
+    }
+    async applyBoundedMove(who, handler) {
+      return new Promise(
+        (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
+      );
+    }
+    async heal(source, amount, e, startingMultiplier) {
+      const bonus = new BonusCollector();
+      bonus.add(amount, source);
+      const multiplier = new MultiplierCollector();
+      if (typeof startingMultiplier !== "undefined")
+        multiplier.add(startingMultiplier, source);
+      const gather = await this.resolve(
+        new GatherHealEvent({
+          ...e,
+          bonus,
+          multiplier,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const total = bonus.result * multiplier.result;
+      return this.applyHeal(gather.detail.target, total, gather.detail.actor);
+    }
+    async applyHeal(who, fullAmount, actor) {
+      const amount = Math.min(fullAmount, who.hpMax - who.hp);
+      who.hp += amount;
+      return this.resolve(
+        new CombatantHealedEvent({
+          who,
+          actor,
+          amount,
+          fullAmount,
+          interrupt: new InterruptionCollector()
+        })
+      );
+    }
+    async giveTemporaryHP(who, count, source) {
+      var _a;
+      if (who.temporaryHP > 0)
+        return new YesNoChoice(
+          who,
+          source,
+          `Replace Temporary HP?`,
+          `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
+          async () => this.setTemporaryHP(who, count, source)
+        ).apply(this);
+      this.setTemporaryHP(who, count, source);
+      return true;
+    }
+    setTemporaryHP(who, count, source) {
+      who.temporaryHP = count;
+      who.temporaryHPSource = source;
+    }
+    canSee(who, target) {
+      return this.fire(
+        new CheckVisionEvent({ who, target, error: new ErrorCollector() })
+      ).detail.error.result;
+    }
+    async getSaveDC(e) {
+      const bonus = new BonusCollector();
+      const interrupt = new InterruptionCollector();
+      switch (e.type.type) {
+        case "ability":
+          bonus.add(8, e.source);
+          break;
+        case "flat":
+          bonus.add(e.type.dc, e.source);
+          break;
+      }
+      const result = await this.resolve(
+        new GetSaveDCEvent({ ...e, bonus, interrupt })
+      );
+      return result.detail;
+    }
+    async save({
+      source,
+      type,
+      attacker,
+      who,
+      ability,
+      spell,
+      method,
+      effect,
+      config,
+      tags,
+      save = "half",
+      fail = "normal"
+    }) {
+      const dcRoll = await this.getSaveDC({
+        type,
+        source,
+        who: attacker,
+        target: who,
+        ability,
+        spell,
+        method
+      });
+      const result = await this.savingThrow(
+        dcRoll.bonus.result,
+        {
+          who,
+          attacker,
+          ability,
+          spell,
+          method,
+          effect,
+          config,
+          tags: new Set(tags)
+        },
+        { save, fail }
+      );
+      return { ...result, dcRoll };
+    }
+    text(message) {
+      this.fire(new TextEvent({ message }));
+    }
+  };
+
   // src/ui/App.tsx
   var import_signals2 = __toESM(require_signals());
   var import_hooks17 = __toESM(require_hooks());
@@ -15137,39 +15551,12 @@ The creature is aware of this effect before it makes its attack against you.`
   }
 
   // src/index.tsx
+  var template = daviesVsFiends;
   var svgCache = new FetchCache();
   var gInstance = new Engine();
   window.g = gInstance;
   (0, import_preact4.render)(
-    /* @__PURE__ */ o(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ o(
-      App,
-      {
-        g: gInstance,
-        onMount: () => {
-          const aura = new Aura(gInstance);
-          const beldalynn = new Beldalynn(gInstance);
-          const galilea = new Galilea(gInstance);
-          const salgar = new Salgar(gInstance);
-          const hagrond = new Hagrond(gInstance);
-          const birnotec = new Birnotec(gInstance);
-          const kay = new Kay(gInstance);
-          const gonrit = new OGonrit(gInstance);
-          const yulash = new Yulash(gInstance);
-          const zafron = new Zafron(gInstance);
-          gInstance.place(aura, 20, 20);
-          gInstance.place(beldalynn, 10, 30);
-          gInstance.place(galilea, 5, 0);
-          gInstance.place(salgar, 15, 30);
-          gInstance.place(hagrond, 0, 5);
-          gInstance.place(birnotec, 15, 0);
-          gInstance.place(kay, 20, 0);
-          gInstance.place(gonrit, 10, 15);
-          gInstance.place(yulash, 25, 10);
-          gInstance.place(zafron, 10, 5);
-          gInstance.start();
-        }
-      }
-    ) }),
+    /* @__PURE__ */ o(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ o(App, { g: gInstance, onMount: () => useTemplate(gInstance, template) }) }),
     document.body
   );
 })();

@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/marvoril.png";
+
 import Paladin from "../../classes/paladin";
 import Engine from "../../Engine";
 import { ChainMailArmor, Shield } from "../../items/armor";
@@ -12,7 +14,7 @@ import {
 
 export default class Marvoril extends PC {
   constructor(g: Engine) {
-    super(g, "Marvoril", "");
+    super(g, "Marvoril", tokenUrl);
 
     this.setAbilityScores(15, 8, 13, 12, 10, 14);
     this.setRace(HalfElf);

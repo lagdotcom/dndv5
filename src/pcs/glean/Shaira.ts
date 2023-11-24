@@ -1,3 +1,5 @@
+import tokenUrl from "@img/tok/pc/shaira.png";
+
 import Bard from "../../classes/bard";
 import Engine from "../../Engine";
 import { LeatherArmor } from "../../items/armor";
@@ -12,7 +14,7 @@ import {
 
 export default class Shaira extends PC {
   constructor(g: Engine) {
-    super(g, "Shaira", "");
+    super(g, "Shaira", tokenUrl);
 
     this.setAbilityScores(13, 10, 8, 14, 15, 12);
     this.setRace(HalfElf);

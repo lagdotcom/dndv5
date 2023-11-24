@@ -5,6 +5,7 @@ export const LanguageNames = [
   "Dwarvish",
   "Elvish",
   "Giant",
+  "Goblin",
   "Halfling",
   "Infernal",
   "Orc",

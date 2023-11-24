@@ -87,6 +87,28 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
   });
 });
 
+export const CloseCombatRule = new DndRule("Close Combat", (g) => {
+  // Aiming a ranged attack is more difficult when a foe is next to you. When you make a ranged attack with a weapon, a spell, or some other means, you have disadvantage on the attack roll if you are within 5 feet of a hostile creature who can see you and who isn't incapacitated.
+  g.events.on("BeforeAttack", ({ detail: { tags, who, diceType } }) => {
+    if (tags.has("ranged")) {
+      let threatened = false;
+      for (const co of g.combatants) {
+        if (
+          co.side !== who.side &&
+          !co.conditions.has("Incapacitated") &&
+          distance(who, co) <= 5
+          // TODO [SIGHT] who can see you
+        ) {
+          threatened = true;
+          break;
+        }
+      }
+
+      if (threatened) diceType.add("disadvantage", CloseCombatRule);
+    }
+  });
+});
+
 export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
   g.events.on("GetActions", ({ detail: { who, actions } }) => {
     actions.push(new DashAction(g, who));
