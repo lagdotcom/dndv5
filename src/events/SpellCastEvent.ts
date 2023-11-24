@@ -10,6 +10,7 @@ export interface SpellCastDetail<T extends object = object> {
   method: SpellcastingMethod;
   level: number;
   targets: Set<Combatant>;
+  affected: Set<Combatant>;
   interrupt: InterruptionCollector;
   success: SuccessResponseCollector;
 }

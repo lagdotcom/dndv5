@@ -17,7 +17,7 @@ const SculptSpells = new SimpleFeature(
   (g, me) => {
     g.events.on(
       "SpellCast",
-      ({ detail: { who, spell, level, targets, interrupt } }) => {
+      ({ detail: { who, spell, level, affected, interrupt } }) => {
         if (who === me && spell.school === "Evocation")
           interrupt.add(
             new MultiListChoice(
@@ -25,7 +25,7 @@ const SculptSpells = new SimpleFeature(
               SculptSpells,
               "Sculpt Spells",
               `Pick combatants who will be somewhat protected from your spell.`,
-              Array.from(targets, (value) => ({
+              Array.from(affected, (value) => ({
                 value,
                 label: value.name,
               })),

@@ -33,8 +33,10 @@ import Spell from "./Spell";
 import SpellcastingMethod from "./SpellcastingMethod";
 import ToolName from "./ToolName";
 
+export type CombatantID = number;
+
 export default interface Combatant extends Source {
-  id: number;
+  id: CombatantID;
   img: string;
   type: CreatureType;
   size: SizeCategory;
