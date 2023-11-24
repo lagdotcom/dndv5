@@ -5,6 +5,7 @@ import SimpleFeature from "../../features/SimpleFeature";
 import MessageBuilder from "../../MessageBuilder";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
+import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { SkillNames, skSet } from "../../types/SkillName";
 import Spell from "../../types/Spell";
@@ -123,8 +124,8 @@ export const ASI19 = makeASI("Bard", 19);
 const Bard: PCClass = {
   name: "Bard",
   hitDieSize: 8,
-  armorProficiencies: new Set(["light"]),
-  weaponCategoryProficiencies: new Set(["simple"]),
+  armorProficiencies: acSet("light"),
+  weaponCategoryProficiencies: wcSet("simple"),
   weaponProficiencies: new Set([
     "hand crossbow",
     "longsword",
