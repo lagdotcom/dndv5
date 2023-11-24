@@ -11,7 +11,7 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
-import { FightingStyleProtection } from "../../features/fightingStyles";
+import FightingStyleProtection from "../../features/fightingStyles/Protection";
 import SimpleFeature from "../../features/SimpleFeature";
 import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";

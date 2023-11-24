@@ -1,17 +1,17 @@
 import protectionUrl from "@img/act/protection.svg";
 
-import AbstractAction from "../actions/AbstractAction";
-import DiceTypeCollector from "../collectors/DiceTypeCollector";
-import ErrorCollector from "../collectors/ErrorCollector";
-import { makeIcon } from "../colours";
-import { HasTarget } from "../configs";
-import Engine from "../Engine";
-import { canSee, isAlly, isEnemy, notSelf } from "../filters";
-import YesNoChoice from "../interruptions/YesNoChoice";
-import TargetResolver from "../resolvers/TargetResolver";
-import Combatant from "../types/Combatant";
-import { checkConfig } from "../utils/config";
-import SimpleFeature from "./SimpleFeature";
+import AbstractAction from "../../actions/AbstractAction";
+import DiceTypeCollector from "../../collectors/DiceTypeCollector";
+import ErrorCollector from "../../collectors/ErrorCollector";
+import { makeIcon } from "../../colours";
+import { HasTarget } from "../../configs";
+import Engine from "../../Engine";
+import { canSee, isAlly, isEnemy, notSelf } from "../../filters";
+import YesNoChoice from "../../interruptions/YesNoChoice";
+import TargetResolver from "../../resolvers/TargetResolver";
+import Combatant from "../../types/Combatant";
+import { checkConfig } from "../../utils/config";
+import SimpleFeature from "../SimpleFeature";
 
 type Config = HasTarget & { attacker: Combatant };
 
@@ -51,7 +51,7 @@ class ProtectionAction extends AbstractAction<Config> {
   }
 }
 
-export const FightingStyleProtection = new SimpleFeature(
+const FightingStyleProtection = new SimpleFeature(
   "Fighting Style: Protection",
   `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
   (g, me) => {
@@ -83,3 +83,4 @@ export const FightingStyleProtection = new SimpleFeature(
     );
   },
 );
+export default FightingStyleProtection;

@@ -129,6 +129,7 @@ export default interface Combatant extends Source {
   changeExhaustion(delta: number): Promise<number>;
   hasTime(time: ActionTime): boolean;
   useTime(time: ActionTime): void;
+  regainTime(time: ActionTime): void;
   resetTime(): void;
   getCoefficient(co: AICoefficient): number;
 }

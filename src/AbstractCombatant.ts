@@ -600,6 +600,10 @@ export default abstract class AbstractCombatant implements Combatant {
     this.time.add("reaction");
   }
 
+  regainTime(time: ActionTime): void {
+    this.time.add(time);
+  }
+
   getCoefficient(co: AICoefficient) {
     const values = [this.coefficients.get(co)];
     for (const group of this.groups) values.push(group.getCoefficient(co));

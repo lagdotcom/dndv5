@@ -1862,6 +1862,9 @@
       this.time.add("bonus action");
       this.time.add("reaction");
     }
+    regainTime(time) {
+      this.time.add(time);
+    }
     getCoefficient(co) {
       const values = [this.coefficients.get(co)];
       for (const group of this.groups)
@@ -5065,7 +5068,7 @@
   // src/img/act/protection.svg
   var protection_default = "./protection-NGWVG7SN.svg";
 
-  // src/features/fightingStyles.ts
+  // src/features/fightingStyles/Protection.ts
   var ProtectionIcon = makeIcon(protection_default);
   var ProtectionAction = class extends AbstractAction {
     constructor(g, actor, diceType) {
@@ -5127,6 +5130,7 @@
       );
     }
   );
+  var Protection_default = FightingStyleProtection;
 
   // src/spells/level1/GuidingBolt.ts
   var GuidingBoltEffect = new Effect(
@@ -5422,7 +5426,7 @@
       this.addFeature(FiendishMantle);
       this.addFeature(ShieldBash);
       this.addFeature(Spellcasting);
-      this.addFeature(FightingStyleProtection);
+      this.addFeature(Protection_default);
       this.don(new SplintArmor(g), true);
       this.don(new Shield(g), true);
       this.don(new Mace(g), true);
@@ -10367,7 +10371,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       this.addClassLevel(paladin_default2);
       this.addClassLevel(paladin_default2);
       this.addClassLevel(paladin_default2);
-      this.setConfig(PaladinFightingStyle, FightingStyleProtection);
+      this.setConfig(PaladinFightingStyle, Protection_default);
       this.setConfig(ASI43, { type: "ability", abilities: ["str", "str"] });
       this.skills.set("Insight", 1);
       this.skills.set("Intimidation", 1);

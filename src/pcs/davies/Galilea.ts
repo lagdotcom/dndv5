@@ -3,7 +3,7 @@ import tokenUrl from "@img/tok/pc/galilea.png";
 import Paladin, { ASI4, PaladinFightingStyle } from "../../classes/paladin";
 import Devotion from "../../classes/paladin/Devotion";
 import Engine from "../../Engine";
-import { FightingStyleProtection } from "../../features/fightingStyles";
+import FightingStyleProtection from "../../features/fightingStyles/Protection";
 import { CrossbowBolt } from "../../items/ammunition";
 import { Shield, SplintArmor } from "../../items/armor";
 import { WandOfWeb } from "../../items/wands";
