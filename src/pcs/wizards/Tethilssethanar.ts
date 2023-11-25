@@ -17,8 +17,8 @@ export default class Tethilssethanar extends PC {
     this.skills.set("Athletics", 1);
     this.skills.set("Insight", 1);
 
-    this.don(new Dart(g, 10));
     this.don(new Sickle(g));
+    this.inventory.add(new Dart(g, 10));
     this.inventory.add(new Sling(g));
     this.inventory.add(new SlingBullet(g, 40));
   }

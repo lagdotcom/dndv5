@@ -46,8 +46,6 @@ class WildShapeController {
     public me: Combatant,
     public form: Monster,
   ) {
-    // TODO
-
     this.backup = {
       name: me.name,
       img: me.img,

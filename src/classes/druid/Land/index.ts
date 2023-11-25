@@ -7,12 +7,14 @@ import {
 import ConfiguredFeature from "../../../features/ConfiguredFeature";
 import SimpleFeature from "../../../features/SimpleFeature";
 import Blur from "../../../spells/level2/Blur";
+import Darkness from "../../../spells/level2/Darkness";
 import HoldPerson from "../../../spells/level2/HoldPerson";
 import MirrorImage from "../../../spells/level2/MirrorImage";
 import MistyStep from "../../../spells/level2/MistyStep";
 import Silence from "../../../spells/level2/Silence";
 import SpiderClimb from "../../../spells/level2/SpiderClimb";
 import SpikeGrowth from "../../../spells/level2/SpikeGrowth";
+import Web from "../../../spells/level2/Web";
 import LightningBolt from "../../../spells/level3/LightningBolt";
 import MeldIntoStone from "../../../spells/level3/MeldIntoStone";
 import SleetStorm from "../../../spells/level3/SleetStorm";
@@ -80,15 +82,15 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     { level: 3, spell: Silence },
     // { level: 5, spell: CreateFoodAndWater },
     // { level: 5, spell: ProtectionFromEnergy },
-    // { level: 7, spell: Blight },
+    // TODO { level: 7, spell: Blight },
     // { level: 7, spell: HallucinatoryTerrain },
-    // { level: 9, spell: InsectPlague },
-    // { level: 9, spell: WallOfStone },
+    // TODO { level: 9, spell: InsectPlague },
+    // TODO { level: 9, spell: WallOfStone },
   ],
   forest: [
-    // { level: 3, spell: Barkskin },
+    // TODO { level: 3, spell: Barkskin },
     { level: 3, spell: SpiderClimb },
-    // { level: 5, spell: CallLightning },
+    // TODO { level: 5, spell: CallLightning },
     // { level: 5, spell: PlantGrowth },
     // { level: 7, spell: Divination },
     { level: 7, spell: FreedomOfMovement },
@@ -96,14 +98,14 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     // { level: 9, spell: TreeStride },
   ],
   grassland: [
-    // { level: 3, spell: Invisibility },
+    // TODO { level: 3, spell: Invisibility },
     // { level: 3, spell: PassWithoutTrade },
     // { level: 5, spell: Daylight },
-    // { level: 5, spell: Haste },
+    // TODO { level: 5, spell: Haste },
     // { level: 7, spell: Divination },
     { level: 7, spell: FreedomOfMovement },
     // { level: 9, spell: Dream },
-    // { level: 9, spell: InsectPlague },
+    // TODO { level: 9, spell: InsectPlague },
   ],
   mountain: [
     { level: 3, spell: SpiderClimb },
@@ -116,24 +118,24 @@ const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
     // { level: 9, spell: WallOfStone },
   ],
   swamp: [
-    // { level: 3, spell: Darkness },
-    // { level: 3, spell: MelfsAcidArrow },
+    { level: 3, spell: Darkness },
+    // TODO { level: 3, spell: MelfsAcidArrow },
     { level: 5, spell: WaterWalk },
-    // { level: 5, spell: StinkingCloud },
+    // TODO { level: 5, spell: StinkingCloud },
     { level: 7, spell: FreedomOfMovement },
     // { level: 7, spell: LocateCreature },
-    // { level: 9, spell: InsectPlague },
+    // TODO { level: 9, spell: InsectPlague },
     // { level: 9, spell: Scrying },
   ],
   Underdark: [
     { level: 3, spell: SpiderClimb },
-    // { level: 3, spell: Web },
+    { level: 3, spell: Web },
     // { level: 5, spell: GaseousForm },
-    // { level: 5, spell: StinkingCloud },
-    // { level: 7, spell: GreaterInvisibility },
+    // TODO { level: 5, spell: StinkingCloud },
+    // TODO { level: 7, spell: GreaterInvisibility },
     // { level: 7, spell: StoneShape },
-    // { level: 9, spell: Cloudkill },
-    // { level: 9, spell: InsectPlague },
+    // TODO { level: 9, spell: Cloudkill },
+    // TODO { level: 9, spell: InsectPlague },
   ],
 };
 
@@ -185,7 +187,7 @@ const NaturesWard = new SimpleFeature(
         const isCharmOrFrighten =
           config.conditions?.has("Charmed") ||
           config.conditions?.has("Frightened");
-        const isElementalOrFey = attacker?.type && wardTypes.has(attacker.type);
+        const isElementalOrFey = attacker && wardTypes.has(attacker.type);
 
         if (
           who === me &&

@@ -2321,6 +2321,11 @@
       super(g, "crossbow bolt", "crossbow", quantity, bolt_default);
     }
   };
+  var SlingBullet = class extends AbstractAmmo {
+    constructor(g, quantity) {
+      super(g, "sling bullet", "sling", quantity);
+    }
+  };
 
   // src/items/armor.ts
   var AbstractArmor = class extends AbstractItem {
@@ -2474,6 +2479,20 @@
       );
     }
   };
+  var Sickle = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "sickle",
+        "simple",
+        "melee",
+        _dd(1, 4, "slashing"),
+        ["light"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
   var Spear = class extends AbstractWeapon {
     constructor(g, quantity) {
       super(
@@ -2506,6 +2525,23 @@
       this.ammunitionTag = "crossbow";
     }
   };
+  var Dart = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "dart",
+        "simple",
+        "ranged",
+        _dd(1, 4, "piercing"),
+        ["finesse", "thrown"],
+        void 0,
+        // TODO [ICON]
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
   var Shortbow = class extends AbstractWeapon {
     constructor(g) {
       super(
@@ -2521,6 +2557,23 @@
         320
       );
       this.ammunitionTag = "bow";
+    }
+  };
+  var Sling = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "sling",
+        "simple",
+        "ranged",
+        _dd(1, 4, "bludgeoning"),
+        ["ammunition"],
+        void 0,
+        // TODO [ICON]
+        30,
+        120
+      );
+      this.ammunitionTag = "sling";
     }
   };
   var Greataxe = class extends AbstractWeapon {
@@ -10615,6 +10668,34 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   });
   var Blur_default = Blur;
 
+  // src/spells/level2/Darkness.ts
+  var getDarknessArea = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 15
+  });
+  var Darkness = simpleSpell({
+    name: "Darkness",
+    level: 2,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    m: "bat fur and a drop of pitch or piece of coal",
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `Magical darkness spreads from a point you choose within range to fill a 15-foot-radius sphere for the duration. The darkness spreads around corners. A creature with darkvision can't see through this darkness, and nonmagical light can't illuminate it.
+
+  If the point you choose is on an object you are holding or one that isn't being worn or carried, the darkness emanates from the object and moves with it. Completely covering the source of the darkness with an opaque object, such as a bowl or a helm, blocks the darkness.
+  
+  If any of this spell's area overlaps with an area of light created by a spell of 2nd level or lower, the spell that created the light is dispelled.`,
+    getConfig: (g) => ({ point: new PointResolver(g, 60) }),
+    getTargets: () => [],
+    getAffectedArea: (g, caster, { point }) => point && [getDarknessArea(point)],
+    getAffected: (g, caster, { point }) => g.getInside(getDarknessArea(point)),
+    async apply() {
+    }
+  });
+  var Darkness_default = Darkness;
+
   // src/spells/level2/MirrorImage.ts
   var MirrorImage = simpleSpell({
     name: "Mirror Image",
@@ -11252,15 +11333,15 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 3, spell: Silence_default }
       // { level: 5, spell: CreateFoodAndWater },
       // { level: 5, spell: ProtectionFromEnergy },
-      // { level: 7, spell: Blight },
+      // TODO { level: 7, spell: Blight },
       // { level: 7, spell: HallucinatoryTerrain },
-      // { level: 9, spell: InsectPlague },
-      // { level: 9, spell: WallOfStone },
+      // TODO { level: 9, spell: InsectPlague },
+      // TODO { level: 9, spell: WallOfStone },
     ],
     forest: [
-      // { level: 3, spell: Barkskin },
+      // TODO { level: 3, spell: Barkskin },
       { level: 3, spell: SpiderClimb_default },
-      // { level: 5, spell: CallLightning },
+      // TODO { level: 5, spell: CallLightning },
       // { level: 5, spell: PlantGrowth },
       // { level: 7, spell: Divination },
       { level: 7, spell: FreedomOfMovement_default }
@@ -11268,14 +11349,14 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       // { level: 9, spell: TreeStride },
     ],
     grassland: [
-      // { level: 3, spell: Invisibility },
+      // TODO { level: 3, spell: Invisibility },
       // { level: 3, spell: PassWithoutTrade },
       // { level: 5, spell: Daylight },
-      // { level: 5, spell: Haste },
+      // TODO { level: 5, spell: Haste },
       // { level: 7, spell: Divination },
       { level: 7, spell: FreedomOfMovement_default }
       // { level: 9, spell: Dream },
-      // { level: 9, spell: InsectPlague },
+      // TODO { level: 9, spell: InsectPlague },
     ],
     mountain: [
       { level: 3, spell: SpiderClimb_default },
@@ -11288,24 +11369,24 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       // { level: 9, spell: WallOfStone },
     ],
     swamp: [
-      // { level: 3, spell: Darkness },
-      // { level: 3, spell: MelfsAcidArrow },
+      { level: 3, spell: Darkness_default },
+      // TODO { level: 3, spell: MelfsAcidArrow },
       { level: 5, spell: WaterWalk_default },
-      // { level: 5, spell: StinkingCloud },
+      // TODO { level: 5, spell: StinkingCloud },
       { level: 7, spell: FreedomOfMovement_default }
       // { level: 7, spell: LocateCreature },
-      // { level: 9, spell: InsectPlague },
+      // TODO { level: 9, spell: InsectPlague },
       // { level: 9, spell: Scrying },
     ],
     Underdark: [
-      { level: 3, spell: SpiderClimb_default }
-      // { level: 3, spell: Web },
+      { level: 3, spell: SpiderClimb_default },
+      { level: 3, spell: Web_default }
       // { level: 5, spell: GaseousForm },
-      // { level: 5, spell: StinkingCloud },
-      // { level: 7, spell: GreaterInvisibility },
+      // TODO { level: 5, spell: StinkingCloud },
+      // TODO { level: 7, spell: GreaterInvisibility },
       // { level: 7, spell: StoneShape },
-      // { level: 9, spell: Cloudkill },
-      // { level: 9, spell: InsectPlague },
+      // TODO { level: 9, spell: Cloudkill },
+      // TODO { level: 9, spell: InsectPlague },
     ]
   };
   var bonusSpellsFeatures = new Map(
@@ -11348,7 +11429,7 @@ In addition, you have advantage on saving throws against plants that are magical
           var _a, _b, _c;
           const isPoisonOrDisease = ((_a = config.conditions) == null ? void 0 : _a.has("Poisoned")) || effect.tags.has("poison") || effect.tags.has("disease");
           const isCharmOrFrighten = ((_b = config.conditions) == null ? void 0 : _b.has("Charmed")) || ((_c = config.conditions) == null ? void 0 : _c.has("Frightened"));
-          const isElementalOrFey = (attacker == null ? void 0 : attacker.type) && wardTypes.has(attacker.type);
+          const isElementalOrFey = attacker && wardTypes.has(attacker.type);
           if (who === me && (isElementalOrFey && isCharmOrFrighten || isPoisonOrDisease))
             success.add("fail", NaturesWard);
         }
@@ -12819,6 +12900,344 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
   };
 
+  // src/img/tok/pc/tethilssethanar.png
+  var tethilssethanar_default = "./tethilssethanar-7GNDRUAR.png";
+
+  // src/classes/monk/MartialArts.ts
+  function getMartialArtsDie(level) {
+    if (level < 5)
+      return 4;
+    if (level < 11)
+      return 6;
+    if (level < 17)
+      return 8;
+    return 10;
+  }
+  function isMonkWeapon(weapon) {
+    if (weapon.weaponType === "unarmed strike")
+      return true;
+    if (weapon.weaponType === "shortsword")
+      return true;
+    return weapon.category === "simple" && weapon.rangeCategory === "melee" && !weapon.properties.has("two-handed") && !weapon.properties.has("heavy");
+  }
+  function isMonkWeaponAttack(action) {
+    return action instanceof WeaponAttack && isMonkWeapon(action.weapon);
+  }
+  function canUpgradeDamage(damage, size) {
+    const avg = getDiceAverage(1, size);
+    if (damage.type === "flat")
+      return avg > damage.amount;
+    return size > getDiceAverage(damage.amount.count, damage.amount.size);
+  }
+  function canUseMartialArts(who) {
+    if (who.armor || who.shield)
+      return false;
+    for (const item of who.equipment) {
+      if (item.itemType === "weapon" && !isMonkWeapon(item))
+        return false;
+    }
+    return true;
+  }
+  var MonkWeaponWrapper = class extends AbstractWeapon {
+    constructor(g, weapon, size) {
+      super(
+        g,
+        weapon.name,
+        weapon.category,
+        weapon.rangeCategory,
+        _dd(1, size, weapon.damage.damageType),
+        weapon.properties,
+        void 0,
+        weapon.shortRange,
+        weapon.longRange
+      );
+      this.weapon = weapon;
+    }
+    get icon() {
+      return this.weapon.icon;
+    }
+  };
+  var HasBonusAttackThisTurn = new Effect(
+    "Martial Arts",
+    "turnEnd",
+    void 0,
+    { quiet: true }
+  );
+  var MartialArtsBonusAttack = class extends WeaponAttack {
+    constructor(g, actor, weapon) {
+      super(g, actor, weapon);
+      this.name = `Martial Arts (${weapon.name})`;
+      this.isAttack = false;
+    }
+    getTime() {
+      return "bonus action";
+    }
+  };
+  var MartialArts = new SimpleFeature(
+    "Martial Arts",
+    `Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
+
+You gain the following benefits while you are unarmed or wielding only monk weapons and you aren't wearing armor or wielding a shield.
+
+- You can use Dexterity instead of Strength for the attack and damage rolls of your unarmed strikes and monk weapons.
+- You can roll a d4 in place of the normal damage of your unarmed strike or monk weapon. This die changes as you gain monk levels, as shown in the Martial Arts column of the Monk table.
+- When you use the Attack action with an unarmed strike or a monk weapon on your turn, you can make one unarmed strike as a bonus action. For example, if you take the Attack action and attack with a quarterstaff, you can also make an unarmed strike as a bonus action, assuming you haven't already taken a bonus action this turn.
+
+Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
+    (g, me) => {
+      var _a;
+      const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who !== me || !canUseMartialArts(me))
+          return;
+        for (const wa of actions.filter(isMonkWeaponAttack)) {
+          if (me.dex.score > me.str.score)
+            wa.ability = "dex";
+          if (canUpgradeDamage(wa.weapon.damage, diceSize))
+            wa.weapon = new MonkWeaponWrapper(g, wa.weapon, diceSize);
+        }
+      });
+      g.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
+        if (action.actor === me && isMonkWeaponAttack(action) && canUseMartialArts(me))
+          interrupt.add(
+            new EvaluateLater(action.actor, MartialArts, async () => {
+              await action.actor.addEffect(HasBonusAttackThisTurn, {
+                duration: 1
+              });
+            })
+          );
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who.hasEffect(HasBonusAttackThisTurn) && canUseMartialArts(who)) {
+          const weapon = who.weapons.find(
+            (w) => w.weaponType === "unarmed strike"
+          );
+          if (weapon)
+            actions.push(
+              new MartialArtsBonusAttack(
+                g,
+                who,
+                canUpgradeDamage(weapon.damage, diceSize) ? new MonkWeaponWrapper(g, weapon, diceSize) : weapon
+              )
+            );
+        }
+      });
+    }
+  );
+  var MartialArts_default = MartialArts;
+
+  // src/classes/monk/index.ts
+  var UnarmoredDefense2 = new SimpleFeature(
+    "Unarmored Defense",
+    `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
+    (g, me) => {
+      g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
+        if (who === me && !me.armor && !me.shield)
+          methods.push({
+            name: "Unarmored Defense",
+            ac: 10 + me.dex.modifier + me.wis.modifier,
+            uses: /* @__PURE__ */ new Set()
+          });
+      });
+    }
+  );
+  var Monk = {
+    name: "Monk",
+    hitDieSize: 8,
+    weaponCategoryProficiencies: wcSet("simple"),
+    weaponProficiencies: /* @__PURE__ */ new Set(["shortsword"]),
+    saveProficiencies: abSet("str", "dex"),
+    skillChoices: 2,
+    skillProficiencies: skSet(
+      "Acrobatics",
+      "Athletics",
+      "History",
+      "Insight",
+      "Religion",
+      "Stealth"
+    ),
+    features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense2, MartialArts_default]]])
+  };
+  var monk_default = Monk;
+
+  // src/spells/level1/FogCloud.ts
+  var FogCloud = scalingSpell({
+    status: "incomplete",
+    name: "Fog Cloud",
+    level: 1,
+    school: "Conjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    lists: ["Druid", "Ranger", "Sorcerer", "Wizard"],
+    description: `You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners, and its area is heavily obscured. It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st.`,
+    getAffectedArea: (g, caster, { point, slot }) => point && [{ type: "sphere", radius: 20 * (slot != null ? slot : 1), centre: point }],
+    getConfig: (g) => ({ point: new PointResolver(g, 120) }),
+    getTargets: () => [],
+    getAffected: () => [],
+    async apply(g, caster, _method, { point, slot }) {
+      const radius = 20 * slot;
+      const area = new ActiveEffectArea(
+        "Fog Cloud",
+        { type: "sphere", centre: point, radius },
+        arSet("heavily obscured"),
+        "grey"
+      );
+      g.addEffectArea(area);
+      await caster.concentrateOn({
+        spell: FogCloud,
+        duration: hours(1),
+        onSpellEnd: async () => g.removeEffectArea(area)
+      });
+    }
+  });
+  var FogCloud_default = FogCloud;
+
+  // src/spells/level2/GustOfWind.ts
+  var GustOfWind = simpleSpell({
+    name: "Gust of Wind",
+    level: 2,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a legume seed",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `A line of strong wind 60 feet long and 10 feet wide blasts from you in a direction you choose for the spell's duration. Each creature that starts its turn in the line must succeed on a Strength saving throw or be pushed 15 feet away from you in a direction following the line.
+
+  Any creature in the line must spend 2 feet of movement for every 1 foot it moves when moving closer to you.
+
+  The gust disperses gas or vapor, and it extinguishes candles, torches, and similar unprotected flames in the area. It causes protected flames, such as those of lanterns, to dance wildly and has a 50 percent chance to extinguish them.
+
+  As a bonus action on each of your turns before the spell ends, you can change the direction in which the line blasts from you.`,
+    getConfig: (g) => ({ point: new PointResolver(g, 60) }),
+    getTargets: () => [],
+    getAffected: () => [],
+    async apply() {
+    }
+  });
+  var GustOfWind_default = GustOfWind;
+
+  // src/spells/level3/WallOfWater.ts
+  var shapeChoices2 = [
+    { label: "line", value: "line" },
+    { label: "ring", value: "ring" }
+  ];
+  var WallOfWater = simpleSpell({
+    name: "Wall of Water",
+    level: 3,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a drop of water",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `You create a wall of water on the ground at a point you can see within range. You can make the wall up to 30 feet long, 10 feet high, and 1 foot thick, or you can make a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall vanishes when the spell ends. The wall's space is difficult terrain.
+
+  Any ranged weapon attack that enters the wall's space has disadvantage on the attack roll, and fire damage is halved if the fire effect passes through the wall to reach its target. Spells that deal cold damage that pass through the wall cause the area of the wall they pass through to freeze solid (at least a 5-foot-square section is frozen). Each 5-foot-square frozen section has AC 5 and 15 hit points. Reducing a frozen section to 0 hit points destroys it. When a section is destroyed, the wall's water doesn't fill it.`,
+    getConfig: (g) => ({
+      point: new PointResolver(g, 60),
+      shape: new ChoiceResolver(g, shapeChoices2)
+    }),
+    getTargets: () => [],
+    getAffected: () => [],
+    async apply() {
+    }
+  });
+  var WallOfWater_default = WallOfWater;
+
+  // src/races/Triton.ts
+  var Amphibious = notImplementedFeature(
+    "Amphibious",
+    `You can breathe air and water.`
+  );
+  var FogCloudResource = new LongRestResource(
+    "Control Air and Water: Fog Cloud",
+    1
+  );
+  var GustOfWindResource = new LongRestResource(
+    "Control Air and Water: Gust of Wind",
+    1
+  );
+  var WallOfWaterResource = new LongRestResource(
+    "Control Air and Water: Wall of Water",
+    1
+  );
+  var ControlAirAndWaterSpells = [
+    { level: 1, spell: FogCloud_default, resource: FogCloudResource },
+    { level: 3, spell: GustOfWind_default, resource: GustOfWindResource },
+    { level: 5, spell: WallOfWater_default, resource: WallOfWaterResource }
+  ];
+  var ControlAirAndWaterMethod = new InnateSpellcasting(
+    "Control Air and Water",
+    "cha",
+    (spell) => {
+      if (spell === FogCloud_default)
+        return FogCloudResource;
+      if (spell === GustOfWind_default)
+        return GustOfWindResource;
+      if (spell === WallOfWater_default)
+        return WallOfWaterResource;
+    }
+  );
+  var ControlAirAndWater = bonusSpellsFeature(
+    "Control Air and Water",
+    `You can cast fog cloud with this trait. Starting at 3rd level, you can cast gust of wind with it, and starting at 5th level, you can also cast wall of water with it. Once you cast a spell with this trait, you can\u2019t cast that spell with it again until you finish a long rest. Charisma is your spellcasting ability for these spells.`,
+    "level",
+    ControlAirAndWaterMethod,
+    ControlAirAndWaterSpells
+  );
+  var Darkvision3 = darkvisionFeature();
+  var EmissaryOfTheSea = nonCombatFeature(
+    "Emissary of the Sea",
+    `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
+  );
+  var GuardiansOfTheDepths = resistanceFeature(
+    "Guardians of the Depths",
+    `Adapted to even the most extreme ocean depths, you have resistance to cold damage.`,
+    ["cold"]
+  );
+  var Triton = {
+    name: "Triton",
+    size: "medium",
+    abilities: /* @__PURE__ */ new Map([
+      ["str", 1],
+      ["con", 1],
+      ["cha", 1]
+    ]),
+    movement: /* @__PURE__ */ new Map([
+      ["speed", 30],
+      ["swim", 30]
+    ]),
+    languages: laSet("Common", "Primordial"),
+    features: /* @__PURE__ */ new Set([
+      Amphibious,
+      ControlAirAndWater,
+      Darkvision3,
+      EmissaryOfTheSea,
+      GuardiansOfTheDepths
+    ])
+  };
+  var Triton_default = Triton;
+
+  // src/pcs/wizards/Tethilssethanar.ts
+  var Tethilssethanar = class extends PC {
+    constructor(g) {
+      super(g, "Tethilssethanar", tethilssethanar_default);
+      this.setAbilityScores(9, 14, 13, 8, 15, 13);
+      this.setRace(Triton_default);
+      this.addClassLevel(monk_default);
+      this.skills.set("Athletics", 1);
+      this.skills.set("Insight", 1);
+      this.don(new Sickle(g));
+      this.inventory.add(new Dart(g, 10));
+      this.inventory.add(new Sling(g));
+      this.inventory.add(new SlingBullet(g, 40));
+    }
+  };
+
   // src/data/templates.ts
   function useTemplate(g, template2) {
     for (const { combatant, side, x, y } of template2) {
@@ -12853,6 +13272,10 @@ At the end of each of its turns, and each time it takes damage, the target can m
     bte((g) => new OGonrit(g), 10, 15),
     bte((g) => new Yulash(g), 25, 10),
     bte((g) => new Zafron(g), 10, 5)
+  ];
+  var tethVsGoblin = [
+    bte((g) => new Tethilssethanar(g), 5, 5),
+    bte((g) => new Goblin(g), 15, 5)
   ];
 
   // src/collectors/AttackOutcomeCollector.ts

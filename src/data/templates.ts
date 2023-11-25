@@ -12,6 +12,7 @@ import Hagrond from "../pcs/davies/Hagrond";
 import Salgar from "../pcs/davies/Salgar";
 import Marvoril from "../pcs/glean/Marvoril";
 import Shaira from "../pcs/glean/Shaira";
+import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import Combatant from "../types/Combatant";
 
 export type CombatantCreator = (g: Engine) => Combatant;
@@ -65,4 +66,9 @@ export const daviesVsFiends: BattleTemplate = [
   bte((g) => new OGonrit(g), 10, 15),
   bte((g) => new Yulash(g), 25, 10),
   bte((g) => new Zafron(g), 10, 5),
+];
+
+export const tethVsGoblin: BattleTemplate = [
+  bte((g) => new Tethilssethanar(g), 5, 5),
+  bte((g) => new Goblin(g), 15, 5),
 ];
