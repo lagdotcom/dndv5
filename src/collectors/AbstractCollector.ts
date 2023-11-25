@@ -8,9 +8,9 @@ interface CollectorEntry<T> {
 }
 
 abstract class AbstractCollector<T> {
-  entries: Set<CollectorEntry<T>>;
-  ignoredSources: Set<Source>;
-  ignoredValues: Set<T>;
+  protected entries: Set<CollectorEntry<T>>;
+  protected ignoredSources: Set<Source>;
+  protected ignoredValues: Set<T>;
 
   constructor(
     entries?: SetInitialiser<CollectorEntry<T>>,
@@ -42,16 +42,18 @@ abstract class AbstractCollector<T> {
     return false;
   }
 
-  getValidEntries() {
-    return Array.from(this.entries)
-      .filter(
-        (entry) =>
-          !(
-            this.ignoredSources.has(entry.source) ||
-            this.ignoredValues.has(entry.value)
-          ),
-      )
-      .map((entry) => entry.value);
+  getEntries() {
+    return Array.from(this.entries).filter(
+      (entry) =>
+        !(
+          this.ignoredSources.has(entry.source) ||
+          this.ignoredValues.has(entry.value)
+        ),
+    );
+  }
+
+  getValues() {
+    return this.getEntries().map((entry) => entry.value);
   }
 }
 
@@ -62,7 +64,7 @@ export abstract class AbstractSumCollector<TValue, TResult = TValue>
   abstract getSum(values: TValue[]): TResult;
 
   get result() {
-    return this.getSum(this.getValidEntries());
+    return this.getSum(this.getValues());
   }
 }
 
@@ -71,6 +73,6 @@ export class SetCollector<T>
   implements Collector<T, Set<T>>
 {
   get result() {
-    return new Set(this.getValidEntries());
+    return new Set(this.getValues());
   }
 }

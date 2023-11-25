@@ -45,7 +45,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
             weapon.rangeCategory === "ranged";
           const advantage = attack.roll.diceType === "advantage";
           const noDisadvantage = !attack.pre.diceType
-            .getValidEntries()
+            .getValues()
             .includes("disadvantage");
 
           if (

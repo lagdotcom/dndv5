@@ -193,20 +193,23 @@
           return true;
       return false;
     }
-    getValidEntries() {
+    getEntries() {
       return Array.from(this.entries).filter(
         (entry) => !(this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value))
-      ).map((entry) => entry.value);
+      );
+    }
+    getValues() {
+      return this.getEntries().map((entry) => entry.value);
     }
   };
   var AbstractSumCollector = class extends AbstractCollector {
     get result() {
-      return this.getSum(this.getValidEntries());
+      return this.getSum(this.getValues());
     }
   };
   var SetCollector = class extends AbstractCollector {
     get result() {
-      return new Set(this.getValidEntries());
+      return new Set(this.getValues());
     }
   };
 
@@ -960,16 +963,10 @@
       return this.baseMaximum;
     }
     set maximum(value) {
-      this.baseMaximum = value;
+      this.baseMaximum = Math.max(this.baseMaximum, value);
     }
     get modifier() {
       return getAbilityModifier(this.score);
-    }
-    setMaximum(value) {
-      this.baseMaximum = Math.max(this.baseMaximum, value);
-    }
-    setScore(value) {
-      this.baseScore = value;
     }
   };
 
@@ -1425,15 +1422,10 @@
       return ammo;
     }
     get conditions() {
-      const conditions = new ConditionCollector();
-      for (const condition of this.conditionImmunities)
-        conditions.ignoreValue(condition);
-      this.g.fire(new GetConditionsEvent({ who: this, conditions }));
-      for (const co of conditions.entries) {
-        if (co.value === "Paralyzed" || co.value === "Petrified" || co.value === "Stunned" || co.value === "Unconscious")
-          conditions.add("Incapacitated", co.source);
-      }
-      return conditions.result;
+      return this.getConditions().conditions.result;
+    }
+    get frightenedBy() {
+      return this.getConditions().frightenedBy;
     }
     get speed() {
       var _a;
@@ -1460,6 +1452,22 @@
       );
       return bonus.result * e.detail.multiplier.result;
     }
+    getConditions() {
+      const conditions = new ConditionCollector();
+      for (const condition of this.conditionImmunities)
+        conditions.ignoreValue(condition);
+      const frightenedBy = /* @__PURE__ */ new Set();
+      this.g.fire(
+        new GetConditionsEvent({ who: this, conditions, frightenedBy })
+      );
+      for (const condition of conditions.getEntries()) {
+        if (condition.value === "Paralyzed" || condition.value === "Petrified" || condition.value === "Stunned" || condition.value === "Unconscious")
+          conditions.add("Incapacitated", condition.source);
+      }
+      if (!conditions.result.has("Frightened"))
+        frightenedBy.clear();
+      return { conditions, frightenedBy };
+    }
     addFeatures(features) {
       for (const feature of features != null ? features : [])
         this.addFeature(feature);
@@ -1475,12 +1483,12 @@
       return true;
     }
     setAbilityScores(str, dex, con, int, wis, cha) {
-      this.str.setScore(str);
-      this.dex.setScore(dex);
-      this.con.setScore(con);
-      this.int.setScore(int);
-      this.wis.setScore(wis);
-      this.cha.setScore(cha);
+      this.str.score = str;
+      this.dex.score = dex;
+      this.con.score = con;
+      this.int.score = int;
+      this.wis.score = wis;
+      this.cha.score = cha;
     }
     don(item, attune = false) {
       if (item.itemType === "armor") {
@@ -3345,8 +3353,8 @@
     g.events.on("BeforeAttack", ({ detail: { tags, who, diceType } }) => {
       if (tags.has("ranged")) {
         let threatened = false;
-        for (const co of g.combatants) {
-          if (co.side !== who.side && !co.conditions.has("Incapacitated") && distance(who, co) <= 5) {
+        for (const other of g.combatants) {
+          if (other.side !== who.side && distance(who, other) <= 5 && g.canSee(other, who) && !other.conditions.has("Incapacitated")) {
             threatened = true;
             break;
           }
@@ -3417,6 +3425,32 @@
         interrupt.add(
           new EvaluateLater(who, ExhaustionRule, async () => g.kill(who))
         );
+    });
+  });
+  var FrightenedRule = new DndRule("Frightened", (g) => {
+    const checkFrightened = ({
+      detail: { who, diceType }
+    }) => {
+      for (const other of who.frightenedBy)
+        if (g.canSee(who, other)) {
+          diceType.add("disadvantage", FrightenedRule);
+          return;
+        }
+    };
+    g.events.on("BeforeCheck", checkFrightened);
+    g.events.on("BeforeAttack", checkFrightened);
+    g.events.on("BeforeMove", ({ detail: { who, from, to, error } }) => {
+      for (const other of who.frightenedBy) {
+        const { oldDistance, newDistance } = compareDistances(
+          other,
+          other.position,
+          who,
+          from,
+          to
+        );
+        if (newDistance < oldDistance)
+          error.add(`cannot move closer to ${other.name}`, FrightenedRule);
+      }
     });
   });
   var IncapacitatedRule = new DndRule("Incapacitated", (g) => {
@@ -5132,7 +5166,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
           if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
             const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
             const advantage = attack.roll.diceType === "advantage";
-            const noDisadvantage = !attack.pre.diceType.getValidEntries().includes("disadvantage");
+            const noDisadvantage = !attack.pre.diceType.getValues().includes("disadvantage");
             if (isFinesseOrRangedWeapon && (advantage || getFlanker(g, me, target) && noDisadvantage)) {
               interrupt.add(
                 new YesNoChoice(
@@ -5743,267 +5777,30 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   );
 
-  // src/img/class/paladin.svg
-  var paladin_default = "./paladin-QFY4DOD4.svg";
-
-  // src/spells/NormalSpellcasting.ts
-  var SpellSlots = {
-    full: [
-      [2],
-      [3],
-      [4, 2],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 2, 1, 1]
-    ],
-    half: [
-      [],
-      [2],
-      [3],
-      [4],
-      [4, 2],
-      [4, 2],
-      [4, 3],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2]
-    ]
-  };
-  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
-  var SpellSlotResources = enumerate(0, 9).map(
-    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
-  );
-  function getMaxSpellSlotAvailable(who) {
-    for (let level = 1; level <= 9; level++) {
-      const name = getSpellSlotResourceName(level);
-      if (!who.resources.has(name))
-        return level - 1;
-    }
-    return 9;
-  }
-  var NormalSpellcasting = class {
-    constructor(name, text, ability, strength, className, spellList, icon) {
-      this.name = name;
-      this.text = text;
-      this.ability = ability;
-      this.strength = strength;
-      this.className = className;
-      this.spellList = spellList;
-      this.icon = icon;
-      this.entries = /* @__PURE__ */ new Map();
-      this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
-        var _a;
-        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
-        me.spellcastingMethods.add(this);
-        g.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me) {
-            for (const spell of me.preparedSpells) {
-              if (this.canCast(spell, who))
-                actions.push(new CastSpell(g, me, this, spell));
-            }
-          }
-        });
-      });
-    }
-    getEntry(who) {
-      const entry = this.entries.get(who);
-      if (!entry)
-        throw new Error(
-          `${who.name} has not initialised their ${this.name} spellcasting method.`
-        );
-      return entry;
-    }
-    canCast(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      return spell.lists.includes(this.spellList) || spells.has(spell);
-    }
-    addCastableSpell(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      spells.add(spell);
-    }
-    initialise(who, casterLevel) {
-      const slots = SpellSlots[this.strength][casterLevel - 1];
-      const resources = [];
-      for (let i = 0; i < slots.length; i++) {
-        const resource = SpellSlotResources[i + 1];
-        who.initResource(resource, slots[i]);
-        resources.push(resource);
-      }
-      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
-    }
-    getMinSlot(spell) {
-      return spell.level;
-    }
-    getMaxSlot(spell, who) {
-      if (!spell.scaling)
-        return spell.level;
-      const { resources } = this.getEntry(who);
-      return resources.length;
-    }
-    getResourceForSpell(spell, level, who) {
-      const { resources } = this.getEntry(who);
-      return resources[level - 1];
-    }
-    getSaveType() {
-      return { type: "ability", ability: this.ability };
-    }
-  };
-
-  // src/classes/paladin/common.ts
-  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
-  var PaladinSpellcasting = new NormalSpellcasting(
-    "Paladin",
-    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-    "cha",
-    "half",
-    "Paladin",
-    "Paladin",
-    PaladinIcon
-  );
-  var ChannelDivinityResource = new ShortRestResource(
-    "Channel Divinity",
-    1
-  );
-  function getPaladinAuraRadius(level) {
-    if (level < 18)
-      return 10;
-    return 30;
-  }
-
-  // src/items/wondrous.ts
+  // src/items/AbstractWondrous.ts
   var AbstractWondrous = class extends AbstractItem {
     constructor(g, name, hands = 0, iconUrl) {
       super(g, "wondrous", name, hands, iconUrl);
     }
   };
+
+  // src/items/wondrous/BracersOfTheArbalest.ts
   var BracersOfTheArbalest = class extends AbstractWondrous {
     constructor(g) {
       super(g, "Bracers of the Arbalest");
       this.attunement = true;
       this.rarity = "Uncommon";
+      g.events.on("BattleStarted", () => {
+        for (const who of g.combatants)
+          if (isEquipmentAttuned(this, who)) {
+            who.weaponProficiencies.add("hand crossbow");
+            who.weaponProficiencies.add("light crossbow");
+            who.weaponProficiencies.add("heavy crossbow");
+          }
+      });
       g.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
         if (isEquipmentAttuned(this, attacker) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
           bonus.add(2, this);
-      });
-    }
-  };
-  var BootsOfTheWinterlands = class extends AbstractWondrous {
-    constructor(g) {
-      super(g, "Boots of the Winterlands");
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      g.events.on(
-        "GetDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (isEquipmentAttuned(this, who) && damageType === "cold")
-            response.add("resist", this);
-        }
-      );
-    }
-  };
-  var CloakOfProtection = class extends AbstractWondrous {
-    constructor(g) {
-      super(g, "Cloak of Protection");
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
-        if (isEquipmentAttuned(this, who))
-          for (const method of methods) {
-            method.ac++;
-            method.uses.add(this);
-          }
-      });
-      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-        if (isEquipmentAttuned(this, who))
-          bonus.add(1, this);
-      });
-    }
-  };
-  var DragonTouchedFocus = class extends AbstractWondrous {
-    constructor(g, level) {
-      super(g, `Dragon-Touched Focus (${level})`, 1);
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      g.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
-        if (isEquipmentAttuned(this, who))
-          diceType.add("advantage", this);
-      });
-    }
-  };
-  var FigurineData = {
-    "Bronze Griffin": { rarity: "Rare" },
-    "Ebony Fly": { rarity: "Rare" },
-    "Golden Lions": { rarity: "Rare" },
-    "Ivory Goats": { rarity: "Rare" },
-    "Marble Elephant": { rarity: "Rare" },
-    "Obsidian Steed": { rarity: "Very Rare" },
-    "Onyx Dog": { rarity: "Rare" },
-    "Serpentine Owl": { rarity: "Rare" },
-    "Silver Raven": { rarity: "Uncommon" }
-  };
-  var FigurineOfWondrousPower = class extends AbstractWondrous {
-    constructor(g, type) {
-      super(g, `Figurine of Wondrous Power, ${type}`, 0);
-      this.type = type;
-      this.rarity = FigurineData[type].rarity;
-    }
-  };
-  var RingOfAwe = class extends AbstractWondrous {
-    constructor(g) {
-      super(g, "Ring of Awe", 0);
-      this.attunement = true;
-      this.rarity = "Rare";
-    }
-  };
-  var SilverShiningAmulet = class extends AbstractWondrous {
-    constructor(g, charged = true) {
-      super(g, "Silver Shining Amulet", 0);
-      this.charged = charged;
-      this.attunement = true;
-      this.rarity = "Rare";
-      const giveBonus = ({
-        detail: { who, spell, bonus }
-      }) => {
-        if (isEquipmentAttuned(this, who) && spell)
-          bonus.add(1, this);
-      };
-      g.events.on("BeforeAttack", giveBonus);
-      g.events.on("GetSaveDC", giveBonus);
-      g.events.on("AfterAction", ({ detail: { action, config } }) => {
-        var _a;
-        const isAttuned = isEquipmentAttuned(this, action.actor);
-        const isChannel = (_a = action.getResources(config).get(ChannelDivinityResource)) != null ? _a : 0;
-        if (isAttuned && isChannel && this.charged) {
-          this.charged = false;
-          action.actor.giveResource(ChannelDivinityResource, 1);
-          g.text(
-            new MessageBuilder().co(action.actor).nosp().text("'s amulet shines briefly with divine light.")
-          );
-        }
       });
     }
   };
@@ -6215,6 +6012,133 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   // src/img/tok/pc/beldalynn.png
   var beldalynn_default = "./beldalynn-B47TNTON.png";
 
+  // src/spells/NormalSpellcasting.ts
+  var SpellSlots = {
+    full: [
+      [2],
+      [3],
+      [4, 2],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]
+    ],
+    half: [
+      [],
+      [2],
+      [3],
+      [4],
+      [4, 2],
+      [4, 2],
+      [4, 3],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2]
+    ]
+  };
+  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var SpellSlotResources = enumerate(0, 9).map(
+    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+  );
+  function getMaxSpellSlotAvailable(who) {
+    for (let level = 1; level <= 9; level++) {
+      const name = getSpellSlotResourceName(level);
+      if (!who.resources.has(name))
+        return level - 1;
+    }
+    return 9;
+  }
+  var NormalSpellcasting = class {
+    constructor(name, text, ability, strength, className, spellList, icon) {
+      this.name = name;
+      this.text = text;
+      this.ability = ability;
+      this.strength = strength;
+      this.className = className;
+      this.spellList = spellList;
+      this.icon = icon;
+      this.entries = /* @__PURE__ */ new Map();
+      this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
+        var _a;
+        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        me.spellcastingMethods.add(this);
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me) {
+            for (const spell of me.preparedSpells) {
+              if (this.canCast(spell, who))
+                actions.push(new CastSpell(g, me, this, spell));
+            }
+          }
+        });
+      });
+    }
+    getEntry(who) {
+      const entry = this.entries.get(who);
+      if (!entry)
+        throw new Error(
+          `${who.name} has not initialised their ${this.name} spellcasting method.`
+        );
+      return entry;
+    }
+    canCast(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      return spell.lists.includes(this.spellList) || spells.has(spell);
+    }
+    addCastableSpell(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      spells.add(spell);
+    }
+    initialise(who, casterLevel) {
+      const slots = SpellSlots[this.strength][casterLevel - 1];
+      const resources = [];
+      for (let i = 0; i < slots.length; i++) {
+        const resource = SpellSlotResources[i + 1];
+        who.initResource(resource, slots[i]);
+        resources.push(resource);
+      }
+      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell, who) {
+      if (!spell.scaling)
+        return spell.level;
+      const { resources } = this.getEntry(who);
+      return resources.length;
+    }
+    getResourceForSpell(spell, level, who) {
+      const { resources } = this.getEntry(who);
+      return resources[level - 1];
+    }
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
+    }
+  };
+
   // src/img/class/wizard.svg
   var wizard_default = "./wizard-FEOOHPRA.svg";
 
@@ -6409,6 +6333,39 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ])
   };
   var Evocation_default = Evocation;
+
+  // src/items/wondrous/CloakOfProtection.ts
+  var CloakOfProtection = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Cloak of Protection");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
+        if (isEquipmentAttuned(this, who))
+          for (const method of methods) {
+            method.ac++;
+            method.uses.add(this);
+          }
+      });
+      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+        if (isEquipmentAttuned(this, who))
+          bonus.add(1, this);
+      });
+    }
+  };
+
+  // src/items/wondrous/DragonTouchedFocus.ts
+  var DragonTouchedFocus = class extends AbstractWondrous {
+    constructor(g, level) {
+      super(g, `Dragon-Touched Focus (${level})`, 1);
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on("GetInitiative", ({ detail: { who, diceType } }) => {
+        if (isEquipmentAttuned(this, who))
+          diceType.add("advantage", this);
+      });
+    }
+  };
 
   // src/img/act/breath.svg
   var breath_default = "./breath-5T2EAE3T.svg";
@@ -8030,6 +7987,30 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/types/EffectArea.ts
   var arSet = (...items) => new Set(items);
 
+  // src/img/class/paladin.svg
+  var paladin_default = "./paladin-QFY4DOD4.svg";
+
+  // src/classes/paladin/common.ts
+  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
+  var PaladinSpellcasting = new NormalSpellcasting(
+    "Paladin",
+    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
+    "cha",
+    "half",
+    "Paladin",
+    "Paladin",
+    PaladinIcon
+  );
+  var ChannelDivinityResource = new ShortRestResource(
+    "Channel Divinity",
+    1
+  );
+  function getPaladinAuraRadius(level) {
+    if (level < 18)
+      return 10;
+    return 30;
+  }
+
   // src/classes/paladin/AuraOfProtection.ts
   var AuraOfProtection = new SimpleFeature(
     "Aura of Protection",
@@ -9066,6 +9047,160 @@ Once you use this feature, you can't use it again until you finish a long rest.`
     }
   };
 
+  // src/items/wondrous/FigurineOfWondrousPower.ts
+  var FigurineData = {
+    "Bronze Griffin": { rarity: "Rare" },
+    "Ebony Fly": { rarity: "Rare" },
+    "Golden Lions": { rarity: "Rare" },
+    "Ivory Goats": { rarity: "Rare" },
+    "Marble Elephant": { rarity: "Rare" },
+    "Obsidian Steed": { rarity: "Very Rare" },
+    "Onyx Dog": { rarity: "Rare" },
+    "Serpentine Owl": { rarity: "Rare" },
+    "Silver Raven": { rarity: "Uncommon" }
+  };
+  var FigurineOfWondrousPower = class extends AbstractWondrous {
+    constructor(g, type) {
+      super(g, `Figurine of Wondrous Power, ${type}`, 0);
+      this.type = type;
+      this.rarity = FigurineData[type].rarity;
+    }
+  };
+
+  // src/items/wondrous/RingOfAwe.ts
+  var RingOfAweResource = new DawnResource("Ring of Awe", 1);
+  var RingOfAweEffect = new Effect(
+    "Ring of Awe",
+    "turnStart",
+    (g) => {
+      g.events.on(
+        "GetConditions",
+        ({ detail: { who, conditions, frightenedBy } }) => {
+          const config = who.getEffectConfig(RingOfAweEffect);
+          if (config) {
+            conditions.add("Frightened", RingOfAweEffect);
+            frightenedBy.add(config.actor);
+          }
+        }
+      );
+      g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        const config = who.getEffectConfig(RingOfAweEffect);
+        if (config)
+          interrupt.add(
+            new EvaluateLater(who, RingOfAweEffect, async () => {
+              const { outcome } = await g.save({
+                source: RingOfAweEffect,
+                type: { type: "flat", dc: config.dc },
+                attacker: config.actor,
+                who,
+                ability: "wis",
+                effect: RingOfAweEffect,
+                config
+              });
+              if (outcome === "success")
+                await who.removeEffect(RingOfAweEffect);
+            })
+          );
+      });
+    },
+    { tags: efSet("magic") }
+  );
+  var RingOfAweAction = class extends AbstractAction {
+    constructor(g, actor, item, dc = 13) {
+      super(
+        g,
+        actor,
+        item.name,
+        "implemented",
+        {},
+        {
+          area: [{ type: "within", radius: 15, who: actor }],
+          isHarmful: true,
+          time: "action",
+          resources: /* @__PURE__ */ new Map([[RingOfAweResource, 1]]),
+          description: `By holding the ring aloft and speaking a command word, you project a field of awe around you. Each creature of your choice in a 15-foot sphere centred on you must succeed on a DC ${dc} Wisdom save or become frightened for 1 minute. On each affected creature's turn, it may repeat the Wisdom saving throw. On a successful save, the effect ends for that creature.`
+        }
+      );
+      this.dc = dc;
+    }
+    getAffected() {
+      return this.g.getInside({ type: "within", radius: 15, who: this.actor }).filter((co) => co.side !== this.actor.side);
+    }
+    async apply() {
+      await super.apply({});
+      const { g, actor, dc } = this;
+      for (const who of this.getAffected()) {
+        const effect = RingOfAweEffect;
+        const config = {
+          conditions: coSet("Frightened"),
+          duration: minutes(1),
+          actor,
+          dc
+        };
+        const { outcome } = await g.save({
+          source: this,
+          type: { type: "flat", dc },
+          attacker: actor,
+          who,
+          ability: "wis",
+          effect,
+          config
+        });
+        if (outcome === "fail")
+          await who.addEffect(effect, config, actor);
+      }
+    }
+  };
+  var RingOfAwe = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Ring of Awe", 0);
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("BattleStarted", () => {
+        for (const who of g.combatants) {
+          if (isEquipmentAttuned(this, who)) {
+            who.cha.score++;
+            who.initResource(RingOfAweResource);
+          }
+        }
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new RingOfAweAction(g, who, this));
+      });
+    }
+  };
+
+  // src/items/wondrous/SilverShiningAmulet.ts
+  var SilverShiningAmulet = class extends AbstractWondrous {
+    constructor(g, charged = true) {
+      super(g, "Silver Shining Amulet", 0);
+      this.charged = charged;
+      this.attunement = true;
+      this.rarity = "Rare";
+      const giveBonus = ({
+        detail: { who, spell, bonus }
+      }) => {
+        if (isEquipmentAttuned(this, who) && spell)
+          bonus.add(1, this);
+      };
+      g.events.on("BeforeAttack", giveBonus);
+      g.events.on("GetSaveDC", giveBonus);
+      g.events.on("AfterAction", ({ detail: { action, config } }) => {
+        var _a;
+        const isAttuned = isEquipmentAttuned(this, action.actor);
+        const isChannel = (_a = action.getResources(config).get(ChannelDivinityResource)) != null ? _a : 0;
+        if (isAttuned && isChannel && this.charged) {
+          this.charged = false;
+          action.actor.giveResource(ChannelDivinityResource, 1);
+          g.text(
+            new MessageBuilder().co(action.actor).nosp().text("'s amulet shines briefly with divine light.")
+          );
+        }
+      });
+    }
+  };
+
   // src/races/Human.ts
   var Human = {
     name: "Human",
@@ -9843,8 +9978,8 @@ Each time you use this feature after the first, the DC increases by 5. When you 
     "Primal Champion",
     `At 20th level, you embody the power of the wilds. Your Strength and Constitution scores increase by 4. Your maximum for those scores is now 24.`,
     (g, me) => {
-      me.str.setMaximum(24);
-      me.con.setMaximum(24);
+      me.str.maximum = 24;
+      me.con.maximum = 24;
       me.str.score += 4;
       me.con.score += 4;
     }
@@ -10046,13 +10181,54 @@ If the creature succeeds on its saving throw, you can't use this feature on that
 
   // src/enchantments/ofTheDeep.ts
   var ofTheDeep = {
-    name: "of the deep",
+    name: "weapon of the deep",
     setup(g, item) {
       item.name = `${item.name} of the deep`;
       item.magical = true;
       item.rarity = "Rare";
       if (item.icon)
         item.icon.colour = ItemRarityColours.Rare;
+      let charges = 1;
+      g.events.on("Attack", ({ detail: { interrupt, roll } }) => {
+        if (charges && roll.type.weapon === item)
+          interrupt.add(
+            new YesNoChoice(
+              roll.type.who,
+              ofTheDeep,
+              item.name,
+              "Speak the command word and emit a spray of acid?",
+              async () => {
+                charges--;
+                const damage = await g.rollDamage(4, {
+                  attacker: roll.type.who,
+                  damageType: "acid",
+                  size: 6,
+                  source: ofTheDeep
+                });
+                const targets = g.getInside(
+                  { type: "within", radius: 10, who: roll.type.target },
+                  [roll.type.who]
+                );
+                for (const target of targets) {
+                  const { damageResponse } = await g.save({
+                    source: ofTheDeep,
+                    type: { type: "flat", dc: 13 },
+                    attacker: roll.type.who,
+                    who: target,
+                    ability: "dex"
+                  });
+                  await g.damage(
+                    ofTheDeep,
+                    "acid",
+                    { attacker: roll.type.who, target },
+                    [["acid", damage]],
+                    damageResponse
+                  );
+                }
+              }
+            )
+          );
+      });
     }
   };
   var ofTheDeep_default = ofTheDeep;
@@ -10079,8 +10255,7 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     "Lucky",
     `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`,
     (g, me) => {
-      g.events.on("DiceRolled", ({ detail }) => {
-        const { type: t, values, interrupt } = detail;
+      g.events.on("DiceRolled", ({ detail: { type: t, values, interrupt } }) => {
         if ((t.type === "attack" || t.type === "check" || t.type === "save") && t.who === me && values.final === 1)
           interrupt.add(
             new YesNoChoice(
@@ -11211,59 +11386,6 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var silvered_default = silvered;
 
-  // src/img/eq/hood.svg
-  var hood_default = "./hood-7E4VG7WM.svg";
-
-  // src/items/CloakOfElvenkind.ts
-  var CloakHoodAction = class extends AbstractAction {
-    constructor(g, actor, cloak) {
-      super(
-        g,
-        actor,
-        cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
-        "incomplete",
-        {},
-        {
-          icon: cloak.icon,
-          time: "action",
-          description: `While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak's color shifts to camouflage you.`
-        }
-      );
-      this.cloak = cloak;
-    }
-    async apply() {
-      await super.apply({});
-      this.cloak.hoodUp = !this.cloak.hoodUp;
-      this.g.text(
-        new MessageBuilder().co(this.actor).text(
-          this.cloak.hoodUp ? " pulls the hood of their cloak up." : " pulls the hood of their cloak down."
-        )
-      );
-    }
-  };
-  var CloakOfElvenkind = class extends AbstractWondrous {
-    constructor(g, hoodUp = true) {
-      super(g, "Cloak of Elvenkind", 0, hood_default);
-      this.hoodUp = hoodUp;
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      const cloaked = (who) => isEquipmentAttuned(this, who) && this.hoodUp;
-      g.events.on(
-        "BeforeCheck",
-        ({ detail: { who, target, skill, diceType } }) => {
-          if (skill === "Perception" && cloaked(target))
-            diceType.add("disadvantage", this);
-          if (skill === "Stealth" && cloaked(who))
-            diceType.add("advantage", this);
-        }
-      );
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (isEquipmentAttuned(this, who))
-          actions.push(new CloakHoodAction(g, who, this));
-      });
-    }
-  };
-
   // src/img/eq/arrow-catching-shield.svg
   var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
 
@@ -11327,6 +11449,75 @@ The creature is aware of this effect before it makes its attack against you.`
               )
             );
         }
+      });
+    }
+  };
+
+  // src/items/wondrous/BootsOfTheWinterlands.ts
+  var BootsOfTheWinterlands = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Boots of the Winterlands");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (isEquipmentAttuned(this, who) && damageType === "cold")
+            response.add("resist", this);
+        }
+      );
+    }
+  };
+
+  // src/img/eq/hood.svg
+  var hood_default = "./hood-7E4VG7WM.svg";
+
+  // src/items/wondrous/CloakOfElvenkind.ts
+  var CloakHoodAction = class extends AbstractAction {
+    constructor(g, actor, cloak) {
+      super(
+        g,
+        actor,
+        cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
+        "incomplete",
+        {},
+        {
+          icon: cloak.icon,
+          time: "action",
+          description: `While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak's color shifts to camouflage you.`
+        }
+      );
+      this.cloak = cloak;
+    }
+    async apply() {
+      await super.apply({});
+      this.cloak.hoodUp = !this.cloak.hoodUp;
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(
+          this.cloak.hoodUp ? " pulls the hood of their cloak up." : " pulls the hood of their cloak down."
+        )
+      );
+    }
+  };
+  var CloakOfElvenkind = class extends AbstractWondrous {
+    constructor(g, hoodUp = true) {
+      super(g, "Cloak of Elvenkind", 0, hood_default);
+      this.hoodUp = hoodUp;
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      const cloaked = (who) => isEquipmentAttuned(this, who) && this.hoodUp;
+      g.events.on(
+        "BeforeCheck",
+        ({ detail: { who, target, skill, diceType } }) => {
+          if (skill === "Perception" && cloaked(target))
+            diceType.add("disadvantage", this);
+          if (skill === "Stealth" && cloaked(who))
+            diceType.add("advantage", this);
+        }
+      );
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new CloakHoodAction(g, who, this));
       });
     }
   };
@@ -12276,8 +12467,8 @@ You learn two additional spells from any classes at 14th level and again at 18th
     "Superior Inspiration",
     `At 20th level, when you roll initiative and have no uses of Bardic Inspiration left, you regain one use.`,
     (g, me) => {
-      g.events.on("GetInitiative", ({ detail }) => {
-        if (detail.who === me && me.getResource(BardicInspirationResource) < 1) {
+      g.events.on("GetInitiative", ({ detail: { who } }) => {
+        if (who === me && me.getResource(BardicInspirationResource) < 1) {
           g.text(
             new MessageBuilder().co(me).text("recovers a use of Bardic Inspiration.")
           );
@@ -12412,15 +12603,15 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
             await caster.endConcentration();
         })
       );
-      g.events.on("TurnEnded", ({ detail }) => {
-        const config = detail.who.getEffectConfig(LaughterEffect);
+      g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        const config = who.getEffectConfig(LaughterEffect);
         if (config)
-          resave(detail.interrupt, detail.who, config);
+          resave(interrupt, who, config);
       });
-      g.events.on("CombatantDamaged", ({ detail }) => {
-        const config = detail.who.getEffectConfig(LaughterEffect);
+      g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+        const config = who.getEffectConfig(LaughterEffect);
         if (config)
-          resave(detail.interrupt, detail.who, config, "advantage");
+          resave(interrupt, who, config, "advantage");
       });
     },
     { tags: efSet("magic") }
@@ -12631,10 +12822,10 @@ At the end of each of its turns, and each time it takes damage, the target can m
   // src/data/templates.ts
   function useTemplate(g, template2) {
     for (const { combatant, side, x, y } of template2) {
-      const co = combatant(g);
+      const who = combatant(g);
       if (typeof side === "number")
-        co.side = side;
-      g.place(co, x, y);
+        who.side = side;
+      g.place(who, x, y);
     }
     return g.start();
   }
@@ -13145,13 +13336,13 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.fire(new CombatantPlacedEvent({ who, position }));
     }
     async start() {
-      for (const co of this.combatants) {
-        co.finalise();
-        co.initiative = await this.rollInitiative(co);
-        const items = [...co.inventory, ...co.equipment];
+      for (const who of this.combatants) {
+        who.finalise();
+        who.initiative = await this.rollInitiative(who);
+        const items = [...who.inventory, ...who.equipment];
         for (const item of items) {
-          item.owner = co;
-          item.possessor = co;
+          item.owner = who;
+          item.possessor = who;
         }
       }
       this.initiativeOrder = Array.from(this.combatants).sort(
@@ -13670,12 +13861,12 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getInside(area, ignore = []) {
       const points = resolveArea(area);
       const inside = [];
-      for (const combatant of this.combatants) {
-        if (ignore.includes(combatant))
+      for (const who of this.combatants) {
+        if (ignore.includes(who))
           continue;
-        const squares = new PointSet(getSquares(combatant, combatant.position));
+        const squares = new PointSet(getSquares(who, who.position));
         if (points.overlaps(squares))
-          inside.push(combatant);
+          inside.push(who);
       }
       return inside;
     }

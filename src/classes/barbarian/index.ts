@@ -191,8 +191,8 @@ const PrimalChampion = new SimpleFeature(
   "Primal Champion",
   `At 20th level, you embody the power of the wilds. Your Strength and Constitution scores increase by 4. Your maximum for those scores is now 24.`,
   (g, me) => {
-    me.str.setMaximum(24);
-    me.con.setMaximum(24);
+    me.str.maximum = 24;
+    me.con.maximum = 24;
     me.str.score += 4;
     me.con.score += 4;
   },

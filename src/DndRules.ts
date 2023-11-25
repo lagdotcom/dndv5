@@ -92,12 +92,12 @@ export const CloseCombatRule = new DndRule("Close Combat", (g) => {
   g.events.on("BeforeAttack", ({ detail: { tags, who, diceType } }) => {
     if (tags.has("ranged")) {
       let threatened = false;
-      for (const co of g.combatants) {
+      for (const other of g.combatants) {
         if (
-          co.side !== who.side &&
-          !co.conditions.has("Incapacitated") &&
-          distance(who, co) <= 5
-          // TODO [SIGHT] who can see you
+          other.side !== who.side &&
+          distance(who, other) <= 5 &&
+          g.canSee(other, who) &&
+          !other.conditions.has("Incapacitated")
         ) {
           threatened = true;
           break;
@@ -183,10 +183,36 @@ export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
   });
 });
 
-/* TODO Frightened
-- A frightened creature has disadvantage on ability checks and attack rolls while the source of its fear is within line of sight.
-- The creature can't willingly move closer to the source of its fear.
-*/
+export const FrightenedRule = new DndRule("Frightened", (g) => {
+  // A frightened creature has disadvantage on ability checks and attack rolls while the source of its fear is within line of sight.
+  const checkFrightened: Listener<"BeforeAttack" | "BeforeCheck"> = ({
+    detail: { who, diceType },
+  }) => {
+    for (const other of who.frightenedBy)
+      if (g.canSee(who, other)) {
+        diceType.add("disadvantage", FrightenedRule);
+        return;
+      }
+  };
+  g.events.on("BeforeCheck", checkFrightened);
+  g.events.on("BeforeAttack", checkFrightened);
+
+  // The creature can't willingly move closer to the source of its fear.
+  g.events.on("BeforeMove", ({ detail: { who, from, to, error } }) => {
+    for (const other of who.frightenedBy) {
+      const { oldDistance, newDistance } = compareDistances(
+        other,
+        other.position,
+        who,
+        from,
+        to,
+      );
+
+      if (newDistance < oldDistance)
+        error.add(`cannot move closer to ${other.name}`, FrightenedRule);
+    }
+  });
+});
 
 /* TODO Grappled
 - A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.

@@ -124,14 +124,14 @@ export default class Engine {
   }
 
   async start() {
-    for (const co of this.combatants) {
-      co.finalise();
-      co.initiative = await this.rollInitiative(co);
+    for (const who of this.combatants) {
+      who.finalise();
+      who.initiative = await this.rollInitiative(who);
 
-      const items = [...co.inventory, ...co.equipment];
+      const items = [...who.inventory, ...who.equipment];
       for (const item of items) {
-        item.owner = co;
-        item.possessor = co;
+        item.owner = who;
+        item.possessor = who;
       }
     }
 
@@ -820,11 +820,11 @@ export default class Engine {
     const points = resolveArea(area);
     const inside: Combatant[] = [];
 
-    for (const combatant of this.combatants) {
-      if (ignore.includes(combatant)) continue;
-      const squares = new PointSet(getSquares(combatant, combatant.position));
+    for (const who of this.combatants) {
+      if (ignore.includes(who)) continue;
+      const squares = new PointSet(getSquares(who, who.position));
 
-      if (points.overlaps(squares)) inside.push(combatant);
+      if (points.overlaps(squares)) inside.push(who);
     }
 
     return inside;

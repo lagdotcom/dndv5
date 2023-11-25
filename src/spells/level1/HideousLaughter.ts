@@ -62,13 +62,13 @@ const LaughterEffect = new Effect<Config>(
         }),
       );
 
-    g.events.on("TurnEnded", ({ detail }) => {
-      const config = detail.who.getEffectConfig(LaughterEffect);
-      if (config) resave(detail.interrupt, detail.who, config);
+    g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+      const config = who.getEffectConfig(LaughterEffect);
+      if (config) resave(interrupt, who, config);
     });
-    g.events.on("CombatantDamaged", ({ detail }) => {
-      const config = detail.who.getEffectConfig(LaughterEffect);
-      if (config) resave(detail.interrupt, detail.who, config, "advantage");
+    g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+      const config = who.getEffectConfig(LaughterEffect);
+      if (config) resave(interrupt, who, config, "advantage");
     });
   },
   { tags: efSet("magic") },

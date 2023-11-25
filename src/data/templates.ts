@@ -28,9 +28,9 @@ export default BattleTemplate;
 
 export function useTemplate(g: Engine, template: BattleTemplate) {
   for (const { combatant, side, x, y } of template) {
-    const co = combatant(g);
-    if (typeof side === "number") co.side = side;
-    g.place(co, x, y);
+    const who = combatant(g);
+    if (typeof side === "number") who.side = side;
+    g.place(who, x, y);
   }
   return g.start();
 }

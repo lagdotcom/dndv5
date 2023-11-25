@@ -7,7 +7,7 @@ import Resource from "../types/Resource";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { isEquipmentAttuned } from "../utils/items";
-import { AbstractWondrous } from "./wondrous";
+import AbstractWondrous from "./AbstractWondrous";
 
 class AbstractWand extends AbstractWondrous {
   constructor(

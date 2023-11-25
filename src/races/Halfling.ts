@@ -9,9 +9,7 @@ const Lucky = new SimpleFeature(
   "Lucky",
   `When you roll a 1 on an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.`,
   (g, me) => {
-    g.events.on("DiceRolled", ({ detail }) => {
-      const { type: t, values, interrupt } = detail;
-
+    g.events.on("DiceRolled", ({ detail: { type: t, values, interrupt } }) => {
       if (
         (t.type === "attack" || t.type === "check" || t.type === "save") &&
         t.who === me &&

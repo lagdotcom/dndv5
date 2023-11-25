@@ -1,6 +1,6 @@
 import Engine from "../Engine";
 import { ItemRarity } from "../types/Item";
-import { AbstractWondrous } from "./wondrous";
+import AbstractWondrous from "./AbstractWondrous";
 
 const GiantTypes = [
   "Hill",

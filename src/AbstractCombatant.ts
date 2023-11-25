@@ -297,24 +297,11 @@ export default abstract class AbstractCombatant implements Combatant {
   }
 
   get conditions(): Set<ConditionName> {
-    const conditions = new ConditionCollector();
-    for (const condition of this.conditionImmunities)
-      conditions.ignoreValue(condition);
+    return this.getConditions().conditions.result;
+  }
 
-    this.g.fire(new GetConditionsEvent({ who: this, conditions }));
-
-    // cascading conditions
-    for (const co of conditions.entries) {
-      if (
-        co.value === "Paralyzed" ||
-        co.value === "Petrified" ||
-        co.value === "Stunned" ||
-        co.value === "Unconscious"
-      )
-        conditions.add("Incapacitated", co.source);
-    }
-
-    return conditions.result;
+  get frightenedBy(): Set<Combatant> {
+    return this.getConditions().frightenedBy;
   }
 
   get speed(): number {
@@ -347,6 +334,33 @@ export default abstract class AbstractCombatant implements Combatant {
     return bonus.result * e.detail.multiplier.result;
   }
 
+  private getConditions() {
+    const conditions = new ConditionCollector();
+    for (const condition of this.conditionImmunities)
+      conditions.ignoreValue(condition);
+
+    const frightenedBy = new Set<Combatant>();
+
+    this.g.fire(
+      new GetConditionsEvent({ who: this, conditions, frightenedBy }),
+    );
+
+    // cascading conditions
+    for (const condition of conditions.getEntries()) {
+      if (
+        condition.value === "Paralyzed" ||
+        condition.value === "Petrified" ||
+        condition.value === "Stunned" ||
+        condition.value === "Unconscious"
+      )
+        conditions.add("Incapacitated", condition.source);
+    }
+
+    if (!conditions.result.has("Frightened")) frightenedBy.clear();
+
+    return { conditions, frightenedBy };
+  }
+
   addFeatures(features?: Feature[]) {
     for (const feature of features ?? []) this.addFeature(feature);
   }
@@ -371,12 +385,12 @@ export default abstract class AbstractCombatant implements Combatant {
     wis: number,
     cha: number,
   ) {
-    this.str.setScore(str);
-    this.dex.setScore(dex);
-    this.con.setScore(con);
-    this.int.setScore(int);
-    this.wis.setScore(wis);
-    this.cha.setScore(cha);
+    this.str.score = str;
+    this.dex.score = dex;
+    this.con.score = con;
+    this.int.score = int;
+    this.wis.score = wis;
+    this.cha.score = cha;
   }
 
   don(item: Item, attune = false) {

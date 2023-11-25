@@ -10,7 +10,7 @@ import { BoonOfVassetri } from "../../features/boons";
 import { CrossbowBolt } from "../../items/ammunition";
 import { LeatherArmor } from "../../items/armor";
 import { LightCrossbow, Rapier } from "../../items/weapons";
-import { BracersOfTheArbalest } from "../../items/wondrous";
+import BracersOfTheArbalest from "../../items/wondrous/BracersOfTheArbalest";
 import PC from "../../PC";
 import { AirGenasi } from "../../races/Genasi_EEPC";
 import { enchant } from "../../utils/items";

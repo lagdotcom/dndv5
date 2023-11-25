@@ -97,6 +97,7 @@ export default interface Combatant extends Source {
   features: Map<string, Feature>;
   groups: Set<CombatantGroup>;
   rules: Set<AIRule>;
+  frightenedBy: Set<Combatant>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

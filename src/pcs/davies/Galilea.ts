@@ -8,11 +8,9 @@ import { CrossbowBolt } from "../../items/ammunition";
 import { Shield, SplintArmor } from "../../items/armor";
 import { WandOfWeb } from "../../items/wands";
 import { LightCrossbow, Longsword } from "../../items/weapons";
-import {
-  FigurineOfWondrousPower,
-  RingOfAwe,
-  SilverShiningAmulet,
-} from "../../items/wondrous";
+import FigurineOfWondrousPower from "../../items/wondrous/FigurineOfWondrousPower";
+import RingOfAwe from "../../items/wondrous/RingOfAwe";
+import SilverShiningAmulet from "../../items/wondrous/SilverShiningAmulet";
 import PC from "../../PC";
 import Human from "../../races/Human";
 import Bless from "../../spells/level1/Bless";
