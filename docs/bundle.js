@@ -8391,6 +8391,7 @@ This feature has no effect on undead and constructs.`,
 
 You can use this feature a number of times equal to 1 + your Charisma modifier. When you finish a long rest, you regain all expended uses.`
   );
+  var extraSmiteDiceTypes = ctSet("undead", "fiend");
   var DivineSmite = new SimpleFeature(
     "Divine Smite",
     `Starting at 2nd level, when you hit a creature with a melee weapon attack, you can expend one spell slot to deal radiant damage to the target, in addition to the weapon's damage. The extra damage is 2d8 for a 1st-level spell slot, plus 1d8 for each spell level higher than 1st, to a maximum of 5d8. The damage increases by 1d8 if the target is an undead or a fiend, to a maximum of 6d8.`,
@@ -8405,27 +8406,23 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
                 DivineSmite,
                 "Divine Smite",
                 "Choose a spell slot to use.",
-                [
-                  { label: "None", value: NaN },
-                  ...enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
-                    label: ordinal(value),
-                    value,
-                    disabled: me.getResource(SpellSlotResources[value]) < 1
-                  }))
-                ],
+                enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
+                  label: ordinal(value),
+                  value,
+                  disabled: me.getResource(SpellSlotResources[value]) < 1
+                })),
                 async (slot) => {
-                  if (isNaN(slot))
-                    return;
                   me.spendResource(SpellSlotResources[slot], 1);
                   const count = Math.min(5, slot + 1);
-                  const extra = target.type === "undead" || target.type === "fiend" ? 1 : 0;
+                  const extra = extraSmiteDiceTypes.has(target.type) ? 1 : 0;
                   const damage = await g.rollDamage(
                     count + extra,
                     { source: DivineSmite, attacker, size: 8 },
                     critical
                   );
                   map.add("radiant", damage);
-                }
+                },
+                true
               )
             );
         }
