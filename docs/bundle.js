@@ -2256,7 +2256,7 @@
   // src/img/tok/boss/kay.png
   var kay_default = "./kay-LUSXSSD5.png";
 
-  // src/classes/rogue/Evasion.ts
+  // src/features/Evasion.ts
   var Evasion = new SimpleFeature(
     "Evasion",
     `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`,
@@ -2708,6 +2708,12 @@
   };
   function describeAbility(ability) {
     return niceAbilityName[ability];
+  }
+  function describeSave(tags, ability) {
+    if (tags.has("death"))
+      return "death";
+    if (ability)
+      return describeAbility(ability);
   }
   function describeRange(min, max) {
     if (min === 0) {
@@ -5150,6 +5156,72 @@
   var skSet = (...items) => new Set(items);
 
   // src/types/ToolName.ts
+  var ArtisansTools = [
+    "alchemist's supplies",
+    "brewer's supplies",
+    "calligrapher's supplies",
+    "carpenter's tools",
+    "cartographer's tools",
+    "cobbler's tools",
+    "cook's utensils",
+    "glassblower's tools",
+    "jeweler's tools",
+    "leatherworker's tools",
+    "mason's tools",
+    "painter's supplies",
+    "potter's tools",
+    "smith's tools",
+    "tinker's tools",
+    "weaver's tools",
+    "woodcarver's tools"
+  ];
+  var GamingSets = [
+    "dice set",
+    "dragonchess set",
+    "playing card set",
+    "three-dragon ante set"
+  ];
+  var Instruments = [
+    "bagpipes",
+    "birdpipes",
+    "drum",
+    "dulcimer",
+    "flute",
+    "glaur",
+    "hand drum",
+    "horn",
+    "longhorn",
+    "lute",
+    "lyre",
+    "pan flute",
+    "shawm",
+    "songborn",
+    "tantan",
+    "thelarr",
+    "tocken",
+    "viol",
+    "wargong",
+    "yarting",
+    "zulkoon"
+  ];
+  var VehicleTypes = [
+    "vehicles (air)",
+    "vehicles (land)",
+    "vehicles (space)",
+    "vehicles (water)"
+  ];
+  var ToolNames = [
+    ...ArtisansTools,
+    ...GamingSets,
+    ...Instruments,
+    ...VehicleTypes,
+    "disguise kit",
+    "forgery kit",
+    "herbalism kit",
+    "navigator's tools",
+    "poisoner's kit",
+    "thieves' tools"
+  ];
   var toSet = (...items) => new Set(items);
 
   // src/classes/common.ts
@@ -9871,7 +9943,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   );
 
   // src/classes/barbarian/index.ts
-  var UnarmoredDefense = new SimpleFeature(
+  var BarbarianUnarmoredDefense = new SimpleFeature(
     "Unarmored Defense",
     `While you are not wearing any armor, your Armor Class equals 10 + your Dexterity modifier + your Constitution modifier. You can use a shield and still gain this benefit.`,
     (g, me) => {
@@ -10055,7 +10127,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       "Survival"
     ),
     features: /* @__PURE__ */ new Map([
-      [1, [Rage_default, UnarmoredDefense]],
+      [1, [Rage_default, BarbarianUnarmoredDefense]],
       [2, [DangerSense, RecklessAttack]],
       [3, [PrimalKnowledge]],
       [4, [ASI44]],
@@ -12970,6 +13042,14 @@ At the end of each of its turns, and each time it takes damage, the target can m
       return "bonus action";
     }
   };
+  function getMonkUnarmedWeapon(g, who) {
+    var _a;
+    const weapon = who.weapons.find((w) => w.weaponType === "unarmed strike");
+    if (weapon) {
+      const diceSize = getMartialArtsDie((_a = who.classLevels.get("Monk")) != null ? _a : 0);
+      return canUpgradeDamage(weapon.damage, diceSize) ? new MonkWeaponWrapper(g, weapon, diceSize) : weapon;
+    }
+  }
   var MartialArts = new SimpleFeature(
     "Martial Arts",
     `Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
@@ -13006,25 +13086,223 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       });
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who.hasEffect(HasBonusAttackThisTurn) && canUseMartialArts(who)) {
-          const weapon = who.weapons.find(
-            (w) => w.weaponType === "unarmed strike"
-          );
+          const weapon = getMonkUnarmedWeapon(g, who);
           if (weapon)
-            actions.push(
-              new MartialArtsBonusAttack(
-                g,
-                who,
-                canUpgradeDamage(weapon.damage, diceSize) ? new MonkWeaponWrapper(g, weapon, diceSize) : weapon
-              )
-            );
+            actions.push(new MartialArtsBonusAttack(g, who, weapon));
         }
       });
     }
   );
   var MartialArts_default = MartialArts;
 
+  // src/classes/monk/Ki.ts
+  var KiResource = new ShortRestResource("Ki", 2);
+  var FlurryOfBlows = class extends AbstractAction {
+    constructor(g, actor, weapon, available, ability = getWeaponAbility(actor, weapon)) {
+      super(
+        g,
+        actor,
+        "Flurry of Blows",
+        "implemented",
+        { target: new TargetResolver(g, actor.reach + weapon.reach, []) },
+        { isHarmful: true, resources: [[KiResource, 1]], time: "bonus action" }
+      );
+      this.weapon = weapon;
+      this.available = available;
+      this.ability = ability;
+    }
+    check({ target }, ec) {
+      if (!this.available)
+        ec.add("must use immediately after Attack action", this);
+      return super.check({ target }, ec);
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor: attacker, weapon, ability } = this;
+      await doStandardAttack(g, {
+        ability,
+        attacker,
+        source: this,
+        target,
+        weapon
+      });
+      await doStandardAttack(g, {
+        ability,
+        attacker,
+        source: this,
+        target,
+        weapon
+      });
+    }
+  };
+  var PatientDefense = class extends DodgeAction {
+    constructor(g, actor) {
+      super(g, actor);
+      this.name += " (Patient Defense)";
+      this.time = "bonus action";
+      this.resources.set(KiResource, 1);
+    }
+  };
+  var StepDisengage = class extends DisengageAction {
+    constructor(g, actor) {
+      super(g, actor);
+      this.name += " (Step of the Wind)";
+      this.time = "bonus action";
+      this.resources.set(KiResource, 1);
+    }
+  };
+  var StepDash = class extends DashAction {
+    constructor(g, actor) {
+      super(g, actor);
+      this.status = "incomplete";
+      this.name += " (Step of the Wind)";
+      this.time = "bonus action";
+      this.resources.set(KiResource, 1);
+    }
+  };
+  var Ki = new SimpleFeature(
+    "Ki",
+    `Starting at 2nd level, your training allows you to harness the mystic energy of ki. Your access to this energy is represented by a number of ki points. Your monk level determines the number of points you have, as shown in the Ki Points column of the Monk table.
+
+You can spend these points to fuel various ki features. You start knowing three such features: Flurry of Blows, Patient Defense, and Step of the Wind. You learn more ki features as you gain levels in this class.
+
+When you spend a ki point, it is unavailable until you finish a short or long rest, at the end of which you draw all of your expended ki back into yourself. You must spend at least 30 minutes of the rest meditating to regain your ki points.
+
+Some of your ki features require your target to make a saving throw to resist the feature's effects. The saving throw DC is calculated as follows:
+
+Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
+    (g, me) => {
+      var _a;
+      const charges = (_a = me.classLevels.get("Monk")) != null ? _a : 2;
+      me.initResource(KiResource, charges);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          const weapon = getMonkUnarmedWeapon(g, me);
+          if (weapon)
+            actions.push(new FlurryOfBlows(g, me, weapon, false));
+          actions.push(
+            new PatientDefense(g, me),
+            new StepDisengage(g, me),
+            new StepDash(g, me)
+          );
+        }
+      });
+      g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
+        if (action.actor === me && action.isAttack) {
+          const target = config.target;
+          const weapon = getMonkUnarmedWeapon(g, me);
+          if (target && weapon) {
+            const action2 = new FlurryOfBlows(g, me, weapon, true);
+            const config2 = { target };
+            if (checkConfig(g, action2, config2))
+              interrupt.add(
+                new YesNoChoice(
+                  me,
+                  Ki,
+                  "Flurry of Blows",
+                  `Spend 1 ki to activate Flurry of Blows?`,
+                  async () => {
+                    await g.act(action2, config2);
+                  }
+                )
+              );
+          }
+        }
+      });
+    }
+  );
+  var Ki_default = Ki;
+
+  // src/classes/monk/QuickenedHealing.ts
+  var QuickenedHealingAction = class extends AbstractAction {
+    constructor(g, actor, size) {
+      super(
+        g,
+        actor,
+        "Quickened Healing",
+        "implemented",
+        {},
+        {
+          description: `As an action, you can spend 2 ki points and roll a Martial Arts die. You regain a number of hit points equal to the number rolled plus your proficiency bonus.`,
+          heal: [
+            { type: "dice", amount: { count: 1, size } },
+            { type: "flat", amount: actor.pb }
+          ],
+          resources: [[KiResource, 2]],
+          time: "action"
+        }
+      );
+      this.size = size;
+    }
+    async apply() {
+      await super.apply({});
+      const { g, actor, size } = this;
+      const amount = await g.rollHeal(1, {
+        source: this,
+        actor,
+        size,
+        target: actor
+      });
+      await g.heal(this, amount + actor.pb, {
+        action: this,
+        actor,
+        target: actor
+      });
+    }
+  };
+  var QuickenedHealing = new SimpleFeature(
+    "Quickened Healing",
+    `As an action, you can spend 2 ki points and roll a Martial Arts die. You regain a number of hit points equal to the number rolled plus your proficiency bonus.`,
+    (g, me) => {
+      var _a;
+      const size = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 4);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new QuickenedHealingAction(g, me, size));
+      });
+    }
+  );
+  var QuickenedHealing_default = QuickenedHealing;
+
+  // src/classes/monk/UnarmoredMovement.ts
+  function getUnarmoredMovementBonus(level) {
+    if (level < 6)
+      return 10;
+    if (level < 10)
+      return 15;
+    if (level < 14)
+      return 20;
+    if (level < 18)
+      return 25;
+    return 30;
+  }
+  var UnarmoredMovement = new SimpleFeature(
+    "Unarmored Movement",
+    `Starting at 2nd level, your speed increases by 10 feet while you are not wearing armor or wielding a shield. This bonus increases when you reach certain monk levels, as shown in the Monk table.
+
+At 9th level, you gain the ability to move along vertical surfaces and across liquids on your turn without falling during the move.`,
+    (g, me) => {
+      var _a;
+      const level = (_a = me.classLevels.get("Monk")) != null ? _a : 2;
+      if (getExecutionMode() !== "test" && level >= 9)
+        console.warn(`[Feature Not Complete] Unarmored Movement (on ${me.name})`);
+      const speed = getUnarmoredMovementBonus(level);
+      g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
+        if (who === me && !me.armor && !me.shield)
+          bonus.add(speed, UnarmoredMovement);
+      });
+    }
+  );
+  var UnarmoredMovement_default = UnarmoredMovement;
+
   // src/classes/monk/index.ts
-  var UnarmoredDefense2 = new SimpleFeature(
+  var MonkUnarmoredDefense = new SimpleFeature(
     "Unarmored Defense",
     `Beginning at 1st level, while you are wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier.`,
     (g, me) => {
@@ -13038,6 +13316,96 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       });
     }
   );
+  var DedicatedWeapon = notImplementedFeature(
+    "Dedicated Weapon",
+    `You train yourself to use a variety of weapons as monk weapons, not just simple melee weapons and shortswords. Whenever you finish a short or long rest, you can touch one weapon, focus your ki on it, and then count that weapon as a monk weapon until you use this feature again.
+
+The chosen weapon must meet these criteria:
+- The weapon must be a simple or martial weapon.
+- You must be proficient with it.
+- It must lack the heavy and special properties.`
+  );
+  var DeflectMissiles = notImplementedFeature(
+    "Deflect Missiles",
+    `Starting at 3rd level, you can use your reaction to deflect or catch the missile when you are hit by a ranged weapon attack. When you do so, the damage you take from the attack is reduced by 1d10 + your Dexterity modifier + your monk level.
+
+If you reduce the damage to 0, you can catch the missile if it is small enough for you to hold in one hand and you have at least one hand free. If you catch a missile in this way, you can spend 1 ki point to make a ranged attack (range 20/60 feet) with the weapon or piece of ammunition you just caught, as part of the same reaction. You make this attack with proficiency, regardless of your weapon proficiencies, and the missile counts as a monk weapon for the attack.`
+  );
+  var KiFueledAttack = notImplementedFeature(
+    "Ki-Fueled Attack",
+    `f you spend 1 ki point or more as part of your action on your turn, you can make one attack with an unarmed strike or a monk weapon as a bonus action before the end of the turn.`
+  );
+  var SlowFall = notImplementedFeature(
+    "Slow Fall",
+    `Beginning at 4th level, you can use your reaction when you fall to reduce any falling damage you take by an amount equal to five times your monk level.`
+  );
+  var ExtraAttack3 = makeExtraAttack(
+    "Extra Attack",
+    `Beginning at 5th level, you can attack twice, instead of once, whenever you take the Attack action on your turn.`
+  );
+  var FocusedAim = notImplementedFeature(
+    "Focused Aim",
+    `When you miss with an attack roll, you can spend 1 to 3 ki points to increase your attack roll by 2 for each of these ki points you spend, potentially turning the miss into a hit.`
+  );
+  var StunningStrike = notImplementedFeature(
+    "Stunning Strike",
+    `Starting at 5th level, you can interfere with the flow of ki in an opponent's body. When you hit another creature with a melee weapon attack, you can spend 1 ki point to attempt a stunning strike. The target must succeed on a Constitution saving throw or be stunned until the end of your next turn.`
+  );
+  var KiEmpoweredStrikes = new SimpleFeature(
+    "Ki-Empowered Strikes",
+    `Starting at 6th level, your unarmed strikes count as magical for the purpose of overcoming resistance and immunity to nonmagical attacks and damage.`,
+    (g, me) => {
+      g.events.on("BeforeAttack", ({ detail: { who, weapon, tags } }) => {
+        if (who === me && (weapon == null ? void 0 : weapon.weaponType) === "unarmed strike")
+          tags.add("magical");
+      });
+    }
+  );
+  var StillnessOfMind = notImplementedFeature(
+    "Stillness of Mind",
+    `Starting at 7th level, you can use your action to end one effect on yourself that is causing you to be charmed or frightened.`
+  );
+  var PurityOfBody = notImplementedFeature(
+    "Purity of Body",
+    `At 10th level, your mastery of the ki flowing through you makes you immune to disease and poison.`
+  );
+  var TongueOfTheSunAndMoon = notImplementedFeature(
+    "Tongue of the Sun and Moon",
+    `Starting at 13th level, you learn to touch the ki of other minds so that you understand all spoken languages. Moreover, any creature that can understand a language can understand what you say.`
+  );
+  var DiamondSoul = notImplementedFeature(
+    "Diamond Soul",
+    `Beginning at 14th level, your mastery of ki grants you proficiency in all saving throws.
+
+Additionally, whenever you make a saving throw and fail, you can spend 1 ki point to reroll it and take the second result.`
+  );
+  var TimelessBody2 = nonCombatFeature(
+    "Timeless Body",
+    `At 15th level, your ki sustains you so that you suffer none of the frailty of old age, and you can't be aged magically. You can still die of old age, however. In addition, you no longer need food or water.`
+  );
+  var EmptyBody = notImplementedFeature(
+    "Empty Body",
+    `Beginning at 18th level, you can use your action to spend 4 ki points to become invisible for 1 minute. During that time, you also have resistance to all damage but force damage.
+
+Additionally, you can spend 8 ki points to cast the astral projection spell, without needing material components. When you do so, you can't take any other creatures with you.`
+  );
+  var PerfectSelf = new SimpleFeature(
+    "Perfect Self",
+    `At 20th level, when you roll for initiative and have no ki points remaining, you regain 4 ki points.`,
+    (g, me) => {
+      g.events.on("GetInitiative", ({ detail: { who } }) => {
+        if (who === me && me.getResource(KiResource) < 1) {
+          g.text(new MessageBuilder().co(me).text("recovers 4 ki points."));
+          me.giveResource(KiResource, 4);
+        }
+      });
+    }
+  );
+  var ASI47 = makeASI("Monk", 4);
+  var ASI87 = makeASI("Monk", 8);
+  var ASI127 = makeASI("Monk", 12);
+  var ASI167 = makeASI("Monk", 16);
+  var ASI197 = makeASI("Monk", 19);
   var Monk = {
     name: "Monk",
     hitDieSize: 8,
@@ -13053,7 +13421,25 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       "Religion",
       "Stealth"
     ),
-    features: /* @__PURE__ */ new Map([[1, [UnarmoredDefense2, MartialArts_default]]])
+    features: /* @__PURE__ */ new Map([
+      [1, [MonkUnarmoredDefense, MartialArts_default]],
+      [2, [Ki_default, DedicatedWeapon, UnarmoredMovement_default]],
+      [3, [DeflectMissiles, KiFueledAttack]],
+      [4, [ASI47, SlowFall, QuickenedHealing_default]],
+      [5, [ExtraAttack3, StunningStrike, FocusedAim]],
+      [6, [KiEmpoweredStrikes]],
+      [7, [Evasion_default, StillnessOfMind]],
+      [8, [ASI87]],
+      [10, [PurityOfBody]],
+      [12, [ASI127]],
+      [13, [TongueOfTheSunAndMoon]],
+      [14, [DiamondSoul]],
+      [15, [TimelessBody2]],
+      [16, [ASI167]],
+      [18, [EmptyBody]],
+      [19, [ASI197]],
+      [20, [PerfectSelf]]
+    ])
   };
   var monk_default = Monk;
 
@@ -13229,7 +13615,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       this.skills.set("Athletics", 1);
       this.skills.set("Insight", 1);
       this.don(new Sickle(g));
-      this.inventory.add(new Dart(g, 10));
+      this.don(new Dart(g, 10));
       this.inventory.add(new Sling(g));
       this.inventory.add(new SlingBullet(g, 40));
     }
@@ -15875,7 +16261,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     ` gets a ${total}`,
     msgDiceType(diceType),
     " on a ",
-    tags.has("death") ? "death" : ability ? describeAbility(ability) : "",
+    describeSave(tags, ability),
     ` saving throw. (DC ${dc})`
   ];
   var getHealedMessage = ({

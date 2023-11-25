@@ -1,6 +1,8 @@
 import AbilityName from "../types/AbilityName";
 import Amount from "../types/Amount";
 import Point from "../types/Point";
+import SaveTag from "../types/SaveTag";
+import SkillName from "../types/SkillName";
 import { getDiceAverage } from "./dnd";
 
 const niceAbilityName: Record<AbilityName, string> = {
@@ -14,6 +16,16 @@ const niceAbilityName: Record<AbilityName, string> = {
 
 export function describeAbility(ability: AbilityName) {
   return niceAbilityName[ability];
+}
+
+export function describeCheck(ability: AbilityName, skill?: SkillName) {
+  if (skill) return `${describeAbility(ability)} (${skill})`;
+  return describeAbility(ability);
+}
+
+export function describeSave(tags: Set<SaveTag>, ability?: AbilityName) {
+  if (tags.has("death")) return "death";
+  if (ability) return describeAbility(ability);
 }
 
 export function describeRange(min: number, max: number) {

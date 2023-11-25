@@ -1,10 +1,10 @@
 import wreathedInShadowUrl from "@img/act/wreathed-in-shadow.svg";
 import tokenUrl from "@img/tok/boss/kay.png";
 
-import Evasion from "../../classes/rogue/Evasion";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
+import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { Arrow } from "../../items/ammunition";

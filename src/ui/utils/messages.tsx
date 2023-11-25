@@ -18,7 +18,7 @@ import DamageType from "../../types/DamageType";
 import DiceType from "../../types/DiceType";
 import { AmmoItem, WeaponItem } from "../../types/Item";
 import Spell from "../../types/Spell";
-import { describeAbility } from "../../utils/text";
+import { describeAbility, describeSave } from "../../utils/text";
 import CombatantRef from "../CombatantRef";
 import common from "../common.module.scss";
 
@@ -179,7 +179,7 @@ export const getSaveMessage = ({
   ` gets a ${total}`,
   msgDiceType(diceType),
   " on a ",
-  tags.has("death") ? "death" : ability ? describeAbility(ability) : "",
+  describeSave(tags, ability),
   ` saving throw. (DC ${dc})`,
 ];
 

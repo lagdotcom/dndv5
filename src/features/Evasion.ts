@@ -1,4 +1,4 @@
-import SimpleFeature from "../../features/SimpleFeature";
+import SimpleFeature from "./SimpleFeature";
 
 const Evasion = new SimpleFeature(
   "Evasion",

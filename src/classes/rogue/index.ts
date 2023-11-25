@@ -6,6 +6,7 @@ import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
+import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import { canSee } from "../../filters";
 import YesNoChoice from "../../interruptions/YesNoChoice";
@@ -20,7 +21,6 @@ import { checkConfig } from "../../utils/config";
 import { getExecutionMode } from "../../utils/env";
 import { makeASI } from "../common";
 import { RogueIcon } from "./common";
-import Evasion from "./Evasion";
 import SneakAttack from "./SneakAttack";
 import SteadyAim from "./SteadyAim";
 

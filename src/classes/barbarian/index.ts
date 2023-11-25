@@ -15,7 +15,7 @@ import { makeASI, makeExtraAttack } from "../common";
 import Rage, { RageAction } from "./Rage";
 import { RecklessAttack } from "./RecklessAttack";
 
-const UnarmoredDefense = new SimpleFeature(
+const BarbarianUnarmoredDefense = new SimpleFeature(
   "Unarmored Defense",
   `While you are not wearing any armor, your Armor Class equals 10 + your Dexterity modifier + your Constitution modifier. You can use a shield and still gain this benefit.`,
   (g, me) => {
@@ -220,7 +220,7 @@ const Barbarian: PCClass = {
     "Survival",
   ),
   features: new Map([
-    [1, [Rage, UnarmoredDefense]],
+    [1, [Rage, BarbarianUnarmoredDefense]],
     [2, [DangerSense, RecklessAttack]],
     [3, [PrimalKnowledge]],
     [4, [ASI4]],

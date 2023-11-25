@@ -12,7 +12,7 @@ import { WeaponItem } from "../../types/Item";
 import { _dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
 
-function getMartialArtsDie(level: number) {
+export function getMartialArtsDie(level: number) {
   if (level < 5) return 4;
   if (level < 11) return 6;
   if (level < 17) return 8;
@@ -96,6 +96,17 @@ class MartialArtsBonusAttack extends WeaponAttack {
   }
 }
 
+export function getMonkUnarmedWeapon(g: Engine, who: Combatant) {
+  const weapon = who.weapons.find((w) => w.weaponType === "unarmed strike");
+  if (weapon) {
+    const diceSize = getMartialArtsDie(who.classLevels.get("Monk") ?? 0);
+
+    return canUpgradeDamage(weapon.damage, diceSize)
+      ? new MonkWeaponWrapper(g, weapon, diceSize)
+      : weapon;
+  }
+}
+
 const MartialArts = new SimpleFeature(
   "Martial Arts",
   `Your practice of martial arts gives you mastery of combat styles that use unarmed strikes and monk weapons, which are shortswords and any simple melee weapons that don't have the two-handed or heavy property.
@@ -141,19 +152,8 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
     });
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who.hasEffect(HasBonusAttackThisTurn) && canUseMartialArts(who)) {
-        const weapon = who.weapons.find(
-          (w) => w.weaponType === "unarmed strike",
-        );
-        if (weapon)
-          actions.push(
-            new MartialArtsBonusAttack(
-              g,
-              who,
-              canUpgradeDamage(weapon.damage, diceSize)
-                ? new MonkWeaponWrapper(g, weapon, diceSize)
-                : weapon,
-            ),
-          );
+        const weapon = getMonkUnarmedWeapon(g, who);
+        if (weapon) actions.push(new MartialArtsBonusAttack(g, who, weapon));
       }
     });
   },
