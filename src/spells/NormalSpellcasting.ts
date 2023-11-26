@@ -81,6 +81,7 @@ interface Entry {
   spells: Set<Spell>;
 }
 
+// TODO multiclass spellcasting is weird
 export default class NormalSpellcasting implements SpellcastingMethod {
   entries: Map<Combatant, Entry>;
   feature: SimpleFeature;
@@ -96,7 +97,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
   ) {
     this.entries = new Map();
 
-    this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
+    this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
       this.initialise(me, me.classLevels.get(className) ?? 1);
       me.spellcastingMethods.add(this);
 

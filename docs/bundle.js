@@ -6213,7 +6213,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.spellList = spellList;
       this.icon = icon;
       this.entries = /* @__PURE__ */ new Map();
-      this.feature = new SimpleFeature("Spellcasting", text, (g, me) => {
+      this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
         var _a;
         this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
         me.spellcastingMethods.add(this);
