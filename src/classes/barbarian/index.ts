@@ -56,7 +56,7 @@ export const PrimalKnowledge = new ConfiguredFeature<SkillName[]>(
   "Primal Knowledge",
   `When you reach 3rd level and again at 10th level, you gain proficiency in one skill of your choice from the list of skills available to barbarians at 1st level.`,
   (g, me, skills) => {
-    for (const skill of skills) me.skills.set(skill, 1);
+    for (const skill of skills) me.addProficiency(skill, "proficient");
   },
 );
 

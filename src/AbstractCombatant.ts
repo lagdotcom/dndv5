@@ -34,6 +34,7 @@ import EffectType, {
   EffectDurationTimer,
 } from "./types/EffectType";
 import Feature from "./types/Feature";
+import HasProficiency from "./types/HasProficiency";
 import Item, {
   AmmoItem,
   ArmorCategory,
@@ -44,6 +45,7 @@ import LanguageName from "./types/LanguageName";
 import MovementType from "./types/MovementType";
 import PCClassName from "./types/PCClassName";
 import Point from "./types/Point";
+import ProficiencyType from "./types/ProficiencyType";
 import Resource from "./types/Resource";
 import SenseName from "./types/SenseName";
 import SizeCategory from "./types/SizeCategory";
@@ -52,7 +54,11 @@ import Source from "./types/Source";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
-import { getNaturalArmourMethod, getProficiencyType } from "./utils/dnd";
+import {
+  getNaturalArmourMethod,
+  getProficiencyMax,
+  getProficiencyType,
+} from "./utils/dnd";
 import { isShield, isSuitOfArmor } from "./utils/items";
 import { MapInitialiser } from "./utils/map";
 import { clamp } from "./utils/numbers";
@@ -104,7 +110,7 @@ export default abstract class AbstractCombatant implements Combatant {
   cha: CombatantScore;
 
   movement: Map<MovementType, number>;
-  skills: Map<SkillName, number>;
+  skills: Map<SkillName, ProficiencyType>;
   languages: Set<LanguageName>;
   equipment: Set<Item>;
   inventory: Set<Item>;
@@ -126,7 +132,7 @@ export default abstract class AbstractCombatant implements Combatant {
   effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
-  toolProficiencies: Map<ToolName, number>;
+  toolProficiencies: Map<ToolName, ProficiencyType>;
   resourcesMax: Map<string, number>;
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
@@ -365,7 +371,7 @@ export default abstract class AbstractCombatant implements Combatant {
     for (const feature of features ?? []) this.addFeature(feature);
   }
 
-  addFeature(feature: Feature, initialiseNow = false) {
+  addFeature(feature: Feature) {
     if (this.features.get(feature.name)) {
       console.warn(
         `${this.name} already has a feature named ${feature.name}, skipping.`,
@@ -374,9 +380,6 @@ export default abstract class AbstractCombatant implements Combatant {
     }
 
     this.features.set(feature.name, feature);
-
-    if (initialiseNow)
-      feature.setup(this.g, this, this.getConfig(feature.name));
 
     return true;
   }
@@ -419,26 +422,73 @@ export default abstract class AbstractCombatant implements Combatant {
     }
   }
 
-  getProficiencyMultiplier(thing: Item | AbilityName | SkillName): number {
+  addProficiency(thing: HasProficiency, value: ProficiencyType) {
     const prof = getProficiencyType(thing);
 
     switch (prof?.type) {
       case "ability":
-        return this.saveProficiencies.has(prof.ability) ? 1 : 0;
+        this.saveProficiencies.add(prof.ability);
+        return;
 
       case "armor":
-        return this.armorProficiencies.has(prof.category) ? 1 : 0;
+        this.armorProficiencies.add(prof.category);
+        return;
 
-      case "skill":
-        return this.skills.get(prof.skill) ?? 0;
+      case "skill": {
+        const old = this.skills.get(prof.skill) ?? "none";
+        this.skills.set(prof.skill, getProficiencyMax(old, value));
+        return;
+      }
+
+      case "tool": {
+        const old = this.toolProficiencies.get(prof.tool) ?? "none";
+        this.toolProficiencies.set(prof.tool, getProficiencyMax(old, value));
+        return;
+      }
 
       case "weapon":
-        if (prof.category === "natural") return 1;
-        if (this.weaponCategoryProficiencies.has(prof.category)) return 1;
-        if (this.weaponProficiencies.has(prof.weapon)) return 1;
+        if (prof.category !== "natural")
+          this.weaponProficiencies.add(prof.weapon);
+        return;
+
+      case "weaponCategory":
+        this.weaponCategoryProficiencies.add(prof.category);
+        return;
+    }
+  }
+
+  getProficiency(thing: HasProficiency): ProficiencyType {
+    const prof = getProficiencyType(thing);
+
+    switch (prof?.type) {
+      case "ability":
+        return this.saveProficiencies.has(prof.ability) ? "proficient" : "none";
+
+      case "armor":
+        return this.armorProficiencies.has(prof.category)
+          ? "proficient"
+          : "none";
+
+      case "skill":
+        return this.skills.get(prof.skill) ?? "none";
+
+      case "tool":
+        return this.toolProficiencies.get(prof.tool) ?? "none";
+
+      case "weapon":
+        if (prof.category === "natural") return "proficient";
+        if (this.weaponCategoryProficiencies.has(prof.category))
+          return "proficient";
+        if (this.weaponProficiencies.has(prof.weapon)) return "proficient";
+        break;
+
+      case "weaponCategory":
+        return this.weaponCategoryProficiencies.has(prof.category)
+          ? "proficient"
+          : "none";
     }
 
-    return 0;
+    return "none";
   }
 
   initResource(resource: Resource, amount = resource.maximum, max = amount) {

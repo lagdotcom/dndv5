@@ -78,6 +78,6 @@ export function notImplementedFeature(name: string, text: string) {
 
 export function wrapperFeature(name: string, text: string) {
   return new ConfiguredFeature<Feature>(name, text, (g, me, style) => {
-    me.addFeature(style, true);
+    me.addFeature(style);
   });
 }

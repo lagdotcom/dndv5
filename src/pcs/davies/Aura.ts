@@ -19,8 +19,8 @@ export default class Aura extends PC {
   constructor(g: Engine) {
     super(g, "Aura", tokenUrl);
 
-    this.toolProficiencies.set("dice set", 1);
-    this.toolProficiencies.set("horn", 1);
+    this.addProficiency("dice set", "proficient");
+    this.addProficiency("horn", "proficient");
     this.setAbilityScores(8, 15, 11, 14, 9, 14);
     this.setRace(AirGenasi);
 
@@ -42,12 +42,12 @@ export default class Aura extends PC {
     this.setConfig(ASI4, { type: "feat", feat: Lucky });
     this.addFeature(BoonOfVassetri);
 
-    this.skills.set("Acrobatics", 1);
-    this.skills.set("Athletics", 1);
-    this.skills.set("Deception", 1);
-    this.skills.set("Investigation", 1);
-    this.skills.set("Medicine", 1);
-    this.skills.set("Stealth", 1);
+    this.addProficiency("Acrobatics", "proficient");
+    this.addProficiency("Athletics", "proficient");
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Investigation", "proficient");
+    this.addProficiency("Medicine", "proficient");
+    this.addProficiency("Stealth", "proficient");
 
     this.don(enchant(new LightCrossbow(g), vicious));
     this.don(new LeatherArmor(g));

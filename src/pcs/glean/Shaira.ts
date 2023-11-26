@@ -25,10 +25,10 @@ export default class Shaira extends PC {
     this.setConfig(AbilityScoreBonus, ["int", "wis"]);
     this.setConfig(SkillVersatility, ["Persuasion", "History"]);
     this.setConfig(LanguageChoice, "Dwarvish");
-    this.skills.set("Deception", 1);
-    this.skills.set("Stealth", 1);
-    this.toolProficiencies.set("thieves' tools", 1);
-    this.toolProficiencies.set("playing card set", 1);
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Stealth", "proficient");
+    this.addProficiency("thieves' tools", "proficient");
+    this.addProficiency("playing card set", "proficient");
     this.addClassLevel(Bard);
 
     this.don(new LeatherArmor(g));

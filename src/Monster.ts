@@ -28,12 +28,6 @@ export default class Monster extends AbstractCombatant {
 
   don(item: Item, giveProficiency = false): void {
     super.don(item);
-
-    if (giveProficiency) {
-      if (item.itemType === "weapon")
-        this.weaponProficiencies.add(item.weaponType);
-      else if (item.itemType === "armor")
-        this.armorProficiencies.add(item.category);
-    }
+    if (giveProficiency) this.addProficiency(item, "proficient");
   }
 }

@@ -23,7 +23,7 @@ export default class Galilea extends PC {
   constructor(g: Engine) {
     super(g, "Galilea", tokenUrl);
 
-    this.toolProficiencies.set("playing card set", 1);
+    this.addProficiency("playing card set", "proficient");
     this.setAbilityScores(13, 10, 15, 11, 11, 13);
     this.setRace(Human);
     this.languages.add("Sylvan");
@@ -40,10 +40,10 @@ export default class Galilea extends PC {
     this.setConfig(PaladinFightingStyle, FightingStyleProtection);
     this.setConfig(ASI4, { type: "ability", abilities: ["str", "str"] });
 
-    this.skills.set("Insight", 1);
-    this.skills.set("Intimidation", 1);
-    this.skills.set("History", 1);
-    this.skills.set("Persuasion", 1);
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Intimidation", "proficient");
+    this.addProficiency("History", "proficient");
+    this.addProficiency("Persuasion", "proficient");
 
     this.don(new Longsword(g));
     this.don(new Shield(g));

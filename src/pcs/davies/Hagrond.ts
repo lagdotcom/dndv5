@@ -15,10 +15,10 @@ export default class Hagrond extends PC {
   constructor(g: Engine) {
     super(g, "Hagrond", tokenUrl);
 
-    this.skills.set("Survival", 1);
-    this.skills.set("Sleight of Hand", 1);
-    this.toolProficiencies.set("vehicles (land)", 1);
-    this.toolProficiencies.set("woodcarver's tools", 1);
+    this.addProficiency("Survival", "proficient");
+    this.addProficiency("Sleight of Hand", "proficient");
+    this.addProficiency("vehicles (land)", "proficient");
+    this.addProficiency("woodcarver's tools", "proficient");
     this.setAbilityScores(15, 15, 13, 10, 8, 10);
     this.setRace(StoutHalfling);
 
@@ -34,8 +34,8 @@ export default class Hagrond extends PC {
     this.setConfig(ASI4, { type: "ability", abilities: ["str", "con"] });
     this.setConfig(PrimalKnowledge, ["Perception"]);
 
-    this.skills.set("Intimidation", 1);
-    this.skills.set("Animal Handling", 1);
+    this.addProficiency("Intimidation", "proficient");
+    this.addProficiency("Animal Handling", "proficient");
 
     this.don(enchant(new Spear(g, 1), darkSun), true);
     this.don(enchant(new Trident(g, 1), ofTheDeep), true);

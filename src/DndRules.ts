@@ -429,21 +429,24 @@ export const PoisonedRule = new DndRule("Poisoned", (g) => {
 });
 
 export const ProficiencyRule = new DndRule("Proficiency", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
-    const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
-    bonus.add(who.pb * mul, ProficiencyRule);
-  });
-  g.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
-    if (skill) {
-      const mul = who.getProficiencyMultiplier(skill);
-      bonus.add(who.pb * mul, ProficiencyRule);
-    }
-  });
-  g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
-    if (ability) {
-      const mul = who.getProficiencyMultiplier(ability);
-      bonus.add(who.pb * mul, ProficiencyRule);
-    }
+  g.events.on(
+    "BeforeAttack",
+    ({ detail: { who, proficiency, spell, weapon } }) => {
+      proficiency.add(
+        weapon ? who.getProficiency(weapon) : spell ? "proficient" : "none",
+        ProficiencyRule,
+      );
+    },
+  );
+  g.events.on(
+    "BeforeCheck",
+    ({ detail: { who, skill, tool, proficiency } }) => {
+      if (skill) proficiency.add(who.getProficiency(skill), ProficiencyRule);
+      if (tool) proficiency.add(who.getProficiency(tool), ProficiencyRule);
+    },
+  );
+  g.events.on("BeforeSave", ({ detail: { who, ability, proficiency } }) => {
+    if (ability) proficiency.add(who.getProficiency(ability), ProficiencyRule);
   });
   g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
     if (type.type === "ability" && who) bonus.add(who.pb, ProficiencyRule);

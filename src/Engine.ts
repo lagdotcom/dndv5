@@ -9,11 +9,12 @@ import InterruptionCollector from "./collectors/InterruptionCollector";
 import MultiplierCollector, {
   MultiplierType,
 } from "./collectors/MultiplierCollector";
+import ProficiencyCollector from "./collectors/ProficiencyCollector";
 import SaveDamageResponseCollector from "./collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
-import DndRules from "./DndRules";
+import DndRules, { ProficiencyRule } from "./DndRules";
 import Effect from "./Effect";
 import { Dead, Dying, Stable } from "./effects";
 import AbilityCheckEvent from "./events/AbilityCheckEvent";
@@ -185,6 +186,18 @@ export default class Engine {
     return value;
   }
 
+  private addProficiencyBonus(
+    who: Combatant,
+    proficiency: ProficiencyCollector,
+    bonus: BonusCollector,
+  ) {
+    const result = proficiency.result;
+    if (result) {
+      const value = Math.floor(result * who.pb);
+      bonus.add(value, ProficiencyRule);
+    }
+  }
+
   private async savingThrow<T = object>(
     dc: number,
     e: Omit<SavingThrow<T>, "dc" | "type">,
@@ -202,6 +215,7 @@ export default class Engine {
     },
   ) {
     const successResponse = new SuccessResponseCollector();
+    const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
     const saveDamageResponse = new SaveDamageResponseCollector(save);
@@ -213,6 +227,7 @@ export default class Engine {
       new BeforeSaveEvent({
         ...e,
         dc,
+        proficiency,
         bonus,
         diceType,
         successResponse,
@@ -221,6 +236,8 @@ export default class Engine {
         interrupt: new InterruptionCollector(),
       }),
     );
+
+    this.addProficiencyBonus(e.who, proficiency, bonus);
 
     let forced = false;
     let success = false;
@@ -258,6 +275,7 @@ export default class Engine {
 
   async abilityCheck(dc: number, e: Omit<AbilityCheck, "dc" | "type">) {
     const successResponse = new SuccessResponseCollector();
+    const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
 
@@ -265,12 +283,15 @@ export default class Engine {
       new BeforeCheckEvent({
         ...e,
         dc,
+        proficiency,
         bonus,
         diceType,
         successResponse,
         interrupt: new InterruptionCollector(),
       }),
     );
+
+    this.addProficiencyBonus(e.who, proficiency, bonus);
 
     let forced = false;
     let success = false;
@@ -636,8 +657,12 @@ export default class Engine {
   }
 
   async attack(
-    e: Omit<BeforeAttackDetail, "bonus" | "diceType" | "interrupt" | "success">,
+    e: Omit<
+      BeforeAttackDetail,
+      "proficiency" | "bonus" | "diceType" | "interrupt" | "success"
+    >,
   ) {
+    const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
     const success = new SuccessResponseCollector();
@@ -645,6 +670,7 @@ export default class Engine {
     const pre = await this.resolve(
       new BeforeAttackEvent({
         ...e,
+        proficiency,
         bonus,
         diceType,
         success,
@@ -653,6 +679,8 @@ export default class Engine {
     );
     if (success.result === "fail")
       return { outcome: "cancelled", hit: false } as const;
+
+    this.addProficiencyBonus(e.who, proficiency, bonus);
 
     // these COULD be changed during the event
     const { target, who, ability } = pre.detail;

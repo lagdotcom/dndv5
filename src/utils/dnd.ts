@@ -1,9 +1,12 @@
 import Engine from "../Engine";
-import AbilityName, { AbilityNames } from "../types/AbilityName";
+import { AbilityNames } from "../types/AbilityName";
 import ACMethod from "../types/ACMethod";
 import Combatant from "../types/Combatant";
-import Item from "../types/Item";
-import SkillName from "../types/SkillName";
+import HasProficiency from "../types/HasProficiency";
+import Item, { ArmorCategories, WeaponCategories } from "../types/Item";
+import ProficiencyType, { ProficiencyTypes } from "../types/ProficiencyType";
+import { SkillNames } from "../types/SkillName";
+import { ToolNames } from "../types/ToolName";
 import { isA } from "./types";
 import { distance } from "./units";
 
@@ -19,22 +22,39 @@ export function getProficiencyBonusByLevel(level: number) {
   return Math.ceil(level / 4) + 1;
 }
 
-export function getProficiencyType(thing: Item | AbilityName | SkillName) {
+export function getProficiencyType(thing: HasProficiency) {
   if (typeof thing === "string") {
     if (isA(thing, AbilityNames))
-      return { type: "ability" as const, ability: thing };
-    return { type: "skill" as const, skill: thing };
+      return { type: "ability", ability: thing } as const;
+
+    if (isA(thing, ArmorCategories))
+      return { type: "armor", category: thing } as const;
+
+    if (isA(thing, WeaponCategories))
+      return { type: "weaponCategory", category: thing } as const;
+
+    if (isA(thing, ToolNames)) return { type: "tool", tool: thing } as const;
+
+    if (isA(thing, SkillNames)) return { type: "skill", skill: thing } as const;
+
+    throw new Error(`${thing} has no proficiency`);
   }
 
   if (thing.itemType === "weapon")
     return {
-      type: "weapon" as const,
+      type: "weapon",
       category: thing.category,
       weapon: thing.weaponType,
-    };
+    } as const;
 
   if (thing.itemType === "armor")
-    return { type: "armor" as const, category: thing.category };
+    return { type: "armor", category: thing.category } as const;
+}
+
+export function getProficiencyMax(...types: ProficiencyType[]) {
+  return types.sort(
+    (a, b) => ProficiencyTypes.indexOf(b) - ProficiencyTypes.indexOf(a),
+  )[0];
 }
 
 export const getNaturalArmourMethod = (

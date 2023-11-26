@@ -49,10 +49,10 @@ export default class Beldalynn extends PC {
 
     this.setConfig(ASI4, { type: "ability", abilities: ["int", "wis"] });
 
-    this.skills.set("History", 1);
-    this.skills.set("Perception", 1);
-    this.skills.set("Arcana", 1);
-    this.skills.set("Investigation", 1);
+    this.addProficiency("History", "proficient");
+    this.addProficiency("Perception", "proficient");
+    this.addProficiency("Arcana", "proficient");
+    this.addProficiency("Investigation", "proficient");
 
     this.don(new CloakOfProtection(g), true);
     this.don(enchant(new Quarterstaff(g), chaoticBurst), true);

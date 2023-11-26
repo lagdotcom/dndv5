@@ -26,7 +26,7 @@ export const ToolProficiency = new ConfiguredFeature<DwarfTool>(
   "Tool Proficiency",
   `You gain proficiency with the artisan's tools of your choice: Smith's tools, brewer's supplies, or mason's tools.`,
   (g, me, tool) => {
-    me.toolProficiencies.set(tool, 1);
+    me.addProficiency(tool, "proficient");
   },
 );
 

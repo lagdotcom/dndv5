@@ -55,10 +55,7 @@ export const Expertise = new ConfiguredFeature<SkillName[]>(
 
   At 10th level, you can choose another two skill proficiencies to gain this benefit.`,
   (g, me, config) => {
-    for (const entry of config) {
-      if (me.skills.has(entry)) me.skills.set(entry, 2);
-      else console.warn(`Expertise in ${entry} without existing proficiency`);
-    }
+    for (const entry of config) me.addProficiency(entry, "expertise");
   },
 );
 

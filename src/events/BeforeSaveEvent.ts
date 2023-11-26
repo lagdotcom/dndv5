@@ -1,6 +1,7 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import ProficiencyCollector from "../collectors/ProficiencyCollector";
 import SaveDamageResponseCollector from "../collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import Effect from "../Effect";
@@ -17,6 +18,7 @@ export interface BeforeSaveDetail<T = unknown> {
   dc: number;
   ability?: AbilityName;
   diceType: DiceTypeCollector;
+  proficiency: ProficiencyCollector;
   bonus: BonusCollector;
   successResponse: SuccessResponseCollector;
   saveDamageResponse: SaveDamageResponseCollector;

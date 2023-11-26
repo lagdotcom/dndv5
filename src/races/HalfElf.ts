@@ -28,7 +28,7 @@ export const SkillVersatility = new ConfiguredFeature<SkillName[]>(
   "Skill Versatility",
   `You gain proficiency in two skills of your choice.`,
   (g, me, skills) => {
-    for (const skill of skills) me.skills.set(skill, 1);
+    for (const skill of skills) me.addProficiency(skill, "proficient");
   },
 );
 

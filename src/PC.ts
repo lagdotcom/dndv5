@@ -87,7 +87,7 @@ export default class PC extends AbstractCombatant {
       mergeSets(this.weaponProficiencies, cls.weaponProficiencies);
 
       for (const prof of cls?.toolProficiencies ?? [])
-        this.toolProficiencies.set(prof, 1);
+        this.addProficiency(prof, "proficient");
     }
 
     this.addFeatures(cls.features.get(level));

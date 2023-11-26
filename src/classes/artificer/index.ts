@@ -1,4 +1,5 @@
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
+import SimpleFeature from "../../features/SimpleFeature";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
@@ -39,9 +40,14 @@ const TheRightToolForTheJob = nonCombatFeature(
   `At 3rd level, you learn how to produce exactly the tool you need: with thieves' tools or artisan's tools in hand, you can magically create one set of artisan's tools in an unoccupied space within 5 feet of you. This creation requires 1 hour of uninterrupted work, which can coincide with a short or long rest. Though the product of magic, the tools are nonmagical, and they vanish when you use this feature again.`,
 );
 
-const ToolExpertise = notImplementedFeature(
+const ToolExpertise = new SimpleFeature(
   "Tool Expertise",
   `Starting at 6th level, your proficiency bonus is doubled for any ability check you make that uses your proficiency with a tool.`,
+  (g, me) => {
+    g.events.on("BeforeCheck", ({ detail: { who, tool, proficiency } }) => {
+      if (who === me && tool) proficiency.add("expertise", ToolExpertise);
+    });
+  },
 );
 
 // TODO [ATTUNEMENTLIMIT]

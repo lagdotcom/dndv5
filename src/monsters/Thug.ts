@@ -13,7 +13,7 @@ export default class Thug extends Monster {
     this.don(new LeatherArmor(g), true);
     this.movement.set("speed", 30);
     this.setAbilityScores(15, 11, 14, 10, 10, 11);
-    this.skills.set("Intimidation", 1);
+    this.addProficiency("Intimidation", "proficient");
     this.languages.add("Common");
     this.pb = 2;
 

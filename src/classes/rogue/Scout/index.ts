@@ -76,8 +76,8 @@ const Survivalist = new SimpleFeature(
   "Survivalist",
   `When you choose this archetype at 3rd level, you gain proficiency in the Nature and Survival skills if you don't already have it. Your proficiency bonus is doubled for any ability check you make that uses either of those proficiencies.`,
   (g, me) => {
-    me.skills.set("Nature", 2);
-    me.skills.set("Survival", 2);
+    me.addProficiency("Nature", "expertise");
+    me.addProficiency("Survival", "expertise");
   },
 );
 

@@ -14,8 +14,8 @@ export default class Tethilssethanar extends PC {
     this.setAbilityScores(9, 14, 13, 8, 15, 13);
     this.setRace(Triton);
     this.addClassLevel(Monk);
-    this.skills.set("Athletics", 1);
-    this.skills.set("Insight", 1);
+    this.addProficiency("Athletics", "proficient");
+    this.addProficiency("Insight", "proficient");
 
     this.don(new Sickle(g));
     this.don(new Dart(g, 10));

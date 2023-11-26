@@ -872,6 +872,112 @@
   var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
   var abSet = (...items) => new Set(items);
 
+  // src/types/Item.ts
+  var WeaponCategories = ["natural", "simple", "martial"];
+  var wcSet = (...items) => new Set(items);
+  var ArmorCategories = ["light", "medium", "heavy", "shield"];
+  var acSet = (...items) => new Set(items);
+
+  // src/types/ProficiencyType.ts
+  var ProficiencyTypes = [
+    "none",
+    "half",
+    "proficient",
+    "expertise"
+  ];
+
+  // src/types/SkillName.ts
+  var SkillNames = [
+    "Acrobatics",
+    "Animal Handling",
+    "Arcana",
+    "Athletics",
+    "Deception",
+    "History",
+    "Insight",
+    "Intimidation",
+    "Investigation",
+    "Medicine",
+    "Nature",
+    "Perception",
+    "Performance",
+    "Persuasion",
+    "Religion",
+    "Sleight of Hand",
+    "Stealth",
+    "Survival"
+  ];
+  var skSet = (...items) => new Set(items);
+
+  // src/types/ToolName.ts
+  var ArtisansTools = [
+    "alchemist's supplies",
+    "brewer's supplies",
+    "calligrapher's supplies",
+    "carpenter's tools",
+    "cartographer's tools",
+    "cobbler's tools",
+    "cook's utensils",
+    "glassblower's tools",
+    "jeweler's tools",
+    "leatherworker's tools",
+    "mason's tools",
+    "painter's supplies",
+    "potter's tools",
+    "smith's tools",
+    "tinker's tools",
+    "weaver's tools",
+    "woodcarver's tools"
+  ];
+  var GamingSets = [
+    "dice set",
+    "dragonchess set",
+    "playing card set",
+    "three-dragon ante set"
+  ];
+  var Instruments = [
+    "bagpipes",
+    "birdpipes",
+    "drum",
+    "dulcimer",
+    "flute",
+    "glaur",
+    "hand drum",
+    "horn",
+    "longhorn",
+    "lute",
+    "lyre",
+    "pan flute",
+    "shawm",
+    "songborn",
+    "tantan",
+    "thelarr",
+    "tocken",
+    "viol",
+    "wargong",
+    "yarting",
+    "zulkoon"
+  ];
+  var VehicleTypes = [
+    "vehicles (air)",
+    "vehicles (land)",
+    "vehicles (space)",
+    "vehicles (water)"
+  ];
+  var ToolNames = [
+    ...ArtisansTools,
+    ...GamingSets,
+    ...Instruments,
+    ...VehicleTypes,
+    "disguise kit",
+    "forgery kit",
+    "herbalism kit",
+    "navigator's tools",
+    "poisoner's kit",
+    "thieves' tools"
+  ];
+  var toSet = (...items) => new Set(items);
+
   // src/utils/types.ts
   function isDefined(value) {
     return typeof value !== "undefined";
@@ -913,7 +1019,15 @@
     if (typeof thing === "string") {
       if (isA(thing, AbilityNames))
         return { type: "ability", ability: thing };
-      return { type: "skill", skill: thing };
+      if (isA(thing, ArmorCategories))
+        return { type: "armor", category: thing };
+      if (isA(thing, WeaponCategories))
+        return { type: "weaponCategory", category: thing };
+      if (isA(thing, ToolNames))
+        return { type: "tool", tool: thing };
+      if (isA(thing, SkillNames))
+        return { type: "skill", skill: thing };
+      throw new Error(`${thing} has no proficiency`);
     }
     if (thing.itemType === "weapon")
       return {
@@ -923,6 +1037,11 @@
       };
     if (thing.itemType === "armor")
       return { type: "armor", category: thing.category };
+  }
+  function getProficiencyMax(...types) {
+    return types.sort(
+      (a, b) => ProficiencyTypes.indexOf(b) - ProficiencyTypes.indexOf(a)
+    )[0];
   }
   var getNaturalArmourMethod = (who, naturalAC) => {
     const uses = /* @__PURE__ */ new Set();
@@ -1472,7 +1591,7 @@
       for (const feature of features != null ? features : [])
         this.addFeature(feature);
     }
-    addFeature(feature, initialiseNow = false) {
+    addFeature(feature) {
       if (this.features.get(feature.name)) {
         console.warn(
           `${this.name} already has a feature named ${feature.name}, skipping.`
@@ -1480,8 +1599,6 @@
         return false;
       }
       this.features.set(feature.name, feature);
-      if (initialiseNow)
-        feature.setup(this.g, this, this.getConfig(feature.name));
       return true;
     }
     setAbilityScores(str, dex, con, int, wis, cha) {
@@ -1509,25 +1626,59 @@
         this.inventory.add(item);
       }
     }
-    getProficiencyMultiplier(thing) {
-      var _a;
+    addProficiency(thing, value) {
+      var _a, _b;
       const prof = getProficiencyType(thing);
       switch (prof == null ? void 0 : prof.type) {
         case "ability":
-          return this.saveProficiencies.has(prof.ability) ? 1 : 0;
+          this.saveProficiencies.add(prof.ability);
+          return;
         case "armor":
-          return this.armorProficiencies.has(prof.category) ? 1 : 0;
+          this.armorProficiencies.add(prof.category);
+          return;
+        case "skill": {
+          const old = (_a = this.skills.get(prof.skill)) != null ? _a : "none";
+          this.skills.set(prof.skill, getProficiencyMax(old, value));
+          return;
+        }
+        case "tool": {
+          const old = (_b = this.toolProficiencies.get(prof.tool)) != null ? _b : "none";
+          this.toolProficiencies.set(prof.tool, getProficiencyMax(old, value));
+          return;
+        }
+        case "weapon":
+          if (prof.category !== "natural")
+            this.weaponProficiencies.add(prof.weapon);
+          return;
+        case "weaponCategory":
+          this.weaponCategoryProficiencies.add(prof.category);
+          return;
+      }
+    }
+    getProficiency(thing) {
+      var _a, _b;
+      const prof = getProficiencyType(thing);
+      switch (prof == null ? void 0 : prof.type) {
+        case "ability":
+          return this.saveProficiencies.has(prof.ability) ? "proficient" : "none";
+        case "armor":
+          return this.armorProficiencies.has(prof.category) ? "proficient" : "none";
         case "skill":
-          return (_a = this.skills.get(prof.skill)) != null ? _a : 0;
+          return (_a = this.skills.get(prof.skill)) != null ? _a : "none";
+        case "tool":
+          return (_b = this.toolProficiencies.get(prof.tool)) != null ? _b : "none";
         case "weapon":
           if (prof.category === "natural")
-            return 1;
+            return "proficient";
           if (this.weaponCategoryProficiencies.has(prof.category))
-            return 1;
+            return "proficient";
           if (this.weaponProficiencies.has(prof.weapon))
-            return 1;
+            return "proficient";
+          break;
+        case "weaponCategory":
+          return this.weaponCategoryProficiencies.has(prof.category) ? "proficient" : "none";
       }
-      return 0;
+      return "none";
     }
     initResource(resource, amount = resource.maximum, max = amount) {
       this.resources.set(resource.name, amount);
@@ -1705,12 +1856,8 @@
     }
     don(item, giveProficiency = false) {
       super.don(item);
-      if (giveProficiency) {
-        if (item.itemType === "weapon")
-          this.weaponProficiencies.add(item.weaponType);
-        else if (item.itemType === "armor")
-          this.armorProficiencies.add(item.category);
-      }
+      if (giveProficiency)
+        this.addProficiency(item, "proficient");
     }
   };
 
@@ -2239,8 +2386,8 @@
       this.pb = 3;
       this.saveProficiencies.add("wis");
       this.saveProficiencies.add("cha");
-      this.skills.set("Arcana", 1);
-      this.skills.set("Nature", 1);
+      this.addProficiency("Arcana", "proficient");
+      this.addProficiency("Nature", "proficient");
       this.damageResponses.set("poison", "immune");
       this.conditionImmunities.add("Poisoned");
       this.languages.add("Abyssal");
@@ -3656,21 +3803,27 @@
     g.events.on("BeforeCheck", poisonCheck);
   });
   var ProficiencyRule = new DndRule("Proficiency", (g) => {
-    g.events.on("BeforeAttack", ({ detail: { who, bonus, spell, weapon } }) => {
-      const mul = weapon ? who.getProficiencyMultiplier(weapon) : spell ? 1 : 0;
-      bonus.add(who.pb * mul, ProficiencyRule);
-    });
-    g.events.on("BeforeCheck", ({ detail: { who, skill, bonus } }) => {
-      if (skill) {
-        const mul = who.getProficiencyMultiplier(skill);
-        bonus.add(who.pb * mul, ProficiencyRule);
+    g.events.on(
+      "BeforeAttack",
+      ({ detail: { who, proficiency, spell, weapon } }) => {
+        proficiency.add(
+          weapon ? who.getProficiency(weapon) : spell ? "proficient" : "none",
+          ProficiencyRule
+        );
       }
-    });
-    g.events.on("BeforeSave", ({ detail: { who, ability, bonus } }) => {
-      if (ability) {
-        const mul = who.getProficiencyMultiplier(ability);
-        bonus.add(who.pb * mul, ProficiencyRule);
+    );
+    g.events.on(
+      "BeforeCheck",
+      ({ detail: { who, skill, tool, proficiency } }) => {
+        if (skill)
+          proficiency.add(who.getProficiency(skill), ProficiencyRule);
+        if (tool)
+          proficiency.add(who.getProficiency(tool), ProficiencyRule);
       }
+    );
+    g.events.on("BeforeSave", ({ detail: { who, ability, proficiency } }) => {
+      if (ability)
+        proficiency.add(who.getProficiency(ability), ProficiencyRule);
     });
     g.events.on("GetSaveDC", ({ detail: { type, bonus, who } }) => {
       if (type.type === "ability" && who)
@@ -3879,8 +4032,8 @@
       this.pb = 3;
       this.saveProficiencies.add("str");
       this.saveProficiencies.add("dex");
-      this.skills.set("Athletics", 1);
-      this.skills.set("Stealth", 2);
+      this.addProficiency("Athletics", "proficient");
+      this.addProficiency("Stealth", "expertise");
       this.conditionImmunities.add("Frightened");
       this.languages.add("Abyssal");
       this.languages.add("Common");
@@ -4091,7 +4244,7 @@
   }
   function wrapperFeature(name, text) {
     return new ConfiguredFeature(name, text, (g, me, style) => {
-      me.addFeature(style, true);
+      me.addFeature(style);
     });
   }
 
@@ -4457,8 +4610,8 @@
       this.level = 5;
       this.saveProficiencies.add("wis");
       this.saveProficiencies.add("cha");
-      this.skills.set("Insight", 1);
-      this.skills.set("Persuasion", 1);
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Persuasion", "proficient");
       this.damageResponses.set("fire", "resist");
       this.damageResponses.set("poison", "resist");
       this.conditionImmunities.add("Poisoned");
@@ -4868,8 +5021,8 @@
       this.level = 5;
       this.saveProficiencies.add("dex");
       this.saveProficiencies.add("cha");
-      this.skills.set("Deception", 1);
-      this.skills.set("Perception", 1);
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Perception", "proficient");
       this.damageResponses.set("poison", "immune");
       this.conditionImmunities.add("Poisoned");
       this.languages.add("Abyssal");
@@ -5059,8 +5212,8 @@
       this.pb = 3;
       this.saveProficiencies.add("str");
       this.saveProficiencies.add("con");
-      this.skills.set("Acrobatics", 1);
-      this.skills.set("Intimidation", 1);
+      this.addProficiency("Acrobatics", "proficient");
+      this.addProficiency("Intimidation", "proficient");
       this.damageResponses.set("fire", "resist");
       this.damageResponses.set("poison", "resist");
       this.conditionImmunities.add("Poisoned");
@@ -5107,7 +5260,7 @@
     constructor(g, wieldingBow = false) {
       super(g, "goblin", 0.25, "humanoid", "small", goblin_default, 7);
       this.movement.set("speed", 30);
-      this.skills.set("Stealth", 2);
+      this.addProficiency("Stealth", "expertise");
       this.senses.set("darkvision", 60);
       this.languages.add("Common");
       this.languages.add("Goblin");
@@ -5135,109 +5288,13 @@
   // src/img/tok/pc/aura.png
   var aura_default = "./aura-PXXTYCUY.png";
 
-  // src/types/Item.ts
-  var wcSet = (...items) => new Set(items);
-  var acSet = (...items) => new Set(items);
-
-  // src/types/SkillName.ts
-  var SkillNames = [
-    "Acrobatics",
-    "Animal Handling",
-    "Arcana",
-    "Athletics",
-    "Deception",
-    "History",
-    "Insight",
-    "Intimidation",
-    "Investigation",
-    "Medicine",
-    "Nature",
-    "Perception",
-    "Performance",
-    "Persuasion",
-    "Religion",
-    "Sleight of Hand",
-    "Stealth",
-    "Survival"
-  ];
-  var skSet = (...items) => new Set(items);
-
-  // src/types/ToolName.ts
-  var ArtisansTools = [
-    "alchemist's supplies",
-    "brewer's supplies",
-    "calligrapher's supplies",
-    "carpenter's tools",
-    "cartographer's tools",
-    "cobbler's tools",
-    "cook's utensils",
-    "glassblower's tools",
-    "jeweler's tools",
-    "leatherworker's tools",
-    "mason's tools",
-    "painter's supplies",
-    "potter's tools",
-    "smith's tools",
-    "tinker's tools",
-    "weaver's tools",
-    "woodcarver's tools"
-  ];
-  var GamingSets = [
-    "dice set",
-    "dragonchess set",
-    "playing card set",
-    "three-dragon ante set"
-  ];
-  var Instruments = [
-    "bagpipes",
-    "birdpipes",
-    "drum",
-    "dulcimer",
-    "flute",
-    "glaur",
-    "hand drum",
-    "horn",
-    "longhorn",
-    "lute",
-    "lyre",
-    "pan flute",
-    "shawm",
-    "songborn",
-    "tantan",
-    "thelarr",
-    "tocken",
-    "viol",
-    "wargong",
-    "yarting",
-    "zulkoon"
-  ];
-  var VehicleTypes = [
-    "vehicles (air)",
-    "vehicles (land)",
-    "vehicles (space)",
-    "vehicles (water)"
-  ];
-  var ToolNames = [
-    ...ArtisansTools,
-    ...GamingSets,
-    ...Instruments,
-    ...VehicleTypes,
-    "disguise kit",
-    "forgery kit",
-    "herbalism kit",
-    "navigator's tools",
-    "poisoner's kit",
-    "thieves' tools"
-  ];
-  var toSet = (...items) => new Set(items);
-
   // src/classes/common.ts
   function asiSetup(g, me, config) {
     if (config.type === "ability")
       for (const ability of config.abilities)
         me[ability].score++;
     else
-      me.addFeature(config.feat, true);
+      me.addFeature(config.feat);
   }
   function makeASI(className, level) {
     return new ConfiguredFeature(
@@ -5415,19 +5472,8 @@ The amount of the extra damage increases as you gain levels in this class, as sh
 
   At 6th level, you can choose two more of your proficiencies (in skills or with thieves\u2019 tools) to gain this benefit.`,
     (g, me, config) => {
-      for (const entry of config) {
-        if (entry === "thieves' tools") {
-          if (me.toolProficiencies.has(entry))
-            me.toolProficiencies.set(entry, 2);
-          else
-            console.warn(`Expertise in ${entry} without existing proficiency`);
-        } else {
-          if (me.skills.has(entry))
-            me.skills.set(entry, 2);
-          else
-            console.warn(`Expertise in ${entry} without existing proficiency`);
-        }
-      }
+      for (const entry of config)
+        me.addProficiency(entry, "expertise");
     }
   );
   var ThievesCant = nonCombatFeature(
@@ -5643,8 +5689,8 @@ Once you use this feature, you can't use it again until you finish a short or lo
     "Survivalist",
     `When you choose this archetype at 3rd level, you gain proficiency in the Nature and Survival skills if you don't already have it. Your proficiency bonus is doubled for any ability check you make that uses either of those proficiencies.`,
     (g, me) => {
-      me.skills.set("Nature", 2);
-      me.skills.set("Survival", 2);
+      me.addProficiency("Nature", "expertise");
+      me.addProficiency("Survival", "expertise");
     }
   );
   var SuperiorMobility = notImplementedFeature(
@@ -6020,7 +6066,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         );
         mergeSets(this.weaponProficiencies, cls.weaponProficiencies);
         for (const prof of (_b = cls == null ? void 0 : cls.toolProficiencies) != null ? _b : [])
-          this.toolProficiencies.set(prof, 1);
+          this.addProficiency(prof, "proficient");
       }
       this.addFeatures(cls.features.get(level));
       const sub = this.subclasses.get(cls.name);
@@ -6106,8 +6152,8 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var Aura = class extends PC {
     constructor(g) {
       super(g, "Aura", aura_default);
-      this.toolProficiencies.set("dice set", 1);
-      this.toolProficiencies.set("horn", 1);
+      this.addProficiency("dice set", "proficient");
+      this.addProficiency("horn", "proficient");
       this.setAbilityScores(8, 15, 11, 14, 9, 14);
       this.setRace(AirGenasi);
       this.addSubclass(Scout_default);
@@ -6126,12 +6172,12 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       ]);
       this.setConfig(ASI4, { type: "feat", feat: Lucky_default });
       this.addFeature(BoonOfVassetri);
-      this.skills.set("Acrobatics", 1);
-      this.skills.set("Athletics", 1);
-      this.skills.set("Deception", 1);
-      this.skills.set("Investigation", 1);
-      this.skills.set("Medicine", 1);
-      this.skills.set("Stealth", 1);
+      this.addProficiency("Acrobatics", "proficient");
+      this.addProficiency("Athletics", "proficient");
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Investigation", "proficient");
+      this.addProficiency("Medicine", "proficient");
+      this.addProficiency("Stealth", "proficient");
       this.don(enchant(new LightCrossbow(g), vicious));
       this.don(new LeatherArmor(g));
       this.don(new BracersOfTheArbalest(g), true);
@@ -8075,10 +8121,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.addClassLevel(wizard_default2);
       this.addClassLevel(wizard_default2);
       this.setConfig(ASI42, { type: "ability", abilities: ["int", "wis"] });
-      this.skills.set("History", 1);
-      this.skills.set("Perception", 1);
-      this.skills.set("Arcana", 1);
-      this.skills.set("Investigation", 1);
+      this.addProficiency("History", "proficient");
+      this.addProficiency("Perception", "proficient");
+      this.addProficiency("Arcana", "proficient");
+      this.addProficiency("Investigation", "proficient");
       this.don(new CloakOfProtection(g), true);
       this.don(enchant(new Quarterstaff(g), chaoticBurst), true);
       this.don(new DragonTouchedFocus(g, "Slumbering"), true);
@@ -9637,7 +9683,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   var Galilea = class extends PC {
     constructor(g) {
       super(g, "Galilea", galilea_default);
-      this.toolProficiencies.set("playing card set", 1);
+      this.addProficiency("playing card set", "proficient");
       this.setAbilityScores(13, 10, 15, 11, 11, 13);
       this.setRace(Human_default);
       this.languages.add("Sylvan");
@@ -9651,10 +9697,10 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       this.addClassLevel(paladin_default2);
       this.setConfig(PaladinFightingStyle, Protection_default);
       this.setConfig(ASI43, { type: "ability", abilities: ["str", "str"] });
-      this.skills.set("Insight", 1);
-      this.skills.set("Intimidation", 1);
-      this.skills.set("History", 1);
-      this.skills.set("Persuasion", 1);
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Intimidation", "proficient");
+      this.addProficiency("History", "proficient");
+      this.addProficiency("Persuasion", "proficient");
       this.don(new Longsword(g));
       this.don(new Shield(g));
       this.don(new SplintArmor(g));
@@ -9980,7 +10026,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
     `When you reach 3rd level and again at 10th level, you gain proficiency in one skill of your choice from the list of skills available to barbarians at 1st level.`,
     (g, me, skills) => {
       for (const skill of skills)
-        me.skills.set(skill, 1);
+        me.addProficiency(skill, "proficient");
     }
   );
   var ExtraAttack2 = makeExtraAttack(
@@ -10437,10 +10483,10 @@ If the creature succeeds on its saving throw, you can't use this feature on that
   var Hagrond = class extends PC {
     constructor(g) {
       super(g, "Hagrond", hagrond_default);
-      this.skills.set("Survival", 1);
-      this.skills.set("Sleight of Hand", 1);
-      this.toolProficiencies.set("vehicles (land)", 1);
-      this.toolProficiencies.set("woodcarver's tools", 1);
+      this.addProficiency("Survival", "proficient");
+      this.addProficiency("Sleight of Hand", "proficient");
+      this.addProficiency("vehicles (land)", "proficient");
+      this.addProficiency("woodcarver's tools", "proficient");
       this.setAbilityScores(15, 15, 13, 10, 8, 10);
       this.setRace(StoutHalfling);
       this.addSubclass(Berserker_default);
@@ -10453,8 +10499,8 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       this.addClassLevel(barbarian_default2);
       this.setConfig(ASI44, { type: "ability", abilities: ["str", "con"] });
       this.setConfig(PrimalKnowledge, ["Perception"]);
-      this.skills.set("Intimidation", 1);
-      this.skills.set("Animal Handling", 1);
+      this.addProficiency("Intimidation", "proficient");
+      this.addProficiency("Animal Handling", "proficient");
       this.don(enchant(new Spear(g, 1), darkSun_default), true);
       this.don(enchant(new Trident(g, 1), ofTheDeep_default), true);
       this.inventory.add(new Dagger(g, 4));
@@ -11765,7 +11811,7 @@ The creature is aware of this effect before it makes its attack against you.`
     "Tool Proficiency",
     `You gain proficiency with the artisan's tools of your choice: Smith's tools, brewer's supplies, or mason's tools.`,
     (g, me, tool) => {
-      me.toolProficiencies.set(tool, 1);
+      me.addProficiency(tool, "proficient");
     }
   );
   var Stonecunning = nonCombatFeature(
@@ -12400,8 +12446,8 @@ The creature is aware of this effect before it makes its attack against you.`
   var Salgar = class extends PC {
     constructor(g) {
       super(g, "Salgar", salgar_default);
-      this.skills.set("Arcana", 1);
-      this.skills.set("History", 1);
+      this.addProficiency("Arcana", "proficient");
+      this.addProficiency("History", "proficient");
       this.setAbilityScores(10, 8, 14, 14, 15, 10);
       this.setRace(MountainDwarf);
       this.languages.add("Elvish");
@@ -12419,8 +12465,8 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(BonusCantrip, MagicStone_default);
       this.setConfig(ASI45, { type: "ability", abilities: ["cha", "wis"] });
       this.setConfig(WildShape_default, [new Bat(g), new GiantBadger(g)]);
-      this.skills.set("Insight", 1);
-      this.skills.set("Survival", 1);
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Survival", "proficient");
       this.don(new ArrowCatchingShield(g), true);
       this.don(new BootsOfTheWinterlands(g), true);
       this.don(new CloakOfElvenkind(g), true);
@@ -12471,7 +12517,7 @@ The creature is aware of this effect before it makes its attack against you.`
     `You gain proficiency in two skills of your choice.`,
     (g, me, skills) => {
       for (const skill of skills)
-        me.skills.set(skill, 1);
+        me.addProficiency(skill, "proficient");
     }
   );
   var AbilityScoreBonus = new ConfiguredFeature(
@@ -12513,8 +12559,8 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(AbilityScoreBonus, ["str", "con"]);
       this.setConfig(SkillVersatility, ["Athletics", "Persuasion"]);
       this.setConfig(LanguageChoice, "Dwarvish");
-      this.skills.set("Survival", 1);
-      this.skills.set("Investigation", 1);
+      this.addProficiency("Survival", "proficient");
+      this.addProficiency("Investigation", "proficient");
       this.languages.add("Primordial");
       this.languages.add("Infernal");
       this.addClassLevel(paladin_default2);
@@ -12580,12 +12626,8 @@ The extra hit points increase when you reach certain levels in this class: to 1d
 
   At 10th level, you can choose another two skill proficiencies to gain this benefit.`,
     (g, me, config) => {
-      for (const entry of config) {
-        if (me.skills.has(entry))
-          me.skills.set(entry, 2);
-        else
-          console.warn(`Expertise in ${entry} without existing proficiency`);
-      }
+      for (const entry of config)
+        me.addProficiency(entry, "expertise");
     }
   );
   var BardicVersatility = nonCombatFeature(
@@ -12954,10 +12996,10 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.setConfig(AbilityScoreBonus, ["int", "wis"]);
       this.setConfig(SkillVersatility, ["Persuasion", "History"]);
       this.setConfig(LanguageChoice, "Dwarvish");
-      this.skills.set("Deception", 1);
-      this.skills.set("Stealth", 1);
-      this.toolProficiencies.set("thieves' tools", 1);
-      this.toolProficiencies.set("playing card set", 1);
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Stealth", "proficient");
+      this.addProficiency("thieves' tools", "proficient");
+      this.addProficiency("playing card set", "proficient");
       this.addClassLevel(bard_default);
       this.don(new LeatherArmor(g));
       this.don(new Rapier(g));
@@ -13616,8 +13658,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       this.setAbilityScores(9, 14, 13, 8, 15, 13);
       this.setRace(Triton_default);
       this.addClassLevel(monk_default);
-      this.skills.set("Athletics", 1);
-      this.skills.set("Insight", 1);
+      this.addProficiency("Athletics", "proficient");
+      this.addProficiency("Insight", "proficient");
       this.don(new Sickle(g));
       this.don(new Dart(g, 10));
       this.inventory.add(new Sling(g));
@@ -13736,6 +13778,19 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     }
     get result() {
       return this.valid.length === 0;
+    }
+  };
+
+  // src/collectors/ProficiencyCollector.ts
+  var ProficiencyCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      if (values.includes("expertise"))
+        return 2;
+      if (values.includes("proficient"))
+        return 1;
+      if (values.includes("half"))
+        return 0.5;
+      return 0;
     }
   };
 
@@ -14190,6 +14245,13 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
       return value;
     }
+    addProficiencyBonus(who, proficiency, bonus) {
+      const result = proficiency.result;
+      if (result) {
+        const value = Math.floor(result * who.pb);
+        bonus.add(value, ProficiencyRule);
+      }
+    }
     async savingThrow(dc, e, {
       diceType: baseDiceType,
       save,
@@ -14199,6 +14261,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       fail: "normal"
     }) {
       const successResponse = new SuccessResponseCollector();
+      const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const saveDamageResponse = new SaveDamageResponseCollector(save);
@@ -14209,6 +14272,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         new BeforeSaveEvent({
           ...e,
           dc,
+          proficiency,
           bonus,
           diceType,
           successResponse,
@@ -14217,6 +14281,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           interrupt: new InterruptionCollector()
         })
       );
+      this.addProficiencyBonus(e.who, proficiency, bonus);
       let forced = false;
       let success = false;
       const roll = await this.roll({ type: "save", ...e }, diceType.result);
@@ -14248,18 +14313,21 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     }
     async abilityCheck(dc, e) {
       const successResponse = new SuccessResponseCollector();
+      const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const pre = await this.resolve(
         new BeforeCheckEvent({
           ...e,
           dc,
+          proficiency,
           bonus,
           diceType,
           successResponse,
           interrupt: new InterruptionCollector()
         })
       );
+      this.addProficiencyBonus(e.who, proficiency, bonus);
       let forced = false;
       let success = false;
       const roll = await this.roll({ type: "check", ...e }, diceType.result);
@@ -14529,12 +14597,14 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
     }
     async attack(e) {
+      const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const success = new SuccessResponseCollector();
       const pre = await this.resolve(
         new BeforeAttackEvent({
           ...e,
+          proficiency,
           bonus,
           diceType,
           success,
@@ -14543,6 +14613,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       );
       if (success.result === "fail")
         return { outcome: "cancelled", hit: false };
+      this.addProficiencyBonus(e.who, proficiency, bonus);
       const { target, who, ability } = pre.detail;
       const ac = await this.getAC(target, pre.detail);
       const roll = await this.roll(

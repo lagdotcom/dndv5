@@ -28,8 +28,8 @@ export default class Salgar extends PC {
   constructor(g: Engine) {
     super(g, "Salgar", tokenUrl);
 
-    this.skills.set("Arcana", 1);
-    this.skills.set("History", 1);
+    this.addProficiency("Arcana", "proficient");
+    this.addProficiency("History", "proficient");
     this.setAbilityScores(10, 8, 14, 14, 15, 10);
     this.setRace(MountainDwarf);
     this.languages.add("Elvish");
@@ -51,8 +51,8 @@ export default class Salgar extends PC {
 
     this.setConfig(WildShape, [new Bat(g), new GiantBadger(g)]);
 
-    this.skills.set("Insight", 1);
-    this.skills.set("Survival", 1);
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Survival", "proficient");
 
     this.don(new ArrowCatchingShield(g), true);
     this.don(new BootsOfTheWinterlands(g), true);

@@ -1,6 +1,7 @@
 import BonusCollector from "../collectors/BonusCollector";
 import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import ProficiencyCollector from "../collectors/ProficiencyCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import AbilityName from "../types/AbilityName";
 import AttackTag from "../types/AttackTag";
@@ -19,6 +20,7 @@ export interface BeforeAttackDetail {
   method?: SpellcastingMethod;
   tags: Set<AttackTag>;
   diceType: DiceTypeCollector;
+  proficiency: ProficiencyCollector;
   bonus: BonusCollector;
   interrupt: InterruptionCollector;
   success: SuccessResponseCollector;

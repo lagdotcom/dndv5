@@ -32,15 +32,7 @@ export const Expertise = new ConfiguredFeature<ExpertiseEntry[]>(
 
   At 6th level, you can choose two more of your proficiencies (in skills or with thieves’ tools) to gain this benefit.`,
   (g, me, config) => {
-    for (const entry of config) {
-      if (entry === "thieves' tools") {
-        if (me.toolProficiencies.has(entry)) me.toolProficiencies.set(entry, 2);
-        else console.warn(`Expertise in ${entry} without existing proficiency`);
-      } else {
-        if (me.skills.has(entry)) me.skills.set(entry, 2);
-        else console.warn(`Expertise in ${entry} without existing proficiency`);
-      }
-    }
+    for (const entry of config) me.addProficiency(entry, "expertise");
   },
 );
 

@@ -2,6 +2,7 @@ import BonusCollector from "../../collectors/BonusCollector";
 import DiceTypeCollector from "../../collectors/DiceTypeCollector";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
+import ProficiencyCollector from "../../collectors/ProficiencyCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import BeforeCheckEvent from "../../events/BeforeCheckEvent";
 import CheckActionEvent from "../../events/CheckActionEvent";
@@ -57,6 +58,7 @@ describe("Rage Feature", () => {
         dc: 10,
         tags: chSet(),
         diceType,
+        proficiency: new ProficiencyCollector(),
         bonus: new BonusCollector(),
         successResponse: new SuccessResponseCollector(),
         interrupt: new InterruptionCollector(),

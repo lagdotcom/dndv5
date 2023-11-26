@@ -21,8 +21,8 @@ export default class Marvoril extends PC {
     this.setConfig(AbilityScoreBonus, ["str", "con"]);
     this.setConfig(SkillVersatility, ["Athletics", "Persuasion"]);
     this.setConfig(LanguageChoice, "Dwarvish");
-    this.skills.set("Survival", 1);
-    this.skills.set("Investigation", 1);
+    this.addProficiency("Survival", "proficient");
+    this.addProficiency("Investigation", "proficient");
     this.languages.add("Primordial");
     this.languages.add("Infernal");
     this.addClassLevel(Paladin);

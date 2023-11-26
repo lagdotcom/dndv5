@@ -154,8 +154,8 @@ export default class OGonrit extends Monster {
 
     this.saveProficiencies.add("wis");
     this.saveProficiencies.add("cha");
-    this.skills.set("Insight", 1);
-    this.skills.set("Persuasion", 1);
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Persuasion", "proficient");
     this.damageResponses.set("fire", "resist");
     this.damageResponses.set("poison", "resist");
     this.conditionImmunities.add("Poisoned");

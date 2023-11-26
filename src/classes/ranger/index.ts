@@ -64,11 +64,11 @@ export const DeftExplorer = new SimpleFeature(
   "Deft Explorer",
   `You are an unsurpassed explorer and survivor, both in the wilderness and in dealing with others on your travels. You gain the Canny benefit below, and you gain an additional benefit below when you reach 6th level and 10th level in this class.`,
   (g, me) => {
-    me.addFeature(Canny, true);
+    me.addFeature(Canny);
 
     const level = me.classLevels.get("Ranger") ?? 1;
-    if (level >= 6) me.addFeature(Roving, true);
-    if (level >= 10) me.addFeature(Tireless, true);
+    if (level >= 6) me.addFeature(Roving);
+    if (level >= 10) me.addFeature(Tireless);
   },
 );
 

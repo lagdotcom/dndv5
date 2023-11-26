@@ -35,7 +35,7 @@ export default class Goblin extends Monster {
   constructor(g: Engine, wieldingBow = false) {
     super(g, "goblin", 0.25, "humanoid", "small", tokenUrl, 7);
     this.movement.set("speed", 30);
-    this.skills.set("Stealth", 2);
+    this.addProficiency("Stealth", "expertise");
     this.senses.set("darkvision", 60);
     this.languages.add("Common");
     this.languages.add("Goblin");

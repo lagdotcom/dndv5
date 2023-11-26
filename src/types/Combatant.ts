@@ -13,6 +13,7 @@ import DamageResponse from "./DamageResponse";
 import DamageType from "./DamageType";
 import EffectType, { EffectConfig, EffectDurationTimer } from "./EffectType";
 import Feature from "./Feature";
+import HasProficiency from "./HasProficiency";
 import Item, {
   AmmoItem,
   ArmorCategory,
@@ -24,6 +25,7 @@ import LanguageName from "./LanguageName";
 import MovementType from "./MovementType";
 import PCClassName from "./PCClassName";
 import Point from "./Point";
+import ProficiencyType from "./ProficiencyType";
 import Resource from "./Resource";
 import SenseName from "./SenseName";
 import SizeCategory from "./SizeCategory";
@@ -65,7 +67,7 @@ export default interface Combatant extends Source {
   cha: CombatantScore;
 
   movement: Map<MovementType, number>;
-  skills: Map<SkillName, number>;
+  skills: Map<SkillName, ProficiencyType>;
   languages: Set<LanguageName>;
   equipment: Set<Item>;
   inventory: Set<Item>;
@@ -86,7 +88,7 @@ export default interface Combatant extends Source {
   saveProficiencies: Set<AbilityName>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
-  toolProficiencies: Map<ToolName, number>;
+  toolProficiencies: Map<ToolName, ProficiencyType>;
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
   readonly exhaustion: number;
@@ -104,9 +106,10 @@ export default interface Combatant extends Source {
   shield?: ArmorItem;
   ammunition: AmmoItem[];
 
-  addFeature(feature: Feature, initialiseNow?: boolean): boolean;
+  addFeature(feature: Feature): boolean;
   getConfig<T>(key: string): T | undefined;
-  getProficiencyMultiplier(thing: Item | AbilityName | SkillName): number;
+  addProficiency(thing: HasProficiency, value: ProficiencyType): void;
+  getProficiency(thing: HasProficiency): ProficiencyType;
   initResource(resource: Resource, amount?: number, max?: number): void;
   giveResource(resource: Resource, amount: number): void;
   hasResource(resource: Resource, amount?: number): boolean;

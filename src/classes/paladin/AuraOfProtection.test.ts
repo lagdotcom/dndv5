@@ -1,6 +1,7 @@
 import BonusCollector from "../../collectors/BonusCollector";
 import DiceTypeCollector from "../../collectors/DiceTypeCollector";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
+import ProficiencyCollector from "../../collectors/ProficiencyCollector";
 import SaveDamageResponseCollector from "../../collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { Dying } from "../../effects";
@@ -23,6 +24,7 @@ describe("Aura of Protection", () => {
         who,
         dc: 10,
         diceType: new DiceTypeCollector(),
+        proficiency: new ProficiencyCollector(),
         bonus: new BonusCollector(),
         successResponse: new SuccessResponseCollector(),
         saveDamageResponse: new SaveDamageResponseCollector("normal"),
@@ -41,6 +43,7 @@ describe("Aura of Protection", () => {
         who,
         dc: 10,
         diceType: new DiceTypeCollector(),
+        proficiency: new ProficiencyCollector(),
         bonus: new BonusCollector(),
         successResponse: new SuccessResponseCollector(),
         saveDamageResponse: new SaveDamageResponseCollector("normal"),
@@ -62,6 +65,7 @@ describe("Aura of Protection", () => {
         who,
         dc: 10,
         diceType: new DiceTypeCollector(),
+        proficiency: new ProficiencyCollector(),
         bonus: new BonusCollector(),
         successResponse: new SuccessResponseCollector(),
         saveDamageResponse: new SaveDamageResponseCollector("normal"),

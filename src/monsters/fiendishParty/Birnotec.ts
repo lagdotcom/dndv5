@@ -326,8 +326,8 @@ export default class Birnotec extends Monster {
 
     this.saveProficiencies.add("wis");
     this.saveProficiencies.add("cha");
-    this.skills.set("Arcana", 1);
-    this.skills.set("Nature", 1);
+    this.addProficiency("Arcana", "proficient");
+    this.addProficiency("Nature", "proficient");
     this.damageResponses.set("poison", "immune");
     this.conditionImmunities.add("Poisoned");
     this.languages.add("Abyssal");
