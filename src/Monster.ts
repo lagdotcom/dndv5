@@ -1,4 +1,5 @@
 import AbstractCombatant from "./AbstractCombatant";
+import { defaultAIRules } from "./ai/data";
 import Engine from "./Engine";
 import AIRule from "./types/AIRule";
 import CreatureType from "./types/CreatureType";
@@ -14,7 +15,7 @@ export default class Monster extends AbstractCombatant {
     size: SizeCategory,
     img: string,
     hpMax: number,
-    rules: AIRule[] = [],
+    rules: AIRule[] = defaultAIRules,
   ) {
     super(g, name, {
       type,

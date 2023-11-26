@@ -71,6 +71,13 @@ export default function App({ g, onMount }: Props) {
 
   const refreshUnits = useCallback(() => {
     allCombatants.value = Array.from(g.combatants, getUnitData);
+    // TODO
+    // if (g.activeCombatant) {
+    //   const evaluations = Array.from(
+    //     getAllEvaluations(g, g.activeCombatant),
+    //   ).sort((a, b) => b.score.result - a.score.result);
+    //   aiEvaluation.value = evaluations[0];
+    // } else aiEvaluation.value = undefined;
   }, [g]);
 
   const refreshAreas = useCallback(() => {

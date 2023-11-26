@@ -9,6 +9,7 @@ import Combatant from "../../types/Combatant";
 import EffectArea, { SpecifiedEffectShape } from "../../types/EffectArea";
 import MoveHandler from "../../types/MoveHandler";
 import Point from "../../types/Point";
+import { CompleteEvaluation } from "../../utils/ai";
 import { UnitData } from "./types";
 
 export type Wants<T> = (point?: T) => void;
@@ -22,6 +23,8 @@ export const activeCombatantId = signal<number>(NaN);
 export const activeCombatant = computed(() =>
   allCombatants.value.find((u) => u.id === activeCombatantId.value),
 );
+
+export const aiEvaluation = signal<CompleteEvaluation | undefined>(undefined);
 
 export const allActions = signal<Action[]>([]);
 
@@ -62,6 +65,7 @@ export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
   actionAreas,
   activeCombatantId,
   activeCombatant,
+  aiEvaluation,
   allActions,
   allCombatants,
   allEffects,

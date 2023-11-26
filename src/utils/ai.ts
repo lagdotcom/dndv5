@@ -2,7 +2,7 @@ import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
 import { MapSquareSize } from "../MapSquare";
 import PointSet from "../PointSet";
-import { PositionConstraint } from "../types/AIRule";
+import { ActionEvaluation, PositionConstraint } from "../types/AIRule";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
 import { checkConfig } from "./config";
@@ -69,7 +69,17 @@ export function getAllPoints(
   return points;
 }
 
-export function* getAllEvaluations(g: Engine, me: Combatant) {
+export type CompleteEvaluation = ActionEvaluation & {
+  positionMap: Map<number, PointSet>;
+  best: number;
+  bestPositions: PointSet;
+  bestScore: EvaluationCollector;
+};
+
+export function* getAllEvaluations(
+  g: Engine,
+  me: Combatant,
+): Generator<CompleteEvaluation> {
   const actions = g.getActions(me);
   const original = me.position;
   const positions = getAllPoints(g, me, [
@@ -89,7 +99,11 @@ export function* getAllEvaluations(g: Engine, me: Combatant) {
         if (!matchesAll(g, position, me.sizeInUnits, o.positioning)) continue;
 
         me.position = position;
-        if (!checkConfig(g, o.action, o.config)) continue;
+        if (
+          !checkConfig(g, o.action, o.config) ||
+          o.action.getTime(o.config) === "reaction"
+        )
+          continue;
 
         const score = o.score.copy();
         for (const rule of me.rules) {
@@ -109,7 +123,7 @@ export function* getAllEvaluations(g: Engine, me: Combatant) {
       }
 
       const bestPositions = positionMap.get(best);
-      if (bestPositions)
+      if (bestPositions && bestScore)
         yield {
           ...o,
           positionMap,

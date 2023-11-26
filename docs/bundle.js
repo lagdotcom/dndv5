@@ -1841,9 +1841,170 @@
     }
   };
 
+  // src/collectors/EvaluationCollector.ts
+  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
+    addEval(c, value, co) {
+      this.add(value * c.getCoefficient(co), co);
+    }
+    copy() {
+      return new _EvaluationCollector(
+        this.entries,
+        this.ignoredSources,
+        this.ignoredValues
+      );
+    }
+  };
+
+  // src/utils/text.ts
+  var niceAbilityName = {
+    str: "Strength",
+    dex: "Dexterity",
+    con: "Constitution",
+    int: "Intelligence",
+    wis: "Wisdom",
+    cha: "Charisma"
+  };
+  function describeAbility(ability) {
+    return niceAbilityName[ability];
+  }
+  function describeSave(tags, ability) {
+    if (tags.has("death"))
+      return "death";
+    if (ability)
+      return describeAbility(ability);
+  }
+  function describeRange(min, max) {
+    if (min === 0) {
+      if (max === Infinity)
+        return "any number of";
+      return `up to ${max}`;
+    }
+    if (max === Infinity)
+      return `${min}+`;
+    if (min === max)
+      return min.toString();
+    return `${min}-${max}`;
+  }
+  function describePoint(p) {
+    return p ? `${p.x},${p.y}` : "NONE";
+  }
+  function describeDice(amounts) {
+    let average = 0;
+    let flat = 0;
+    const dice = [];
+    for (const a of amounts) {
+      if (a.type === "flat") {
+        average += a.amount;
+        flat += a.amount;
+      } else {
+        const { count, size } = a.amount;
+        average += getDiceAverage(count, size);
+        dice.push(`${count}d${size}`);
+      }
+    }
+    let list = dice.join(" + ");
+    if (flat < 0)
+      list += ` - ${-flat}`;
+    else if (flat > 0)
+      list += ` + ${flat}`;
+    return { average, list };
+  }
+
+  // src/ai/coefficients.ts
+  var makeAICo = (name, defaultValue = 1) => ({
+    name,
+    defaultValue
+  });
+  var HealSelf = makeAICo("HealSelf");
+  var HealAllies = makeAICo("HealAllies");
+  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
+  var DamageEnemies = makeAICo("DamageEnemies");
+  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
+  var DamageAllies = makeAICo("DamageAllies", -1);
+  var StayNearAllies = makeAICo("StayNearAllies");
+
+  // src/ai/DamageRule.ts
+  var DamageRule = class {
+    evaluateActions(g, me, actions) {
+      const enemies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side !== me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
+          const amounts = action.getDamage(config);
+          if (!amounts)
+            return;
+          const targets = action.getAffected(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effective = 0;
+          let overKill = 0;
+          let friendlyFire = 0;
+          for (const target of targets) {
+            const remaining = target.hp;
+            const damage = Math.min(average, remaining);
+            if (target.side === me.side)
+              friendlyFire += damage;
+            else
+              effective += damage;
+            overKill += Math.max(average - remaining, 0);
+          }
+          score.addEval(me, effective, DamageEnemies);
+          score.addEval(me, overKill, OverKillEnemies);
+          score.addEval(me, friendlyFire, DamageAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/HealingRule.ts
+  var HealingRule = class {
+    evaluateActions(g, me, actions) {
+      const allies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side === me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
+          const amounts = action.getHeal(config);
+          if (!amounts)
+            return;
+          const targets = action.getAffected(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effectiveSelf = 0;
+          let effective = 0;
+          let overHeal = 0;
+          for (const target of targets) {
+            const missing = target.hpMax - target.hp;
+            const heal = Math.min(average, missing);
+            if (target === me)
+              effectiveSelf += heal;
+            else
+              effective += heal;
+            overHeal += Math.max(average - missing, 0);
+          }
+          if (effective + effectiveSelf <= 0)
+            return;
+          score.addEval(me, effectiveSelf, HealSelf);
+          score.addEval(me, effective, HealAllies);
+          score.addEval(me, overHeal, OverHealAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/data.ts
+  var defaultAIRules = [new HealingRule(), new DamageRule()];
+
   // src/Monster.ts
   var Monster = class extends AbstractCombatant {
-    constructor(g, name, cr, type, size, img, hpMax, rules = []) {
+    constructor(g, name, cr, type, size, img, hpMax, rules = defaultAIRules) {
       super(g, name, {
         type,
         size,
@@ -2845,61 +3006,6 @@
     "piercing",
     "slashing"
   ];
-
-  // src/utils/text.ts
-  var niceAbilityName = {
-    str: "Strength",
-    dex: "Dexterity",
-    con: "Constitution",
-    int: "Intelligence",
-    wis: "Wisdom",
-    cha: "Charisma"
-  };
-  function describeAbility(ability) {
-    return niceAbilityName[ability];
-  }
-  function describeSave(tags, ability) {
-    if (tags.has("death"))
-      return "death";
-    if (ability)
-      return describeAbility(ability);
-  }
-  function describeRange(min, max) {
-    if (min === 0) {
-      if (max === Infinity)
-        return "any number of";
-      return `up to ${max}`;
-    }
-    if (max === Infinity)
-      return `${min}+`;
-    if (min === max)
-      return min.toString();
-    return `${min}-${max}`;
-  }
-  function describePoint(p) {
-    return p ? `${p.x},${p.y}` : "NONE";
-  }
-  function describeDice(amounts) {
-    let average = 0;
-    let flat = 0;
-    const dice = [];
-    for (const a of amounts) {
-      if (a.type === "flat") {
-        average += a.amount;
-        flat += a.amount;
-      } else {
-        const { count, size } = a.amount;
-        average += getDiceAverage(count, size);
-        dice.push(`${count}d${size}`);
-      }
-    }
-    let list = dice.join(" + ");
-    if (flat < 0)
-      list += ` - ${-flat}`;
-    else if (flat > 0)
-      list += ` + ${flat}`;
-    return { average, list };
-  }
 
   // src/img/act/dying.svg
   var dying_default = "./dying-YUO2NF73.svg";
@@ -4061,109 +4167,6 @@
   // src/img/tok/boss/o-gonrit.png
   var o_gonrit_default = "./o-gonrit-C5AF3HHR.png";
 
-  // src/ai/coefficients.ts
-  var makeAICo = (name, defaultValue = 1) => ({
-    name,
-    defaultValue
-  });
-  var HealSelf = makeAICo("HealSelf");
-  var HealAllies = makeAICo("HealAllies");
-  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
-  var DamageEnemies = makeAICo("DamageEnemies");
-  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
-  var DamageAllies = makeAICo("DamageAllies", -1);
-  var StayNearAllies = makeAICo("StayNearAllies");
-
-  // src/collectors/EvaluationCollector.ts
-  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
-    addEval(c, value, co) {
-      this.add(value * c.getCoefficient(co), co);
-    }
-    copy() {
-      return new _EvaluationCollector(
-        this.entries,
-        this.ignoredSources,
-        this.ignoredValues
-      );
-    }
-  };
-
-  // src/ai/DamageRule.ts
-  var DamageRule = class {
-    evaluateActions(g, me, actions) {
-      const enemies = Array.from(g.combatants.keys()).filter(
-        (who) => who.side !== me.side
-      );
-      return actions.flatMap(
-        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
-          const amounts = action.getDamage(config);
-          if (!amounts)
-            return;
-          const targets = action.getAffected(config);
-          if (!targets)
-            return;
-          const { average } = describeDice(amounts);
-          const score = new EvaluationCollector();
-          let effective = 0;
-          let overKill = 0;
-          let friendlyFire = 0;
-          for (const target of targets) {
-            const remaining = target.hp;
-            const damage = Math.min(average, remaining);
-            if (target.side === me.side)
-              friendlyFire += damage;
-            else
-              effective += damage;
-            overKill += Math.max(average - remaining, 0);
-          }
-          score.addEval(me, effective, DamageEnemies);
-          score.addEval(me, overKill, OverKillEnemies);
-          score.addEval(me, friendlyFire, DamageAllies);
-          return { action, config, positioning, score };
-        }).filter(isDefined)
-      );
-    }
-  };
-
-  // src/ai/HealingRule.ts
-  var HealingRule = class {
-    evaluateActions(g, me, actions) {
-      const allies = Array.from(g.combatants.keys()).filter(
-        (who) => who.side === me.side
-      );
-      return actions.flatMap(
-        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
-          const amounts = action.getHeal(config);
-          if (!amounts)
-            return;
-          const targets = action.getAffected(config);
-          if (!targets)
-            return;
-          const { average } = describeDice(amounts);
-          const score = new EvaluationCollector();
-          let effectiveSelf = 0;
-          let effective = 0;
-          let overHeal = 0;
-          for (const target of targets) {
-            const missing = target.hpMax - target.hp;
-            const heal = Math.min(average, missing);
-            if (target === me)
-              effectiveSelf += heal;
-            else
-              effective += heal;
-            overHeal += Math.max(average - missing, 0);
-          }
-          if (effective + effectiveSelf <= 0)
-            return;
-          score.addEval(me, effectiveSelf, HealSelf);
-          score.addEval(me, effective, HealAllies);
-          score.addEval(me, overHeal, OverHealAllies);
-          return { action, config, positioning, score };
-        }).filter(isDefined)
-      );
-    }
-  };
-
   // src/ai/StayNearAlliesRule.ts
   var StayNearAlliesRule = class {
     constructor(range) {
@@ -5054,10 +5057,10 @@
           if (attacker === me && (attack == null ? void 0 : attack.pre.weapon) === weapon)
             interrupt.add(
               new EvaluateLater(me, LustForBattle, async () => {
-                await g.giveTemporaryHP(me, 5, LustForBattle);
-                g.text(
-                  new MessageBuilder().co(me).text(" pulses with dark energy.")
-                );
+                if (await g.giveTemporaryHP(me, 5, LustForBattle))
+                  g.text(
+                    new MessageBuilder().co(me).text(" pulses with dark energy.")
+                  );
               })
             );
         }
@@ -6023,14 +6026,15 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     }
   };
   var PC = class extends AbstractCombatant {
-    constructor(g, name, img) {
+    constructor(g, name, img, rules = defaultAIRules) {
       super(g, name, {
         type: "humanoid",
         size: "medium",
         img,
         side: 0,
         diesAtZero: false,
-        level: 0
+        level: 0,
+        rules
       });
       this.subclasses = /* @__PURE__ */ new Map();
       this.naturalWeapons.add(new UnarmedStrike(g, this));
@@ -15050,6 +15054,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   var activeCombatant = (0, import_signals.computed)(
     () => allCombatants.value.find((u) => u.id === activeCombatantId.value)
   );
+  var aiEvaluation = (0, import_signals.signal)(void 0);
   var allActions = (0, import_signals.signal)([]);
   var allCombatants = (0, import_signals.signal)([]);
   var allEffects = (0, import_signals.signal)([]);
@@ -15073,6 +15078,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     actionAreas,
     activeCombatantId,
     activeCombatant,
+    aiEvaluation,
     allActions,
     allCombatants,
     allEffects,

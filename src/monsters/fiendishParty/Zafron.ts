@@ -35,10 +35,10 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
         if (attacker === me && attack?.pre.weapon === weapon)
           interrupt.add(
             new EvaluateLater(me, LustForBattle, async () => {
-              await g.giveTemporaryHP(me, 5, LustForBattle);
-              g.text(
-                new MessageBuilder().co(me).text(" pulses with dark energy."),
-              );
+              if (await g.giveTemporaryHP(me, 5, LustForBattle))
+                g.text(
+                  new MessageBuilder().co(me).text(" pulses with dark energy."),
+                );
             }),
           );
       },

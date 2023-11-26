@@ -1,8 +1,10 @@
 import punchUrl from "@img/eq/punch.svg";
 
 import AbstractCombatant from "./AbstractCombatant";
+import { defaultAIRules } from "./ai/data";
 import Engine from "./Engine";
 import { AbstractWeapon } from "./items/weapons";
+import AIRule from "./types/AIRule";
 import PCClass from "./types/PCClass";
 import PCClassName from "./types/PCClassName";
 import PCRace from "./types/PCRace";
@@ -32,7 +34,12 @@ export default class PC extends AbstractCombatant {
   race?: PCRace;
   subclasses: Map<PCClassName, PCSubclass>;
 
-  constructor(g: Engine, name: string, img: string) {
+  constructor(
+    g: Engine,
+    name: string,
+    img: string,
+    rules: AIRule[] = defaultAIRules,
+  ) {
     super(g, name, {
       type: "humanoid",
       size: "medium",
@@ -40,6 +47,7 @@ export default class PC extends AbstractCombatant {
       side: 0,
       diesAtZero: false,
       level: 0,
+      rules,
     });
 
     this.subclasses = new Map();
