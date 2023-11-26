@@ -3685,6 +3685,12 @@
       actions.push(new DodgeAction(g, who));
     });
   });
+  var DeafenedRule = new DndRule("Deafened", (g) => {
+    g.events.on("BeforeCheck", ({ detail: { tags, who, successResponse } }) => {
+      if (tags.has("hearing") && who.conditions.has("Deafened"))
+        successResponse.add("fail", DeafenedRule);
+    });
+  });
   var DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
     const isDifficultTerrainAnywhere = (squares) => {
       for (const effect of g.effects) {
@@ -8146,7 +8152,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         MelfsMinuteMeteors_default,
         Fireball_default,
         IntellectFortress_default,
-        // TODO LeomundsTinyHut,
+        // LeomundsTinyHut,
         WallOfFire_default
       );
     }
@@ -12479,15 +12485,15 @@ The creature is aware of this effect before it makes its attack against you.`
       this.inventory.add(new Handaxe(g, 1));
       this.inventory.add(enchant(new Shortsword(g), silvered_default));
       this.addPreparedSpells(
-        // TODO Druidcraft,
-        // TODO Mending,
+        // Druidcraft,
+        // Mending,
         // TODO MoldEarth,
         // TODO DetectMagic,
         EarthTremor_default,
         HealingWord_default,
         // TODO SpeakWithAnimals,
         LesserRestoration_default,
-        // TODO LocateObject,
+        // LocateObject,
         Moonbeam_default,
         EruptingEarth_default,
         CharmMonster_default,

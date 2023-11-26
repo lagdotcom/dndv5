@@ -63,8 +63,8 @@ export default class Salgar extends PC {
     this.inventory.add(enchant(new Shortsword(g), silvered));
 
     this.addPreparedSpells(
-      // TODO Druidcraft,
-      // TODO Mending,
+      // Druidcraft,
+      // Mending,
       // TODO MoldEarth,
 
       // TODO DetectMagic,
@@ -73,7 +73,7 @@ export default class Salgar extends PC {
       // TODO SpeakWithAnimals,
 
       LesserRestoration,
-      // TODO LocateObject,
+      // LocateObject,
       Moonbeam,
 
       EruptingEarth,

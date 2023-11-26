@@ -80,6 +80,7 @@ const MagicItemMaster = nonCombatFeature(
   `Starting at 18th level, you can attune to up to six magic items at once.`,
 );
 
+// TODO [DAMAGEINTERRUPT]
 const SoulOfArtifice = notImplementedFeature(
   "Soul of Artifice",
   `At 20th level, you develop a mystical connection to your magic items, which you can draw on for protection:

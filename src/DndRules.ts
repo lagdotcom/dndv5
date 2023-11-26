@@ -117,7 +117,12 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
   });
 });
 
-// TODO Deafened: A deafened creature can't hear and automatically fails any ability check that requires hearing.
+export const DeafenedRule = new DndRule("Deafened", (g) => {
+  g.events.on("BeforeCheck", ({ detail: { tags, who, successResponse } }) => {
+    if (tags.has("hearing") && who.conditions.has("Deafened"))
+      successResponse.add("fail", DeafenedRule);
+  });
+});
 
 export const DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
   const isDifficultTerrainAnywhere = (squares: PointSet) => {

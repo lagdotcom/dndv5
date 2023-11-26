@@ -20,6 +20,7 @@ export const SorcererSpellcasting = new NormalSpellcasting(
   "Sorcerer",
 );
 
+// TODO
 const FontOfMagic = notImplementedFeature(
   "Font of Magic",
   `At 2nd level, you tap into a deep wellspring of magic within yourself. This wellspring is represented by sorcery points, which allow you to create a variety of magical effects.
@@ -39,6 +40,7 @@ Creating Spell Slots: You can transform unexpended sorcery points into one spell
 Converting a Spell Slot to Sorcery Points: As a bonus action on your turn, you can expend one spell slot and gain a number of sorcery points equal to the slot's level.`,
 );
 
+// TODO
 const Metamagic = notImplementedFeature(
   "Metamagic",
   `At 3rd level, you gain the ability to twist your spells to suit your needs. You gain two of the following Metamagic options of your choice. You gain another one at 10th and 17th level.
@@ -53,6 +55,7 @@ const SorcerousVersatility = nonCombatFeature(
 - Replace one cantrip you learned from this class's Spellcasting feature with another cantrip from the sorcerer spell list.`,
 );
 
+// TODO
 const MagicalGuidance = notImplementedFeature(
   "Magical Guidance",
   `You can tap into your inner wellspring of magic to try to conjure success from failure. When you make an ability check that fails, you can spend 1 sorcery point to reroll the d20, and you must use the new roll, potentially turning the failure into a success.`,

@@ -18,6 +18,7 @@ export const WarlockPactMagic = new PactMagic(
   "Warlock",
 );
 
+// TODO
 const EldritchInvocations = notImplementedFeature(
   "Eldritch Invocation",
   `In your study of occult lore, you have unearthed eldritch invocations, fragments of forbidden knowledge that imbue you with an abiding magical ability.
@@ -34,6 +35,7 @@ export const PactBoon = wrapperFeature(
   `At 3rd level, your otherworldly patron bestows a gift upon you for your loyal service. You gain one of the following features of your choice.`,
 );
 
+// TODO
 export const PactOfTheBlade = notImplementedFeature(
   "Pact of the Blade",
   `You can use your action to create a pact weapon in your empty hand. You can choose the form that this melee weapon takes each time you create it (see chapter 5 for weapon options). You are proficient with it while you wield it. This weapon counts as magical for the purpose of overcoming resistance and immunity to nonmagical attacks and damage.
@@ -43,6 +45,7 @@ Your pact weapon disappears if it is more than 5 feet away from you for 1 minute
 You can transform one magic weapon into your pact weapon by performing a special ritual while you hold the weapon. You perform the ritual over the course of 1 hour, which can be done during a short rest. You can then dismiss the weapon, shunting it into an extradimensional space, and it appears whenever you create your pact weapon thereafter. You can't affect an artifact or a sentient weapon in this way. The weapon ceases being your pact weapon if you die, if you perform the 1-hour ritual on a different weapon, or if you use a 1-hour ritual to break your bond to it. The weapon appears at your feet if it is in the extradimensional space when the bond breaks.`,
 );
 
+// TODO
 export const PactOfTheChain = notImplementedFeature(
   "Pact of the Chain",
   `You learn the find familiar spell and can cast it as a ritual. The spell doesn't count against your number of spells known.
@@ -52,6 +55,7 @@ When you cast the spell, you can choose one of the normal forms for your familia
 Additionally, when you take the Attack action, you can forgo one of your own attacks to allow your familiar to use its reaction to make one attack of its own.`,
 );
 
+// TODO
 export const PactOfTheTalisman = notImplementedFeature(
   "Pact of the Talisman",
   `Your patron gives you an amulet, a talisman that can aid the wearer when the need is great. When the wearer fails an ability check, they can add a d4 to the roll, potentially turning the roll into a success. This benefit can be used a number of times equal to your proficiency bonus, and all expended uses are restored when you finish a long rest.
@@ -59,6 +63,7 @@ export const PactOfTheTalisman = notImplementedFeature(
 If you lose the talisman, you can perform a 1-hour ceremony to receive a replacement from your patron. This ceremony can be performed during a short or long rest, and it destroys the previous amulet. The talisman turns to ash when you die.`,
 );
 
+// TODO
 export const PactOfTheTome = notImplementedFeature(
   "Pact of the Tome",
   `Your patron gives you a grimoire called a Book of Shadows. When you gain this feature, choose three cantrips from any class's spell list. The cantrips do not need to be from the same spell list. While the book is on your person, you can cast those cantrips at will. They don't count against your number of cantrips known. Any cantrip you cast with this feature is considered a warlock cantrip for you. If you lose your Book of Shadows, you can perform a 1-hour ceremony to receive a replacement from your patron. This ceremony can be performed during a short or long rest, and it destroys the previous book. The book turns to ash when you die.`,
@@ -74,6 +79,7 @@ const EldritchVersatility = nonCombatFeature(
 If this change makes you ineligible for any of your Eldritch Invocations, you must also replace them now, choosing invocations for which you qualify.`,
 );
 
+// TODO
 const MysticArcanum = notImplementedFeature(
   "Mystic Arcanum",
   `At 11th level, your patron bestows upon you a magical secret called an arcanum. Choose one 6th-level spell from the warlock spell list as this arcanum.
