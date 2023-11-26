@@ -104,7 +104,7 @@ export default interface Combatant extends Source {
   shield?: ArmorItem;
   ammunition: AmmoItem[];
 
-  addFeature(feature: Feature): boolean;
+  addFeature(feature: Feature, initialiseNow?: boolean): boolean;
   getConfig<T>(key: string): T | undefined;
   getProficiencyMultiplier(thing: Item | AbilityName | SkillName): number;
   initResource(resource: Resource, amount?: number, max?: number): void;

@@ -1472,7 +1472,7 @@
       for (const feature of features != null ? features : [])
         this.addFeature(feature);
     }
-    addFeature(feature) {
+    addFeature(feature, initialiseNow = false) {
       if (this.features.get(feature.name)) {
         console.warn(
           `${this.name} already has a feature named ${feature.name}, skipping.`
@@ -1480,6 +1480,8 @@
         return false;
       }
       this.features.set(feature.name, feature);
+      if (initialiseNow)
+        feature.setup(this.g, this, this.getConfig(feature.name));
       return true;
     }
     setAbilityScores(str, dex, con, int, wis, cha) {
@@ -4027,6 +4029,23 @@
     }
   };
 
+  // src/features/ConfiguredFeature.ts
+  var ConfiguredFeature = class {
+    constructor(name, text, apply) {
+      this.name = name;
+      this.text = text;
+      this.apply = apply;
+    }
+    setup(g, who) {
+      const config = who.getConfig(this.name);
+      if (typeof config === "undefined") {
+        console.error(`${who.name} has no config for ${this.name}`);
+        return;
+      }
+      this.apply(g, who, config);
+    }
+  };
+
   // src/features/common.ts
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
     return new SimpleFeature(name, text, (g, me) => {
@@ -4068,6 +4087,11 @@
     return new SimpleFeature(name, text, (g, me) => {
       if (getExecutionMode() !== "test")
         console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+    });
+  }
+  function wrapperFeature(name, text) {
+    return new ConfiguredFeature(name, text, (g, me, style) => {
+      me.addFeature(style, true);
     });
   }
 
@@ -4866,23 +4890,6 @@
   // src/img/tok/boss/zafron.png
   var zafron_default = "./zafron-HS5HC4BR.png";
 
-  // src/features/ConfiguredFeature.ts
-  var ConfiguredFeature = class {
-    constructor(name, text, apply) {
-      this.name = name;
-      this.text = text;
-      this.apply = apply;
-    }
-    setup(g, who) {
-      const config = who.getConfig(this.name);
-      if (typeof config === "undefined") {
-        console.error(`${who.name} has no config for ${this.name}`);
-        return;
-      }
-      this.apply(g, who, config);
-    }
-  };
-
   // src/monsters/fiendishParty/Zafron.ts
   var LustForBattle = new ConfiguredFeature(
     "Lust for Battle",
@@ -5230,7 +5237,7 @@
       for (const ability of config.abilities)
         me[ability].score++;
     else
-      me.addFeature(config.feat);
+      me.addFeature(config.feat, true);
   }
   function makeASI(className, level) {
     return new ConfiguredFeature(
@@ -8501,12 +8508,9 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
       );
     }
   );
-  var PaladinFightingStyle = new ConfiguredFeature(
+  var PaladinFightingStyle = wrapperFeature(
     "Fighting Style (Paladin)",
-    `At 2nd level, you adopt a particular style of fighting as your specialty. You can't take the same Fighting Style option more than once, even if you get to choose again.`,
-    (g, me, style) => {
-      me.addFeature(style);
-    }
+    `At 2nd level, you adopt a particular style of fighting as your specialty. You can't take the same Fighting Style option more than once, even if you get to choose again.`
   );
   var DivineHealth = new SimpleFeature(
     "Divine Health",

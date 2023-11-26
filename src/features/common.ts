@@ -1,10 +1,12 @@
 import CastSpell from "../actions/CastSpell";
 import { spellImplementationWarning } from "../spells/common";
+import Feature from "../types/Feature";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { getExecutionMode } from "../utils/env";
+import ConfiguredFeature from "./ConfiguredFeature";
 import SimpleFeature from "./SimpleFeature";
 
 export type BonusSpellEntry = {
@@ -71,5 +73,11 @@ export function notImplementedFeature(name: string, text: string) {
   return new SimpleFeature(name, text, (g, me) => {
     if (getExecutionMode() !== "test")
       console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+  });
+}
+
+export function wrapperFeature(name: string, text: string) {
+  return new ConfiguredFeature<Feature>(name, text, (g, me, style) => {
+    me.addFeature(style, true);
   });
 }

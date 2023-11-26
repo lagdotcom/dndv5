@@ -1,7 +1,5 @@
-import { nonCombatFeature } from "../../features/common";
-import ConfiguredFeature from "../../features/ConfiguredFeature";
+import { nonCombatFeature, wrapperFeature } from "../../features/common";
 import { abSet } from "../../types/AbilityName";
-import Feature from "../../types/Feature";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
@@ -10,12 +8,9 @@ import ActionSurge from "./ActionSurge";
 import Indomitable from "./Indomitable";
 import SecondWind from "./SecondWind";
 
-export const FighterFightingStyle = new ConfiguredFeature<Feature>(
+export const FighterFightingStyle = wrapperFeature(
   "Fighting Style (Fighter)",
   `You adopt a particular style of fighting as your specialty. Choose one of the following options. You can't take the same Fighting Style option more than once, even if you get to choose again.`,
-  (g, me, style) => {
-    me.addFeature(style);
-  },
 );
 
 const ExtraAttack = makeExtraAttack(

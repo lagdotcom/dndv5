@@ -365,7 +365,7 @@ export default abstract class AbstractCombatant implements Combatant {
     for (const feature of features ?? []) this.addFeature(feature);
   }
 
-  addFeature(feature: Feature) {
+  addFeature(feature: Feature, initialiseNow = false) {
     if (this.features.get(feature.name)) {
       console.warn(
         `${this.name} already has a feature named ${feature.name}, skipping.`,
@@ -374,6 +374,10 @@ export default abstract class AbstractCombatant implements Combatant {
     }
 
     this.features.set(feature.name, feature);
+
+    if (initialiseNow)
+      feature.setup(this.g, this, this.getConfig(feature.name));
+
     return true;
   }
 

@@ -15,7 +15,7 @@ type ASIConfig =
 function asiSetup(g: Engine, me: Combatant, config: ASIConfig) {
   if (config.type === "ability")
     for (const ability of config.abilities) me[ability].score++;
-  else me.addFeature(config.feat);
+  else me.addFeature(config.feat, true);
 }
 
 export function makeASI(className: PCClassName, level: number) {

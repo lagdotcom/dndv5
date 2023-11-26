@@ -1,5 +1,8 @@
-import { nonCombatFeature, notImplementedFeature } from "../../features/common";
-import ConfiguredFeature from "../../features/ConfiguredFeature";
+import {
+  nonCombatFeature,
+  notImplementedFeature,
+  wrapperFeature,
+} from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
@@ -9,7 +12,6 @@ import {
 } from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { ctSet } from "../../types/CreatureType";
-import Feature from "../../types/Feature";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
@@ -75,12 +77,9 @@ export const DivineSmite = new SimpleFeature(
   },
 );
 
-export const PaladinFightingStyle = new ConfiguredFeature<Feature>(
+export const PaladinFightingStyle = wrapperFeature(
   "Fighting Style (Paladin)",
   `At 2nd level, you adopt a particular style of fighting as your specialty. You can't take the same Fighting Style option more than once, even if you get to choose again.`,
-  (g, me, style) => {
-    me.addFeature(style);
-  },
 );
 
 const DivineHealth = new SimpleFeature(
