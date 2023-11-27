@@ -148,7 +148,7 @@ export default class OGonrit extends Monster {
     this.groups.add(FiendishParty);
     this.diesAtZero = false;
     this.movement.set("speed", 30);
-    this.setAbilityScores(12, 8, 14, 10, 18, 13);
+    this.setAbilityScores(15, 8, 14, 10, 18, 13);
     this.pb = 3;
     this.level = 5; // for spellcasting
 

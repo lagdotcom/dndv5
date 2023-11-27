@@ -243,6 +243,19 @@ export const HeavyArmorRule = new DndRule("Heavy Armor", (g) => {
     const minimum = who.armor?.minimumStrength ?? 1;
     if (who.str.score < minimum) bonus.add(-10, HeavyArmorRule);
   });
+
+  // If the Armor table shows "Disadvantage" in the Stealth column, the wearer has disadvantage on Dexterity (Stealth) checks.
+  g.events.on(
+    "BeforeCheck",
+    ({ detail: { ability, skill, who, diceType } }) => {
+      if (
+        ability === "dex" &&
+        skill === "Stealth" &&
+        who.armor?.stealthDisadvantage
+      )
+        diceType.add("disadvantage", HeavyArmorRule);
+    },
+  );
 });
 
 export const IncapacitatedRule = new DndRule("Incapacitated", (g) => {
