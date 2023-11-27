@@ -3781,6 +3781,14 @@
       }
     });
   });
+  var HeavyArmorRule = new DndRule("Heavy Armor", (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
+      var _a, _b;
+      const minimum = (_b = (_a = who.armor) == null ? void 0 : _a.minimumStrength) != null ? _b : 1;
+      if (who.str.score < minimum)
+        bonus.add(-10, HeavyArmorRule);
+    });
+  });
   var IncapacitatedRule = new DndRule("Incapacitated", (g) => {
     g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
       if (action.actor.conditions.has("Incapacitated") && (action.isAttack || action.getTime(config)))

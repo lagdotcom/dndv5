@@ -237,6 +237,14 @@ export const FrightenedRule = new DndRule("Frightened", (g) => {
 - The condition also ends if an effect removes the grappled creature from the reach of the grappler or grappling effect, such as when a creature is hurled away by the thunderwave spell.
 */
 
+export const HeavyArmorRule = new DndRule("Heavy Armor", (g) => {
+  // Heavier armor interferes with the wearer's ability to move quickly, stealthily, and freely. If the Armor table shows "Str 13" or "Str 15" in the Strength column for an armor type, the armor reduces the wearer's speed by 10 feet unless the wearer has a Strength score equal to or higher than the listed score.
+  g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
+    const minimum = who.armor?.minimumStrength ?? 1;
+    if (who.str.score < minimum) bonus.add(-10, HeavyArmorRule);
+  });
+});
+
 export const IncapacitatedRule = new DndRule("Incapacitated", (g) => {
   // An incapacitated creature can't take actions or reactions.
   g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
