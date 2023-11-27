@@ -87,7 +87,7 @@ import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import { resolveArea } from "./utils/areas";
 import { modulo } from "./utils/numbers";
-import { movePoint } from "./utils/points";
+import { getPathAwayFrom, movePoint } from "./utils/points";
 import { SetInitialiser } from "./utils/set";
 import { getSquares } from "./utils/units";
 
@@ -1009,6 +1009,28 @@ export default class Engine {
 
   text(message: MessageBuilder) {
     this.fire(new TextEvent({ message }));
+  }
+
+  async forcePush(
+    who: Combatant,
+    away: Combatant,
+    dist: number,
+    source: Source,
+  ) {
+    const path = getPathAwayFrom(who.position, away.position, dist);
+    for (const point of path) {
+      const result = await this.move(who, point, {
+        maximum: Infinity,
+        cannotApproach: new Set(),
+        mustUseAll: false,
+        provokesOpportunityAttacks: false,
+        teleportation: false,
+        onMove: () => false,
+        name: source.name,
+      });
+
+      if (result.type !== "ok") break;
+    }
   }
 }
 

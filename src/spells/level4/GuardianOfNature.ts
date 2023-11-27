@@ -18,18 +18,21 @@ const PrimalBeastEffect = new Effect(
   PrimalBeast,
   "turnStart",
   (g) => {
+    // Your walking speed increases by 10 feet.
     // TODO walking speed only
     g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
       if (who.hasEffect(PrimalBeastEffect)) bonus.add(10, PrimalBeastEffect);
     });
 
-    // TODO darkvision 120
+    // TODO You gain darkvision with a range of 120 feet.
 
+    // You make Strength-based attack rolls with advantage.
     g.events.on("BeforeAttack", ({ detail: { who, ability, diceType } }) => {
       if (who.hasEffect(PrimalBeastEffect) && ability === "str")
         diceType.add("advantage", PrimalBeastEffect);
     });
 
+    // Your melee weapon attacks deal an extra 1d6 force damage on a hit.
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
@@ -64,11 +67,13 @@ const GreatTreeEffect = new Effect(
   GreatTree,
   "turnStart",
   (g) => {
+    // You make Constitution saving throws with advantage.
     g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (who.hasEffect(GreatTreeEffect) && ability === "con")
         diceType.add("advantage", GreatTreeEffect);
     });
 
+    // You make Dexterity- and Wisdom-based attack rolls with advantage.
     g.events.on("BeforeAttack", ({ detail: { who, ability, diceType } }) => {
       if (
         who.hasEffect(GreatTreeEffect) &&
@@ -113,6 +118,7 @@ const GuardianOfNature = simpleSpell<{ form: Form }>({
     const duration = minutes(1);
     let effect = PrimalBeastEffect;
 
+    // You gain 10 temporary hit points.
     if (form === GreatTree) {
       effect = GreatTreeEffect;
       await g.giveTemporaryHP(caster, 10, GreatTreeEffect);

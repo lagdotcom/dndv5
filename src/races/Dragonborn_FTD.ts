@@ -19,7 +19,6 @@ import ImplementationStatus from "../types/ImplementationStatus";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
 import { _dd } from "../utils/dice";
-import { getExecutionMode } from "../utils/env";
 import { resistanceFeature } from "./common";
 
 const MetallicDragonborn: PCRace = {
@@ -80,7 +79,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     });
 
     for (const target of g.getInside(getBreathArea(attacker, point))) {
-      const save = await g.save({
+      const { damageResponse } = await g.save({
         source: this,
         type: { type: "ability", ability: "con" },
         attacker,
@@ -93,7 +92,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
         damageType,
         { attacker, target },
         [[damageType, damage]],
-        save.damageResponse,
+        damageResponse,
       );
     }
   }
@@ -166,7 +165,7 @@ class EnervatingBreathAction extends MetallicBreathAction {
     const config = { conditions: coSet("Incapacitated"), duration: 2 };
 
     for (const target of g.getInside(getBreathArea(actor, point))) {
-      const save = await g.save({
+      const { outcome } = await g.save({
         source: this,
         type: { type: "ability", ability: "con" },
         attacker: actor,
@@ -176,7 +175,8 @@ class EnervatingBreathAction extends MetallicBreathAction {
         config,
       });
 
-      if (!save) await target.addEffect(EnervatingBreathEffect, config, actor);
+      if (outcome === "fail")
+        await target.addEffect(EnervatingBreathEffect, config, actor);
     }
   }
 }
@@ -187,7 +187,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
       g,
       actor,
       "Repulsion Breath",
-      "incomplete",
+      "implemented",
       `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus.
       Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`,
     );
@@ -198,7 +198,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
     const { g, actor } = this;
     for (const target of g.getInside(getBreathArea(actor, point))) {
       const config = { duration: Infinity };
-      const save = await g.save({
+      const { outcome } = await g.save({
         source: this,
         type: { type: "ability", ability: "con" },
         attacker: actor,
@@ -208,9 +208,8 @@ class RepulsionBreathAction extends MetallicBreathAction {
         config,
       });
 
-      if (!save) {
-        // TODO [FORCEMOVE] pushed 20 feet away from you
-
+      if (outcome === "fail") {
+        await g.forcePush(target, actor, 20, this);
         await target.addEffect(Prone, config);
       }
     }
@@ -256,10 +255,6 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
 
   Once you use your Metallic Breath Weapon, you can’t do so again until you finish a long rest.`,
     (g, me) => {
-      if (getExecutionMode() !== "test")
-        console.warn(
-          `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`,
-        );
       if (me.level < 5) return;
 
       me.initResource(MetallicBreathWeaponResource);

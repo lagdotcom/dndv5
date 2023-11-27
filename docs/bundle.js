@@ -6608,6 +6608,44 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   function movePoint(p, d) {
     return addPoints(p, moveOffsets[d]);
   }
+  function supercoverLine(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const nx = Math.abs(dx);
+    const ny = Math.abs(dy);
+    const moveX = dx > 0 ? MapSquareSize : -MapSquareSize;
+    const moveY = dy > 0 ? MapSquareSize : -MapSquareSize;
+    const p = _p(a.x, a.y);
+    const points = [_p(p.x, p.y)];
+    for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
+      const decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
+      if (decision === 0) {
+        p.x += moveX;
+        p.y += moveY;
+        ix += MapSquareSize;
+        iy += MapSquareSize;
+      } else if (decision < 0) {
+        p.x += moveX;
+        ix += MapSquareSize;
+      } else {
+        p.y += moveY;
+        iy += MapSquareSize;
+      }
+      points.push(_p(p.x, p.y));
+    }
+    return points;
+  }
+  function getPathAwayFrom(p, away, dist) {
+    const dy = p.y - away.y;
+    const dx = p.x - away.x;
+    const angle = Math.atan2(dy, dx);
+    const mx = dist * Math.cos(angle);
+    const my = dist * Math.sin(angle);
+    return supercoverLine(
+      p,
+      _p(Math.floor(p.x + mx), Math.floor(p.y + my))
+    ).slice(1);
+  }
 
   // src/aim.ts
   var eighth = Math.PI / 4;
@@ -6763,7 +6801,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         damageType
       });
       for (const target of g.getInside(getBreathArea(attacker, point))) {
-        const save = await g.save({
+        const { damageResponse } = await g.save({
           source: this,
           type: { type: "ability", ability: "con" },
           attacker,
@@ -6775,7 +6813,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           damageType,
           { attacker, target },
           [[damageType, damage]],
-          save.damageResponse
+          damageResponse
         );
       }
     }
@@ -6837,7 +6875,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       const { g, actor } = this;
       const config = { conditions: coSet("Incapacitated"), duration: 2 };
       for (const target of g.getInside(getBreathArea(actor, point))) {
-        const save = await g.save({
+        const { outcome } = await g.save({
           source: this,
           type: { type: "ability", ability: "con" },
           attacker: actor,
@@ -6846,7 +6884,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           effect: EnervatingBreathEffect,
           config
         });
-        if (!save)
+        if (outcome === "fail")
           await target.addEffect(EnervatingBreathEffect, config, actor);
       }
     }
@@ -6857,7 +6895,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         g,
         actor,
         "Repulsion Breath",
-        "incomplete",
+        "implemented",
         `At 5th level, you gain a second breath weapon. When you take the Attack action on your turn, you can replace one of your attacks with an exhalation in a 15-foot cone. The save DC for this breath is 8 + your Constitution modifier + your proficiency bonus.
       Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`
       );
@@ -6867,7 +6905,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       const { g, actor } = this;
       for (const target of g.getInside(getBreathArea(actor, point))) {
         const config = { duration: Infinity };
-        const save = await g.save({
+        const { outcome } = await g.save({
           source: this,
           type: { type: "ability", ability: "con" },
           attacker: actor,
@@ -6876,7 +6914,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           effect: Prone,
           config
         });
-        if (!save) {
+        if (outcome === "fail") {
+          await g.forcePush(target, actor, 20, this);
           await target.addEffect(Prone, config);
         }
       }
@@ -6918,10 +6957,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   Once you use your Metallic Breath Weapon, you can\u2019t do so again until you finish a long rest.`,
       (g, me) => {
-        if (getExecutionMode() !== "test")
-          console.warn(
-            `[Feature Not Complete] Metallic Breath Weapon (on ${me.name})`
-          );
         if (me.level < 5)
           return;
         me.initResource(MetallicBreathWeaponResource);
@@ -14905,6 +14940,22 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     }
     text(message) {
       this.fire(new TextEvent({ message }));
+    }
+    async forcePush(who, away, dist, source) {
+      const path = getPathAwayFrom(who.position, away.position, dist);
+      for (const point of path) {
+        const result = await this.move(who, point, {
+          maximum: Infinity,
+          cannotApproach: /* @__PURE__ */ new Set(),
+          mustUseAll: false,
+          provokesOpportunityAttacks: false,
+          teleportation: false,
+          onMove: () => false,
+          name: source.name
+        });
+        if (result.type !== "ok")
+          break;
+      }
     }
   };
 
