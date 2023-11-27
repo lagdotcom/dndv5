@@ -3,6 +3,7 @@ import DashAction from "./actions/DashAction";
 import DisengageAction from "./actions/DisengageAction";
 import DodgeAction from "./actions/DodgeAction";
 import OpportunityAttack from "./actions/OpportunityAttack";
+import { TwoWeaponAttack } from "./actions/TwoWeaponAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
@@ -22,8 +23,14 @@ import { getValidAmmunition } from "./utils/items";
 import { compareDistances, distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
-  g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-    if (ability) bonus.add(who[ability].modifier, AbilityScoreRule);
+  g.events.on("BeforeAttack", ({ detail: { who, ability, bonus, tags } }) => {
+    if (ability) {
+      const modifier = who[ability].modifier;
+
+      // [Two-Weapon Fighting] You don't add your ability modifier to the damage of the bonus attack, unless that modifier is negative.
+      if (modifier < 0 || !tags.has("two-weapon"))
+        bonus.add(who[ability].modifier, AbilityScoreRule);
+    }
   });
   g.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
     bonus.add(who[ability].modifier, AbilityScoreRule);
@@ -126,6 +133,9 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
     actions.push(new DashAction(g, who));
     actions.push(new DisengageAction(g, who));
     actions.push(new DodgeAction(g, who));
+
+    // TODO GrappleAction
+    // TODO ShoveAction
   });
 });
 
@@ -572,6 +582,28 @@ export const StunnedRule = new DndRule("Stunned", (g) => {
 
 export const TurnTimeRule = new DndRule("Turn Time", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
+});
+
+export const TwoWeaponFightingRule = new DndRule("Two-Weapon Fighting", (g) => {
+  g.events.on("GetActions", ({ detail: { who, actions } }) => {
+    /* When you take the Attack action and attack with a light melee weapon that you're holding in one hand, you can use a bonus action to attack with a different light melee weapon that you're holding in the other hand. You don't add your ability modifier to the damage of the bonus attack, unless that modifier is negative.
+
+    If either weapon has the thrown property, you can throw the weapon, instead of making a melee attack with it. */
+
+    const lightMeleeAttack = who.attacksSoFar.find(
+      (atk): atk is WeaponAttack =>
+        atk instanceof WeaponAttack &&
+        atk.weapon.properties.has("light") &&
+        atk.weapon.rangeCategory === "melee",
+    );
+    const otherLightWeapon =
+      lightMeleeAttack &&
+      who.weapons.find(
+        (w) => w.properties.has("light") && w !== lightMeleeAttack.weapon,
+      );
+    if (otherLightWeapon)
+      actions.push(new TwoWeaponAttack(g, who, otherLightWeapon));
+  });
 });
 
 export const UnconsciousRule = new DndRule("Unconscious", (g) => {

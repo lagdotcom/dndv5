@@ -11,6 +11,7 @@ import Source from "../types/Source";
 import { poSet, poWithin } from "../utils/ai";
 import { sieve } from "../utils/array";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
+import { SetInitialiser } from "../utils/set";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
 import { distance } from "../utils/units";
@@ -24,6 +25,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     actor: Combatant,
     public weapon: WeaponItem,
     public ammo?: AmmoItem,
+    public tags?: SetInitialiser<AttackTag>,
   ) {
     super(
       g,
@@ -101,6 +103,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       source: this,
       target,
       weapon: this.weapon,
+      tags: this.tags,
     });
   }
 }
@@ -114,6 +117,7 @@ export async function doStandardAttack(
     source,
     target,
     weapon,
+    tags: startTags,
   }: {
     ability: AbilityName;
     ammo?: AmmoItem;
@@ -121,9 +125,10 @@ export async function doStandardAttack(
     source: Source;
     target: Combatant;
     weapon: WeaponItem;
+    tags?: SetInitialiser<AttackTag>;
   },
 ) {
-  const tags = new Set<AttackTag>();
+  const tags = new Set<AttackTag>(startTags);
   // TODO this should probably be a choice
   tags.add(
     distance(attacker, target) > attacker.reach + weapon.reach

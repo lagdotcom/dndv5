@@ -648,11 +648,14 @@ export default class Engine {
   }
 
   getAttackOutcome(ac: number, roll: number, total: number) {
+    // If the d20 roll for an attack is a 1, the attack misses regardless of any modifiers or the target's AC.
     return roll === 1
       ? "miss"
-      : roll === 20
+      : // If the d20 roll for an attack is a 20, the attack hits regardless of any modifiers or the target's AC.
+        roll === 20
         ? "critical"
-        : total >= ac
+        : // To make an attack roll, roll a d20 and add the appropriate modifiers. If the total of the roll plus modifiers equals or exceeds the target's Armor Class (AC), the attack hits.
+          total >= ac
           ? "hit"
           : "miss";
   }

@@ -4,6 +4,7 @@ export const AttackTags = [
   "ranged",
   "silvered",
   "spell",
+  "two-weapon",
   "weapon",
 ] as const;
 type AttackTag = (typeof AttackTags)[number];

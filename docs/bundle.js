@@ -3306,7 +3306,7 @@
 
   // src/actions/WeaponAttack.ts
   var WeaponAttack = class extends AbstractAttackAction {
-    constructor(g, actor, weapon, ammo) {
+    constructor(g, actor, weapon, ammo, tags) {
       super(
         g,
         actor,
@@ -3319,6 +3319,7 @@
       );
       this.weapon = weapon;
       this.ammo = ammo;
+      this.tags = tags;
       this.ability = getWeaponAbility(actor, weapon);
     }
     generateAttackConfigs(targets) {
@@ -3370,7 +3371,8 @@
         attacker: this.actor,
         source: this,
         target,
-        weapon: this.weapon
+        weapon: this.weapon,
+        tags: this.tags
       });
     }
   };
@@ -3380,9 +3382,10 @@
     attacker,
     source,
     target,
-    weapon
+    weapon,
+    tags: startTags
   }) {
-    const tags = /* @__PURE__ */ new Set();
+    const tags = new Set(startTags);
     tags.add(
       distance(attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
     );
@@ -3584,6 +3587,15 @@
     }
   };
 
+  // src/actions/TwoWeaponAttack.ts
+  var TwoWeaponAttack = class extends WeaponAttack {
+    constructor(g, actor, weapon) {
+      super(g, actor, weapon, void 0, ["two-weapon"]);
+      this.isAttack = false;
+      this.name = `Two-Weapon ${this.name}`;
+    }
+  };
+
   // src/events/ListChoiceEvent.ts
   var ListChoiceEvent = class extends CustomEvent {
     constructor(detail) {
@@ -3657,9 +3669,12 @@
 
   // src/DndRules.ts
   var AbilityScoreRule = new DndRule("Ability Score", (g) => {
-    g.events.on("BeforeAttack", ({ detail: { who, ability, bonus } }) => {
-      if (ability)
-        bonus.add(who[ability].modifier, AbilityScoreRule);
+    g.events.on("BeforeAttack", ({ detail: { who, ability, bonus, tags } }) => {
+      if (ability) {
+        const modifier = who[ability].modifier;
+        if (modifier < 0 || !tags.has("two-weapon"))
+          bonus.add(who[ability].modifier, AbilityScoreRule);
+      }
     });
     g.events.on("BeforeCheck", ({ detail: { who, ability, bonus } }) => {
       bonus.add(who[ability].modifier, AbilityScoreRule);
@@ -4069,6 +4084,18 @@
   });
   var TurnTimeRule = new DndRule("Turn Time", (g) => {
     g.events.on("TurnStarted", ({ detail: { who } }) => who.resetTime());
+  });
+  var TwoWeaponFightingRule = new DndRule("Two-Weapon Fighting", (g) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      const lightMeleeAttack = who.attacksSoFar.find(
+        (atk) => atk instanceof WeaponAttack && atk.weapon.properties.has("light") && atk.weapon.rangeCategory === "melee"
+      );
+      const otherLightWeapon = lightMeleeAttack && who.weapons.find(
+        (w) => w.properties.has("light") && w !== lightMeleeAttack.weapon
+      );
+      if (otherLightWeapon)
+        actions.push(new TwoWeaponAttack(g, who, otherLightWeapon));
+    });
   });
   var UnconsciousRule = new DndRule("Unconscious", (g) => {
     g.events.on(
@@ -14726,7 +14753,13 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       }
     }
     getAttackOutcome(ac, roll, total) {
-      return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
+      return roll === 1 ? "miss" : (
+        // If the d20 roll for an attack is a 20, the attack hits regardless of any modifiers or the target's AC.
+        roll === 20 ? "critical" : (
+          // To make an attack roll, roll a d20 and add the appropriate modifiers. If the total of the roll plus modifiers equals or exceeds the target's Armor Class (AC), the attack hits.
+          total >= ac ? "hit" : "miss"
+        )
+      );
     }
     async attack(e2) {
       const proficiency = new ProficiencyCollector();
