@@ -28,7 +28,6 @@ export default class GiantBadger extends Monster {
     this.movement.set("burrow", 10);
     this.setAbilityScores(13, 10, 15, 2, 12, 5);
     this.senses.set("darkvision", 30);
-    this.pb = 2;
 
     this.addFeature(KeenSmell);
     this.addFeature(

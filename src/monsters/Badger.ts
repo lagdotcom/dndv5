@@ -24,7 +24,6 @@ export default class Badger extends Monster {
     this.movement.set("burrow", 5);
     this.setAbilityScores(4, 11, 12, 2, 12, 5);
     this.senses.set("darkvision", 30);
-    this.pb = 2;
 
     this.addFeature(KeenSmell);
 

@@ -15,7 +15,6 @@ export default class Thug extends Monster {
     this.setAbilityScores(15, 11, 14, 10, 10, 11);
     this.addProficiency("Intimidation", "proficient");
     this.languages.add("Common");
-    this.pb = 2;
 
     this.addFeature(PackTactics);
     this.addFeature(

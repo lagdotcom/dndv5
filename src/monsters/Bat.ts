@@ -23,8 +23,7 @@ export default class Bat extends Monster {
     this.movement.set("speed", 5);
     this.movement.set("fly", 30);
     this.setAbilityScores(2, 15, 8, 2, 12, 4);
-    this.senses.set("blindsight", 50);
-    this.pb = 2;
+    this.senses.set("blindsight", 60);
 
     // TODO Echolocation. The bat can't use its blindsight while deafened.
     this.addFeature(KeenHearing);
