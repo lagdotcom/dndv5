@@ -145,6 +145,7 @@ export default abstract class AbstractCombatant implements Combatant {
   rules: Set<AIRule>;
   coefficients: Map<AICoefficient, number>;
   groups: Set<CombatantGroup>;
+  spellsSoFar: Spell[];
 
   constructor(
     public g: Engine,
@@ -253,6 +254,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.rules = new Set(rules);
     this.coefficients = new Map(coefficients);
     this.groups = new Set(groups);
+    this.spellsSoFar = [];
   }
 
   get baseACMethod(): ACMethod {

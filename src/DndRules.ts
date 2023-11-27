@@ -1,3 +1,4 @@
+import { isCastSpell } from "./actions/CastSpell";
 import DashAction from "./actions/DashAction";
 import DisengageAction from "./actions/DisengageAction";
 import DodgeAction from "./actions/DodgeAction";
@@ -60,8 +61,8 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
       armor?.category === "medium"
         ? Math.min(dex.modifier, 2)
         : armor?.category === "heavy"
-        ? 0
-        : dex.modifier;
+          ? 0
+          : dex.modifier;
     methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
   });
 });
@@ -84,6 +85,17 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
     // ...and the creature's attack rolls have disadvantage.
     if (who.conditions.has("Blinded"))
       diceType.add("disadvantage", BlindedRule);
+  });
+});
+
+export const CastingInArmorRule = new DndRule("Casting in Armor", (g) => {
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (
+      action.isSpell &&
+      action.actor.armor &&
+      action.actor.getProficiency(action.actor.armor) !== "proficient"
+    )
+      error.add("not proficient with armor", CastingInArmorRule);
   });
 });
 
@@ -286,6 +298,33 @@ export const OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
   g.events.on("CheckAction", ({ detail: { action, error } }) => {
     if (action.isAttack && action.actor.attacksSoFar.length)
       error.add("No attacks left", OneAttackPerTurnRule);
+  });
+});
+
+export const OneSpellPerTurnRule = new DndRule("Spells per turn", (g) => {
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (
+      !action.actor.spellsSoFar.length ||
+      !isCastSpell(action) ||
+      action.spell.time === "reaction"
+    )
+      return;
+
+    const considering = action.actor.spellsSoFar.concat(action.spell);
+
+    // A spell cast with a bonus action is especially swift. You must use a bonus action on your turn to cast the spell, provided that you haven't already taken a bonus action this turn. You can't cast another spell during the same turn, except for a cantrip with a casting time of 1 action.
+    const bonusActionSpell = considering.find(
+      (sp) => sp.time === "bonus action",
+    );
+    const cantripActionSpell = considering.find(
+      (sp) => sp.level === 0 && sp.time === "action",
+    );
+
+    if (!bonusActionSpell || !cantripActionSpell)
+      error.add(
+        "can only cast a bonus action spell and an action cantrip in the same turn",
+        OneSpellPerTurnRule,
+      );
   });
 });
 

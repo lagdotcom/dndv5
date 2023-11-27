@@ -366,6 +366,7 @@ export default class Engine {
 
     this.activeCombatant = who;
     who.attacksSoFar = [];
+    who.spellsSoFar = [];
     who.movedSoFar = 0;
     await this.resolve(
       new TurnStartedEvent({ who, interrupt: new InterruptionCollector() }),
@@ -650,10 +651,10 @@ export default class Engine {
     return roll === 1
       ? "miss"
       : roll === 20
-      ? "critical"
-      : total >= ac
-      ? "hit"
-      : "miss";
+        ? "critical"
+        : total >= ac
+          ? "hit"
+          : "miss";
   }
 
   async attack(

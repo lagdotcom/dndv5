@@ -100,6 +100,7 @@ export default interface Combatant extends Source {
   groups: Set<CombatantGroup>;
   rules: Set<AIRule>;
   frightenedBy: Set<Combatant>;
+  spellsSoFar: Spell[];
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

@@ -366,6 +366,7 @@
           new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`)
         );
       }
+      actor.spellsSoFar.push(spell);
       if (spell.concentration)
         await actor.endConcentration();
       return spell.apply(g, actor, method, config);
@@ -1494,6 +1495,7 @@
       this.rules = new Set(rules);
       this.coefficients = new Map(coefficients);
       this.groups = new Set(groups);
+      this.spellsSoFar = [];
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -3663,6 +3665,12 @@
         diceType.add("disadvantage", BlindedRule);
     });
   });
+  var CastingInArmorRule = new DndRule("Casting in Armor", (g) => {
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.isSpell && action.actor.armor && action.actor.getProficiency(action.actor.armor) !== "proficient")
+        error.add("not proficient with armor", CastingInArmorRule);
+    });
+  });
   var CloseCombatRule = new DndRule("Close Combat", (g) => {
     g.events.on("BeforeAttack", ({ detail: { tags, who, diceType } }) => {
       if (tags.has("ranged")) {
@@ -3816,6 +3824,24 @@
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
       if (action.isAttack && action.actor.attacksSoFar.length)
         error.add("No attacks left", OneAttackPerTurnRule);
+    });
+  });
+  var OneSpellPerTurnRule = new DndRule("Spells per turn", (g) => {
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (!action.actor.spellsSoFar.length || !isCastSpell(action) || action.spell.time === "reaction")
+        return;
+      const considering = action.actor.spellsSoFar.concat(action.spell);
+      const bonusActionSpell = considering.find(
+        (sp) => sp.time === "bonus action"
+      );
+      const cantripActionSpell = considering.find(
+        (sp) => sp.level === 0 && sp.time === "action"
+      );
+      if (!bonusActionSpell || !cantripActionSpell)
+        error.add(
+          "can only cast a bonus action spell and an action cantrip in the same turn",
+          OneSpellPerTurnRule
+        );
     });
   });
   function getValidOpportunityAttacks(g, attacker, position, target, from, to) {
@@ -11757,8 +11783,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.movement.set("speed", 5);
       this.movement.set("fly", 30);
       this.setAbilityScores(2, 15, 8, 2, 12, 4);
-      this.senses.set("blindsight", 50);
-      this.pb = 2;
+      this.senses.set("blindsight", 60);
       this.addFeature(KeenHearing);
       this.naturalWeapons.add(new Bite(g));
     }
@@ -11787,7 +11812,6 @@ The creature is aware of this effect before it makes its attack against you.`
       this.movement.set("burrow", 10);
       this.setAbilityScores(13, 10, 15, 2, 12, 5);
       this.senses.set("darkvision", 30);
-      this.pb = 2;
       this.addFeature(KeenSmell);
       this.addFeature(
         makeMultiattack(
@@ -14402,6 +14426,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       }
       this.activeCombatant = who;
       who.attacksSoFar = [];
+      who.spellsSoFar = [];
       who.movedSoFar = 0;
       await this.resolve(
         new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })

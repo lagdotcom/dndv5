@@ -92,8 +92,8 @@ export const getAttackMessage = ({
   outcome.result === "miss"
     ? " misses "
     : outcome.result === "hit"
-    ? " hits "
-    : " CRITICALLY hits ",
+      ? " hits "
+      : " CRITICALLY hits ",
   msgCombatant(target, true),
   msgDiceType(roll.diceType),
   msgWeapon(weapon),

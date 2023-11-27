@@ -140,6 +140,8 @@ export default class CastSpell<T extends object> implements Action<T> {
       );
     }
 
+    actor.spellsSoFar.push(spell);
+
     // TODO should this be done here?
     // TODO also could have the ability to concentrate on multiple spells
     if (spell.concentration) await actor.endConcentration();

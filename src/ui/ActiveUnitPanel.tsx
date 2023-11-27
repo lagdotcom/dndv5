@@ -37,8 +37,8 @@ function splitActions(actionList: Action[]) {
     const label = action.isAttack
       ? "Attacks"
       : time
-      ? niceTime[time]
-      : "Other Actions";
+        ? niceTime[time]
+        : "Other Actions";
 
     const category = categories.get(label) ?? [];
     category.push(action);
