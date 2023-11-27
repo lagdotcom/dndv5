@@ -187,7 +187,7 @@ const SurvivalReflex = new SimpleFeature(
     g.events.on("BeforeSave", useReflex);
 
     g.events.on("AfterAction", ({ detail: { interrupt } }) => {
-      if (activated) {
+      if (activated && !me.conditions.has("Unconscious")) {
         activated = false;
         interrupt.add(
           new EvaluateLater(me, SurvivalReflex, async () =>

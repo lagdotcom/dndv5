@@ -53,12 +53,16 @@ class MagicWeaponController {
   }
 
   onSpellEnd = async () => {
-    this.item.magical = false;
-    this.item.name = this.oldName;
-    if (this.item.icon) this.item.icon.colour = this.oldColour;
-    for (const cleanup of this.subscriptions) cleanup();
+    const { item, oldName, oldColour, subscriptions } = this;
 
-    this.g.text(new MessageBuilder().it(this.item).text(" loses its shine."));
+    item.magical = false;
+    item.name = oldName;
+    if (item.icon) item.icon.colour = oldColour;
+    for (const cleanup of subscriptions) cleanup();
+
+    const msg = new MessageBuilder();
+    if (item.possessor) msg.co(item.possessor).nosp().text("'s ");
+    this.g.text(msg.it(this.item).text(" loses its shine."));
   };
 }
 

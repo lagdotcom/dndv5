@@ -5193,7 +5193,7 @@
       g.events.on("BeforeCheck", useReflex);
       g.events.on("BeforeSave", useReflex);
       g.events.on("AfterAction", ({ detail: { interrupt } }) => {
-        if (activated) {
+        if (activated && !me.conditions.has("Unconscious")) {
           activated = false;
           interrupt.add(
             new EvaluateLater(
@@ -9631,13 +9631,17 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       this.item = item;
       this.bonus = bonus;
       this.onSpellEnd = async () => {
-        this.item.magical = false;
-        this.item.name = this.oldName;
-        if (this.item.icon)
-          this.item.icon.colour = this.oldColour;
-        for (const cleanup of this.subscriptions)
+        const { item, oldName, oldColour, subscriptions } = this;
+        item.magical = false;
+        item.name = oldName;
+        if (item.icon)
+          item.icon.colour = oldColour;
+        for (const cleanup of subscriptions)
           cleanup();
-        this.g.text(new MessageBuilder().it(this.item).text(" loses its shine."));
+        const msg = new MessageBuilder();
+        if (item.possessor)
+          msg.co(item.possessor).nosp().text("'s ");
+        this.g.text(msg.it(this.item).text(" loses its shine."));
       };
       var _a;
       const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
