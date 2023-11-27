@@ -3051,6 +3051,42 @@
     }
   };
 
+  // src/actions/StabilizeAction.ts
+  var StabilizeAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Stabilize",
+        "implemented",
+        { target: new TargetResolver(g, actor.reach, [hasEffect(Dying)]) },
+        {
+          description: `You can use your action to administer first aid to an unconscious creature and attempt to stabilize it, which requires a successful DC 10 Wisdom (Medicine) check.`,
+          time: "action"
+        }
+      );
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { outcome } = await this.g.abilityCheck(10, {
+        ability: "wis",
+        skill: "Medicine",
+        who: this.actor,
+        tags: chSet()
+      });
+      if (outcome === "success") {
+        await target.removeEffect(Dying);
+        await target.addEffect(Stable, { duration: Infinity });
+      }
+    }
+  };
+
   // src/img/act/stand.svg
   var stand_default = "./stand-L4X6POXJ.svg";
 
@@ -3138,6 +3174,13 @@
             })
           );
       });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        const dying = Array.from(g.combatants).find(
+          (other) => other.hasEffect(Dying)
+        );
+        if (dying)
+          actions.push(new StabilizeAction(g, who));
+      });
     },
     { icon: makeIcon(dying_default, "red") }
   );
@@ -3169,6 +3212,10 @@
           conditions.add("Prone", Dead);
           conditions.add("Unconscious", Dead);
         }
+      });
+      g.events.on("GatherHeal", ({ detail: { target, multiplier } }) => {
+        if (target.hasEffect(Dead))
+          multiplier.add("zero", Dead);
       });
     },
     { quiet: true }
@@ -3788,6 +3835,14 @@
       if (who.str.score < minimum)
         bonus.add(-10, HeavyArmorRule);
     });
+    g.events.on(
+      "BeforeCheck",
+      ({ detail: { ability, skill, who, diceType } }) => {
+        var _a;
+        if (ability === "dex" && skill === "Stealth" && ((_a = who.armor) == null ? void 0 : _a.stealthDisadvantage))
+          diceType.add("disadvantage", HeavyArmorRule);
+      }
+    );
   });
   var IncapacitatedRule = new DndRule("Incapacitated", (g) => {
     g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
@@ -4648,7 +4703,7 @@
       this.groups.add(FiendishParty);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
-      this.setAbilityScores(12, 8, 14, 10, 18, 13);
+      this.setAbilityScores(15, 8, 14, 10, 18, 13);
       this.pb = 3;
       this.level = 5;
       this.saveProficiencies.add("wis");
@@ -13813,22 +13868,17 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     }
   };
 
-  // src/types/DamageResponse.ts
-  var DamageResponses = [
-    "absorb",
-    "immune",
-    "resist",
-    "vulnerable",
-    "normal"
-  ];
-
   // src/collectors/DamageResponseCollector.ts
   var DamageResponseCollector = class extends AbstractSumCollector {
     getSum(values) {
-      for (const p of DamageResponses) {
-        if (values.includes(p))
-          return p;
-      }
+      if (values.includes("absorb"))
+        return "absorb";
+      if (values.includes("immune"))
+        return "immune";
+      if (values.includes("resist") && !values.includes("vulnerable"))
+        return "resist";
+      if (values.includes("vulnerable"))
+        return "vulnerable";
       return "normal";
     }
   };

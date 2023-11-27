@@ -3,6 +3,7 @@ import proneUrl from "@img/act/prone.svg";
 import charmedUrl from "@img/spl/charm-monster.svg";
 
 import DropProneAction from "./actions/DropProneAction";
+import StabilizeAction from "./actions/StabilizeAction";
 import StandUpAction from "./actions/StandUpAction";
 import { makeIcon } from "./colours";
 import Effect from "./Effect";
@@ -24,6 +25,11 @@ export const Dying = new Effect(
     });
 
     g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
+      /* Whenever you start your turn with 0 hit points, you must make a special saving throw, called a death saving throw, to determine whether you creep closer to death or hang onto life. Unlike other saving throws, this one isn't tied to any ability score. You are in the hands of fate now, aided only by spells and features that improve your chances of succeeding on a saving throw.
+
+      Roll a d20. If the roll is 10 or higher, you succeed. Otherwise, you fail. A success or failure has no effect by itself. On your third success, you become stable (see below). On your third failure, you die. The successes and failures don't need to be consecutive; keep track of both until you collect three of a kind. The number of both is reset to zero when you regain any hit points or become stable.
+
+      Rolling 1 or 20. When you make a death saving throw and roll a 1 on the d20, it counts as two failures. If you roll a 20 on the d20, you regain 1 hit point. */
       if (who.hasEffect(Dying))
         interrupt.add(
           new EvaluateLater(who, Dying, async () => {
@@ -46,6 +52,7 @@ export const Dying = new Effect(
     });
 
     g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
+      // This unconsciousness ends if you regain any hit points.
       if (who.hasEffect(Dying))
         interrupt.add(
           new EvaluateLater(who, Dying, async () => {
@@ -55,6 +62,13 @@ export const Dying = new Effect(
             await who.addEffect(Prone, { duration: Infinity });
           }),
         );
+    });
+
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      const dying = Array.from(g.combatants).find((other) =>
+        other.hasEffect(Dying),
+      );
+      if (dying) actions.push(new StabilizeAction(g, who));
     });
   },
   { icon: makeIcon(dyingUrl, "red") },
@@ -90,6 +104,11 @@ export const Dead = new Effect(
         conditions.add("Prone", Dead);
         conditions.add("Unconscious", Dead);
       }
+    });
+
+    g.events.on("GatherHeal", ({ detail: { target, multiplier } }) => {
+      // A creature that has died can't regain hit points until magic such as the revivify spell has restored it to life.
+      if (target.hasEffect(Dead)) multiplier.add("zero", Dead);
     });
   },
   { quiet: true },
