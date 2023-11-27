@@ -164,8 +164,8 @@
     *[Symbol.iterator]() {
       const interruptions = [...this.set];
       interruptions.sort((a, b) => b.priority - a.priority);
-      for (const i of interruptions)
-        yield i;
+      for (const i2 of interruptions)
+        yield i2;
     }
   };
 
@@ -436,9 +436,9 @@
         results.push([...current]);
         return;
       }
-      for (let i = start; i < source.length; i++) {
-        current.push(source[i]);
-        backtrack(i + 1, current);
+      for (let i2 = start; i2 < source.length; i2++) {
+        current.push(source[i2]);
+        backtrack(i2 + 1, current);
         current.pop();
       }
     }
@@ -457,8 +457,8 @@
     constructor(points) {
       this.points = points;
       const lines = [];
-      for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-        const a = points[i];
+      for (let i2 = 0, j = points.length - 1; i2 < points.length; j = i2++) {
+        const a = points[i2];
         const b = points[j];
         lines.push([a, b]);
       }
@@ -655,8 +655,8 @@
   }
   function enumerate(min, max) {
     const values = [];
-    for (let i = min; i <= max; i++)
-      values.push(i);
+    for (let i2 = min; i2 <= max; i2++)
+      values.push(i2);
     return values;
   }
   function ordinal(n) {
@@ -1550,26 +1550,26 @@
       var _a;
       const bonus = new BonusCollector();
       bonus.add((_a = this.movement.get("speed")) != null ? _a : 0, this);
-      const e = this.g.fire(
+      const e2 = this.g.fire(
         new GetSpeedEvent({
           who: this,
           bonus,
           multiplier: new MultiplierCollector()
         })
       );
-      return bonus.result * e.detail.multiplier.result;
+      return bonus.result * e2.detail.multiplier.result;
     }
     get hpMax() {
       const bonus = new BonusCollector();
       bonus.add(this.baseHpMax, this);
-      const e = this.g.fire(
+      const e2 = this.g.fire(
         new GetMaxHPEvent({
           who: this,
           bonus,
           multiplier: new MultiplierCollector()
         })
       );
-      return bonus.result * e.detail.multiplier.result;
+      return bonus.result * e2.detail.multiplier.result;
     }
     getConditions() {
       const conditions = new ConditionCollector();
@@ -1612,9 +1612,9 @@
     don(item, attune = false) {
       if (item.itemType === "armor") {
         const predicate = isSuitOfArmor(item) ? isSuitOfArmor : isShield;
-        for (const o2 of this.equipment) {
-          if (predicate(o2))
-            this.doff(o2);
+        for (const o of this.equipment) {
+          if (predicate(o))
+            this.doff(o);
         }
       }
       this.equipment.add(item);
@@ -1740,7 +1740,7 @@
         spellImplementationWarning(spell, this);
     }
     async addEffect(effect, config, attacker) {
-      const e = await this.g.resolve(
+      const e2 = await this.g.resolve(
         new BeforeEffectEvent({
           who: this,
           effect,
@@ -1750,7 +1750,7 @@
           success: new SuccessResponseCollector()
         })
       );
-      if (e.detail.success.result === "fail")
+      if (e2.detail.success.result === "fail")
         return false;
       this.effects.set(effect, config);
       await this.g.resolve(
@@ -1804,7 +1804,7 @@
     async changeExhaustion(delta) {
       const old = this.exhaustion;
       const value = clamp(this.exhaustion + delta, 0, 6);
-      const e = new ExhaustionEvent({
+      const e2 = new ExhaustionEvent({
         who: this,
         old,
         delta,
@@ -1812,8 +1812,8 @@
         interrupt: new InterruptionCollector(),
         success: new SuccessResponseCollector()
       });
-      await this.g.resolve(e);
-      if (e.detail.success.result !== "fail")
+      await this.g.resolve(e2);
+      if (e2.detail.success.result !== "fail")
         this.exhaustion = value;
       return this.exhaustion;
     }
@@ -2034,7 +2034,7 @@
       const clauses = [];
       if (this.maxRange < Infinity)
         clauses.push(`target within ${this.maxRange}'`);
-      clauses.push(...this.filters.map((f) => f.name));
+      clauses.push(...this.filters.map((f2) => f2.name));
       return clauses.length ? clauses.join(", ") : "any target";
     }
     check(value, action, ec) {
@@ -2607,9 +2607,9 @@
       if (this.iconUrl)
         return { url: this.iconUrl, colour: ItemRarityColours[this.rarity] };
     }
-    addEnchantment(e) {
-      this.enchantments.add(e);
-      e.setup(this.g, this);
+    addEnchantment(e2) {
+      this.enchantments.add(e2);
+      e2.setup(this.g, this);
     }
   };
 
@@ -3347,9 +3347,9 @@
       await g.attack({ who: attacker, tags, target, ability, weapon, ammo })
     );
   }
-  async function getAttackResult(g, source, e) {
-    if (e.hit) {
-      const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
+  async function getAttackResult(g, source, e2) {
+    if (e2.hit) {
+      const { who: attacker, target, ability, weapon, ammo } = e2.attack.pre;
       if (ammo)
         ammo.quantity--;
       if (weapon) {
@@ -3368,30 +3368,30 @@
               ability,
               weapon
             },
-            e.critical
+            e2.critical
           );
           baseDamage.push([damage.damageType, amount]);
         } else
           baseDamage.push([damage.damageType, damage.amount]);
-        const e2 = await g.damage(
+        const e22 = await g.damage(
           weapon,
           weapon.damage.damageType,
           {
-            attack: e.attack,
+            attack: e2.attack,
             attacker,
             target,
             ability,
             weapon,
             ammo,
-            critical: e.critical
+            critical: e2.critical
           },
           baseDamage
         );
-        return { type: "hit", attack: e, damage: e2 };
+        return { type: "hit", attack: e2, damage: e22 };
       }
-      return { type: "hit", attack: e };
+      return { type: "hit", attack: e2 };
     }
-    return { type: "miss", attack: e };
+    return { type: "miss", attack: e2 };
   }
 
   // src/img/act/dash.svg
@@ -6302,9 +6302,9 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     initialise(who, casterLevel) {
       const slots = SpellSlots[this.strength][casterLevel - 1];
       const resources = [];
-      for (let i = 0; i < slots.length; i++) {
-        const resource = SpellSlotResources[i + 1];
-        who.initResource(resource, slots[i]);
+      for (let i2 = 0; i2 < slots.length; i2++) {
+        const resource = SpellSlotResources[i2 + 1];
+        who.initResource(resource, slots[i2]);
         resources.push(resource);
       }
       this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
@@ -7358,9 +7358,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
     getTargets: (g, caster, { targets }) => {
       var _a;
-      return (_a = targets == null ? void 0 : targets.map((e) => e.who)) != null ? _a : [];
+      return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
     },
-    getAffected: (g, caster, { targets }) => targets.map((e) => e.who),
+    getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
     async apply(g, attacker, method, { targets }) {
       const perBolt = await g.rollDamage(1, {
         source: MagicMissile,
@@ -7482,14 +7482,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     get name() {
       if (this.entries.length === 0)
         return "empty";
-      return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
+      return `One of: ${this.entries.map((e2) => e2.label).join(", ")}`;
     }
     check(value, action, ec) {
       if (this.entries.length === 0)
         ec.add("No valid choices", this);
       else if (!value)
         ec.add("No choice made", this);
-      else if (!this.entries.find((e) => e.value === value))
+      else if (!this.entries.find((e2) => e2.value === value))
         ec.add("Invalid choice", this);
       return ec;
     }
@@ -8333,7 +8333,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
     get name() {
       if (this.entries.length === 0)
         return "empty";
-      return `${describeRange(this.minimum, this.maximum)}: ${this.entries.map((e) => e.label).join(", ")}`;
+      return `${describeRange(this.minimum, this.maximum)}: ${this.entries.map((e2) => e2.label).join(", ")}`;
     }
     check(value, action, ec) {
       if (this.entries.length === 0)
@@ -8437,8 +8437,8 @@ At 18th level, the range of this aura increases to 30 feet.`,
       });
     }
   };
-  function isCurable(e) {
-    return e.tags.has("disease") || e.tags.has("poison");
+  function isCurable(e2) {
+    return e2.tags.has("disease") || e2.tags.has("poison");
   }
   function getCurableEffects(who) {
     const effects = [];
@@ -12790,7 +12790,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
         if (action.actor.hasEffect(LaughterEffect) && action instanceof StandUpAction)
           error.add("laughing too hard", LaughterEffect);
       });
-      const resave = (i, who, config, diceType = "normal") => i.add(
+      const resave = (i2, who, config, diceType = "normal") => i2.add(
         new EvaluateLater(who, LaughterEffect, async () => {
           const { caster, method } = config;
           const { outcome } = await g.save({
@@ -13839,8 +13839,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
 
   // src/collectors/ValueCollector.ts
   var comparators = {
-    higher: (o2, n) => n > o2,
-    lower: (o2, n) => n < o2
+    higher: (o, n) => n > o,
+    lower: (o, n) => n < o
   };
   var ValueCollector = class {
     constructor(final) {
@@ -14228,17 +14228,17 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       );
       await this.nextTurn();
     }
-    async rollMany(count, e, critical = false) {
+    async rollMany(count, e2, critical = false) {
       const rolls = await Promise.all(
-        Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e))
+        Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e2))
       );
       return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
     }
-    async rollDamage(count, e, critical = false) {
-      return this.rollMany(count, { ...e, type: "damage" }, critical);
+    async rollDamage(count, e2, critical = false) {
+      return this.rollMany(count, { ...e2, type: "damage" }, critical);
     }
-    async rollHeal(count, e, critical = false) {
-      return this.rollMany(count, { ...e, type: "heal" }, critical);
+    async rollHeal(count, e2, critical = false) {
+      return this.rollMany(count, { ...e2, type: "heal" }, critical);
     }
     async rollInitiative(who) {
       const gi = await this.resolve(
@@ -14262,7 +14262,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         bonus.add(value, ProficiencyRule);
       }
     }
-    async savingThrow(dc, e, {
+    async savingThrow(dc, e2, {
       diceType: baseDiceType,
       save,
       fail
@@ -14280,7 +14280,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         diceType.add(baseDiceType, { name: "Base" });
       const pre = await this.resolve(
         new BeforeSaveEvent({
-          ...e,
+          ...e2,
           dc,
           proficiency,
           bonus,
@@ -14291,10 +14291,10 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           interrupt: new InterruptionCollector()
         })
       );
-      this.addProficiencyBonus(e.who, proficiency, bonus);
+      this.addProficiencyBonus(e2.who, proficiency, bonus);
       let forced = false;
       let success = false;
-      const roll = await this.roll({ type: "save", ...e }, diceType.result);
+      const roll = await this.roll({ type: "save", ...e2 }, diceType.result);
       const total = roll.values.final + bonus.result;
       if (successResponse.result !== "normal") {
         success = successResponse.result === "success";
@@ -14321,14 +14321,14 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
       };
     }
-    async abilityCheck(dc, e) {
+    async abilityCheck(dc, e2) {
       const successResponse = new SuccessResponseCollector();
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const pre = await this.resolve(
         new BeforeCheckEvent({
-          ...e,
+          ...e2,
           dc,
           proficiency,
           bonus,
@@ -14337,10 +14337,10 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           interrupt: new InterruptionCollector()
         })
       );
-      this.addProficiencyBonus(e.who, proficiency, bonus);
+      this.addProficiencyBonus(e2.who, proficiency, bonus);
       let forced = false;
       let success = false;
-      const roll = await this.roll({ type: "check", ...e }, diceType.result);
+      const roll = await this.roll({ type: "check", ...e2 }, diceType.result);
       const total = roll.values.final + bonus.result;
       if (successResponse.result !== "normal") {
         success = successResponse.result === "success";
@@ -14606,14 +14606,14 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     getAttackOutcome(ac, roll, total) {
       return roll === 1 ? "miss" : roll === 20 ? "critical" : total >= ac ? "hit" : "miss";
     }
-    async attack(e) {
+    async attack(e2) {
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const success = new SuccessResponseCollector();
       const pre = await this.resolve(
         new BeforeAttackEvent({
-          ...e,
+          ...e2,
           proficiency,
           bonus,
           diceType,
@@ -14623,7 +14623,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       );
       if (success.result === "fail")
         return { outcome: "cancelled", hit: false };
-      this.addProficiencyBonus(e.who, proficiency, bonus);
+      this.addProficiencyBonus(e2.who, proficiency, bonus);
       const { target, who, ability } = pre.detail;
       const ac = await this.getAC(target, pre.detail);
       const roll = await this.roll(
@@ -14656,7 +14656,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         critical: outcome === "critical"
       };
     }
-    async damage(source, damageType, e, damageInitialiser = [], startingMultiplier) {
+    async damage(source, damageType, e2, damageInitialiser = [], startingMultiplier) {
       if (startingMultiplier === "zero")
         return;
       const map = new DamageMap(damageInitialiser);
@@ -14666,7 +14666,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       const gather = await this.resolve(
         new GatherDamageEvent({
           critical: false,
-          ...e,
+          ...e2,
           map,
           bonus: new BonusCollector(),
           interrupt: new InterruptionCollector(),
@@ -14676,9 +14676,9 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       map.add(damageType, gather.detail.bonus.result);
       return this.applyDamage(map, {
         source,
-        attack: e.attack,
-        attacker: e.attacker,
-        target: e.target,
+        attack: e2.attack,
+        attacker: e2.attacker,
+        target: e2.target,
         multiplier: multiplier.result
       });
     }
@@ -14715,7 +14715,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     }
     async getAC(who, pre) {
       const method = this.getBestACMethod(who);
-      const e = await this.resolve(
+      const e2 = await this.resolve(
         new GetACEvent({
           who,
           method,
@@ -14724,21 +14724,21 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           pre
         })
       );
-      return method.ac + e.detail.bonus.result;
+      return method.ac + e2.detail.bonus.result;
     }
-    fire(e) {
-      if (e.detail.interrupt)
+    fire(e2) {
+      if (e2.detail.interrupt)
         throw new Error(
-          `Use Engine.resolve() on an interruptible event type: ${e.type}`
+          `Use Engine.resolve() on an interruptible event type: ${e2.type}`
         );
-      this.events.fire(e);
-      return e;
+      this.events.fire(e2);
+      return e2;
     }
-    async resolve(e) {
-      this.events.fire(e);
-      for (const interruption of e.detail.interrupt)
+    async resolve(e2) {
+      this.events.fire(e2);
+      for (const interruption of e2.detail.interrupt)
         await interruption.apply(this);
-      return e;
+      return e2;
     }
     addEffectArea(area) {
       area.id = this.nextId();
@@ -14766,7 +14766,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
       );
     }
-    async heal(source, amount, e, startingMultiplier) {
+    async heal(source, amount, e2, startingMultiplier) {
       const bonus = new BonusCollector();
       bonus.add(amount, source);
       const multiplier = new MultiplierCollector();
@@ -14774,7 +14774,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         multiplier.add(startingMultiplier, source);
       const gather = await this.resolve(
         new GatherHealEvent({
-          ...e,
+          ...e2,
           bonus,
           multiplier,
           interrupt: new InterruptionCollector()
@@ -14818,19 +14818,19 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         new CheckVisionEvent({ who, target, error: new ErrorCollector() })
       ).detail.error.result;
     }
-    async getSaveDC(e) {
+    async getSaveDC(e2) {
       const bonus = new BonusCollector();
       const interrupt = new InterruptionCollector();
-      switch (e.type.type) {
+      switch (e2.type.type) {
         case "ability":
-          bonus.add(8, e.source);
+          bonus.add(8, e2.source);
           break;
         case "flat":
-          bonus.add(e.type.dc, e.source);
+          bonus.add(e2.type.dc, e2.source);
           break;
       }
       const result = await this.resolve(
-        new GetSaveDCEvent({ ...e, bonus, interrupt })
+        new GetSaveDCEvent({ ...e2, bonus, interrupt })
       );
       return result.detail;
     }
@@ -14925,16 +14925,17 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact2 = __toESM(require_preact());
   var import_preact3 = __toESM(require_preact());
-  var r = 0;
-  function o(o2, e, n, t, f, l) {
-    var s, i, u = {};
-    for (i in e)
-      "ref" == i ? s = e[i] : u[i] = e[i];
-    var a = { type: o2, props: u, key: n, ref: s, __k: null, __: null, __b: 0, __e: null, __d: void 0, __c: null, __h: null, constructor: void 0, __v: --r, __i: -1, __source: f, __self: l };
-    if ("function" == typeof o2 && (s = o2.defaultProps))
-      for (i in s)
-        void 0 === u[i] && (u[i] = s[i]);
-    return import_preact2.options.vnode && import_preact2.options.vnode(a), a;
+  var f = 0;
+  var i = Array.isArray;
+  function u(e2, t, n, o, i2, u2) {
+    var a, c, p = {};
+    for (c in t)
+      "ref" == c ? a = t[c] : p[c] = t[c];
+    var l = { type: e2, props: p, key: n, ref: a, __k: null, __: null, __b: 0, __e: null, __d: void 0, __c: null, constructor: void 0, __v: --f, __i: -1, __u: 0, __source: i2, __self: u2 };
+    if ("function" == typeof e2 && (a = e2.defaultProps))
+      for (c in a)
+        void 0 === p[c] && (p[c] = a[c]);
+    return import_preact2.options.vnode && import_preact2.options.vnode(l), l;
   }
 
   // src/ui/SVGIcon.tsx
@@ -14948,7 +14949,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         return html;
       });
     }, [cache, src]);
-    return /* @__PURE__ */ o(
+    return /* @__PURE__ */ u(
       "div",
       {
         ref,
@@ -14969,7 +14970,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     sub,
     subSize = 24
   }) {
-    return /* @__PURE__ */ o(
+    return /* @__PURE__ */ u(
       "button",
       {
         className: IconButton_module_default.main,
@@ -14979,7 +14980,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         title: alt,
         "aria-label": alt,
         children: [
-          /* @__PURE__ */ o(
+          /* @__PURE__ */ u(
             SVGIcon,
             {
               className: IconButton_module_default.image,
@@ -14988,7 +14989,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
               color: icon.colour
             }
           ),
-          sub && /* @__PURE__ */ o(
+          sub && /* @__PURE__ */ u(
             SVGIcon,
             {
               className: IconButton_module_default.sub,
@@ -15037,8 +15038,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     role = "group"
   }) {
     const labelId = (0, import_hooks2.useId)();
-    return /* @__PURE__ */ o("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
-      /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
+      /* @__PURE__ */ u(
         "div",
         {
           id: labelId,
@@ -15047,7 +15048,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           children: label
         }
       ),
-      /* @__PURE__ */ o("div", { className: classnames(Labelled_module_default.contents, contentsClass), children })
+      /* @__PURE__ */ u("div", { className: classnames(Labelled_module_default.contents, contentsClass), children })
     ] });
   }
 
@@ -15058,7 +15059,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   );
   var activeCombatantId = (0, import_signals.signal)(NaN);
   var activeCombatant = (0, import_signals.computed)(
-    () => allCombatants.value.find((u) => u.id === activeCombatantId.value)
+    () => allCombatants.value.find((u2) => u2.id === activeCombatantId.value)
   );
   var aiEvaluation = (0, import_signals.signal)(void 0);
   var allActions = (0, import_signals.signal)([]);
@@ -15073,7 +15074,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   var moveHandler = (0, import_signals.signal)(void 0);
   var movingCombatantId = (0, import_signals.signal)(NaN);
   var movingCombatant = (0, import_signals.computed)(
-    () => allCombatants.value.find((u) => u.id === movingCombatantId.value)
+    () => allCombatants.value.find((u2) => u2.id === movingCombatantId.value)
   );
   var scale = (0, import_signals.signal)(20);
   var showSideHP = (0, import_signals.signal)([0]);
@@ -15141,12 +15142,12 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     who
   }) {
     const actionCategories = splitActions(allActions.value);
-    return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Active Unit", children: [
-      /* @__PURE__ */ o(Labelled, { label: "Current Turn", children: who.name }),
-      /* @__PURE__ */ o("button", { onClick: onPass, children: "End Turn" }),
-      /* @__PURE__ */ o("hr", {}),
-      actionCategories.map(({ label, actions }) => /* @__PURE__ */ o(Labelled, { label, children: actions.map(
-        (action) => action.icon ? /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Active Unit", children: [
+      /* @__PURE__ */ u(Labelled, { label: "Current Turn", children: who.name }),
+      /* @__PURE__ */ u("button", { onClick: onPass, children: "End Turn" }),
+      /* @__PURE__ */ u("hr", {}),
+      actionCategories.map(({ label, actions }) => /* @__PURE__ */ u(Labelled, { label, children: actions.map(
+        (action) => action.icon ? /* @__PURE__ */ u(
           IconButton,
           {
             onClick: () => onChooseAction(action),
@@ -15155,7 +15156,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
             alt: action.name
           },
           action.name
-        ) : /* @__PURE__ */ o(
+        ) : /* @__PURE__ */ u(
           "button",
           {
             onClick: () => onChooseAction(action),
@@ -15217,7 +15218,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       }),
       [point.x, point.y, tint]
     );
-    return /* @__PURE__ */ o(
+    return /* @__PURE__ */ u(
       "div",
       {
         className: classnames(BattlefieldEffect_module_default.square, { [BattlefieldEffect_module_default.top]: top }),
@@ -15237,9 +15238,9 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       const { x: left2, y: top2 } = points2.average(scale.value);
       return { points: points2, left: left2, top: top2 };
     }, [shape]);
-    const squares = Array.from(points, (p, key) => /* @__PURE__ */ o(AffectedSquare, { point: p, tint: tint != null ? tint : "silver", top: onTop }, key));
-    return /* @__PURE__ */ o(import_preact3.Fragment, { children: [
-      /* @__PURE__ */ o(
+    const squares = Array.from(points, (p, key) => /* @__PURE__ */ u(AffectedSquare, { point: p, tint: tint != null ? tint : "silver", top: onTop }, key));
+    return /* @__PURE__ */ u(import_preact3.Fragment, { children: [
+      /* @__PURE__ */ u(
         "div",
         {
           className: classnames(BattlefieldEffect_module_default.main, { [BattlefieldEffect_module_default.top]: onTop }),
@@ -15256,23 +15257,23 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   function usePanning(onPan) {
     const [isPanning, setIsPanning] = (0, import_hooks4.useState)(false);
     const [panStartCoords, setPanStartCoords] = (0, import_hooks4.useState)({ x: 0, y: 0 });
-    const onMouseDown = (0, import_hooks4.useCallback)((e) => {
-      if (e.button === 2) {
+    const onMouseDown = (0, import_hooks4.useCallback)((e2) => {
+      if (e2.button === 2) {
         setIsPanning(true);
-        setPanStartCoords({ x: e.clientX, y: e.clientY });
+        setPanStartCoords({ x: e2.clientX, y: e2.clientY });
       }
     }, []);
-    const onMouseEnter = (0, import_hooks4.useCallback)((e) => {
-      if (!e.button)
+    const onMouseEnter = (0, import_hooks4.useCallback)((e2) => {
+      if (!e2.button)
         setIsPanning(false);
     }, []);
     const onMouseMove = (0, import_hooks4.useCallback)(
-      (e) => {
+      (e2) => {
         if (isPanning) {
-          const deltaX = e.clientX - panStartCoords.x;
-          const deltaY = e.clientY - panStartCoords.y;
+          const deltaX = e2.clientX - panStartCoords.x;
+          const deltaY = e2.clientY - panStartCoords.y;
           onPan(-deltaX, -deltaY);
-          setPanStartCoords({ x: e.clientX, y: e.clientY });
+          setPanStartCoords({ x: e2.clientX, y: e2.clientY });
         }
       },
       [isPanning, onPan, panStartCoords.x, panStartCoords.y]
@@ -15305,7 +15306,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   // src/ui/UnitEffectIcon.tsx
   function UnitEffectIcon({ effect }) {
     var _a, _b, _c;
-    return /* @__PURE__ */ o("div", { title: effect.name, children: /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("div", { title: effect.name, children: /* @__PURE__ */ u(
       SVGIcon,
       {
         src: (_b = (_a = effect.icon) == null ? void 0 : _a.url) != null ? _b : missing_icon_default,
@@ -15329,31 +15330,31 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   };
 
   // src/ui/UnitHP.tsx
-  function UnitDeathSaves({ u }) {
-    return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ o("div", { className: UnitHP_module_default.text, children: [
+  function UnitDeathSaves({ u: u2 }) {
+    return /* @__PURE__ */ u("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ u("div", { className: UnitHP_module_default.text, children: [
       "Down: ",
-      /* @__PURE__ */ o("span", { className: UnitHP_module_default.success, children: u.deathSaveSuccesses }),
+      /* @__PURE__ */ u("span", { className: UnitHP_module_default.success, children: u2.deathSaveSuccesses }),
       " /",
       " ",
-      /* @__PURE__ */ o("span", { className: UnitHP_module_default.failure, children: u.deathSaveFailures })
+      /* @__PURE__ */ u("span", { className: UnitHP_module_default.failure, children: u2.deathSaveFailures })
     ] }) });
   }
   function UnitStable() {
-    return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ o("span", { className: UnitHP_module_default.text, children: "Stable" }) });
+    return /* @__PURE__ */ u("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ u("span", { className: UnitHP_module_default.text, children: "Stable" }) });
   }
-  function UnitDetailedHP({ u }) {
-    if (u.effects.find((e) => e.effect === Stable))
-      return /* @__PURE__ */ o(UnitStable, {});
-    if (u.hp <= 0)
-      return /* @__PURE__ */ o(UnitDeathSaves, { u });
-    const width = `${u.hp * 100 / u.hpMax}%`;
-    return /* @__PURE__ */ o("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.detailed), children: [
-      /* @__PURE__ */ o("span", { className: UnitHP_module_default.detailedBar, style: { width } }),
-      /* @__PURE__ */ o("span", { className: UnitHP_module_default.text, children: [
-        u.hp,
-        u.temporaryHP > 0 ? "+" : "",
+  function UnitDetailedHP({ u: u2 }) {
+    if (u2.effects.find((e2) => e2.effect === Stable))
+      return /* @__PURE__ */ u(UnitStable, {});
+    if (u2.hp <= 0)
+      return /* @__PURE__ */ u(UnitDeathSaves, { u: u2 });
+    const width = `${u2.hp * 100 / u2.hpMax}%`;
+    return /* @__PURE__ */ u("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.detailed), children: [
+      /* @__PURE__ */ u("span", { className: UnitHP_module_default.detailedBar, style: { width } }),
+      /* @__PURE__ */ u("span", { className: UnitHP_module_default.text, children: [
+        u2.hp,
+        u2.temporaryHP > 0 ? "+" : "",
         " / ",
-        u.hpMax
+        u2.hpMax
       ] })
     ] });
   }
@@ -15362,16 +15363,16 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     Bloody: "bloody",
     Down: "down"
   };
-  function UnitBriefHP({ u }) {
-    const ratio = u.hp / u.hpMax;
+  function UnitBriefHP({ u: u2 }) {
+    const ratio = u2.hp / u2.hpMax;
     const status = ratio >= 0.5 ? "OK" : ratio > 0 ? "Bloody" : "Down";
-    return /* @__PURE__ */ o(
+    return /* @__PURE__ */ u(
       "div",
       {
         className: classnames(UnitHP_module_default.hp, UnitHP_module_default.brief, UnitHP_module_default[BriefData[status]]),
-        children: /* @__PURE__ */ o("span", { className: UnitHP_module_default.text, children: [
+        children: /* @__PURE__ */ u("span", { className: UnitHP_module_default.text, children: [
           status,
-          u.temporaryHP > 0 ? "+" : ""
+          u2.temporaryHP > 0 ? "+" : ""
         ] })
       }
     );
@@ -15439,67 +15440,67 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       [type]
     );
     const clicked = (0, import_hooks5.useCallback)(
-      (e) => {
-        e.stopPropagation();
+      (e2) => {
+        e2.stopPropagation();
         onClick(type);
       },
       [type, onClick]
     );
-    return /* @__PURE__ */ o(
+    return /* @__PURE__ */ u(
       "button",
       {
         disabled,
         className: classnames(UnitMoveButton_module_default.main, className),
         onClick: clicked,
         "aria-label": label,
-        children: /* @__PURE__ */ o(SVGIcon, { src: iconUrl, size: 26 })
+        children: /* @__PURE__ */ u(SVGIcon, { src: iconUrl, size: 26 })
       }
     );
   }
 
   // src/ui/Unit.tsx
-  function Unit({ isMoving, onClick, onMove, u }) {
+  function Unit({ isMoving, onClick, onMove, u: u2 }) {
     const containerStyle = {
-      left: u.position.x * scale.value,
-      top: u.position.y * scale.value,
-      width: u.sizeInUnits * scale.value,
-      height: u.sizeInUnits * scale.value
+      left: u2.position.x * scale.value,
+      top: u2.position.y * scale.value,
+      width: u2.sizeInUnits * scale.value,
+      height: u2.sizeInUnits * scale.value
     };
     const tokenStyle = {
-      width: u.sizeInUnits * scale.value,
-      height: u.sizeInUnits * scale.value
+      width: u2.sizeInUnits * scale.value,
+      height: u2.sizeInUnits * scale.value
     };
-    const disabled = u.movedSoFar >= u.speed;
+    const disabled = u2.movedSoFar >= u2.speed;
     const clicked = (0, import_hooks6.useCallback)(
-      (e) => onClick(u.who, e),
-      [onClick, u]
+      (e2) => onClick(u2.who, e2),
+      [onClick, u2]
     );
     const moved = (0, import_hooks6.useCallback)(
-      (dir) => onMove(u.who, dir),
-      [onMove, u]
+      (dir) => onMove(u2.who, dir),
+      [onMove, u2]
     );
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "div",
         {
           className: Unit_module_default.main,
           style: containerStyle,
-          title: u.name,
+          title: u2.name,
           onClick: clicked,
           children: [
-            /* @__PURE__ */ o(
+            /* @__PURE__ */ u(
               "img",
               {
                 className: Unit_module_default.token,
                 style: tokenStyle,
-                alt: u.name,
-                src: u.img
+                alt: u2.name,
+                src: u2.img
               }
             ),
-            isMoving && /* @__PURE__ */ o(import_preact3.Fragment, { children: [
-              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "east" }),
-              /* @__PURE__ */ o(
+            isMoving && /* @__PURE__ */ u(import_preact3.Fragment, { children: [
+              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "east" }),
+              /* @__PURE__ */ u(
                 UnitMoveButton,
                 {
                   disabled,
@@ -15507,8 +15508,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
                   type: "southeast"
                 }
               ),
-              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "south" }),
-              /* @__PURE__ */ o(
+              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "south" }),
+              /* @__PURE__ */ u(
                 UnitMoveButton,
                 {
                   disabled,
@@ -15516,8 +15517,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
                   type: "southwest"
                 }
               ),
-              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "west" }),
-              /* @__PURE__ */ o(
+              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "west" }),
+              /* @__PURE__ */ u(
                 UnitMoveButton,
                 {
                   disabled,
@@ -15525,8 +15526,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
                   type: "northwest"
                 }
               ),
-              /* @__PURE__ */ o(UnitMoveButton, { disabled, onClick: moved, type: "north" }),
-              /* @__PURE__ */ o(
+              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "north" }),
+              /* @__PURE__ */ u(
                 UnitMoveButton,
                 {
                   disabled,
@@ -15535,8 +15536,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
                 }
               )
             ] }),
-            showSideHP.value.includes(u.side) ? /* @__PURE__ */ o(UnitDetailedHP, { u }) : /* @__PURE__ */ o(UnitBriefHP, { u }),
-            /* @__PURE__ */ o("div", { className: Unit_module_default.icons, children: u.effects.map((effect, i) => /* @__PURE__ */ o(UnitEffectIcon, { effect }, i)) })
+            showSideHP.value.includes(u2.side) ? /* @__PURE__ */ u(UnitDetailedHP, { u: u2 }) : /* @__PURE__ */ u(UnitBriefHP, { u: u2 }),
+            /* @__PURE__ */ u("div", { className: Unit_module_default.icons, children: u2.effects.map((effect, i2) => /* @__PURE__ */ u(UnitEffectIcon, { effect }, i2)) })
           ]
         }
       )
@@ -15554,18 +15555,18 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     const { isPanning, onMouseDown, onMouseEnter, onMouseMove, onMouseUp } = usePanning(
       (dx, dy) => setOffset((old) => ({ x: old.x + dx, y: old.y + dy }))
     );
-    const convertCoordinate = (0, import_hooks7.useCallback)((e) => {
-      const x = round(Math.floor(e.pageX / scale.value), MapSquareSize);
-      const y = round(Math.floor(e.pageY / scale.value), MapSquareSize);
+    const convertCoordinate = (0, import_hooks7.useCallback)((e2) => {
+      const x = round(Math.floor(e2.pageX / scale.value), MapSquareSize);
+      const y = round(Math.floor(e2.pageY / scale.value), MapSquareSize);
       return { x, y };
     }, []);
     const onClick = (0, import_hooks7.useCallback)(
-      (e) => onClickBattlefield(convertCoordinate(e), e),
+      (e2) => onClickBattlefield(convertCoordinate(e2), e2),
       [convertCoordinate, onClickBattlefield]
     );
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "main",
         {
           className: classnames(Battlefield_module_default.main, { [Battlefield_module_default.panning]: isPanning }),
@@ -15575,12 +15576,12 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           onMouseEnter,
           onMouseMove,
           onMouseUp,
-          onContextMenu: (e) => {
-            e.preventDefault();
+          onContextMenu: (e2) => {
+            e2.preventDefault();
             return false;
           },
-          children: /* @__PURE__ */ o("div", { style: { transform: `translate(${offset.x}px, ${offset.y}px)` }, children: [
-            allCombatants.value.map((unit) => /* @__PURE__ */ o(
+          children: /* @__PURE__ */ u("div", { style: { transform: `translate(${offset.x}px, ${offset.y}px)` }, children: [
+            allCombatants.value.map((unit) => /* @__PURE__ */ u(
               Unit,
               {
                 isMoving: movingCombatantId.value === unit.id,
@@ -15590,9 +15591,9 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
               },
               unit.id
             )),
-            allEffects.value.map((effect) => /* @__PURE__ */ o(BattlefieldEffect, { ...effect }, effect.id)),
-            ((_a = actionAreas.value) != null ? _a : []).map((shape, i) => /* @__PURE__ */ o(BattlefieldEffect, { shape, top: true }, `temp${i}`)),
-            teleportInfo.value && /* @__PURE__ */ o(
+            allEffects.value.map((effect) => /* @__PURE__ */ u(BattlefieldEffect, { ...effect }, effect.id)),
+            ((_a = actionAreas.value) != null ? _a : []).map((shape, i2) => /* @__PURE__ */ u(BattlefieldEffect, { shape, top: true }, `temp${i2}`)),
+            teleportInfo.value && /* @__PURE__ */ u(
               BattlefieldEffect,
               {
                 shape: teleportInfo.value,
@@ -15609,16 +15610,16 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
 
   // src/ui/BoundedMovePanel.tsx
   function BoundedMovePanel({ bounds, onFinish }) {
-    return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Bounded Movement", children: [
-      /* @__PURE__ */ o(Labelled, { label: bounds.handler.name, children: bounds.who.name }),
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Bounded Movement", children: [
+      /* @__PURE__ */ u(Labelled, { label: bounds.handler.name, children: bounds.who.name }),
+      /* @__PURE__ */ u("div", { children: [
         bounds.handler.teleportation ? "Teleport" : "Move",
         " up to",
         " ",
         bounds.handler.maximum,
         " feet."
       ] }),
-      /* @__PURE__ */ o("button", { onClick: onFinish, disabled: bounds.handler.mustUseAll, children: "End Movement Early" })
+      /* @__PURE__ */ u("button", { onClick: onFinish, disabled: bounds.handler.mustUseAll, children: "End Movement Early" })
     ] });
   }
 
@@ -15653,7 +15654,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     spaceBefore = false,
     spaceAfter = true
   }) {
-    return /* @__PURE__ */ o(
+    return /* @__PURE__ */ u(
       "div",
       {
         className: classnames(CombatantRef_module_default.main, {
@@ -15661,8 +15662,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           [CombatantRef_module_default.spaceAfter]: spaceAfter
         }),
         children: [
-          /* @__PURE__ */ o("img", { className: CombatantRef_module_default.icon, src: who.img, alt: who.name }),
-          /* @__PURE__ */ o("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
+          /* @__PURE__ */ u("img", { className: CombatantRef_module_default.icon, src: who.img, alt: who.name }),
+          /* @__PURE__ */ u("span", { className: CombatantRef_module_default.iconLabel, "aria-hidden": "true", children: who.name })
         ]
       }
     );
@@ -15683,12 +15684,12 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   // src/ui/RangeInput.tsx
   function RangeInput({ value, onChange, min, max }) {
     const changed = (0, import_hooks8.useCallback)(
-      (e) => onChange(e.currentTarget.valueAsNumber),
+      (e2) => onChange(e2.currentTarget.valueAsNumber),
       [onChange]
     );
-    return /* @__PURE__ */ o("div", { className: RangeInput_module_default.main, children: [
-      /* @__PURE__ */ o("div", { className: RangeInput_module_default.min, children: min }),
-      /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("div", { className: RangeInput_module_default.main, children: [
+      /* @__PURE__ */ u("div", { className: RangeInput_module_default.min, children: min }),
+      /* @__PURE__ */ u(
         "input",
         {
           className: RangeInput_module_default.slider,
@@ -15699,8 +15700,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           onChange: changed
         }
       ),
-      /* @__PURE__ */ o("div", { className: RangeInput_module_default.max, children: max }),
-      /* @__PURE__ */ o("div", { className: RangeInput_module_default.value, children: value })
+      /* @__PURE__ */ u("div", { className: RangeInput_module_default.max, children: max }),
+      /* @__PURE__ */ u("div", { className: RangeInput_module_default.value, children: value })
     ] });
   }
 
@@ -15716,12 +15717,12 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     const onClick = (0, import_hooks9.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Target: ",
-        value ? /* @__PURE__ */ o(CombatantRef, { who: value }) : "NONE"
+        value ? /* @__PURE__ */ u(CombatantRef, { who: value }) : "NONE"
       ] }),
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "button",
         {
           className: classnames({
@@ -15758,21 +15759,21 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       ),
       [field, onChange, value]
     );
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Targets (",
         describeRange(resolver.minimum, resolver.maximum),
         "):",
-        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((who) => /* @__PURE__ */ o("li", { children: [
-          /* @__PURE__ */ o(CombatantRef, { who }),
+        (value != null ? value : []).length ? /* @__PURE__ */ u("ul", { children: (value != null ? value : []).map((who) => /* @__PURE__ */ u("li", { children: [
+          /* @__PURE__ */ u(CombatantRef, { who }),
           " ",
-          /* @__PURE__ */ o("button", { onClick: () => remove(who), children: [
+          /* @__PURE__ */ u("button", { onClick: () => remove(who), children: [
             "remove ",
             who.name
           ] })
         ] }, who.id)) }) : ` NONE`
       ] }),
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "button",
         {
           className: classnames({
@@ -15796,12 +15797,12 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     const onClick = (0, import_hooks9.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Point: ",
         describePoint(value)
       ] }),
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "button",
         {
           className: classnames({
@@ -15837,20 +15838,20 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       ),
       [field, onChange, value]
     );
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Points (",
         describeRange(resolver.minimum, resolver.maximum),
         "):",
-        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map((p, i) => /* @__PURE__ */ o("li", { children: [
+        (value != null ? value : []).length ? /* @__PURE__ */ u("ul", { children: (value != null ? value : []).map((p, i2) => /* @__PURE__ */ u("li", { children: [
           describePoint(p),
-          /* @__PURE__ */ o("button", { onClick: () => remove(p), children: [
+          /* @__PURE__ */ u("button", { onClick: () => remove(p), children: [
             "remove ",
             describePoint(p)
           ] })
-        ] }, i)) }) : ` NONE`
+        ] }, i2)) }) : ` NONE`
       ] }),
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "button",
         {
           className: classnames({
@@ -15869,15 +15870,15 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     value,
     onChange
   }) {
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Spell Slot: ",
         value != null ? value : "NONE"
       ] }),
-      /* @__PURE__ */ o("div", { children: enumerate(
+      /* @__PURE__ */ u("div", { children: enumerate(
         resolver.getMinimum(action.actor),
         resolver.getMaximum(action.actor)
-      ).map((slot) => /* @__PURE__ */ o(
+      ).map((slot) => /* @__PURE__ */ u(
         "button",
         {
           className: classnames({ [button_module_default.active]: value === slot }),
@@ -15896,30 +15897,30 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     onChange
   }) {
     const [label, setLabel] = (0, import_hooks9.useState)("NONE");
-    const choose = (e) => () => {
-      if (e.value === value) {
+    const choose = (e2) => () => {
+      if (e2.value === value) {
         onChange(field, void 0);
         setLabel("NONE");
         return;
       }
-      onChange(field, e.value);
-      setLabel(e.label);
+      onChange(field, e2.value);
+      setLabel(e2.label);
     };
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Choice: ",
         label
       ] }),
-      /* @__PURE__ */ o("div", { children: resolver.entries.map((e) => /* @__PURE__ */ o(
+      /* @__PURE__ */ u("div", { children: resolver.entries.map((e2) => /* @__PURE__ */ u(
         "button",
         {
-          className: classnames({ [button_module_default.active]: value === e.value }),
-          "aria-pressed": value === e.value,
-          onClick: choose(e),
-          disabled: e.disabled,
-          children: e.label
+          className: classnames({ [button_module_default.active]: value === e2.value }),
+          "aria-pressed": value === e2.value,
+          onClick: choose(e2),
+          disabled: e2.disabled,
+          children: e2.label
         },
-        e.label
+        e2.label
       )) })
     ] });
   }
@@ -15949,24 +15950,24 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       },
       [field, onChange, value]
     );
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         "Choice: ",
         labels.length ? labels.join(", ") : "NONE"
       ] }),
-      /* @__PURE__ */ o("div", { children: resolver.entries.map((e) => {
-        const selected = (value != null ? value : []).includes(e.value);
+      /* @__PURE__ */ u("div", { children: resolver.entries.map((e2) => {
+        const selected = (value != null ? value : []).includes(e2.value);
         const full = (value != null ? value : []).length > resolver.maximum;
-        return /* @__PURE__ */ o(
+        return /* @__PURE__ */ u(
           "button",
           {
             className: classnames({ [button_module_default.active]: selected }),
             "aria-pressed": selected,
-            onClick: selected ? () => remove(e) : () => add(e),
-            disabled: e.disabled || full,
-            children: e.label
+            onClick: selected ? () => remove(e2) : () => add(e2),
+            disabled: e2.disabled || full,
+            children: e2.label
           },
-          e.label
+          e2.label
         );
       }) })
     ] });
@@ -15977,13 +15978,13 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     value,
     onChange
   }) {
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         resolver.rangeName,
         " Choice: ",
         value != null ? value : "NONE"
       ] }),
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         RangeInput,
         {
           min: resolver.min,
@@ -16002,7 +16003,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   }) {
     const addTarget = (0, import_hooks9.useCallback)(
       (who) => {
-        if (who && !(value != null ? value : []).find((e) => e.who === who))
+        if (who && !(value != null ? value : []).find((e2) => e2.who === who))
           onChange(field, (value != null ? value : []).concat({ amount: 1, who }));
         wantsCombatant.value = void 0;
       },
@@ -16018,20 +16019,20 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       ),
       [field, onChange, value]
     );
-    return /* @__PURE__ */ o("div", { children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u("div", { children: [
         resolver.rangeName,
         " (",
         describeRange(resolver.minimum, resolver.maximum),
         "):",
-        (value != null ? value : []).length ? /* @__PURE__ */ o("ul", { children: (value != null ? value : []).map(({ amount, who }) => /* @__PURE__ */ o("li", { children: [
-          /* @__PURE__ */ o(CombatantRef, { who }),
+        (value != null ? value : []).length ? /* @__PURE__ */ u("ul", { children: (value != null ? value : []).map(({ amount, who }) => /* @__PURE__ */ u("li", { children: [
+          /* @__PURE__ */ u(CombatantRef, { who }),
           " ",
-          /* @__PURE__ */ o("button", { onClick: () => remove(who), children: [
+          /* @__PURE__ */ u("button", { onClick: () => remove(who), children: [
             "remove ",
             who.name
           ] }),
-          /* @__PURE__ */ o(
+          /* @__PURE__ */ u(
             RangeInput,
             {
               min: 0,
@@ -16047,7 +16048,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           )
         ] }, who.id)) }) : "NONE"
       ] }),
-      /* @__PURE__ */ o(
+      /* @__PURE__ */ u(
         "button",
         {
           className: classnames({
@@ -16070,7 +16071,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     return config;
   }
   function AmountElement({ a, type }) {
-    return /* @__PURE__ */ o("span", { children: [
+    return /* @__PURE__ */ u("span", { children: [
       a.type === "flat" ? a.amount : `${a.amount.count}d${a.amount.size}`,
       type && " " + type
     ] });
@@ -16123,25 +16124,25 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           value: config[key]
         };
         if (resolver instanceof TargetResolver)
-          return /* @__PURE__ */ o(ChooseTarget, { ...subProps });
+          return /* @__PURE__ */ u(ChooseTarget, { ...subProps });
         else if (resolver instanceof MultiTargetResolver)
-          return /* @__PURE__ */ o(ChooseTargets, { ...subProps });
+          return /* @__PURE__ */ u(ChooseTargets, { ...subProps });
         else if (resolver instanceof PointResolver || resolver instanceof PointToPointResolver)
-          return /* @__PURE__ */ o(ChoosePoint, { ...subProps });
+          return /* @__PURE__ */ u(ChoosePoint, { ...subProps });
         else if (resolver instanceof MultiPointResolver)
-          return /* @__PURE__ */ o(ChoosePoints, { ...subProps });
+          return /* @__PURE__ */ u(ChoosePoints, { ...subProps });
         else if (resolver instanceof SlotResolver)
-          return /* @__PURE__ */ o(ChooseSlot, { ...subProps });
+          return /* @__PURE__ */ u(ChooseSlot, { ...subProps });
         else if (resolver instanceof ChoiceResolver)
-          return /* @__PURE__ */ o(ChooseText, { ...subProps });
+          return /* @__PURE__ */ u(ChooseText, { ...subProps });
         else if (resolver instanceof MultiChoiceResolver)
-          return /* @__PURE__ */ o(ChooseMany, { ...subProps });
+          return /* @__PURE__ */ u(ChooseMany, { ...subProps });
         else if (resolver instanceof NumberRangeResolver)
-          return /* @__PURE__ */ o(ChooseNumber, { ...subProps });
+          return /* @__PURE__ */ u(ChooseNumber, { ...subProps });
         else if (resolver instanceof AllocationResolver)
-          return /* @__PURE__ */ o(ChooseAllocations, { ...subProps });
+          return /* @__PURE__ */ u(ChooseAllocations, { ...subProps });
         else
-          return /* @__PURE__ */ o("div", { children: [
+          return /* @__PURE__ */ u("div", { children: [
             "(no frontend for resolver type [",
             subProps.resolver.type,
             "] yet)"
@@ -16149,41 +16150,41 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       }),
       [action, config, patchConfig]
     );
-    const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
-    return /* @__PURE__ */ o("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
-      /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.namePanel, children: [
-        /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.name, children: action.name }),
-        /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.time, children: action.isAttack ? "attack" : time != null ? time : "no cost" })
+    const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
+    return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
+      /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.namePanel, children: [
+        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.name, children: action.name }),
+        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.time, children: action.isAttack ? "attack" : time != null ? time : "no cost" })
       ] }),
       statusWarning,
-      description && /* @__PURE__ */ o("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, i) => /* @__PURE__ */ o("p", { children: p }, i)) }),
-      damage && /* @__PURE__ */ o("div", { children: [
+      description && /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, i2) => /* @__PURE__ */ u("p", { children: p }, i2)) }),
+      damage && /* @__PURE__ */ u("div", { children: [
         "Damage:",
         " ",
-        /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: [
-          damage.map((a, i) => /* @__PURE__ */ o(AmountElement, { a, type: a.damageType }, i)),
+        /* @__PURE__ */ u("div", { className: common_module_default.damageList, children: [
+          damage.map((a, i2) => /* @__PURE__ */ u(AmountElement, { a, type: a.damageType }, i2)),
           " ",
           "(",
           Math.ceil(damage.reduce(amountReducer, 0)),
           ")"
         ] })
       ] }),
-      heal && /* @__PURE__ */ o("div", { children: [
+      heal && /* @__PURE__ */ u("div", { children: [
         "Heal:",
         " ",
-        /* @__PURE__ */ o("div", { className: common_module_default.healList, children: [
-          heal.map((a, i) => /* @__PURE__ */ o(AmountElement, { a }, i)),
+        /* @__PURE__ */ u("div", { className: common_module_default.healList, children: [
+          heal.map((a, i2) => /* @__PURE__ */ u(AmountElement, { a }, i2)),
           " ",
           "(",
           Math.ceil(heal.reduce(amountReducer, 0)),
           ")"
         ] })
       ] }),
-      !isReaction && /* @__PURE__ */ o(import_preact3.Fragment, { children: [
-        /* @__PURE__ */ o("button", { disabled, onClick: execute, children: "Execute" }),
-        /* @__PURE__ */ o("button", { onClick: onCancel, children: "Cancel" }),
-        /* @__PURE__ */ o("div", { children: elements }),
-        errors.length > 0 && /* @__PURE__ */ o(Labelled, { label: "Errors", children: errors.map((msg, i) => /* @__PURE__ */ o("div", { children: msg }, i)) })
+      !isReaction && /* @__PURE__ */ u(import_preact3.Fragment, { children: [
+        /* @__PURE__ */ u("button", { disabled, onClick: execute, children: "Execute" }),
+        /* @__PURE__ */ u("button", { onClick: onCancel, children: "Cancel" }),
+        /* @__PURE__ */ u("div", { children: elements }),
+        errors.length > 0 && /* @__PURE__ */ u(Labelled, { label: "Errors", children: errors.map((msg, i2) => /* @__PURE__ */ u("div", { children: msg }, i2)) })
       ] })
     ] });
   }
@@ -16228,37 +16229,37 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
 
   // src/ui/utils/messages.tsx
   var msgCombatant = (c, spaceBefore = false, spaceAfter = true) => ({
-    element: /* @__PURE__ */ o(CombatantRef, { who: c, spaceBefore, spaceAfter }),
+    element: /* @__PURE__ */ u(CombatantRef, { who: c, spaceBefore, spaceAfter }),
     text: c.name
   });
-  var msgDiceType = (dt) => dt !== "normal" ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+  var msgDiceType = (dt) => dt !== "normal" ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
     " at ",
     dt
   ] }), text: ` at ${dt}` } : void 0;
-  var msgWeapon = (w) => w ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+  var msgWeapon = (w) => w ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
     " with ",
     w.name
   ] }), text: ` with ${w.name}` } : void 0;
-  var msgSpell = (s) => s ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+  var msgSpell = (s) => s ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
     " with ",
     s.name
   ] }), text: ` with ${s.name}` } : void 0;
-  var msgAmmo = (a) => a ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+  var msgAmmo = (a) => a ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
     ", firing ",
     a.name
   ] }), text: `, firing ${a.name}` } : void 0;
-  var msgUpcast = (spell, level) => level > spell.level ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+  var msgUpcast = (spell, level) => level > spell.level ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
     " at level ",
     level
   ] }), text: ` at level ${level}` } : void 0;
-  var msgNonzero = (value, text) => value ? { element: /* @__PURE__ */ o(import_preact3.Fragment, { children: text }), text } : void 0;
+  var msgNonzero = (value, text) => value ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: text }), text } : void 0;
   function getDamageEntryText([type, entry]) {
     return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;
   }
   var dmgBreakdown = (breakdown) => ({
-    element: /* @__PURE__ */ o(import_preact3.Fragment, { children: [
+    element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
       "(",
-      /* @__PURE__ */ o("div", { className: common_module_default.damageList, children: Array.from(breakdown, ([type, entry]) => /* @__PURE__ */ o("span", { children: getDamageEntryText([type, entry]) }, type)) }),
+      /* @__PURE__ */ u("div", { className: common_module_default.damageList, children: Array.from(breakdown, ([type, entry]) => /* @__PURE__ */ u("span", { children: getDamageEntryText([type, entry]) }, type)) }),
       ")"
     ] }),
     text: `(${Array.from(breakdown, getDamageEntryText).join(", ")})`
@@ -16391,7 +16392,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   function LogMessage({ message }) {
     const text = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.text).join("");
     const children = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.element);
-    return /* @__PURE__ */ o("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ o("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
+    return /* @__PURE__ */ u("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ u("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function EventLog({ g }) {
     const ref = (0, import_hooks11.useRef)(null);
@@ -16412,57 +16413,57 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         ({ detail }) => detail.interrupt.add(
           new UIResponse(
             detail.pre.who,
-            async () => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAttackMessage(detail) }))
+            async () => addMessage(/* @__PURE__ */ u(LogMessage, { message: getAttackMessage(detail) }))
           )
         )
       );
       g.events.on(
         "CombatantDamaged",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getDamageMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getDamageMessage(detail) }))
       );
       g.events.on(
         "CombatantHealed",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getHealedMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getHealedMessage(detail) }))
       );
       g.events.on(
         "CombatantDied",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getDeathMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getDeathMessage(detail) }))
       );
       g.events.on("EffectAdded", ({ detail }) => {
         if (!detail.effect.quiet)
-          addMessage(/* @__PURE__ */ o(LogMessage, { message: getEffectAddedMessage(detail) }));
+          addMessage(/* @__PURE__ */ u(LogMessage, { message: getEffectAddedMessage(detail) }));
       });
       g.events.on("EffectRemoved", ({ detail }) => {
         if (!detail.effect.quiet)
-          addMessage(/* @__PURE__ */ o(LogMessage, { message: getEffectRemovedMessage(detail) }));
+          addMessage(/* @__PURE__ */ u(LogMessage, { message: getEffectRemovedMessage(detail) }));
       });
       g.events.on(
         "SpellCast",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getCastMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getCastMessage(detail) }))
       );
       g.events.on("CombatantInitiative", ({ detail }) => {
-        addMessage(/* @__PURE__ */ o(LogMessage, { message: getInitiativeMessage(detail) }));
+        addMessage(/* @__PURE__ */ u(LogMessage, { message: getInitiativeMessage(detail) }));
       });
       g.events.on(
         "AbilityCheck",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getAbilityCheckMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getAbilityCheckMessage(detail) }))
       );
       g.events.on(
         "Save",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getSaveMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getSaveMessage(detail) }))
       );
       g.events.on(
         "Exhaustion",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getExhaustionMessage(detail) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getExhaustionMessage(detail) }))
       );
       g.events.on(
         "Text",
-        ({ detail }) => addMessage(/* @__PURE__ */ o(LogMessage, { message: getBuilderMessage(detail.message) }))
+        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getBuilderMessage(detail.message) }))
       );
     }, [addMessage, g]);
-    return /* @__PURE__ */ o("div", { className: EventLog_module_default.container, children: [
-      /* @__PURE__ */ o("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages }),
-      /* @__PURE__ */ o("div", { ref })
+    return /* @__PURE__ */ u("div", { className: EventLog_module_default.container, children: [
+      /* @__PURE__ */ u("ul", { className: EventLog_module_default.main, "aria-label": "Event Log", children: messages }),
+      /* @__PURE__ */ u("div", { ref })
     ] });
   }
 
@@ -16483,7 +16484,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   // src/ui/Dialog.tsx
   function ReactDialog({ title, text, children }) {
     const titleId = (0, import_hooks12.useId)();
-    return /* @__PURE__ */ o("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ u(
       "div",
       {
         role: "dialog",
@@ -16491,15 +16492,15 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         "aria-modal": "true",
         className: classnames(Dialog_module_default.main, Dialog_module_default.react),
         children: [
-          /* @__PURE__ */ o("div", { id: titleId, className: Dialog_module_default.title, children: title }),
-          /* @__PURE__ */ o("p", { className: Dialog_module_default.text, children: text }),
+          /* @__PURE__ */ u("div", { id: titleId, className: Dialog_module_default.title, children: title }),
+          /* @__PURE__ */ u("p", { className: Dialog_module_default.text, children: text }),
           children
         ]
       }
     ) });
   }
   function Dialog(props) {
-    return /* @__PURE__ */ o(ReactDialog, { ...props });
+    return /* @__PURE__ */ u(ReactDialog, { ...props });
   }
 
   // src/ui/ListChoiceDialog.tsx
@@ -16514,9 +16515,9 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       },
       [resolve]
     );
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
-      interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o("button", { disabled, onClick: () => decide(value), children: label }, label)),
-      interruption.allowNone && /* @__PURE__ */ o("button", { onClick: () => decide(), children: "(None)" })
+    return /* @__PURE__ */ u(Dialog, { title: interruption.title, text: interruption.text, children: [
+      interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ u("button", { disabled, onClick: () => decide(value), children: label }, label)),
+      interruption.allowNone && /* @__PURE__ */ u("button", { onClick: () => decide(), children: "(None)" })
     ] });
   }
 
@@ -16528,7 +16529,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
 
   // src/ui/Menu.tsx
   function Menu({ caption, items, onClick, x, y }) {
-    return /* @__PURE__ */ o("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ o(Labelled, { label: caption, contentsClass: Menu_module_default.sub, children: items.length === 0 ? /* @__PURE__ */ o("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ u(Labelled, { label: caption, contentsClass: Menu_module_default.sub, children: items.length === 0 ? /* @__PURE__ */ u("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ u(
       "button",
       {
         role: "menuitem",
@@ -16567,8 +16568,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       chooseManyFromList.value = void 0;
       resolve(list);
     }, [list, resolve]);
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
-      /* @__PURE__ */ o("div", { children: [
+    return /* @__PURE__ */ u(Dialog, { title: interruption.title, text: interruption.text, children: [
+      /* @__PURE__ */ u("div", { children: [
         "Choose between ",
         interruption.minimum,
         " and ",
@@ -16576,7 +16577,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         " ",
         "inclusive."
       ] }),
-      interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ o(
+      interruption.items.map(({ label, value, disabled }) => /* @__PURE__ */ u(
         "button",
         {
           className: classnames({
@@ -16588,7 +16589,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
         },
         label
       )),
-      /* @__PURE__ */ o("button", { disabled: invalidSelection, onClick: decide, children: "OK" })
+      /* @__PURE__ */ u("button", { disabled: invalidSelection, onClick: decide, children: "OK" })
     ] });
   }
 
@@ -16676,9 +16677,9 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     );
     const onYes = (0, import_hooks16.useCallback)(() => decide(true), [decide]);
     const onNo = (0, import_hooks16.useCallback)(() => decide(false), [decide]);
-    return /* @__PURE__ */ o(Dialog, { title: interruption.title, text: interruption.text, children: [
-      /* @__PURE__ */ o("button", { onClick: onYes, children: "Yes" }),
-      /* @__PURE__ */ o("button", { onClick: onNo, children: "No" })
+    return /* @__PURE__ */ u(Dialog, { title: interruption.title, text: interruption.text, children: [
+      /* @__PURE__ */ u("button", { onClick: onYes, children: "Yes" }),
+      /* @__PURE__ */ u("button", { onClick: onNo, children: "No" })
     ] });
   }
 
@@ -16746,13 +16747,13 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
             })
           );
         }),
-        g.events.on("ListChoice", (e) => chooseFromList.value = e),
-        g.events.on("MultiListChoice", (e) => chooseManyFromList.value = e),
-        g.events.on("YesNoChoice", (e) => chooseYesNo.value = e),
-        g.events.on("BoundedMove", (e) => {
-          const { who, handler } = e.detail;
+        g.events.on("ListChoice", (e2) => chooseFromList.value = e2),
+        g.events.on("MultiListChoice", (e2) => chooseManyFromList.value = e2),
+        g.events.on("YesNoChoice", (e2) => chooseYesNo.value = e2),
+        g.events.on("BoundedMove", (e2) => {
+          const { who, handler } = e2.detail;
           (0, import_signals2.batch)(() => {
-            moveBounds.value = e;
+            moveBounds.value = e2;
             moveHandler.value = handler;
             movingCombatantId.value = who.id;
             if (handler.teleportation) {
@@ -16831,8 +16832,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       [hideActionMenu]
     );
     const onClickCombatant = (0, import_hooks17.useCallback)(
-      (who, e) => {
-        e.stopPropagation();
+      (who, e2) => {
+        e2.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
         if (giveCombatant) {
           giveCombatant(who);
@@ -16861,7 +16862,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
               disabled: invalidConfig || isReaction || !needsTarget && !needsPoint
             };
           }).filter((item) => !item.disabled);
-          setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
+          setActionMenu({ show: true, x: e2.clientX, y: e2.clientY, items });
         }
       },
       [g]
@@ -16891,8 +16892,8 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       },
       [hideActionMenu]
     );
-    return /* @__PURE__ */ o("div", { className: App_module_default.main, children: [
-      /* @__PURE__ */ o(
+    return /* @__PURE__ */ u("div", { className: App_module_default.main, children: [
+      /* @__PURE__ */ u(
         Battlefield,
         {
           onClickBattlefield,
@@ -16900,15 +16901,15 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           onMoveCombatant
         }
       ),
-      actionMenu.show && /* @__PURE__ */ o(Menu, { caption: "Quick Actions", ...actionMenu, onClick: onClickAction }),
-      /* @__PURE__ */ o("div", { className: App_module_default.sidePanel, children: moveBounds.value ? /* @__PURE__ */ o(
+      actionMenu.show && /* @__PURE__ */ u(Menu, { caption: "Quick Actions", ...actionMenu, onClick: onClickAction }),
+      /* @__PURE__ */ u("div", { className: App_module_default.sidePanel, children: moveBounds.value ? /* @__PURE__ */ u(
         BoundedMovePanel,
         {
           bounds: moveBounds.value.detail,
           onFinish: onFinishBoundedMove
         }
-      ) : /* @__PURE__ */ o(import_preact3.Fragment, { children: [
-        activeCombatant.value && /* @__PURE__ */ o(
+      ) : /* @__PURE__ */ u(import_preact3.Fragment, { children: [
+        activeCombatant.value && /* @__PURE__ */ u(
           ActiveUnitPanel,
           {
             who: activeCombatant.value,
@@ -16916,7 +16917,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
             onChooseAction
           }
         ),
-        action && /* @__PURE__ */ o(
+        action && /* @__PURE__ */ u(
           ChooseActionConfigPanel,
           {
             g,
@@ -16926,10 +16927,10 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
           }
         )
       ] }) }),
-      /* @__PURE__ */ o(EventLog, { g }),
-      chooseFromList.value && /* @__PURE__ */ o(ListChoiceDialog, { ...chooseFromList.value.detail }),
-      chooseManyFromList.value && /* @__PURE__ */ o(MultiListChoiceDialog, { ...chooseManyFromList.value.detail }),
-      chooseYesNo.value && /* @__PURE__ */ o(YesNoDialog, { ...chooseYesNo.value.detail })
+      /* @__PURE__ */ u(EventLog, { g }),
+      chooseFromList.value && /* @__PURE__ */ u(ListChoiceDialog, { ...chooseFromList.value.detail }),
+      chooseManyFromList.value && /* @__PURE__ */ u(MultiListChoiceDialog, { ...chooseManyFromList.value.detail }),
+      chooseYesNo.value && /* @__PURE__ */ u(YesNoDialog, { ...chooseYesNo.value.detail })
     ] });
   }
 
@@ -16939,7 +16940,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   var gInstance = new Engine();
   window.g = gInstance;
   (0, import_preact4.render)(
-    /* @__PURE__ */ o(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ o(App, { g: gInstance, onMount: () => useTemplate(gInstance, template) }) }),
+    /* @__PURE__ */ u(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ u(App, { g: gInstance, onMount: () => useTemplate(gInstance, template) }) }),
     document.body
   );
 })();

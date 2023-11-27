@@ -2,16 +2,31 @@
 
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: "jest-preset-preact",
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
-  testEnvironment: "jsdom",
+  collectCoverageFrom: ["src/**/*.{mjs,js,jsx,ts,tsx}", "!src/**/*.d.ts"],
+  moduleNameMapper: {
+    "^react/jsx-runtime$": "preact/jsx-runtime",
+    "^react-dom$": "preact/compat",
+    "^react$": "preact/compat",
+    "^.+\\.(css|sass|scss|less)$": "identity-obj-proxy",
+    "^react-dom/test-utils$": "preact/test-utils",
+    "@img/(.*)": "<rootDir>/src/img/$1",
+  },
   transform: {
-    ".+\\.(css|styl|less|sass|scss)$": "jest-css-modules-transform",
     ".+\\.(png|svg)$": "jest-transform-stub",
     "^.+\\.tsx?$": "ts-jest",
   },
-  moduleNameMapper: {
-    "@img/(.*)": "<rootDir>/src/img/$1",
+  transformIgnorePatterns: [
+    "[/\\\\]node_modules[/\\\\].+\\.(mjs|js|jsx|ts|tsx)$",
+    "^.+\\.(css|sass|scss|less)$",
+  ],
+  watchPlugins: [
+    "jest-watch-typeahead/filename",
+    "jest-watch-typeahead/testname",
+  ],
+  testEnvironment: "jsdom",
+  testEnvironmentOptions: {
+    customExportConditions: ["node", "node-addons"],
   },
   globals: { MODE: "test" },
 };
