@@ -6,7 +6,7 @@ import {
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import PactMagic from "./PactMagic";
 
@@ -103,11 +103,10 @@ export const ASI19 = makeASI("Warlock", 19);
 const Warlock: PCClass = {
   name: "Warlock",
   hitDieSize: 8,
-  armorProficiencies: acSet("light"),
-  weaponCategoryProficiencies: wcSet("simple"),
-  saveProficiencies: abSet("wis", "cha"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  armor: acSet("light"),
+  weaponCategory: wcSet("simple"),
+  save: abSet("wis", "cha"),
+  skill: gains([], 2, [
     "Arcana",
     "Deception",
     "History",
@@ -115,11 +114,11 @@ const Warlock: PCClass = {
     "Investigation",
     "Nature",
     "Religion",
-  ),
+  ]),
   multi: {
-    abilities: new Map([["cha", 13]]),
-    armorProficiencies: acSet("light"),
-    weaponCategoryProficiencies: wcSet("simple"),
+    requirements: new Map([["cha", 13]]),
+    armor: acSet("light"),
+    weaponCategory: wcSet("simple"),
   },
 
   features: new Map([

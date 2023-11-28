@@ -16,6 +16,7 @@ import { coSet } from "../types/ConditionName";
 import DamageType from "../types/DamageType";
 import { SpecifiedEffectShape } from "../types/EffectArea";
 import ImplementationStatus from "../types/ImplementationStatus";
+import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
 import { _dd } from "../utils/dice";
@@ -25,6 +26,7 @@ const MetallicDragonborn: PCRace = {
   name: "Dragonborn (Metallic)",
   size: "medium",
   movement: new Map([["speed", 30]]),
+  languages: laSet("Common"),
 };
 
 type Ancestry = "Brass" | "Bronze" | "Copper" | "Gold" | "Silver";

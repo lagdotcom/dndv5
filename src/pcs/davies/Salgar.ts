@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/salgar.png";
 
+import Sage from "../../backgrounds/Sage";
 import Druid, { ASI4 } from "../../classes/druid";
 import Land, { BonusCantrip, CircleSpells } from "../../classes/druid/Land";
 import WildShape from "../../classes/druid/WildShape";
@@ -28,15 +29,18 @@ export default class Salgar extends PC {
   constructor(g: Engine) {
     super(g, "Salgar", tokenUrl);
 
-    this.addProficiency("Arcana", "proficient");
-    this.addProficiency("History", "proficient");
     this.setAbilityScores(10, 8, 14, 14, 15, 10);
     this.setRace(MountainDwarf);
+
+    this.setBackground(Sage);
     this.languages.add("Elvish");
     this.languages.add("Giant");
 
-    this.addSubclass(Land);
     this.addClassLevel(Druid);
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Survival", "proficient");
+
+    this.addSubclass(Land);
     this.addClassLevel(Druid);
     this.addClassLevel(Druid);
     this.addClassLevel(Druid);
@@ -50,9 +54,6 @@ export default class Salgar extends PC {
     this.setConfig(ASI4, { type: "ability", abilities: ["cha", "wis"] });
 
     this.setConfig(WildShape, [new Bat(g), new GiantBadger(g)]);
-
-    this.addProficiency("Insight", "proficient");
-    this.addProficiency("Survival", "proficient");
 
     this.don(new ArrowCatchingShield(g), true);
     this.don(new BootsOfTheWinterlands(g), true);

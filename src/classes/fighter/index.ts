@@ -2,7 +2,7 @@ import { nonCombatFeature, wrapperFeature } from "../../features/common";
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
+import { gains } from "../../utils/gain";
 import { makeASI, makeExtraAttack } from "../common";
 import ActionSurge from "./ActionSurge";
 import Indomitable from "./Indomitable";
@@ -46,11 +46,10 @@ export const ASI19 = makeASI("Fighter", 19);
 const Fighter: PCClass = {
   name: "Fighter",
   hitDieSize: 10,
-  armorProficiencies: acSet("light", "medium", "heavy", "shield"),
-  weaponCategoryProficiencies: wcSet("simple", "martial"),
-  saveProficiencies: abSet("str", "con"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  armor: acSet("light", "medium", "heavy", "shield"),
+  weaponCategory: wcSet("simple", "martial"),
+  save: abSet("str", "con"),
+  skill: gains([], 2, [
     "Acrobatics",
     "Animal Handling",
     "Athletics",
@@ -59,12 +58,12 @@ const Fighter: PCClass = {
     "Intimidation",
     "Perception",
     "Survival",
-  ),
+  ]),
   multi: {
-    // TODO  Strength 13 or Dexterity 13
-    abilities: new Map([["str", 13]]),
-    armorProficiencies: acSet("light", "medium", "shield"),
-    weaponCategoryProficiencies: wcSet("simple", "martial"),
+    // TODO Strength 13 or Dexterity 13
+    requirements: new Map([["str", 13]]),
+    armor: acSet("light", "medium", "shield"),
+    weaponCategory: wcSet("simple", "martial"),
   },
 
   features: new Map([

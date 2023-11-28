@@ -7,9 +7,11 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import SkillName, { SkillNames, skSet } from "../../types/SkillName";
+import SkillName, { SkillNames } from "../../types/SkillName";
 import Spell from "../../types/Spell";
+import { Instruments } from "../../types/ToolName";
 import { wtSet } from "../../types/WeaponType";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import BardicInspiration, {
   BardicInspirationResource,
@@ -122,24 +124,17 @@ export const ASI19 = makeASI("Bard", 19);
 const Bard: PCClass = {
   name: "Bard",
   hitDieSize: 8,
-  armorProficiencies: acSet("light"),
-  weaponCategoryProficiencies: wcSet("simple"),
-  weaponProficiencies: wtSet(
-    "hand crossbow",
-    "longsword",
-    "rapier",
-    "shortsword",
-  ),
-  // TODO Tools: three musical instruments of your choice,
-  saveProficiencies: abSet("dex", "cha"),
-  skillChoices: 3,
-  skillProficiencies: skSet(...SkillNames),
+  armor: acSet("light"),
+  weaponCategory: wcSet("simple"),
+  weapon: wtSet("hand crossbow", "longsword", "rapier", "shortsword"),
+  tool: gains([], 3, Instruments),
+  save: abSet("dex", "cha"),
+  skill: gains([], 3, SkillNames),
   multi: {
-    abilities: new Map([["cha", 13]]),
-    armorProficiencies: acSet("light"),
-    // TODO Tools: one musical instrument of your choice.
-    skillChoices: 1,
-    skillProficiencies: skSet(...SkillNames),
+    requirements: new Map([["cha", 13]]),
+    armor: acSet("light"),
+    tool: gains([], 1, Instruments),
+    skill: gains([], 1, SkillNames),
   },
 
   features: new Map([

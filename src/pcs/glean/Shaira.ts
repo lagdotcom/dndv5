@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/shaira.png";
 
+import Criminal from "../../backgrounds/Criminal";
 import Bard from "../../classes/bard";
 import Engine from "../../Engine";
 import { LeatherArmor } from "../../items/armor";
@@ -25,11 +26,17 @@ export default class Shaira extends PC {
     this.setConfig(AbilityScoreBonus, ["int", "wis"]);
     this.setConfig(SkillVersatility, ["Persuasion", "History"]);
     this.setConfig(ExtraLanguage, "Dwarvish");
-    this.addProficiency("Deception", "proficient");
-    this.addProficiency("Stealth", "proficient");
-    this.addProficiency("thieves' tools", "proficient");
+
+    this.setBackground(Criminal);
     this.addProficiency("playing card set", "proficient");
+
     this.addClassLevel(Bard);
+    this.addProficiency("birdpipes", "proficient");
+    this.addProficiency("glaur", "proficient");
+    this.addProficiency("tocken", "proficient");
+    this.addProficiency("Investigation", "proficient");
+    this.addProficiency("Medicine", "proficient");
+    this.addProficiency("Survival", "proficient");
 
     this.don(new LeatherArmor(g));
     this.don(new Rapier(g));

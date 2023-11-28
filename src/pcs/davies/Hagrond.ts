@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/hagrond.png";
 
+import FolkHero from "../../backgrounds/FolkHero";
 import Barbarian, { ASI4, PrimalKnowledge } from "../../classes/barbarian";
 import Berserker from "../../classes/barbarian/Berserker";
 import darkSun from "../../enchantments/darkSun";
@@ -15,16 +16,19 @@ export default class Hagrond extends PC {
   constructor(g: Engine) {
     super(g, "Hagrond", tokenUrl);
 
-    this.addProficiency("Survival", "proficient");
-    this.addProficiency("Sleight of Hand", "proficient");
-    this.addProficiency("vehicles (land)", "proficient");
-    this.addProficiency("woodcarver's tools", "proficient");
     this.setAbilityScores(15, 15, 13, 10, 8, 10);
     this.setRace(StoutHalfling);
 
+    this.setBackground(FolkHero);
+    this.addProficiency("Sleight of Hand", "proficient");
+    this.addProficiency("woodcarver's tools", "proficient");
+
+    this.addClassLevel(Barbarian);
+    this.addProficiency("Intimidation", "proficient");
+    this.addProficiency("Animal Handling", "proficient");
+
+    this.addClassLevel(Barbarian);
     this.addSubclass(Berserker);
-    this.addClassLevel(Barbarian);
-    this.addClassLevel(Barbarian);
     this.addClassLevel(Barbarian);
     this.addClassLevel(Barbarian);
     this.addClassLevel(Barbarian);
@@ -33,9 +37,6 @@ export default class Hagrond extends PC {
 
     this.setConfig(ASI4, { type: "ability", abilities: ["str", "con"] });
     this.setConfig(PrimalKnowledge, ["Perception"]);
-
-    this.addProficiency("Intimidation", "proficient");
-    this.addProficiency("Animal Handling", "proficient");
 
     this.don(enchant(new Spear(g, 1), darkSun), true);
     this.don(enchant(new Trident(g, 1), ofTheDeep), true);

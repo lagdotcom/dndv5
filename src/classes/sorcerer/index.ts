@@ -2,8 +2,8 @@ import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
 import { wtSet } from "../../types/WeaponType";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 
 export const ASI4 = makeASI("Sorcerer", 4);
@@ -70,24 +70,17 @@ const SorcerousRestoration = nonCombatFeature(
 const Sorcerer: PCClass = {
   name: "Sorcerer",
   hitDieSize: 6,
-  weaponProficiencies: wtSet(
-    "dagger",
-    "dart",
-    "sling",
-    "quarterstaff",
-    "light crossbow",
-  ),
-  saveProficiencies: abSet("con", "cha"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  weapon: wtSet("dagger", "dart", "sling", "quarterstaff", "light crossbow"),
+  save: abSet("con", "cha"),
+  skill: gains([], 2, [
     "Arcana",
     "Deception",
     "Insight",
     "Intimidation",
     "Persuasion",
     "Religion",
-  ),
-  multi: { abilities: new Map([["cha", 13]]) },
+  ]),
+  multi: { requirements: new Map([["cha", 13]]) },
 
   features: new Map([
     [1, [SorcererSpellcasting.feature]],

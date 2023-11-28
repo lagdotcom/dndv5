@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/aura.png";
 
+import Criminal from "../../backgrounds/Criminal";
 import Rogue, { ASI4, Expertise } from "../../classes/rogue";
 import Scout from "../../classes/rogue/Scout";
 import { weaponPlus1 } from "../../enchantments/plus";
@@ -24,9 +25,20 @@ export default class Aura extends PC {
     this.setAbilityScores(8, 15, 11, 14, 9, 14);
     this.setRace(AirGenasi);
 
+    this.setBackground(Criminal);
+    this.addProficiency("Medicine", "proficient");
+    this.addProficiency("Athletics", "proficient");
+    this.addProficiency("dice set", "proficient");
+    this.addProficiency("horn", "proficient");
+
+    this.addClassLevel(Rogue);
+    this.addProficiency("Acrobatics", "proficient");
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Investigation", "proficient");
+    this.addProficiency("Stealth", "proficient");
+
+    this.addClassLevel(Rogue);
     this.addSubclass(Scout);
-    this.addClassLevel(Rogue);
-    this.addClassLevel(Rogue);
     this.addClassLevel(Rogue);
     this.addClassLevel(Rogue);
     this.addClassLevel(Rogue);
@@ -41,13 +53,6 @@ export default class Aura extends PC {
     ]);
     this.setConfig(ASI4, { type: "feat", feat: Lucky });
     this.addFeature(BoonOfVassetri);
-
-    this.addProficiency("Acrobatics", "proficient");
-    this.addProficiency("Athletics", "proficient");
-    this.addProficiency("Deception", "proficient");
-    this.addProficiency("Investigation", "proficient");
-    this.addProficiency("Medicine", "proficient");
-    this.addProficiency("Stealth", "proficient");
 
     this.don(enchant(new LightCrossbow(g), vicious));
     this.don(new LeatherArmor(g));

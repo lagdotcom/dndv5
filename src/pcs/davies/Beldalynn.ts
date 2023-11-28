@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/beldalynn.png";
 
+import Sage from "../../backgrounds/Sage";
 import Wizard, { ASI4 } from "../../classes/wizard";
 import Evocation from "../../classes/wizard/Evocation";
 import { chaoticBurst } from "../../enchantments/weapon";
@@ -33,10 +34,16 @@ export default class Beldalynn extends PC {
     this.dex.score++;
     this.con.score++;
     this.str.score++;
-    this.languages.add("Common");
     this.languages.add("Draconic");
+
+    this.setBackground(Sage);
+    this.addProficiency("Perception", "proficient");
     this.languages.add("Elvish");
     this.languages.add("Infernal");
+
+    this.addClassLevel(Wizard);
+    this.addProficiency("Arcana", "proficient");
+    this.addProficiency("Investigation", "proficient");
 
     this.addSubclass(Evocation);
     this.addClassLevel(Wizard);
@@ -45,14 +52,8 @@ export default class Beldalynn extends PC {
     this.addClassLevel(Wizard);
     this.addClassLevel(Wizard);
     this.addClassLevel(Wizard);
-    this.addClassLevel(Wizard);
 
     this.setConfig(ASI4, { type: "ability", abilities: ["int", "wis"] });
-
-    this.addProficiency("History", "proficient");
-    this.addProficiency("Perception", "proficient");
-    this.addProficiency("Arcana", "proficient");
-    this.addProficiency("Investigation", "proficient");
 
     this.don(new CloakOfProtection(g), true);
     this.don(enchant(new Quarterstaff(g), chaoticBurst), true);

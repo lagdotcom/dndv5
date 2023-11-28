@@ -3,7 +3,7 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import ChannelDivinity from "./ChannelDivinity";
 import HarnessDivinePower from "./HarnessDivinePower";
@@ -11,7 +11,7 @@ import TurnUndead from "./TurnUndead";
 
 const ClericSpellcasting = new NormalSpellcasting(
   "Cleric",
-  ``,
+  `As a conduit for divine power, you can cast cleric spells.`,
   "wis",
   "full",
   "Cleric",
@@ -42,20 +42,19 @@ export const ASI19 = makeASI("Cleric", 19);
 const Cleric: PCClass = {
   name: "Cleric",
   hitDieSize: 8,
-  armorProficiencies: acSet("light", "medium", "shield"),
-  weaponCategoryProficiencies: wcSet("simple"),
-  saveProficiencies: abSet("wis", "cha"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  armor: acSet("light", "medium", "shield"),
+  weaponCategory: wcSet("simple"),
+  save: abSet("wis", "cha"),
+  skill: gains([], 2, [
     "History",
     "Insight",
     "Medicine",
     "Persuasion",
     "Religion",
-  ),
+  ]),
   multi: {
-    abilities: new Map([["wis", 13]]),
-    armorProficiencies: acSet("light", "medium", "shield"),
+    requirements: new Map([["wis", 13]]),
+    armor: acSet("light", "medium", "shield"),
   },
 
   features: new Map([

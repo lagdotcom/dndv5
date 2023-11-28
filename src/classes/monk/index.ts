@@ -5,8 +5,8 @@ import MessageBuilder from "../../MessageBuilder";
 import { abSet } from "../../types/AbilityName";
 import { wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
 import { wtSet } from "../../types/WeaponType";
+import { gains } from "../../utils/gain";
 import { makeASI, makeExtraAttack } from "../common";
 import Ki, { KiResource } from "./Ki";
 import MartialArts from "./MartialArts";
@@ -148,25 +148,24 @@ export const ASI19 = makeASI("Monk", 19);
 const Monk: PCClass = {
   name: "Monk",
   hitDieSize: 8,
-  weaponCategoryProficiencies: wcSet("simple"),
-  weaponProficiencies: wtSet("shortsword"),
-  saveProficiencies: abSet("str", "dex"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  weaponCategory: wcSet("simple"),
+  weapon: wtSet("shortsword"),
+  save: abSet("str", "dex"),
+  skill: gains([], 2, [
     "Acrobatics",
     "Athletics",
     "History",
     "Insight",
     "Religion",
     "Stealth",
-  ),
+  ]),
   multi: {
-    abilities: new Map([
+    requirements: new Map([
       ["dex", 13],
       ["wis", 13],
     ]),
-    weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: wtSet("shortsword"),
+    weaponCategory: wcSet("simple"),
+    weapon: wtSet("shortsword"),
   },
 
   features: new Map([

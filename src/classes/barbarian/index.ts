@@ -8,7 +8,8 @@ import { abSet } from "../../types/AbilityName";
 import { coSet } from "../../types/ConditionName";
 import Item, { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import SkillName, { skSet } from "../../types/SkillName";
+import SkillName from "../../types/SkillName";
+import { gains } from "../../utils/gain";
 import { round } from "../../utils/numbers";
 import { intersects } from "../../utils/set";
 import { makeASI, makeExtraAttack } from "../common";
@@ -207,22 +208,21 @@ export const ASI19 = makeASI("Barbarian", 19);
 const Barbarian: PCClass = {
   name: "Barbarian",
   hitDieSize: 12,
-  armorProficiencies: acSet("light", "medium", "shield"),
-  weaponCategoryProficiencies: wcSet("simple", "martial"),
-  saveProficiencies: abSet("str", "con"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  armor: acSet("light", "medium", "shield"),
+  weaponCategory: wcSet("simple", "martial"),
+  save: abSet("str", "con"),
+  skill: gains([], 2, [
     "Animal Handling",
     "Athletics",
     "Intimidation",
     "Nature",
     "Perception",
     "Survival",
-  ),
+  ]),
   multi: {
-    abilities: new Map([["str", 13]]),
-    armorProficiencies: acSet("shield"),
-    weaponCategoryProficiencies: wcSet("simple", "martial"),
+    requirements: new Map([["str", 13]]),
+    armor: acSet("shield"),
+    weaponCategory: wcSet("simple", "martial"),
   },
 
   features: new Map([

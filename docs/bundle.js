@@ -910,7 +910,6 @@
     "Stealth",
     "Survival"
   ];
-  var skSet = (...items) => new Set(items);
 
   // src/types/ToolName.ts
   var ArtisansTools = [
@@ -979,7 +978,6 @@
     "poisoner's kit",
     "thieves' tools"
   ];
-  var toSet = (...items) => new Set(items);
 
   // src/types/WeaponType.ts
   var SimpleMeleeWeapons = [
@@ -5489,6 +5487,27 @@
   // src/img/tok/pc/aura.png
   var aura_default = "./aura-PXXTYCUY.png";
 
+  // src/utils/gain.ts
+  function gains(fixed, amount, set) {
+    const result = fixed.map((value) => ({ type: "static", value }));
+    if (amount && set)
+      result.push({ type: "choice", amount, set: new Set(set) });
+    return result;
+  }
+
+  // src/backgrounds/Criminal.ts
+  var Criminal = {
+    name: "Criminal",
+    description: `You are an experienced criminal with a history of breaking the law. You have spent a lot of time among other criminals and still have contacts within the criminal underworld. You\u2019re far closer than most people to the world of murder, theft, and violence that pervades the underbelly of civilization, and you have survived up to this point by flouting the rules and regulations of society.`,
+    feature: {
+      name: "Criminal Contact",
+      description: `You have a reliable and trustworthy contact who acts as your liaison to a network of other criminals. You know how to get messages to and from your contact, even over great distances; specifically, you know the local messengers, corrupt caravan masters, and seedy sailors who can deliver messages for you.`
+    },
+    skills: gains(["Deception", "Stealth"]),
+    tools: gains(["thieves' tools"], 1, GamingSets)
+  };
+  var Criminal_default = Criminal;
+
   // src/classes/common.ts
   function asiSetup(g, me, config) {
     if (config.type === "ability")
@@ -5785,18 +5804,12 @@ Once you use this feature, you can't use it again until you finish a short or lo
   var Rogue = {
     name: "Rogue",
     hitDieSize: 8,
-    armorProficiencies: acSet("light"),
-    weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: wtSet(
-      "hand crossbow",
-      "longsword",
-      "rapier",
-      "shortsword"
-    ),
-    toolProficiencies: toSet("thieves' tools"),
-    saveProficiencies: abSet("dex", "int"),
-    skillChoices: 4,
-    skillProficiencies: skSet(
+    armor: acSet("light"),
+    weaponCategory: wcSet("simple"),
+    weapon: wtSet("hand crossbow", "longsword", "rapier", "shortsword"),
+    tool: gains(["thieves' tools"]),
+    save: abSet("dex", "int"),
+    skill: gains([], 4, [
       "Acrobatics",
       "Athletics",
       "Deception",
@@ -5808,13 +5821,12 @@ Once you use this feature, you can't use it again until you finish a short or lo
       "Persuasion",
       "Sleight of Hand",
       "Stealth"
-    ),
+    ]),
     multi: {
-      abilities: /* @__PURE__ */ new Map([["dex", 13]]),
-      armorProficiencies: acSet("light"),
-      toolProficiencies: toSet("thieves' tools"),
-      skillChoices: 1,
-      skillProficiencies: skSet(
+      requirements: /* @__PURE__ */ new Map([["dex", 13]]),
+      armor: acSet("light"),
+      tool: gains(["thieves' tools"]),
+      skill: gains([], 1, [
         "Acrobatics",
         "Athletics",
         "Deception",
@@ -5826,7 +5838,7 @@ Once you use this feature, you can't use it again until you finish a short or lo
         "Persuasion",
         "Sleight of Hand",
         "Stealth"
-      )
+      ])
     },
     features: /* @__PURE__ */ new Map([
       [1, [Expertise, SneakAttack_default, ThievesCant]],
@@ -6256,6 +6268,16 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.subclasses = /* @__PURE__ */ new Map();
       this.naturalWeapons.add(new UnarmedStrike(g, this));
     }
+    gainLanguages(list = []) {
+      for (const gain of list)
+        if (gain.type === "static")
+          this.languages.add(gain.value);
+    }
+    gainProficiencies(...list) {
+      for (const gain of list)
+        if (gain.type === "static")
+          this.addProficiency(gain.value, "proficient");
+    }
     setRace(race) {
       var _a, _b, _c, _d;
       if (race.parent)
@@ -6271,8 +6293,14 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       for (const feature of (_d = race == null ? void 0 : race.features) != null ? _d : [])
         this.addFeature(feature);
     }
+    setBackground(bg) {
+      var _a;
+      this.background = bg;
+      this.gainLanguages(bg.languages);
+      this.gainProficiencies(...bg.skills, ...(_a = bg.tools) != null ? _a : []);
+    }
     addClassLevel(cls, hpRoll) {
-      var _a, _b;
+      var _a, _b, _c;
       const level = ((_a = this.classLevels.get(cls.name)) != null ? _a : 0) + 1;
       this.classLevels.set(cls.name, level);
       this.level++;
@@ -6280,15 +6308,11 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.baseHpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.modifier;
       if (level === 1) {
         const data = this.level === 1 ? cls : cls.multi;
-        mergeSets(this.armorProficiencies, data.armorProficiencies);
-        mergeSets(this.saveProficiencies, data.saveProficiencies);
-        mergeSets(
-          this.weaponCategoryProficiencies,
-          data.weaponCategoryProficiencies
-        );
-        mergeSets(this.weaponProficiencies, data.weaponProficiencies);
-        for (const tool of (_b = data.toolProficiencies) != null ? _b : [])
-          this.addProficiency(tool, "proficient");
+        mergeSets(this.armorProficiencies, data.armor);
+        mergeSets(this.saveProficiencies, data.save);
+        mergeSets(this.weaponCategoryProficiencies, data.weaponCategory);
+        mergeSets(this.weaponProficiencies, data.weapon);
+        this.gainProficiencies(...(_b = data.skill) != null ? _b : [], ...(_c = data.tool) != null ? _c : []);
       }
       this.addFeatures(cls.features.get(level));
       const sub = this.subclasses.get(cls.name);
@@ -6327,6 +6351,30 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   var Levitate_default = Levitate;
 
   // src/types/LanguageName.ts
+  var StandardLanguages = [
+    "Common",
+    "Dwarvish",
+    "Elvish",
+    "Giant",
+    "Gnomish",
+    "Goblin",
+    "Halfling",
+    "Orc"
+  ];
+  var ExoticLanguages = [
+    "Abyssal",
+    "Celestial",
+    "Draconic",
+    "Deep Speech",
+    "Infernal",
+    "Primordial",
+    "Sylvan",
+    "Undercommon"
+  ];
+  var LanguageNames = [
+    ...StandardLanguages,
+    ...ExoticLanguages
+  ];
   var laSet = (...items) => new Set(items);
 
   // src/races/Genasi_EEPC.ts
@@ -6378,9 +6426,18 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.addProficiency("horn", "proficient");
       this.setAbilityScores(8, 15, 11, 14, 9, 14);
       this.setRace(AirGenasi);
+      this.setBackground(Criminal_default);
+      this.addProficiency("Medicine", "proficient");
+      this.addProficiency("Athletics", "proficient");
+      this.addProficiency("dice set", "proficient");
+      this.addProficiency("horn", "proficient");
+      this.addClassLevel(rogue_default2);
+      this.addProficiency("Acrobatics", "proficient");
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Investigation", "proficient");
+      this.addProficiency("Stealth", "proficient");
+      this.addClassLevel(rogue_default2);
       this.addSubclass(Scout_default);
-      this.addClassLevel(rogue_default2);
-      this.addClassLevel(rogue_default2);
       this.addClassLevel(rogue_default2);
       this.addClassLevel(rogue_default2);
       this.addClassLevel(rogue_default2);
@@ -6394,12 +6451,6 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       ]);
       this.setConfig(ASI4, { type: "feat", feat: Lucky_default });
       this.addFeature(BoonOfVassetri);
-      this.addProficiency("Acrobatics", "proficient");
-      this.addProficiency("Athletics", "proficient");
-      this.addProficiency("Deception", "proficient");
-      this.addProficiency("Investigation", "proficient");
-      this.addProficiency("Medicine", "proficient");
-      this.addProficiency("Stealth", "proficient");
       this.don(enchant(new LightCrossbow(g), vicious));
       this.don(new LeatherArmor(g));
       this.don(new BracersOfTheArbalest(g), true);
@@ -6411,6 +6462,19 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
 
   // src/img/tok/pc/beldalynn.png
   var beldalynn_default = "./beldalynn-B47TNTON.png";
+
+  // src/backgrounds/Sage.ts
+  var Sage = {
+    name: "Sage",
+    description: `You spent years learning the lore of the multiverse. You scoured manuscripts, studied scrolls, and listened to the greatest experts on the subjects that interest you. Your efforts have made you a master in your fields of study.`,
+    feature: {
+      name: "Researcher",
+      description: `When you attempt to learn or recall a piece of lore, if you do not know that information, you often know where and from whom you can obtain it. Usually, this information comes from a library, scriptorium, university, or a sage or other learned person or creature. Your DM might rule that the knowledge you seek is secreted away in an almost inaccessible place, or that it simply cannot be found. Unearthing the deepest secrets of the multiverse can require an adventure or even a whole campaign.`
+    },
+    skills: gains(["Arcana", "History"]),
+    languages: gains([], 2, LanguageNames)
+  };
+  var Sage_default = Sage;
 
   // src/spells/NormalSpellcasting.ts
   var SpellSlots = {
@@ -6587,24 +6651,17 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var Wizard = {
     name: "Wizard",
     hitDieSize: 6,
-    weaponProficiencies: wtSet(
-      "dagger",
-      "dart",
-      "sling",
-      "quarterstaff",
-      "light crossbow"
-    ),
-    saveProficiencies: abSet("int", "wis"),
-    skillChoices: 2,
-    skillProficiencies: skSet(
+    weapon: wtSet("dagger", "dart", "sling", "quarterstaff", "light crossbow"),
+    save: abSet("int", "wis"),
+    skill: gains([], 2, [
       "Arcana",
       "History",
       "Insight",
       "Investigation",
       "Medicine",
       "Religion"
-    ),
-    multi: { abilities: /* @__PURE__ */ new Map([["int", 13]]) },
+    ]),
+    multi: { requirements: /* @__PURE__ */ new Map([["int", 13]]) },
     features: /* @__PURE__ */ new Map([
       [1, [ArcaneRecovery, WizardSpellcasting.feature]],
       [3, [CantripFormulas]],
@@ -6966,7 +7023,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var MetallicDragonborn = {
     name: "Dragonborn (Metallic)",
     size: "medium",
-    movement: /* @__PURE__ */ new Map([["speed", 30]])
+    movement: /* @__PURE__ */ new Map([["speed", 30]]),
+    languages: laSet("Common")
   };
   var BreathWeaponResource = new LongRestResource("Breath Weapon", 2);
   var MetallicBreathWeaponResource = new LongRestResource(
@@ -8386,10 +8444,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.dex.score++;
       this.con.score++;
       this.str.score++;
-      this.languages.add("Common");
       this.languages.add("Draconic");
+      this.setBackground(Sage_default);
+      this.addProficiency("Perception", "proficient");
       this.languages.add("Elvish");
       this.languages.add("Infernal");
+      this.addClassLevel(wizard_default2);
+      this.addProficiency("Arcana", "proficient");
+      this.addProficiency("Investigation", "proficient");
       this.addSubclass(Evocation_default);
       this.addClassLevel(wizard_default2);
       this.addClassLevel(wizard_default2);
@@ -8397,12 +8459,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.addClassLevel(wizard_default2);
       this.addClassLevel(wizard_default2);
       this.addClassLevel(wizard_default2);
-      this.addClassLevel(wizard_default2);
       this.setConfig(ASI42, { type: "ability", abilities: ["int", "wis"] });
-      this.addProficiency("History", "proficient");
-      this.addProficiency("Perception", "proficient");
-      this.addProficiency("Arcana", "proficient");
-      this.addProficiency("Investigation", "proficient");
       this.don(new CloakOfProtection(g), true);
       this.don(enchant(new Quarterstaff(g), chaoticBurst), true);
       this.don(new DragonTouchedFocus(g, "Slumbering"), true);
@@ -8428,6 +8485,30 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/img/tok/pc/galilea.png
   var galilea_default = "./galilea-D4XX5FIV.png";
+
+  // src/backgrounds/Noble.ts
+  var Noble = {
+    name: "Noble",
+    description: `You understand wealth, power, and privilege. You carry a noble title, and your family owns land, collects taxes, and wields significant political influence. You might be a pampered aristocrat unfamiliar with work or discomfort, a former merchant just elevated to the nobility, or a disinherited scoundrel with a disproportionate sense of entitlement. Or you could be an honest, hard-working landowner who cares deeply about the people who live and work on your land, keenly aware of your responsibility to them.
+
+  Work with your DM to come up with an appropriate title and determine how much authority that title carries. A noble title doesn\u2019t stand on its own\u2014it\u2019s connected to an entire family, and whatever title you hold, you will pass it down to your own children. Not only do you need to determine your noble title, but you should also work with the DM to describe your family and their influence on you.
+  
+  Is your family old and established, or was your title only recently bestowed? How much influence do they wield, and over what area? What kind of reputation does your family have among the other aristocrats of the region? How do the common people regard them?
+  
+  What\u2019s your position in the family? Are you the heir to the head of the family? Have you already inherited the title? How do you feel about that responsibility? Or are you so far down the line of inheritance that no one cares what you do, as long as you don\u2019t embarrass the family? How does the head of your family feel about your adventuring career? Are you in your family\u2019s good graces, or shunned by the rest of your family?
+  
+  Does your family have a coat of arms? An insignia you might wear on a signet ring? Particular colors you wear all the time? An animal you regard as a symbol of your line or even a spiritual member of the family?
+  
+  These details help establish your family and your title as features of the world of the campaign.`,
+    feature: {
+      name: "Position of Privilege",
+      description: `Thanks to your noble birth, people are inclined to think the best of you. You are welcome in high society, and people assume you have the right to be wherever you are. The common folk make every effort to accommodate you and avoid your displeasure, and other people of high birth treat you as a member of the same social sphere. You can secure an audience with a local noble if you need to.`
+    },
+    skills: gains(["History", "Persuasion"]),
+    tools: gains([], 1, GamingSets),
+    languages: gains([], 1, LanguageNames)
+  };
+  var Noble_default = Noble;
 
   // src/ActiveEffectArea.ts
   var ActiveEffectArea = class {
@@ -8920,25 +9001,24 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
   var Paladin = {
     name: "Paladin",
     hitDieSize: 10,
-    armorProficiencies: acSet("light", "medium", "heavy", "shield"),
-    weaponCategoryProficiencies: wcSet("simple", "martial"),
-    saveProficiencies: abSet("wis", "cha"),
-    skillChoices: 2,
-    skillProficiencies: skSet(
+    armor: acSet("light", "medium", "heavy", "shield"),
+    weaponCategory: wcSet("simple", "martial"),
+    save: abSet("wis", "cha"),
+    skill: gains([], 2, [
       "Athletics",
       "Insight",
       "Intimidation",
       "Medicine",
       "Persuasion",
       "Religion"
-    ),
+    ]),
     multi: {
-      abilities: /* @__PURE__ */ new Map([
+      requirements: /* @__PURE__ */ new Map([
         ["str", 13],
         ["cha", 13]
       ]),
-      armorProficiencies: acSet("light", "medium", "shield"),
-      weaponCategoryProficiencies: wcSet("simple", "martial")
+      armor: acSet("light", "medium", "shield"),
+      weaponCategory: wcSet("simple", "martial")
     },
     features: /* @__PURE__ */ new Map([
       [1, [DivineSense, LayOnHands_default]],
@@ -9974,13 +10054,17 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   var Galilea = class extends PC {
     constructor(g) {
       super(g, "Galilea", galilea_default);
-      this.addProficiency("playing card set", "proficient");
       this.setAbilityScores(13, 10, 15, 11, 11, 13);
       this.setRace(Human_default);
       this.setConfig(ExtraLanguage, "Sylvan");
+      this.setBackground(Noble_default);
+      this.addProficiency("playing card set", "proficient");
+      this.languages.add("Orc");
+      this.addClassLevel(paladin_default2);
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Intimidation", "proficient");
+      this.addClassLevel(paladin_default2);
       this.addSubclass(Devotion_default);
-      this.addClassLevel(paladin_default2);
-      this.addClassLevel(paladin_default2);
       this.addClassLevel(paladin_default2);
       this.addClassLevel(paladin_default2);
       this.addClassLevel(paladin_default2);
@@ -9988,10 +10072,6 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       this.addClassLevel(paladin_default2);
       this.setConfig(PaladinFightingStyle, Protection_default);
       this.setConfig(ASI43, { type: "ability", abilities: ["str", "str"] });
-      this.addProficiency("Insight", "proficient");
-      this.addProficiency("Intimidation", "proficient");
-      this.addProficiency("History", "proficient");
-      this.addProficiency("Persuasion", "proficient");
       this.don(new Longsword(g));
       this.don(new Shield(g));
       this.don(new SplintArmor(g));
@@ -10015,6 +10095,19 @@ Once you use this feature, you can't use it again until you finish a long rest.`
 
   // src/img/tok/pc/hagrond.png
   var hagrond_default = "./hagrond-SXREGQ37.png";
+
+  // src/backgrounds/FolkHero.ts
+  var FolkHero = {
+    name: "Folk Hero",
+    description: `You come from a humble social rank, but you are destined for so much more. Already the people of your home village regard you as their champion, and your destiny calls you to stand against the tyrants and monsters that threaten the common folk everywhere.`,
+    feature: {
+      name: "Rustic Hospitality",
+      description: `Since you come from the ranks of the common folk, you fit in among them with ease. You can find a place to hide, rest, or recuperate among other commoners, unless you have shown yourself to be a danger to them. They will shield you from the law or anyone else searching for you, though they will not risk their lives for you.`
+    },
+    skills: gains(["Animal Handling", "Survival"]),
+    tools: gains(["vehicles (land)"], 1, ArtisansTools)
+  };
+  var FolkHero_default = FolkHero;
 
   // src/img/act/rage.svg
   var rage_default = "./rage-EKMK4HCH.svg";
@@ -10455,22 +10548,21 @@ Each time you use this feature after the first, the DC increases by 5. When you 
   var Barbarian = {
     name: "Barbarian",
     hitDieSize: 12,
-    armorProficiencies: acSet("light", "medium", "shield"),
-    weaponCategoryProficiencies: wcSet("simple", "martial"),
-    saveProficiencies: abSet("str", "con"),
-    skillChoices: 2,
-    skillProficiencies: skSet(
+    armor: acSet("light", "medium", "shield"),
+    weaponCategory: wcSet("simple", "martial"),
+    save: abSet("str", "con"),
+    skill: gains([], 2, [
       "Animal Handling",
       "Athletics",
       "Intimidation",
       "Nature",
       "Perception",
       "Survival"
-    ),
+    ]),
     multi: {
-      abilities: /* @__PURE__ */ new Map([["str", 13]]),
-      armorProficiencies: acSet("shield"),
-      weaponCategoryProficiencies: wcSet("simple", "martial")
+      requirements: /* @__PURE__ */ new Map([["str", 13]]),
+      armor: acSet("shield"),
+      weaponCategory: wcSet("simple", "martial")
     },
     features: /* @__PURE__ */ new Map([
       [1, [Rage_default, BarbarianUnarmoredDefense]],
@@ -10784,15 +10876,16 @@ If the creature succeeds on its saving throw, you can't use this feature on that
   var Hagrond = class extends PC {
     constructor(g) {
       super(g, "Hagrond", hagrond_default);
-      this.addProficiency("Survival", "proficient");
-      this.addProficiency("Sleight of Hand", "proficient");
-      this.addProficiency("vehicles (land)", "proficient");
-      this.addProficiency("woodcarver's tools", "proficient");
       this.setAbilityScores(15, 15, 13, 10, 8, 10);
       this.setRace(StoutHalfling);
+      this.setBackground(FolkHero_default);
+      this.addProficiency("Sleight of Hand", "proficient");
+      this.addProficiency("woodcarver's tools", "proficient");
+      this.addClassLevel(barbarian_default2);
+      this.addProficiency("Intimidation", "proficient");
+      this.addProficiency("Animal Handling", "proficient");
+      this.addClassLevel(barbarian_default2);
       this.addSubclass(Berserker_default);
-      this.addClassLevel(barbarian_default2);
-      this.addClassLevel(barbarian_default2);
       this.addClassLevel(barbarian_default2);
       this.addClassLevel(barbarian_default2);
       this.addClassLevel(barbarian_default2);
@@ -10800,8 +10893,6 @@ If the creature succeeds on its saving throw, you can't use this feature on that
       this.addClassLevel(barbarian_default2);
       this.setConfig(ASI44, { type: "ability", abilities: ["str", "con"] });
       this.setConfig(PrimalKnowledge, ["Perception"]);
-      this.addProficiency("Intimidation", "proficient");
-      this.addProficiency("Animal Handling", "proficient");
       this.don(enchant(new Spear(g, 1), darkSun_default), true);
       this.don(enchant(new Trident(g, 1), ofTheDeep_default), true);
       this.inventory.add(new Dagger(g, 4));
@@ -11010,8 +11101,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     name: "Druid",
     hitDieSize: 8,
     // TODO druids will not wear armor or use shields made of metal
-    armorProficiencies: acSet("light", "medium", "shield"),
-    weaponProficiencies: wtSet(
+    armor: acSet("light", "medium", "shield"),
+    weapon: wtSet(
       "club",
       "dagger",
       "dart",
@@ -11023,10 +11114,9 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       "sling",
       "spear"
     ),
-    toolProficiencies: toSet("herbalism kit"),
-    saveProficiencies: abSet("int", "wis"),
-    skillChoices: 2,
-    skillProficiencies: skSet(
+    tool: gains(["herbalism kit"]),
+    save: abSet("int", "wis"),
+    skill: gains([], 2, [
       "Arcana",
       "Animal Handling",
       "Insight",
@@ -11035,11 +11125,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       "Perception",
       "Religion",
       "Survival"
-    ),
+    ]),
     multi: {
-      abilities: /* @__PURE__ */ new Map([["wis", 13]]),
+      requirements: /* @__PURE__ */ new Map([["wis", 13]]),
       // TODO druids will not wear armor or use shields made of metal
-      armorProficiencies: acSet("light", "medium", "shield")
+      armor: acSet("light", "medium", "shield")
     },
     features: /* @__PURE__ */ new Map([
       [1, [Druidic, DruidSpellcasting.feature]],
@@ -12762,14 +12852,15 @@ The creature is aware of this effect before it makes its attack against you.`
   var Salgar = class extends PC {
     constructor(g) {
       super(g, "Salgar", salgar_default);
-      this.addProficiency("Arcana", "proficient");
-      this.addProficiency("History", "proficient");
       this.setAbilityScores(10, 8, 14, 14, 15, 10);
       this.setRace(MountainDwarf);
+      this.setBackground(Sage_default);
       this.languages.add("Elvish");
       this.languages.add("Giant");
-      this.addSubclass(Land_default);
       this.addClassLevel(druid_default2);
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Survival", "proficient");
+      this.addSubclass(Land_default);
       this.addClassLevel(druid_default2);
       this.addClassLevel(druid_default2);
       this.addClassLevel(druid_default2);
@@ -12781,8 +12872,6 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(BonusCantrip, MagicStone_default);
       this.setConfig(ASI45, { type: "ability", abilities: ["cha", "wis"] });
       this.setConfig(WildShape_default, [new Bat(g), new GiantBadger(g)]);
-      this.addProficiency("Insight", "proficient");
-      this.addProficiency("Survival", "proficient");
       this.don(new ArrowCatchingShield(g), true);
       this.don(new BootsOfTheWinterlands(g), true);
       this.don(new CloakOfElvenkind(g), true);
@@ -12810,6 +12899,19 @@ The creature is aware of this effect before it makes its attack against you.`
 
   // src/img/tok/pc/marvoril.png
   var marvoril_default = "./marvoril-LEL3VCQJ.png";
+
+  // src/backgrounds/Acolyte.ts
+  var Acolyte = {
+    name: "Acolyte",
+    description: `You have spent your life in the service of a temple to a specific god or pantheon of gods. You act as an intermediary between the realm of the holy and the mortal world, performing sacred rites and offering sacrifices in order to conduct worshipers into the presence of the divine. You are not necessarily a cleric\u2014performing sacred rites is not the same thing as channeling divine power. Choose a god, a pantheon of gods, or some other quasi-divine being from among those listed in "Fantasy-Historical Pantheons" or those specified by your GM, and work with your GM to detail the nature of your religious service. Were you a lesser functionary in a temple, raised from childhood to assist the priests in the sacred rites? Or were you a high priest who suddenly experienced a call to serve your god in a different way? Perhaps you were the leader of a small cult outside of any established temple structure, or even an occult group that served a fiendish master that you now deny.`,
+    feature: {
+      name: "Shelter of the Faithful",
+      description: `As an acolyte, you command the respect of those who share your faith, and you can perform the religious ceremonies of your deity. You and your adventuring companions can expect to receive free healing and care at a temple, shrine, or other established presence of your faith, though you must provide any material components needed for spells. Those who share your religion will support you (but only you) at a modest lifestyle. You might also have ties to a specific temple dedicated to your chosen deity or pantheon, and you have a residence there. This could be the temple where you used to serve, if you remain on good terms with it, or a temple where you have found a new home. While near your temple, you can call upon the priests for assistance, provided the assistance you ask for is not hazardous and you remain in good standing with your temple.`
+    },
+    skills: gains(["Insight", "Religion"]),
+    languages: gains([], 2, LanguageNames)
+  };
+  var Acolyte_default = Acolyte;
 
   // src/races/HalfElf.ts
   var SkillVersatility = new ConfiguredFeature(
@@ -12852,11 +12954,14 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setConfig(AbilityScoreBonus, ["str", "con"]);
       this.setConfig(SkillVersatility, ["Athletics", "Persuasion"]);
       this.setConfig(ExtraLanguage, "Dwarvish");
+      this.setBackground(Acolyte_default);
       this.addProficiency("Survival", "proficient");
       this.addProficiency("Investigation", "proficient");
       this.languages.add("Primordial");
       this.languages.add("Infernal");
       this.addClassLevel(paladin_default2);
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Religion", "proficient");
       this.don(new ChainMailArmor(g));
       this.don(new Morningstar(g));
       this.don(new Shield(g));
@@ -12974,24 +13079,17 @@ You learn two additional spells from any classes at 14th level and again at 18th
   var Bard = {
     name: "Bard",
     hitDieSize: 8,
-    armorProficiencies: acSet("light"),
-    weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: wtSet(
-      "hand crossbow",
-      "longsword",
-      "rapier",
-      "shortsword"
-    ),
-    // TODO Tools: three musical instruments of your choice,
-    saveProficiencies: abSet("dex", "cha"),
-    skillChoices: 3,
-    skillProficiencies: skSet(...SkillNames),
+    armor: acSet("light"),
+    weaponCategory: wcSet("simple"),
+    weapon: wtSet("hand crossbow", "longsword", "rapier", "shortsword"),
+    tool: gains([], 3, Instruments),
+    save: abSet("dex", "cha"),
+    skill: gains([], 3, SkillNames),
     multi: {
-      abilities: /* @__PURE__ */ new Map([["cha", 13]]),
-      armorProficiencies: acSet("light"),
-      // TODO Tools: one musical instrument of your choice.
-      skillChoices: 1,
-      skillProficiencies: skSet(...SkillNames)
+      requirements: /* @__PURE__ */ new Map([["cha", 13]]),
+      armor: acSet("light"),
+      tool: gains([], 1, Instruments),
+      skill: gains([], 1, SkillNames)
     },
     features: /* @__PURE__ */ new Map([
       [1, [BardicInspiration_default, BardSpellcasting.feature]],
@@ -13289,11 +13387,15 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.setConfig(AbilityScoreBonus, ["int", "wis"]);
       this.setConfig(SkillVersatility, ["Persuasion", "History"]);
       this.setConfig(ExtraLanguage, "Dwarvish");
-      this.addProficiency("Deception", "proficient");
-      this.addProficiency("Stealth", "proficient");
-      this.addProficiency("thieves' tools", "proficient");
+      this.setBackground(Criminal_default);
       this.addProficiency("playing card set", "proficient");
       this.addClassLevel(bard_default);
+      this.addProficiency("birdpipes", "proficient");
+      this.addProficiency("glaur", "proficient");
+      this.addProficiency("tocken", "proficient");
+      this.addProficiency("Investigation", "proficient");
+      this.addProficiency("Medicine", "proficient");
+      this.addProficiency("Survival", "proficient");
       this.don(new LeatherArmor(g));
       this.don(new Rapier(g));
       this.inventory.add(new Dagger(g, 1));
@@ -13310,6 +13412,25 @@ At the end of each of its turns, and each time it takes damage, the target can m
 
   // src/img/tok/pc/tethilssethanar.png
   var tethilssethanar_default = "./tethilssethanar-7GNDRUAR.png";
+
+  // src/backgrounds/Knight.ts
+  var Knight = {
+    name: "Knight",
+    description: `
+  A knighthood is among the lowest noble titles in most societies, but it can be a path to higher status. If you wish to be a knight, choose the Retainers feature (see the sidebar) instead of the Position of Privilege feature. One of your commoner retainers is replaced by a noble who serves as your squire, aiding you in exchange for training on his or her own path to knighthood. Your two remaining retainers might include a groom to care for your horse and a servant who polishes your armor (and even helps you put it on).
+  
+  As an emblem of chivalry and the ideals of courtly love, you might include among your equipment a banner or other token from a noble lord or lady to whom you have given your heart\u2014in a chaste sort of devotion. (This person could be your bond.)`,
+    feature: {
+      name: "Retainers",
+      description: `A knighthood is among the lowest noble titles in most societies, but it can be a path to higher status. If you wish to be a knight, choose the Retainers feature instead of the Position of Privilege feature.
+
+  As an emblem of chivalry and the ideals of courtly love, you might include among your equipment a banner or other token from a noble lord or lady to whom you have given your heart-in a chaste sort of devotion.`
+    },
+    skills: gains(["History", "Persuasion"]),
+    tools: gains([], 1, GamingSets),
+    languages: gains([], 1, LanguageNames)
+  };
+  var Knight_default = Knight;
 
   // src/classes/monk/MartialArts.ts
   function getMartialArtsDie(level) {
@@ -13748,25 +13869,24 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   var Monk = {
     name: "Monk",
     hitDieSize: 8,
-    weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: wtSet("shortsword"),
-    saveProficiencies: abSet("str", "dex"),
-    skillChoices: 2,
-    skillProficiencies: skSet(
+    weaponCategory: wcSet("simple"),
+    weapon: wtSet("shortsword"),
+    save: abSet("str", "dex"),
+    skill: gains([], 2, [
       "Acrobatics",
       "Athletics",
       "History",
       "Insight",
       "Religion",
       "Stealth"
-    ),
+    ]),
     multi: {
-      abilities: /* @__PURE__ */ new Map([
+      requirements: /* @__PURE__ */ new Map([
         ["dex", 13],
         ["wis", 13]
       ]),
-      weaponCategoryProficiencies: wcSet("simple"),
-      weaponProficiencies: wtSet("shortsword")
+      weaponCategory: wcSet("simple"),
+      weapon: wtSet("shortsword")
     },
     features: /* @__PURE__ */ new Map([
       [1, [MonkUnarmoredDefense, MartialArts_default]],
@@ -13957,6 +14077,9 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       super(g, "Tethilssethanar", tethilssethanar_default);
       this.setAbilityScores(9, 14, 13, 8, 15, 13);
       this.setRace(Triton_default);
+      this.setBackground(Knight_default);
+      this.addProficiency("playing card set", "proficient");
+      this.languages.add("Deep Speech");
       this.addClassLevel(monk_default);
       this.addProficiency("Athletics", "proficient");
       this.addProficiency("Insight", "proficient");

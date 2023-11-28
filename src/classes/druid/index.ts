@@ -3,9 +3,8 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { acSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
-import { toSet } from "../../types/ToolName";
 import { wtSet } from "../../types/WeaponType";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import { DruidIcon } from "./common";
 import WildShape from "./WildShape";
@@ -65,8 +64,8 @@ const Druid: PCClass = {
   name: "Druid",
   hitDieSize: 8,
   // TODO druids will not wear armor or use shields made of metal
-  armorProficiencies: acSet("light", "medium", "shield"),
-  weaponProficiencies: wtSet(
+  armor: acSet("light", "medium", "shield"),
+  weapon: wtSet(
     "club",
     "dagger",
     "dart",
@@ -78,10 +77,9 @@ const Druid: PCClass = {
     "sling",
     "spear",
   ),
-  toolProficiencies: toSet("herbalism kit"),
-  saveProficiencies: abSet("int", "wis"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  tool: gains(["herbalism kit"]),
+  save: abSet("int", "wis"),
+  skill: gains([], 2, [
     "Arcana",
     "Animal Handling",
     "Insight",
@@ -90,11 +88,11 @@ const Druid: PCClass = {
     "Perception",
     "Religion",
     "Survival",
-  ),
+  ]),
   multi: {
-    abilities: new Map([["wis", 13]]),
+    requirements: new Map([["wis", 13]]),
     // TODO druids will not wear armor or use shields made of metal
-    armorProficiencies: acSet("light", "medium", "shield"),
+    armor: acSet("light", "medium", "shield"),
   },
 
   features: new Map([

@@ -14,7 +14,7 @@ import { abSet } from "../../types/AbilityName";
 import { ctSet } from "../../types/CreatureType";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
+import { gains } from "../../utils/gain";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { hasAll } from "../../utils/set";
 import { distance } from "../../utils/units";
@@ -183,25 +183,24 @@ export const ASI19 = makeASI("Paladin", 19);
 const Paladin: PCClass = {
   name: "Paladin",
   hitDieSize: 10,
-  armorProficiencies: acSet("light", "medium", "heavy", "shield"),
-  weaponCategoryProficiencies: wcSet("simple", "martial"),
-  saveProficiencies: abSet("wis", "cha"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  armor: acSet("light", "medium", "heavy", "shield"),
+  weaponCategory: wcSet("simple", "martial"),
+  save: abSet("wis", "cha"),
+  skill: gains([], 2, [
     "Athletics",
     "Insight",
     "Intimidation",
     "Medicine",
     "Persuasion",
     "Religion",
-  ),
+  ]),
   multi: {
-    abilities: new Map([
+    requirements: new Map([
       ["str", 13],
       ["cha", 13],
     ]),
-    armorProficiencies: acSet("light", "medium", "shield"),
-    weaponCategoryProficiencies: wcSet("simple", "martial"),
+    armor: acSet("light", "medium", "shield"),
+    weaponCategory: wcSet("simple", "martial"),
   },
 
   features: new Map([

@@ -5,6 +5,10 @@ import { defaultAIRules } from "./ai/data";
 import Engine from "./Engine";
 import { AbstractWeapon } from "./items/weapons";
 import AIRule from "./types/AIRule";
+import Gain from "./types/Gain";
+import HasProficiency from "./types/HasProficiency";
+import LanguageName from "./types/LanguageName";
+import PCBackground from "./types/PCBackground";
 import PCClass from "./types/PCClass";
 import PCClassName from "./types/PCClassName";
 import PCRace from "./types/PCRace";
@@ -31,6 +35,7 @@ export class UnarmedStrike extends AbstractWeapon {
 }
 
 export default class PC extends AbstractCombatant {
+  background?: PCBackground;
   race?: PCRace;
   subclasses: Map<PCClassName, PCSubclass>;
 
@@ -56,6 +61,16 @@ export default class PC extends AbstractCombatant {
     this.naturalWeapons.add(new UnarmedStrike(g, this));
   }
 
+  gainLanguages(list: Gain<LanguageName>[] = []) {
+    for (const gain of list)
+      if (gain.type === "static") this.languages.add(gain.value);
+  }
+
+  gainProficiencies(...list: Gain<HasProficiency>[]) {
+    for (const gain of list)
+      if (gain.type === "static") this.addProficiency(gain.value, "proficient");
+  }
+
   setRace(race: PCRace) {
     if (race.parent) this.setRace(race.parent);
 
@@ -73,6 +88,13 @@ export default class PC extends AbstractCombatant {
     for (const feature of race?.features ?? []) this.addFeature(feature);
   }
 
+  setBackground(bg: PCBackground) {
+    this.background = bg;
+
+    this.gainLanguages(bg.languages);
+    this.gainProficiencies(...bg.skills, ...(bg.tools ?? []));
+  }
+
   addClassLevel(cls: PCClass, hpRoll?: number) {
     const level = (this.classLevels.get(cls.name) ?? 0) + 1;
     this.classLevels.set(cls.name, level);
@@ -88,16 +110,12 @@ export default class PC extends AbstractCombatant {
     if (level === 1) {
       const data = this.level === 1 ? cls : cls.multi;
 
-      mergeSets(this.armorProficiencies, data.armorProficiencies);
-      mergeSets(this.saveProficiencies, data.saveProficiencies);
-      mergeSets(
-        this.weaponCategoryProficiencies,
-        data.weaponCategoryProficiencies,
-      );
-      mergeSets(this.weaponProficiencies, data.weaponProficiencies);
+      mergeSets(this.armorProficiencies, data.armor);
+      mergeSets(this.saveProficiencies, data.save);
+      mergeSets(this.weaponCategoryProficiencies, data.weaponCategory);
+      mergeSets(this.weaponProficiencies, data.weapon);
 
-      for (const tool of data.toolProficiencies ?? [])
-        this.addProficiency(tool, "proficient");
+      this.gainProficiencies(...(data.skill ?? []), ...(data.tool ?? []));
     }
 
     this.addFeatures(cls.features.get(level));

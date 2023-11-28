@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/galilea.png";
 
+import Noble from "../../backgrounds/Noble";
 import Paladin, { ASI4, PaladinFightingStyle } from "../../classes/paladin";
 import Devotion from "../../classes/paladin/Devotion";
 import Engine from "../../Engine";
@@ -24,14 +25,20 @@ export default class Galilea extends PC {
   constructor(g: Engine) {
     super(g, "Galilea", tokenUrl);
 
-    this.addProficiency("playing card set", "proficient");
     this.setAbilityScores(13, 10, 15, 11, 11, 13);
     this.setRace(Human);
     this.setConfig(ExtraLanguage, "Sylvan");
 
+    this.setBackground(Noble);
+    this.addProficiency("playing card set", "proficient");
+    this.languages.add("Orc");
+
+    this.addClassLevel(Paladin);
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Intimidation", "proficient");
+
+    this.addClassLevel(Paladin);
     this.addSubclass(Devotion);
-    this.addClassLevel(Paladin);
-    this.addClassLevel(Paladin);
     this.addClassLevel(Paladin);
     this.addClassLevel(Paladin);
     this.addClassLevel(Paladin);
@@ -40,11 +47,6 @@ export default class Galilea extends PC {
 
     this.setConfig(PaladinFightingStyle, FightingStyleProtection);
     this.setConfig(ASI4, { type: "ability", abilities: ["str", "str"] });
-
-    this.addProficiency("Insight", "proficient");
-    this.addProficiency("Intimidation", "proficient");
-    this.addProficiency("History", "proficient");
-    this.addProficiency("Persuasion", "proficient");
 
     this.don(new Longsword(g));
     this.don(new Shield(g));

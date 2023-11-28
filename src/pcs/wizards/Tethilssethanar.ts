@@ -1,5 +1,6 @@
 import tokenUrl from "@img/tok/pc/tethilssethanar.png";
 
+import Knight from "../../backgrounds/Knight";
 import Monk from "../../classes/monk";
 import Engine from "../../Engine";
 import { SlingBullet } from "../../items/ammunition";
@@ -13,6 +14,11 @@ export default class Tethilssethanar extends PC {
 
     this.setAbilityScores(9, 14, 13, 8, 15, 13);
     this.setRace(Triton);
+
+    this.setBackground(Knight);
+    this.addProficiency("playing card set", "proficient");
+    this.languages.add("Deep Speech");
+
     this.addClassLevel(Monk);
     this.addProficiency("Athletics", "proficient");
     this.addProficiency("Insight", "proficient");

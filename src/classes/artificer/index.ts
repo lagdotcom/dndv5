@@ -4,8 +4,8 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
-import { toSet } from "../../types/ToolName";
+import { ArtisansTools } from "../../types/ToolName";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import FlashOfGenius from "./FlashOfGenius";
 
@@ -97,13 +97,11 @@ export const ASI19 = makeASI("Artificer", 19);
 const Artificer: PCClass = {
   name: "Artificer",
   hitDieSize: 8,
-  armorProficiencies: acSet("light", "medium", "shield"),
-  weaponCategoryProficiencies: wcSet("simple"),
-  // TODO ...and one type of artisan's tools of your choice
-  toolProficiencies: toSet("thieves' tools", "tinker's tools"),
-  saveProficiencies: abSet("con", "int"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  armor: acSet("light", "medium", "shield"),
+  weaponCategory: wcSet("simple"),
+  tool: gains(["thieves' tools", "tinker's tools"], 1, ArtisansTools),
+  save: abSet("con", "int"),
+  skill: gains([], 2, [
     "Arcana",
     "History",
     "Investigation",
@@ -111,11 +109,11 @@ const Artificer: PCClass = {
     "Nature",
     "Perception",
     "Sleight of Hand",
-  ),
+  ]),
   multi: {
-    abilities: new Map([["int", 13]]),
-    armorProficiencies: acSet("light", "medium", "shield"),
-    toolProficiencies: toSet("thieves' tools", "tinker's tools"),
+    requirements: new Map([["int", 13]]),
+    armor: acSet("light", "medium", "shield"),
+    tool: gains(["thieves' tools", "tinker's tools"]),
   },
 
   features: new Map([

@@ -1,17 +1,28 @@
-export const LanguageNames = [
-  "Abyssal",
+export const StandardLanguages = [
   "Common",
-  "Draconic",
   "Dwarvish",
   "Elvish",
   "Giant",
   "Gnomish",
   "Goblin",
   "Halfling",
-  "Infernal",
   "Orc",
+] as const;
+
+export const ExoticLanguages = [
+  "Abyssal",
+  "Celestial",
+  "Draconic",
+  "Deep Speech",
+  "Infernal",
   "Primordial",
   "Sylvan",
+  "Undercommon",
+] as const;
+
+export const LanguageNames = [
+  ...StandardLanguages,
+  ...ExoticLanguages,
 ] as const;
 type LanguageName = (typeof LanguageNames)[number];
 export default LanguageName;

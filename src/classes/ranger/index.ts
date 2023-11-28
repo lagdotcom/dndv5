@@ -8,7 +8,7 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
+import { gains } from "../../utils/gain";
 import { makeASI, makeExtraAttack } from "../common";
 
 export const Favored = wrapperFeature(
@@ -207,11 +207,10 @@ export const ASI19 = makeASI("Ranger", 19);
 const Ranger: PCClass = {
   name: "Ranger",
   hitDieSize: 10,
-  armorProficiencies: acSet("light", "medium", "shield"),
-  weaponCategoryProficiencies: wcSet("simple", "martial"),
-  saveProficiencies: abSet("str", "dex"),
-  skillChoices: 3,
-  skillProficiencies: skSet(
+  armor: acSet("light", "medium", "shield"),
+  weaponCategory: wcSet("simple", "martial"),
+  save: abSet("str", "dex"),
+  skill: gains([], 3, [
     "Animal Handling",
     "Athletics",
     "Insight",
@@ -220,16 +219,15 @@ const Ranger: PCClass = {
     "Perception",
     "Stealth",
     "Survival",
-  ),
+  ]),
   multi: {
-    abilities: new Map([
+    requirements: new Map([
       ["dex", 13],
       ["wis", 13],
     ]),
-    armorProficiencies: acSet("light", "medium", "shield"),
-    weaponCategoryProficiencies: wcSet("simple", "martial"),
-    skillChoices: 1,
-    skillProficiencies: skSet(
+    armor: acSet("light", "medium", "shield"),
+    weaponCategory: wcSet("simple", "martial"),
+    skill: gains([], 1, [
       "Animal Handling",
       "Athletics",
       "Insight",
@@ -238,7 +236,7 @@ const Ranger: PCClass = {
       "Perception",
       "Stealth",
       "Survival",
-    ),
+    ]),
   },
 
   features: new Map([

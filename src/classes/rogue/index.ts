@@ -15,11 +15,11 @@ import { abSet } from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
-import SkillName, { skSet } from "../../types/SkillName";
-import { toSet } from "../../types/ToolName";
+import SkillName from "../../types/SkillName";
 import { wtSet } from "../../types/WeaponType";
 import { checkConfig } from "../../utils/config";
 import { getExecutionMode } from "../../utils/env";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import { RogueIcon } from "./common";
 import SneakAttack from "./SneakAttack";
@@ -167,18 +167,12 @@ export const ASI19 = makeASI("Rogue", 19);
 const Rogue: PCClass = {
   name: "Rogue",
   hitDieSize: 8,
-  armorProficiencies: acSet("light"),
-  weaponCategoryProficiencies: wcSet("simple"),
-  weaponProficiencies: wtSet(
-    "hand crossbow",
-    "longsword",
-    "rapier",
-    "shortsword",
-  ),
-  toolProficiencies: toSet("thieves' tools"),
-  saveProficiencies: abSet("dex", "int"),
-  skillChoices: 4,
-  skillProficiencies: skSet(
+  armor: acSet("light"),
+  weaponCategory: wcSet("simple"),
+  weapon: wtSet("hand crossbow", "longsword", "rapier", "shortsword"),
+  tool: gains(["thieves' tools"]),
+  save: abSet("dex", "int"),
+  skill: gains([], 4, [
     "Acrobatics",
     "Athletics",
     "Deception",
@@ -190,13 +184,12 @@ const Rogue: PCClass = {
     "Persuasion",
     "Sleight of Hand",
     "Stealth",
-  ),
+  ]),
   multi: {
-    abilities: new Map([["dex", 13]]),
-    armorProficiencies: acSet("light"),
-    toolProficiencies: toSet("thieves' tools"),
-    skillChoices: 1,
-    skillProficiencies: skSet(
+    requirements: new Map([["dex", 13]]),
+    armor: acSet("light"),
+    tool: gains(["thieves' tools"]),
+    skill: gains([], 1, [
       "Acrobatics",
       "Athletics",
       "Deception",
@@ -208,7 +201,7 @@ const Rogue: PCClass = {
       "Persuasion",
       "Sleight of Hand",
       "Stealth",
-    ),
+    ]),
   },
 
   features: new Map([

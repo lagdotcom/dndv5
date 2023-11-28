@@ -2,8 +2,8 @@ import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import PCClass from "../../types/PCClass";
-import { skSet } from "../../types/SkillName";
 import { wtSet } from "../../types/WeaponType";
+import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import { WizardIcon } from "./common";
 
@@ -56,24 +56,17 @@ export const ASI19 = makeASI("Wizard", 19);
 const Wizard: PCClass = {
   name: "Wizard",
   hitDieSize: 6,
-  weaponProficiencies: wtSet(
-    "dagger",
-    "dart",
-    "sling",
-    "quarterstaff",
-    "light crossbow",
-  ),
-  saveProficiencies: abSet("int", "wis"),
-  skillChoices: 2,
-  skillProficiencies: skSet(
+  weapon: wtSet("dagger", "dart", "sling", "quarterstaff", "light crossbow"),
+  save: abSet("int", "wis"),
+  skill: gains([], 2, [
     "Arcana",
     "History",
     "Insight",
     "Investigation",
     "Medicine",
     "Religion",
-  ),
-  multi: { abilities: new Map([["int", 13]]) },
+  ]),
+  multi: { requirements: new Map([["int", 13]]) },
 
   features: new Map([
     [1, [ArcaneRecovery, WizardSpellcasting.feature]],
