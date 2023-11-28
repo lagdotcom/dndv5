@@ -53,6 +53,11 @@ const Cleric: PCClass = {
     "Persuasion",
     "Religion",
   ),
+  multi: {
+    abilities: new Map([["wis", 13]]),
+    armorProficiencies: acSet("light", "medium", "shield"),
+  },
+
   features: new Map([
     [1, [ClericSpellcasting.feature]],
     [2, [ChannelDivinity, TurnUndead, HarnessDivinePower]],

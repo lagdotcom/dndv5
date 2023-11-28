@@ -54,6 +54,7 @@ import Source from "./types/Source";
 import Spell from "./types/Spell";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 import ToolName from "./types/ToolName";
+import WeaponType from "./types/WeaponType";
 import {
   getNaturalArmourMethod,
   getProficiencyMax,
@@ -115,7 +116,7 @@ export default abstract class AbstractCombatant implements Combatant {
   equipment: Set<Item>;
   inventory: Set<Item>;
   senses: Map<SenseName, number>;
-  weaponProficiencies: Set<string>;
+  weaponProficiencies: Set<WeaponType>;
   weaponCategoryProficiencies: Set<WeaponCategory>;
   armorProficiencies: Set<ArmorCategory>;
   naturalWeapons: Set<WeaponItem>;

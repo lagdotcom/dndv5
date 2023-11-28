@@ -3,6 +3,7 @@ import NormalSpellcasting from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
+import { wtSet } from "../../types/WeaponType";
 import { makeASI } from "../common";
 
 export const ASI4 = makeASI("Sorcerer", 4);
@@ -69,13 +70,13 @@ const SorcerousRestoration = nonCombatFeature(
 const Sorcerer: PCClass = {
   name: "Sorcerer",
   hitDieSize: 6,
-  weaponProficiencies: new Set([
+  weaponProficiencies: wtSet(
     "dagger",
     "dart",
     "sling",
     "quarterstaff",
     "light crossbow",
-  ]),
+  ),
   saveProficiencies: abSet("con", "cha"),
   skillChoices: 2,
   skillProficiencies: skSet(
@@ -86,6 +87,8 @@ const Sorcerer: PCClass = {
     "Persuasion",
     "Religion",
   ),
+  multi: { abilities: new Map([["cha", 13]]) },
+
   features: new Map([
     [1, [SorcererSpellcasting.feature]],
     [2, [FontOfMagic]],

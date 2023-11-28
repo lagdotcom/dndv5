@@ -1034,6 +1034,7 @@
     ...MartialRangedWeapons,
     "unarmed strike"
   ];
+  var wtSet = (...items) => new Set(items);
 
   // src/utils/types.ts
   function isDefined(value) {
@@ -5786,12 +5787,12 @@ Once you use this feature, you can't use it again until you finish a short or lo
     hitDieSize: 8,
     armorProficiencies: acSet("light"),
     weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: /* @__PURE__ */ new Set([
+    weaponProficiencies: wtSet(
       "hand crossbow",
       "longsword",
       "rapier",
       "shortsword"
-    ]),
+    ),
     toolProficiencies: toSet("thieves' tools"),
     saveProficiencies: abSet("dex", "int"),
     skillChoices: 4,
@@ -5808,6 +5809,25 @@ Once you use this feature, you can't use it again until you finish a short or lo
       "Sleight of Hand",
       "Stealth"
     ),
+    multi: {
+      abilities: /* @__PURE__ */ new Map([["dex", 13]]),
+      armorProficiencies: acSet("light"),
+      toolProficiencies: toSet("thieves' tools"),
+      skillChoices: 1,
+      skillProficiencies: skSet(
+        "Acrobatics",
+        "Athletics",
+        "Deception",
+        "Insight",
+        "Intimidation",
+        "Investigation",
+        "Perception",
+        "Performance",
+        "Persuasion",
+        "Sleight of Hand",
+        "Stealth"
+      )
+    },
     features: /* @__PURE__ */ new Map([
       [1, [Expertise, SneakAttack_default, ThievesCant]],
       [2, [CunningAction]],
@@ -6259,15 +6279,16 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       this.pb = getProficiencyBonusByLevel(this.level);
       this.baseHpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.modifier;
       if (level === 1) {
-        mergeSets(this.armorProficiencies, cls.armorProficiencies);
-        mergeSets(this.saveProficiencies, cls.saveProficiencies);
+        const data = this.level === 1 ? cls : cls.multi;
+        mergeSets(this.armorProficiencies, data.armorProficiencies);
+        mergeSets(this.saveProficiencies, data.saveProficiencies);
         mergeSets(
           this.weaponCategoryProficiencies,
-          cls.weaponCategoryProficiencies
+          data.weaponCategoryProficiencies
         );
-        mergeSets(this.weaponProficiencies, cls.weaponProficiencies);
-        for (const prof of (_b = cls == null ? void 0 : cls.toolProficiencies) != null ? _b : [])
-          this.addProficiency(prof, "proficient");
+        mergeSets(this.weaponProficiencies, data.weaponProficiencies);
+        for (const tool of (_b = data.toolProficiencies) != null ? _b : [])
+          this.addProficiency(tool, "proficient");
       }
       this.addFeatures(cls.features.get(level));
       const sub = this.subclasses.get(cls.name);
@@ -6566,13 +6587,13 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var Wizard = {
     name: "Wizard",
     hitDieSize: 6,
-    weaponProficiencies: /* @__PURE__ */ new Set([
+    weaponProficiencies: wtSet(
       "dagger",
       "dart",
       "sling",
       "quarterstaff",
       "light crossbow"
-    ]),
+    ),
     saveProficiencies: abSet("int", "wis"),
     skillChoices: 2,
     skillProficiencies: skSet(
@@ -6583,6 +6604,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       "Medicine",
       "Religion"
     ),
+    multi: { abilities: /* @__PURE__ */ new Map([["int", 13]]) },
     features: /* @__PURE__ */ new Map([
       [1, [ArcaneRecovery, WizardSpellcasting.feature]],
       [3, [CantripFormulas]],
@@ -8910,6 +8932,14 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       "Persuasion",
       "Religion"
     ),
+    multi: {
+      abilities: /* @__PURE__ */ new Map([
+        ["str", 13],
+        ["cha", 13]
+      ]),
+      armorProficiencies: acSet("light", "medium", "shield"),
+      weaponCategoryProficiencies: wcSet("simple", "martial")
+    },
     features: /* @__PURE__ */ new Map([
       [1, [DivineSense, LayOnHands_default]],
       [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],
@@ -10437,6 +10467,11 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       "Perception",
       "Survival"
     ),
+    multi: {
+      abilities: /* @__PURE__ */ new Map([["str", 13]]),
+      armorProficiencies: acSet("shield"),
+      weaponCategoryProficiencies: wcSet("simple", "martial")
+    },
     features: /* @__PURE__ */ new Map([
       [1, [Rage_default, BarbarianUnarmoredDefense]],
       [2, [DangerSense, RecklessAttack]],
@@ -10976,7 +11011,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     hitDieSize: 8,
     // TODO druids will not wear armor or use shields made of metal
     armorProficiencies: acSet("light", "medium", "shield"),
-    weaponProficiencies: /* @__PURE__ */ new Set([
+    weaponProficiencies: wtSet(
       "club",
       "dagger",
       "dart",
@@ -10987,7 +11022,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       "sickle",
       "sling",
       "spear"
-    ]),
+    ),
     toolProficiencies: toSet("herbalism kit"),
     saveProficiencies: abSet("int", "wis"),
     skillChoices: 2,
@@ -11001,6 +11036,11 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
       "Religion",
       "Survival"
     ),
+    multi: {
+      abilities: /* @__PURE__ */ new Map([["wis", 13]]),
+      // TODO druids will not wear armor or use shields made of metal
+      armorProficiencies: acSet("light", "medium", "shield")
+    },
     features: /* @__PURE__ */ new Map([
       [1, [Druidic, DruidSpellcasting.feature]],
       [2, [WildShape_default, WildCompanion]],
@@ -12936,16 +12976,23 @@ You learn two additional spells from any classes at 14th level and again at 18th
     hitDieSize: 8,
     armorProficiencies: acSet("light"),
     weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: /* @__PURE__ */ new Set([
+    weaponProficiencies: wtSet(
       "hand crossbow",
       "longsword",
       "rapier",
       "shortsword"
-    ]),
+    ),
     // TODO Tools: three musical instruments of your choice,
     saveProficiencies: abSet("dex", "cha"),
     skillChoices: 3,
     skillProficiencies: skSet(...SkillNames),
+    multi: {
+      abilities: /* @__PURE__ */ new Map([["cha", 13]]),
+      armorProficiencies: acSet("light"),
+      // TODO Tools: one musical instrument of your choice.
+      skillChoices: 1,
+      skillProficiencies: skSet(...SkillNames)
+    },
     features: /* @__PURE__ */ new Map([
       [1, [BardicInspiration_default, BardSpellcasting.feature]],
       [2, [JackOfAllTrades, SongOfRest, MagicalInspiration]],
@@ -13702,7 +13749,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     name: "Monk",
     hitDieSize: 8,
     weaponCategoryProficiencies: wcSet("simple"),
-    weaponProficiencies: /* @__PURE__ */ new Set(["shortsword"]),
+    weaponProficiencies: wtSet("shortsword"),
     saveProficiencies: abSet("str", "dex"),
     skillChoices: 2,
     skillProficiencies: skSet(
@@ -13713,6 +13760,14 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       "Religion",
       "Stealth"
     ),
+    multi: {
+      abilities: /* @__PURE__ */ new Map([
+        ["dex", 13],
+        ["wis", 13]
+      ]),
+      weaponCategoryProficiencies: wcSet("simple"),
+      weaponProficiencies: wtSet("shortsword")
+    },
     features: /* @__PURE__ */ new Map([
       [1, [MonkUnarmoredDefense, MartialArts_default]],
       [2, [Ki_default, DedicatedWeapon, UnarmoredMovement_default]],

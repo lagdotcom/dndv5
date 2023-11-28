@@ -79,23 +79,25 @@ export default class PC extends AbstractCombatant {
     this.level++;
     this.pb = getProficiencyBonusByLevel(this.level);
 
-    // TODO multi class
+    // TODO multi class ability requirements
 
     this.baseHpMax +=
       (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) +
       this.con.modifier;
 
     if (level === 1) {
-      mergeSets(this.armorProficiencies, cls.armorProficiencies);
-      mergeSets(this.saveProficiencies, cls.saveProficiencies);
+      const data = this.level === 1 ? cls : cls.multi;
+
+      mergeSets(this.armorProficiencies, data.armorProficiencies);
+      mergeSets(this.saveProficiencies, data.saveProficiencies);
       mergeSets(
         this.weaponCategoryProficiencies,
-        cls.weaponCategoryProficiencies,
+        data.weaponCategoryProficiencies,
       );
-      mergeSets(this.weaponProficiencies, cls.weaponProficiencies);
+      mergeSets(this.weaponProficiencies, data.weaponProficiencies);
 
-      for (const prof of cls?.toolProficiencies ?? [])
-        this.addProficiency(prof, "proficient");
+      for (const tool of data.toolProficiencies ?? [])
+        this.addProficiency(tool, "proficient");
     }
 
     this.addFeatures(cls.features.get(level));

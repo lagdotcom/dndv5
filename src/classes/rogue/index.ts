@@ -17,6 +17,7 @@ import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
+import { wtSet } from "../../types/WeaponType";
 import { checkConfig } from "../../utils/config";
 import { getExecutionMode } from "../../utils/env";
 import { makeASI } from "../common";
@@ -168,12 +169,12 @@ const Rogue: PCClass = {
   hitDieSize: 8,
   armorProficiencies: acSet("light"),
   weaponCategoryProficiencies: wcSet("simple"),
-  weaponProficiencies: new Set([
+  weaponProficiencies: wtSet(
     "hand crossbow",
     "longsword",
     "rapier",
     "shortsword",
-  ]),
+  ),
   toolProficiencies: toSet("thieves' tools"),
   saveProficiencies: abSet("dex", "int"),
   skillChoices: 4,
@@ -190,6 +191,26 @@ const Rogue: PCClass = {
     "Sleight of Hand",
     "Stealth",
   ),
+  multi: {
+    abilities: new Map([["dex", 13]]),
+    armorProficiencies: acSet("light"),
+    toolProficiencies: toSet("thieves' tools"),
+    skillChoices: 1,
+    skillProficiencies: skSet(
+      "Acrobatics",
+      "Athletics",
+      "Deception",
+      "Insight",
+      "Intimidation",
+      "Investigation",
+      "Perception",
+      "Performance",
+      "Persuasion",
+      "Sleight of Hand",
+      "Stealth",
+    ),
+  },
+
   features: new Map([
     [1, [Expertise, SneakAttack, ThievesCant]],
     [2, [CunningAction]],

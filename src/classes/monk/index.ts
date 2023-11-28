@@ -6,6 +6,7 @@ import { abSet } from "../../types/AbilityName";
 import { wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
+import { wtSet } from "../../types/WeaponType";
 import { makeASI, makeExtraAttack } from "../common";
 import Ki, { KiResource } from "./Ki";
 import MartialArts from "./MartialArts";
@@ -148,7 +149,7 @@ const Monk: PCClass = {
   name: "Monk",
   hitDieSize: 8,
   weaponCategoryProficiencies: wcSet("simple"),
-  weaponProficiencies: new Set(["shortsword"]),
+  weaponProficiencies: wtSet("shortsword"),
   saveProficiencies: abSet("str", "dex"),
   skillChoices: 2,
   skillProficiencies: skSet(
@@ -159,6 +160,14 @@ const Monk: PCClass = {
     "Religion",
     "Stealth",
   ),
+  multi: {
+    abilities: new Map([
+      ["dex", 13],
+      ["wis", 13],
+    ]),
+    weaponCategoryProficiencies: wcSet("simple"),
+    weaponProficiencies: wtSet("shortsword"),
+  },
 
   features: new Map([
     [1, [MonkUnarmoredDefense, MartialArts]],

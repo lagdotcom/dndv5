@@ -221,6 +221,26 @@ const Ranger: PCClass = {
     "Stealth",
     "Survival",
   ),
+  multi: {
+    abilities: new Map([
+      ["dex", 13],
+      ["wis", 13],
+    ]),
+    armorProficiencies: acSet("light", "medium", "shield"),
+    weaponCategoryProficiencies: wcSet("simple", "martial"),
+    skillChoices: 1,
+    skillProficiencies: skSet(
+      "Animal Handling",
+      "Athletics",
+      "Insight",
+      "Investigation",
+      "Nature",
+      "Perception",
+      "Stealth",
+      "Survival",
+    ),
+  },
+
   features: new Map([
     [1, [Favored, Explorer]],
     [2, [RangerFightingStyle, RangerSpellcasting.feature, SpellcastingFocus]],

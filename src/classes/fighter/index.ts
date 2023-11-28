@@ -60,6 +60,13 @@ const Fighter: PCClass = {
     "Perception",
     "Survival",
   ),
+  multi: {
+    // TODO  Strength 13 or Dexterity 13
+    abilities: new Map([["str", 13]]),
+    armorProficiencies: acSet("light", "medium", "shield"),
+    weaponCategoryProficiencies: wcSet("simple", "martial"),
+  },
+
   features: new Map([
     [1, [FighterFightingStyle, SecondWind]],
     [2, [ActionSurge]],

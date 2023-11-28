@@ -219,6 +219,12 @@ const Barbarian: PCClass = {
     "Perception",
     "Survival",
   ),
+  multi: {
+    abilities: new Map([["str", 13]]),
+    armorProficiencies: acSet("shield"),
+    weaponCategoryProficiencies: wcSet("simple", "martial"),
+  },
+
   features: new Map([
     [1, [Rage, BarbarianUnarmoredDefense]],
     [2, [DangerSense, RecklessAttack]],

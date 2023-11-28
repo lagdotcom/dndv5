@@ -9,6 +9,7 @@ import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { SkillNames, skSet } from "../../types/SkillName";
 import Spell from "../../types/Spell";
+import { wtSet } from "../../types/WeaponType";
 import { makeASI } from "../common";
 import BardicInspiration, {
   BardicInspirationResource,
@@ -123,16 +124,24 @@ const Bard: PCClass = {
   hitDieSize: 8,
   armorProficiencies: acSet("light"),
   weaponCategoryProficiencies: wcSet("simple"),
-  weaponProficiencies: new Set([
+  weaponProficiencies: wtSet(
     "hand crossbow",
     "longsword",
     "rapier",
     "shortsword",
-  ]),
+  ),
   // TODO Tools: three musical instruments of your choice,
   saveProficiencies: abSet("dex", "cha"),
   skillChoices: 3,
   skillProficiencies: skSet(...SkillNames),
+  multi: {
+    abilities: new Map([["cha", 13]]),
+    armorProficiencies: acSet("light"),
+    // TODO Tools: one musical instrument of your choice.
+    skillChoices: 1,
+    skillProficiencies: skSet(...SkillNames),
+  },
+
   features: new Map([
     [1, [BardicInspiration, BardSpellcasting.feature]],
     [2, [JackOfAllTrades, SongOfRest, MagicalInspiration]],

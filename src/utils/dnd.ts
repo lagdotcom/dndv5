@@ -74,7 +74,7 @@ export function getProficiencyType(thing: HasProficiency) {
     return {
       type: "weapon",
       category: thing.category,
-      weapon: thing.weaponType,
+      weapon: thing.weaponType as WeaponType,
     } as const;
 
   if (thing.itemType === "armor")

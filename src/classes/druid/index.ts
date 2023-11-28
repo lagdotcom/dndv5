@@ -5,6 +5,7 @@ import { acSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { skSet } from "../../types/SkillName";
 import { toSet } from "../../types/ToolName";
+import { wtSet } from "../../types/WeaponType";
 import { makeASI } from "../common";
 import { DruidIcon } from "./common";
 import WildShape from "./WildShape";
@@ -65,7 +66,7 @@ const Druid: PCClass = {
   hitDieSize: 8,
   // TODO druids will not wear armor or use shields made of metal
   armorProficiencies: acSet("light", "medium", "shield"),
-  weaponProficiencies: new Set([
+  weaponProficiencies: wtSet(
     "club",
     "dagger",
     "dart",
@@ -76,7 +77,7 @@ const Druid: PCClass = {
     "sickle",
     "sling",
     "spear",
-  ]),
+  ),
   toolProficiencies: toSet("herbalism kit"),
   saveProficiencies: abSet("int", "wis"),
   skillChoices: 2,
@@ -90,6 +91,12 @@ const Druid: PCClass = {
     "Religion",
     "Survival",
   ),
+  multi: {
+    abilities: new Map([["wis", 13]]),
+    // TODO druids will not wear armor or use shields made of metal
+    armorProficiencies: acSet("light", "medium", "shield"),
+  },
+
   features: new Map([
     [1, [Druidic, DruidSpellcasting.feature]],
     [2, [WildShape, WildCompanion]],

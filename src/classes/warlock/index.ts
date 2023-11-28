@@ -116,6 +116,12 @@ const Warlock: PCClass = {
     "Nature",
     "Religion",
   ),
+  multi: {
+    abilities: new Map([["cha", 13]]),
+    armorProficiencies: acSet("light"),
+    weaponCategoryProficiencies: wcSet("simple"),
+  },
+
   features: new Map([
     [1, [WarlockPactMagic.feature]],
     [2, [EldritchInvocations]],

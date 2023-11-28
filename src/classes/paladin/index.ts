@@ -195,6 +195,15 @@ const Paladin: PCClass = {
     "Persuasion",
     "Religion",
   ),
+  multi: {
+    abilities: new Map([
+      ["str", 13],
+      ["cha", 13],
+    ]),
+    armorProficiencies: acSet("light", "medium", "shield"),
+    weaponCategoryProficiencies: wcSet("simple", "martial"),
+  },
+
   features: new Map([
     [1, [DivineSense, LayOnHands]],
     [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],

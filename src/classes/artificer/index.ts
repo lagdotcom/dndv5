@@ -112,6 +112,11 @@ const Artificer: PCClass = {
     "Perception",
     "Sleight of Hand",
   ),
+  multi: {
+    abilities: new Map([["int", 13]]),
+    armorProficiencies: acSet("light", "medium", "shield"),
+    toolProficiencies: toSet("thieves' tools", "tinker's tools"),
+  },
 
   features: new Map([
     [1, [MagicalTinkering, ArtificerSpellcasting.feature]],
