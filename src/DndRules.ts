@@ -74,6 +74,29 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
   });
 });
 
+export const ArmorProficiencyRule = new DndRule("Armor Proficiency", (g) => {
+  // If you wear armor that you lack proficiency with, you have disadvantage on any ability check, saving throw, or attack roll that involves Strength or Dexterity, and you can’t cast spells.
+  const lacksArmorProficiency = (who: Combatant) =>
+    !!(who.armor && who.getProficiency(who.armor) !== "proficient");
+
+  g.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
+    if (lacksArmorProficiency(who))
+      diceType.add("disadvantage", ArmorProficiencyRule);
+  });
+  g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+    if (lacksArmorProficiency(who))
+      diceType.add("disadvantage", ArmorProficiencyRule);
+  });
+  g.events.on("BeforeAttack", ({ detail: { who, diceType, ability } }) => {
+    if (lacksArmorProficiency(who) && (ability === "str" || ability === "dex"))
+      diceType.add("disadvantage", ArmorProficiencyRule);
+  });
+  g.events.on("CheckAction", ({ detail: { action, error } }) => {
+    if (action.isSpell && lacksArmorProficiency(action.actor))
+      error.add("not proficient", ArmorProficiencyRule);
+  });
+});
+
 export const BlindedRule = new DndRule("Blinded", (g) => {
   // A blinded creature can't see...
   g.events.on("CheckVision", ({ detail: { who, error } }) => {
@@ -92,17 +115,6 @@ export const BlindedRule = new DndRule("Blinded", (g) => {
     // ...and the creature's attack rolls have disadvantage.
     if (who.conditions.has("Blinded"))
       diceType.add("disadvantage", BlindedRule);
-  });
-});
-
-export const CastingInArmorRule = new DndRule("Casting in Armor", (g) => {
-  g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (
-      action.isSpell &&
-      action.actor.armor &&
-      action.actor.getProficiency(action.actor.armor) !== "proficient"
-    )
-      error.add("not proficient with armor", CastingInArmorRule);
   });
 });
 

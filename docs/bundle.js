@@ -3458,9 +3458,14 @@
     tags: startTags
   }) {
     const tags = new Set(startTags);
-    tags.add(
-      distance(attacker, target) > attacker.reach + weapon.reach ? "ranged" : "melee"
-    );
+    const isRanged = distance(attacker, target) > attacker.reach + weapon.reach;
+    if (isRanged) {
+      tags.add("ranged");
+      if (weapon.rangeCategory === "melee")
+        tags.add("thrown");
+    } else {
+      tags.add("melee");
+    }
     if (weapon.category !== "natural")
       tags.add("weapon");
     if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
@@ -3783,6 +3788,25 @@
       methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
     });
   });
+  var ArmorProficiencyRule = new DndRule("Armor Proficiency", (g) => {
+    const lacksArmorProficiency = (who) => !!(who.armor && who.getProficiency(who.armor) !== "proficient");
+    g.events.on("BeforeCheck", ({ detail: { who, diceType } }) => {
+      if (lacksArmorProficiency(who))
+        diceType.add("disadvantage", ArmorProficiencyRule);
+    });
+    g.events.on("BeforeSave", ({ detail: { who, diceType } }) => {
+      if (lacksArmorProficiency(who))
+        diceType.add("disadvantage", ArmorProficiencyRule);
+    });
+    g.events.on("BeforeAttack", ({ detail: { who, diceType, ability } }) => {
+      if (lacksArmorProficiency(who) && (ability === "str" || ability === "dex"))
+        diceType.add("disadvantage", ArmorProficiencyRule);
+    });
+    g.events.on("CheckAction", ({ detail: { action, error } }) => {
+      if (action.isSpell && lacksArmorProficiency(action.actor))
+        error.add("not proficient", ArmorProficiencyRule);
+    });
+  });
   var BlindedRule = new DndRule("Blinded", (g) => {
     g.events.on("CheckVision", ({ detail: { who, error } }) => {
       if (who.conditions.has("Blinded"))
@@ -3797,12 +3821,6 @@
         diceType.add("advantage", BlindedRule);
       if (who.conditions.has("Blinded"))
         diceType.add("disadvantage", BlindedRule);
-    });
-  });
-  var CastingInArmorRule = new DndRule("Casting in Armor", (g) => {
-    g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.isSpell && action.actor.armor && action.actor.getProficiency(action.actor.armor) !== "proficient")
-        error.add("not proficient with armor", CastingInArmorRule);
     });
   });
   var CloseCombatRule = new DndRule("Close Combat", (g) => {

@@ -129,12 +129,16 @@ export async function doStandardAttack(
   },
 ) {
   const tags = new Set<AttackTag>(startTags);
-  // TODO this should probably be a choice
-  tags.add(
-    distance(attacker, target) > attacker.reach + weapon.reach
-      ? "ranged"
-      : "melee",
-  );
+
+  const isRanged = distance(attacker, target) > attacker.reach + weapon.reach;
+  if (isRanged) {
+    tags.add("ranged");
+
+    // TODO this should probably be a choice?
+    if (weapon.rangeCategory === "melee") tags.add("thrown");
+  } else {
+    tags.add("melee");
+  }
 
   if (weapon.category !== "natural") tags.add("weapon");
   if (weapon.magical || ammo?.magical) tags.add("magical");

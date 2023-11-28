@@ -28,8 +28,6 @@ export function getWeaponAbility(
 
   if (weapon.rangeCategory === "ranged") return "dex";
 
-  // TODO thrown
-
   return "str";
 }
 

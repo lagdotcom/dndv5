@@ -4,6 +4,7 @@ export const AttackTags = [
   "ranged",
   "silvered",
   "spell",
+  "thrown",
   "two-weapon",
   "weapon",
 ] as const;
