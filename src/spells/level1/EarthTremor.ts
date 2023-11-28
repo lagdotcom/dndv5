@@ -61,6 +61,7 @@ const EarthTremor = scalingSpell({
         who: target,
         fail: "normal",
         save: "zero",
+        tags: ["magic"],
       });
 
       if (save.damageResponse !== "zero") {

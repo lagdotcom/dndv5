@@ -1,6 +1,6 @@
 import {
   bonusSpellsFeature,
-  darkvisionFeature,
+  Darkvision60,
   nonCombatFeature,
   notImplementedFeature,
 } from "../features/common";
@@ -56,8 +56,6 @@ const ControlAirAndWater = bonusSpellsFeature(
   ControlAirAndWaterSpells,
 );
 
-const Darkvision = darkvisionFeature();
-
 const EmissaryOfTheSea = nonCombatFeature(
   "Emissary of the Sea",
   `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`,
@@ -85,7 +83,7 @@ const Triton: PCRace = {
   features: new Set([
     Amphibious,
     ControlAirAndWater,
-    Darkvision,
+    Darkvision60,
     EmissaryOfTheSea,
     GuardiansOfTheDepths,
   ]),

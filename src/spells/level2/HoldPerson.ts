@@ -1,20 +1,39 @@
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
+import { EngineSaveConfig } from "../../Engine";
 import { canSee, ofCreatureType, withinRangeOfEachOther } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { efSet } from "../../types/EffectTag";
+import { EffectConfig } from "../../types/EffectType";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
-const HoldPersonEffect = new Effect<{
+type Config = {
   affected: Set<Combatant>;
   caster: Combatant;
   method: SpellcastingMethod;
-}>(
+};
+
+const getHoldPersonSave = (
+  who: Combatant,
+  config: EffectConfig<Config>,
+): EngineSaveConfig<Config> => ({
+  source: HoldPersonEffect,
+  type: config.method.getSaveType(config.caster, HoldPerson),
+  who,
+  attacker: config.caster,
+  ability: "wis",
+  spell: HoldPerson,
+  effect: HoldPersonEffect,
+  config,
+  tags: ["magic"],
+});
+
+const HoldPersonEffect = new Effect<Config>(
   "Hold Person",
   "turnStart",
   (g) => {
@@ -28,16 +47,7 @@ const HoldPersonEffect = new Effect<{
       if (config) {
         interrupt.add(
           new EvaluateLater(who, HoldPersonEffect, async () => {
-            const { outcome } = await g.save({
-              source: HoldPersonEffect,
-              type: config.method.getSaveType(config.caster, HoldPerson),
-              who,
-              attacker: config.caster,
-              ability: "wis",
-              spell: HoldPerson,
-              effect: HoldPersonEffect,
-              config,
-            });
+            const { outcome } = await g.save(getHoldPersonSave(who, config));
 
             if (outcome === "success") {
               await who.removeEffect(HoldPersonEffect);
@@ -95,16 +105,7 @@ const HoldPerson = scalingSpell<HasTargets>({
         conditions,
       };
 
-      const { outcome } = await g.save({
-        source: HoldPerson,
-        type: method.getSaveType(caster, HoldPerson),
-        who: target,
-        attacker: caster,
-        ability: "wis",
-        spell: HoldPerson,
-        effect: HoldPersonEffect,
-        config,
-      });
+      const { outcome } = await g.save(getHoldPersonSave(target, config));
 
       if (
         outcome === "fail" &&

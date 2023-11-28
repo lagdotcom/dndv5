@@ -5,10 +5,10 @@ import Engine from "../../Engine";
 import { LeatherArmor } from "../../items/armor";
 import { Dagger, Rapier } from "../../items/weapons";
 import PC from "../../PC";
+import { ExtraLanguage } from "../../races/common";
 import {
   AbilityScoreBonus,
   HalfElf,
-  LanguageChoice,
   SkillVersatility,
 } from "../../races/HalfElf";
 import Thunderclap from "../../spells/cantrip/Thunderclap";
@@ -24,7 +24,7 @@ export default class Shaira extends PC {
     this.setRace(HalfElf);
     this.setConfig(AbilityScoreBonus, ["int", "wis"]);
     this.setConfig(SkillVersatility, ["Persuasion", "History"]);
-    this.setConfig(LanguageChoice, "Dwarvish");
+    this.setConfig(ExtraLanguage, "Dwarvish");
     this.addProficiency("Deception", "proficient");
     this.addProficiency("Stealth", "proficient");
     this.addProficiency("thieves' tools", "proficient");

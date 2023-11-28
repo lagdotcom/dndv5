@@ -133,6 +133,7 @@ class WebController {
         method,
         spell: Web,
         who: target,
+        tags: ["magic"],
       });
 
       if (outcome === "fail")

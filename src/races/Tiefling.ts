@@ -1,7 +1,7 @@
 import {
   BonusSpellEntry,
   bonusSpellsFeature,
-  darkvisionFeature,
+  Darkvision60,
 } from "../features/common";
 import { LongRestResource } from "../resources";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
@@ -11,8 +11,6 @@ import Darkness from "../spells/level2/Darkness";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import { resistanceFeature } from "./common";
-
-const Darkvision = darkvisionFeature(60);
 
 const HellishResistance = resistanceFeature(
   "Hellish Resistance",
@@ -25,7 +23,7 @@ const Tiefling: PCRace = {
   size: "medium",
   abilities: new Map([["cha", 2]]),
   movement: new Map([["speed", 30]]),
-  features: new Set([Darkvision, HellishResistance]),
+  features: new Set([Darkvision60, HellishResistance]),
   languages: laSet("Common", "Infernal"),
 };
 

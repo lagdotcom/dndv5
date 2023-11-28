@@ -60,6 +60,7 @@ const SanctuaryEffect = new Effect<{
               type: config.method.getSaveType(config.caster, Sanctuary),
               who,
               ability: "wis",
+              tags: ["charm", "magic"],
             });
 
             if (outcome === "fail") {

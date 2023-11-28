@@ -70,6 +70,7 @@ const AcidSplash = simpleSpell<HasTargets>({
         method,
         fail: "normal",
         save: "zero",
+        tags: ["magic"],
       });
 
       await g.damage(

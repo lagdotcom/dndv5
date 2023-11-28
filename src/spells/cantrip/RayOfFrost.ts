@@ -5,7 +5,6 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { efSet } from "../../types/EffectTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -21,7 +20,7 @@ const RayOfFrostEffect = new Effect(
       if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const RayOfFrost = simpleSpell<HasTarget>({

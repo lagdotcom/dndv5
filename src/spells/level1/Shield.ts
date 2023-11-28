@@ -6,7 +6,6 @@ import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import Combatant from "../../types/Combatant";
-import { efSet } from "../../types/EffectTag";
 import { checkConfig } from "../../utils/config";
 import { simpleSpell } from "../common";
 import MagicMissile from "./MagicMissile";
@@ -86,7 +85,7 @@ const ShieldEffect = new Effect(
         multiplier.add("zero", ShieldEffect);
     });
   },
-  { icon: ShieldIcon, tags: efSet("magic") },
+  { icon: ShieldIcon, tags: ["magic"] },
 );
 
 const Shield = simpleSpell({

@@ -61,6 +61,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
         spell: ConeOfCold,
         method,
         who: target,
+        tags: ["magic"],
       });
 
       await g.damage(

@@ -11,7 +11,6 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { SpecifiedSphere } from "../../types/EffectArea";
-import { efSet } from "../../types/EffectTag";
 import Point from "../../types/Point";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
@@ -78,7 +77,7 @@ const SleepEffect = new Effect(
       }
     });
   },
-  { tags: efSet("magic", "sleep") },
+  { tags: ["magic", "sleep"] },
 );
 
 const getSleepArea = (centre: Point): SpecifiedSphere => ({

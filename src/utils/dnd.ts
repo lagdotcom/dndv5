@@ -3,10 +3,21 @@ import { AbilityNames } from "../types/AbilityName";
 import ACMethod from "../types/ACMethod";
 import Combatant from "../types/Combatant";
 import HasProficiency from "../types/HasProficiency";
-import Item, { ArmorCategories, WeaponCategories } from "../types/Item";
+import Item, {
+  ArmorCategories,
+  WeaponCategories,
+  WeaponCategory,
+} from "../types/Item";
 import ProficiencyType, { ProficiencyTypes } from "../types/ProficiencyType";
 import { SkillNames } from "../types/SkillName";
 import { ToolNames } from "../types/ToolName";
+import WeaponType, {
+  MartialMeleeWeapons,
+  MartialRangedWeapons,
+  SimpleMeleeWeapons,
+  SimpleRangedWeapons,
+  WeaponTypes,
+} from "../types/WeaponType";
 import { isA } from "./types";
 import { distance } from "./units";
 
@@ -22,6 +33,18 @@ export function getProficiencyBonusByLevel(level: number) {
   return Math.ceil(level / 4) + 1;
 }
 
+function getWeaponCategory(wt: WeaponType): WeaponCategory {
+  if (wt === "unarmed strike") return "natural";
+
+  if (isA(wt, SimpleMeleeWeapons) || isA(wt, SimpleRangedWeapons))
+    return "simple";
+
+  if (isA(wt, MartialMeleeWeapons) || isA(wt, MartialRangedWeapons))
+    return "martial";
+
+  throw new Error(`Unknown weapon type: ${wt}`);
+}
+
 export function getProficiencyType(thing: HasProficiency) {
   if (typeof thing === "string") {
     if (isA(thing, AbilityNames))
@@ -29,6 +52,13 @@ export function getProficiencyType(thing: HasProficiency) {
 
     if (isA(thing, ArmorCategories))
       return { type: "armor", category: thing } as const;
+
+    if (isA(thing, WeaponTypes))
+      return {
+        type: "weapon",
+        category: getWeaponCategory(thing),
+        weapon: thing,
+      } as const;
 
     if (isA(thing, WeaponCategories))
       return { type: "weaponCategory", category: thing } as const;

@@ -60,6 +60,20 @@ const Halfling: PCRace = {
   languages: laSet("Common", "Halfling"),
 };
 
+// TODO [HIDE]
+const NaturallyStealthy = notImplementedFeature(
+  "Naturally Stealthy",
+  `You can attempt to hide even when you are obscured only by a creature that is at least one size larger than you.`,
+);
+
+export const LightfootHalfling: PCRace = {
+  parent: Halfling,
+  name: "Lightfoot Halfling",
+  abilities: new Map([["cha", 1]]),
+  size: "small",
+  features: new Set([NaturallyStealthy]),
+};
+
 const StoutResilience = poisonResistance(
   "Stout Resilience",
   `You have advantage on saving throws against poison, and you have resistance against poison damage.`,

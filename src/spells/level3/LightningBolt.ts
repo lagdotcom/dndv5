@@ -62,6 +62,7 @@ const LightningBolt = scalingSpell<HasPoint>({
         spell: LightningBolt,
         method,
         who: target,
+        tags: ["magic"],
       });
 
       await g.damage(

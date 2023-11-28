@@ -83,6 +83,7 @@ const HellishRebuke = scalingSpell<HasTarget>({
       who: target,
       attacker,
       ability: "dex",
+      tags: ["magic"],
     });
 
     await g.damage(

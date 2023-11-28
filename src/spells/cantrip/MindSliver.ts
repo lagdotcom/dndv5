@@ -3,7 +3,6 @@ import Effect from "../../Effect";
 import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { efSet } from "../../types/EffectTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -26,7 +25,7 @@ const MindSliverEffect = new Effect(
       }
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const MindSliver = simpleSpell<HasTarget>({
@@ -73,6 +72,7 @@ const MindSliver = simpleSpell<HasTarget>({
       method,
       fail: "normal",
       save: "zero",
+      tags: ["magic"],
     });
     await g.damage(
       MindSliver,

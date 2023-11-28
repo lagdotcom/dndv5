@@ -12,6 +12,7 @@ import FigurineOfWondrousPower from "../../items/wondrous/FigurineOfWondrousPowe
 import RingOfAwe from "../../items/wondrous/RingOfAwe";
 import SilverShiningAmulet from "../../items/wondrous/SilverShiningAmulet";
 import PC from "../../PC";
+import { ExtraLanguage } from "../../races/common";
 import Human from "../../races/Human";
 import Bless from "../../spells/level1/Bless";
 import DivineFavor from "../../spells/level1/DivineFavor";
@@ -26,7 +27,7 @@ export default class Galilea extends PC {
     this.addProficiency("playing card set", "proficient");
     this.setAbilityScores(13, 10, 15, 11, 11, 13);
     this.setRace(Human);
-    this.languages.add("Sylvan");
+    this.setConfig(ExtraLanguage, "Sylvan");
 
     this.addSubclass(Devotion);
     this.addClassLevel(Paladin);

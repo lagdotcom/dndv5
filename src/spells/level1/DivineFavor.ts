@@ -1,6 +1,5 @@
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import { efSet } from "../../types/EffectTag";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -32,7 +31,7 @@ const DivineFavorEffect = new Effect(
       },
     );
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const DivineFavor = simpleSpell({

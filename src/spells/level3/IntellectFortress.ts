@@ -2,12 +2,10 @@ import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
-import { abSet } from "../../types/AbilityName";
-import { efSet } from "../../types/EffectTag";
+import { MentalAbilities } from "../../types/AbilityName";
 import { hours } from "../../utils/time";
+import { isA } from "../../utils/types";
 import { scalingSpell } from "../common";
-
-const mental = abSet("int", "wis", "cha");
 
 const IntellectFortressEffect = new Effect(
   "Intellect Fortress",
@@ -24,13 +22,12 @@ const IntellectFortressEffect = new Effect(
     g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (
         who.hasEffect(IntellectFortressEffect) &&
-        ability &&
-        mental.has(ability)
+        isA(ability, MentalAbilities)
       )
         diceType.add("advantage", IntellectFortressEffect);
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const IntellectFortress = scalingSpell<HasTargets>({

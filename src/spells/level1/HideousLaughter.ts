@@ -3,6 +3,7 @@ import InterruptionCollector from "../../collectors/InterruptionCollector";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
+import { EngineSaveConfig } from "../../Engine";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -17,6 +18,23 @@ import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
 type Config = { caster: Combatant; method: SpellcastingMethod };
+
+const getHideousLaughterSave = (
+  who: Combatant,
+  config: EffectConfig<Config>,
+  diceType: DiceType = "normal",
+): EngineSaveConfig<Config> => ({
+  source: HideousLaughter,
+  type: config.method.getSaveType(config.caster, HideousLaughter),
+  who,
+  ability: "wis",
+  attacker: config.caster,
+  effect: LaughterEffect,
+  config,
+  diceType,
+  spell: HideousLaughter,
+  method: config.method,
+});
 
 const LaughterEffect = new Effect<Config>(
   "Hideous Laughter",
@@ -43,22 +61,11 @@ const LaughterEffect = new Effect<Config>(
     ) =>
       i.add(
         new EvaluateLater(who, LaughterEffect, async () => {
-          const { caster, method } = config;
+          const { outcome } = await g.save(
+            getHideousLaughterSave(who, config, diceType),
+          );
 
-          const { outcome } = await g.save({
-            source: HideousLaughter,
-            type: method.getSaveType(caster, HideousLaughter),
-            who,
-            ability: "wis",
-            attacker: caster,
-            effect: LaughterEffect,
-            config,
-            diceType,
-            spell: HideousLaughter,
-            method,
-          });
-
-          if (outcome === "success") await caster.endConcentration();
+          if (outcome === "success") await config.caster.endConcentration();
         }),
       );
 
@@ -108,17 +115,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       conditions: coSet("Incapacitated"),
       duration: minutes(1),
     };
-    const { outcome } = await g.save({
-      source: HideousLaughter,
-      type: method.getSaveType(caster, HideousLaughter),
-      attacker: caster,
-      who: target,
-      ability: "wis",
-      spell: HideousLaughter,
-      method,
-      effect,
-      config,
-    });
+    const { outcome } = await g.save(getHideousLaughterSave(target, config));
 
     if (outcome === "fail") {
       const success = await target.addEffect(effect, config, caster);

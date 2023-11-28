@@ -109,6 +109,7 @@ const IceKnife = scalingSpell<HasTarget>({
         who: victim,
         fail: "normal",
         save: "zero",
+        tags: ["magic"],
       });
       await g.damage(
         IceKnife,

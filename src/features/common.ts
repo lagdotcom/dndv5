@@ -47,7 +47,7 @@ export function bonusSpellsFeature(
   });
 }
 
-export function darkvisionFeature(range = 60) {
+function darkvisionFeature(range = 60) {
   return new SimpleFeature(
     "Darkvision",
     `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can’t discern color in darkness, only shades of gray.`,
@@ -56,6 +56,8 @@ export function darkvisionFeature(range = 60) {
     },
   );
 }
+export const Darkvision60 = darkvisionFeature(60);
+export const Darkvision120 = darkvisionFeature(120);
 
 export function nonCombatFeature(name: string, text: string) {
   // eslint-disable-next-line @typescript-eslint/no-empty-function

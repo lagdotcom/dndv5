@@ -52,6 +52,7 @@ const CharmMonster = scalingSpell<HasTargets>({
         attacker: caster,
         effect: Charmed,
         config,
+        tags: ["charm", "magic"],
       });
 
       if (outcome === "fail") await target.addEffect(Charmed, config, caster);

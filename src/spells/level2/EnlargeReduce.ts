@@ -6,7 +6,6 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
-import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
 import SizeCategory, { SizeCategories } from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
@@ -45,7 +44,7 @@ const EnlargeEffect = new Effect(
       },
     );
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const ReduceEffect = new Effect(
@@ -81,7 +80,7 @@ const ReduceEffect = new Effect(
       },
     );
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 function applySizeChange(size: SizeCategory, change: number) {
@@ -178,6 +177,7 @@ const EnlargeReduce = simpleSpell<Config>({
         method,
         effect,
         config,
+        tags: ["magic"],
       });
       if (outcome === "success") return;
     }

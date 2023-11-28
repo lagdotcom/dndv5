@@ -62,6 +62,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
         spell: EruptingEarth,
         method,
         who: target,
+        tags: ["magic"],
       });
 
       await g.damage(

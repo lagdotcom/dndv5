@@ -7,7 +7,6 @@ import Effect from "../../Effect";
 import Engine from "../../Engine";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
-import { efSet } from "../../types/EffectTag";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -31,7 +30,7 @@ const BlessEffect = new Effect(
       applyBless(g, who, bonus),
     );
   },
-  { icon: BlessIcon, tags: efSet("magic") },
+  { icon: BlessIcon, tags: ["magic"] },
 );
 
 const Bless = scalingSpell<HasTargets>({

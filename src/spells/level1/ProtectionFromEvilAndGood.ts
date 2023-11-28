@@ -6,7 +6,6 @@ import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { ctSet } from "../../types/CreatureType";
-import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
@@ -14,7 +13,7 @@ import { simpleSpell } from "../common";
 
 const ProtectionEvilGoodIcon = makeIcon(iconUrl);
 
-const affectedTypes = ctSet(
+const evilAndGoodCreatureTypes = ctSet(
   "aberration",
   "celestial",
   "elemental",
@@ -23,7 +22,7 @@ const affectedTypes = ctSet(
   "undead",
 );
 const isAffected = (attacker?: Combatant) =>
-  attacker && affectedTypes.has(attacker.type);
+  attacker && evilAndGoodCreatureTypes.has(attacker.type);
 
 const isValidEffect = (effect?: Effect, config?: EffectConfig) =>
   effect?.tags.has("possession") ||
@@ -63,7 +62,7 @@ const ProtectionEffect = new Effect(
       },
     );
   },
-  { icon: ProtectionEvilGoodIcon, tags: efSet("magic") },
+  { icon: ProtectionEvilGoodIcon, tags: ["magic"] },
 );
 
 const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({

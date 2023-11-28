@@ -42,6 +42,7 @@ const ofTheDeep: Enchantment<"weapon"> = {
                   attacker: roll.type.who,
                   who: target,
                   ability: "dex",
+                  tags: ["magic"],
                 });
 
                 await g.damage(

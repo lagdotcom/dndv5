@@ -146,6 +146,7 @@ class MoonbeamController {
         method,
         spell: Moonbeam,
         who: target,
+        tags: ["magic"],
       });
 
       await g.damage(

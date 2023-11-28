@@ -92,6 +92,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
         method,
         fail: "normal",
         save: "zero",
+        tags: ["magic"],
       });
       await g.damage(
         this,
@@ -272,6 +273,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
       who: target,
       attacker,
       ability: "dex",
+      tags: ["magic"],
     });
 
     await g.damage(

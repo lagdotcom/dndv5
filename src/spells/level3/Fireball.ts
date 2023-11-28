@@ -60,6 +60,7 @@ const Fireball = scalingSpell<HasPoint>({
         spell: Fireball,
         method,
         who: target,
+        tags: ["magic"],
       });
 
       await g.damage(

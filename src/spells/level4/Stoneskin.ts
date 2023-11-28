@@ -3,7 +3,6 @@ import Effect from "../../Effect";
 import { isAlly } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { MundaneDamageTypes } from "../../types/DamageType";
-import { efSet } from "../../types/EffectTag";
 import { sieve } from "../../utils/array";
 import { hours } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -24,7 +23,7 @@ const StoneskinEffect = new Effect(
       },
     );
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const Stoneskin = simpleSpell<HasTarget>({

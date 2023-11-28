@@ -870,7 +870,9 @@
   };
 
   // src/types/AbilityName.ts
-  var AbilityNames = ["str", "dex", "con", "int", "wis", "cha"];
+  var PhysicalAbilities = ["str", "dex", "con"];
+  var MentalAbilities = ["int", "wis", "cha"];
+  var AbilityNames = [...PhysicalAbilities, ...MentalAbilities];
   var abSet = (...items) => new Set(items);
 
   // src/types/Item.ts
@@ -979,6 +981,60 @@
   ];
   var toSet = (...items) => new Set(items);
 
+  // src/types/WeaponType.ts
+  var SimpleMeleeWeapons = [
+    "club",
+    "dagger",
+    "greatclub",
+    "handaxe",
+    "javelin",
+    "light hammer",
+    "mace",
+    "quarterstaff",
+    "sickle",
+    "spear"
+  ];
+  var SimpleRangedWeapons = [
+    "light crossbow",
+    "dart",
+    "shortbow",
+    "sling"
+  ];
+  var MartialMeleeWeapons = [
+    "battleaxe",
+    "flail",
+    "glaive",
+    "greataxe",
+    "greatsword",
+    "halberd",
+    "lance",
+    "longsword",
+    "maul",
+    "morningstar",
+    "pike",
+    "rapier",
+    "scimitar",
+    "shortsword",
+    "trident",
+    "war pick",
+    "warhammer",
+    "whip"
+  ];
+  var MartialRangedWeapons = [
+    "blowgun",
+    "hand crossbow",
+    "heavy crossbow",
+    "longbow",
+    "net"
+  ];
+  var WeaponTypes = [
+    ...SimpleMeleeWeapons,
+    ...SimpleRangedWeapons,
+    ...MartialMeleeWeapons,
+    ...MartialRangedWeapons,
+    "unarmed strike"
+  ];
+
   // src/utils/types.ts
   function isDefined(value) {
     return typeof value !== "undefined";
@@ -1016,12 +1072,27 @@
   function getProficiencyBonusByLevel(level) {
     return Math.ceil(level / 4) + 1;
   }
+  function getWeaponCategory(wt) {
+    if (wt === "unarmed strike")
+      return "natural";
+    if (isA(wt, SimpleMeleeWeapons) || isA(wt, SimpleRangedWeapons))
+      return "simple";
+    if (isA(wt, MartialMeleeWeapons) || isA(wt, MartialRangedWeapons))
+      return "martial";
+    throw new Error(`Unknown weapon type: ${wt}`);
+  }
   function getProficiencyType(thing) {
     if (typeof thing === "string") {
       if (isA(thing, AbilityNames))
         return { type: "ability", ability: thing };
       if (isA(thing, ArmorCategories))
         return { type: "armor", category: thing };
+      if (isA(thing, WeaponTypes))
+        return {
+          type: "weapon",
+          category: getWeaponCategory(thing),
+          weapon: thing
+        };
       if (isA(thing, WeaponCategories))
         return { type: "weaponCategory", category: thing };
       if (isA(thing, ToolNames))
@@ -2342,7 +2413,8 @@
           spell: EldritchBurstSpell,
           method,
           fail: "normal",
-          save: "zero"
+          save: "zero",
+          tags: ["magic"]
         });
         await g.damage(
           this,
@@ -2498,7 +2570,8 @@
         type: { type: "flat", dc },
         who: target,
         attacker,
-        ability: "dex"
+        ability: "dex",
+        tags: ["magic"]
       });
       await g.damage(
         HellishRebuke,
@@ -2715,7 +2788,7 @@
 
   // src/items/weapons.ts
   var AbstractWeapon = class extends AbstractItem {
-    constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange) {
+    constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange, weaponType = name) {
       super(g, "weapon", name, 1, iconUrl);
       this.g = g;
       this.category = category;
@@ -2723,7 +2796,7 @@
       this.damage = damage;
       this.shortRange = shortRange;
       this.longRange = longRange;
-      this.weaponType = name;
+      this.weaponType = weaponType;
       this.properties = new Set(properties);
       this.quantity = 1;
     }
@@ -3277,7 +3350,7 @@
         }
       );
     },
-    { icon: makeIcon(charm_monster_default) }
+    { icon: makeIcon(charm_monster_default), tags: ["magic"] }
   );
 
   // src/actions/AbstractAttackAction.ts
@@ -4357,6 +4430,8 @@
       }
     );
   }
+  var Darkvision60 = darkvisionFeature(60);
+  var Darkvision120 = darkvisionFeature(120);
   function nonCombatFeature(name, text) {
     return new SimpleFeature(name, text, () => {
     });
@@ -4470,7 +4545,7 @@
         }
       );
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var GuidingBolt = scalingSpell({
     status: "implemented",
@@ -4998,7 +5073,7 @@
         attacker: this.actor,
         who: attacker,
         ability: "cha",
-        tags: ["charm"]
+        tags: ["charm", "magic"]
       });
       if (outcome === "success")
         return;
@@ -5059,7 +5134,7 @@
         attacker: this.actor,
         who: target,
         ability: "con",
-        tags: ["concentration"]
+        tags: ["concentration", "magic"]
       });
       if (outcome === "fail")
         await target.endConcentration();
@@ -6842,6 +6917,28 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     });
     return feature;
   }
+  var ExtraLanguage = new ConfiguredFeature(
+    "Extra Language",
+    `You can speak, read, and write one extra language of your choice.`,
+    (g, me, language) => {
+      me.languages.add(language);
+    }
+  );
+  var FeyAncestry = new SimpleFeature(
+    "Fey Ancestry",
+    `You have advantage on saving throws against being charmed, and magic can't put you to sleep.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
+        var _a;
+        if (who === me && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")))
+          diceType.add("advantage", FeyAncestry);
+      });
+      g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
+        if (who === me && effect.tags.has("magic") && effect.tags.has("sleep"))
+          success.add("fail", FeyAncestry);
+      });
+    }
+  );
 
   // src/races/Dragonborn_FTD.ts
   var MetallicDragonborn = {
@@ -7125,7 +7222,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           spell: AcidSplash,
           method,
           fail: "normal",
-          save: "zero"
+          save: "zero",
+          tags: ["magic"]
         });
         await g.damage(
           AcidSplash,
@@ -7194,7 +7292,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var MindSliver = simpleSpell({
     status: "implemented",
@@ -7234,7 +7332,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         spell: MindSliver,
         method,
         fail: "normal",
-        save: "zero"
+        save: "zero",
+        tags: ["magic"]
       });
       await g.damage(
         MindSliver,
@@ -7277,7 +7376,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           bonus.add(-10, RayOfFrostEffect);
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var RayOfFrost = simpleSpell({
     status: "implemented",
@@ -7407,7 +7506,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           method,
           who: victim,
           fail: "normal",
-          save: "zero"
+          save: "zero",
+          tags: ["magic"]
         });
         await g.damage(
           IceKnife,
@@ -7601,7 +7701,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           multiplier.add("zero", ShieldEffect);
       });
     },
-    { icon: ShieldIcon, tags: efSet("magic") }
+    { icon: ShieldIcon, tags: ["magic"] }
   );
   var Shield2 = simpleSpell({
     status: "implemented",
@@ -7686,7 +7786,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       );
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var ReduceEffect = new Effect(
     "Reduce",
@@ -7717,7 +7817,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       );
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   function applySizeChange(size, change) {
     const index = SizeCategories.indexOf(size) + change;
@@ -7798,7 +7898,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           spell: EnlargeReduce,
           method,
           effect,
-          config
+          config,
+          tags: ["magic"]
         });
         if (outcome === "success")
           return;
@@ -7815,6 +7916,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var EnlargeReduce_default = EnlargeReduce;
 
   // src/spells/level2/HoldPerson.ts
+  var getHoldPersonSave = (who, config) => ({
+    source: HoldPersonEffect,
+    type: config.method.getSaveType(config.caster, HoldPerson),
+    who,
+    attacker: config.caster,
+    ability: "wis",
+    spell: HoldPerson,
+    effect: HoldPersonEffect,
+    config,
+    tags: ["magic"]
+  });
   var HoldPersonEffect = new Effect(
     "Hold Person",
     "turnStart",
@@ -7828,16 +7940,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         if (config) {
           interrupt.add(
             new EvaluateLater(who, HoldPersonEffect, async () => {
-              const { outcome } = await g.save({
-                source: HoldPersonEffect,
-                type: config.method.getSaveType(config.caster, HoldPerson),
-                who,
-                attacker: config.caster,
-                ability: "wis",
-                spell: HoldPerson,
-                effect: HoldPersonEffect,
-                config
-              });
+              const { outcome } = await g.save(getHoldPersonSave(who, config));
               if (outcome === "success") {
                 await who.removeEffect(HoldPersonEffect);
                 config.affected.delete(who);
@@ -7888,16 +7991,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           duration,
           conditions
         };
-        const { outcome } = await g.save({
-          source: HoldPerson,
-          type: method.getSaveType(caster, HoldPerson),
-          who: target,
-          attacker: caster,
-          ability: "wis",
-          spell: HoldPerson,
-          effect: HoldPersonEffect,
-          config
-        });
+        const { outcome } = await g.save(getHoldPersonSave(target, config));
         if (outcome === "fail" && await target.addEffect(HoldPersonEffect, config))
           affected.add(target);
       }
@@ -7962,7 +8056,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           ability: "dex",
           spell: Fireball,
           method,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         await g.damage(
           Fireball,
@@ -7977,7 +8072,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var Fireball_default = Fireball;
 
   // src/spells/level3/IntellectFortress.ts
-  var mental = abSet("int", "wis", "cha");
   var IntellectFortressEffect = new Effect(
     "Intellect Fortress",
     "turnStart",
@@ -7990,11 +8084,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       );
       g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
-        if (who.hasEffect(IntellectFortressEffect) && ability && mental.has(ability))
+        if (who.hasEffect(IntellectFortressEffect) && isA(ability, MentalAbilities))
           diceType.add("advantage", IntellectFortressEffect);
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var IntellectFortress = scalingSpell({
     status: "implemented",
@@ -8094,7 +8188,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           attacker,
           spell: MelfsMinuteMeteors,
           method,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         await g.damage(
           MelfsMinuteMeteors,
@@ -8838,7 +8933,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
 
   // src/spells/level1/ProtectionFromEvilAndGood.ts
   var ProtectionEvilGoodIcon = makeIcon(protection_evil_good_default);
-  var affectedTypes = ctSet(
+  var evilAndGoodCreatureTypes = ctSet(
     "aberration",
     "celestial",
     "elemental",
@@ -8846,7 +8941,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
     "fiend",
     "undead"
   );
-  var isAffected = (attacker) => attacker && affectedTypes.has(attacker.type);
+  var isAffected = (attacker) => attacker && evilAndGoodCreatureTypes.has(attacker.type);
   var isValidEffect = (effect, config) => {
     var _a, _b;
     return (effect == null ? void 0 : effect.tags.has("possession")) || ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")) || ((_b = config == null ? void 0 : config.conditions) == null ? void 0 : _b.has("Frightened"));
@@ -8874,7 +8969,7 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
         }
       );
     },
-    { icon: ProtectionEvilGoodIcon, tags: efSet("magic") }
+    { icon: ProtectionEvilGoodIcon, tags: ["magic"] }
   );
   var ProtectionFromEvilAndGood = simpleSpell({
     status: "implemented",
@@ -8949,7 +9044,8 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
                 source: SanctuaryEffect,
                 type: config.method.getSaveType(config.caster, Sanctuary),
                 who,
-                ability: "wis"
+                ability: "wis",
+                tags: ["charm", "magic"]
               });
               if (outcome === "fail") {
                 g2.text(
@@ -9294,7 +9390,8 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           attacker: caster,
           method,
           spell: Web,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         if (outcome === "fail")
           await target.addEffect(Webbed, {
@@ -9402,6 +9499,16 @@ Once you use this feature, you can't use it again until you finish a long rest.`
 
   // src/items/wondrous/RingOfAwe.ts
   var RingOfAweResource = new DawnResource("Ring of Awe", 1);
+  var getRingOfAweSave = (who, attacker, dc, config) => ({
+    source: RingOfAweEffect,
+    type: { type: "flat", dc },
+    attacker,
+    who,
+    ability: "wis",
+    effect: RingOfAweEffect,
+    config,
+    tags: ["charm", "magic"]
+  });
   var RingOfAweEffect = new Effect(
     "Ring of Awe",
     "turnStart",
@@ -9421,15 +9528,9 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         if (config)
           interrupt.add(
             new EvaluateLater(who, RingOfAweEffect, async () => {
-              const { outcome } = await g.save({
-                source: RingOfAweEffect,
-                type: { type: "flat", dc: config.dc },
-                attacker: config.actor,
-                who,
-                ability: "wis",
-                effect: RingOfAweEffect,
-                config
-              });
+              const { outcome } = await g.save(
+                getRingOfAweSave(who, config.actor, config.dc, config)
+              );
               if (outcome === "success")
                 await who.removeEffect(RingOfAweEffect);
             })
@@ -9470,15 +9571,9 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           actor,
           dc
         };
-        const { outcome } = await g.save({
-          source: this,
-          type: { type: "flat", dc },
-          attacker: actor,
-          who,
-          ability: "wis",
-          effect,
-          config
-        });
+        const { outcome } = await g.save(
+          getRingOfAweSave(who, actor, dc, config)
+        );
         if (outcome === "fail")
           await who.addEffect(effect, config, actor);
       }
@@ -9537,7 +9632,6 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   // src/races/Human.ts
   var Human = {
     name: "Human",
-    size: "medium",
     abilities: /* @__PURE__ */ new Map([
       ["str", 1],
       ["dex", 1],
@@ -9546,8 +9640,10 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       ["wis", 1],
       ["cha", 1]
     ]),
+    size: "medium",
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
-    languages: laSet("Common")
+    languages: laSet("Common"),
+    features: /* @__PURE__ */ new Set([ExtraLanguage])
   };
   var Human_default = Human;
 
@@ -9575,7 +9671,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         ({ detail: { bonus, who } }) => applyBless(g, who, bonus)
       );
     },
-    { icon: BlessIcon, tags: efSet("magic") }
+    { icon: BlessIcon, tags: ["magic"] }
   );
   var Bless = scalingSpell({
     status: "implemented",
@@ -9641,7 +9737,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         }
       );
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var DivineFavor = simpleSpell({
     status: "implemented",
@@ -9685,7 +9781,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           bonus.add(2, ShieldOfFaith);
       });
     },
-    { icon: ShieldOfFaithIcon, tags: efSet("magic") }
+    { icon: ShieldOfFaithIcon, tags: ["magic"] }
   );
   var ShieldOfFaith = simpleSpell({
     status: "implemented",
@@ -9851,7 +9947,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
       this.addProficiency("playing card set", "proficient");
       this.setAbilityScores(13, 10, 15, 11, 11, 13);
       this.setRace(Human_default);
-      this.languages.add("Sylvan");
+      this.setConfig(ExtraLanguage, "Sylvan");
       this.addSubclass(Devotion_default);
       this.addClassLevel(paladin_default2);
       this.addClassLevel(paladin_default2);
@@ -10552,7 +10648,8 @@ If the creature succeeds on its saving throw, you can't use this feature on that
                     type: { type: "flat", dc: 13 },
                     attacker: roll.type.who,
                     who: target,
-                    ability: "dex"
+                    ability: "dex",
+                    tags: ["magic"]
                   });
                   await g.damage(
                     ofTheDeep,
@@ -10632,6 +10729,10 @@ If the creature succeeds on its saving throw, you can't use this feature on that
     features: /* @__PURE__ */ new Set([Lucky2, Brave, HalflingNimbleness]),
     languages: laSet("Common", "Halfling")
   };
+  var NaturallyStealthy = notImplementedFeature(
+    "Naturally Stealthy",
+    `You can attempt to hide even when you are obscured only by a creature that is at least one size larger than you.`
+  );
   var StoutResilience = poisonResistance(
     "Stout Resilience",
     `You have advantage on saving throws against poison, and you have resistance against poison damage.`
@@ -10924,7 +11025,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           diceType.add("disadvantage", BlurEffect);
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var Blur = simpleSpell({
     status: "incomplete",
@@ -11245,7 +11346,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           ability: "dex",
           spell: LightningBolt,
           method,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         await g.damage(
           LightningBolt,
@@ -11486,7 +11588,7 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         }
       );
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var Stoneskin = simpleSpell({
     status: "implemented",
@@ -11563,7 +11665,8 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
           ability: "con",
           spell: ConeOfCold,
           method,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         await g.damage(
           ConeOfCold,
@@ -11957,7 +12060,6 @@ The creature is aware of this effect before it makes its attack against you.`
   };
 
   // src/races/Dwarf.ts
-  var Darkvision = darkvisionFeature();
   var DwarvenResilience = poisonResistance(
     "Dwarven Resilience",
     `You have advantage on saving throws against poison, and you have resistance against poison damage.`
@@ -11987,7 +12089,7 @@ The creature is aware of this effect before it makes its attack against you.`
     size: "medium",
     movement: /* @__PURE__ */ new Map([["speed", 25]]),
     features: /* @__PURE__ */ new Set([
-      Darkvision,
+      Darkvision60,
       DwarvenResilience,
       DwarvenCombatTraining,
       ToolProficiency,
@@ -11995,6 +12097,13 @@ The creature is aware of this effect before it makes its attack against you.`
     ]),
     languages: laSet("Common", "Dwarvish")
   };
+  var DwarvenToughness = new SimpleFeature(
+    "Dwarven Toughness",
+    `Your hit point maximum increases by 1, and it increases by 1 every time you gain a level.`,
+    (g, me) => {
+      me.baseHpMax += me.level;
+    }
+  );
   var DwarvenArmorTraining = new SimpleFeature(
     "Dwarven Armor Training",
     `You have proficiency with light and medium armor.`,
@@ -12167,7 +12276,8 @@ The creature is aware of this effect before it makes its attack against you.`
           method,
           who: target,
           fail: "normal",
-          save: "zero"
+          save: "zero",
+          tags: ["magic"]
         });
         if (save.damageResponse !== "zero") {
           await g.damage(
@@ -12327,7 +12437,8 @@ The creature is aware of this effect before it makes its attack against you.`
           attacker,
           method,
           spell: Moonbeam,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         await g.damage(
           Moonbeam,
@@ -12432,7 +12543,8 @@ The creature is aware of this effect before it makes its attack against you.`
           ability: "dex",
           spell: EruptingEarth,
           method,
-          who: target
+          who: target,
+          tags: ["magic"]
         });
         await g.damage(
           EruptingEarth,
@@ -12493,7 +12605,8 @@ The creature is aware of this effect before it makes its attack against you.`
           ability: "wis",
           attacker: caster,
           effect: Charmed,
-          config
+          config,
+          tags: ["charm", "magic"]
         });
         if (outcome === "fail")
           await target.addEffect(Charmed, config, caster);
@@ -12659,22 +12772,6 @@ The creature is aware of this effect before it makes its attack against you.`
   var marvoril_default = "./marvoril-LEL3VCQJ.png";
 
   // src/races/HalfElf.ts
-  var Darkvision2 = darkvisionFeature(60);
-  var FeyAncestry = new SimpleFeature(
-    "Fey Ancestry",
-    `You have advantage on saving throws against being charmed, and magic can't put you to sleep.`,
-    (g, me) => {
-      g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
-        var _a;
-        if (who === me && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")))
-          diceType.add("advantage", FeyAncestry);
-      });
-      g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
-        if (who === me && effect.tags.has("magic") && effect.tags.has("sleep"))
-          success.add("fail", FeyAncestry);
-      });
-    }
-  );
   var SkillVersatility = new ConfiguredFeature(
     "Skill Versatility",
     `You gain proficiency in two skills of your choice.`,
@@ -12691,24 +12788,17 @@ The creature is aware of this effect before it makes its attack against you.`
         me[ability].score++;
     }
   );
-  var LanguageChoice = new ConfiguredFeature(
-    "Language Choice",
-    ``,
-    (g, me, language) => {
-      me.languages.add(language);
-    }
-  );
   var HalfElf = {
     name: "Half-Elf",
     abilities: /* @__PURE__ */ new Map([["cha", 2]]),
     size: "medium",
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     features: /* @__PURE__ */ new Set([
-      Darkvision2,
+      Darkvision60,
       FeyAncestry,
       SkillVersatility,
       AbilityScoreBonus,
-      LanguageChoice
+      ExtraLanguage
     ]),
     languages: laSet("Common", "Elvish")
   };
@@ -12721,7 +12811,7 @@ The creature is aware of this effect before it makes its attack against you.`
       this.setRace(HalfElf);
       this.setConfig(AbilityScoreBonus, ["str", "con"]);
       this.setConfig(SkillVersatility, ["Athletics", "Persuasion"]);
-      this.setConfig(LanguageChoice, "Dwarvish");
+      this.setConfig(ExtraLanguage, "Dwarvish");
       this.addProficiency("Survival", "proficient");
       this.addProficiency("Investigation", "proficient");
       this.languages.add("Primordial");
@@ -12915,7 +13005,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
           ability: "con",
           spell: Thunderclap,
           method,
-          save: "zero"
+          save: "zero",
+          tags: ["magic"]
         });
         if (outcome === "fail")
           await g.damage(
@@ -12931,6 +13022,18 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
   var Thunderclap_default = Thunderclap;
 
   // src/spells/level1/HideousLaughter.ts
+  var getHideousLaughterSave = (who, config, diceType = "normal") => ({
+    source: HideousLaughter,
+    type: config.method.getSaveType(config.caster, HideousLaughter),
+    who,
+    ability: "wis",
+    attacker: config.caster,
+    effect: LaughterEffect,
+    config,
+    diceType,
+    spell: HideousLaughter,
+    method: config.method
+  });
   var LaughterEffect = new Effect(
     "Hideous Laughter",
     "turnStart",
@@ -12945,21 +13048,11 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
       });
       const resave = (i2, who, config, diceType = "normal") => i2.add(
         new EvaluateLater(who, LaughterEffect, async () => {
-          const { caster, method } = config;
-          const { outcome } = await g.save({
-            source: HideousLaughter,
-            type: method.getSaveType(caster, HideousLaughter),
-            who,
-            ability: "wis",
-            attacker: caster,
-            effect: LaughterEffect,
-            config,
-            diceType,
-            spell: HideousLaughter,
-            method
-          });
+          const { outcome } = await g.save(
+            getHideousLaughterSave(who, config, diceType)
+          );
           if (outcome === "success")
-            await caster.endConcentration();
+            await config.caster.endConcentration();
         })
       );
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
@@ -13006,17 +13099,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
         conditions: coSet("Incapacitated"),
         duration: minutes(1)
       };
-      const { outcome } = await g.save({
-        source: HideousLaughter,
-        type: method.getSaveType(caster, HideousLaughter),
-        attacker: caster,
-        who: target,
-        ability: "wis",
-        spell: HideousLaughter,
-        method,
-        effect,
-        config
-      });
+      const { outcome } = await g.save(getHideousLaughterSave(target, config));
       if (outcome === "fail") {
         const success = await target.addEffect(effect, config, caster);
         if (success) {
@@ -13091,7 +13174,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
         }
       });
     },
-    { tags: efSet("magic", "sleep") }
+    { tags: ["magic", "sleep"] }
   );
   var getSleepArea = (centre) => ({
     type: "sphere",
@@ -13158,7 +13241,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.setRace(HalfElf);
       this.setConfig(AbilityScoreBonus, ["int", "wis"]);
       this.setConfig(SkillVersatility, ["Persuasion", "History"]);
-      this.setConfig(LanguageChoice, "Dwarvish");
+      this.setConfig(ExtraLanguage, "Dwarvish");
       this.addProficiency("Deception", "proficient");
       this.addProficiency("Stealth", "proficient");
       this.addProficiency("thieves' tools", "proficient");
@@ -13781,7 +13864,6 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     ControlAirAndWaterMethod,
     ControlAirAndWaterSpells
   );
-  var Darkvision3 = darkvisionFeature();
   var EmissaryOfTheSea = nonCombatFeature(
     "Emissary of the Sea",
     `Aquatic beasts have an extraordinary affinity with your people. You can communicate simple ideas with beasts that can breathe water. They can understand the meaning of your words, though you have no special ability to understand them in return.`
@@ -13807,7 +13889,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     features: /* @__PURE__ */ new Set([
       Amphibious,
       ControlAirAndWater,
-      Darkvision3,
+      Darkvision60,
       EmissaryOfTheSea,
       GuardiansOfTheDepths
     ])

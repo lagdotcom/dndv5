@@ -163,7 +163,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
       attacker: this.actor,
       who: attacker,
       ability: "cha",
-      tags: ["charm"],
+      tags: ["charm", "magic"],
     });
     if (outcome === "success") return;
 
@@ -227,7 +227,7 @@ class IrritationAction extends AbstractAction<HasTarget> {
       attacker: this.actor,
       who: target,
       ability: "con",
-      tags: ["concentration"],
+      tags: ["concentration", "magic"],
     });
     if (outcome === "fail") await target.endConcentration();
   }

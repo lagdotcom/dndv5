@@ -32,7 +32,6 @@ export abstract class AbstractWeapon
   forceAbilityScore?: AbilityName;
   properties: Set<WeaponProperty>;
   quantity: number;
-  weaponType: string;
 
   constructor(
     public g: Engine,
@@ -44,10 +43,10 @@ export abstract class AbstractWeapon
     iconUrl?: string,
     public shortRange?: number,
     public longRange?: number,
+    public weaponType = name,
   ) {
     super(g, "weapon", name, 1, iconUrl);
 
-    this.weaponType = name;
     this.properties = new Set(properties);
     this.quantity = 1;
   }

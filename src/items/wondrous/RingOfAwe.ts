@@ -1,6 +1,6 @@
 import AbstractAction from "../../actions/AbstractAction";
 import Effect from "../../Effect";
-import Engine from "../../Engine";
+import Engine, { EngineSaveConfig } from "../../Engine";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { DawnResource } from "../../resources";
 import Combatant from "../../types/Combatant";
@@ -14,6 +14,22 @@ import AbstractWondrous from "../AbstractWondrous";
 const RingOfAweResource = new DawnResource("Ring of Awe", 1);
 
 type Config = { actor: Combatant; dc: number };
+
+const getRingOfAweSave = (
+  who: Combatant,
+  attacker: Combatant,
+  dc: number,
+  config: EffectConfig<Config>,
+): EngineSaveConfig<Config> => ({
+  source: RingOfAweEffect,
+  type: { type: "flat", dc },
+  attacker,
+  who,
+  ability: "wis",
+  effect: RingOfAweEffect,
+  config,
+  tags: ["charm", "magic"],
+});
 
 const RingOfAweEffect = new Effect<Config>(
   "Ring of Awe",
@@ -35,15 +51,9 @@ const RingOfAweEffect = new Effect<Config>(
       if (config)
         interrupt.add(
           new EvaluateLater(who, RingOfAweEffect, async () => {
-            const { outcome } = await g.save({
-              source: RingOfAweEffect,
-              type: { type: "flat", dc: config.dc },
-              attacker: config.actor,
-              who,
-              ability: "wis",
-              effect: RingOfAweEffect,
-              config,
-            });
+            const { outcome } = await g.save(
+              getRingOfAweSave(who, config.actor, config.dc, config),
+            );
 
             if (outcome === "success") await who.removeEffect(RingOfAweEffect);
           }),
@@ -95,15 +105,9 @@ class RingOfAweAction extends AbstractAction {
         dc,
       };
 
-      const { outcome } = await g.save({
-        source: this,
-        type: { type: "flat", dc },
-        attacker: actor,
-        who,
-        ability: "wis",
-        effect,
-        config,
-      });
+      const { outcome } = await g.save(
+        getRingOfAweSave(who, actor, dc, config),
+      );
 
       if (outcome === "fail") await who.addEffect(effect, config, actor);
     }

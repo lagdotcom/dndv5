@@ -1,5 +1,4 @@
 import Effect from "../../Effect";
-import { efSet } from "../../types/EffectTag";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -12,7 +11,7 @@ const BlurEffect = new Effect(
       if (who.hasEffect(BlurEffect)) diceType.add("disadvantage", BlurEffect);
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const Blur = simpleSpell({

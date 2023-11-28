@@ -185,5 +185,5 @@ export const Charmed = new Effect<{ by: Combatant }>(
       },
     );
   },
-  { icon: makeIcon(charmedUrl) },
+  { icon: makeIcon(charmedUrl), tags: ["magic"] },
 );

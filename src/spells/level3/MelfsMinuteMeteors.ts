@@ -48,6 +48,7 @@ async function fireMeteors(
         spell: MelfsMinuteMeteors,
         method,
         who: target,
+        tags: ["magic"],
       });
 
       await g.damage(

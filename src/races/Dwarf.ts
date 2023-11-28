@@ -1,11 +1,9 @@
-import { darkvisionFeature, nonCombatFeature } from "../features/common";
+import { Darkvision60, nonCombatFeature } from "../features/common";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import { poisonResistance } from "./common";
-
-const Darkvision = darkvisionFeature();
 
 const DwarvenResilience = poisonResistance(
   "Dwarven Resilience",
@@ -41,13 +39,29 @@ const Dwarf: PCRace = {
   size: "medium",
   movement: new Map([["speed", 25]]),
   features: new Set([
-    Darkvision,
+    Darkvision60,
     DwarvenResilience,
     DwarvenCombatTraining,
     ToolProficiency,
     Stonecunning,
   ]),
   languages: laSet("Common", "Dwarvish"),
+};
+
+const DwarvenToughness = new SimpleFeature(
+  "Dwarven Toughness",
+  `Your hit point maximum increases by 1, and it increases by 1 every time you gain a level.`,
+  (g, me) => {
+    me.baseHpMax += me.level;
+  },
+);
+
+export const HillDwarf: PCRace = {
+  parent: Dwarf,
+  name: "Hill Dwarf",
+  abilities: new Map([["wis", 1]]),
+  size: "medium",
+  features: new Set([DwarvenToughness]),
 };
 
 const DwarvenArmorTraining = new SimpleFeature(

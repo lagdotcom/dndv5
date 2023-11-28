@@ -968,21 +968,7 @@ export default class Engine {
     save = "half",
     fail = "normal",
     diceType,
-  }: {
-    source: Source;
-    type: SaveType;
-    attacker?: Combatant;
-    who: Combatant;
-    ability?: AbilityName;
-    spell?: Spell;
-    method?: SpellcastingMethod;
-    effect?: Effect<E>;
-    config?: EffectConfig<E>;
-    tags?: SetInitialiser<SaveTag>;
-    save?: SaveDamageResponse;
-    fail?: SaveDamageResponse;
-    diceType?: DiceType;
-  }) {
+  }: EngineSaveConfig<E>) {
     const dcRoll = await this.getSaveDC({
       type,
       source,
@@ -1040,3 +1026,19 @@ export default class Engine {
 export type EngineAttackResult = ReturnType<Engine["attack"]>;
 
 export type EngineMoveResult = ReturnType<Engine["move"]>;
+
+export type EngineSaveConfig<E extends object> = {
+  source: Source;
+  type: SaveType;
+  attacker?: Combatant;
+  who: Combatant;
+  ability?: AbilityName;
+  spell?: Spell;
+  method?: SpellcastingMethod;
+  effect?: Effect<E>;
+  config?: EffectConfig<E>;
+  tags?: SetInitialiser<SaveTag>;
+  save?: SaveDamageResponse;
+  fail?: SaveDamageResponse;
+  diceType?: DiceType;
+};
