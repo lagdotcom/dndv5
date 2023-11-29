@@ -1,13 +1,15 @@
 import { render } from "@testing-library/preact";
 import userEvent from "@testing-library/user-event";
 
+import { MonsterName } from "../data/allMonsters";
+import allPCs, { PCName } from "../data/allPCs";
+import BattleTemplate, { initialiseFromTemplate } from "../data/BattleTemplate";
 import Engine from "../Engine";
-import Combatant from "../types/Combatant";
 import App from "../ui/App";
 import { SVGCacheContext } from "../ui/utils/SVGCache";
 
 export type BattleEntry = [
-  constructor: new (g: Engine) => Combatant,
+  name: PCName | MonsterName,
   x: number,
   y: number,
   initiative: number,
@@ -19,6 +21,12 @@ export const MockSVGCache = {
   },
 };
 
+function nameAsTemplate(name: PCName | MonsterName) {
+  if (allPCs[name as PCName])
+    return { type: "pc", name: name as PCName } as const;
+  return { type: "monster", name: name as MonsterName } as const;
+}
+
 export default async function setupBattleTest(...entries: BattleEntry[]) {
   const user = userEvent.setup();
   const g = new Engine();
@@ -28,14 +36,17 @@ export default async function setupBattleTest(...entries: BattleEntry[]) {
     </SVGCacheContext.Provider>,
   );
 
-  const combatants = entries.map(([constructor, x, y, initiative]) => {
-    const z = new constructor(g);
-    g.place(z, x, y);
-    g.dice.force(initiative, { type: "initiative", who: z });
-    g.dice.force(initiative, { type: "initiative", who: z }); // in case they have adv/dis
-    return z;
-  });
+  const template: BattleTemplate = {
+    combatants: entries.map(([name, x, y, initiative]) => ({
+      ...nameAsTemplate(name),
+      x,
+      y,
+      initiative,
+    })),
+  };
 
-  await g.start();
+  await initialiseFromTemplate(g, template);
+  const combatants = Array.from(g.combatants);
+
   return { g, user, combatants };
 }

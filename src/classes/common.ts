@@ -1,21 +1,21 @@
+import allFeatures, { FeatureName } from "../data/allFeatures";
 import { OneAttackPerTurnRule } from "../DndRules";
 import Engine from "../Engine";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
-import Feature from "../types/Feature";
 import PCClassName from "../types/PCClassName";
 import { ordinal } from "../utils/numbers";
 
 type ASIConfig =
   | { type: "ability"; abilities: AbilityName[] }
-  | { type: "feat"; feat: Feature };
+  | { type: "feat"; feat: FeatureName };
 
 function asiSetup(g: Engine, me: Combatant, config: ASIConfig) {
   if (config.type === "ability")
     for (const ability of config.abilities) me[ability].score++;
-  else me.addFeature(config.feat);
+  else me.addFeature(allFeatures[config.feat]);
 }
 
 export function makeASI(className: PCClassName, level: number) {

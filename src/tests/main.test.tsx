@@ -7,12 +7,6 @@ import {
 } from "@testing-library/preact";
 
 import { DivineSmite } from "../classes/paladin";
-import Badger from "../monsters/Badger";
-import Thug from "../monsters/Thug";
-import Aura from "../pcs/davies/Aura";
-import Beldalynn from "../pcs/davies/Beldalynn";
-import Galilea from "../pcs/davies/Galilea";
-import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import setupBattleTest from "./setupBattleTest";
 
 const dialog = (name?: string) => screen.getByRole("dialog", { name });
@@ -33,7 +27,7 @@ it("can run a simple battle", async () => {
     g,
     user,
     combatants: [me],
-  } = await setupBattleTest([Thug, 0, 0, 12], [Badger, 10, 0, 4]);
+  } = await setupBattleTest(["thug", 0, 0, 12], ["badger", 10, 0, 4]);
 
   await user.click(btn("Move East"));
   await user.click(token("badger"));
@@ -50,7 +44,7 @@ it("supports Fog Cloud", async () => {
     g,
     user,
     combatants: [pc, enemy],
-  } = await setupBattleTest([Tethilssethanar, 0, 0, 20], [Thug, 30, 0, 10]);
+  } = await setupBattleTest(["Tethilssethanar", 0, 0, 20], ["thug", 30, 0, 10]);
 
   const getFogCloud = () => btn("Fog Cloud (Control Air and Water)");
 
@@ -89,9 +83,9 @@ it("supports a typical Aura attack", async () => {
     user,
     combatants: [aura],
   } = await setupBattleTest(
-    [Aura, 10, 10, 20],
-    [Tethilssethanar, 5, 0, 2],
-    [Thug, 0, 0, 1],
+    ["Aura", 10, 10, 20],
+    ["Tethilssethanar", 5, 0, 2],
+    ["thug", 0, 0, 1],
   );
 
   await user.click(token("thug"));
@@ -119,9 +113,9 @@ it("supports a typical Beldalynn attack", async () => {
     user,
     combatants: [beldalynn, thug],
   } = await setupBattleTest(
-    [Beldalynn, 0, 0, 20],
-    [Thug, 25, 0, 1],
-    [Tethilssethanar, 20, 0, 2],
+    ["Beldalynn", 0, 0, 20],
+    ["thug", 25, 0, 1],
+    ["Tethilssethanar", 20, 0, 2],
   );
 
   await user.click(btn("Melf's Minute Meteors (Wizard)"));
@@ -148,7 +142,7 @@ it("supports a typical Galilea attack", async () => {
     g,
     user,
     combatants: [galilea],
-  } = await setupBattleTest([Galilea, 0, 0, 20], [Thug, 5, 0, 10]);
+  } = await setupBattleTest(["Galilea", 0, 0, 20], ["thug", 5, 0, 10]);
 
   await user.click(token("thug"));
 

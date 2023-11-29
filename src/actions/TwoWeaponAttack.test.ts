@@ -1,27 +1,33 @@
-import Engine from "../Engine";
+import allPCs, { PCName } from "../data/allPCs";
+import PCTemplate from "../data/PCTemplate";
 import { AttackDetail } from "../events/AttackEvent";
-import { Dagger } from "../items/weapons";
-import Thug from "../monsters/Thug";
-import PC from "../PC";
 import setupBattleTest from "../tests/setupBattleTest";
 
-class Stabby extends PC {
-  constructor(g: Engine) {
-    super(g, "Stabby", "");
-
-    this.dex.score = 12;
-    this.don(new Dagger(g, 1));
-    this.don(new Dagger(g, 1));
-    this.addProficiency("simple", "proficient");
-  }
-}
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+allPCs.Stabby = {
+  name: "Stabby",
+  tokenUrl: "",
+  abilities: [10, 11, 10, 10, 10, 10],
+  background: { name: "Criminal" },
+  race: { name: "Human" },
+  levels: [],
+  items: [
+    { name: "dagger", equip: true },
+    { name: "dagger", equip: true },
+  ],
+  proficiencies: ["simple"],
+} satisfies PCTemplate;
 
 describe("TwoWeaponAttack", () => {
   it("should allow a two-weapon attack", async () => {
     const {
       g,
       combatants: [me, target],
-    } = await setupBattleTest([Stabby, 0, 5, 20], [Thug, 0, 0, 10]);
+    } = await setupBattleTest(
+      ["Stabby" as PCName, 0, 5, 20],
+      ["thug", 0, 0, 10],
+    );
 
     let thing: AttackDetail | undefined;
     g.events.on("Attack", (event) => (thing = event.detail));

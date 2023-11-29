@@ -1,3 +1,4 @@
+import allSpells, { SpellName } from "../../../data/allSpells";
 import {
   BonusSpellEntry,
   bonusSpellsFeature,
@@ -28,14 +29,13 @@ import Stoneskin from "../../../spells/level4/Stoneskin";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
 import { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
-import Spell from "../../../types/Spell";
 import { DruidSpellcasting } from "..";
 
-export const BonusCantrip = new ConfiguredFeature<Spell>(
+export const BonusCantrip = new ConfiguredFeature<SpellName>(
   "Bonus Cantrip",
   `You learn one additional druid cantrip of your choice. This cantrip doesn't count against the number of druid cantrips you know.`,
   (g, me, spell) => {
-    me.preparedSpells.add(spell);
+    me.preparedSpells.add(allSpells[spell]);
   },
 );
 

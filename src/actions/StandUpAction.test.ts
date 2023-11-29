@@ -1,7 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Effect from "../Effect";
 import { Prone } from "../effects";
-import Thug from "../monsters/Thug";
 import setupBattleTest from "../tests/setupBattleTest";
 import { coSet } from "../types/ConditionName";
 import StandUpAction from "./StandUpAction";
@@ -17,7 +16,7 @@ describe("StandUpAction", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Thug, 0, 0, 10]);
+    } = await setupBattleTest(["thug", 0, 0, 10]);
     const action = new StandUpAction(g, me);
 
     expect(action.cost).toBe(15);
@@ -27,7 +26,7 @@ describe("StandUpAction", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Thug, 0, 0, 10]);
+    } = await setupBattleTest(["thug", 0, 0, 10]);
     const action = new StandUpAction(g, me);
 
     // not prone
@@ -58,7 +57,7 @@ describe("StandUpAction", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Thug, 0, 0, 10]);
+    } = await setupBattleTest(["thug", 0, 0, 10]);
     await me.addEffect(Prone, { duration: Infinity });
 
     const action = new StandUpAction(g, me);

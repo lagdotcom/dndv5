@@ -1,31 +1,23 @@
 import tokenUrl from "@img/tok/pc/tethilssethanar.png";
 
-import Knight from "../../backgrounds/Knight";
-import Monk from "../../classes/monk";
-import Engine from "../../Engine";
-import { SlingBullet } from "../../items/ammunition";
-import { Dart, Sickle, Sling } from "../../items/weapons";
-import PC from "../../PC";
-import Triton from "../../races/Triton";
+import PCTemplate from "../../data/PCTemplate";
 
-export default class Tethilssethanar extends PC {
-  constructor(g: Engine) {
-    super(g, "Tethilssethanar", tokenUrl);
-
-    this.setAbilityScores(9, 14, 13, 8, 15, 13);
-    this.setRace(Triton);
-
-    this.setBackground(Knight);
-    this.addProficiency("playing card set", "proficient");
-    this.languages.add("Deep Speech");
-
-    this.addClassLevel(Monk);
-    this.addProficiency("Athletics", "proficient");
-    this.addProficiency("Insight", "proficient");
-
-    this.don(new Sickle(g));
-    this.don(new Dart(g, 10));
-    this.inventory.add(new Sling(g));
-    this.inventory.add(new SlingBullet(g, 40));
-  }
-}
+const Tethilssethanar: PCTemplate = {
+  name: "Tethilssethanar",
+  tokenUrl,
+  abilities: [9, 14, 13, 8, 15, 13],
+  race: { name: "Triton" },
+  background: {
+    name: "Knight",
+    proficiencies: ["playing card set"],
+    languages: ["Deep Speech"],
+  },
+  levels: [{ class: "Monk", proficiencies: ["Athletics", "Insight"] }],
+  items: [
+    { name: "sickle", equip: true },
+    { name: "dart", quantity: 10, equip: true },
+    { name: "sling" },
+    { name: "sling bullet", quantity: 40 },
+  ],
+};
+export default Tethilssethanar;

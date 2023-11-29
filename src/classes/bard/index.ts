@@ -1,3 +1,4 @@
+import allSpells, { SpellName } from "../../data/allSpells";
 import { ProficiencyRule } from "../../DndRules";
 import { nonCombatFeature, notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
@@ -8,7 +9,6 @@ import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import SkillName, { SkillNames } from "../../types/SkillName";
-import Spell from "../../types/Spell";
 import { Instruments } from "../../types/ToolName";
 import { wtSet } from "../../types/WeaponType";
 import { gains } from "../../utils/gain";
@@ -81,7 +81,7 @@ const Countercharm = notImplementedFeature(
   `At 6th level, you gain the ability to use musical notes or words of power to disrupt mind-influencing effects. As an action, you can start a performance that lasts until the end of your next turn. During that time, you and any friendly creatures within 30 feet of you have advantage on saving throws against being frightened or charmed. A creature must be able to hear you to gain this benefit. The performance ends early if you are incapacitated or silenced or if you voluntarily end it (no action required).`,
 );
 
-const MagicalSecrets = new ConfiguredFeature<Spell[]>(
+const MagicalSecrets = new ConfiguredFeature<SpellName[]>(
   "Magical Secrets",
   `By 10th level, you have plundered magical knowledge from a wide spectrum of disciplines. Choose two spells from any classes, including this one. A spell you choose must be of a level you can cast, as shown on the Bard table, or a cantrip.
 
@@ -91,7 +91,8 @@ You learn two additional spells from any classes at 14th level and again at 18th
   (g, me, spells) => {
     // TODO A spell you choose must be of a level you can cast, as shown on the Bard table, or a cantrip.
 
-    for (const spell of spells) {
+    for (const name of spells) {
+      const spell = allSpells[name];
       me.knownSpells.add(spell);
       BardSpellcasting.addCastableSpell(spell, me);
     }

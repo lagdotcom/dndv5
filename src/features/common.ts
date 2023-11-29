@@ -1,6 +1,6 @@
 import CastSpell from "../actions/CastSpell";
+import allFeatures, { FeatureName } from "../data/allFeatures";
 import { spellImplementationWarning } from "../spells/common";
-import Feature from "../types/Feature";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
@@ -79,7 +79,7 @@ export function notImplementedFeature(name: string, text: string) {
 }
 
 export function wrapperFeature(name: string, text: string) {
-  return new ConfiguredFeature<Feature>(name, text, (g, me, style) => {
-    me.addFeature(style);
+  return new ConfiguredFeature<FeatureName>(name, text, (g, me, feature) => {
+    me.addFeature(allFeatures[feature]);
   });
 }

@@ -1,16 +1,16 @@
 import AbstractAction from "../../actions/AbstractAction";
+import allMonsters, { MonsterName } from "../../data/allMonsters";
 import Engine from "../../Engine";
 import { Unsubscribe } from "../../events/Dispatcher";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import MessageBuilder from "../../MessageBuilder";
-import Monster from "../../Monster";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { ShortRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Feature from "../../types/Feature";
 import { getExecutionMode } from "../../utils/env";
 
-type HasForm = { form: Monster };
+type HasForm = { form: MonsterName };
 
 const WildShapeResource = new ShortRestResource("Wild Shape", 2);
 
@@ -44,7 +44,8 @@ class WildShapeController {
   constructor(
     public g: Engine,
     public me: Combatant,
-    public form: Monster,
+    public formName: MonsterName,
+    public form = allMonsters[formName](g),
   ) {
     this.backup = {
       name: me.name,
@@ -182,7 +183,7 @@ class WildShapeAction extends AbstractAction<HasForm> {
   constructor(
     g: Engine,
     actor: Combatant,
-    public forms: Monster[],
+    public forms: MonsterName[],
   ) {
     super(
       g,
@@ -192,7 +193,7 @@ class WildShapeAction extends AbstractAction<HasForm> {
       {
         form: new ChoiceResolver(
           g,
-          forms.map((value) => ({ value, label: value.name })),
+          forms.map((value) => ({ value, label: value })),
         ),
       },
       { time: "action", resources: [[WildShapeResource, 1]] },
@@ -207,7 +208,7 @@ class WildShapeAction extends AbstractAction<HasForm> {
   }
 }
 
-const WildShape = new ConfiguredFeature<Monster[]>(
+const WildShape = new ConfiguredFeature<MonsterName[]>(
   "Wild Shape",
   `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
   (g, me, forms) => {

@@ -1,86 +1,68 @@
 import tokenUrl from "@img/tok/pc/salgar.png";
 
-import Sage from "../../backgrounds/Sage";
-import Druid, { ASI4 } from "../../classes/druid";
-import Land, { BonusCantrip, CircleSpells } from "../../classes/druid/Land";
-import WildShape from "../../classes/druid/WildShape";
-import silvered from "../../enchantments/silvered";
-import Engine from "../../Engine";
-import { HideArmor } from "../../items/armor";
-import { ArrowCatchingShield } from "../../items/shields";
-import { Handaxe, Shortsword, Spear } from "../../items/weapons";
-import BootsOfTheWinterlands from "../../items/wondrous/BootsOfTheWinterlands";
-import CloakOfElvenkind from "../../items/wondrous/CloakOfElvenkind";
-import Bat from "../../monsters/Bat";
-import GiantBadger from "../../monsters/GiantBadger";
-import PC from "../../PC";
-import { MountainDwarf, ToolProficiency } from "../../races/Dwarf";
-import MagicStone from "../../spells/cantrip/MagicStone";
-import EarthTremor from "../../spells/level1/EarthTremor";
-import HealingWord from "../../spells/level1/HealingWord";
-import LesserRestoration from "../../spells/level2/LesserRestoration";
-import Moonbeam from "../../spells/level2/Moonbeam";
-import EruptingEarth from "../../spells/level3/EruptingEarth";
-import CharmMonster from "../../spells/level4/CharmMonster";
-import GuardianOfNature from "../../spells/level4/GuardianOfNature";
-import { enchant } from "../../utils/items";
+import PCTemplate from "../../data/PCTemplate";
 
-export default class Salgar extends PC {
-  constructor(g: Engine) {
-    super(g, "Salgar", tokenUrl);
+const Salgar: PCTemplate = {
+  name: "Salgar",
+  tokenUrl,
+  abilities: [10, 8, 14, 14, 15, 10],
+  race: {
+    name: "Mountain Dwarf",
+    configs: { "Tool Proficiency": "mason's tools" },
+  },
+  background: { name: "Sage", languages: ["Elvish", "Giant"] },
+  levels: [
+    { class: "Druid", proficiencies: ["Insight", "Survival"] },
+    {
+      class: "Druid",
+      subclass: "Land",
+      configs: {
+        "Wild Shape": ["bat", "giant badger"],
+        "Circle Spells": "mountain",
+        "Bonus Cantrip": "magic stone",
+      },
+    },
+    { class: "Druid" },
+    {
+      class: "Druid",
+      configs: {
+        "Ability Score Improvement (Druid 4)": {
+          type: "ability",
+          abilities: ["cha", "wis"],
+        },
+      },
+    },
+    { class: "Druid" },
+    { class: "Druid" },
+    { class: "Druid" },
+  ],
+  items: [
+    { name: "arrow-catching shield", equip: true, attune: true },
+    { name: "boots of the winterlands", equip: true, attune: true },
+    { name: "cloak of elvenkind", equip: true, attune: true },
+    { name: "spear", equip: true },
+    { name: "hide armor", equip: true },
+    { name: "handaxe" },
+    { name: "shortsword", enchantments: ["silvered"] },
+  ],
+  prepared: [
+    // "druidcraft",
+    // "mending",
+    // "mold earth",
 
-    this.setAbilityScores(10, 8, 14, 14, 15, 10);
-    this.setRace(MountainDwarf);
+    // "detect magic",
+    "earth tremor",
+    "healing word",
+    // "speak with animals",
 
-    this.setBackground(Sage);
-    this.languages.add("Elvish");
-    this.languages.add("Giant");
+    "lesser restoration",
+    // "locate object",
+    "moonbeam",
 
-    this.addClassLevel(Druid);
-    this.addProficiency("Insight", "proficient");
-    this.addProficiency("Survival", "proficient");
+    "erupting earth",
 
-    this.addSubclass(Land);
-    this.addClassLevel(Druid);
-    this.addClassLevel(Druid);
-    this.addClassLevel(Druid);
-    this.addClassLevel(Druid);
-    this.addClassLevel(Druid);
-    this.addClassLevel(Druid);
-
-    this.setConfig(ToolProficiency, "mason's tools");
-    this.setConfig(CircleSpells, "mountain");
-    this.setConfig(BonusCantrip, MagicStone);
-    this.setConfig(ASI4, { type: "ability", abilities: ["cha", "wis"] });
-
-    this.setConfig(WildShape, [new Bat(g), new GiantBadger(g)]);
-
-    this.don(new ArrowCatchingShield(g), true);
-    this.don(new BootsOfTheWinterlands(g), true);
-    this.don(new CloakOfElvenkind(g), true);
-    this.don(new Spear(g, 1), true);
-    this.don(new HideArmor(g));
-    this.inventory.add(new Handaxe(g, 1));
-    this.inventory.add(enchant(new Shortsword(g), silvered));
-
-    this.addPreparedSpells(
-      // Druidcraft,
-      // Mending,
-      // TODO MoldEarth,
-
-      // TODO DetectMagic,
-      EarthTremor,
-      HealingWord,
-      // TODO SpeakWithAnimals,
-
-      LesserRestoration,
-      // LocateObject,
-      Moonbeam,
-
-      EruptingEarth,
-
-      CharmMonster,
-      GuardianOfNature,
-    );
-  }
-}
+    "charm monster",
+    "guardian of nature",
+  ],
+};
+export default Salgar;

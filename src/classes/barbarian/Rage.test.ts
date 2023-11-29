@@ -7,7 +7,6 @@ import SuccessResponseCollector from "../../collectors/SuccessResponseCollector"
 import BeforeCheckEvent from "../../events/BeforeCheckEvent";
 import CheckActionEvent from "../../events/CheckActionEvent";
 import TurnEndedEvent from "../../events/TurnEndedEvent";
-import Hagrond from "../../pcs/davies/Hagrond";
 import setupBattleTest from "../../tests/setupBattleTest";
 import Action from "../../types/Action";
 import { chSet } from "../../types/CheckTag";
@@ -18,7 +17,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Hagrond, 0, 0, 10]);
+    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();
@@ -30,7 +29,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Hagrond, 0, 0, 10]);
+    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
 
     const rageAction = new RageAction(g, me);
     const endRageAction = new EndRageAction(g, me);
@@ -45,7 +44,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Hagrond, 0, 0, 10]);
+    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();
@@ -72,7 +71,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Hagrond, 0, 0, 10]);
+    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();
@@ -100,7 +99,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest([Hagrond, 0, 0, 10]);
+    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();

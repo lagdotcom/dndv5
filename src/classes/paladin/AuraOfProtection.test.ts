@@ -6,8 +6,6 @@ import SaveDamageResponseCollector from "../../collectors/SaveDamageResponseColl
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { Dying } from "../../effects";
 import BeforeSaveEvent from "../../events/BeforeSaveEvent";
-import Aura from "../../pcs/davies/Aura";
-import Galilea from "../../pcs/davies/Galilea";
 import setupBattleTest from "../../tests/setupBattleTest";
 import { svSet } from "../../types/SaveTag";
 import AuraOfProtection from "./AuraOfProtection";
@@ -17,7 +15,7 @@ describe("Aura of Protection", () => {
     const {
       g,
       combatants: [who, paladin],
-    } = await setupBattleTest([Aura, 35, 0, 10], [Galilea, 0, 0, 1]);
+    } = await setupBattleTest(["Aura", 35, 0, 10], ["Galilea", 0, 0, 1]);
 
     const outOfRange = await g.resolve(
       new BeforeSaveEvent({

@@ -1,7 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import { Shortbow } from "../items/weapons";
-import Badger from "../monsters/Badger";
-import Thug from "../monsters/Thug";
 import setupBattleTest from "../tests/setupBattleTest";
 import OpportunityAttack from "./OpportunityAttack";
 
@@ -10,7 +8,7 @@ describe("OpportunityAttack", () => {
     const {
       g,
       combatants: [me, target],
-    } = await setupBattleTest([Thug, 0, 0, 10], [Badger, 5, 0, 0]);
+    } = await setupBattleTest(["thug", 0, 0, 10], ["badger", 5, 0, 0]);
 
     const bow = new Shortbow(g);
     const oa = new OpportunityAttack(g, me, bow);

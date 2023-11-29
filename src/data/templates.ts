@@ -1,74 +1,51 @@
-import Engine from "../Engine";
-import Birnotec from "../monsters/fiendishParty/Birnotec";
-import Kay from "../monsters/fiendishParty/Kay";
-import OGonrit from "../monsters/fiendishParty/OGonrit";
-import Yulash from "../monsters/fiendishParty/Yulash";
-import Zafron from "../monsters/fiendishParty/Zafron";
-import Goblin from "../monsters/Goblin";
-import Aura from "../pcs/davies/Aura";
-import Beldalynn from "../pcs/davies/Beldalynn";
-import Galilea from "../pcs/davies/Galilea";
-import Hagrond from "../pcs/davies/Hagrond";
-import Salgar from "../pcs/davies/Salgar";
-import Marvoril from "../pcs/glean/Marvoril";
-import Shaira from "../pcs/glean/Shaira";
-import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
-import Combatant from "../types/Combatant";
+import { MonsterName } from "./allMonsters";
+import { PCName } from "./allPCs";
+import BattleTemplate, { BattleTemplateEntry } from "./BattleTemplate";
 
-export type CombatantCreator = (g: Engine) => Combatant;
-
-export interface BattleTemplateEntry {
-  combatant: CombatantCreator;
-  side?: number;
-  x: number;
-  y: number;
-}
-
-type BattleTemplate = BattleTemplateEntry[];
-export default BattleTemplate;
-
-export function useTemplate(g: Engine, template: BattleTemplate) {
-  for (const { combatant, side, x, y } of template) {
-    const who = combatant(g);
-    if (typeof side === "number") who.side = side;
-    g.place(who, x, y);
-  }
-  return g.start();
-}
-
-const bte = (
-  combatant: CombatantCreator,
-  x: number,
-  y: number,
-): BattleTemplateEntry => ({
-  combatant,
+const addPC = (name: PCName, x: number, y: number): BattleTemplateEntry => ({
+  type: "pc",
+  name,
   x,
   y,
 });
 
-export const gleanVsGoblins: BattleTemplate = [
-  bte((g) => new Marvoril(g), 15, 30),
-  bte((g) => new Shaira(g), 10, 35),
-  bte((g) => new Goblin(g, true), 15, 0),
-  bte((g) => new Goblin(g, true), 25, 0),
-  bte((g) => new Goblin(g), 20, 5),
-  bte((g) => new Goblin(g), 25, 5),
-];
+const addMonster = (
+  name: MonsterName,
+  x: number,
+  y: number,
+): BattleTemplateEntry => ({
+  type: "monster",
+  name,
+  x,
+  y,
+});
 
-export const daviesVsFiends: BattleTemplate = [
-  bte((g) => new Aura(g), 20, 20),
-  bte((g) => new Beldalynn(g), 10, 30),
-  bte((g) => new Galilea(g), 5, 0),
-  bte((g) => new Salgar(g), 15, 30),
-  bte((g) => new Hagrond(g), 0, 5),
-  bte((g) => new Birnotec(g), 15, 0),
-  bte((g) => new Kay(g), 20, 0),
-  bte((g) => new OGonrit(g), 10, 15),
-  bte((g) => new Yulash(g), 25, 10),
-  bte((g) => new Zafron(g), 10, 5),
-];
+export const gleanVsGoblins: BattleTemplate = {
+  combatants: [
+    addPC("Marvoril", 15, 30),
+    addPC("Shaira", 10, 35),
+    addMonster("goblin [bow]", 15, 0),
+    addMonster("goblin [bow]", 25, 0),
+    addMonster("goblin", 20, 5),
+    addMonster("goblin", 25, 5),
+  ],
+};
 
-export const tethVsGoblin: BattleTemplate = [
-  bte((g) => new Tethilssethanar(g), 5, 5),
-  bte((g) => new Goblin(g), 15, 5),
-];
+export const daviesVsFiends: BattleTemplate = {
+  combatants: [
+    addPC("Aura", 20, 20),
+    addPC("Beldalynn", 10, 30),
+    addPC("Galilea", 5, 0),
+    addPC("Salgar", 15, 30),
+    addPC("Hagrond", 0, 5),
+    addMonster("Birnotec", 15, 0),
+    addMonster("Kay of the Abyss", 20, 0),
+    addMonster("O Gonrit", 10, 15),
+    addMonster("Yulash", 25, 10),
+    addMonster("Zafron Halehart", 10, 5),
+  ],
+};
+
+export const tethVsGoblin: BattleTemplate = {
+  combatants: [addPC("Tethilssethanar", 5, 5), addMonster("goblin", 15, 5)],
+};

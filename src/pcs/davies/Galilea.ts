@@ -1,72 +1,52 @@
 import tokenUrl from "@img/tok/pc/galilea.png";
 
-import Noble from "../../backgrounds/Noble";
-import Paladin, { ASI4, PaladinFightingStyle } from "../../classes/paladin";
-import Devotion from "../../classes/paladin/Devotion";
-import Engine from "../../Engine";
-import FightingStyleProtection from "../../features/fightingStyles/Protection";
-import { CrossbowBolt } from "../../items/ammunition";
-import { Shield, SplintArmor } from "../../items/armor";
-import { WandOfWeb } from "../../items/wands";
-import { LightCrossbow, Longsword } from "../../items/weapons";
-import FigurineOfWondrousPower from "../../items/wondrous/FigurineOfWondrousPower";
-import RingOfAwe from "../../items/wondrous/RingOfAwe";
-import SilverShiningAmulet from "../../items/wondrous/SilverShiningAmulet";
-import PC from "../../PC";
-import { ExtraLanguage } from "../../races/common";
-import Human from "../../races/Human";
-import Bless from "../../spells/level1/Bless";
-import DivineFavor from "../../spells/level1/DivineFavor";
-import ShieldOfFaith from "../../spells/level1/ShieldOfFaith";
-import Aid from "../../spells/level2/Aid";
-import MagicWeapon from "../../spells/level2/MagicWeapon";
+import PCTemplate from "../../data/PCTemplate";
 
-export default class Galilea extends PC {
-  constructor(g: Engine) {
-    super(g, "Galilea", tokenUrl);
-
-    this.setAbilityScores(13, 10, 15, 11, 11, 13);
-    this.setRace(Human);
-    this.setConfig(ExtraLanguage, "Sylvan");
-
-    this.setBackground(Noble);
-    this.addProficiency("playing card set", "proficient");
-    this.languages.add("Orc");
-
-    this.addClassLevel(Paladin);
-    this.addProficiency("Insight", "proficient");
-    this.addProficiency("Intimidation", "proficient");
-
-    this.addClassLevel(Paladin);
-    this.addSubclass(Devotion);
-    this.addClassLevel(Paladin);
-    this.addClassLevel(Paladin);
-    this.addClassLevel(Paladin);
-    this.addClassLevel(Paladin);
-    this.addClassLevel(Paladin);
-
-    this.setConfig(PaladinFightingStyle, FightingStyleProtection);
-    this.setConfig(ASI4, { type: "ability", abilities: ["str", "str"] });
-
-    this.don(new Longsword(g));
-    this.don(new Shield(g));
-    this.don(new SplintArmor(g));
-    this.don(new RingOfAwe(g), true);
-    this.don(new SilverShiningAmulet(g), true);
-    this.inventory.add(new FigurineOfWondrousPower(g, "Silver Raven"));
-    const wand = new WandOfWeb(g);
-    this.inventory.add(wand);
-    this.attunements.add(wand);
-    this.inventory.add(new LightCrossbow(g));
-    this.inventory.add(new CrossbowBolt(g, 20));
-
-    this.addPreparedSpells(
-      Bless,
-      DivineFavor,
-      ShieldOfFaith,
-
-      Aid,
-      MagicWeapon,
-    );
-  }
-}
+const Galilea: PCTemplate = {
+  name: "Galilea",
+  tokenUrl,
+  abilities: [13, 10, 15, 11, 11, 13],
+  race: {
+    name: "Human",
+    configs: { "Extra Language": "Sylvan" },
+  },
+  background: {
+    name: "Noble",
+    proficiencies: ["playing card set"],
+    languages: ["Orc"],
+  },
+  levels: [
+    { class: "Paladin" },
+    {
+      class: "Paladin",
+      subclass: "Devotion",
+      configs: { "Fighting Style (Paladin)": "Fighting Style: Protection" },
+    },
+    { class: "Paladin" },
+    {
+      class: "Paladin",
+      configs: {
+        "Ability Score Improvement (Paladin 4)": {
+          type: "ability",
+          abilities: ["str", "str"],
+        },
+      },
+    },
+    { class: "Paladin" },
+    { class: "Paladin" },
+    { class: "Paladin" },
+  ],
+  items: [
+    { name: "longsword", equip: true },
+    { name: "shield", equip: true },
+    { name: "splint armor", equip: true },
+    { name: "ring of awe", equip: true, attune: true },
+    { name: "silver shining amulet", equip: true, attune: true },
+    { name: "figurine of wondrous power, silver raven" },
+    { name: "wand of web", attune: true },
+    { name: "light crossbow" },
+    { name: "crossbow bolt", quantity: 20 },
+  ],
+  prepared: ["bless", "divine favor", "shield of faith", "aid", "magic weapon"],
+};
+export default Galilea;
