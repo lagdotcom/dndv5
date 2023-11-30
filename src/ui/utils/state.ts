@@ -32,6 +32,8 @@ export const allCombatants = signal<UnitData[]>([]);
 
 export const allEffects = signal<EffectArea[]>([]);
 
+export const canDragUnits = signal<boolean>(false);
+
 export const chooseFromList = signal<ListChoiceEvent | undefined>(undefined);
 
 export const chooseManyFromList = signal<MultiListChoiceEvent | undefined>(
@@ -71,6 +73,7 @@ export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
   allActions,
   allCombatants,
   allEffects,
+  canDragUnits,
   chooseFromList,
   chooseManyFromList,
   chooseYesNo,
@@ -86,7 +89,7 @@ export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
   wantsPoint,
 };
 
-export const resetAllState = () =>
+export const resetAllState = (continuation?: () => void) =>
   batch(() => {
     actionAreas.value = [];
     activeCombatantId.value = NaN;
@@ -94,6 +97,7 @@ export const resetAllState = () =>
     allActions.value = [];
     allCombatants.value = [];
     allEffects.value = [];
+    canDragUnits.value = false;
     chooseFromList.value = undefined;
     chooseManyFromList.value = undefined;
     chooseYesNo.value = undefined;
@@ -105,4 +109,5 @@ export const resetAllState = () =>
     teleportInfo.value = undefined;
     wantsCombatant.value = undefined;
     wantsPoint.value = undefined;
+    continuation?.();
   });

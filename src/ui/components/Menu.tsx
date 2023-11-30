@@ -1,9 +1,14 @@
 import Labelled from "./Labelled";
 import styles from "./Menu.module.scss";
 
-export type MenuItem<T> = { label: string; value: T; disabled?: boolean };
+export interface MenuItem<T> {
+  label: string;
+  value: T;
+  disabled?: boolean;
+  className?: string;
+}
 
-interface Props<T> {
+export interface MenuProps<T> {
   caption: string;
   items: MenuItem<T>[];
   onClick(item: T): void;
@@ -11,18 +16,25 @@ interface Props<T> {
   y: number;
 }
 
-export default function Menu<T>({ caption, items, onClick, x, y }: Props<T>) {
+export default function Menu<T>({
+  caption,
+  items,
+  onClick,
+  x,
+  y,
+}: MenuProps<T>) {
   return (
     <menu className={styles.main} style={{ left: x, top: y }}>
       <Labelled label={caption} contentsClass={styles.sub}>
         {items.length === 0 ? (
           <div>(empty)</div>
         ) : (
-          items.map(({ label, value, disabled }) => (
+          items.map(({ label, value, disabled, className }) => (
             <button
               role="menuitem"
               key={label}
               disabled={disabled}
+              className={className}
               onClick={() => onClick(value)}
             >
               {label}

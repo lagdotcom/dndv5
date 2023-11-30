@@ -172,12 +172,15 @@ export const getSaveMessage = ({
   roll: {
     type: { who, ability, tags },
   },
+  forced,
+  outcome,
   total,
   dc,
 }: SaveEventDetail) => [
   msgCombatant(who),
-  ` gets a ${total}`,
-  msgDiceType(diceType),
+  ...(forced
+    ? [" automatically ", outcome === "success" ? "succeeds" : "fails"]
+    : [` gets a ${total}`, msgDiceType(diceType)]),
   " on a ",
   describeSave(tags, ability),
   ` saving throw. (DC ${dc})`,

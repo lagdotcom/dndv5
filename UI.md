@@ -5,6 +5,7 @@
 | 200 | menu                    |
 | 100 | dialog                  |
 | 99  | dialog shade            |
+| 50  | mode switch (temp)      |
 | 30  | side panel              |
 | 29  | event log               |
 | 25  | effect label (pending)  |

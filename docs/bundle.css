@@ -2,8 +2,8 @@
 :root {
   --scale: 100px;
 }
-._modeSwitch_19cx7_5 {
-  z-index: 100;
+._modeSwitch_1ojjx_5 {
+  z-index: 50;
   position: absolute;
   right: 20px;
   bottom: 20px;
@@ -219,8 +219,12 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/button.module.scss */
-._active_10ff1_1 {
+._active_rcghq_1 {
   background-color: yellow;
+}
+._danger_rcghq_5 {
+  background-color: red;
+  color: white;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/ChooseActionConfigPanel.module.scss */

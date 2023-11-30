@@ -11,6 +11,7 @@ import {
   actionAreas,
   allCombatants,
   allEffects,
+  canDragUnits,
   movingCombatantId,
   scale,
   teleportInfo,
@@ -22,6 +23,7 @@ import Unit from "./Unit";
 interface Props {
   onClickBattlefield?: (pos: Point, e: MouseEvent) => void;
   onClickCombatant?: (who: Combatant, e: MouseEvent) => void;
+  onDragCombatant?: (who: Combatant, p: Point) => void;
   onMoveCombatant?: (who: Combatant, dir: MoveDirection) => void;
   showHoveredTile?: boolean;
 }
@@ -29,6 +31,7 @@ interface Props {
 export default function Battlefield({
   onClickBattlefield,
   onClickCombatant,
+  onDragCombatant,
   onMoveCombatant,
   showHoveredTile,
 }: Props) {
@@ -62,6 +65,20 @@ export default function Battlefield({
     [convertCoordinate, onClickBattlefield],
   );
 
+  const onDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  }, []);
+  const onDrop = useCallback(
+    (e: DragEvent) => {
+      const p = convertCoordinate(e);
+      const id = Number(e.dataTransfer?.getData("unit/id"));
+      const u = allCombatants.peek()[id - 1];
+      if (u) onDragCombatant?.(u.who, p);
+    },
+    [convertCoordinate, onDragCombatant],
+  );
+
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <main
@@ -77,6 +94,8 @@ export default function Battlefield({
         e.preventDefault();
         return false;
       }}
+      onDragOver={canDragUnits.value ? onDragOver : undefined}
+      onDrop={canDragUnits.value ? onDrop : undefined}
     >
       <div style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}>
         {allCombatants.value.map((unit) => (

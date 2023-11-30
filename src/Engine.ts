@@ -12,6 +12,7 @@ import MultiplierCollector, {
 import ProficiencyCollector from "./collectors/ProficiencyCollector";
 import SaveDamageResponseCollector from "./collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
+import ValueCollector from "./collectors/ValueCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
 import DndRules, { ProficiencyRule } from "./DndRules";
@@ -38,7 +39,7 @@ import CombatantHealedEvent from "./events/CombatantHealedEvent";
 import CombatantInitiativeEvent from "./events/CombatantInitiativeEvent";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import CombatantPlacedEvent from "./events/CombatantPlacedEvent";
-import DiceRolledEvent from "./events/DiceRolledEvent";
+import DiceRolledEvent, { DiceRolledDetail } from "./events/DiceRolledEvent";
 import Dispatcher from "./events/Dispatcher";
 import GatherDamageEvent, {
   GatherDamageDetail,
@@ -153,6 +154,7 @@ export default class Engine {
     this.initiativeOrder = Array.from(this.combatants).sort(
       (a, b) => b.initiative - a.initiative,
     );
+    if (!this.initiativeOrder.length) return;
 
     await this.resolve(
       new BattleStartedEvent({ interrupt: new InterruptionCollector() }),
@@ -253,14 +255,22 @@ export default class Engine {
 
     this.addProficiencyBonus(e.who, proficiency, bonus);
 
+    let roll: DiceRolledDetail<SavingThrow> = {
+      type: { type: "save", ...e },
+      diceType: "normal",
+      interrupt: new InterruptionCollector(),
+      size: 20,
+      values: new ValueCollector(NaN),
+    };
+    let total = NaN;
     let forced = false;
     let success = false;
-    const roll = await this.roll({ type: "save", ...e }, diceType.result);
-    const total = roll.values.final + bonus.result;
     if (successResponse.result !== "normal") {
       success = successResponse.result === "success";
       forced = true;
     } else {
+      roll = await this.roll({ type: "save", ...e }, diceType.result);
+      total = roll.values.final + bonus.result;
       success = total >= dc;
     }
 
@@ -627,6 +637,7 @@ export default class Engine {
     totalDamage: number,
   ) {
     const dc = Math.max(10, Math.floor(totalDamage / 2));
+    // TODO update to this.save() ?
     const result = await this.savingThrow(dc, {
       attacker: target,
       who: target,

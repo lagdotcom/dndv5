@@ -13,6 +13,7 @@ import MoveDirection from "../../types/MoveDirection";
 import Point from "../../types/Point";
 import { resolveArea } from "../../utils/areas";
 import { checkConfig } from "../../utils/config";
+import useMenu from "../hooks/useMenu";
 import { getAllIcons } from "../utils/icons";
 import {
   actionAreas,
@@ -27,6 +28,7 @@ import {
   moveBounds,
   moveHandler,
   movingCombatantId,
+  resetAllState,
   showSideHP,
   showSideUnderlay,
   teleportInfo,
@@ -43,7 +45,7 @@ import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
 import styles from "./CombatUI.module.scss";
 import EventLog from "./EventLog";
 import ListChoiceDialog from "./ListChoiceDialog";
-import Menu, { MenuItem } from "./Menu";
+import Menu from "./Menu";
 import MultiListChoiceDialog from "./MultiListChoiceDialog";
 import YesNoDialog from "./YesNoDialog";
 
@@ -52,27 +54,9 @@ interface Props {
   template?: BattleTemplate;
 }
 
-interface ActionMenuState {
-  show: boolean;
-  x: number;
-  y: number;
-  items: MenuItem<Action>[];
-}
-
 export default function CombatUI({ g, template }: Props) {
   const cache = useContext(SVGCacheContext);
-  const [target, setTarget] = useState<Combatant>();
   const [action, setAction] = useState<Action>();
-  const [actionMenu, setActionMenu] = useState<ActionMenuState>({
-    show: false,
-    x: NaN,
-    y: NaN,
-    items: [],
-  });
-  const hideActionMenu = useCallback(
-    () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
-    [],
-  );
 
   const refreshUnits = useCallback(() => {
     allCombatants.value = Array.from(g.combatants, getUnitData);
@@ -111,8 +95,32 @@ export default function CombatUI({ g, template }: Props) {
     [onFinishBoundedMove],
   );
 
+  const onExecuteAction = useCallback(
+    <T extends object>(action: Action<T>, config: T) => {
+      setAction(undefined);
+      actionAreas.value = undefined;
+      void g.act(action, config).then(() => {
+        refreshUnits();
+        const actions = g.getActions(action.actor);
+        allActions.value = actions;
+        return actions;
+      });
+    },
+    [g, refreshUnits],
+  );
+
+  const menu = useMenu<Action, Combatant>("Quick Actions", (choice, target) => {
+    setAction(undefined);
+
+    const point = target.position;
+    const config = { target, point };
+    if (checkConfig(g, choice, config)) {
+      onExecuteAction(choice, config);
+    } else console.warn(config, "does not match", choice.getConfig(config));
+  });
+
   useEffect(() => {
-    batch(() => {
+    resetAllState(() => {
       showSideHP.value = [0];
       showSideUnderlay.value = false;
     });
@@ -131,7 +139,7 @@ export default function CombatUI({ g, template }: Props) {
             activeCombatantId.value = who.id;
             moveHandler.value = getDefaultMovement(who);
             movingCombatantId.value = who.id;
-            hideActionMenu();
+            menu.hide();
 
             refreshUnits();
             allActions.value = g.getActions(who);
@@ -180,43 +188,8 @@ export default function CombatUI({ g, template }: Props) {
       });
 
     return g.reset.bind(g);
-  }, [
-    cache,
-    g,
-    hideActionMenu,
-    processMove,
-    refreshAreas,
-    refreshUnits,
-    template,
-  ]);
-
-  const onExecuteAction = useCallback(
-    <T extends object>(action: Action<T>, config: T) => {
-      setAction(undefined);
-      actionAreas.value = undefined;
-      void g.act(action, config).then(() => {
-        refreshUnits();
-        const actions = g.getActions(action.actor);
-        allActions.value = actions;
-        return actions;
-      });
-    },
-    [g, refreshUnits],
-  );
-
-  const onClickAction = useCallback(
-    (action: Action) => {
-      hideActionMenu();
-      setAction(undefined);
-
-      const point = target?.position;
-      const config = { target, point };
-      if (checkConfig(g, action, config)) {
-        onExecuteAction(action, config);
-      } else console.warn(config, "does not match", action.getConfig(config));
-    },
-    [g, hideActionMenu, onExecuteAction, target],
-  );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cache, g, processMove, refreshAreas, refreshUnits, template]);
 
   const onClickBattlefield = useCallback(
     (p: Point) => {
@@ -226,10 +199,10 @@ export default function CombatUI({ g, template }: Props) {
         return;
       }
 
-      hideActionMenu();
+      menu.hide();
       actionAreas.value = undefined;
     },
-    [hideActionMenu],
+    [menu],
   );
 
   const onClickCombatant = useCallback(
@@ -253,41 +226,41 @@ export default function CombatUI({ g, template }: Props) {
 
       const me = activeCombatant.value;
       if (me && !moveBounds.peek()) {
-        setTarget(who);
+        menu.show(
+          e,
+          allActions.value
+            .map((action) => {
+              const testConfig = { target: who, point: who.position };
+              const invalidConfig = !checkConfig(g, action, testConfig);
+              const config = action.getConfig(testConfig);
+              const needsTarget = "target" in config || me.who === who;
+              const needsPoint = "point" in config;
+              const isReaction = action.getTime(testConfig) === "reaction";
 
-        const items = allActions.value
-          .map((action) => {
-            const testConfig = { target: who, point: who.position };
-            const invalidConfig = !checkConfig(g, action, testConfig);
-            const config = action.getConfig(testConfig);
-            const needsTarget = "target" in config || me.who === who;
-            const needsPoint = "point" in config;
-            const isReaction = action.getTime(testConfig) === "reaction";
-
-            return {
-              label: action.name,
-              value: action,
-              disabled:
-                invalidConfig || isReaction || (!needsTarget && !needsPoint),
-            };
-          })
-          // TODO would this be useful at some point?
-          .filter((item) => !item.disabled);
-
-        setActionMenu({ show: true, x: e.clientX, y: e.clientY, items });
+              return {
+                label: action.name,
+                value: action,
+                disabled:
+                  invalidConfig || isReaction || (!needsTarget && !needsPoint),
+              };
+            })
+            // TODO would this be useful at some point?
+            .filter((item) => !item.disabled),
+          who,
+        );
       }
     },
-    [g],
+    [g, menu],
   );
 
   const onMoveCombatant = useCallback(
     (who: Combatant, dir: MoveDirection) => {
       if (moveHandler.value) {
-        hideActionMenu();
+        menu.hide();
         processMove(g.moveInDirection(who, dir, moveHandler.value));
       }
     },
-    [g, hideActionMenu, processMove],
+    [g, menu, processMove],
   );
 
   const onPass = useCallback(() => {
@@ -303,10 +276,10 @@ export default function CombatUI({ g, template }: Props) {
 
   const onChooseAction = useCallback(
     (action: Action) => {
-      hideActionMenu();
+      menu.hide();
       setAction(action);
     },
-    [hideActionMenu],
+    [menu],
   );
 
   return (
@@ -316,9 +289,7 @@ export default function CombatUI({ g, template }: Props) {
         onClickCombatant={onClickCombatant}
         onMoveCombatant={onMoveCombatant}
       />
-      {actionMenu.show && (
-        <Menu caption="Quick Actions" {...actionMenu} onClick={onClickAction} />
-      )}
+      {menu.isShown && <Menu {...menu.props} />}
       <div className={styles.sidePanel}>
         {moveBounds.value ? (
           <BoundedMovePanel

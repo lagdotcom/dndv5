@@ -2,7 +2,12 @@ import { useCallback } from "preact/hooks";
 
 import Combatant from "../../types/Combatant";
 import MoveDirection from "../../types/MoveDirection";
-import { scale, showSideHP, showSideUnderlay } from "../utils/state";
+import {
+  canDragUnits,
+  scale,
+  showSideHP,
+  showSideUnderlay,
+} from "../utils/state";
 import { UnitData } from "../utils/types";
 import styles from "./Unit.module.scss";
 import UnitEffectIcon from "./UnitEffectIcon";
@@ -50,6 +55,13 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
     [onMove, u],
   );
 
+  const onDragStart = useCallback(
+    (e: DragEvent) => {
+      e.dataTransfer?.setData("unit/id", String(u.id));
+    },
+    [u.id],
+  );
+
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
@@ -57,6 +69,8 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
       style={containerStyle}
       title={u.name}
       onClick={clicked}
+      draggable={canDragUnits.value}
+      onDragStart={canDragUnits.value ? onDragStart : undefined}
     >
       <img
         className={styles.token}
