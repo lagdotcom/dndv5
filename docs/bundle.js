@@ -9515,6 +9515,50 @@ Once you have raged the maximum number of times for your barbarian level, you mu
     }
   );
 
+  // src/classes/barbarian/RelentlessRage.ts
+  var RelentlessRageResource = new ShortRestResource(
+    "Relentless Rage DC",
+    Infinity
+  );
+  var RelentlessRage = new SimpleFeature(
+    "Relentless Rage",
+    `Starting at 11th level, your rage can keep you fighting despite grievous wounds. If you drop to 0 hit points while you're raging and don't die outright, you can make a DC 10 Constitution saving throw. If you succeed, you drop to 1 hit point instead.
+
+Each time you use this feature after the first, the DC increases by 5. When you finish a short or long rest, the DC resets to 10.`,
+    (g, me) => {
+      me.initResource(RelentlessRageResource, 10, Infinity);
+      g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+        if (who === me && me.hasEffect(RageEffect) && !me.hasEffect(Dead) && me.hp <= 0)
+          interrupt.add(
+            new YesNoChoice(
+              me,
+              RelentlessRage,
+              "Relentless Rage",
+              `${me.name} is about to fall unconscious. Try to stay conscious with Relentless Rage?`,
+              async () => {
+                var _a;
+                const dc = (_a = me.getResource(RelentlessRageResource)) != null ? _a : 10;
+                who.giveResource(RelentlessRageResource, 5);
+                const { outcome } = await g.save({
+                  source: RelentlessRage,
+                  type: { type: "flat", dc },
+                  who,
+                  ability: "con"
+                });
+                if (outcome === "success") {
+                  g.text(
+                    new MessageBuilder().co(who).text(" refuses to fall unconscious!")
+                  );
+                  who.hp = 1;
+                }
+              }
+            )
+          );
+      });
+    }
+  );
+  var RelentlessRage_default = RelentlessRage;
+
   // src/classes/barbarian/index.ts
   var BarbarianUnarmoredDefense = new SimpleFeature(
     "Unarmored Defense",
@@ -9655,12 +9699,6 @@ This increases to two additional dice at 13th level and three additional dice at
       );
     }
   );
-  var RelentlessRage = notImplementedFeature(
-    "Relentless Rage",
-    `Starting at 11th level, your rage can keep you fighting despite grievous wounds. If you drop to 0 hit points while you're raging and don't die outright, you can make a DC 10 Constitution saving throw. If you succeed, you drop to 1 hit point instead.
-
-Each time you use this feature after the first, the DC increases by 5. When you finish a short or long rest, the DC resets to 10.`
-  );
   var PersistentRage = notImplementedFeature(
     "Persistent Rage",
     `Beginning at 15th level, your rage is so fierce that it ends early only if you fall unconscious or if you choose to end it.`
@@ -9712,7 +9750,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
       [7, [FeralInstinct, InstinctivePounce]],
       [8, [ASI82]],
       [9, [BrutalCritical]],
-      [11, [RelentlessRage]],
+      [11, [RelentlessRage_default]],
       [12, [ASI122]],
       [15, [PersistentRage]],
       [16, [ASI162]],

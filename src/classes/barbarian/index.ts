@@ -15,6 +15,7 @@ import { intersects } from "../../utils/set";
 import { makeASI, makeExtraAttack } from "../common";
 import Rage, { RageAction } from "./Rage";
 import { RecklessAttack } from "./RecklessAttack";
+import RelentlessRage from "./RelentlessRage";
 
 const BarbarianUnarmoredDefense = new SimpleFeature(
   "Unarmored Defense",
@@ -166,14 +167,6 @@ This increases to two additional dice at 13th level and three additional dice at
       },
     );
   },
-);
-
-// TODO [DAMAGEINTERRUPT]
-const RelentlessRage = notImplementedFeature(
-  "Relentless Rage",
-  `Starting at 11th level, your rage can keep you fighting despite grievous wounds. If you drop to 0 hit points while you're raging and don't die outright, you can make a DC 10 Constitution saving throw. If you succeed, you drop to 1 hit point instead.
-
-Each time you use this feature after the first, the DC increases by 5. When you finish a short or long rest, the DC resets to 10.`,
 );
 
 // TODO [CONDITIONREACTION]

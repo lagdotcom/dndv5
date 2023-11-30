@@ -10,7 +10,7 @@ allPCs.Stabby = {
   tokenUrl: "",
   abilities: [10, 11, 10, 10, 10, 10],
   background: { name: "Criminal" },
-  race: { name: "Human" },
+  race: { name: "Human", configs: { "Extra Language": "Gnomish" } },
   levels: [],
   items: [
     { name: "dagger", equip: true },

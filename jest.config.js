@@ -20,10 +20,6 @@ module.exports = {
     "[/\\\\]node_modules[/\\\\].+\\.(mjs|js|jsx|ts|tsx)$",
     "^.+\\.(css|sass|scss|less)$",
   ],
-  watchPlugins: [
-    "jest-watch-typeahead/filename",
-    "jest-watch-typeahead/testname",
-  ],
   testEnvironment: "jsdom",
   testEnvironmentOptions: {
     customExportConditions: ["node", "node-addons"],
