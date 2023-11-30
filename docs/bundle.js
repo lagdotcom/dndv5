@@ -1098,6 +1098,16 @@
     message: "not visible",
     check: (g, action, value) => g.canSee(action.actor, value)
   });
+  var capable = makeFilter({
+    name: "can act",
+    message: "incapacitated",
+    check: (g, action, value) => !value.conditions.has("Incapacitated")
+  });
+  var conscious = makeFilter({
+    name: "conscious",
+    message: "unconscious",
+    check: (g, action, value) => !value.conditions.has("Unconscious")
+  });
   var isAlly = makeFilter({
     name: "ally",
     message: "must target ally",
@@ -6667,12 +6677,12 @@
   var FiendishMantleRange = 30;
   var FiendishMantle = new SimpleFeature(
     "Fiendish Mantle",
-    "Whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
+    "As long as he is conscious, whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
     (g, me) => {
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
-          if (attacker.side === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
+          if (!me.conditions.has("Unconscious") && attacker.side === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
             interrupt.add(
               new EvaluateLater(attacker, FiendishMantle, async () => {
                 const amount = await g.rollDamage(
@@ -6881,7 +6891,7 @@
         actor,
         "Cheer",
         "implemented",
-        { target: new TargetResolver(g, 30, [isAlly]) },
+        { target: new TargetResolver(g, 30, [isAlly, capable, conscious]) },
         {
           time: "action",
           icon: cheerIcon,
@@ -6944,7 +6954,7 @@
         actor,
         "Discord",
         "implemented",
-        { target: new TargetResolver(g, 30, [isEnemy]) },
+        { target: new TargetResolver(g, 30, [isEnemy, capable, conscious]) },
         {
           time: "action",
           icon: discordIcon,

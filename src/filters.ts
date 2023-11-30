@@ -28,6 +28,18 @@ export const canSee = makeFilter<Combatant>({
   check: (g, action, value) => g.canSee(action.actor, value),
 });
 
+export const capable = makeFilter<Combatant>({
+  name: "can act",
+  message: "incapacitated",
+  check: (g, action, value) => !value.conditions.has("Incapacitated"),
+});
+
+export const conscious = makeFilter<Combatant>({
+  name: "conscious",
+  message: "unconscious",
+  check: (g, action, value) => !value.conditions.has("Unconscious"),
+});
+
 export const isAlly = makeFilter<Combatant>({
   name: "ally",
   message: "must target ally",

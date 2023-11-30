@@ -9,7 +9,13 @@ import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
-import { isAlly, isConcentrating, isEnemy } from "../../filters";
+import {
+  capable,
+  conscious,
+  isAlly,
+  isConcentrating,
+  isEnemy,
+} from "../../filters";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { LeatherArmor } from "../../items/armor";
@@ -57,7 +63,7 @@ class CheerAction extends AbstractAction<HasTarget> {
       actor,
       "Cheer",
       "implemented",
-      { target: new TargetResolver(g, 30, [isAlly]) },
+      { target: new TargetResolver(g, 30, [isAlly, capable, conscious]) },
       {
         time: "action",
         icon: cheerIcon,
@@ -126,7 +132,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
       actor,
       "Discord",
       "implemented",
-      { target: new TargetResolver(g, 30, [isEnemy]) },
+      { target: new TargetResolver(g, 30, [isEnemy, capable, conscious]) },
       {
         time: "action",
         icon: discordIcon,

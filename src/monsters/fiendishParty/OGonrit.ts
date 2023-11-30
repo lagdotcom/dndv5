@@ -31,12 +31,13 @@ import { FiendishParty } from "./common";
 const FiendishMantleRange = 30;
 const FiendishMantle = new SimpleFeature(
   "Fiendish Mantle",
-  "Whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
+  "As long as he is conscious, whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
   (g, me) => {
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, critical, interrupt, map } }) => {
         if (
+          !me.conditions.has("Unconscious") &&
           attacker.side === me.side &&
           attacker !== me &&
           attack?.pre.tags.has("weapon") &&
