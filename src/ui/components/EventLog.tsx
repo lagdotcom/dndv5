@@ -1,9 +1,8 @@
-import { VNode } from "preact";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-
 import Engine from "../../Engine";
 import { isDefined } from "../../utils/types";
 import useTimeout from "../hooks/useTimeout";
+import { VNode } from "../lib";
+import { useCallback, useEffect, useRef, useState } from "../lib";
 import {
   getAbilityCheckMessage,
   getAttackMessage,

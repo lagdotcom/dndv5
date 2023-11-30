@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useState } from "../lib";
 
 export default function useTimeout(handler: () => void, ms = undefined) {
   const [handle, setHandle] = useState<ReturnType<typeof setTimeout>>();

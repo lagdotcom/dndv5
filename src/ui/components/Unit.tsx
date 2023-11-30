@@ -1,7 +1,6 @@
-import { useCallback } from "preact/hooks";
-
 import Combatant from "../../types/Combatant";
 import MoveDirection from "../../types/MoveDirection";
+import { useCallback } from "../lib";
 import {
   canDragUnits,
   scale,

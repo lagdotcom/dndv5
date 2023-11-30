@@ -1,6 +1,4 @@
-import { ComponentChildren } from "preact";
-import { useEffect, useId, useRef } from "preact/hooks";
-
+import { ComponentChildren, useEffect, useId, useRef } from "../lib";
 import classnames from "../utils/classnames";
 import styles from "./Dialog.module.scss";
 

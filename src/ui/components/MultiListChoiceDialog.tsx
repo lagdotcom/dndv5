@@ -1,7 +1,6 @@
-import { useCallback } from "preact/hooks";
-
 import { MultiListChoiceDetail } from "../../events/MultiListChoiceEvent";
 import useList from "../hooks/useList";
+import { useCallback } from "../lib";
 import classnames from "../utils/classnames";
 import { chooseManyFromList } from "../utils/state";
 import buttonStyles from "./button.module.scss";

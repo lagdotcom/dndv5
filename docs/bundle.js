@@ -26,6 +26,13 @@
     mod
   ));
 
+  // globalExternal:@preact/signals
+  var require_signals = __commonJS({
+    "globalExternal:@preact/signals"(exports, module) {
+      module.exports = globalThis.preactSignals;
+    }
+  });
+
   // globalExternal:preact
   var require_preact = __commonJS({
     "globalExternal:preact"(exports, module) {
@@ -39,19 +46,6 @@
       module.exports = globalThis.preactHooks;
     }
   });
-
-  // globalExternal:@preact/signals
-  var require_signals = __commonJS({
-    "globalExternal:@preact/signals"(exports, module) {
-      module.exports = globalThis.preactSignals;
-    }
-  });
-
-  // src/index.tsx
-  var import_preact4 = __toESM(require_preact());
-
-  // src/ui/components/App.tsx
-  var import_hooks21 = __toESM(require_hooks());
 
   // src/data/templates.ts
   var addPC = (name, x, y) => ({
@@ -4484,8 +4478,12 @@
     }
   };
 
-  // src/ui/hooks/useBool.ts
+  // src/ui/lib.ts
+  var import_signals = __toESM(require_signals());
+  var import_preact = __toESM(require_preact());
   var import_hooks = __toESM(require_hooks());
+
+  // src/ui/hooks/useBool.ts
   function useBool(defaultValue = false) {
     const [value, setValue] = (0, import_hooks.useState)(defaultValue);
     const setTrue = () => setValue(true);
@@ -4498,10 +4496,6 @@
   var App_module_default = {
     "modeSwitch": "_modeSwitch_1ojjx_5"
   };
-
-  // src/ui/components/CombatUI.tsx
-  var import_signals2 = __toESM(require_signals());
-  var import_hooks19 = __toESM(require_hooks());
 
   // src/img/tok/badger.png
   var badger_default = "./badger-53MEBA7R.png";
@@ -17533,15 +17527,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/hooks/useMenu.ts
-  var import_hooks2 = __toESM(require_hooks());
   function useMenu(caption, clicked) {
     const [isShown, showMenu, hideMenu] = useBool(false);
-    const [, setContext] = (0, import_hooks2.useState)();
-    const hide = (0, import_hooks2.useCallback)(() => {
+    const [, setContext] = (0, import_hooks.useState)();
+    const hide = (0, import_hooks.useCallback)(() => {
       setContext(void 0);
       hideMenu();
     }, [hideMenu]);
-    const onClick = (0, import_hooks2.useCallback)(
+    const onClick = (0, import_hooks.useCallback)(
       (item) => {
         hideMenu();
         setContext((context) => {
@@ -17551,14 +17544,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [clicked, hideMenu]
     );
-    const [props, setProps] = (0, import_hooks2.useState)({
+    const [props, setProps] = (0, import_hooks.useState)({
       x: NaN,
       y: NaN,
       items: [],
       caption,
       onClick
     });
-    const show = (0, import_hooks2.useCallback)(
+    const show = (0, import_hooks.useCallback)(
       (e2, items, ctx) => {
         showMenu();
         setProps({ x: e2.clientX, y: e2.clientY, items, caption, onClick });
@@ -17589,7 +17582,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/utils/state.ts
-  var import_signals = __toESM(require_signals());
   var actionAreas = (0, import_signals.signal)(
     void 0
   );
@@ -17665,7 +17657,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   });
 
   // src/ui/utils/SVGCache.ts
-  var import_preact = __toESM(require_preact());
   var FetchCache = class {
     constructor(init) {
       this.init = init;
@@ -17766,9 +17757,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "sub": "_sub_13fqt_9"
   };
 
-  // src/ui/components/SVGIcon.tsx
-  var import_hooks3 = __toESM(require_hooks());
-
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact2 = __toESM(require_preact());
   var import_preact3 = __toESM(require_preact());
@@ -17787,9 +17775,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/SVGIcon.tsx
   function SVGIcon({ className, color, size, src }) {
-    const cache = (0, import_hooks3.useContext)(SVGCacheContext);
-    const ref = (0, import_hooks3.useRef)(null);
-    (0, import_hooks3.useEffect)(() => {
+    const cache = (0, import_hooks.useContext)(SVGCacheContext);
+    const ref = (0, import_hooks.useRef)(null);
+    (0, import_hooks.useEffect)(() => {
       void cache.get(src).then((html) => {
         if (ref.current)
           ref.current.innerHTML = html;
@@ -17850,9 +17838,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/components/Labelled.tsx
-  var import_hooks4 = __toESM(require_hooks());
-
   // src/ui/utils/classnames.ts
   function classnames(...items) {
     const names = [];
@@ -17884,7 +17869,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     contentsClass,
     role = "group"
   }) {
-    const labelId = (0, import_hooks4.useId)();
+    const labelId = (0, import_hooks.useId)();
     return /* @__PURE__ */ u("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
       /* @__PURE__ */ u(
         "div",
@@ -17968,25 +17953,21 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/components/Battlefield.tsx
-  var import_hooks9 = __toESM(require_hooks());
-
   // src/ui/hooks/usePanning.ts
-  var import_hooks5 = __toESM(require_hooks());
   function usePanning(onPan, onHover) {
-    const [isPanning, setIsPanning] = (0, import_hooks5.useState)(false);
-    const [panStartCoords, setPanStartCoords] = (0, import_hooks5.useState)({ x: 0, y: 0 });
-    const onMouseDown = (0, import_hooks5.useCallback)((e2) => {
+    const [isPanning, setIsPanning] = (0, import_hooks.useState)(false);
+    const [panStartCoords, setPanStartCoords] = (0, import_hooks.useState)({ x: 0, y: 0 });
+    const onMouseDown = (0, import_hooks.useCallback)((e2) => {
       if (e2.button === 2) {
         setIsPanning(true);
         setPanStartCoords({ x: e2.clientX, y: e2.clientY });
       }
     }, []);
-    const onMouseEnter = (0, import_hooks5.useCallback)((e2) => {
+    const onMouseEnter = (0, import_hooks.useCallback)((e2) => {
       if (!e2.button)
         setIsPanning(false);
     }, []);
-    const onMouseMove = (0, import_hooks5.useCallback)(
+    const onMouseMove = (0, import_hooks.useCallback)(
       (e2) => {
         if (isPanning) {
           const deltaX = e2.clientX - panStartCoords.x;
@@ -17998,7 +17979,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [isPanning, onHover, onPan, panStartCoords.x, panStartCoords.y]
     );
-    const onMouseUp = (0, import_hooks5.useCallback)(() => {
+    const onMouseUp = (0, import_hooks.useCallback)(() => {
       setIsPanning(false);
     }, []);
     return {
@@ -18015,9 +17996,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "main": "_main_1bit5_1",
     "panning": "_panning_1bit5_11"
   };
-
-  // src/ui/components/BattlefieldEffect.tsx
-  var import_hooks6 = __toESM(require_hooks());
 
   // src/ui/components/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
@@ -18042,7 +18020,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     tint,
     top = false
   }) {
-    const style = (0, import_hooks6.useMemo)(
+    const style = (0, import_hooks.useMemo)(
       () => ({
         left: point.x * scale.value,
         top: point.y * scale.value,
@@ -18067,7 +18045,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     top: onTop = false,
     tint = getAuraColour(tags)
   }) {
-    const { points, left, top } = (0, import_hooks6.useMemo)(() => {
+    const { points, left, top } = (0, import_hooks.useMemo)(() => {
       const points2 = resolveArea(shape);
       const { x: left2, y: top2 } = points2.average(scale.value);
       return { points: points2, left: left2, top: top2 };
@@ -18085,9 +18063,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       squares
     ] });
   }
-
-  // src/ui/components/Unit.tsx
-  var import_hooks8 = __toESM(require_hooks());
 
   // src/ui/components/Unit.module.scss
   var Unit_module_default = {
@@ -18198,9 +18173,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/img/ui/w.svg
   var w_default = "./w-IMIMIJNF.svg";
 
-  // src/ui/components/UnitMoveButton.tsx
-  var import_hooks7 = __toESM(require_hooks());
-
   // src/ui/components/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
     "main": "_main_etih8_5",
@@ -18231,11 +18203,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     northeast: makeButtonType("moveNE", ne_default, "Move Northeast")
   };
   function UnitMoveButton({ disabled, onClick, type }) {
-    const { className, iconUrl, label } = (0, import_hooks7.useMemo)(
+    const { className, iconUrl, label } = (0, import_hooks.useMemo)(
       () => buttonTypes[type],
       [type]
     );
-    const clicked = (0, import_hooks7.useCallback)(
+    const clicked = (0, import_hooks.useCallback)(
       (e2) => {
         e2.stopPropagation();
         onClick(type);
@@ -18271,15 +18243,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       backgroundColor: showSideUnderlay.value ? u2.side === 0 ? allyBg : u2.side === 1 ? enemyBg : otherBg : void 0
     };
     const disabled = u2.movedSoFar >= u2.speed;
-    const clicked = (0, import_hooks8.useCallback)(
+    const clicked = (0, import_hooks.useCallback)(
       (e2) => onClick == null ? void 0 : onClick(u2.who, e2),
       [onClick, u2]
     );
-    const moved = (0, import_hooks8.useCallback)(
+    const moved = (0, import_hooks.useCallback)(
       (dir) => onMove == null ? void 0 : onMove(u2.who, dir),
       [onMove, u2]
     );
-    const onDragStart = (0, import_hooks8.useCallback)(
+    const onDragStart = (0, import_hooks.useCallback)(
       (e2) => {
         var _a;
         (_a = e2.dataTransfer) == null ? void 0 : _a.setData("unit/id", String(u2.id));
@@ -18362,9 +18334,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     showHoveredTile
   }) {
     var _a;
-    const [offset, setOffset] = (0, import_hooks9.useState)({ x: 0, y: 0 });
-    const [hover, setHover] = (0, import_hooks9.useState)();
-    const convertCoordinate = (0, import_hooks9.useCallback)(
+    const [offset, setOffset] = (0, import_hooks.useState)({ x: 0, y: 0 });
+    const [hover, setHover] = (0, import_hooks.useState)();
+    const convertCoordinate = (0, import_hooks.useCallback)(
       (e2) => {
         const x = round(
           Math.floor((e2.pageX - offset.x) / scale.value),
@@ -18383,16 +18355,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       (e2) => setHover(convertCoordinate(e2))
     );
     const onMouseOut = () => setHover(void 0);
-    const onClick = (0, import_hooks9.useCallback)(
+    const onClick = (0, import_hooks.useCallback)(
       (e2) => onClickBattlefield == null ? void 0 : onClickBattlefield(convertCoordinate(e2), e2),
       [convertCoordinate, onClickBattlefield]
     );
-    const onDragOver = (0, import_hooks9.useCallback)((e2) => {
+    const onDragOver = (0, import_hooks.useCallback)((e2) => {
       e2.preventDefault();
       if (e2.dataTransfer)
         e2.dataTransfer.dropEffect = "move";
     }, []);
-    const onDrop = (0, import_hooks9.useCallback)(
+    const onDrop = (0, import_hooks.useCallback)(
       (e2) => {
         var _a2;
         const p = convertCoordinate(e2);
@@ -18466,9 +18438,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/components/ChooseActionConfigPanel.tsx
-  var import_hooks11 = __toESM(require_hooks());
-
   // src/ui/components/button.module.scss
   var button_module_default = {
     "active": "_active_rcghq_1",
@@ -18513,9 +18482,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/components/RangeInput.tsx
-  var import_hooks10 = __toESM(require_hooks());
-
   // src/ui/components/RangeInput.module.scss
   var RangeInput_module_default = {
     "main": "_main_1k0vn_1",
@@ -18527,7 +18493,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/RangeInput.tsx
   function RangeInput({ value, onChange, min, max }) {
-    const changed = (0, import_hooks10.useCallback)(
+    const changed = (0, import_hooks.useCallback)(
       (e2) => onChange(e2.currentTarget.valueAsNumber),
       [onChange]
     );
@@ -18551,14 +18517,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
-    const setTarget = (0, import_hooks11.useCallback)(
+    const setTarget = (0, import_hooks.useCallback)(
       (who) => {
         onChange(field, who);
         wantsCombatant.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks11.useCallback)(() => {
+    const onClick = (0, import_hooks.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ u("div", { children: [
@@ -18585,7 +18551,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     onChange
   }) {
     var _a;
-    const addTarget = (0, import_hooks11.useCallback)(
+    const addTarget = (0, import_hooks.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).includes(who))
           onChange(field, (value != null ? value : []).concat(who));
@@ -18593,10 +18559,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks11.useCallback)(() => {
+    const onClick = (0, import_hooks.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks11.useCallback)(
+    const remove = (0, import_hooks.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== who)
@@ -18631,14 +18597,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChoosePoint({ field, value, onChange }) {
-    const setTarget = (0, import_hooks11.useCallback)(
+    const setTarget = (0, import_hooks.useCallback)(
       (p) => {
         onChange(field, p);
         wantsPoint.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks11.useCallback)(() => {
+    const onClick = (0, import_hooks.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ u("div", { children: [
@@ -18664,7 +18630,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const addPoint = (0, import_hooks11.useCallback)(
+    const addPoint = (0, import_hooks.useCallback)(
       (p) => {
         if (p)
           onChange(field, (value != null ? value : []).concat(p));
@@ -18672,10 +18638,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks11.useCallback)(() => {
+    const onClick = (0, import_hooks.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== addPoint ? addPoint : void 0;
     }, [addPoint]);
-    const remove = (0, import_hooks11.useCallback)(
+    const remove = (0, import_hooks.useCallback)(
       (p) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== p)
@@ -18740,7 +18706,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const [label, setLabel] = (0, import_hooks11.useState)("NONE");
+    const [label, setLabel] = (0, import_hooks.useState)("NONE");
     const choose = (e2) => () => {
       if (e2.value === value) {
         onChange(field, void 0);
@@ -18774,8 +18740,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const [labels, setLabels] = (0, import_hooks11.useState)([]);
-    const add = (0, import_hooks11.useCallback)(
+    const [labels, setLabels] = (0, import_hooks.useState)([]);
+    const add = (0, import_hooks.useCallback)(
       (ch) => {
         if (!(value != null ? value : []).find((x) => x === ch)) {
           onChange(field, (value != null ? value : []).concat(ch.value));
@@ -18784,7 +18750,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const remove = (0, import_hooks11.useCallback)(
+    const remove = (0, import_hooks.useCallback)(
       (ch) => {
         onChange(
           field,
@@ -18845,7 +18811,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const addTarget = (0, import_hooks11.useCallback)(
+    const addTarget = (0, import_hooks.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).find((e2) => e2.who === who))
           onChange(field, (value != null ? value : []).concat({ amount: 1, who }));
@@ -18853,10 +18819,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks11.useCallback)(() => {
+    const onClick = (0, import_hooks.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks11.useCallback)(
+    const remove = (0, import_hooks.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x.who !== who)
@@ -18930,32 +18896,32 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     onCancel,
     onExecute
   }) {
-    const [config, setConfig] = (0, import_hooks11.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks11.useCallback)(
+    const [config, setConfig] = (0, import_hooks.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks.useCallback)(
       (key, value) => setConfig((old) => ({ ...old, [key]: value })),
       []
     );
-    (0, import_hooks11.useEffect)(() => {
+    (0, import_hooks.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
     }, [action, activeCombatant.value, config]);
-    const errors = (0, import_hooks11.useMemo)(
+    const errors = (0, import_hooks.useMemo)(
       () => getConfigErrors(g, action, config).messages,
       [g, action, config]
     );
-    const disabled = (0, import_hooks11.useMemo)(() => errors.length > 0, [errors]);
-    const damage = (0, import_hooks11.useMemo)(() => action.getDamage(config), [action, config]);
-    const description = (0, import_hooks11.useMemo)(
+    const disabled = (0, import_hooks.useMemo)(() => errors.length > 0, [errors]);
+    const damage = (0, import_hooks.useMemo)(() => action.getDamage(config), [action, config]);
+    const description = (0, import_hooks.useMemo)(
       () => action.getDescription(config),
       [action, config]
     );
-    const heal = (0, import_hooks11.useMemo)(() => action.getHeal(config), [action, config]);
-    const time = (0, import_hooks11.useMemo)(() => action.getTime(config), [action, config]);
+    const heal = (0, import_hooks.useMemo)(() => action.getHeal(config), [action, config]);
+    const time = (0, import_hooks.useMemo)(() => action.getTime(config), [action, config]);
     const isReaction = time === "reaction";
-    const execute = (0, import_hooks11.useCallback)(() => {
+    const execute = (0, import_hooks.useCallback)(() => {
       if (checkConfig(g, action, config))
         onExecute(action, config);
     }, [g, action, config, onExecute]);
-    const elements = (0, import_hooks11.useMemo)(
+    const elements = (0, import_hooks.useMemo)(
       () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
         const subProps = {
           key,
@@ -19038,14 +19004,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "sidePanel": "_sidePanel_4415i_1"
   };
 
-  // src/ui/components/EventLog.tsx
-  var import_hooks13 = __toESM(require_hooks());
-
   // src/ui/hooks/useTimeout.ts
-  var import_hooks12 = __toESM(require_hooks());
   function useTimeout(handler, ms = void 0) {
-    const [handle, setHandle] = (0, import_hooks12.useState)();
-    const fire = (0, import_hooks12.useCallback)(
+    const [handle, setHandle] = (0, import_hooks.useState)();
+    const fire = (0, import_hooks.useCallback)(
       () => setHandle((old) => {
         if (old)
           return old;
@@ -19056,7 +19018,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }),
       [handler, ms]
     );
-    const cancel = (0, import_hooks12.useCallback)(
+    const cancel = (0, import_hooks.useCallback)(
       () => setHandle((old) => {
         if (old)
           clearTimeout(old);
@@ -19064,7 +19026,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }),
       []
     );
-    (0, import_hooks12.useEffect)(() => cancel, [cancel]);
+    (0, import_hooks.useEffect)(() => cancel, [cancel]);
     return { cancel, fire, handle };
   }
 
@@ -19234,19 +19196,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return /* @__PURE__ */ u("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ u("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function EventLog({ g }) {
-    const ref = (0, import_hooks13.useRef)(null);
-    const [messages, setMessages] = (0, import_hooks13.useState)([]);
+    const ref = (0, import_hooks.useRef)(null);
+    const [messages, setMessages] = (0, import_hooks.useState)([]);
     const { fire } = useTimeout(
       () => {
         var _a, _b;
         return (_b = (_a = ref.current) == null ? void 0 : _a.scrollIntoView) == null ? void 0 : _b.call(_a, { behavior: "smooth" });
       }
     );
-    const addMessage = (0, import_hooks13.useCallback)((el) => {
+    const addMessage = (0, import_hooks.useCallback)((el) => {
       setMessages((old) => old.concat(el).slice(-50));
       fire();
     }, []);
-    (0, import_hooks13.useEffect)(() => {
+    (0, import_hooks.useEffect)(() => {
       g.events.on(
         "Attack",
         ({ detail }) => detail.interrupt.add(
@@ -19306,12 +19268,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/components/ListChoiceDialog.tsx
-  var import_hooks15 = __toESM(require_hooks());
-
-  // src/ui/components/Dialog.tsx
-  var import_hooks14 = __toESM(require_hooks());
-
   // src/ui/components/Dialog.module.scss
   var Dialog_module_default = {
     "main": "_main_1hd4j_1",
@@ -19322,7 +19278,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/Dialog.tsx
   function ReactDialog({ title, text, children }) {
-    const titleId = (0, import_hooks14.useId)();
+    const titleId = (0, import_hooks.useId)();
     return /* @__PURE__ */ u("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ u(
       "div",
       {
@@ -19347,7 +19303,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks15.useCallback)(
+    const decide = (0, import_hooks.useCallback)(
       (value) => {
         chooseFromList.value = void 0;
         resolve(value);
@@ -19387,14 +19343,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     )) }) });
   }
 
-  // src/ui/components/MultiListChoiceDialog.tsx
-  var import_hooks17 = __toESM(require_hooks());
-
   // src/ui/hooks/useList.ts
-  var import_hooks16 = __toESM(require_hooks());
   function useList(initialValue = []) {
-    const [list, setList] = (0, import_hooks16.useState)(initialValue);
-    const toggle = (0, import_hooks16.useCallback)(
+    const [list, setList] = (0, import_hooks.useState)(initialValue);
+    const toggle = (0, import_hooks.useCallback)(
       (item) => setList(
         (old) => old.includes(item) ? old.filter((x) => x !== item) : old.concat(item)
       ),
@@ -19410,7 +19362,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }) {
     const { list, toggle } = useList();
     const invalidSelection = list.length < interruption.minimum || list.length > interruption.maximum;
-    const decide = (0, import_hooks17.useCallback)(() => {
+    const decide = (0, import_hooks.useCallback)(() => {
       chooseManyFromList.value = void 0;
       resolve(list);
     }, [list, resolve]);
@@ -19440,20 +19392,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/YesNoDialog.tsx
-  var import_hooks18 = __toESM(require_hooks());
   function YesNoDialog({
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks18.useCallback)(
+    const decide = (0, import_hooks.useCallback)(
       (value) => {
         chooseYesNo.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks18.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks18.useCallback)(() => decide(false), [decide]);
+    const onYes = (0, import_hooks.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ u(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ u("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ u("button", { onClick: onNo, children: "No" })
@@ -19462,15 +19413,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/CombatUI.tsx
   function CombatUI({ g, template }) {
-    const cache = (0, import_hooks19.useContext)(SVGCacheContext);
-    const [action, setAction] = (0, import_hooks19.useState)();
-    const refreshUnits = (0, import_hooks19.useCallback)(() => {
+    const cache = (0, import_hooks.useContext)(SVGCacheContext);
+    const [action, setAction] = (0, import_hooks.useState)();
+    const refreshUnits = (0, import_hooks.useCallback)(() => {
       allCombatants.value = Array.from(g.combatants, getUnitData);
     }, [g]);
-    const refreshAreas = (0, import_hooks19.useCallback)(() => {
+    const refreshAreas = (0, import_hooks.useCallback)(() => {
       allEffects.value = Array.from(g.effects);
     }, [g]);
-    const onFinishBoundedMove = (0, import_hooks19.useCallback)(() => {
+    const onFinishBoundedMove = (0, import_hooks.useCallback)(() => {
       if (moveBounds.value) {
         moveBounds.value.detail.resolve();
         moveBounds.value = void 0;
@@ -19480,7 +19431,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       }
     }, [g]);
-    const processMove = (0, import_hooks19.useCallback)(
+    const processMove = (0, import_hooks.useCallback)(
       (mover) => {
         void mover.then((result) => {
           if (result.type === "error")
@@ -19492,7 +19443,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [onFinishBoundedMove]
     );
-    const onExecuteAction = (0, import_hooks19.useCallback)(
+    const onExecuteAction = (0, import_hooks.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
@@ -19514,7 +19465,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       } else
         console.warn(config, "does not match", choice.getConfig(config));
     });
-    (0, import_hooks19.useEffect)(() => {
+    (0, import_hooks.useEffect)(() => {
       resetAllState(() => {
         showSideHP.value = [0];
         showSideUnderlay.value = false;
@@ -19529,7 +19480,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
         interrupt.add(
           new UIResponse(who, async () => {
-            (0, import_signals2.batch)(() => {
+            (0, import_signals.batch)(() => {
               activeCombatantId.value = who.id;
               moveHandler.value = getDefaultMovement(who);
               movingCombatantId.value = who.id;
@@ -19545,7 +19496,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       g.events.on("YesNoChoice", (e2) => chooseYesNo.value = e2);
       g.events.on("BoundedMove", (e2) => {
         const { who, handler } = e2.detail;
-        (0, import_signals2.batch)(() => {
+        (0, import_signals.batch)(() => {
           moveBounds.value = e2;
           moveHandler.value = handler;
           movingCombatantId.value = who.id;
@@ -19560,7 +19511,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             wantsPoint.value = (p) => {
               if (p && area.has(p)) {
                 processMove(g.move(who, p, handler));
-                (0, import_signals2.batch)(() => {
+                (0, import_signals.batch)(() => {
                   wantsPoint.value = void 0;
                   teleportInfo.value = void 0;
                 });
@@ -19577,7 +19528,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         });
       return g.reset.bind(g);
     }, [cache, g, processMove, refreshAreas, refreshUnits, template]);
-    const onClickBattlefield = (0, import_hooks19.useCallback)(
+    const onClickBattlefield = (0, import_hooks.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -19589,7 +19540,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [menu]
     );
-    const onClickCombatant = (0, import_hooks19.useCallback)(
+    const onClickCombatant = (0, import_hooks.useCallback)(
       (who, e2) => {
         e2.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -19627,7 +19578,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [g, menu]
     );
-    const onMoveCombatant = (0, import_hooks19.useCallback)(
+    const onMoveCombatant = (0, import_hooks.useCallback)(
       (who, dir) => {
         if (moveHandler.value) {
           menu.hide();
@@ -19636,16 +19587,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [g, menu, processMove]
     );
-    const onPass = (0, import_hooks19.useCallback)(() => {
+    const onPass = (0, import_hooks.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
       void g.nextTurn();
     }, [g]);
-    const onCancelAction = (0, import_hooks19.useCallback)(() => {
+    const onCancelAction = (0, import_hooks.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks19.useCallback)(
+    const onChooseAction = (0, import_hooks.useCallback)(
       (action2) => {
         menu.hide();
         setAction(action2);
@@ -19695,14 +19646,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/EditUI.tsx
-  var import_hooks20 = __toESM(require_hooks());
   var sideItem = (side, current) => ({
     label: side === 0 ? "Ally" : side === 1 ? "Enemy" : `Side #${side}`,
     value: { type: "side", side },
     disabled: side === current
   });
   function EditUI({ g, template, onUpdate }) {
-    (0, import_hooks20.useEffect)(() => {
+    (0, import_hooks.useEffect)(() => {
       void initialiseFromTemplate(g, template).then((arg) => {
         resetAllState(() => {
           allCombatants.value = Array.from(g.combatants, getUnitData);
@@ -19716,7 +19666,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }, [g, template]);
     const menu = useMenu(
       "Unit Actions",
-      (0, import_hooks20.useCallback)(
+      (0, import_hooks.useCallback)(
         (action, index) => {
           switch (action.type) {
             case "side":
@@ -19737,7 +19687,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         [onUpdate]
       )
     );
-    const onClickCombatant = (0, import_hooks20.useCallback)(
+    const onClickCombatant = (0, import_hooks.useCallback)(
       (who, e2) => {
         e2.stopPropagation();
         menu.show(
@@ -19757,7 +19707,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [menu]
     );
-    const onDragCombatant = (0, import_hooks20.useCallback)(
+    const onDragCombatant = (0, import_hooks.useCallback)(
       (who, { x, y }) => {
         onUpdate((old) => ({
           ...old,
@@ -19770,7 +19720,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [onUpdate]
     );
-    const onClickBattlefield = (0, import_hooks20.useCallback)(() => {
+    const onClickBattlefield = (0, import_hooks.useCallback)(() => {
       menu.hide();
     }, [menu]);
     return /* @__PURE__ */ u(import_preact3.Fragment, { children: [
@@ -19789,13 +19739,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/App.tsx
   function App() {
-    const g = (0, import_hooks21.useMemo)(() => {
+    const g = (0, import_hooks.useMemo)(() => {
       const engine = new Engine();
       window.g = engine;
       return engine;
     }, []);
     const [editing, , , toggleMode] = useBool(true);
-    const [template, setTemplate] = (0, import_hooks21.useState)(daviesVsFiends);
+    const [template, setTemplate] = (0, import_hooks.useState)(daviesVsFiends);
     return /* @__PURE__ */ u("main", { className: App_module_default.container, children: [
       editing ? /* @__PURE__ */ u(EditUI, { g, template, onUpdate: setTemplate }) : /* @__PURE__ */ u(CombatUI, { g, template }),
       /* @__PURE__ */ u(
@@ -19812,7 +19762,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/index.tsx
   var svgCache = new FetchCache();
-  (0, import_preact4.render)(
+  (0, import_preact.render)(
     /* @__PURE__ */ u(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ u(App, {}) }),
     document.body
   );

@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
-
 import Engine from "../../Engine";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
 import AllocationResolver, {
@@ -24,6 +22,7 @@ import { checkConfig, getConfigErrors } from "../../utils/config";
 import { getDiceAverage } from "../../utils/dnd";
 import { enumerate } from "../../utils/numbers";
 import { describePoint, describeRange } from "../../utils/text";
+import { useCallback, useEffect, useMemo, useState } from "../lib";
 import classnames from "../utils/classnames";
 import {
   actionAreas,

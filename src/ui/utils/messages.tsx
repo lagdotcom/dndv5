@@ -1,5 +1,3 @@
-import { VNode } from "preact";
-
 import { AbilityCheckDetail } from "../../events/AbilityCheckEvent";
 import { AttackDetail } from "../../events/AttackEvent";
 import { CombatantDamagedDetail } from "../../events/CombatantDamagedEvent";
@@ -21,6 +19,7 @@ import Spell from "../../types/Spell";
 import { describeAbility, describeSave } from "../../utils/text";
 import CombatantRef from "../components/CombatantRef";
 import common from "../components/common.module.scss";
+import { VNode } from "../lib";
 
 export type MessagePart = { element: VNode; text: string } | string | undefined;
 

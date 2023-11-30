@@ -1,6 +1,4 @@
-import { useCallback } from "preact/hooks";
-import { JSXInternal } from "preact/src/jsx";
-
+import { TargetedEvent, useCallback } from "../lib";
 import styles from "./RangeInput.module.scss";
 
 interface Props {
@@ -12,7 +10,7 @@ interface Props {
 
 export default function RangeInput({ value, onChange, min, max }: Props) {
   const changed = useCallback(
-    (e: JSXInternal.TargetedEvent<HTMLInputElement>) =>
+    (e: TargetedEvent<HTMLInputElement>) =>
       onChange(e.currentTarget.valueAsNumber),
     [onChange],
   );

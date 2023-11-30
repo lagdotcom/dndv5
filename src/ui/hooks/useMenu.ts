@@ -1,6 +1,5 @@
-import { useCallback, useState } from "preact/hooks";
-
 import { MenuItem, MenuProps } from "../components/Menu";
+import { useCallback, useState } from "../lib";
 import useBool from "./useBool";
 
 export default function useMenu<T, C = never>(

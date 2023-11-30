@@ -1,11 +1,10 @@
-import { useCallback, useState } from "preact/hooks";
-
 import { MapSquareSize } from "../../MapSquare";
 import Combatant from "../../types/Combatant";
 import MoveDirection from "../../types/MoveDirection";
 import Point from "../../types/Point";
 import { round } from "../../utils/numbers";
 import usePanning from "../hooks/usePanning";
+import { useCallback, useState } from "../lib";
 import classnames from "../utils/classnames";
 import {
   actionAreas,

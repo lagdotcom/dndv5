@@ -1,8 +1,7 @@
 // import "preact/debug";
 
-import { render } from "preact";
-
 import App from "./ui/components/App";
+import { render } from "./ui/lib";
 import { FetchCache, SVGCacheContext } from "./ui/utils/SVGCache";
 
 const svgCache = new FetchCache();

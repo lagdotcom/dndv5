@@ -1,6 +1,5 @@
-import { useCallback } from "preact/hooks";
-
 import { YesNoChoiceDetail } from "../../events/YesNoChoiceEvent";
+import { useCallback } from "../lib";
 import { chooseYesNo } from "../utils/state";
 import Dialog from "./Dialog";
 

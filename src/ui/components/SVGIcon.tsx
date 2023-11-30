@@ -1,5 +1,4 @@
-import { useContext, useEffect, useRef } from "preact/hooks";
-
+import { useContext, useEffect, useRef } from "../lib";
 import { SVGCacheContext } from "../utils/SVGCache";
 
 interface Props {

@@ -1,4 +1,4 @@
-import { createContext } from "preact";
+import { createContext } from "../lib";
 
 export default interface SVGCache {
   get(src: string): Promise<string>;

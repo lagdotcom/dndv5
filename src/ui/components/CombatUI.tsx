@@ -1,6 +1,3 @@
-import { batch } from "@preact/signals";
-import { useCallback, useContext, useEffect, useState } from "preact/hooks";
-
 import BattleTemplate, {
   initialiseFromTemplate,
 } from "../../data/BattleTemplate";
@@ -14,6 +11,7 @@ import Point from "../../types/Point";
 import { resolveArea } from "../../utils/areas";
 import { checkConfig } from "../../utils/config";
 import useMenu from "../hooks/useMenu";
+import { batch, useCallback, useContext, useEffect, useState } from "../lib";
 import { getAllIcons } from "../utils/icons";
 import {
   actionAreas,

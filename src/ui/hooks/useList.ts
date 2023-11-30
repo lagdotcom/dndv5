@@ -1,4 +1,4 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useState } from "../lib";
 
 export default function useList<T>(initialValue: T[] = []) {
   const [list, setList] = useState(initialValue);

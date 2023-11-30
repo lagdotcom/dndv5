@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState } from "../lib";
 
 export default function useBool(
   defaultValue = false,

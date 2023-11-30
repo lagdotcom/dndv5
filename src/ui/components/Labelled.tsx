@@ -1,7 +1,4 @@
-import { ComponentChildren } from "preact";
-import { useId } from "preact/hooks";
-import { JSXInternal } from "preact/src/jsx";
-
+import { AriaRole, ComponentChildren, useId } from "../lib";
 import classnames from "../utils/classnames";
 import styles from "./Labelled.module.scss";
 
@@ -10,7 +7,7 @@ interface Props {
   label: string;
   labelClass?: string;
   contentsClass?: string;
-  role?: JSXInternal.AriaRole;
+  role?: AriaRole;
 }
 
 export default function Labelled({

@@ -1,10 +1,8 @@
-import { useMemo } from "preact/hooks";
-import { JSXInternal } from "preact/src/jsx";
-
 import { MapSquareSize } from "../../MapSquare";
 import { AreaTag, SpecifiedEffectShape } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { resolveArea } from "../../utils/areas";
+import { CSSProperties, useMemo } from "../lib";
 import classnames from "../utils/classnames";
 import { scale } from "../utils/state";
 import styles from "./BattlefieldEffect.module.scss";
@@ -26,7 +24,7 @@ export function AffectedSquare({
   tint,
   top = false,
 }: AffectedSquareProps) {
-  const style = useMemo<JSXInternal.CSSProperties>(
+  const style = useMemo<CSSProperties>(
     () => ({
       left: point.x * scale.value,
       top: point.y * scale.value,

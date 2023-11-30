@@ -1,4 +1,4 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useState } from "../lib";
 
 export default function usePanning(
   onPan: (dx: number, dy: number) => void,

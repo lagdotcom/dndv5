@@ -1,5 +1,3 @@
-import { batch, computed, signal } from "@preact/signals";
-
 import BoundedMoveEvent from "../../events/BoundedMoveEvent";
 import ListChoiceEvent from "../../events/ListChoiceEvent";
 import MultiListChoiceEvent from "../../events/MultiListChoiceEvent";
@@ -10,6 +8,7 @@ import EffectArea, { SpecifiedEffectShape } from "../../types/EffectArea";
 import MoveHandler from "../../types/MoveHandler";
 import Point from "../../types/Point";
 import { CompleteEvaluation } from "../../utils/ai";
+import { batch, computed, signal } from "../lib";
 import { UnitData } from "./types";
 
 export type Wants<T> = (point?: T) => void;

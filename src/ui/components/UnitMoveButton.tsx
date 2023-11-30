@@ -6,9 +6,9 @@ import iconSUrl from "@img/ui/s.svg";
 import iconSEUrl from "@img/ui/se.svg";
 import iconSWUrl from "@img/ui/sw.svg";
 import iconWUrl from "@img/ui/w.svg";
-import { useCallback, useMemo } from "preact/hooks";
 
 import MoveDirection from "../../types/MoveDirection";
+import { useCallback, useMemo } from "../lib";
 import classnames from "../utils/classnames";
 import SVGIcon from "./SVGIcon";
 import styles from "./UnitMoveButton.module.scss";

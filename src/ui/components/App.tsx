@@ -1,9 +1,8 @@
-import { useMemo, useState } from "preact/hooks";
-
 import BattleTemplate from "../../data/BattleTemplate";
 import { daviesVsFiends } from "../../data/templates";
 import Engine from "../../Engine";
 import useBool from "../hooks/useBool";
+import { useMemo, useState } from "../lib";
 import styles from "./App.module.scss";
 import CombatUI from "./CombatUI";
 import EditUI from "./EditUI";
