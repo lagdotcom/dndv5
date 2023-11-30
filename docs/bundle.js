@@ -4813,6 +4813,33 @@
       );
     }
   };
+  var Flail = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "flail",
+        "martial",
+        "melee",
+        _dd(1, 8, "bludgeoning"),
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Glaive = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "glaive",
+        "martial",
+        "melee",
+        _dd(1, 10, "slashing"),
+        ["heavy", "reach", "two-handed"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
   var Greataxe = class extends AbstractWeapon {
     constructor(g) {
       super(
@@ -4837,6 +4864,41 @@
         ["heavy", "two-handed"],
         void 0
         // TODO [ICON]
+      );
+    }
+  };
+  var Halberd = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "halberd",
+        "martial",
+        "melee",
+        _dd(1, 10, "slashing"),
+        ["heavy", "reach", "two-handed"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Lance = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "lance",
+        "martial",
+        "melee",
+        _dd(1, 12, "piercing"),
+        ["reach"],
+        void 0
+        // TODO [ICON]
+      );
+      g.events.on(
+        "BeforeAttack",
+        ({ detail: { weapon, who, target, diceType } }) => {
+          if (weapon === this && distance(who, target) <= 5)
+            diceType.add("disadvantage", this);
+        }
       );
     }
   };
@@ -4876,6 +4938,20 @@
         "melee",
         _dd(1, 8, "piercing"),
         void 0,
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Pike = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "pike",
+        "martial",
+        "melee",
+        _dd(1, 10, "piercing"),
+        ["heavy", "reach", "two-handed"],
         void 0
         // TODO [ICON]
       );
@@ -4938,6 +5014,20 @@
       this.quantity = quantity;
     }
   };
+  var WarPick = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "war pick",
+        "martial",
+        "melee",
+        _dd(1, 8, "piercing"),
+        void 0,
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
   var Warhammer = class extends AbstractWeapon {
     constructor(g) {
       super(
@@ -4950,6 +5040,37 @@
         void 0
         // TODO [ICON]
       );
+    }
+  };
+  var Whip = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "whip",
+        "martial",
+        "melee",
+        _dd(1, 4, "slashing"),
+        ["finesse", "reach"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Blowgun = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "blowgun",
+        "martial",
+        "ranged",
+        { type: "flat", amount: 1, damageType: "piercing" },
+        ["ammunition", "loading"],
+        void 0,
+        // TODO [ICON]
+        25,
+        100
+      );
+      this.ammunitionTag = "blowgun";
     }
   };
   var HandCrossbow = class extends AbstractWeapon {
@@ -5000,6 +5121,23 @@
         600
       );
       this.ammunitionTag = "bow";
+    }
+  };
+  var Net = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "net",
+        "martial",
+        "ranged",
+        { type: "flat", amount: 0, damageType: "bludgeoning" },
+        ["thrown"],
+        void 0,
+        // TODO [ICON]
+        5,
+        15
+      );
+      this.quantity = quantity;
     }
   };
 
@@ -8986,20 +9124,29 @@
     shortbow: (g) => new Shortbow(g),
     // martial melee
     battleaxe: (g) => new Battleaxe(g),
+    flail: (g) => new Flail(g),
+    glaive: (g) => new Glaive(g),
     greataxe: (g) => new Greataxe(g),
     greatsword: (g) => new Greatsword(g),
+    halberd: (g) => new Halberd(g),
+    lance: (g) => new Lance(g),
     longsword: (g) => new Longsword(g),
     maul: (g) => new Maul(g),
     morningstar: (g) => new Morningstar(g),
+    pike: (g) => new Pike(g),
     rapier: (g) => new Rapier(g),
     scimitar: (g) => new Scimitar(g),
     shortsword: (g) => new Shortsword(g),
     trident: (g, qty = 1) => new Trident(g, qty),
     warhammer: (g) => new Warhammer(g),
+    "war pick": (g) => new WarPick(g),
+    whip: (g) => new Whip(g),
     // martial ranged
+    blowgun: (g) => new Blowgun(g),
     "hand crossbow": (g) => new HandCrossbow(g),
     "heavy crossbow": (g) => new HeavyCrossbow(g),
     longbow: (g) => new Longbow(g),
+    net: (g, qty = 1) => new Net(g, qty),
     // ammunition
     arrow: (g, qty = 1) => new Arrow(g, qty),
     "blowgun needle": (g, qty = 1) => new BlowgunNeedle(g, qty),

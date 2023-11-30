@@ -24,16 +24,21 @@ import { ArrowCatchingShield } from "../items/shields";
 import { WandOfWeb } from "../items/wands";
 import {
   Battleaxe,
+  Blowgun,
   Club,
   Dagger,
   Dart,
+  Flail,
+  Glaive,
   Greataxe,
   Greatclub,
   Greatsword,
+  Halberd,
   Handaxe,
   HandCrossbow,
   HeavyCrossbow,
   Javelin,
+  Lance,
   LightCrossbow,
   LightHammer,
   Longbow,
@@ -41,6 +46,8 @@ import {
   Mace,
   Maul,
   Morningstar,
+  Net,
+  Pike,
   Quarterstaff,
   Rapier,
   Scimitar,
@@ -51,6 +58,8 @@ import {
   Spear,
   Trident,
   Warhammer,
+  WarPick,
+  Whip,
 } from "../items/weapons";
 import BootsOfTheWinterlands from "../items/wondrous/BootsOfTheWinterlands";
 import BracersOfTheArbalest from "../items/wondrous/BracersOfTheArbalest";
@@ -98,21 +107,30 @@ const allItems = {
 
   // martial melee
   battleaxe: (g) => new Battleaxe(g),
+  flail: (g) => new Flail(g),
+  glaive: (g) => new Glaive(g),
   greataxe: (g) => new Greataxe(g),
   greatsword: (g) => new Greatsword(g),
+  halberd: (g) => new Halberd(g),
+  lance: (g) => new Lance(g),
   longsword: (g) => new Longsword(g),
   maul: (g) => new Maul(g),
   morningstar: (g) => new Morningstar(g),
+  pike: (g) => new Pike(g),
   rapier: (g) => new Rapier(g),
   scimitar: (g) => new Scimitar(g),
   shortsword: (g) => new Shortsword(g),
   trident: (g, qty = 1) => new Trident(g, qty),
   warhammer: (g) => new Warhammer(g),
+  "war pick": (g) => new WarPick(g),
+  whip: (g) => new Whip(g),
 
   // martial ranged
+  blowgun: (g) => new Blowgun(g),
   "hand crossbow": (g) => new HandCrossbow(g),
   "heavy crossbow": (g) => new HeavyCrossbow(g),
   longbow: (g) => new Longbow(g),
+  net: (g, qty = 1) => new Net(g, qty),
 
   // ammunition
   arrow: (g, qty = 1) => new Arrow(g, qty),
