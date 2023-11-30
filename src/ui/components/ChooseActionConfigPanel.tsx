@@ -1,42 +1,42 @@
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
-import Engine from "../Engine";
-import { PickChoice } from "../interruptions/PickFromListChoice";
+import Engine from "../../Engine";
+import { PickChoice } from "../../interruptions/PickFromListChoice";
 import AllocationResolver, {
   Allocation,
-} from "../resolvers/AllocationResolver";
-import ChoiceResolver from "../resolvers/ChoiceResolver";
-import MultiChoiceResolver from "../resolvers/MultiChoiceResolver";
-import MultiPointResolver from "../resolvers/MultiPointResolver";
-import MultiTargetResolver from "../resolvers/MultiTargetResolver";
-import NumberRangeResolver from "../resolvers/NumberRangeResolver";
-import PointResolver from "../resolvers/PointResolver";
-import PointToPointResolver from "../resolvers/PointToPointResolver";
-import SlotResolver from "../resolvers/SlotResolver";
-import TargetResolver from "../resolvers/TargetResolver";
-import Action from "../types/Action";
-import Amount from "../types/Amount";
-import Combatant from "../types/Combatant";
-import DamageType from "../types/DamageType";
-import Point from "../types/Point";
-import Resolver from "../types/Resolver";
-import { checkConfig, getConfigErrors } from "../utils/config";
-import { getDiceAverage } from "../utils/dnd";
-import { enumerate } from "../utils/numbers";
-import { describePoint, describeRange } from "../utils/text";
+} from "../../resolvers/AllocationResolver";
+import ChoiceResolver from "../../resolvers/ChoiceResolver";
+import MultiChoiceResolver from "../../resolvers/MultiChoiceResolver";
+import MultiPointResolver from "../../resolvers/MultiPointResolver";
+import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import NumberRangeResolver from "../../resolvers/NumberRangeResolver";
+import PointResolver from "../../resolvers/PointResolver";
+import PointToPointResolver from "../../resolvers/PointToPointResolver";
+import SlotResolver from "../../resolvers/SlotResolver";
+import TargetResolver from "../../resolvers/TargetResolver";
+import Action from "../../types/Action";
+import Amount from "../../types/Amount";
+import Combatant from "../../types/Combatant";
+import DamageType from "../../types/DamageType";
+import Point from "../../types/Point";
+import Resolver from "../../types/Resolver";
+import { checkConfig, getConfigErrors } from "../../utils/config";
+import { getDiceAverage } from "../../utils/dnd";
+import { enumerate } from "../../utils/numbers";
+import { describePoint, describeRange } from "../../utils/text";
+import classnames from "../utils/classnames";
+import {
+  actionAreas,
+  activeCombatant,
+  wantsCombatant,
+  wantsPoint,
+} from "../utils/state";
 import buttonStyles from "./button.module.scss";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
 import commonStyles from "./common.module.scss";
 import Labelled from "./Labelled";
 import RangeInput from "./RangeInput";
-import classnames from "./utils/classnames";
-import {
-  actionAreas,
-  activeCombatant,
-  wantsCombatant,
-  wantsPoint,
-} from "./utils/state";
 
 type ChooserProps<T, R = Resolver<T>> = {
   action: Action;

@@ -1,25 +1,19 @@
 import { batch } from "@preact/signals";
 import { useCallback, useContext, useEffect, useState } from "preact/hooks";
 
-import Engine, { EngineMoveResult } from "../Engine";
-import { getDefaultMovement } from "../movement";
-import Action from "../types/Action";
-import Combatant from "../types/Combatant";
-import { SpecifiedEffectShape } from "../types/EffectArea";
-import MoveDirection from "../types/MoveDirection";
-import Point from "../types/Point";
-import { resolveArea } from "../utils/areas";
-import { checkConfig } from "../utils/config";
-import ActiveUnitPanel from "./ActiveUnitPanel";
-import styles from "./App.module.scss";
-import Battlefield from "./Battlefield";
-import BoundedMovePanel from "./BoundedMovePanel";
-import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
-import EventLog from "./EventLog";
-import ListChoiceDialog from "./ListChoiceDialog";
-import Menu, { MenuItem } from "./Menu";
-import MultiListChoiceDialog from "./MultiListChoiceDialog";
-import { getAllIcons } from "./utils/icons";
+import BattleTemplate, {
+  initialiseFromTemplate,
+} from "../../data/BattleTemplate";
+import Engine, { EngineMoveResult } from "../../Engine";
+import { getDefaultMovement } from "../../movement";
+import Action from "../../types/Action";
+import Combatant from "../../types/Combatant";
+import { SpecifiedEffectShape } from "../../types/EffectArea";
+import MoveDirection from "../../types/MoveDirection";
+import Point from "../../types/Point";
+import { resolveArea } from "../../utils/areas";
+import { checkConfig } from "../../utils/config";
+import { getAllIcons } from "../utils/icons";
 import {
   actionAreas,
   activeCombatant,
@@ -33,18 +27,29 @@ import {
   moveBounds,
   moveHandler,
   movingCombatantId,
+  showSideHP,
+  showSideUnderlay,
   teleportInfo,
   wantsCombatant,
   wantsPoint,
-} from "./utils/state";
-import { SVGCacheContext } from "./utils/SVGCache";
-import { getUnitData } from "./utils/types";
-import UIResponse from "./utils/UIResponse";
+} from "../utils/state";
+import { SVGCacheContext } from "../utils/SVGCache";
+import { getUnitData } from "../utils/types";
+import UIResponse from "../utils/UIResponse";
+import ActiveUnitPanel from "./ActiveUnitPanel";
+import Battlefield from "./Battlefield";
+import BoundedMovePanel from "./BoundedMovePanel";
+import ChooseActionConfigPanel from "./ChooseActionConfigPanel";
+import styles from "./CombatUI.module.scss";
+import EventLog from "./EventLog";
+import ListChoiceDialog from "./ListChoiceDialog";
+import Menu, { MenuItem } from "./Menu";
+import MultiListChoiceDialog from "./MultiListChoiceDialog";
 import YesNoDialog from "./YesNoDialog";
 
 interface Props {
   g: Engine;
-  onMount?: (g: Engine) => void;
+  template?: BattleTemplate;
 }
 
 interface ActionMenuState {
@@ -54,7 +59,7 @@ interface ActionMenuState {
   items: MenuItem<Action>[];
 }
 
-export default function App({ g, onMount }: Props) {
+export default function CombatUI({ g, template }: Props) {
   const cache = useContext(SVGCacheContext);
   const [target, setTarget] = useState<Combatant>();
   const [action, setAction] = useState<Action>();
@@ -107,19 +112,22 @@ export default function App({ g, onMount }: Props) {
   );
 
   useEffect(() => {
-    const subscriptions = [
-      g.events.on("CombatantPlaced", refreshUnits),
-      g.events.on("CombatantMoved", refreshUnits),
-      g.events.on("CombatantDied", refreshUnits),
-      g.events.on("EffectAdded", refreshUnits),
-      g.events.on("EffectRemoved", refreshUnits),
+    batch(() => {
+      showSideHP.value = [0];
+      showSideUnderlay.value = false;
+    });
 
-      g.events.on("AreaPlaced", refreshAreas),
-      g.events.on("AreaRemoved", refreshAreas),
-
-      g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
-        interrupt.add(
-          new UIResponse(who, async () => {
+    g.events.on("CombatantPlaced", refreshUnits);
+    g.events.on("CombatantMoved", refreshUnits);
+    g.events.on("CombatantDied", refreshUnits);
+    g.events.on("EffectAdded", refreshUnits);
+    g.events.on("EffectRemoved", refreshUnits);
+    g.events.on("AreaPlaced", refreshAreas);
+    g.events.on("AreaRemoved", refreshAreas);
+    g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+      interrupt.add(
+        new UIResponse(who, async () => {
+          batch(() => {
             activeCombatantId.value = who.id;
             moveHandler.value = getDefaultMovement(who);
             movingCombatantId.value = who.id;
@@ -127,61 +135,59 @@ export default function App({ g, onMount }: Props) {
 
             refreshUnits();
             allActions.value = g.getActions(who);
-          }),
-        );
-      }),
+          });
+        }),
+      );
+    });
+    g.events.on("ListChoice", (e) => (chooseFromList.value = e));
+    g.events.on("MultiListChoice", (e) => (chooseManyFromList.value = e));
+    g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e));
+    g.events.on("BoundedMove", (e) => {
+      const { who, handler } = e.detail;
 
-      g.events.on("ListChoice", (e) => (chooseFromList.value = e)),
-      g.events.on("MultiListChoice", (e) => (chooseManyFromList.value = e)),
-      g.events.on("YesNoChoice", (e) => (chooseYesNo.value = e)),
+      batch(() => {
+        moveBounds.value = e;
+        moveHandler.value = handler;
+        movingCombatantId.value = who.id;
 
-      g.events.on("BoundedMove", (e) => {
-        const { who, handler } = e.detail;
+        if (handler.teleportation) {
+          const shape: SpecifiedEffectShape = {
+            type: "within",
+            who,
+            radius: handler.maximum,
+          };
+          teleportInfo.value = shape;
+          const area = resolveArea(shape);
 
-        batch(() => {
-          moveBounds.value = e;
-          moveHandler.value = handler;
-          movingCombatantId.value = who.id;
+          wantsPoint.value = (p) => {
+            if (p && area.has(p)) {
+              processMove(g.move(who, p, handler));
 
-          if (handler.teleportation) {
-            const shape: SpecifiedEffectShape = {
-              type: "within",
-              who,
-              radius: handler.maximum,
-            };
-            teleportInfo.value = shape;
-            const area = resolveArea(shape);
+              batch(() => {
+                wantsPoint.value = undefined;
+                teleportInfo.value = undefined;
+              });
+            }
+          };
+        }
+      });
+    });
 
-            wantsPoint.value = (p) => {
-              if (p && area.has(p)) {
-                processMove(g.move(who, p, handler));
+    if (template)
+      void initialiseFromTemplate(g, template).then((arg) => {
+        for (const iconUrl of getAllIcons(g)) cache.get(iconUrl);
+        return arg;
+      });
 
-                batch(() => {
-                  wantsPoint.value = undefined;
-                  teleportInfo.value = undefined;
-                });
-              }
-            };
-          }
-        });
-      }),
-    ];
-
-    onMount?.(g);
-
-    for (const iconUrl of getAllIcons(g)) cache.get(iconUrl);
-
-    return () => {
-      for (const cleanup of subscriptions) cleanup();
-    };
+    return g.reset.bind(g);
   }, [
     cache,
     g,
     hideActionMenu,
-    onMount,
     processMove,
     refreshAreas,
     refreshUnits,
+    template,
   ]);
 
   const onExecuteAction = useCallback(

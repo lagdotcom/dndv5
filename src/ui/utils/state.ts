@@ -1,4 +1,4 @@
-import { computed, signal } from "@preact/signals";
+import { batch, computed, signal } from "@preact/signals";
 
 import BoundedMoveEvent from "../../events/BoundedMoveEvent";
 import ListChoiceEvent from "../../events/ListChoiceEvent";
@@ -54,6 +54,8 @@ export const scale = signal(20);
 
 export const showSideHP = signal<number[]>([0]);
 
+export const showSideUnderlay = signal<boolean>(false);
+
 export const teleportInfo = signal<SpecifiedEffectShape | undefined>(undefined);
 
 export const wantsCombatant = signal<Wants<Combatant> | undefined>(undefined);
@@ -78,7 +80,29 @@ export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
   movingCombatant,
   scale,
   showSideHP,
+  showSideUnderlay,
   teleportInfo,
   wantsCombatant,
   wantsPoint,
 };
+
+export const resetAllState = () =>
+  batch(() => {
+    actionAreas.value = [];
+    activeCombatantId.value = NaN;
+    aiEvaluation.value = undefined;
+    allActions.value = [];
+    allCombatants.value = [];
+    allEffects.value = [];
+    chooseFromList.value = undefined;
+    chooseManyFromList.value = undefined;
+    chooseYesNo.value = undefined;
+    moveBounds.value = undefined;
+    moveHandler.value = undefined;
+    movingCombatantId.value = NaN;
+    showSideHP.value = [0];
+    showSideUnderlay.value = false;
+    teleportInfo.value = undefined;
+    wantsCombatant.value = undefined;
+    wantsPoint.value = undefined;
+  });

@@ -5,7 +5,7 @@ import { MonsterName } from "../data/allMonsters";
 import allPCs, { PCName } from "../data/allPCs";
 import BattleTemplate, { initialiseFromTemplate } from "../data/BattleTemplate";
 import Engine from "../Engine";
-import App from "../ui/App";
+import CombatUI from "../ui/components/CombatUI";
 import { SVGCacheContext } from "../ui/utils/SVGCache";
 
 export type BattleEntry = [
@@ -32,7 +32,7 @@ export default async function setupBattleTest(...entries: BattleEntry[]) {
   const g = new Engine();
   render(
     <SVGCacheContext.Provider value={MockSVGCache}>
-      <App g={g} />
+      <CombatUI g={g} />
     </SVGCacheContext.Provider>,
   );
 

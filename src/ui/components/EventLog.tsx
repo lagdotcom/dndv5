@@ -1,10 +1,9 @@
 import { VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
-import Engine from "../Engine";
-import { isDefined } from "../utils/types";
-import styles from "./EventLog.module.scss";
-import useTimeout from "./hooks/useTimeout";
+import Engine from "../../Engine";
+import { isDefined } from "../../utils/types";
+import useTimeout from "../hooks/useTimeout";
 import {
   getAbilityCheckMessage,
   getAttackMessage,
@@ -19,8 +18,9 @@ import {
   getInitiativeMessage,
   getSaveMessage,
   MessagePart,
-} from "./utils/messages";
-import UIResponse from "./utils/UIResponse";
+} from "../utils/messages";
+import UIResponse from "../utils/UIResponse";
+import styles from "./EventLog.module.scss";
 
 function LogMessage({ message }: { message: MessagePart[] }) {
   const text = message

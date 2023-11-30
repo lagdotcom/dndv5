@@ -8,10 +8,10 @@ import iconSWUrl from "@img/ui/sw.svg";
 import iconWUrl from "@img/ui/w.svg";
 import { useCallback, useMemo } from "preact/hooks";
 
-import MoveDirection from "../types/MoveDirection";
+import MoveDirection from "../../types/MoveDirection";
+import classnames from "../utils/classnames";
 import SVGIcon from "./SVGIcon";
 import styles from "./UnitMoveButton.module.scss";
-import classnames from "./utils/classnames";
 
 const makeButtonType = (className: string, iconUrl: string, label: string) => ({
   className: styles[className],

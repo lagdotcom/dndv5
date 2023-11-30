@@ -1,8 +1,8 @@
 import { useCallback } from "preact/hooks";
 
-import { ListChoiceDetail } from "../events/ListChoiceEvent";
+import { ListChoiceDetail } from "../../events/ListChoiceEvent";
+import { chooseFromList } from "../utils/state";
 import Dialog from "./Dialog";
-import { chooseFromList } from "./utils/state";
 
 export default function ListChoiceDialog<T>({
   interruption,

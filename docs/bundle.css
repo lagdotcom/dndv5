@@ -1,4 +1,16 @@
-/* esbuild-sass-plugin:css-chunk:src/ui/common.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/App.module.scss */
+:root {
+  --scale: 100px;
+}
+._modeSwitch_19cx7_5 {
+  z-index: 100;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  background: white;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/components/common.module.scss */
 ._damageList_f4xy4_1 {
   display: inline;
 }
@@ -18,7 +30,7 @@
   padding: 2px;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/IconButton.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/IconButton.module.scss */
 ._main_13fqt_1 {
   margin: 0;
   padding: 0;
@@ -39,29 +51,13 @@
   right: 0;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/Labelled.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/Labelled.module.scss */
 ._label_ehxn3_1 {
   font-size: 0.8em;
   font-variant: small-caps;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/App.module.scss */
-:root {
-  --scale: 100px;
-}
-._sidePanel_czif9_5 {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 40vw;
-  max-width: 400px;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* esbuild-sass-plugin:css-chunk:src/ui/Battlefield.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/Battlefield.module.scss */
 ._main_1bit5_1 {
   position: absolute;
   left: 0;
@@ -75,7 +71,7 @@
   cursor: grabbing;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/BattlefieldEffect.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/BattlefieldEffect.module.scss */
 ._main_1azly_1 {
   position: absolute;
   z-index: 5;
@@ -98,7 +94,7 @@
   z-index: 23;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/Unit.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/Unit.module.scss */
 ._main_120hg_1 {
   position: absolute;
   cursor: pointer;
@@ -121,7 +117,7 @@
   flex-flow: wrap-reverse;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/UnitHP.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/UnitHP.module.scss */
 ._hp_1j4fd_1 {
   position: absolute;
   top: 0;
@@ -170,7 +166,7 @@
   color: red;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/UnitMoveButton.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/UnitMoveButton.module.scss */
 :root {
   --movebtn-size: 30px;
 }
@@ -222,12 +218,12 @@
   top: 0;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/button.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/button.module.scss */
 ._active_10ff1_1 {
   background-color: yellow;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/ChooseActionConfigPanel.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/ChooseActionConfigPanel.module.scss */
 ._warning_15trd_1 {
   font-size: 0.8em;
   font-weight: bold;
@@ -261,7 +257,7 @@
   content: ")";
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/CombatantRef.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/CombatantRef.module.scss */
 ._main_g12vt_1 {
   display: inline-flex;
   align-items: center;
@@ -278,7 +274,7 @@
   margin-right: 4px;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/RangeInput.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/RangeInput.module.scss */
 ._main_1k0vn_1 {
   display: inline-grid;
   grid-template-columns: 20px auto 20px;
@@ -302,7 +298,20 @@
   text-align: center;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/EventLog.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/CombatUI.module.scss */
+._sidePanel_4415i_1 {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40vw;
+  max-width: 400px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/components/EventLog.module.scss */
 ._container_fnmiq_1 {
   position: absolute;
   bottom: 8px;
@@ -331,7 +340,7 @@
   padding: 2px;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/Dialog.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/Dialog.module.scss */
 ._main_1hd4j_1 {
   z-index: 100;
 }
@@ -356,7 +365,7 @@
   font-size: 1.2em;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/Menu.module.scss */
+/* esbuild-sass-plugin:css-chunk:src/ui/components/Menu.module.scss */
 ._main_1j00q_1 {
   position: absolute;
   display: flex;

@@ -1,20 +1,24 @@
 import { useCallback } from "preact/hooks";
 
-import Combatant from "../types/Combatant";
-import MoveDirection from "../types/MoveDirection";
+import Combatant from "../../types/Combatant";
+import MoveDirection from "../../types/MoveDirection";
+import { scale, showSideHP, showSideUnderlay } from "../utils/state";
+import { UnitData } from "../utils/types";
 import styles from "./Unit.module.scss";
 import UnitEffectIcon from "./UnitEffectIcon";
 import { UnitBriefHP, UnitDetailedHP } from "./UnitHP";
 import UnitMoveButton from "./UnitMoveButton";
-import { scale, showSideHP } from "./utils/state";
-import { UnitData } from "./utils/types";
 
 interface Props {
   isMoving: boolean;
-  onClick(who: Combatant, e: MouseEvent): void;
-  onMove(who: Combatant, dir: MoveDirection): void;
+  onClick?: (who: Combatant, e: MouseEvent) => void;
+  onMove?: (who: Combatant, dir: MoveDirection) => void;
   u: UnitData;
 }
+
+const allyBg = "rgba(0, 0, 255, 0.25)";
+const enemyBg = "rgba(255, 0, 0, 0.25)";
+const otherBg = "rgba(0, 255, 0, 0.25)";
 
 export default function Unit({ isMoving, onClick, onMove, u }: Props) {
   const containerStyle = {
@@ -26,16 +30,23 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
   const tokenStyle = {
     width: u.sizeInUnits * scale.value,
     height: u.sizeInUnits * scale.value,
+    backgroundColor: showSideUnderlay.value
+      ? u.side === 0
+        ? allyBg
+        : u.side === 1
+          ? enemyBg
+          : otherBg
+      : undefined,
   };
   const disabled = u.movedSoFar >= u.speed;
 
   const clicked = useCallback(
-    (e: MouseEvent) => onClick(u.who, e),
+    (e: MouseEvent) => onClick?.(u.who, e),
     [onClick, u],
   );
 
   const moved = useCallback(
-    (dir: MoveDirection) => onMove(u.who, dir),
+    (dir: MoveDirection) => onMove?.(u.who, dir),
     [onMove, u],
   );
 

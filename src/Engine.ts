@@ -99,13 +99,27 @@ export default class Engine {
   initiativeOrder: Combatant[];
   initiativePosition: number;
   rules: DndRules;
+  dice: DiceBag;
+  events: Dispatcher;
 
-  constructor(
-    public dice = new DiceBag(),
-    public events = new Dispatcher(),
-  ) {
+  constructor() {
+    this.dice = new DiceBag();
+    this.events = new Dispatcher();
     this.combatants = new Set();
+    this.activeCombatant = undefined;
     this.effects = new Set();
+    this.id = 0;
+    this.initiativeOrder = [];
+    this.initiativePosition = NaN;
+    this.rules = new DndRules(this);
+  }
+
+  reset() {
+    this.dice = new DiceBag();
+    this.events = new Dispatcher();
+    this.combatants.clear();
+    this.activeCombatant = undefined;
+    this.effects.clear();
     this.id = 0;
     this.initiativeOrder = [];
     this.initiativePosition = NaN;

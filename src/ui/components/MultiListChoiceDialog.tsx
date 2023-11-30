@@ -1,11 +1,11 @@
 import { useCallback } from "preact/hooks";
 
-import { MultiListChoiceDetail } from "../events/MultiListChoiceEvent";
+import { MultiListChoiceDetail } from "../../events/MultiListChoiceEvent";
+import useList from "../hooks/useList";
+import classnames from "../utils/classnames";
+import { chooseManyFromList } from "../utils/state";
 import buttonStyles from "./button.module.scss";
 import Dialog from "./Dialog";
-import useList from "./hooks/useList";
-import classnames from "./utils/classnames";
-import { chooseManyFromList } from "./utils/state";
 
 export default function MultiListChoiceDialog<T>({
   interruption,

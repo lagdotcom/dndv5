@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef } from "preact/hooks";
 
-import { SVGCacheContext } from "./utils/SVGCache";
+import { SVGCacheContext } from "../utils/SVGCache";
 
 interface Props {
   className?: string;

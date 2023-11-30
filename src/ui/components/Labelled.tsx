@@ -2,8 +2,8 @@ import { ComponentChildren } from "preact";
 import { useId } from "preact/hooks";
 import { JSXInternal } from "preact/src/jsx";
 
+import classnames from "../utils/classnames";
 import styles from "./Labelled.module.scss";
-import classnames from "./utils/classnames";
 
 interface Props {
   children: ComponentChildren;

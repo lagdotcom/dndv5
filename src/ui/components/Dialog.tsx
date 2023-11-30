@@ -1,8 +1,8 @@
 import { ComponentChildren } from "preact";
 import { useEffect, useId, useRef } from "preact/hooks";
 
+import classnames from "../utils/classnames";
 import styles from "./Dialog.module.scss";
-import classnames from "./utils/classnames";
 
 interface Props {
   title: string;

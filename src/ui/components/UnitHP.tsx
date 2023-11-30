@@ -1,7 +1,7 @@
-import { Stable } from "../effects";
+import { Stable } from "../../effects";
+import classnames from "../utils/classnames";
+import { UnitData } from "../utils/types";
 import styles from "./UnitHP.module.scss";
-import classnames from "./utils/classnames";
-import { UnitData } from "./utils/types";
 
 interface Props {
   u: UnitData;

@@ -1,7 +1,7 @@
-import Combatant from "../types/Combatant";
+import Combatant from "../../types/Combatant";
+import classnames from "../utils/classnames";
+import { UnitData } from "../utils/types";
 import styles from "./CombatantRef.module.scss";
-import classnames from "./utils/classnames";
-import { UnitData } from "./utils/types";
 
 interface Props {
   who: Combatant | UnitData;

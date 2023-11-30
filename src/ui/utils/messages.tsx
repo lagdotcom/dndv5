@@ -19,8 +19,8 @@ import DiceType from "../../types/DiceType";
 import { AmmoItem, WeaponItem } from "../../types/Item";
 import Spell from "../../types/Spell";
 import { describeAbility, describeSave } from "../../utils/text";
-import CombatantRef from "../CombatantRef";
-import common from "../common.module.scss";
+import CombatantRef from "../components/CombatantRef";
+import common from "../components/common.module.scss";
 
 export type MessagePart = { element: VNode; text: string } | string | undefined;
 

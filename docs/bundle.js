@@ -33,13 +33,6 @@
     }
   });
 
-  // globalExternal:@preact/signals
-  var require_signals = __commonJS({
-    "globalExternal:@preact/signals"(exports, module) {
-      module.exports = globalThis.preactSignals;
-    }
-  });
-
   // globalExternal:preact/hooks
   var require_hooks = __commonJS({
     "globalExternal:preact/hooks"(exports, module) {
@@ -47,228 +40,58 @@
     }
   });
 
+  // globalExternal:@preact/signals
+  var require_signals = __commonJS({
+    "globalExternal:@preact/signals"(exports, module) {
+      module.exports = globalThis.preactSignals;
+    }
+  });
+
   // src/index.tsx
   var import_preact4 = __toESM(require_preact());
 
-  // src/img/tok/badger.png
-  var badger_default = "./badger-53MEBA7R.png";
+  // src/ui/components/App.tsx
+  var import_hooks20 = __toESM(require_hooks());
 
-  // src/img/eq/club.svg
-  var club_default = "./club-RZOLCPSS.svg";
-
-  // src/img/eq/greataxe.svg
-  var greataxe_default = "./greataxe-D7DZHVBT.svg";
-
-  // src/img/eq/light-crossbow.svg
-  var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
-
-  // src/img/eq/longbow.svg
-  var longbow_default = "./longbow-2S2OQHMY.svg";
-
-  // src/img/eq/longsword.svg
-  var longsword_default = "./longsword-B4PZKYLG.svg";
-
-  // src/img/eq/mace.svg
-  var mace_default = "./mace-VW7F6EMI.svg";
-
-  // src/img/eq/quarterstaff.svg
-  var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
-
-  // src/img/eq/rapier.svg
-  var rapier_default = "./rapier-ZROPHPFJ.svg";
-
-  // src/img/eq/spear.svg
-  var spear_default = "./spear-JE22DTMJ.svg";
-
-  // src/img/eq/trident.svg
-  var trident_default = "./trident-XL6WP2YY.svg";
-
-  // src/types/AbilityName.ts
-  var PhysicalAbilities = ["str", "dex", "con"];
-  var MentalAbilities = ["int", "wis", "cha"];
-  var AbilityNames = [...PhysicalAbilities, ...MentalAbilities];
-  var abSet = (...items) => new Set(items);
-
-  // src/types/Item.ts
-  var WeaponCategories = ["natural", "simple", "martial"];
-  var wcSet = (...items) => new Set(items);
-  var ArmorCategories = ["light", "medium", "heavy", "shield"];
-  var acSet = (...items) => new Set(items);
-
-  // src/types/ProficiencyType.ts
-  var ProficiencyTypes = [
-    "none",
-    "half",
-    "proficient",
-    "expertise"
-  ];
-
-  // src/types/SkillName.ts
-  var SkillNames = [
-    "Acrobatics",
-    "Animal Handling",
-    "Arcana",
-    "Athletics",
-    "Deception",
-    "History",
-    "Insight",
-    "Intimidation",
-    "Investigation",
-    "Medicine",
-    "Nature",
-    "Perception",
-    "Performance",
-    "Persuasion",
-    "Religion",
-    "Sleight of Hand",
-    "Stealth",
-    "Survival"
-  ];
-
-  // src/types/ToolName.ts
-  var ArtisansTools = [
-    "alchemist's supplies",
-    "brewer's supplies",
-    "calligrapher's supplies",
-    "carpenter's tools",
-    "cartographer's tools",
-    "cobbler's tools",
-    "cook's utensils",
-    "glassblower's tools",
-    "jeweler's tools",
-    "leatherworker's tools",
-    "mason's tools",
-    "painter's supplies",
-    "potter's tools",
-    "smith's tools",
-    "tinker's tools",
-    "weaver's tools",
-    "woodcarver's tools"
-  ];
-  var GamingSets = [
-    "dice set",
-    "dragonchess set",
-    "playing card set",
-    "three-dragon ante set"
-  ];
-  var Instruments = [
-    "bagpipes",
-    "birdpipes",
-    "drum",
-    "dulcimer",
-    "flute",
-    "glaur",
-    "hand drum",
-    "horn",
-    "longhorn",
-    "lute",
-    "lyre",
-    "pan flute",
-    "shawm",
-    "songborn",
-    "tantan",
-    "thelarr",
-    "tocken",
-    "viol",
-    "wargong",
-    "yarting",
-    "zulkoon"
-  ];
-  var VehicleTypes = [
-    "vehicles (air)",
-    "vehicles (land)",
-    "vehicles (space)",
-    "vehicles (water)"
-  ];
-  var ToolNames = [
-    ...ArtisansTools,
-    ...GamingSets,
-    ...Instruments,
-    ...VehicleTypes,
-    "disguise kit",
-    "forgery kit",
-    "herbalism kit",
-    "navigator's tools",
-    "poisoner's kit",
-    "thieves' tools"
-  ];
-
-  // src/types/WeaponType.ts
-  var SimpleMeleeWeapons = [
-    "club",
-    "dagger",
-    "greatclub",
-    "handaxe",
-    "javelin",
-    "light hammer",
-    "mace",
-    "quarterstaff",
-    "sickle",
-    "spear"
-  ];
-  var SimpleRangedWeapons = [
-    "light crossbow",
-    "dart",
-    "shortbow",
-    "sling"
-  ];
-  var MartialMeleeWeapons = [
-    "battleaxe",
-    "flail",
-    "glaive",
-    "greataxe",
-    "greatsword",
-    "halberd",
-    "lance",
-    "longsword",
-    "maul",
-    "morningstar",
-    "pike",
-    "rapier",
-    "scimitar",
-    "shortsword",
-    "trident",
-    "war pick",
-    "warhammer",
-    "whip"
-  ];
-  var MartialRangedWeapons = [
-    "blowgun",
-    "hand crossbow",
-    "heavy crossbow",
-    "longbow",
-    "net"
-  ];
-  var WeaponTypes = [
-    ...SimpleMeleeWeapons,
-    ...SimpleRangedWeapons,
-    ...MartialMeleeWeapons,
-    ...MartialRangedWeapons,
-    "unarmed strike"
-  ];
-  var wtSet = (...items) => new Set(items);
-
-  // src/AbilityScore.ts
-  var AbilityScore = class {
-    constructor(baseScore = 10, baseMaximum = 20) {
-      this.baseScore = baseScore;
-      this.baseMaximum = baseMaximum;
-    }
-    get score() {
-      return Math.min(this.baseScore, this.maximum);
-    }
-    set score(value) {
-      this.baseScore = value;
-    }
-    get maximum() {
-      return this.baseMaximum;
-    }
-    set maximum(value) {
-      this.baseMaximum = Math.max(this.baseMaximum, value);
-    }
-    get modifier() {
-      return getAbilityModifier(this.score);
-    }
+  // src/data/templates.ts
+  var addPC = (name, x, y) => ({
+    type: "pc",
+    name,
+    x,
+    y
+  });
+  var addMonster = (name, x, y) => ({
+    type: "monster",
+    name,
+    x,
+    y
+  });
+  var gleanVsGoblins = {
+    combatants: [
+      addPC("Marvoril", 15, 30),
+      addPC("Shaira", 10, 35),
+      addMonster("goblin [bow]", 15, 0),
+      addMonster("goblin [bow]", 25, 0),
+      addMonster("goblin", 20, 5),
+      addMonster("goblin", 25, 5)
+    ]
+  };
+  var daviesVsFiends = {
+    combatants: [
+      addPC("Aura", 20, 20),
+      addPC("Beldalynn", 10, 30),
+      addPC("Galilea", 5, 0),
+      addPC("Salgar", 15, 30),
+      addPC("Hagrond", 0, 5),
+      addMonster("Birnotec", 15, 0),
+      addMonster("Kay of the Abyss", 20, 0),
+      addMonster("O Gonrit", 10, 15),
+      addMonster("Yulash", 25, 10),
+      addMonster("Zafron Halehart", 10, 5)
+    ]
+  };
+  var tethVsGoblin = {
+    combatants: [addPC("Tethilssethanar", 5, 5), addMonster("goblin", 15, 5)]
   };
 
   // src/collectors/AbstractCollector.ts
@@ -315,6 +138,31 @@
     }
   };
 
+  // src/collectors/AttackOutcomeCollector.ts
+  var AttackOutcomeCollector = class extends AbstractSumCollector {
+    setDefaultGetter(getter) {
+      this.defaultGet = getter;
+      return this;
+    }
+    getDefaultResult() {
+      if (this.defaultGet)
+        return this.defaultGet();
+      throw new Error("AttackOutcomeCollector.setDefaultGetter() not called");
+    }
+    getSum(values) {
+      if (values.includes("miss"))
+        return "miss";
+      if (values.includes("critical"))
+        return "critical";
+      if (values.includes("hit"))
+        return "hit";
+      return this.getDefaultResult();
+    }
+    get hits() {
+      return this.result !== "miss";
+    }
+  };
+
   // src/collectors/BonusCollector.ts
   var BonusCollector = class extends AbstractSumCollector {
     getSum(values) {
@@ -322,8 +170,59 @@
     }
   };
 
-  // src/collectors/ConditionCollector.ts
-  var ConditionCollector = class extends SetCollector {
+  // src/collectors/DamageResponseCollector.ts
+  var DamageResponseCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      if (values.includes("absorb"))
+        return "absorb";
+      if (values.includes("immune"))
+        return "immune";
+      if (values.includes("resist") && !values.includes("vulnerable"))
+        return "resist";
+      if (values.includes("vulnerable"))
+        return "vulnerable";
+      return "normal";
+    }
+  };
+
+  // src/collectors/DiceTypeCollector.ts
+  var DiceTypeCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      const hasAdvantage = values.includes("advantage");
+      const hasDisadvantage = values.includes("disadvantage");
+      if (hasAdvantage === hasDisadvantage)
+        return "normal";
+      return hasAdvantage ? "advantage" : "disadvantage";
+    }
+  };
+
+  // src/collectors/ErrorCollector.ts
+  var ErrorCollector = class {
+    constructor() {
+      this.errors = /* @__PURE__ */ new Set();
+      this.ignored = /* @__PURE__ */ new Set();
+    }
+    add(value, source) {
+      this.errors.add({ value, source });
+    }
+    addMany(messages, source) {
+      for (const message of messages)
+        this.add(message, source);
+    }
+    ignore(source) {
+      this.ignored.add(source);
+    }
+    get valid() {
+      return Array.from(this.errors).filter(
+        (entry) => !this.ignored.has(entry.source)
+      );
+    }
+    get messages() {
+      return this.valid.map((entry) => `${entry.value} (${entry.source.name})`);
+    }
+    get result() {
+      return this.valid.length === 0;
+    }
   };
 
   // src/collectors/InterruptionCollector.ts
@@ -358,6 +257,34 @@
     }
   };
 
+  // src/collectors/ProficiencyCollector.ts
+  var ProficiencyCollector = class extends AbstractSumCollector {
+    getSum(values) {
+      if (values.includes("expertise"))
+        return 2;
+      if (values.includes("proficient"))
+        return 1;
+      if (values.includes("half"))
+        return 0.5;
+      return 0;
+    }
+  };
+
+  // src/collectors/SaveDamageResponseCollector.ts
+  var SaveDamageResponseCollector = class extends AbstractSumCollector {
+    constructor(fallback) {
+      super();
+      this.fallback = fallback;
+    }
+    getSum(values) {
+      if (values.includes("zero"))
+        return "zero";
+      if (values.includes("half"))
+        return "half";
+      return this.fallback;
+    }
+  };
+
   // src/collectors/SuccessResponseCollector.ts
   var SuccessResponseCollector = class extends AbstractSumCollector {
     getSum(values) {
@@ -369,54 +296,478 @@
     }
   };
 
-  // src/events/BeforeEffectEvent.ts
-  var BeforeEffectEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeEffect", { detail });
+  // src/DamageMap.ts
+  var DamageMap = class extends Map {
+    constructor(items = []) {
+      super(items);
+    }
+    get total() {
+      let total = 0;
+      for (const amount of this.values())
+        total += amount;
+      return total;
+    }
+    add(type, value) {
+      var _a;
+      const old = (_a = this.get(type)) != null ? _a : 0;
+      this.set(type, old + value);
     }
   };
 
-  // src/events/EffectAddedEvent.ts
-  var EffectAddedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectAdded", { detail });
+  // src/collectors/ValueCollector.ts
+  var comparators = {
+    higher: (o, n) => n > o,
+    lower: (o, n) => n < o
+  };
+  var ValueCollector = class {
+    constructor(final) {
+      this.final = final;
+      this.others = [];
+    }
+    add(value, prefer) {
+      const comparator = comparators[prefer];
+      if (comparator(this.final, value)) {
+        this.others.push(this.final);
+        this.final = value;
+      } else
+        this.others.push(value);
     }
   };
 
-  // src/events/EffectRemovedEvent.ts
-  var EffectRemovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("EffectRemoved", { detail });
+  // src/DiceBag.ts
+  function matches(rt, m) {
+    for (const [field, value] of Object.entries(m)) {
+      if (rt[field] !== value)
+        return false;
+    }
+    return true;
+  }
+  function sizeOfDice(rt) {
+    switch (rt.type) {
+      case "damage":
+      case "heal":
+      case "other":
+        return rt.size;
+      case "bane":
+      case "bless":
+        return 4;
+      case "attack":
+      case "check":
+      case "initiative":
+      case "luck":
+      case "save":
+        return 20;
+    }
+  }
+  var DiceBag = class {
+    constructor() {
+      this.forcedRolls = /* @__PURE__ */ new Set();
+    }
+    force(value, matcher) {
+      this.forcedRolls.add({ value, matcher });
+    }
+    getForcedRoll(rt) {
+      for (const fr of this.forcedRolls) {
+        if (matches(rt, fr.matcher)) {
+          this.forcedRolls.delete(fr);
+          return fr.value;
+        }
+      }
+    }
+    roll(rt, dt = "normal") {
+      var _a, _b;
+      const size = sizeOfDice(rt);
+      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
+      const values = new ValueCollector(value);
+      if (dt !== "normal") {
+        const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
+        const prefer = dt === "advantage" ? "higher" : "lower";
+        values.add(second, prefer);
+      }
+      return { size, values };
     }
   };
 
-  // src/events/ExhaustionEvent.ts
-  var ExhaustionEvent = class extends CustomEvent {
+  // src/events/SpellCastEvent.ts
+  var SpellCastEvent = class extends CustomEvent {
     constructor(detail) {
-      super("Exhaustion", { detail });
+      super("SpellCast", { detail });
     }
   };
 
-  // src/events/GetConditionsEvent.ts
-  var GetConditionsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetConditions", { detail });
+  // src/MessageBuilder.ts
+  var MessageBuilder = class {
+    constructor() {
+      this.data = [];
+      this.spaceBeforeNext = false;
+    }
+    co(value, overrideName) {
+      this.data.push({
+        type: "combatant",
+        value,
+        overrideName,
+        spaceBefore: this.spaceBeforeNext,
+        spaceAfter: true
+      });
+      this.spaceBeforeNext = false;
+      return this;
+    }
+    sp() {
+      this.spaceBeforeNext = true;
+      return this;
+    }
+    nosp() {
+      const prev = this.data.at(-1);
+      if ((prev == null ? void 0 : prev.type) === "combatant")
+        prev.spaceAfter = false;
+      return this;
+    }
+    it(value) {
+      this.data.push({ type: "item", value });
+      return this;
+    }
+    text(value) {
+      this.data.push({ type: "text", value });
+      return this;
     }
   };
 
-  // src/events/GetMaxHPEvent.ts
-  var GetMaxHPEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetMaxHP", { detail });
+  // src/actions/CastSpell.ts
+  var CastSpell = class {
+    constructor(g, actor, method, spell) {
+      this.g = g;
+      this.actor = actor;
+      this.method = method;
+      this.spell = spell;
+      this.name = `${spell.name} (${method.name})`;
+      this.isSpell = true;
+      this.time = spell.time;
+      this.icon = spell.icon;
+      this.subIcon = method.icon;
+      this.vocal = spell.v;
+      this.isHarmful = spell.isHarmful;
+    }
+    get status() {
+      return this.spell.status;
+    }
+    generateAttackConfigs(targets) {
+      return this.spell.generateAttackConfigs(
+        this.g,
+        this.actor,
+        this.method,
+        targets
+      );
+    }
+    generateHealingConfigs(targets) {
+      return this.spell.generateHealingConfigs(
+        this.g,
+        this.actor,
+        this.method,
+        targets
+      );
+    }
+    getConfig(config) {
+      return this.spell.getConfig(this.g, this.actor, this.method, config);
+    }
+    getAffectedArea(config) {
+      return this.spell.getAffectedArea(this.g, this.actor, config);
+    }
+    getDamage(config) {
+      return this.spell.getDamage(this.g, this.actor, this.method, config);
+    }
+    getDescription() {
+      return this.spell.description;
+    }
+    getHeal(config) {
+      return this.spell.getHeal(this.g, this.actor, this.method, config);
+    }
+    getResources(config) {
+      var _a;
+      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      const resource = this.method.getResourceForSpell(
+        this.spell,
+        level,
+        this.actor
+      );
+      return new Map(resource ? [[resource, 1]] : void 0);
+    }
+    getTargets(config) {
+      return this.spell.getTargets(this.g, this.actor, config);
+    }
+    getAffected(config) {
+      return this.spell.getAffected(this.g, this.actor, config);
+    }
+    getTime() {
+      return this.time;
+    }
+    check(config, ec) {
+      if (!this.actor.hasTime(this.spell.time))
+        ec.add(`No ${this.spell.time} left`, this);
+      for (const [resource, amount] of this.getResources(config))
+        if (!this.actor.hasResource(resource, amount))
+          ec.add(`Not enough ${resource.name} left`, this.method);
+      return this.spell.check(this.g, config, ec);
+    }
+    async apply(config) {
+      const { actor, g, method, spell } = this;
+      actor.useTime(spell.time);
+      for (const [resource, amount] of this.getResources(config))
+        actor.spendResource(resource, amount);
+      const sc = await g.resolve(
+        new SpellCastEvent({
+          who: actor,
+          spell,
+          method,
+          level: spell.getLevel(config),
+          targets: new Set(spell.getTargets(g, actor, config)),
+          affected: new Set(spell.getAffected(g, actor, config)),
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (sc.detail.success.result === "fail") {
+        return g.text(
+          new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`)
+        );
+      }
+      actor.spellsSoFar.push(spell);
+      if (spell.concentration)
+        await actor.endConcentration();
+      return spell.apply(g, actor, method, config);
+    }
+  };
+  function isCastSpell(a, sp) {
+    return a instanceof CastSpell && (!sp || a.spell === sp);
+  }
+
+  // src/img/act/dash.svg
+  var dash_default = "./dash-CNRMKC55.svg";
+
+  // src/colours.ts
+  var ClassColours = {
+    Barbarian: "#e7623e",
+    Bard: "#ab6dac",
+    Cleric: "#91a1b2",
+    Druid: "#7a853b",
+    Fighter: "#7f513e",
+    Monk: "#51a5c5",
+    Paladin: "#b59e54",
+    Ranger: "#507f62",
+    Rogue: "#555752",
+    Sorcerer: "#992e2e",
+    Warlock: "#7b469b",
+    Wizard: "#2a50a1"
+  };
+  var DamageColours = {
+    bludgeoning: "#8b0000",
+    piercing: "#4169e1",
+    slashing: "#ff8c00",
+    acid: "#32cd32",
+    cold: "#6699cc",
+    fire: "#ce2029",
+    force: "#800080",
+    lightning: "#ffd700",
+    necrotic: "#6a0dad",
+    poison: "#00ff00",
+    psychic: "#9966cc",
+    radiant: "#daa520",
+    thunder: "#1e90ff"
+  };
+  var Heal = "#50c878";
+  var ItemRarityColours = {
+    Common: "#242528",
+    Uncommon: "#1FC219",
+    Rare: "#4990E2",
+    "Very Rare": "#9810E0",
+    Legendary: "#FEA227",
+    Artifact: "#BE8972"
+  };
+  var makeIcon = (url, colour) => ({
+    url,
+    colour
+  });
+
+  // src/DndRule.ts
+  var RuleRepository = /* @__PURE__ */ new Set();
+  var DndRule = class {
+    constructor(name, setup) {
+      this.name = name;
+      this.setup = setup;
+      RuleRepository.add(this);
     }
   };
 
-  // src/events/GetSpeedEvent.ts
-  var GetSpeedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetSpeed", { detail });
+  // src/Effect.ts
+  var Effect = class {
+    constructor(name, durationTimer, setup, { quiet = false, icon, tags } = {}) {
+      this.name = name;
+      this.durationTimer = durationTimer;
+      this.quiet = quiet;
+      this.icon = icon;
+      this.tags = new Set(tags);
+      if (setup)
+        this.rule = new DndRule(name, setup);
     }
   };
+
+  // src/actions/AbstractAction.ts
+  var AbstractAction = class {
+    constructor(g, actor, name, status, config, {
+      area,
+      damage,
+      description,
+      heal,
+      icon,
+      isHarmful,
+      resources,
+      subIcon,
+      time
+    } = {}) {
+      this.g = g;
+      this.actor = actor;
+      this.name = name;
+      this.status = status;
+      this.config = config;
+      this.area = area;
+      this.damage = damage;
+      this.description = description;
+      this.isHarmful = isHarmful;
+      this.heal = heal;
+      this.resources = new Map(resources);
+      this.time = time;
+      this.icon = icon;
+      this.subIcon = subIcon;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    generateAttackConfigs(targets) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    generateHealingConfigs(targets) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffectedArea(config) {
+      return this.area;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffected(config) {
+      return [this.actor];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getConfig(config) {
+      return this.config;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDamage(config) {
+      return this.damage;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDescription(config) {
+      return this.description;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getHeal(config) {
+      return this.heal;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getResources(config) {
+      return this.resources;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTargets(config) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTime(config) {
+      return this.time;
+    }
+    check(config, ec) {
+      const time = this.getTime(config);
+      if (time && !this.actor.hasTime(time))
+        ec.add(`No ${time} left`, this);
+      for (const [resource, cost] of this.getResources(config))
+        if (!this.actor.hasResource(resource, cost))
+          ec.add(`Not enough ${resource.name} left`, this);
+      return ec;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async apply(config) {
+      const time = this.getTime(config);
+      if (time)
+        this.actor.useTime(time);
+      for (const [resource, cost] of this.getResources(config))
+        this.actor.spendResource(resource, cost);
+    }
+  };
+
+  // src/actions/DashAction.ts
+  var DashIcon = makeIcon(dash_default);
+  var DashEffect = new Effect(
+    "Dash",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+        if (who.hasEffect(DashEffect))
+          multiplier.add("double", DashEffect);
+      });
+    },
+    { icon: DashIcon }
+  );
+  var DashAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Dash",
+        "implemented",
+        {},
+        {
+          icon: DashIcon,
+          time: "action",
+          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
+
+        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
+        }
+      );
+    }
+    check(config, ec) {
+      if (this.actor.speed <= 0)
+        ec.add("Zero speed", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(DashEffect, { duration: 1 });
+    }
+  };
+
+  // src/img/act/disengage.svg
+  var disengage_default = "./disengage-6XMY6V34.svg";
+
+  // src/utils/combinatorics.ts
+  function combinations(source, size) {
+    const results = [];
+    function backtrack(start, current) {
+      if (current.length === size) {
+        results.push([...current]);
+        return;
+      }
+      for (let i2 = start; i2 < source.length; i2++) {
+        current.push(source[i2]);
+        backtrack(i2 + 1, current);
+        current.pop();
+      }
+    }
+    backtrack(0, []);
+    return results;
+  }
+  function combinationsMulti(source, min, max) {
+    const v = [];
+    for (let l = min; l <= max; l++)
+      v.push(...combinations(source, l));
+    return v;
+  }
 
   // src/Polygon.ts
   var Polygon = class {
@@ -686,157 +1037,456 @@
     return enumerateMapSquares(minX, minY, maxX, maxY);
   }
 
-  // src/events/SpellCastEvent.ts
-  var SpellCastEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("SpellCast", { detail });
-    }
+  // src/utils/units.ts
+  var categoryUnits = {
+    tiny: 1,
+    small: 1,
+    medium: 1,
+    large: 2,
+    huge: 3,
+    gargantuan: 4
   };
-
-  // src/MessageBuilder.ts
-  var MessageBuilder = class {
-    constructor() {
-      this.data = [];
-      this.spaceBeforeNext = false;
-    }
-    co(value, overrideName) {
-      this.data.push({
-        type: "combatant",
-        value,
-        overrideName,
-        spaceBefore: this.spaceBeforeNext,
-        spaceAfter: true
-      });
-      this.spaceBeforeNext = false;
-      return this;
-    }
-    sp() {
-      this.spaceBeforeNext = true;
-      return this;
-    }
-    nosp() {
-      const prev = this.data.at(-1);
-      if ((prev == null ? void 0 : prev.type) === "combatant")
-        prev.spaceAfter = false;
-      return this;
-    }
-    it(value) {
-      this.data.push({ type: "item", value });
-      return this;
-    }
-    text(value) {
-      this.data.push({ type: "text", value });
-      return this;
-    }
-  };
-
-  // src/actions/CastSpell.ts
-  var CastSpell = class {
-    constructor(g, actor, method, spell) {
-      this.g = g;
-      this.actor = actor;
-      this.method = method;
-      this.spell = spell;
-      this.name = `${spell.name} (${method.name})`;
-      this.isSpell = true;
-      this.time = spell.time;
-      this.icon = spell.icon;
-      this.subIcon = method.icon;
-      this.vocal = spell.v;
-      this.isHarmful = spell.isHarmful;
-    }
-    get status() {
-      return this.spell.status;
-    }
-    generateAttackConfigs(targets) {
-      return this.spell.generateAttackConfigs(
-        this.g,
-        this.actor,
-        this.method,
-        targets
-      );
-    }
-    generateHealingConfigs(targets) {
-      return this.spell.generateHealingConfigs(
-        this.g,
-        this.actor,
-        this.method,
-        targets
-      );
-    }
-    getConfig(config) {
-      return this.spell.getConfig(this.g, this.actor, this.method, config);
-    }
-    getAffectedArea(config) {
-      return this.spell.getAffectedArea(this.g, this.actor, config);
-    }
-    getDamage(config) {
-      return this.spell.getDamage(this.g, this.actor, this.method, config);
-    }
-    getDescription() {
-      return this.spell.description;
-    }
-    getHeal(config) {
-      return this.spell.getHeal(this.g, this.actor, this.method, config);
-    }
-    getResources(config) {
-      var _a;
-      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
-      const resource = this.method.getResourceForSpell(
-        this.spell,
-        level,
-        this.actor
-      );
-      return new Map(resource ? [[resource, 1]] : void 0);
-    }
-    getTargets(config) {
-      return this.spell.getTargets(this.g, this.actor, config);
-    }
-    getAffected(config) {
-      return this.spell.getAffected(this.g, this.actor, config);
-    }
-    getTime() {
-      return this.time;
-    }
-    check(config, ec) {
-      if (!this.actor.hasTime(this.spell.time))
-        ec.add(`No ${this.spell.time} left`, this);
-      for (const [resource, amount] of this.getResources(config))
-        if (!this.actor.hasResource(resource, amount))
-          ec.add(`Not enough ${resource.name} left`, this.method);
-      return this.spell.check(this.g, config, ec);
-    }
-    async apply(config) {
-      const { actor, g, method, spell } = this;
-      actor.useTime(spell.time);
-      for (const [resource, amount] of this.getResources(config))
-        actor.spendResource(resource, amount);
-      const sc = await g.resolve(
-        new SpellCastEvent({
-          who: actor,
-          spell,
-          method,
-          level: spell.getLevel(config),
-          targets: new Set(spell.getTargets(g, actor, config)),
-          affected: new Set(spell.getAffected(g, actor, config)),
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
-        })
-      );
-      if (sc.detail.success.result === "fail") {
-        return g.text(
-          new MessageBuilder().co(actor).text(` fails to cast ${spell.name}.`)
-        );
-      }
-      actor.spellsSoFar.push(spell);
-      if (spell.concentration)
-        await actor.endConcentration();
-      return spell.apply(g, actor, method, config);
-    }
-  };
-  function isCastSpell(a, sp) {
-    return a instanceof CastSpell && (!sp || a.spell === sp);
+  function convertSizeToUnit(size) {
+    return categoryUnits[size] * MapSquareSize;
   }
+  function getDistanceBetween({ x: x1, y: y1 }, size1, { x: x2, y: y2 }, size2) {
+    const closest_x1 = Math.max(x1, x2);
+    const closest_x2 = Math.min(x1 + size1, x2 + size2);
+    const closest_y1 = Math.max(y1, y2);
+    const closest_y2 = Math.min(y1 + size1, y2 + size2);
+    return Math.max(closest_x1 - closest_x2, closest_y1 - closest_y2) + MapSquareSize;
+  }
+  function distance(a, b) {
+    return getDistanceBetween(
+      a.position,
+      a.sizeInUnits,
+      b.position,
+      b.sizeInUnits
+    );
+  }
+  function distanceTo(who, to) {
+    return getDistanceBetween(who.position, who.sizeInUnits, to, MapSquareSize);
+  }
+  function compareDistances(stationary, stationaryPosition, mover, oldPosition, newPosition) {
+    const oldDistance = getDistanceBetween(
+      oldPosition,
+      mover.sizeInUnits,
+      stationaryPosition,
+      stationary.sizeInUnits
+    );
+    const newDistance = getDistanceBetween(
+      newPosition,
+      mover.sizeInUnits,
+      stationaryPosition,
+      stationary.sizeInUnits
+    );
+    return { oldDistance, newDistance };
+  }
+  function getSquares(who, position) {
+    return new PointSet(
+      enumerateMapSquares(
+        position.x,
+        position.y,
+        position.x + who.sizeInUnits,
+        position.y + who.sizeInUnits
+      )
+    );
+  }
+
+  // src/filters.ts
+  var makeFilter = ({
+    name,
+    message = name,
+    check
+  }) => ({ name, message, check });
+  var canSee = makeFilter({
+    name: "can see",
+    message: "not visible",
+    check: (g, action, value) => g.canSee(action.actor, value)
+  });
+  var isAlly = makeFilter({
+    name: "ally",
+    message: "must target ally",
+    check: (g, action, value) => action.actor.side === value.side
+  });
+  var isConcentrating = makeFilter({
+    name: "concentrating",
+    message: "target must be concentrating",
+    check: (g, action, value) => value.concentratingOn.size > 0
+  });
+  var isEnemy = makeFilter({
+    name: "enemy",
+    message: "must target enemy",
+    check: (g, action, value) => action.actor.side !== value.side
+  });
+  var notSelf = makeFilter({
+    name: "not self",
+    check: (g, action, value) => action.actor !== value
+  });
+  var hasEffect = (effect, name = effect.name, message = "no effect") => makeFilter({
+    name,
+    message,
+    check: (g, action, value) => value.hasEffect(effect)
+  });
+  var ofCreatureType = (...types) => makeFilter({
+    name: types.join("/"),
+    message: "wrong creature type",
+    check: (g, action, value) => types.includes(value.type)
+  });
+  var notOfCreatureType = (...types) => makeFilter({
+    name: `not ${types.join("/")}`,
+    message: "wrong creature type",
+    check: (g, action, value) => !types.includes(value.type)
+  });
+  var withinRangeOfEachOther = (range) => makeFilter({
+    name: `within ${range}' of each other`,
+    message: `within ${range}' of each other`,
+    check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
+  });
+
+  // src/types/AbilityName.ts
+  var PhysicalAbilities = ["str", "dex", "con"];
+  var MentalAbilities = ["int", "wis", "cha"];
+  var AbilityNames = [...PhysicalAbilities, ...MentalAbilities];
+  var abSet = (...items) => new Set(items);
+
+  // src/types/Item.ts
+  var WeaponCategories = ["natural", "simple", "martial"];
+  var wcSet = (...items) => new Set(items);
+  var ArmorCategories = ["light", "medium", "heavy", "shield"];
+  var acSet = (...items) => new Set(items);
+
+  // src/types/ProficiencyType.ts
+  var ProficiencyTypes = [
+    "none",
+    "half",
+    "proficient",
+    "expertise"
+  ];
+
+  // src/types/SkillName.ts
+  var SkillNames = [
+    "Acrobatics",
+    "Animal Handling",
+    "Arcana",
+    "Athletics",
+    "Deception",
+    "History",
+    "Insight",
+    "Intimidation",
+    "Investigation",
+    "Medicine",
+    "Nature",
+    "Perception",
+    "Performance",
+    "Persuasion",
+    "Religion",
+    "Sleight of Hand",
+    "Stealth",
+    "Survival"
+  ];
+
+  // src/types/ToolName.ts
+  var ArtisansTools = [
+    "alchemist's supplies",
+    "brewer's supplies",
+    "calligrapher's supplies",
+    "carpenter's tools",
+    "cartographer's tools",
+    "cobbler's tools",
+    "cook's utensils",
+    "glassblower's tools",
+    "jeweler's tools",
+    "leatherworker's tools",
+    "mason's tools",
+    "painter's supplies",
+    "potter's tools",
+    "smith's tools",
+    "tinker's tools",
+    "weaver's tools",
+    "woodcarver's tools"
+  ];
+  var GamingSets = [
+    "dice set",
+    "dragonchess set",
+    "playing card set",
+    "three-dragon ante set"
+  ];
+  var Instruments = [
+    "bagpipes",
+    "birdpipes",
+    "drum",
+    "dulcimer",
+    "flute",
+    "glaur",
+    "hand drum",
+    "horn",
+    "longhorn",
+    "lute",
+    "lyre",
+    "pan flute",
+    "shawm",
+    "songborn",
+    "tantan",
+    "thelarr",
+    "tocken",
+    "viol",
+    "wargong",
+    "yarting",
+    "zulkoon"
+  ];
+  var VehicleTypes = [
+    "vehicles (air)",
+    "vehicles (land)",
+    "vehicles (space)",
+    "vehicles (water)"
+  ];
+  var ToolNames = [
+    ...ArtisansTools,
+    ...GamingSets,
+    ...Instruments,
+    ...VehicleTypes,
+    "disguise kit",
+    "forgery kit",
+    "herbalism kit",
+    "navigator's tools",
+    "poisoner's kit",
+    "thieves' tools"
+  ];
+
+  // src/types/WeaponType.ts
+  var SimpleMeleeWeapons = [
+    "club",
+    "dagger",
+    "greatclub",
+    "handaxe",
+    "javelin",
+    "light hammer",
+    "mace",
+    "quarterstaff",
+    "sickle",
+    "spear"
+  ];
+  var SimpleRangedWeapons = [
+    "light crossbow",
+    "dart",
+    "shortbow",
+    "sling"
+  ];
+  var MartialMeleeWeapons = [
+    "battleaxe",
+    "flail",
+    "glaive",
+    "greataxe",
+    "greatsword",
+    "halberd",
+    "lance",
+    "longsword",
+    "maul",
+    "morningstar",
+    "pike",
+    "rapier",
+    "scimitar",
+    "shortsword",
+    "trident",
+    "war pick",
+    "warhammer",
+    "whip"
+  ];
+  var MartialRangedWeapons = [
+    "blowgun",
+    "hand crossbow",
+    "heavy crossbow",
+    "longbow",
+    "net"
+  ];
+  var WeaponTypes = [
+    ...SimpleMeleeWeapons,
+    ...SimpleRangedWeapons,
+    ...MartialMeleeWeapons,
+    ...MartialRangedWeapons,
+    "unarmed strike"
+  ];
+  var wtSet = (...items) => new Set(items);
+
+  // src/utils/types.ts
+  function isDefined(value) {
+    return typeof value !== "undefined";
+  }
+  function isA(value, enumeration) {
+    return enumeration.includes(value);
+  }
+  function isCombatantArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const who of value)
+      if (!(who instanceof AbstractCombatant))
+        return false;
+    return true;
+  }
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  function isPointArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const point of value)
+      if (!isPoint(point))
+        return false;
+    return true;
+  }
+
+  // src/utils/dnd.ts
+  function getAbilityModifier(ability) {
+    return Math.floor((ability - 10) / 2);
+  }
+  function getDiceAverage(count, size) {
+    return (size + 1) / 2 * count;
+  }
+  function getProficiencyBonusByLevel(level) {
+    return Math.ceil(level / 4) + 1;
+  }
+  function getWeaponCategory(wt) {
+    if (wt === "unarmed strike")
+      return "natural";
+    if (isA(wt, SimpleMeleeWeapons) || isA(wt, SimpleRangedWeapons))
+      return "simple";
+    if (isA(wt, MartialMeleeWeapons) || isA(wt, MartialRangedWeapons))
+      return "martial";
+    throw new Error(`Unknown weapon type: ${wt}`);
+  }
+  function getProficiencyType(thing) {
+    if (typeof thing === "string") {
+      if (isA(thing, AbilityNames))
+        return { type: "ability", ability: thing };
+      if (isA(thing, ArmorCategories))
+        return { type: "armor", category: thing };
+      if (isA(thing, WeaponTypes))
+        return {
+          type: "weapon",
+          category: getWeaponCategory(thing),
+          weapon: thing
+        };
+      if (isA(thing, WeaponCategories))
+        return { type: "weaponCategory", category: thing };
+      if (isA(thing, ToolNames))
+        return { type: "tool", tool: thing };
+      if (isA(thing, SkillNames))
+        return { type: "skill", skill: thing };
+      throw new Error(`${thing} has no proficiency`);
+    }
+    if (thing.itemType === "weapon")
+      return {
+        type: "weapon",
+        category: thing.category,
+        weapon: thing.weaponType
+      };
+    if (thing.itemType === "armor")
+      return { type: "armor", category: thing.category };
+  }
+  function getProficiencyMax(...types) {
+    return types.sort(
+      (a, b) => ProficiencyTypes.indexOf(b) - ProficiencyTypes.indexOf(a)
+    )[0];
+  }
+  var getNaturalArmourMethod = (who, naturalAC) => {
+    const uses = /* @__PURE__ */ new Set();
+    let ac = naturalAC + who.dex.modifier;
+    if (who.shield) {
+      uses.add(who.shield);
+      ac += who.shield.ac;
+    }
+    return { name: "natural armor", ac, uses };
+  };
+  function getFlanker(g, attacker, target) {
+    for (const flanker of g.combatants.keys()) {
+      if (flanker.side !== attacker.side)
+        continue;
+      if (flanker === attacker)
+        continue;
+      if (flanker.conditions.has("Incapacitated"))
+        continue;
+      if (distance(flanker, target) > 5)
+        continue;
+      return flanker;
+    }
+  }
+
+  // src/AbilityScore.ts
+  var AbilityScore = class {
+    constructor(baseScore = 10, baseMaximum = 20) {
+      this.baseScore = baseScore;
+      this.baseMaximum = baseMaximum;
+    }
+    get score() {
+      return Math.min(this.baseScore, this.maximum);
+    }
+    set score(value) {
+      this.baseScore = value;
+    }
+    get maximum() {
+      return this.baseMaximum;
+    }
+    set maximum(value) {
+      this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+    get modifier() {
+      return getAbilityModifier(this.score);
+    }
+  };
+
+  // src/collectors/ConditionCollector.ts
+  var ConditionCollector = class extends SetCollector {
+  };
+
+  // src/events/BeforeEffectEvent.ts
+  var BeforeEffectEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeEffect", { detail });
+    }
+  };
+
+  // src/events/EffectAddedEvent.ts
+  var EffectAddedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectAdded", { detail });
+    }
+  };
+
+  // src/events/EffectRemovedEvent.ts
+  var EffectRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("EffectRemoved", { detail });
+    }
+  };
+
+  // src/events/ExhaustionEvent.ts
+  var ExhaustionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Exhaustion", { detail });
+    }
+  };
+
+  // src/events/GetConditionsEvent.ts
+  var GetConditionsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetConditions", { detail });
+    }
+  };
+
+  // src/events/GetMaxHPEvent.ts
+  var GetMaxHPEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetMaxHP", { detail });
+    }
+  };
+
+  // src/events/GetSpeedEvent.ts
+  var GetSpeedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSpeed", { detail });
+    }
+  };
 
   // src/resolvers/SlotResolver.ts
   var SlotResolver = class {
@@ -1061,62 +1711,6 @@
   }
   function isEquipmentAttuned(item, who) {
     return (who == null ? void 0 : who.equipment.has(item)) === true && who.attunements.has(item);
-  }
-
-  // src/utils/units.ts
-  var categoryUnits = {
-    tiny: 1,
-    small: 1,
-    medium: 1,
-    large: 2,
-    huge: 3,
-    gargantuan: 4
-  };
-  function convertSizeToUnit(size) {
-    return categoryUnits[size] * MapSquareSize;
-  }
-  function getDistanceBetween({ x: x1, y: y1 }, size1, { x: x2, y: y2 }, size2) {
-    const closest_x1 = Math.max(x1, x2);
-    const closest_x2 = Math.min(x1 + size1, x2 + size2);
-    const closest_y1 = Math.max(y1, y2);
-    const closest_y2 = Math.min(y1 + size1, y2 + size2);
-    return Math.max(closest_x1 - closest_x2, closest_y1 - closest_y2) + MapSquareSize;
-  }
-  function distance(a, b) {
-    return getDistanceBetween(
-      a.position,
-      a.sizeInUnits,
-      b.position,
-      b.sizeInUnits
-    );
-  }
-  function distanceTo(who, to) {
-    return getDistanceBetween(who.position, who.sizeInUnits, to, MapSquareSize);
-  }
-  function compareDistances(stationary, stationaryPosition, mover, oldPosition, newPosition) {
-    const oldDistance = getDistanceBetween(
-      oldPosition,
-      mover.sizeInUnits,
-      stationaryPosition,
-      stationary.sizeInUnits
-    );
-    const newDistance = getDistanceBetween(
-      newPosition,
-      mover.sizeInUnits,
-      stationaryPosition,
-      stationary.sizeInUnits
-    );
-    return { oldDistance, newDistance };
-  }
-  function getSquares(who, position) {
-    return new PointSet(
-      enumerateMapSquares(
-        position.x,
-        position.y,
-        position.x + who.sizeInUnits,
-        position.y + who.sizeInUnits
-      )
-    );
   }
 
   // src/AbstractCombatant.ts
@@ -1566,639 +2160,58 @@
     }
   };
 
-  // src/utils/types.ts
-  function isDefined(value) {
-    return typeof value !== "undefined";
+  // src/resolvers/TargetResolver.ts
+  var TargetResolver = class {
+    constructor(g, maxRange, filters) {
+      this.g = g;
+      this.maxRange = maxRange;
+      this.filters = filters;
+      this.type = "Combatant";
+    }
+    get name() {
+      const clauses = [];
+      if (this.maxRange < Infinity)
+        clauses.push(`target within ${this.maxRange}'`);
+      clauses.push(...this.filters.map((f2) => f2.name));
+      return clauses.length ? clauses.join(", ") : "any target";
+    }
+    check(value, action, ec) {
+      if (!(value instanceof AbstractCombatant)) {
+        ec.add("No target", this);
+      } else {
+        const isOutOfRange = distance(action.actor, value) > this.maxRange;
+        const errors = this.filters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
+        if (isOutOfRange)
+          ec.add("Out of range", this);
+        ec.addMany(errors, this);
+      }
+      return ec;
+    }
+  };
+
+  // src/utils/config.ts
+  function getConfigErrors(g, action, config) {
+    const ec = g.check(action, config);
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
+      const value = config[key];
+      resolver.check(value, action, ec);
+    }
+    return ec;
   }
-  function isA(value, enumeration) {
-    return enumeration.includes(value);
-  }
-  function isCombatantArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const who of value)
-      if (!(who instanceof AbstractCombatant))
-        return false;
-    return true;
-  }
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
-  }
-  function isPointArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const point of value)
-      if (!isPoint(point))
-        return false;
-    return true;
+  function checkConfig(g, action, config) {
+    return getConfigErrors(g, action, config).result;
   }
 
-  // src/utils/dnd.ts
-  function getAbilityModifier(ability) {
-    return Math.floor((ability - 10) / 2);
-  }
-  function getDiceAverage(count, size) {
-    return (size + 1) / 2 * count;
-  }
-  function getProficiencyBonusByLevel(level) {
-    return Math.ceil(level / 4) + 1;
-  }
-  function getWeaponCategory(wt) {
-    if (wt === "unarmed strike")
-      return "natural";
-    if (isA(wt, SimpleMeleeWeapons) || isA(wt, SimpleRangedWeapons))
-      return "simple";
-    if (isA(wt, MartialMeleeWeapons) || isA(wt, MartialRangedWeapons))
-      return "martial";
-    throw new Error(`Unknown weapon type: ${wt}`);
-  }
-  function getProficiencyType(thing) {
-    if (typeof thing === "string") {
-      if (isA(thing, AbilityNames))
-        return { type: "ability", ability: thing };
-      if (isA(thing, ArmorCategories))
-        return { type: "armor", category: thing };
-      if (isA(thing, WeaponTypes))
-        return {
-          type: "weapon",
-          category: getWeaponCategory(thing),
-          weapon: thing
-        };
-      if (isA(thing, WeaponCategories))
-        return { type: "weaponCategory", category: thing };
-      if (isA(thing, ToolNames))
-        return { type: "tool", tool: thing };
-      if (isA(thing, SkillNames))
-        return { type: "skill", skill: thing };
-      throw new Error(`${thing} has no proficiency`);
-    }
-    if (thing.itemType === "weapon")
-      return {
-        type: "weapon",
-        category: thing.category,
-        weapon: thing.weaponType
-      };
-    if (thing.itemType === "armor")
-      return { type: "armor", category: thing.category };
-  }
-  function getProficiencyMax(...types) {
-    return types.sort(
-      (a, b) => ProficiencyTypes.indexOf(b) - ProficiencyTypes.indexOf(a)
-    )[0];
-  }
-  var getNaturalArmourMethod = (who, naturalAC) => {
-    const uses = /* @__PURE__ */ new Set();
-    let ac = naturalAC + who.dex.modifier;
-    if (who.shield) {
-      uses.add(who.shield);
-      ac += who.shield.ac;
-    }
-    return { name: "natural armor", ac, uses };
-  };
-  function getFlanker(g, attacker, target) {
-    for (const flanker of g.combatants.keys()) {
-      if (flanker.side !== attacker.side)
-        continue;
-      if (flanker === attacker)
-        continue;
-      if (flanker.conditions.has("Incapacitated"))
-        continue;
-      if (distance(flanker, target) > 5)
-        continue;
-      return flanker;
-    }
-  }
-
-  // src/utils/dice.ts
-  var _dd = (count, size, damage) => ({
-    type: "dice",
-    amount: { count, size },
-    damageType: damage
-  });
-  function getDefaultHPRoll(level, hitDieSize) {
-    if (level === 1)
-      return hitDieSize;
-    return Math.ceil(getDiceAverage(1, hitDieSize));
-  }
-
-  // src/colours.ts
-  var ClassColours = {
-    Barbarian: "#e7623e",
-    Bard: "#ab6dac",
-    Cleric: "#91a1b2",
-    Druid: "#7a853b",
-    Fighter: "#7f513e",
-    Monk: "#51a5c5",
-    Paladin: "#b59e54",
-    Ranger: "#507f62",
-    Rogue: "#555752",
-    Sorcerer: "#992e2e",
-    Warlock: "#7b469b",
-    Wizard: "#2a50a1"
-  };
-  var DamageColours = {
-    bludgeoning: "#8b0000",
-    piercing: "#4169e1",
-    slashing: "#ff8c00",
-    acid: "#32cd32",
-    cold: "#6699cc",
-    fire: "#ce2029",
-    force: "#800080",
-    lightning: "#ffd700",
-    necrotic: "#6a0dad",
-    poison: "#00ff00",
-    psychic: "#9966cc",
-    radiant: "#daa520",
-    thunder: "#1e90ff"
-  };
-  var Heal = "#50c878";
-  var ItemRarityColours = {
-    Common: "#242528",
-    Uncommon: "#1FC219",
-    Rare: "#4990E2",
-    "Very Rare": "#9810E0",
-    Legendary: "#FEA227",
-    Artifact: "#BE8972"
-  };
-  var makeIcon = (url, colour) => ({
-    url,
-    colour
+  // src/utils/ai.ts
+  var poSet = (...constraints) => new Set(constraints);
+  var poWithin = (range, of) => ({
+    type: "within",
+    range,
+    of
   });
 
-  // src/items/AbstractItem.ts
-  var AbstractItem = class {
-    constructor(g, itemType, name, hands = 0, iconUrl) {
-      this.g = g;
-      this.itemType = itemType;
-      this.name = name;
-      this.hands = hands;
-      this.iconUrl = iconUrl;
-      this.enchantments = /* @__PURE__ */ new Set();
-      this.rarity = "Common";
-    }
-    get icon() {
-      if (this.iconUrl)
-        return { url: this.iconUrl, colour: ItemRarityColours[this.rarity] };
-    }
-    addEnchantment(e2) {
-      this.enchantments.add(e2);
-      e2.setup(this.g, this);
-    }
-  };
-
-  // src/items/weapons.ts
-  var AbstractWeapon = class extends AbstractItem {
-    constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange, weaponType = name) {
-      super(g, "weapon", name, 1, iconUrl);
-      this.g = g;
-      this.category = category;
-      this.rangeCategory = rangeCategory;
-      this.damage = damage;
-      this.shortRange = shortRange;
-      this.longRange = longRange;
-      this.weaponType = weaponType;
-      this.properties = new Set(properties);
-      this.quantity = 1;
-    }
-    get reach() {
-      return this.properties.has("reach") ? 5 : 0;
-    }
-  };
-  var Club = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "club",
-        "simple",
-        "melee",
-        _dd(1, 4, "bludgeoning"),
-        ["light"],
-        club_default
-      );
-    }
-  };
-  var Dagger = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "dagger",
-        "simple",
-        "melee",
-        _dd(1, 4, "piercing"),
-        ["finesse", "light", "thrown"],
-        void 0,
-        // TODO [ICON]
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Greatclub = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "greatclub",
-        "simple",
-        "melee",
-        _dd(1, 8, "bludgeoning"),
-        ["two-handed"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Handaxe = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "handaxe",
-        "simple",
-        "melee",
-        _dd(1, 6, "slashing"),
-        ["light", "thrown"],
-        void 0,
-        // TODO [ICON]
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Javelin = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "javelin",
-        "simple",
-        "melee",
-        _dd(1, 6, "piercing"),
-        ["thrown"],
-        void 0,
-        // TODO [ICON]
-        30,
-        120
-      );
-      this.quantity = quantity;
-    }
-  };
-  var LightHammer = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "light hammer",
-        "simple",
-        "melee",
-        _dd(1, 4, "bludgeoning"),
-        ["light", "thrown"],
-        void 0,
-        // TODO [ICON]
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Mace = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "mace",
-        "simple",
-        "melee",
-        _dd(1, 6, "bludgeoning"),
-        void 0,
-        mace_default
-      );
-    }
-  };
-  var Quarterstaff = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "quarterstaff",
-        "simple",
-        "melee",
-        _dd(1, 6, "bludgeoning"),
-        ["versatile"],
-        quarterstaff_default
-      );
-    }
-  };
-  var Sickle = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "sickle",
-        "simple",
-        "melee",
-        _dd(1, 4, "slashing"),
-        ["light"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Spear = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "spear",
-        "simple",
-        "melee",
-        _dd(1, 6, "piercing"),
-        ["thrown", "versatile"],
-        spear_default,
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var LightCrossbow = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "light crossbow",
-        "simple",
-        "ranged",
-        _dd(1, 8, "piercing"),
-        ["ammunition", "loading", "two-handed"],
-        light_crossbow_default,
-        80,
-        320
-      );
-      this.ammunitionTag = "crossbow";
-    }
-  };
-  var Dart = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "dart",
-        "simple",
-        "ranged",
-        _dd(1, 4, "piercing"),
-        ["finesse", "thrown"],
-        void 0,
-        // TODO [ICON]
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Shortbow = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "shortbow",
-        "simple",
-        "ranged",
-        _dd(1, 6, "piercing"),
-        ["ammunition", "two-handed"],
-        void 0,
-        // TODO [ICON]
-        80,
-        320
-      );
-      this.ammunitionTag = "bow";
-    }
-  };
-  var Sling = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "sling",
-        "simple",
-        "ranged",
-        _dd(1, 4, "bludgeoning"),
-        ["ammunition"],
-        void 0,
-        // TODO [ICON]
-        30,
-        120
-      );
-      this.ammunitionTag = "sling";
-    }
-  };
-  var Battleaxe = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "battleaxe",
-        "martial",
-        "melee",
-        _dd(1, 8, "slashing"),
-        ["versatile"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Greataxe = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "greataxe",
-        "martial",
-        "melee",
-        _dd(1, 12, "slashing"),
-        ["heavy", "two-handed"],
-        greataxe_default
-      );
-    }
-  };
-  var Greatsword = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "greatsword",
-        "martial",
-        "melee",
-        _dd(2, 6, "slashing"),
-        ["heavy", "two-handed"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Longsword = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "longsword",
-        "martial",
-        "melee",
-        _dd(1, 8, "slashing"),
-        ["versatile"],
-        longsword_default
-      );
-    }
-  };
-  var Maul = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "maul",
-        "martial",
-        "melee",
-        _dd(2, 6, "bludgeoning"),
-        ["heavy", "two-handed"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Morningstar = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "morningstar",
-        "martial",
-        "melee",
-        _dd(1, 8, "piercing"),
-        void 0,
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Rapier = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "rapier",
-        "martial",
-        "melee",
-        _dd(1, 8, "piercing"),
-        ["finesse"],
-        rapier_default
-      );
-    }
-  };
-  var Scimitar = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "scimitar",
-        "martial",
-        "melee",
-        _dd(1, 6, "slashing"),
-        ["finesse", "light"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Shortsword = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "shortsword",
-        "martial",
-        "melee",
-        _dd(1, 6, "piercing"),
-        ["finesse", "light"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var Trident = class extends AbstractWeapon {
-    constructor(g, quantity) {
-      super(
-        g,
-        "trident",
-        "martial",
-        "melee",
-        _dd(1, 6, "piercing"),
-        ["thrown", "versatile"],
-        trident_default,
-        20,
-        60
-      );
-      this.quantity = quantity;
-    }
-  };
-  var Warhammer = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "warhammer",
-        "martial",
-        "melee",
-        _dd(1, 8, "bludgeoning"),
-        ["versatile"],
-        void 0
-        // TODO [ICON]
-      );
-    }
-  };
-  var HandCrossbow = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "hand crossbow",
-        "martial",
-        "ranged",
-        _dd(1, 6, "piercing"),
-        ["ammunition", "light", "loading"],
-        void 0,
-        // TODO [ICON]
-        30,
-        120
-      );
-      this.ammunitionTag = "crossbow";
-    }
-  };
-  var HeavyCrossbow = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "heavy crossbow",
-        "martial",
-        "ranged",
-        _dd(1, 10, "piercing"),
-        ["ammunition", "heavy", "loading", "two-handed"],
-        void 0,
-        // TODO [ICON]
-        100,
-        400
-      );
-      this.ammunitionTag = "crossbow";
-    }
-  };
-  var Longbow = class extends AbstractWeapon {
-    constructor(g) {
-      super(
-        g,
-        "longbow",
-        "martial",
-        "ranged",
-        _dd(1, 8, "piercing"),
-        ["ammunition", "heavy", "two-handed"],
-        longbow_default,
-        150,
-        600
-      );
-      this.ammunitionTag = "bow";
-    }
-  };
-
-  // src/collectors/EvaluationCollector.ts
-  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
-    addEval(c, value, co) {
-      this.add(value * c.getCoefficient(co), co);
-    }
-    copy() {
-      return new _EvaluationCollector(
-        this.entries,
-        this.ignoredSources,
-        this.ignoredValues
-      );
-    }
-  };
+  // src/utils/array.ts
+  var sieve = (...items) => items.filter(isDefined);
 
   // src/utils/text.ts
   var niceAbilityName = {
@@ -2260,246 +2273,6 @@
     return { average, list };
   }
 
-  // src/ai/coefficients.ts
-  var makeAICo = (name, defaultValue = 1) => ({
-    name,
-    defaultValue
-  });
-  var HealSelf = makeAICo("HealSelf");
-  var HealAllies = makeAICo("HealAllies");
-  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
-  var DamageEnemies = makeAICo("DamageEnemies");
-  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
-  var DamageAllies = makeAICo("DamageAllies", -1);
-  var StayNearAllies = makeAICo("StayNearAllies");
-
-  // src/ai/DamageRule.ts
-  var DamageRule = class {
-    evaluateActions(g, me, actions) {
-      const enemies = Array.from(g.combatants.keys()).filter(
-        (who) => who.side !== me.side
-      );
-      return actions.flatMap(
-        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
-          const amounts = action.getDamage(config);
-          if (!amounts)
-            return;
-          const targets = action.getAffected(config);
-          if (!targets)
-            return;
-          const { average } = describeDice(amounts);
-          const score = new EvaluationCollector();
-          let effective = 0;
-          let overKill = 0;
-          let friendlyFire = 0;
-          for (const target of targets) {
-            const remaining = target.hp;
-            const damage = Math.min(average, remaining);
-            if (target.side === me.side)
-              friendlyFire += damage;
-            else
-              effective += damage;
-            overKill += Math.max(average - remaining, 0);
-          }
-          score.addEval(me, effective, DamageEnemies);
-          score.addEval(me, overKill, OverKillEnemies);
-          score.addEval(me, friendlyFire, DamageAllies);
-          return { action, config, positioning, score };
-        }).filter(isDefined)
-      );
-    }
-  };
-
-  // src/ai/HealingRule.ts
-  var HealingRule = class {
-    evaluateActions(g, me, actions) {
-      const allies = Array.from(g.combatants.keys()).filter(
-        (who) => who.side === me.side
-      );
-      return actions.flatMap(
-        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
-          const amounts = action.getHeal(config);
-          if (!amounts)
-            return;
-          const targets = action.getAffected(config);
-          if (!targets)
-            return;
-          const { average } = describeDice(amounts);
-          const score = new EvaluationCollector();
-          let effectiveSelf = 0;
-          let effective = 0;
-          let overHeal = 0;
-          for (const target of targets) {
-            const missing = target.hpMax - target.hp;
-            const heal = Math.min(average, missing);
-            if (target === me)
-              effectiveSelf += heal;
-            else
-              effective += heal;
-            overHeal += Math.max(average - missing, 0);
-          }
-          if (effective + effectiveSelf <= 0)
-            return;
-          score.addEval(me, effectiveSelf, HealSelf);
-          score.addEval(me, effective, HealAllies);
-          score.addEval(me, overHeal, OverHealAllies);
-          return { action, config, positioning, score };
-        }).filter(isDefined)
-      );
-    }
-  };
-
-  // src/ai/data.ts
-  var defaultAIRules = [new HealingRule(), new DamageRule()];
-
-  // src/Monster.ts
-  var Monster = class extends AbstractCombatant {
-    constructor(g, name, cr, type, size, img, hpMax, rules = defaultAIRules) {
-      super(g, name, {
-        type,
-        size,
-        img,
-        side: 1,
-        hpMax,
-        rules
-      });
-      this.cr = cr;
-    }
-    don(item, giveProficiency = false) {
-      super.don(item);
-      if (giveProficiency)
-        this.addProficiency(item, "proficient");
-    }
-  };
-
-  // src/utils/combinatorics.ts
-  function combinations(source, size) {
-    const results = [];
-    function backtrack(start, current) {
-      if (current.length === size) {
-        results.push([...current]);
-        return;
-      }
-      for (let i2 = start; i2 < source.length; i2++) {
-        current.push(source[i2]);
-        backtrack(i2 + 1, current);
-        current.pop();
-      }
-    }
-    backtrack(0, []);
-    return results;
-  }
-  function combinationsMulti(source, min, max) {
-    const v = [];
-    for (let l = min; l <= max; l++)
-      v.push(...combinations(source, l));
-    return v;
-  }
-
-  // src/filters.ts
-  var makeFilter = ({
-    name,
-    message = name,
-    check
-  }) => ({ name, message, check });
-  var canSee = makeFilter({
-    name: "can see",
-    message: "not visible",
-    check: (g, action, value) => g.canSee(action.actor, value)
-  });
-  var isAlly = makeFilter({
-    name: "ally",
-    message: "must target ally",
-    check: (g, action, value) => action.actor.side === value.side
-  });
-  var isConcentrating = makeFilter({
-    name: "concentrating",
-    message: "target must be concentrating",
-    check: (g, action, value) => value.concentratingOn.size > 0
-  });
-  var isEnemy = makeFilter({
-    name: "enemy",
-    message: "must target enemy",
-    check: (g, action, value) => action.actor.side !== value.side
-  });
-  var notSelf = makeFilter({
-    name: "not self",
-    check: (g, action, value) => action.actor !== value
-  });
-  var hasEffect = (effect, name = effect.name, message = "no effect") => makeFilter({
-    name,
-    message,
-    check: (g, action, value) => value.hasEffect(effect)
-  });
-  var ofCreatureType = (...types) => makeFilter({
-    name: types.join("/"),
-    message: "wrong creature type",
-    check: (g, action, value) => types.includes(value.type)
-  });
-  var notOfCreatureType = (...types) => makeFilter({
-    name: `not ${types.join("/")}`,
-    message: "wrong creature type",
-    check: (g, action, value) => !types.includes(value.type)
-  });
-  var withinRangeOfEachOther = (range) => makeFilter({
-    name: `within ${range}' of each other`,
-    message: `within ${range}' of each other`,
-    check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
-  });
-
-  // src/resolvers/TargetResolver.ts
-  var TargetResolver = class {
-    constructor(g, maxRange, filters) {
-      this.g = g;
-      this.maxRange = maxRange;
-      this.filters = filters;
-      this.type = "Combatant";
-    }
-    get name() {
-      const clauses = [];
-      if (this.maxRange < Infinity)
-        clauses.push(`target within ${this.maxRange}'`);
-      clauses.push(...this.filters.map((f2) => f2.name));
-      return clauses.length ? clauses.join(", ") : "any target";
-    }
-    check(value, action, ec) {
-      if (!(value instanceof AbstractCombatant)) {
-        ec.add("No target", this);
-      } else {
-        const isOutOfRange = distance(action.actor, value) > this.maxRange;
-        const errors = this.filters.filter((filter) => !filter.check(this.g, action, value)).map((filter) => filter.message);
-        if (isOutOfRange)
-          ec.add("Out of range", this);
-        ec.addMany(errors, this);
-      }
-      return ec;
-    }
-  };
-
-  // src/utils/config.ts
-  function getConfigErrors(g, action, config) {
-    const ec = g.check(action, config);
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-      const value = config[key];
-      resolver.check(value, action, ec);
-    }
-    return ec;
-  }
-  function checkConfig(g, action, config) {
-    return getConfigErrors(g, action, config).result;
-  }
-
-  // src/utils/ai.ts
-  var poSet = (...constraints) => new Set(constraints);
-  var poWithin = (range, of) => ({
-    type: "within",
-    range,
-    of
-  });
-
-  // src/utils/array.ts
-  var sieve = (...items) => items.filter(isDefined);
-
   // src/img/act/dying.svg
   var dying_default = "./dying-YUO2NF73.svg";
 
@@ -2511,97 +2284,6 @@
 
   // src/types/ConditionName.ts
   var coSet = (...items) => new Set(items);
-
-  // src/actions/AbstractAction.ts
-  var AbstractAction = class {
-    constructor(g, actor, name, status, config, {
-      area,
-      damage,
-      description,
-      heal,
-      icon,
-      isHarmful,
-      resources,
-      subIcon,
-      time
-    } = {}) {
-      this.g = g;
-      this.actor = actor;
-      this.name = name;
-      this.status = status;
-      this.config = config;
-      this.area = area;
-      this.damage = damage;
-      this.description = description;
-      this.isHarmful = isHarmful;
-      this.heal = heal;
-      this.resources = new Map(resources);
-      this.time = time;
-      this.icon = icon;
-      this.subIcon = subIcon;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    generateAttackConfigs(targets) {
-      return [];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    generateHealingConfigs(targets) {
-      return [];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffectedArea(config) {
-      return this.area;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffected(config) {
-      return [this.actor];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getConfig(config) {
-      return this.config;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getDamage(config) {
-      return this.damage;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getDescription(config) {
-      return this.description;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getHeal(config) {
-      return this.heal;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getResources(config) {
-      return this.resources;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getTargets(config) {
-      return [];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getTime(config) {
-      return this.time;
-    }
-    check(config, ec) {
-      const time = this.getTime(config);
-      if (time && !this.actor.hasTime(time))
-        ec.add(`No ${time} left`, this);
-      for (const [resource, cost] of this.getResources(config))
-        if (!this.actor.hasResource(resource, cost))
-          ec.add(`Not enough ${resource.name} left`, this);
-      return ec;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async apply(config) {
-      const time = this.getTime(config);
-      if (time)
-        this.actor.useTime(time);
-      for (const [resource, cost] of this.getResources(config))
-        this.actor.spendResource(resource, cost);
-    }
-  };
 
   // src/actions/DropProneAction.ts
   var DropProneIcon = makeIcon(prone_default);
@@ -2709,29 +2391,6 @@
       this.actor.movedSoFar += this.cost;
       await this.actor.removeEffect(Prone);
       this.g.text(new MessageBuilder().co(this.actor).text(" stands up."));
-    }
-  };
-
-  // src/DndRule.ts
-  var RuleRepository = /* @__PURE__ */ new Set();
-  var DndRule = class {
-    constructor(name, setup) {
-      this.name = name;
-      this.setup = setup;
-      RuleRepository.add(this);
-    }
-  };
-
-  // src/Effect.ts
-  var Effect = class {
-    constructor(name, durationTimer, setup, { quiet = false, icon, tags } = {}) {
-      this.name = name;
-      this.durationTimer = durationTimer;
-      this.quiet = quiet;
-      this.icon = icon;
-      this.tags = new Set(tags);
-      if (setup)
-        this.rule = new DndRule(name, setup);
     }
   };
 
@@ -3068,53 +2727,6 @@
     }
     return { type: "miss", attack: e2 };
   }
-
-  // src/img/act/dash.svg
-  var dash_default = "./dash-CNRMKC55.svg";
-
-  // src/actions/DashAction.ts
-  var DashIcon = makeIcon(dash_default);
-  var DashEffect = new Effect(
-    "Dash",
-    "turnEnd",
-    (g) => {
-      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-        if (who.hasEffect(DashEffect))
-          multiplier.add("double", DashEffect);
-      });
-    },
-    { icon: DashIcon }
-  );
-  var DashAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Dash",
-        "implemented",
-        {},
-        {
-          icon: DashIcon,
-          time: "action",
-          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
-
-        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
-        }
-      );
-    }
-    check(config, ec) {
-      if (this.actor.speed <= 0)
-        ec.add("Zero speed", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(DashEffect, { duration: 1 });
-    }
-  };
-
-  // src/img/act/disengage.svg
-  var disengage_default = "./disengage-6XMY6V34.svg";
 
   // src/actions/OpportunityAttack.ts
   var OpportunityAttack = class extends WeaponAttack {
@@ -3766,6 +3378,1751 @@
     }
   };
 
+  // src/events/AbilityCheckEvent.ts
+  var AbilityCheckEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AbilityCheck", { detail });
+    }
+  };
+
+  // src/events/AfterActionEvent.ts
+  var AfterActionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AfterAction", { detail });
+    }
+  };
+
+  // src/events/AreaPlacedEvent.ts
+  var AreaPlacedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AreaPlaced", { detail });
+    }
+  };
+
+  // src/events/AreaRemovedEvent.ts
+  var AreaRemovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AreaRemoved", { detail });
+    }
+  };
+
+  // src/events/AttackEvent.ts
+  var AttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Attack", { detail });
+    }
+  };
+
+  // src/events/BattleStartedEvent.ts
+  var BattleStartedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BattleStarted", { detail });
+    }
+  };
+
+  // src/events/BeforeAttackEvent.ts
+  var BeforeAttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeAttack", { detail });
+    }
+  };
+
+  // src/events/BeforeCheckEvent.ts
+  var BeforeCheckEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeCheck", { detail });
+    }
+  };
+
+  // src/events/BeforeMoveEvent.ts
+  var BeforeMoveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeMove", { detail });
+    }
+  };
+
+  // src/events/BeforeSaveEvent.ts
+  var BeforeSaveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BeforeSave", { detail });
+    }
+  };
+
+  // src/events/BoundedMoveEvent.ts
+  var BoundedMoveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("BoundedMove", { detail });
+    }
+  };
+
+  // src/events/CheckActionEvent.ts
+  var CheckActionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CheckAction", { detail });
+    }
+  };
+
+  // src/events/CheckVisionEvent.ts
+  var CheckVisionEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CheckVision", { detail });
+    }
+  };
+
+  // src/events/CombatantDamagedEvent.ts
+  var CombatantDamagedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantDamaged", { detail });
+    }
+  };
+
+  // src/events/CombatantDiedEvent.ts
+  var CombatantDiedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantDied", { detail });
+    }
+  };
+
+  // src/events/CombatantHealedEvent.ts
+  var CombatantHealedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantHealed", { detail });
+    }
+  };
+
+  // src/events/CombatantInitiativeEvent.ts
+  var CombatantInitiativeEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantInitiative", { detail });
+    }
+  };
+
+  // src/events/CombatantMovedEvent.ts
+  var CombatantMovedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantMoved", { detail });
+    }
+  };
+
+  // src/events/CombatantPlacedEvent.ts
+  var CombatantPlacedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantPlaced", { detail });
+    }
+  };
+
+  // src/events/DiceRolledEvent.ts
+  var DiceRolledEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("DiceRolled", { detail });
+    }
+  };
+
+  // src/events/Dispatcher.ts
+  var Dispatcher = class {
+    constructor(debug = false, target = new EventTarget()) {
+      this.debug = debug;
+      this.target = target;
+      this.taps = /* @__PURE__ */ new Set();
+    }
+    tap(listener) {
+      this.taps.add(listener);
+      return () => this.taps.delete(listener);
+    }
+    fire(event) {
+      if (this.debug)
+        console.log("fire:", event);
+      return this.target.dispatchEvent(event);
+    }
+    on(type, callback, options) {
+      this.target.addEventListener(
+        type,
+        callback,
+        options
+      );
+      const cleanup = () => this.off(type, callback);
+      for (const tap of this.taps)
+        tap(cleanup);
+      return cleanup;
+    }
+    off(type, callback, options) {
+      return this.target.removeEventListener(
+        type,
+        callback,
+        options
+      );
+    }
+  };
+
+  // src/events/GatherDamageEvent.ts
+  var GatherDamageEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GatherDamage", { detail });
+    }
+  };
+
+  // src/events/GatherHealEvent.ts
+  var GatherHealEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GatherHeal", { detail });
+    }
+  };
+
+  // src/events/GetACEvent.ts
+  var GetACEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetAC", { detail });
+    }
+  };
+
+  // src/events/GetACMethodsEvent.ts
+  var GetACMethodsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetACMethods", { detail });
+    }
+  };
+
+  // src/events/GetActionsEvent.ts
+  var GetActionsEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetActions", { detail });
+    }
+  };
+
+  // src/events/GetDamageResponseEvent.ts
+  var GetDamageResponseEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetDamageResponse", { detail });
+    }
+  };
+
+  // src/events/GetInitiativeEvent.ts
+  var GetInitiativeEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetInitiative", { detail });
+    }
+  };
+
+  // src/events/GetMoveCostEvent.ts
+  var GetMoveCostEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetMoveCost", { detail });
+    }
+  };
+
+  // src/events/GetSaveDCEvent.ts
+  var GetSaveDCEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetSaveDC", { detail });
+    }
+  };
+
+  // src/events/SaveEvent.ts
+  var SaveEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Save", { detail });
+    }
+  };
+
+  // src/events/TextEvent.ts
+  var TextEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("Text", { detail });
+    }
+  };
+
+  // src/events/TurnEndedEvent.ts
+  var TurnEndedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnEnded", { detail });
+    }
+  };
+
+  // src/events/TurnSkippedEvent.ts
+  var TurnSkippedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnSkipped", { detail });
+    }
+  };
+
+  // src/events/TurnStartedEvent.ts
+  var TurnStartedEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("TurnStarted", { detail });
+    }
+  };
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no, priority = 10) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+      this.priority = priority;
+    }
+    async apply(g) {
+      var _a, _b;
+      const choice = await new Promise(
+        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        await ((_a = this.yes) == null ? void 0 : _a.call(this));
+      else
+        await ((_b = this.no) == null ? void 0 : _b.call(this));
+      return choice;
+    }
+  };
+
+  // src/types/SaveTag.ts
+  var svSet = (...items) => new Set(items);
+
+  // src/utils/points.ts
+  var _p = (x, y) => ({ x, y });
+  function addPoints(a, b) {
+    return _p(a.x + b.x, a.y + b.y);
+  }
+  function mulPoint(z, mul) {
+    return _p(z.x * mul, z.y * mul);
+  }
+  var moveOffsets = {
+    east: _p(MapSquareSize, 0),
+    southeast: _p(MapSquareSize, MapSquareSize),
+    south: _p(0, MapSquareSize),
+    southwest: _p(-MapSquareSize, MapSquareSize),
+    west: _p(-MapSquareSize, 0),
+    northwest: _p(-MapSquareSize, -MapSquareSize),
+    north: _p(0, -MapSquareSize),
+    northeast: _p(MapSquareSize, -MapSquareSize)
+  };
+  function movePoint(p, d) {
+    return addPoints(p, moveOffsets[d]);
+  }
+  function supercoverLine(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const nx = Math.abs(dx);
+    const ny = Math.abs(dy);
+    const moveX = dx > 0 ? MapSquareSize : -MapSquareSize;
+    const moveY = dy > 0 ? MapSquareSize : -MapSquareSize;
+    const p = _p(a.x, a.y);
+    const points = [_p(p.x, p.y)];
+    for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
+      const decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
+      if (decision === 0) {
+        p.x += moveX;
+        p.y += moveY;
+        ix += MapSquareSize;
+        iy += MapSquareSize;
+      } else if (decision < 0) {
+        p.x += moveX;
+        ix += MapSquareSize;
+      } else {
+        p.y += moveY;
+        iy += MapSquareSize;
+      }
+      points.push(_p(p.x, p.y));
+    }
+    return points;
+  }
+  function getPathAwayFrom(p, away, dist) {
+    const dy = p.y - away.y;
+    const dx = p.x - away.x;
+    const angle = Math.atan2(dy, dx);
+    const mx = dist * Math.cos(angle);
+    const my = dist * Math.sin(angle);
+    return supercoverLine(
+      p,
+      _p(Math.floor(p.x + mx), Math.floor(p.y + my))
+    ).slice(1);
+  }
+
+  // src/Engine.ts
+  var Engine = class {
+    constructor() {
+      this.dice = new DiceBag();
+      this.events = new Dispatcher();
+      this.combatants = /* @__PURE__ */ new Set();
+      this.activeCombatant = void 0;
+      this.effects = /* @__PURE__ */ new Set();
+      this.id = 0;
+      this.initiativeOrder = [];
+      this.initiativePosition = NaN;
+      this.rules = new DndRules(this);
+    }
+    reset() {
+      this.dice = new DiceBag();
+      this.events = new Dispatcher();
+      this.combatants.clear();
+      this.activeCombatant = void 0;
+      this.effects.clear();
+      this.id = 0;
+      this.initiativeOrder = [];
+      this.initiativePosition = NaN;
+      this.rules = new DndRules(this);
+    }
+    nextId() {
+      return ++this.id;
+    }
+    place(who, x, y) {
+      const position = { x, y };
+      who.position = position;
+      who.initiative = NaN;
+      this.combatants.add(who);
+      this.fire(new CombatantPlacedEvent({ who, position }));
+    }
+    async start() {
+      for (const who of this.combatants) {
+        who.finalise();
+        who.initiative = await this.rollInitiative(who);
+        const items = [...who.inventory, ...who.equipment];
+        for (const item of items) {
+          item.owner = who;
+          item.possessor = who;
+        }
+      }
+      this.initiativeOrder = Array.from(this.combatants).sort(
+        (a, b) => b.initiative - a.initiative
+      );
+      await this.resolve(
+        new BattleStartedEvent({ interrupt: new InterruptionCollector() })
+      );
+      await this.nextTurn();
+    }
+    async rollMany(count, e2, critical = false) {
+      const rolls = await Promise.all(
+        Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e2))
+      );
+      return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
+    }
+    async rollDamage(count, e2, critical = false) {
+      return this.rollMany(count, { ...e2, type: "damage" }, critical);
+    }
+    async rollHeal(count, e2, critical = false) {
+      return this.rollMany(count, { ...e2, type: "heal" }, critical);
+    }
+    async rollInitiative(who) {
+      const gi = await this.resolve(
+        new GetInitiativeEvent({
+          who,
+          bonus: new BonusCollector(),
+          diceType: new DiceTypeCollector(),
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const diceType = gi.detail.diceType.result;
+      const roll = await this.roll({ type: "initiative", who }, diceType);
+      const value = roll.values.final + gi.detail.bonus.result;
+      this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
+      return value;
+    }
+    addProficiencyBonus(who, proficiency, bonus) {
+      const result = proficiency.result;
+      if (result) {
+        const value = Math.floor(result * who.pb);
+        bonus.add(value, ProficiencyRule);
+      }
+    }
+    async savingThrow(dc, e2, {
+      diceType: baseDiceType,
+      save,
+      fail
+    } = {
+      save: "half",
+      fail: "normal"
+    }) {
+      const successResponse = new SuccessResponseCollector();
+      const proficiency = new ProficiencyCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const saveDamageResponse = new SaveDamageResponseCollector(save);
+      const failDamageResponse = new SaveDamageResponseCollector(fail);
+      if (baseDiceType)
+        diceType.add(baseDiceType, { name: "Base" });
+      const pre = await this.resolve(
+        new BeforeSaveEvent({
+          ...e2,
+          dc,
+          proficiency,
+          bonus,
+          diceType,
+          successResponse,
+          saveDamageResponse,
+          failDamageResponse,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      this.addProficiencyBonus(e2.who, proficiency, bonus);
+      let forced = false;
+      let success = false;
+      const roll = await this.roll({ type: "save", ...e2 }, diceType.result);
+      const total = roll.values.final + bonus.result;
+      if (successResponse.result !== "normal") {
+        success = successResponse.result === "success";
+        forced = true;
+      } else {
+        success = total >= dc;
+      }
+      const outcome = success ? "success" : "fail";
+      this.fire(
+        new SaveEvent({
+          pre: pre.detail,
+          diceType: diceType.result,
+          roll,
+          dc,
+          outcome,
+          total,
+          forced
+        })
+      );
+      return {
+        roll,
+        outcome,
+        forced,
+        damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
+      };
+    }
+    async abilityCheck(dc, e2) {
+      const successResponse = new SuccessResponseCollector();
+      const proficiency = new ProficiencyCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const pre = await this.resolve(
+        new BeforeCheckEvent({
+          ...e2,
+          dc,
+          proficiency,
+          bonus,
+          diceType,
+          successResponse,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      this.addProficiencyBonus(e2.who, proficiency, bonus);
+      let forced = false;
+      let success = false;
+      const roll = await this.roll({ type: "check", ...e2 }, diceType.result);
+      const total = roll.values.final + bonus.result;
+      if (successResponse.result !== "normal") {
+        success = successResponse.result === "success";
+        forced = true;
+      } else {
+        success = total >= dc;
+      }
+      const outcome = success ? "success" : "fail";
+      this.fire(
+        new AbilityCheckEvent({
+          pre: pre.detail,
+          diceType: diceType.result,
+          roll,
+          dc,
+          outcome,
+          total,
+          forced
+        })
+      );
+      return { outcome, forced };
+    }
+    async roll(type, diceType = "normal") {
+      const roll = this.dice.roll(type, diceType);
+      return (await this.resolve(
+        new DiceRolledEvent({
+          type,
+          diceType,
+          ...roll,
+          interrupt: new InterruptionCollector()
+        })
+      )).detail;
+    }
+    async nextTurn() {
+      if (this.activeCombatant)
+        await this.resolve(
+          new TurnEndedEvent({
+            who: this.activeCombatant,
+            interrupt: new InterruptionCollector()
+          })
+        );
+      let who = this.initiativeOrder[this.initiativePosition];
+      let scan = true;
+      while (scan) {
+        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
+        who = this.initiativeOrder[this.initiativePosition];
+        if (!who.conditions.has("Unconscious"))
+          scan = false;
+        else {
+          who.tickEffects("turnStart");
+          await this.resolve(
+            new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
+          );
+          who.tickEffects("turnEnd");
+        }
+      }
+      this.activeCombatant = who;
+      who.attacksSoFar = [];
+      who.spellsSoFar = [];
+      who.movedSoFar = 0;
+      await this.resolve(
+        new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
+      );
+    }
+    async moveInDirection(who, direction, handler, type = "speed") {
+      const old = who.position;
+      const position = movePoint(old, direction);
+      return this.move(who, position, handler, type);
+    }
+    async move(who, position, handler, type = "speed") {
+      const old = who.position;
+      const error = new ErrorCollector();
+      const pre = await this.resolve(
+        new BeforeMoveEvent({
+          who,
+          from: old,
+          to: position,
+          handler,
+          type,
+          error,
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector()
+        })
+      );
+      if (pre.detail.success.result === "fail")
+        return { type: "prevented" };
+      if (!error.result)
+        return { type: "error", error };
+      const multiplier = new MultiplierCollector();
+      this.fire(
+        new GetMoveCostEvent({
+          who,
+          from: old,
+          to: position,
+          handler,
+          type,
+          multiplier
+        })
+      );
+      who.position = position;
+      const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+      await this.resolve(
+        new CombatantMovedEvent({
+          who,
+          old,
+          position,
+          handler,
+          type,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (handlerDone)
+        return { type: "unbind" };
+      return { type: "ok" };
+    }
+    async applyDamage(damage, {
+      attack,
+      attacker,
+      multiplier: baseMultiplier = 1,
+      target
+    }) {
+      const { total, healAmount, breakdown } = this.calculateDamage(
+        damage,
+        target,
+        baseMultiplier,
+        attack
+      );
+      if (healAmount > 0) {
+        await this.applyHeal(target, healAmount, target);
+      }
+      if (total < 1)
+        return;
+      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(target, total);
+      await this.resolve(
+        new CombatantDamagedEvent({
+          who: target,
+          attack,
+          attacker,
+          total,
+          takenByTemporaryHP,
+          afterTemporaryHP,
+          temporaryHPSource,
+          breakdown,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (target.hp <= 0) {
+        await this.handleCombatantDeath(target, attacker);
+      } else if (target.concentratingOn.size) {
+        await this.handleConcentrationCheck(target, total);
+      }
+    }
+    calculateDamage(damage, target, baseMultiplier, attack) {
+      let total = 0;
+      let healAmount = 0;
+      const breakdown = /* @__PURE__ */ new Map();
+      for (const [damageType, raw] of damage) {
+        const { response, amount } = this.calculateDamageResponse(
+          damageType,
+          raw,
+          target,
+          baseMultiplier,
+          attack
+        );
+        if (response === "absorb") {
+          healAmount += raw;
+        } else {
+          total += amount;
+        }
+        breakdown.set(damageType, { response, raw, amount });
+      }
+      return { total, healAmount, breakdown };
+    }
+    calculateDamageResponse(damageType, raw, target, baseMultiplier, attack) {
+      const collector = new DamageResponseCollector();
+      const innateResponse = target.damageResponses.get(damageType);
+      if (innateResponse) {
+        collector.add(innateResponse, target);
+      }
+      this.fire(
+        new GetDamageResponseEvent({
+          attack,
+          who: target,
+          damageType,
+          response: collector
+        })
+      );
+      const { response, amount } = this.calculateDamageAmount(
+        raw,
+        collector.result,
+        baseMultiplier
+      );
+      return { response, amount };
+    }
+    calculateDamageAmount(raw, response, baseMultiplier) {
+      let amount = raw;
+      if (response === "absorb" || response === "immune") {
+        amount = 0;
+      } else {
+        let multiplier = baseMultiplier;
+        if (response === "resist") {
+          multiplier *= 0.5;
+        } else if (response === "vulnerable") {
+          multiplier *= 2;
+        }
+        amount = Math.ceil(raw * multiplier);
+      }
+      return { response, amount };
+    }
+    applyTemporaryHP(target, totalDamage) {
+      const takenByTemporaryHP = Math.min(totalDamage, target.temporaryHP);
+      target.temporaryHP -= takenByTemporaryHP;
+      const afterTemporaryHP = totalDamage - takenByTemporaryHP;
+      target.hp -= afterTemporaryHP;
+      const temporaryHPSource = target.temporaryHPSource;
+      if (target.temporaryHP <= 0) {
+        target.temporaryHPSource = void 0;
+      }
+      return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
+    }
+    async handleCombatantDeath(target, attacker) {
+      await target.endConcentration();
+      if (target.diesAtZero || target.hp <= -target.hpMax) {
+        await this.kill(target, attacker);
+      } else if (!target.hasEffect(Dying)) {
+        target.hp = 0;
+        await target.removeEffect(Stable);
+        await target.addEffect(Dying, { duration: Infinity });
+      } else {
+        target.hp = 0;
+        await this.failDeathSave(target);
+      }
+    }
+    async handleConcentrationCheck(target, totalDamage) {
+      const dc = Math.max(10, Math.floor(totalDamage / 2));
+      const result = await this.savingThrow(dc, {
+        attacker: target,
+        who: target,
+        ability: "con",
+        tags: svSet("concentration")
+      });
+      if (result.outcome === "fail") {
+        await target.endConcentration();
+      }
+    }
+    async kill(target, attacker) {
+      this.combatants.delete(target);
+      await target.addEffect(Dead, { duration: Infinity });
+      this.fire(new CombatantDiedEvent({ who: target, attacker }));
+    }
+    async failDeathSave(who, count = 1, attacker) {
+      who.deathSaveFailures += count;
+      if (who.deathSaveFailures >= 3)
+        await this.kill(who, attacker);
+    }
+    async succeedDeathSave(who) {
+      who.deathSaveSuccesses++;
+      if (who.deathSaveSuccesses >= 3) {
+        await who.removeEffect(Dying);
+        who.deathSaveFailures = 0;
+        who.deathSaveSuccesses = 0;
+        await who.addEffect(Stable, { duration: Infinity });
+      }
+    }
+    getAttackOutcome(ac, roll, total) {
+      return roll === 1 ? "miss" : (
+        // If the d20 roll for an attack is a 20, the attack hits regardless of any modifiers or the target's AC.
+        roll === 20 ? "critical" : (
+          // To make an attack roll, roll a d20 and add the appropriate modifiers. If the total of the roll plus modifiers equals or exceeds the target's Armor Class (AC), the attack hits.
+          total >= ac ? "hit" : "miss"
+        )
+      );
+    }
+    async attack(e2) {
+      const proficiency = new ProficiencyCollector();
+      const bonus = new BonusCollector();
+      const diceType = new DiceTypeCollector();
+      const success = new SuccessResponseCollector();
+      const pre = await this.resolve(
+        new BeforeAttackEvent({
+          ...e2,
+          proficiency,
+          bonus,
+          diceType,
+          success,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      if (success.result === "fail")
+        return { outcome: "cancelled", hit: false };
+      this.addProficiencyBonus(e2.who, proficiency, bonus);
+      const { target, who, ability } = pre.detail;
+      const ac = await this.getAC(target, pre.detail);
+      const roll = await this.roll(
+        { type: "attack", who, target, ac, ability },
+        diceType.result
+      );
+      const total = roll.values.final + bonus.result;
+      const outcomeCollector = new AttackOutcomeCollector();
+      const event = new AttackEvent({
+        pre: pre.detail,
+        roll,
+        total,
+        ac,
+        outcome: outcomeCollector,
+        interrupt: new InterruptionCollector()
+      });
+      outcomeCollector.setDefaultGetter(
+        () => this.getAttackOutcome(
+          event.detail.ac,
+          event.detail.roll.values.final,
+          event.detail.total
+        )
+      );
+      const attack = await this.resolve(event);
+      const outcome = outcomeCollector.result;
+      return {
+        outcome,
+        attack: attack.detail,
+        hit: outcome === "hit" || outcome === "critical",
+        critical: outcome === "critical"
+      };
+    }
+    async damage(source, damageType, e2, damageInitialiser = [], startingMultiplier) {
+      if (startingMultiplier === "zero")
+        return;
+      const map = new DamageMap(damageInitialiser);
+      const multiplier = new MultiplierCollector();
+      if (typeof startingMultiplier !== "undefined")
+        multiplier.add(startingMultiplier, source);
+      const gather = await this.resolve(
+        new GatherDamageEvent({
+          critical: false,
+          ...e2,
+          map,
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          multiplier
+        })
+      );
+      map.add(damageType, gather.detail.bonus.result);
+      return this.applyDamage(map, {
+        source,
+        attack: e2.attack,
+        attacker: e2.attacker,
+        target: e2.target,
+        multiplier: multiplier.result
+      });
+    }
+    /** @deprecated use `checkConfig` or `getConfigErrors` instead */
+    check(action, config) {
+      const error = new ErrorCollector();
+      this.fire(new CheckActionEvent({ action, config, error }));
+      action.check(config, error);
+      return error;
+    }
+    async act(action, config) {
+      await action.apply(config);
+      return this.resolve(
+        new AfterActionEvent({
+          action,
+          config,
+          interrupt: new InterruptionCollector()
+        })
+      );
+    }
+    getActions(who, target) {
+      return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
+    }
+    getBestACMethod(who) {
+      return this.fire(
+        new GetACMethodsEvent({
+          who,
+          methods: [who.baseACMethod]
+        })
+      ).detail.methods.reduce(
+        (best, method) => method.ac > best.ac ? method : best,
+        who.baseACMethod
+      );
+    }
+    async getAC(who, pre) {
+      const method = this.getBestACMethod(who);
+      const e2 = await this.resolve(
+        new GetACEvent({
+          who,
+          method,
+          bonus: new BonusCollector(),
+          interrupt: new InterruptionCollector(),
+          pre
+        })
+      );
+      return method.ac + e2.detail.bonus.result;
+    }
+    fire(e2) {
+      if (e2.detail.interrupt)
+        throw new Error(
+          `Use Engine.resolve() on an interruptible event type: ${e2.type}`
+        );
+      this.events.fire(e2);
+      return e2;
+    }
+    async resolve(e2) {
+      this.events.fire(e2);
+      for (const interruption of e2.detail.interrupt)
+        await interruption.apply(this);
+      return e2;
+    }
+    addEffectArea(area) {
+      area.id = this.nextId();
+      this.effects.add(area);
+      this.fire(new AreaPlacedEvent({ area }));
+    }
+    removeEffectArea(area) {
+      this.effects.delete(area);
+      this.fire(new AreaRemovedEvent({ area }));
+    }
+    getInside(area, ignore = []) {
+      const points = resolveArea(area);
+      const inside = [];
+      for (const who of this.combatants) {
+        if (ignore.includes(who))
+          continue;
+        const squares = new PointSet(getSquares(who, who.position));
+        if (points.overlaps(squares))
+          inside.push(who);
+      }
+      return inside;
+    }
+    async applyBoundedMove(who, handler) {
+      return new Promise(
+        (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
+      );
+    }
+    async heal(source, amount, e2, startingMultiplier) {
+      const bonus = new BonusCollector();
+      bonus.add(amount, source);
+      const multiplier = new MultiplierCollector();
+      if (typeof startingMultiplier !== "undefined")
+        multiplier.add(startingMultiplier, source);
+      const gather = await this.resolve(
+        new GatherHealEvent({
+          ...e2,
+          bonus,
+          multiplier,
+          interrupt: new InterruptionCollector()
+        })
+      );
+      const total = bonus.result * multiplier.result;
+      return this.applyHeal(gather.detail.target, total, gather.detail.actor);
+    }
+    async applyHeal(who, fullAmount, actor) {
+      const amount = Math.min(fullAmount, who.hpMax - who.hp);
+      who.hp += amount;
+      return this.resolve(
+        new CombatantHealedEvent({
+          who,
+          actor,
+          amount,
+          fullAmount,
+          interrupt: new InterruptionCollector()
+        })
+      );
+    }
+    async giveTemporaryHP(who, count, source) {
+      var _a;
+      if (who.temporaryHP > 0)
+        return new YesNoChoice(
+          who,
+          source,
+          `Replace Temporary HP?`,
+          `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
+          async () => this.setTemporaryHP(who, count, source)
+        ).apply(this);
+      this.setTemporaryHP(who, count, source);
+      return true;
+    }
+    setTemporaryHP(who, count, source) {
+      who.temporaryHP = count;
+      who.temporaryHPSource = source;
+    }
+    canSee(who, target) {
+      return this.fire(
+        new CheckVisionEvent({ who, target, error: new ErrorCollector() })
+      ).detail.error.result;
+    }
+    async getSaveDC(e2) {
+      const bonus = new BonusCollector();
+      const interrupt = new InterruptionCollector();
+      switch (e2.type.type) {
+        case "ability":
+          bonus.add(8, e2.source);
+          break;
+        case "flat":
+          bonus.add(e2.type.dc, e2.source);
+          break;
+      }
+      const result = await this.resolve(
+        new GetSaveDCEvent({ ...e2, bonus, interrupt })
+      );
+      return result.detail;
+    }
+    async save({
+      source,
+      type,
+      attacker,
+      who,
+      ability,
+      spell,
+      method,
+      effect,
+      config,
+      tags,
+      save = "half",
+      fail = "normal",
+      diceType
+    }) {
+      const dcRoll = await this.getSaveDC({
+        type,
+        source,
+        who: attacker,
+        target: who,
+        ability,
+        spell,
+        method
+      });
+      const result = await this.savingThrow(
+        dcRoll.bonus.result,
+        {
+          who,
+          attacker,
+          ability,
+          spell,
+          method,
+          effect,
+          config,
+          tags: new Set(tags)
+        },
+        { save, fail, diceType }
+      );
+      return { ...result, dcRoll };
+    }
+    text(message) {
+      this.fire(new TextEvent({ message }));
+    }
+    async forcePush(who, away, dist, source) {
+      const path = getPathAwayFrom(who.position, away.position, dist);
+      for (const point of path) {
+        const result = await this.move(who, point, {
+          maximum: Infinity,
+          cannotApproach: /* @__PURE__ */ new Set(),
+          mustUseAll: false,
+          provokesOpportunityAttacks: false,
+          teleportation: false,
+          onMove: () => false,
+          name: source.name
+        });
+        if (result.type !== "ok")
+          break;
+      }
+    }
+  };
+
+  // src/ui/hooks/useBool.ts
+  var import_hooks = __toESM(require_hooks());
+  function useBool(defaultValue = false) {
+    const [value, setValue] = (0, import_hooks.useState)(defaultValue);
+    const setTrue = () => setValue(true);
+    const setFalse = () => setValue(false);
+    const toggle = () => setValue((old) => !old);
+    return [value, setTrue, setFalse, toggle];
+  }
+
+  // src/ui/components/App.module.scss
+  var App_module_default = {
+    "modeSwitch": "_modeSwitch_19cx7_5"
+  };
+
+  // src/ui/components/CombatUI.tsx
+  var import_signals2 = __toESM(require_signals());
+  var import_hooks18 = __toESM(require_hooks());
+
+  // src/img/tok/badger.png
+  var badger_default = "./badger-53MEBA7R.png";
+
+  // src/img/eq/club.svg
+  var club_default = "./club-RZOLCPSS.svg";
+
+  // src/img/eq/greataxe.svg
+  var greataxe_default = "./greataxe-D7DZHVBT.svg";
+
+  // src/img/eq/light-crossbow.svg
+  var light_crossbow_default = "./light-crossbow-PIY5SWC5.svg";
+
+  // src/img/eq/longbow.svg
+  var longbow_default = "./longbow-2S2OQHMY.svg";
+
+  // src/img/eq/longsword.svg
+  var longsword_default = "./longsword-B4PZKYLG.svg";
+
+  // src/img/eq/mace.svg
+  var mace_default = "./mace-VW7F6EMI.svg";
+
+  // src/img/eq/quarterstaff.svg
+  var quarterstaff_default = "./quarterstaff-EMYY63PI.svg";
+
+  // src/img/eq/rapier.svg
+  var rapier_default = "./rapier-ZROPHPFJ.svg";
+
+  // src/img/eq/spear.svg
+  var spear_default = "./spear-JE22DTMJ.svg";
+
+  // src/img/eq/trident.svg
+  var trident_default = "./trident-XL6WP2YY.svg";
+
+  // src/utils/dice.ts
+  var _dd = (count, size, damage) => ({
+    type: "dice",
+    amount: { count, size },
+    damageType: damage
+  });
+  function getDefaultHPRoll(level, hitDieSize) {
+    if (level === 1)
+      return hitDieSize;
+    return Math.ceil(getDiceAverage(1, hitDieSize));
+  }
+
+  // src/items/AbstractItem.ts
+  var AbstractItem = class {
+    constructor(g, itemType, name, hands = 0, iconUrl) {
+      this.g = g;
+      this.itemType = itemType;
+      this.name = name;
+      this.hands = hands;
+      this.iconUrl = iconUrl;
+      this.enchantments = /* @__PURE__ */ new Set();
+      this.rarity = "Common";
+    }
+    get icon() {
+      if (this.iconUrl)
+        return { url: this.iconUrl, colour: ItemRarityColours[this.rarity] };
+    }
+    addEnchantment(e2) {
+      this.enchantments.add(e2);
+      e2.setup(this.g, this);
+    }
+  };
+
+  // src/items/weapons.ts
+  var AbstractWeapon = class extends AbstractItem {
+    constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange, weaponType = name) {
+      super(g, "weapon", name, 1, iconUrl);
+      this.g = g;
+      this.category = category;
+      this.rangeCategory = rangeCategory;
+      this.damage = damage;
+      this.shortRange = shortRange;
+      this.longRange = longRange;
+      this.weaponType = weaponType;
+      this.properties = new Set(properties);
+      this.quantity = 1;
+    }
+    get reach() {
+      return this.properties.has("reach") ? 5 : 0;
+    }
+  };
+  var Club = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "club",
+        "simple",
+        "melee",
+        _dd(1, 4, "bludgeoning"),
+        ["light"],
+        club_default
+      );
+    }
+  };
+  var Dagger = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "dagger",
+        "simple",
+        "melee",
+        _dd(1, 4, "piercing"),
+        ["finesse", "light", "thrown"],
+        void 0,
+        // TODO [ICON]
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Greatclub = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "greatclub",
+        "simple",
+        "melee",
+        _dd(1, 8, "bludgeoning"),
+        ["two-handed"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Handaxe = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "handaxe",
+        "simple",
+        "melee",
+        _dd(1, 6, "slashing"),
+        ["light", "thrown"],
+        void 0,
+        // TODO [ICON]
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Javelin = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "javelin",
+        "simple",
+        "melee",
+        _dd(1, 6, "piercing"),
+        ["thrown"],
+        void 0,
+        // TODO [ICON]
+        30,
+        120
+      );
+      this.quantity = quantity;
+    }
+  };
+  var LightHammer = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "light hammer",
+        "simple",
+        "melee",
+        _dd(1, 4, "bludgeoning"),
+        ["light", "thrown"],
+        void 0,
+        // TODO [ICON]
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Mace = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "mace",
+        "simple",
+        "melee",
+        _dd(1, 6, "bludgeoning"),
+        void 0,
+        mace_default
+      );
+    }
+  };
+  var Quarterstaff = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "quarterstaff",
+        "simple",
+        "melee",
+        _dd(1, 6, "bludgeoning"),
+        ["versatile"],
+        quarterstaff_default
+      );
+    }
+  };
+  var Sickle = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "sickle",
+        "simple",
+        "melee",
+        _dd(1, 4, "slashing"),
+        ["light"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Spear = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "spear",
+        "simple",
+        "melee",
+        _dd(1, 6, "piercing"),
+        ["thrown", "versatile"],
+        spear_default,
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var LightCrossbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "light crossbow",
+        "simple",
+        "ranged",
+        _dd(1, 8, "piercing"),
+        ["ammunition", "loading", "two-handed"],
+        light_crossbow_default,
+        80,
+        320
+      );
+      this.ammunitionTag = "crossbow";
+    }
+  };
+  var Dart = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "dart",
+        "simple",
+        "ranged",
+        _dd(1, 4, "piercing"),
+        ["finesse", "thrown"],
+        void 0,
+        // TODO [ICON]
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Shortbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "shortbow",
+        "simple",
+        "ranged",
+        _dd(1, 6, "piercing"),
+        ["ammunition", "two-handed"],
+        void 0,
+        // TODO [ICON]
+        80,
+        320
+      );
+      this.ammunitionTag = "bow";
+    }
+  };
+  var Sling = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "sling",
+        "simple",
+        "ranged",
+        _dd(1, 4, "bludgeoning"),
+        ["ammunition"],
+        void 0,
+        // TODO [ICON]
+        30,
+        120
+      );
+      this.ammunitionTag = "sling";
+    }
+  };
+  var Battleaxe = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "battleaxe",
+        "martial",
+        "melee",
+        _dd(1, 8, "slashing"),
+        ["versatile"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Greataxe = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "greataxe",
+        "martial",
+        "melee",
+        _dd(1, 12, "slashing"),
+        ["heavy", "two-handed"],
+        greataxe_default
+      );
+    }
+  };
+  var Greatsword = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "greatsword",
+        "martial",
+        "melee",
+        _dd(2, 6, "slashing"),
+        ["heavy", "two-handed"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Longsword = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "longsword",
+        "martial",
+        "melee",
+        _dd(1, 8, "slashing"),
+        ["versatile"],
+        longsword_default
+      );
+    }
+  };
+  var Maul = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "maul",
+        "martial",
+        "melee",
+        _dd(2, 6, "bludgeoning"),
+        ["heavy", "two-handed"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Morningstar = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "morningstar",
+        "martial",
+        "melee",
+        _dd(1, 8, "piercing"),
+        void 0,
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Rapier = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "rapier",
+        "martial",
+        "melee",
+        _dd(1, 8, "piercing"),
+        ["finesse"],
+        rapier_default
+      );
+    }
+  };
+  var Scimitar = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "scimitar",
+        "martial",
+        "melee",
+        _dd(1, 6, "slashing"),
+        ["finesse", "light"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Shortsword = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "shortsword",
+        "martial",
+        "melee",
+        _dd(1, 6, "piercing"),
+        ["finesse", "light"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var Trident = class extends AbstractWeapon {
+    constructor(g, quantity) {
+      super(
+        g,
+        "trident",
+        "martial",
+        "melee",
+        _dd(1, 6, "piercing"),
+        ["thrown", "versatile"],
+        trident_default,
+        20,
+        60
+      );
+      this.quantity = quantity;
+    }
+  };
+  var Warhammer = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "warhammer",
+        "martial",
+        "melee",
+        _dd(1, 8, "bludgeoning"),
+        ["versatile"],
+        void 0
+        // TODO [ICON]
+      );
+    }
+  };
+  var HandCrossbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "hand crossbow",
+        "martial",
+        "ranged",
+        _dd(1, 6, "piercing"),
+        ["ammunition", "light", "loading"],
+        void 0,
+        // TODO [ICON]
+        30,
+        120
+      );
+      this.ammunitionTag = "crossbow";
+    }
+  };
+  var HeavyCrossbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "heavy crossbow",
+        "martial",
+        "ranged",
+        _dd(1, 10, "piercing"),
+        ["ammunition", "heavy", "loading", "two-handed"],
+        void 0,
+        // TODO [ICON]
+        100,
+        400
+      );
+      this.ammunitionTag = "crossbow";
+    }
+  };
+  var Longbow = class extends AbstractWeapon {
+    constructor(g) {
+      super(
+        g,
+        "longbow",
+        "martial",
+        "ranged",
+        _dd(1, 8, "piercing"),
+        ["ammunition", "heavy", "two-handed"],
+        longbow_default,
+        150,
+        600
+      );
+      this.ammunitionTag = "bow";
+    }
+  };
+
+  // src/collectors/EvaluationCollector.ts
+  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
+    addEval(c, value, co) {
+      this.add(value * c.getCoefficient(co), co);
+    }
+    copy() {
+      return new _EvaluationCollector(
+        this.entries,
+        this.ignoredSources,
+        this.ignoredValues
+      );
+    }
+  };
+
+  // src/ai/coefficients.ts
+  var makeAICo = (name, defaultValue = 1) => ({
+    name,
+    defaultValue
+  });
+  var HealSelf = makeAICo("HealSelf");
+  var HealAllies = makeAICo("HealAllies");
+  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
+  var DamageEnemies = makeAICo("DamageEnemies");
+  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
+  var DamageAllies = makeAICo("DamageAllies", -1);
+  var StayNearAllies = makeAICo("StayNearAllies");
+
+  // src/ai/DamageRule.ts
+  var DamageRule = class {
+    evaluateActions(g, me, actions) {
+      const enemies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side !== me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
+          const amounts = action.getDamage(config);
+          if (!amounts)
+            return;
+          const targets = action.getAffected(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effective = 0;
+          let overKill = 0;
+          let friendlyFire = 0;
+          for (const target of targets) {
+            const remaining = target.hp;
+            const damage = Math.min(average, remaining);
+            if (target.side === me.side)
+              friendlyFire += damage;
+            else
+              effective += damage;
+            overKill += Math.max(average - remaining, 0);
+          }
+          score.addEval(me, effective, DamageEnemies);
+          score.addEval(me, overKill, OverKillEnemies);
+          score.addEval(me, friendlyFire, DamageAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/HealingRule.ts
+  var HealingRule = class {
+    evaluateActions(g, me, actions) {
+      const allies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side === me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
+          const amounts = action.getHeal(config);
+          if (!amounts)
+            return;
+          const targets = action.getAffected(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effectiveSelf = 0;
+          let effective = 0;
+          let overHeal = 0;
+          for (const target of targets) {
+            const missing = target.hpMax - target.hp;
+            const heal = Math.min(average, missing);
+            if (target === me)
+              effectiveSelf += heal;
+            else
+              effective += heal;
+            overHeal += Math.max(average - missing, 0);
+          }
+          if (effective + effectiveSelf <= 0)
+            return;
+          score.addEval(me, effectiveSelf, HealSelf);
+          score.addEval(me, effective, HealAllies);
+          score.addEval(me, overHeal, OverHealAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/data.ts
+  var defaultAIRules = [new HealingRule(), new DamageRule()];
+
+  // src/Monster.ts
+  var Monster = class extends AbstractCombatant {
+    constructor(g, name, cr, type, size, img, hpMax, rules = defaultAIRules) {
+      super(g, name, {
+        type,
+        size,
+        img,
+        side: 1,
+        hpMax,
+        rules
+      });
+      this.cr = cr;
+    }
+    don(item, giveProficiency = false) {
+      super.don(item);
+      if (giveProficiency)
+        this.addProficiency(item, "proficient");
+    }
+  };
+
   // src/features/SimpleFeature.ts
   var SimpleFeature = class {
     constructor(name, text, setup) {
@@ -3884,37 +5241,6 @@
 
   // src/img/tok/boss/birnotec.png
   var birnotec_default = "./birnotec-JGKE3FD4.png";
-
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority = 10) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
-      this.priority = priority;
-    }
-    async apply(g) {
-      var _a, _b;
-      const choice = await new Promise(
-        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        await ((_a = this.yes) == null ? void 0 : _a.call(this));
-      else
-        await ((_b = this.no) == null ? void 0 : _b.call(this));
-      return choice;
-    }
-  };
 
   // src/spells/InnateSpellcasting.ts
   var InnateSpellcasting = class {
@@ -4876,17 +6202,6 @@
 
   // src/img/act/protection.svg
   var protection_default = "./protection-NGWVG7SN.svg";
-
-  // src/collectors/DiceTypeCollector.ts
-  var DiceTypeCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      const hasAdvantage = values.includes("advantage");
-      const hasDisadvantage = values.includes("disadvantage");
-      if (hasAdvantage === hasDisadvantage)
-        return "normal";
-      return hasAdvantage ? "advantage" : "disadvantage";
-    }
-  };
 
   // src/features/fightingStyles/Protection.ts
   var ProtectionIcon = makeIcon(protection_default);
@@ -11126,66 +12441,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   // src/img/spl/lightning-bolt.svg
   var lightning_bolt_default = "./lightning-bolt-OXAGJ6WI.svg";
 
-  // src/utils/points.ts
-  var _p = (x, y) => ({ x, y });
-  function addPoints(a, b) {
-    return _p(a.x + b.x, a.y + b.y);
-  }
-  function mulPoint(z, mul) {
-    return _p(z.x * mul, z.y * mul);
-  }
-  var moveOffsets = {
-    east: _p(MapSquareSize, 0),
-    southeast: _p(MapSquareSize, MapSquareSize),
-    south: _p(0, MapSquareSize),
-    southwest: _p(-MapSquareSize, MapSquareSize),
-    west: _p(-MapSquareSize, 0),
-    northwest: _p(-MapSquareSize, -MapSquareSize),
-    north: _p(0, -MapSquareSize),
-    northeast: _p(MapSquareSize, -MapSquareSize)
-  };
-  function movePoint(p, d) {
-    return addPoints(p, moveOffsets[d]);
-  }
-  function supercoverLine(a, b) {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const nx = Math.abs(dx);
-    const ny = Math.abs(dy);
-    const moveX = dx > 0 ? MapSquareSize : -MapSquareSize;
-    const moveY = dy > 0 ? MapSquareSize : -MapSquareSize;
-    const p = _p(a.x, a.y);
-    const points = [_p(p.x, p.y)];
-    for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
-      const decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
-      if (decision === 0) {
-        p.x += moveX;
-        p.y += moveY;
-        ix += MapSquareSize;
-        iy += MapSquareSize;
-      } else if (decision < 0) {
-        p.x += moveX;
-        ix += MapSquareSize;
-      } else {
-        p.y += moveY;
-        iy += MapSquareSize;
-      }
-      points.push(_p(p.x, p.y));
-    }
-    return points;
-  }
-  function getPathAwayFrom(p, away, dist) {
-    const dy = p.y - away.y;
-    const dx = p.x - away.x;
-    const angle = Math.atan2(dy, dx);
-    const mx = dist * Math.cos(angle);
-    const my = dist * Math.sin(angle);
-    return supercoverLine(
-      p,
-      _p(Math.floor(p.x + mx), Math.floor(p.y + my))
-    ).slice(1);
-  }
-
   // src/aim.ts
   var eighth = Math.PI / 4;
   var eighthOffset = eighth / 2;
@@ -16227,1247 +17482,91 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return g.start();
   }
 
-  // src/data/templates.ts
-  var addPC = (name, x, y) => ({
-    type: "pc",
-    name,
-    x,
-    y
-  });
-  var addMonster = (name, x, y) => ({
-    type: "monster",
-    name,
-    x,
-    y
-  });
-  var gleanVsGoblins = {
-    combatants: [
-      addPC("Marvoril", 15, 30),
-      addPC("Shaira", 10, 35),
-      addMonster("goblin [bow]", 15, 0),
-      addMonster("goblin [bow]", 25, 0),
-      addMonster("goblin", 20, 5),
-      addMonster("goblin", 25, 5)
-    ]
-  };
-  var daviesVsFiends = {
-    combatants: [
-      addPC("Aura", 20, 20),
-      addPC("Beldalynn", 10, 30),
-      addPC("Galilea", 5, 0),
-      addPC("Salgar", 15, 30),
-      addPC("Hagrond", 0, 5),
-      addMonster("Birnotec", 15, 0),
-      addMonster("Kay of the Abyss", 20, 0),
-      addMonster("O Gonrit", 10, 15),
-      addMonster("Yulash", 25, 10),
-      addMonster("Zafron Halehart", 10, 5)
-    ]
-  };
-  var tethVsGoblin = {
-    combatants: [addPC("Tethilssethanar", 5, 5), addMonster("goblin", 15, 5)]
-  };
-
-  // src/collectors/AttackOutcomeCollector.ts
-  var AttackOutcomeCollector = class extends AbstractSumCollector {
-    setDefaultGetter(getter) {
-      this.defaultGet = getter;
-      return this;
-    }
-    getDefaultResult() {
-      if (this.defaultGet)
-        return this.defaultGet();
-      throw new Error("AttackOutcomeCollector.setDefaultGetter() not called");
-    }
-    getSum(values) {
-      if (values.includes("miss"))
-        return "miss";
-      if (values.includes("critical"))
-        return "critical";
-      if (values.includes("hit"))
-        return "hit";
-      return this.getDefaultResult();
-    }
-    get hits() {
-      return this.result !== "miss";
-    }
-  };
-
-  // src/collectors/DamageResponseCollector.ts
-  var DamageResponseCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      if (values.includes("absorb"))
-        return "absorb";
-      if (values.includes("immune"))
-        return "immune";
-      if (values.includes("resist") && !values.includes("vulnerable"))
-        return "resist";
-      if (values.includes("vulnerable"))
-        return "vulnerable";
-      return "normal";
-    }
-  };
-
-  // src/collectors/ErrorCollector.ts
-  var ErrorCollector = class {
-    constructor() {
-      this.errors = /* @__PURE__ */ new Set();
-      this.ignored = /* @__PURE__ */ new Set();
-    }
-    add(value, source) {
-      this.errors.add({ value, source });
-    }
-    addMany(messages, source) {
-      for (const message of messages)
-        this.add(message, source);
-    }
-    ignore(source) {
-      this.ignored.add(source);
-    }
-    get valid() {
-      return Array.from(this.errors).filter(
-        (entry) => !this.ignored.has(entry.source)
-      );
-    }
-    get messages() {
-      return this.valid.map((entry) => `${entry.value} (${entry.source.name})`);
-    }
-    get result() {
-      return this.valid.length === 0;
-    }
-  };
-
-  // src/collectors/ProficiencyCollector.ts
-  var ProficiencyCollector = class extends AbstractSumCollector {
-    getSum(values) {
-      if (values.includes("expertise"))
-        return 2;
-      if (values.includes("proficient"))
-        return 1;
-      if (values.includes("half"))
-        return 0.5;
-      return 0;
-    }
-  };
-
-  // src/collectors/SaveDamageResponseCollector.ts
-  var SaveDamageResponseCollector = class extends AbstractSumCollector {
-    constructor(fallback) {
-      super();
-      this.fallback = fallback;
-    }
-    getSum(values) {
-      if (values.includes("zero"))
-        return "zero";
-      if (values.includes("half"))
-        return "half";
-      return this.fallback;
-    }
-  };
-
-  // src/DamageMap.ts
-  var DamageMap = class extends Map {
-    constructor(items = []) {
-      super(items);
-    }
-    get total() {
-      let total = 0;
-      for (const amount of this.values())
-        total += amount;
-      return total;
-    }
-    add(type, value) {
-      var _a;
-      const old = (_a = this.get(type)) != null ? _a : 0;
-      this.set(type, old + value);
-    }
-  };
-
-  // src/collectors/ValueCollector.ts
-  var comparators = {
-    higher: (o, n) => n > o,
-    lower: (o, n) => n < o
-  };
-  var ValueCollector = class {
-    constructor(final) {
-      this.final = final;
-      this.others = [];
-    }
-    add(value, prefer) {
-      const comparator = comparators[prefer];
-      if (comparator(this.final, value)) {
-        this.others.push(this.final);
-        this.final = value;
-      } else
-        this.others.push(value);
-    }
-  };
-
-  // src/DiceBag.ts
-  function matches(rt, m) {
-    for (const [field, value] of Object.entries(m)) {
-      if (rt[field] !== value)
-        return false;
-    }
-    return true;
+  // src/ui/utils/icons.ts
+  var getIconUrl = (item) => item.icon && item.icon.url;
+  function getAllIcons(g) {
+    return new Set(
+      Array.from(g.combatants.keys()).flatMap((who) => [
+        ...who.inventory,
+        ...who.equipment,
+        ...who.knownSpells,
+        ...who.preparedSpells,
+        ...who.spellcastingMethods
+      ]).map(getIconUrl).filter(isDefined)
+    );
   }
-  function sizeOfDice(rt) {
-    switch (rt.type) {
-      case "damage":
-      case "heal":
-      case "other":
-        return rt.size;
-      case "bane":
-      case "bless":
-        return 4;
-      case "attack":
-      case "check":
-      case "initiative":
-      case "luck":
-      case "save":
-        return 20;
-    }
-  }
-  var DiceBag = class {
-    constructor() {
-      this.forcedRolls = /* @__PURE__ */ new Set();
-    }
-    force(value, matcher) {
-      this.forcedRolls.add({ value, matcher });
-    }
-    getForcedRoll(rt) {
-      for (const fr of this.forcedRolls) {
-        if (matches(rt, fr.matcher)) {
-          this.forcedRolls.delete(fr);
-          return fr.value;
-        }
-      }
-    }
-    roll(rt, dt = "normal") {
-      var _a, _b;
-      const size = sizeOfDice(rt);
-      const value = (_a = this.getForcedRoll(rt)) != null ? _a : Math.ceil(Math.random() * size);
-      const values = new ValueCollector(value);
-      if (dt !== "normal") {
-        const second = (_b = this.getForcedRoll(rt)) != null ? _b : Math.ceil(Math.random() * size);
-        const prefer = dt === "advantage" ? "higher" : "lower";
-        values.add(second, prefer);
-      }
-      return { size, values };
-    }
+
+  // src/ui/utils/state.ts
+  var import_signals = __toESM(require_signals());
+  var actionAreas = (0, import_signals.signal)(
+    void 0
+  );
+  var activeCombatantId = (0, import_signals.signal)(NaN);
+  var activeCombatant = (0, import_signals.computed)(
+    () => allCombatants.value.find((u2) => u2.id === activeCombatantId.value)
+  );
+  var aiEvaluation = (0, import_signals.signal)(void 0);
+  var allActions = (0, import_signals.signal)([]);
+  var allCombatants = (0, import_signals.signal)([]);
+  var allEffects = (0, import_signals.signal)([]);
+  var chooseFromList = (0, import_signals.signal)(void 0);
+  var chooseManyFromList = (0, import_signals.signal)(
+    void 0
+  );
+  var chooseYesNo = (0, import_signals.signal)(void 0);
+  var moveBounds = (0, import_signals.signal)(void 0);
+  var moveHandler = (0, import_signals.signal)(void 0);
+  var movingCombatantId = (0, import_signals.signal)(NaN);
+  var movingCombatant = (0, import_signals.computed)(
+    () => allCombatants.value.find((u2) => u2.id === movingCombatantId.value)
+  );
+  var scale = (0, import_signals.signal)(20);
+  var showSideHP = (0, import_signals.signal)([0]);
+  var showSideUnderlay = (0, import_signals.signal)(false);
+  var teleportInfo = (0, import_signals.signal)(void 0);
+  var wantsCombatant = (0, import_signals.signal)(void 0);
+  var wantsPoint = (0, import_signals.signal)(void 0);
+  window.state = {
+    actionAreas,
+    activeCombatantId,
+    activeCombatant,
+    aiEvaluation,
+    allActions,
+    allCombatants,
+    allEffects,
+    chooseFromList,
+    chooseManyFromList,
+    chooseYesNo,
+    moveBounds,
+    moveHandler,
+    movingCombatantId,
+    movingCombatant,
+    scale,
+    showSideHP,
+    showSideUnderlay,
+    teleportInfo,
+    wantsCombatant,
+    wantsPoint
   };
-
-  // src/events/AbilityCheckEvent.ts
-  var AbilityCheckEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AbilityCheck", { detail });
-    }
-  };
-
-  // src/events/AfterActionEvent.ts
-  var AfterActionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AfterAction", { detail });
-    }
-  };
-
-  // src/events/AreaPlacedEvent.ts
-  var AreaPlacedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AreaPlaced", { detail });
-    }
-  };
-
-  // src/events/AreaRemovedEvent.ts
-  var AreaRemovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("AreaRemoved", { detail });
-    }
-  };
-
-  // src/events/AttackEvent.ts
-  var AttackEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Attack", { detail });
-    }
-  };
-
-  // src/events/BattleStartedEvent.ts
-  var BattleStartedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BattleStarted", { detail });
-    }
-  };
-
-  // src/events/BeforeAttackEvent.ts
-  var BeforeAttackEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeAttack", { detail });
-    }
-  };
-
-  // src/events/BeforeCheckEvent.ts
-  var BeforeCheckEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeCheck", { detail });
-    }
-  };
-
-  // src/events/BeforeMoveEvent.ts
-  var BeforeMoveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeMove", { detail });
-    }
-  };
-
-  // src/events/BeforeSaveEvent.ts
-  var BeforeSaveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BeforeSave", { detail });
-    }
-  };
-
-  // src/events/BoundedMoveEvent.ts
-  var BoundedMoveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("BoundedMove", { detail });
-    }
-  };
-
-  // src/events/CheckActionEvent.ts
-  var CheckActionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CheckAction", { detail });
-    }
-  };
-
-  // src/events/CheckVisionEvent.ts
-  var CheckVisionEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CheckVision", { detail });
-    }
-  };
-
-  // src/events/CombatantDamagedEvent.ts
-  var CombatantDamagedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantDamaged", { detail });
-    }
-  };
-
-  // src/events/CombatantDiedEvent.ts
-  var CombatantDiedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantDied", { detail });
-    }
-  };
-
-  // src/events/CombatantHealedEvent.ts
-  var CombatantHealedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantHealed", { detail });
-    }
-  };
-
-  // src/events/CombatantInitiativeEvent.ts
-  var CombatantInitiativeEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantInitiative", { detail });
-    }
-  };
-
-  // src/events/CombatantMovedEvent.ts
-  var CombatantMovedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantMoved", { detail });
-    }
-  };
-
-  // src/events/CombatantPlacedEvent.ts
-  var CombatantPlacedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("CombatantPlaced", { detail });
-    }
-  };
-
-  // src/events/DiceRolledEvent.ts
-  var DiceRolledEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("DiceRolled", { detail });
-    }
-  };
-
-  // src/events/Dispatcher.ts
-  var Dispatcher = class {
-    constructor(debug = false, target = new EventTarget()) {
-      this.debug = debug;
-      this.target = target;
-      this.taps = /* @__PURE__ */ new Set();
-    }
-    tap(listener) {
-      this.taps.add(listener);
-      return () => this.taps.delete(listener);
-    }
-    fire(event) {
-      if (this.debug)
-        console.log("fire:", event);
-      return this.target.dispatchEvent(event);
-    }
-    on(type, callback, options) {
-      this.target.addEventListener(
-        type,
-        callback,
-        options
-      );
-      const cleanup = () => this.off(type, callback);
-      for (const tap of this.taps)
-        tap(cleanup);
-      return cleanup;
-    }
-    off(type, callback, options) {
-      return this.target.removeEventListener(
-        type,
-        callback,
-        options
-      );
-    }
-  };
-
-  // src/events/GatherDamageEvent.ts
-  var GatherDamageEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GatherDamage", { detail });
-    }
-  };
-
-  // src/events/GatherHealEvent.ts
-  var GatherHealEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GatherHeal", { detail });
-    }
-  };
-
-  // src/events/GetACEvent.ts
-  var GetACEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetAC", { detail });
-    }
-  };
-
-  // src/events/GetACMethodsEvent.ts
-  var GetACMethodsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetACMethods", { detail });
-    }
-  };
-
-  // src/events/GetActionsEvent.ts
-  var GetActionsEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetActions", { detail });
-    }
-  };
-
-  // src/events/GetDamageResponseEvent.ts
-  var GetDamageResponseEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetDamageResponse", { detail });
-    }
-  };
-
-  // src/events/GetInitiativeEvent.ts
-  var GetInitiativeEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetInitiative", { detail });
-    }
-  };
-
-  // src/events/GetMoveCostEvent.ts
-  var GetMoveCostEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetMoveCost", { detail });
-    }
-  };
-
-  // src/events/GetSaveDCEvent.ts
-  var GetSaveDCEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("GetSaveDC", { detail });
-    }
-  };
-
-  // src/events/SaveEvent.ts
-  var SaveEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Save", { detail });
-    }
-  };
-
-  // src/events/TextEvent.ts
-  var TextEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("Text", { detail });
-    }
-  };
-
-  // src/events/TurnEndedEvent.ts
-  var TurnEndedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("TurnEnded", { detail });
-    }
-  };
-
-  // src/events/TurnSkippedEvent.ts
-  var TurnSkippedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("TurnSkipped", { detail });
-    }
-  };
-
-  // src/events/TurnStartedEvent.ts
-  var TurnStartedEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("TurnStarted", { detail });
-    }
-  };
-
-  // src/types/SaveTag.ts
-  var svSet = (...items) => new Set(items);
-
-  // src/Engine.ts
-  var Engine = class {
-    constructor(dice = new DiceBag(), events = new Dispatcher()) {
-      this.dice = dice;
-      this.events = events;
-      this.combatants = /* @__PURE__ */ new Set();
-      this.effects = /* @__PURE__ */ new Set();
-      this.id = 0;
-      this.initiativeOrder = [];
-      this.initiativePosition = NaN;
-      this.rules = new DndRules(this);
-    }
-    nextId() {
-      return ++this.id;
-    }
-    place(who, x, y) {
-      const position = { x, y };
-      who.position = position;
-      who.initiative = NaN;
-      this.combatants.add(who);
-      this.fire(new CombatantPlacedEvent({ who, position }));
-    }
-    async start() {
-      for (const who of this.combatants) {
-        who.finalise();
-        who.initiative = await this.rollInitiative(who);
-        const items = [...who.inventory, ...who.equipment];
-        for (const item of items) {
-          item.owner = who;
-          item.possessor = who;
-        }
-      }
-      this.initiativeOrder = Array.from(this.combatants).sort(
-        (a, b) => b.initiative - a.initiative
-      );
-      await this.resolve(
-        new BattleStartedEvent({ interrupt: new InterruptionCollector() })
-      );
-      await this.nextTurn();
-    }
-    async rollMany(count, e2, critical = false) {
-      const rolls = await Promise.all(
-        Array(count * (critical ? 2 : 1)).fill(null).map(async () => await this.roll(e2))
-      );
-      return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
-    }
-    async rollDamage(count, e2, critical = false) {
-      return this.rollMany(count, { ...e2, type: "damage" }, critical);
-    }
-    async rollHeal(count, e2, critical = false) {
-      return this.rollMany(count, { ...e2, type: "heal" }, critical);
-    }
-    async rollInitiative(who) {
-      const gi = await this.resolve(
-        new GetInitiativeEvent({
-          who,
-          bonus: new BonusCollector(),
-          diceType: new DiceTypeCollector(),
-          interrupt: new InterruptionCollector()
-        })
-      );
-      const diceType = gi.detail.diceType.result;
-      const roll = await this.roll({ type: "initiative", who }, diceType);
-      const value = roll.values.final + gi.detail.bonus.result;
-      this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
-      return value;
-    }
-    addProficiencyBonus(who, proficiency, bonus) {
-      const result = proficiency.result;
-      if (result) {
-        const value = Math.floor(result * who.pb);
-        bonus.add(value, ProficiencyRule);
-      }
-    }
-    async savingThrow(dc, e2, {
-      diceType: baseDiceType,
-      save,
-      fail
-    } = {
-      save: "half",
-      fail: "normal"
-    }) {
-      const successResponse = new SuccessResponseCollector();
-      const proficiency = new ProficiencyCollector();
-      const bonus = new BonusCollector();
-      const diceType = new DiceTypeCollector();
-      const saveDamageResponse = new SaveDamageResponseCollector(save);
-      const failDamageResponse = new SaveDamageResponseCollector(fail);
-      if (baseDiceType)
-        diceType.add(baseDiceType, { name: "Base" });
-      const pre = await this.resolve(
-        new BeforeSaveEvent({
-          ...e2,
-          dc,
-          proficiency,
-          bonus,
-          diceType,
-          successResponse,
-          saveDamageResponse,
-          failDamageResponse,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      this.addProficiencyBonus(e2.who, proficiency, bonus);
-      let forced = false;
-      let success = false;
-      const roll = await this.roll({ type: "save", ...e2 }, diceType.result);
-      const total = roll.values.final + bonus.result;
-      if (successResponse.result !== "normal") {
-        success = successResponse.result === "success";
-        forced = true;
-      } else {
-        success = total >= dc;
-      }
-      const outcome = success ? "success" : "fail";
-      this.fire(
-        new SaveEvent({
-          pre: pre.detail,
-          diceType: diceType.result,
-          roll,
-          dc,
-          outcome,
-          total,
-          forced
-        })
-      );
-      return {
-        roll,
-        outcome,
-        forced,
-        damageResponse: success ? saveDamageResponse.result : failDamageResponse.result
-      };
-    }
-    async abilityCheck(dc, e2) {
-      const successResponse = new SuccessResponseCollector();
-      const proficiency = new ProficiencyCollector();
-      const bonus = new BonusCollector();
-      const diceType = new DiceTypeCollector();
-      const pre = await this.resolve(
-        new BeforeCheckEvent({
-          ...e2,
-          dc,
-          proficiency,
-          bonus,
-          diceType,
-          successResponse,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      this.addProficiencyBonus(e2.who, proficiency, bonus);
-      let forced = false;
-      let success = false;
-      const roll = await this.roll({ type: "check", ...e2 }, diceType.result);
-      const total = roll.values.final + bonus.result;
-      if (successResponse.result !== "normal") {
-        success = successResponse.result === "success";
-        forced = true;
-      } else {
-        success = total >= dc;
-      }
-      const outcome = success ? "success" : "fail";
-      this.fire(
-        new AbilityCheckEvent({
-          pre: pre.detail,
-          diceType: diceType.result,
-          roll,
-          dc,
-          outcome,
-          total,
-          forced
-        })
-      );
-      return { outcome, forced };
-    }
-    async roll(type, diceType = "normal") {
-      const roll = this.dice.roll(type, diceType);
-      return (await this.resolve(
-        new DiceRolledEvent({
-          type,
-          diceType,
-          ...roll,
-          interrupt: new InterruptionCollector()
-        })
-      )).detail;
-    }
-    async nextTurn() {
-      if (this.activeCombatant)
-        await this.resolve(
-          new TurnEndedEvent({
-            who: this.activeCombatant,
-            interrupt: new InterruptionCollector()
-          })
-        );
-      let who = this.initiativeOrder[this.initiativePosition];
-      let scan = true;
-      while (scan) {
-        this.initiativePosition = isNaN(this.initiativePosition) ? 0 : modulo(this.initiativePosition + 1, this.initiativeOrder.length);
-        who = this.initiativeOrder[this.initiativePosition];
-        if (!who.conditions.has("Unconscious"))
-          scan = false;
-        else {
-          who.tickEffects("turnStart");
-          await this.resolve(
-            new TurnSkippedEvent({ who, interrupt: new InterruptionCollector() })
-          );
-          who.tickEffects("turnEnd");
-        }
-      }
-      this.activeCombatant = who;
-      who.attacksSoFar = [];
-      who.spellsSoFar = [];
-      who.movedSoFar = 0;
-      await this.resolve(
-        new TurnStartedEvent({ who, interrupt: new InterruptionCollector() })
-      );
-    }
-    async moveInDirection(who, direction, handler, type = "speed") {
-      const old = who.position;
-      const position = movePoint(old, direction);
-      return this.move(who, position, handler, type);
-    }
-    async move(who, position, handler, type = "speed") {
-      const old = who.position;
-      const error = new ErrorCollector();
-      const pre = await this.resolve(
-        new BeforeMoveEvent({
-          who,
-          from: old,
-          to: position,
-          handler,
-          type,
-          error,
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
-        })
-      );
-      if (pre.detail.success.result === "fail")
-        return { type: "prevented" };
-      if (!error.result)
-        return { type: "error", error };
-      const multiplier = new MultiplierCollector();
-      this.fire(
-        new GetMoveCostEvent({
-          who,
-          from: old,
-          to: position,
-          handler,
-          type,
-          multiplier
-        })
-      );
-      who.position = position;
-      const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
-      await this.resolve(
-        new CombatantMovedEvent({
-          who,
-          old,
-          position,
-          handler,
-          type,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      if (handlerDone)
-        return { type: "unbind" };
-      return { type: "ok" };
-    }
-    async applyDamage(damage, {
-      attack,
-      attacker,
-      multiplier: baseMultiplier = 1,
-      target
-    }) {
-      const { total, healAmount, breakdown } = this.calculateDamage(
-        damage,
-        target,
-        baseMultiplier,
-        attack
-      );
-      if (healAmount > 0) {
-        await this.applyHeal(target, healAmount, target);
-      }
-      if (total < 1)
-        return;
-      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(target, total);
-      await this.resolve(
-        new CombatantDamagedEvent({
-          who: target,
-          attack,
-          attacker,
-          total,
-          takenByTemporaryHP,
-          afterTemporaryHP,
-          temporaryHPSource,
-          breakdown,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      if (target.hp <= 0) {
-        await this.handleCombatantDeath(target, attacker);
-      } else if (target.concentratingOn.size) {
-        await this.handleConcentrationCheck(target, total);
-      }
-    }
-    calculateDamage(damage, target, baseMultiplier, attack) {
-      let total = 0;
-      let healAmount = 0;
-      const breakdown = /* @__PURE__ */ new Map();
-      for (const [damageType, raw] of damage) {
-        const { response, amount } = this.calculateDamageResponse(
-          damageType,
-          raw,
-          target,
-          baseMultiplier,
-          attack
-        );
-        if (response === "absorb") {
-          healAmount += raw;
-        } else {
-          total += amount;
-        }
-        breakdown.set(damageType, { response, raw, amount });
-      }
-      return { total, healAmount, breakdown };
-    }
-    calculateDamageResponse(damageType, raw, target, baseMultiplier, attack) {
-      const collector = new DamageResponseCollector();
-      const innateResponse = target.damageResponses.get(damageType);
-      if (innateResponse) {
-        collector.add(innateResponse, target);
-      }
-      this.fire(
-        new GetDamageResponseEvent({
-          attack,
-          who: target,
-          damageType,
-          response: collector
-        })
-      );
-      const { response, amount } = this.calculateDamageAmount(
-        raw,
-        collector.result,
-        baseMultiplier
-      );
-      return { response, amount };
-    }
-    calculateDamageAmount(raw, response, baseMultiplier) {
-      let amount = raw;
-      if (response === "absorb" || response === "immune") {
-        amount = 0;
-      } else {
-        let multiplier = baseMultiplier;
-        if (response === "resist") {
-          multiplier *= 0.5;
-        } else if (response === "vulnerable") {
-          multiplier *= 2;
-        }
-        amount = Math.ceil(raw * multiplier);
-      }
-      return { response, amount };
-    }
-    applyTemporaryHP(target, totalDamage) {
-      const takenByTemporaryHP = Math.min(totalDamage, target.temporaryHP);
-      target.temporaryHP -= takenByTemporaryHP;
-      const afterTemporaryHP = totalDamage - takenByTemporaryHP;
-      target.hp -= afterTemporaryHP;
-      const temporaryHPSource = target.temporaryHPSource;
-      if (target.temporaryHP <= 0) {
-        target.temporaryHPSource = void 0;
-      }
-      return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
-    }
-    async handleCombatantDeath(target, attacker) {
-      await target.endConcentration();
-      if (target.diesAtZero || target.hp <= -target.hpMax) {
-        await this.kill(target, attacker);
-      } else if (!target.hasEffect(Dying)) {
-        target.hp = 0;
-        await target.removeEffect(Stable);
-        await target.addEffect(Dying, { duration: Infinity });
-      } else {
-        target.hp = 0;
-        await this.failDeathSave(target);
-      }
-    }
-    async handleConcentrationCheck(target, totalDamage) {
-      const dc = Math.max(10, Math.floor(totalDamage / 2));
-      const result = await this.savingThrow(dc, {
-        attacker: target,
-        who: target,
-        ability: "con",
-        tags: svSet("concentration")
-      });
-      if (result.outcome === "fail") {
-        await target.endConcentration();
-      }
-    }
-    async kill(target, attacker) {
-      this.combatants.delete(target);
-      await target.addEffect(Dead, { duration: Infinity });
-      this.fire(new CombatantDiedEvent({ who: target, attacker }));
-    }
-    async failDeathSave(who, count = 1, attacker) {
-      who.deathSaveFailures += count;
-      if (who.deathSaveFailures >= 3)
-        await this.kill(who, attacker);
-    }
-    async succeedDeathSave(who) {
-      who.deathSaveSuccesses++;
-      if (who.deathSaveSuccesses >= 3) {
-        await who.removeEffect(Dying);
-        who.deathSaveFailures = 0;
-        who.deathSaveSuccesses = 0;
-        await who.addEffect(Stable, { duration: Infinity });
-      }
-    }
-    getAttackOutcome(ac, roll, total) {
-      return roll === 1 ? "miss" : (
-        // If the d20 roll for an attack is a 20, the attack hits regardless of any modifiers or the target's AC.
-        roll === 20 ? "critical" : (
-          // To make an attack roll, roll a d20 and add the appropriate modifiers. If the total of the roll plus modifiers equals or exceeds the target's Armor Class (AC), the attack hits.
-          total >= ac ? "hit" : "miss"
-        )
-      );
-    }
-    async attack(e2) {
-      const proficiency = new ProficiencyCollector();
-      const bonus = new BonusCollector();
-      const diceType = new DiceTypeCollector();
-      const success = new SuccessResponseCollector();
-      const pre = await this.resolve(
-        new BeforeAttackEvent({
-          ...e2,
-          proficiency,
-          bonus,
-          diceType,
-          success,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      if (success.result === "fail")
-        return { outcome: "cancelled", hit: false };
-      this.addProficiencyBonus(e2.who, proficiency, bonus);
-      const { target, who, ability } = pre.detail;
-      const ac = await this.getAC(target, pre.detail);
-      const roll = await this.roll(
-        { type: "attack", who, target, ac, ability },
-        diceType.result
-      );
-      const total = roll.values.final + bonus.result;
-      const outcomeCollector = new AttackOutcomeCollector();
-      const event = new AttackEvent({
-        pre: pre.detail,
-        roll,
-        total,
-        ac,
-        outcome: outcomeCollector,
-        interrupt: new InterruptionCollector()
-      });
-      outcomeCollector.setDefaultGetter(
-        () => this.getAttackOutcome(
-          event.detail.ac,
-          event.detail.roll.values.final,
-          event.detail.total
-        )
-      );
-      const attack = await this.resolve(event);
-      const outcome = outcomeCollector.result;
-      return {
-        outcome,
-        attack: attack.detail,
-        hit: outcome === "hit" || outcome === "critical",
-        critical: outcome === "critical"
-      };
-    }
-    async damage(source, damageType, e2, damageInitialiser = [], startingMultiplier) {
-      if (startingMultiplier === "zero")
-        return;
-      const map = new DamageMap(damageInitialiser);
-      const multiplier = new MultiplierCollector();
-      if (typeof startingMultiplier !== "undefined")
-        multiplier.add(startingMultiplier, source);
-      const gather = await this.resolve(
-        new GatherDamageEvent({
-          critical: false,
-          ...e2,
-          map,
-          bonus: new BonusCollector(),
-          interrupt: new InterruptionCollector(),
-          multiplier
-        })
-      );
-      map.add(damageType, gather.detail.bonus.result);
-      return this.applyDamage(map, {
-        source,
-        attack: e2.attack,
-        attacker: e2.attacker,
-        target: e2.target,
-        multiplier: multiplier.result
-      });
-    }
-    /** @deprecated use `checkConfig` or `getConfigErrors` instead */
-    check(action, config) {
-      const error = new ErrorCollector();
-      this.fire(new CheckActionEvent({ action, config, error }));
-      action.check(config, error);
-      return error;
-    }
-    async act(action, config) {
-      await action.apply(config);
-      return this.resolve(
-        new AfterActionEvent({
-          action,
-          config,
-          interrupt: new InterruptionCollector()
-        })
-      );
-    }
-    getActions(who, target) {
-      return this.fire(new GetActionsEvent({ who, target, actions: [] })).detail.actions;
-    }
-    getBestACMethod(who) {
-      return this.fire(
-        new GetACMethodsEvent({
-          who,
-          methods: [who.baseACMethod]
-        })
-      ).detail.methods.reduce(
-        (best, method) => method.ac > best.ac ? method : best,
-        who.baseACMethod
-      );
-    }
-    async getAC(who, pre) {
-      const method = this.getBestACMethod(who);
-      const e2 = await this.resolve(
-        new GetACEvent({
-          who,
-          method,
-          bonus: new BonusCollector(),
-          interrupt: new InterruptionCollector(),
-          pre
-        })
-      );
-      return method.ac + e2.detail.bonus.result;
-    }
-    fire(e2) {
-      if (e2.detail.interrupt)
-        throw new Error(
-          `Use Engine.resolve() on an interruptible event type: ${e2.type}`
-        );
-      this.events.fire(e2);
-      return e2;
-    }
-    async resolve(e2) {
-      this.events.fire(e2);
-      for (const interruption of e2.detail.interrupt)
-        await interruption.apply(this);
-      return e2;
-    }
-    addEffectArea(area) {
-      area.id = this.nextId();
-      this.effects.add(area);
-      this.fire(new AreaPlacedEvent({ area }));
-    }
-    removeEffectArea(area) {
-      this.effects.delete(area);
-      this.fire(new AreaRemovedEvent({ area }));
-    }
-    getInside(area, ignore = []) {
-      const points = resolveArea(area);
-      const inside = [];
-      for (const who of this.combatants) {
-        if (ignore.includes(who))
-          continue;
-        const squares = new PointSet(getSquares(who, who.position));
-        if (points.overlaps(squares))
-          inside.push(who);
-      }
-      return inside;
-    }
-    async applyBoundedMove(who, handler) {
-      return new Promise(
-        (resolve) => this.fire(new BoundedMoveEvent({ who, handler, resolve }))
-      );
-    }
-    async heal(source, amount, e2, startingMultiplier) {
-      const bonus = new BonusCollector();
-      bonus.add(amount, source);
-      const multiplier = new MultiplierCollector();
-      if (typeof startingMultiplier !== "undefined")
-        multiplier.add(startingMultiplier, source);
-      const gather = await this.resolve(
-        new GatherHealEvent({
-          ...e2,
-          bonus,
-          multiplier,
-          interrupt: new InterruptionCollector()
-        })
-      );
-      const total = bonus.result * multiplier.result;
-      return this.applyHeal(gather.detail.target, total, gather.detail.actor);
-    }
-    async applyHeal(who, fullAmount, actor) {
-      const amount = Math.min(fullAmount, who.hpMax - who.hp);
-      who.hp += amount;
-      return this.resolve(
-        new CombatantHealedEvent({
-          who,
-          actor,
-          amount,
-          fullAmount,
-          interrupt: new InterruptionCollector()
-        })
-      );
-    }
-    async giveTemporaryHP(who, count, source) {
-      var _a;
-      if (who.temporaryHP > 0)
-        return new YesNoChoice(
-          who,
-          source,
-          `Replace Temporary HP?`,
-          `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
-          async () => this.setTemporaryHP(who, count, source)
-        ).apply(this);
-      this.setTemporaryHP(who, count, source);
-      return true;
-    }
-    setTemporaryHP(who, count, source) {
-      who.temporaryHP = count;
-      who.temporaryHPSource = source;
-    }
-    canSee(who, target) {
-      return this.fire(
-        new CheckVisionEvent({ who, target, error: new ErrorCollector() })
-      ).detail.error.result;
-    }
-    async getSaveDC(e2) {
-      const bonus = new BonusCollector();
-      const interrupt = new InterruptionCollector();
-      switch (e2.type.type) {
-        case "ability":
-          bonus.add(8, e2.source);
-          break;
-        case "flat":
-          bonus.add(e2.type.dc, e2.source);
-          break;
-      }
-      const result = await this.resolve(
-        new GetSaveDCEvent({ ...e2, bonus, interrupt })
-      );
-      return result.detail;
-    }
-    async save({
-      source,
-      type,
-      attacker,
-      who,
-      ability,
-      spell,
-      method,
-      effect,
-      config,
-      tags,
-      save = "half",
-      fail = "normal",
-      diceType
-    }) {
-      const dcRoll = await this.getSaveDC({
-        type,
-        source,
-        who: attacker,
-        target: who,
-        ability,
-        spell,
-        method
-      });
-      const result = await this.savingThrow(
-        dcRoll.bonus.result,
-        {
-          who,
-          attacker,
-          ability,
-          spell,
-          method,
-          effect,
-          config,
-          tags: new Set(tags)
-        },
-        { save, fail, diceType }
-      );
-      return { ...result, dcRoll };
-    }
-    text(message) {
-      this.fire(new TextEvent({ message }));
-    }
-    async forcePush(who, away, dist, source) {
-      const path = getPathAwayFrom(who.position, away.position, dist);
-      for (const point of path) {
-        const result = await this.move(who, point, {
-          maximum: Infinity,
-          cannotApproach: /* @__PURE__ */ new Set(),
-          mustUseAll: false,
-          provokesOpportunityAttacks: false,
-          teleportation: false,
-          onMove: () => false,
-          name: source.name
-        });
-        if (result.type !== "ok")
-          break;
-      }
-    }
-  };
-
-  // src/ui/App.tsx
-  var import_signals2 = __toESM(require_signals());
-  var import_hooks17 = __toESM(require_hooks());
-
-  // src/ui/common.module.scss
-  var common_module_default = {
-    "damageList": "_damageList_f4xy4_1",
-    "healList": "_healList_f4xy4_8",
-    "panel": "_panel_f4xy4_15"
-  };
-
-  // src/ui/IconButton.module.scss
-  var IconButton_module_default = {
-    "main": "_main_13fqt_1",
-    "image": "_image_13fqt_8",
-    "sub": "_sub_13fqt_9"
-  };
-
-  // src/ui/SVGIcon.tsx
-  var import_hooks = __toESM(require_hooks());
+  var resetAllState = () => (0, import_signals.batch)(() => {
+    actionAreas.value = [];
+    activeCombatantId.value = NaN;
+    aiEvaluation.value = void 0;
+    allActions.value = [];
+    allCombatants.value = [];
+    allEffects.value = [];
+    chooseFromList.value = void 0;
+    chooseManyFromList.value = void 0;
+    chooseYesNo.value = void 0;
+    moveBounds.value = void 0;
+    moveHandler.value = void 0;
+    movingCombatantId.value = NaN;
+    showSideHP.value = [0];
+    showSideUnderlay.value = false;
+    teleportInfo.value = void 0;
+    wantsCombatant.value = void 0;
+    wantsPoint.value = void 0;
+  });
 
   // src/ui/utils/SVGCache.ts
   var import_preact = __toESM(require_preact());
@@ -17491,6 +17590,89 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
 
+  // src/ui/utils/types.ts
+  function getUnitData(who) {
+    const {
+      id,
+      name,
+      img,
+      sizeInUnits,
+      attacksSoFar,
+      movedSoFar,
+      speed,
+      side,
+      hp,
+      hpMax,
+      temporaryHP,
+      deathSaveFailures,
+      deathSaveSuccesses,
+      effects: effectsMap,
+      conditions: conditionsSet
+    } = who;
+    const effects = [];
+    for (const [effect, config] of effectsMap) {
+      if (effect.quiet)
+        continue;
+      effects.push({
+        name: effect.name,
+        icon: effect.icon,
+        duration: config.duration,
+        effect,
+        config
+      });
+    }
+    const conditions = [];
+    for (const condition of conditionsSet)
+      conditions.push(condition);
+    return {
+      who,
+      position: who.position,
+      id,
+      name,
+      img,
+      sizeInUnits,
+      attacksSoFar: attacksSoFar.length,
+      movedSoFar,
+      speed,
+      side,
+      hp,
+      hpMax,
+      temporaryHP,
+      deathSaveFailures,
+      deathSaveSuccesses,
+      effects,
+      conditions
+    };
+  }
+
+  // src/ui/utils/UIResponse.ts
+  var UISource = { name: "UI" };
+  var UIResponse = class {
+    constructor(who, apply) {
+      this.who = who;
+      this.apply = apply;
+      this.source = UISource;
+      this.priority = 0;
+    }
+  };
+
+  // src/ui/components/common.module.scss
+  var common_module_default = {
+    "damageList": "_damageList_f4xy4_1",
+    "healList": "_healList_f4xy4_8",
+    "panel": "_panel_f4xy4_15"
+  };
+
+  // src/ui/components/IconButton.module.scss
+  var IconButton_module_default = {
+    "main": "_main_13fqt_1",
+    "image": "_image_13fqt_8",
+    "sub": "_sub_13fqt_9"
+  };
+
+  // src/ui/components/SVGIcon.tsx
+  var import_hooks2 = __toESM(require_hooks());
+
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var import_preact2 = __toESM(require_preact());
   var import_preact3 = __toESM(require_preact());
@@ -17507,11 +17689,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return import_preact2.options.vnode && import_preact2.options.vnode(l), l;
   }
 
-  // src/ui/SVGIcon.tsx
+  // src/ui/components/SVGIcon.tsx
   function SVGIcon({ className, color, size, src }) {
-    const cache = (0, import_hooks.useContext)(SVGCacheContext);
-    const ref = (0, import_hooks.useRef)(null);
-    (0, import_hooks.useEffect)(() => {
+    const cache = (0, import_hooks2.useContext)(SVGCacheContext);
+    const ref = (0, import_hooks2.useRef)(null);
+    (0, import_hooks2.useEffect)(() => {
       void cache.get(src).then((html) => {
         if (ref.current)
           ref.current.innerHTML = html;
@@ -17529,7 +17711,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/IconButton.tsx
+  // src/ui/components/IconButton.tsx
   function IconButton({
     onClick,
     alt,
@@ -17572,13 +17754,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/Labelled.tsx
-  var import_hooks2 = __toESM(require_hooks());
-
-  // src/ui/Labelled.module.scss
-  var Labelled_module_default = {
-    "label": "_label_ehxn3_1"
-  };
+  // src/ui/components/Labelled.tsx
+  var import_hooks3 = __toESM(require_hooks());
 
   // src/ui/utils/classnames.ts
   function classnames(...items) {
@@ -17598,7 +17775,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return names.join(" ");
   }
 
-  // src/ui/Labelled.tsx
+  // src/ui/components/Labelled.module.scss
+  var Labelled_module_default = {
+    "label": "_label_ehxn3_1"
+  };
+
+  // src/ui/components/Labelled.tsx
   function Labelled({
     children,
     label,
@@ -17606,7 +17788,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     contentsClass,
     role = "group"
   }) {
-    const labelId = (0, import_hooks2.useId)();
+    const labelId = (0, import_hooks3.useId)();
     return /* @__PURE__ */ u("div", { className: Labelled_module_default.main, role, "aria-labelledby": labelId, children: [
       /* @__PURE__ */ u(
         "div",
@@ -17621,58 +17803,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/utils/state.ts
-  var import_signals = __toESM(require_signals());
-  var actionAreas = (0, import_signals.signal)(
-    void 0
-  );
-  var activeCombatantId = (0, import_signals.signal)(NaN);
-  var activeCombatant = (0, import_signals.computed)(
-    () => allCombatants.value.find((u2) => u2.id === activeCombatantId.value)
-  );
-  var aiEvaluation = (0, import_signals.signal)(void 0);
-  var allActions = (0, import_signals.signal)([]);
-  var allCombatants = (0, import_signals.signal)([]);
-  var allEffects = (0, import_signals.signal)([]);
-  var chooseFromList = (0, import_signals.signal)(void 0);
-  var chooseManyFromList = (0, import_signals.signal)(
-    void 0
-  );
-  var chooseYesNo = (0, import_signals.signal)(void 0);
-  var moveBounds = (0, import_signals.signal)(void 0);
-  var moveHandler = (0, import_signals.signal)(void 0);
-  var movingCombatantId = (0, import_signals.signal)(NaN);
-  var movingCombatant = (0, import_signals.computed)(
-    () => allCombatants.value.find((u2) => u2.id === movingCombatantId.value)
-  );
-  var scale = (0, import_signals.signal)(20);
-  var showSideHP = (0, import_signals.signal)([0]);
-  var teleportInfo = (0, import_signals.signal)(void 0);
-  var wantsCombatant = (0, import_signals.signal)(void 0);
-  var wantsPoint = (0, import_signals.signal)(void 0);
-  window.state = {
-    actionAreas,
-    activeCombatantId,
-    activeCombatant,
-    aiEvaluation,
-    allActions,
-    allCombatants,
-    allEffects,
-    chooseFromList,
-    chooseManyFromList,
-    chooseYesNo,
-    moveBounds,
-    moveHandler,
-    movingCombatantId,
-    movingCombatant,
-    scale,
-    showSideHP,
-    teleportInfo,
-    wantsCombatant,
-    wantsPoint
-  };
-
-  // src/ui/ActiveUnitPanel.tsx
+  // src/ui/components/ActiveUnitPanel.tsx
   var ActionTypes = [
     "Attacks",
     "Actions",
@@ -17741,31 +17872,65 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/App.module.scss
-  var App_module_default = {
-    "sidePanel": "_sidePanel_czif9_5"
-  };
+  // src/ui/components/Battlefield.tsx
+  var import_hooks8 = __toESM(require_hooks());
 
-  // src/ui/Battlefield.tsx
-  var import_hooks7 = __toESM(require_hooks());
+  // src/ui/hooks/usePanning.ts
+  var import_hooks4 = __toESM(require_hooks());
+  function usePanning(onPan, onHover) {
+    const [isPanning, setIsPanning] = (0, import_hooks4.useState)(false);
+    const [panStartCoords, setPanStartCoords] = (0, import_hooks4.useState)({ x: 0, y: 0 });
+    const onMouseDown = (0, import_hooks4.useCallback)((e2) => {
+      if (e2.button === 2) {
+        setIsPanning(true);
+        setPanStartCoords({ x: e2.clientX, y: e2.clientY });
+      }
+    }, []);
+    const onMouseEnter = (0, import_hooks4.useCallback)((e2) => {
+      if (!e2.button)
+        setIsPanning(false);
+    }, []);
+    const onMouseMove = (0, import_hooks4.useCallback)(
+      (e2) => {
+        if (isPanning) {
+          const deltaX = e2.clientX - panStartCoords.x;
+          const deltaY = e2.clientY - panStartCoords.y;
+          onPan(-deltaX, -deltaY);
+          setPanStartCoords({ x: e2.clientX, y: e2.clientY });
+        } else
+          onHover == null ? void 0 : onHover(e2);
+      },
+      [isPanning, onHover, onPan, panStartCoords.x, panStartCoords.y]
+    );
+    const onMouseUp = (0, import_hooks4.useCallback)(() => {
+      setIsPanning(false);
+    }, []);
+    return {
+      isPanning,
+      onMouseDown,
+      onMouseEnter,
+      onMouseMove,
+      onMouseUp
+    };
+  }
 
-  // src/ui/Battlefield.module.scss
+  // src/ui/components/Battlefield.module.scss
   var Battlefield_module_default = {
     "main": "_main_1bit5_1",
     "panning": "_panning_1bit5_11"
   };
 
-  // src/ui/BattlefieldEffect.tsx
-  var import_hooks3 = __toESM(require_hooks());
+  // src/ui/components/BattlefieldEffect.tsx
+  var import_hooks5 = __toESM(require_hooks());
 
-  // src/ui/BattlefieldEffect.module.scss
+  // src/ui/components/BattlefieldEffect.module.scss
   var BattlefieldEffect_module_default = {
     "main": "_main_1azly_1",
     "top": "_top_1azly_9",
     "square": "_square_1azly_13"
   };
 
-  // src/ui/BattlefieldEffect.tsx
+  // src/ui/components/BattlefieldEffect.tsx
   function getAuraColour(tags) {
     if (tags.has("heavily obscured"))
       return "silver";
@@ -17776,8 +17941,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     if (tags.has("dim light"))
       return "skyblue";
   }
-  function AffectedSquare({ point, tint, top = false }) {
-    const style = (0, import_hooks3.useMemo)(
+  function AffectedSquare({
+    point,
+    tint,
+    top = false
+  }) {
+    const style = (0, import_hooks5.useMemo)(
       () => ({
         left: point.x * scale.value,
         top: point.y * scale.value,
@@ -17802,7 +17971,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     top: onTop = false,
     tint = getAuraColour(tags)
   }) {
-    const { points, left, top } = (0, import_hooks3.useMemo)(() => {
+    const { points, left, top } = (0, import_hooks5.useMemo)(() => {
       const points2 = resolveArea(shape);
       const { x: left2, y: top2 } = points2.average(scale.value);
       return { points: points2, left: left2, top: top2 };
@@ -17821,48 +17990,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/hooks/usePanning.ts
-  var import_hooks4 = __toESM(require_hooks());
-  function usePanning(onPan) {
-    const [isPanning, setIsPanning] = (0, import_hooks4.useState)(false);
-    const [panStartCoords, setPanStartCoords] = (0, import_hooks4.useState)({ x: 0, y: 0 });
-    const onMouseDown = (0, import_hooks4.useCallback)((e2) => {
-      if (e2.button === 2) {
-        setIsPanning(true);
-        setPanStartCoords({ x: e2.clientX, y: e2.clientY });
-      }
-    }, []);
-    const onMouseEnter = (0, import_hooks4.useCallback)((e2) => {
-      if (!e2.button)
-        setIsPanning(false);
-    }, []);
-    const onMouseMove = (0, import_hooks4.useCallback)(
-      (e2) => {
-        if (isPanning) {
-          const deltaX = e2.clientX - panStartCoords.x;
-          const deltaY = e2.clientY - panStartCoords.y;
-          onPan(-deltaX, -deltaY);
-          setPanStartCoords({ x: e2.clientX, y: e2.clientY });
-        }
-      },
-      [isPanning, onPan, panStartCoords.x, panStartCoords.y]
-    );
-    const onMouseUp = (0, import_hooks4.useCallback)(() => {
-      setIsPanning(false);
-    }, []);
-    return {
-      isPanning,
-      onMouseDown,
-      onMouseEnter,
-      onMouseMove,
-      onMouseUp
-    };
-  }
+  // src/ui/components/Unit.tsx
+  var import_hooks7 = __toESM(require_hooks());
 
-  // src/ui/Unit.tsx
-  var import_hooks6 = __toESM(require_hooks());
-
-  // src/ui/Unit.module.scss
+  // src/ui/components/Unit.module.scss
   var Unit_module_default = {
     "main": "_main_120hg_1",
     "token": "_token_120hg_11",
@@ -17872,7 +18003,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/img/ui/missing-icon.svg
   var missing_icon_default = "./missing-icon-Y2QNJ6M4.svg";
 
-  // src/ui/UnitEffectIcon.tsx
+  // src/ui/components/UnitEffectIcon.tsx
   function UnitEffectIcon({ effect }) {
     var _a, _b, _c;
     return /* @__PURE__ */ u("div", { title: effect.name, children: /* @__PURE__ */ u(
@@ -17885,7 +18016,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ) });
   }
 
-  // src/ui/UnitHP.module.scss
+  // src/ui/components/UnitHP.module.scss
   var UnitHP_module_default = {
     "hp": "_hp_1j4fd_1",
     "detailed": "_detailed_1j4fd_13",
@@ -17898,7 +18029,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "failure": "_failure_1j4fd_51"
   };
 
-  // src/ui/UnitHP.tsx
+  // src/ui/components/UnitHP.tsx
   function UnitDeathSaves({ u: u2 }) {
     return /* @__PURE__ */ u("div", { className: classnames(UnitHP_module_default.hp, UnitHP_module_default.down), children: /* @__PURE__ */ u("div", { className: UnitHP_module_default.text, children: [
       "Down: ",
@@ -17971,10 +18102,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   // src/img/ui/w.svg
   var w_default = "./w-IMIMIJNF.svg";
 
-  // src/ui/UnitMoveButton.tsx
-  var import_hooks5 = __toESM(require_hooks());
+  // src/ui/components/UnitMoveButton.tsx
+  var import_hooks6 = __toESM(require_hooks());
 
-  // src/ui/UnitMoveButton.module.scss
+  // src/ui/components/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
     "main": "_main_etih8_5",
     "moveE": "_moveE_etih8_17",
@@ -17987,7 +18118,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "moveNE": "_moveNE_etih8_56"
   };
 
-  // src/ui/UnitMoveButton.tsx
+  // src/ui/components/UnitMoveButton.tsx
   var makeButtonType = (className, iconUrl, label) => ({
     className: UnitMoveButton_module_default[className],
     iconUrl,
@@ -18004,11 +18135,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     northeast: makeButtonType("moveNE", ne_default, "Move Northeast")
   };
   function UnitMoveButton({ disabled, onClick, type }) {
-    const { className, iconUrl, label } = (0, import_hooks5.useMemo)(
+    const { className, iconUrl, label } = (0, import_hooks6.useMemo)(
       () => buttonTypes[type],
       [type]
     );
-    const clicked = (0, import_hooks5.useCallback)(
+    const clicked = (0, import_hooks6.useCallback)(
       (e2) => {
         e2.stopPropagation();
         onClick(type);
@@ -18027,7 +18158,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/Unit.tsx
+  // src/ui/components/Unit.tsx
+  var allyBg = "rgba(0, 0, 255, 0.25)";
+  var enemyBg = "rgba(255, 0, 0, 0.25)";
+  var otherBg = "rgba(0, 255, 0, 0.25)";
   function Unit({ isMoving, onClick, onMove, u: u2 }) {
     const containerStyle = {
       left: u2.position.x * scale.value,
@@ -18037,15 +18171,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     };
     const tokenStyle = {
       width: u2.sizeInUnits * scale.value,
-      height: u2.sizeInUnits * scale.value
+      height: u2.sizeInUnits * scale.value,
+      backgroundColor: showSideUnderlay.value ? u2.side === 0 ? allyBg : u2.side === 1 ? enemyBg : otherBg : void 0
     };
     const disabled = u2.movedSoFar >= u2.speed;
-    const clicked = (0, import_hooks6.useCallback)(
-      (e2) => onClick(u2.who, e2),
+    const clicked = (0, import_hooks7.useCallback)(
+      (e2) => onClick == null ? void 0 : onClick(u2.who, e2),
       [onClick, u2]
     );
-    const moved = (0, import_hooks6.useCallback)(
-      (dir) => onMove(u2.who, dir),
+    const moved = (0, import_hooks7.useCallback)(
+      (dir) => onMove == null ? void 0 : onMove(u2.who, dir),
       [onMove, u2]
     );
     return (
@@ -18113,24 +18248,37 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/Battlefield.tsx
+  // src/ui/components/Battlefield.tsx
   function Battlefield({
     onClickBattlefield,
     onClickCombatant,
-    onMoveCombatant
+    onMoveCombatant,
+    showHoveredTile
   }) {
     var _a;
-    const [offset, setOffset] = (0, import_hooks7.useState)({ x: 0, y: 0 });
-    const { isPanning, onMouseDown, onMouseEnter, onMouseMove, onMouseUp } = usePanning(
-      (dx, dy) => setOffset((old) => ({ x: old.x + dx, y: old.y + dy }))
+    const [offset, setOffset] = (0, import_hooks8.useState)({ x: 0, y: 0 });
+    const [hover, setHover] = (0, import_hooks8.useState)();
+    const convertCoordinate = (0, import_hooks8.useCallback)(
+      (e2) => {
+        const x = round(
+          Math.floor((e2.pageX - offset.x) / scale.value),
+          MapSquareSize
+        );
+        const y = round(
+          Math.floor((e2.pageY - offset.y) / scale.value),
+          MapSquareSize
+        );
+        return { x, y };
+      },
+      [offset.x, offset.y]
     );
-    const convertCoordinate = (0, import_hooks7.useCallback)((e2) => {
-      const x = round(Math.floor(e2.pageX / scale.value), MapSquareSize);
-      const y = round(Math.floor(e2.pageY / scale.value), MapSquareSize);
-      return { x, y };
-    }, []);
-    const onClick = (0, import_hooks7.useCallback)(
-      (e2) => onClickBattlefield(convertCoordinate(e2), e2),
+    const { isPanning, onMouseDown, onMouseEnter, onMouseMove, onMouseUp } = usePanning(
+      (dx, dy) => setOffset((old) => ({ x: old.x + dx, y: old.y + dy })),
+      (e2) => setHover(convertCoordinate(e2))
+    );
+    const onMouseOut = () => setHover(void 0);
+    const onClick = (0, import_hooks8.useCallback)(
+      (e2) => onClickBattlefield == null ? void 0 : onClickBattlefield(convertCoordinate(e2), e2),
       [convertCoordinate, onClickBattlefield]
     );
     return (
@@ -18145,6 +18293,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           onMouseEnter,
           onMouseMove,
           onMouseUp,
+          onMouseLeave: onMouseOut,
           onContextMenu: (e2) => {
             e2.preventDefault();
             return false;
@@ -18170,14 +18319,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
                 name: "Teleport"
               },
               "teleport"
-            )
+            ),
+            showHoveredTile && hover && /* @__PURE__ */ u(AffectedSquare, { point: hover, tint: "silver" })
           ] })
         }
       )
     );
   }
 
-  // src/ui/BoundedMovePanel.tsx
+  // src/ui/components/BoundedMovePanel.tsx
   function BoundedMovePanel({ bounds, onFinish }) {
     return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Bounded Movement", children: [
       /* @__PURE__ */ u(Labelled, { label: bounds.handler.name, children: bounds.who.name }),
@@ -18192,15 +18342,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/ChooseActionConfigPanel.tsx
-  var import_hooks9 = __toESM(require_hooks());
+  // src/ui/components/ChooseActionConfigPanel.tsx
+  var import_hooks10 = __toESM(require_hooks());
 
-  // src/ui/button.module.scss
+  // src/ui/components/button.module.scss
   var button_module_default = {
     "active": "_active_10ff1_1"
   };
 
-  // src/ui/ChooseActionConfigPanel.module.scss
+  // src/ui/components/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
     "warning": "_warning_15trd_1",
     "description": "_description_15trd_10",
@@ -18209,7 +18359,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "time": "_time_15trd_25"
   };
 
-  // src/ui/CombatantRef.module.scss
+  // src/ui/components/CombatantRef.module.scss
   var CombatantRef_module_default = {
     "main": "_main_g12vt_1",
     "spaceBefore": "_spaceBefore_g12vt_5",
@@ -18217,7 +18367,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "icon": "_icon_g12vt_12"
   };
 
-  // src/ui/CombatantRef.tsx
+  // src/ui/components/CombatantRef.tsx
   function CombatantRef({
     who,
     spaceBefore = false,
@@ -18238,10 +18388,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
   }
 
-  // src/ui/RangeInput.tsx
-  var import_hooks8 = __toESM(require_hooks());
+  // src/ui/components/RangeInput.tsx
+  var import_hooks9 = __toESM(require_hooks());
 
-  // src/ui/RangeInput.module.scss
+  // src/ui/components/RangeInput.module.scss
   var RangeInput_module_default = {
     "main": "_main_1k0vn_1",
     "min": "_min_1k0vn_7",
@@ -18250,9 +18400,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "value": "_value_1k0vn_19"
   };
 
-  // src/ui/RangeInput.tsx
+  // src/ui/components/RangeInput.tsx
   function RangeInput({ value, onChange, min, max }) {
-    const changed = (0, import_hooks8.useCallback)(
+    const changed = (0, import_hooks9.useCallback)(
       (e2) => onChange(e2.currentTarget.valueAsNumber),
       [onChange]
     );
@@ -18274,16 +18424,16 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/ChooseActionConfigPanel.tsx
+  // src/ui/components/ChooseActionConfigPanel.tsx
   function ChooseTarget({ field, value, onChange }) {
-    const setTarget = (0, import_hooks9.useCallback)(
+    const setTarget = (0, import_hooks10.useCallback)(
       (who) => {
         onChange(field, who);
         wantsCombatant.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks9.useCallback)(() => {
+    const onClick = (0, import_hooks10.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ u("div", { children: [
@@ -18310,7 +18460,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     onChange
   }) {
     var _a;
-    const addTarget = (0, import_hooks9.useCallback)(
+    const addTarget = (0, import_hooks10.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).includes(who))
           onChange(field, (value != null ? value : []).concat(who));
@@ -18318,10 +18468,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks9.useCallback)(() => {
+    const onClick = (0, import_hooks10.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks9.useCallback)(
+    const remove = (0, import_hooks10.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== who)
@@ -18356,14 +18506,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChoosePoint({ field, value, onChange }) {
-    const setTarget = (0, import_hooks9.useCallback)(
+    const setTarget = (0, import_hooks10.useCallback)(
       (p) => {
         onChange(field, p);
         wantsPoint.value = void 0;
       },
       [field, onChange]
     );
-    const onClick = (0, import_hooks9.useCallback)(() => {
+    const onClick = (0, import_hooks10.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
     }, [setTarget]);
     return /* @__PURE__ */ u("div", { children: [
@@ -18389,7 +18539,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const addPoint = (0, import_hooks9.useCallback)(
+    const addPoint = (0, import_hooks10.useCallback)(
       (p) => {
         if (p)
           onChange(field, (value != null ? value : []).concat(p));
@@ -18397,10 +18547,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks9.useCallback)(() => {
+    const onClick = (0, import_hooks10.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== addPoint ? addPoint : void 0;
     }, [addPoint]);
-    const remove = (0, import_hooks9.useCallback)(
+    const remove = (0, import_hooks10.useCallback)(
       (p) => onChange(
         field,
         (value != null ? value : []).filter((x) => x !== p)
@@ -18465,7 +18615,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const [label, setLabel] = (0, import_hooks9.useState)("NONE");
+    const [label, setLabel] = (0, import_hooks10.useState)("NONE");
     const choose = (e2) => () => {
       if (e2.value === value) {
         onChange(field, void 0);
@@ -18499,8 +18649,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const [labels, setLabels] = (0, import_hooks9.useState)([]);
-    const add = (0, import_hooks9.useCallback)(
+    const [labels, setLabels] = (0, import_hooks10.useState)([]);
+    const add = (0, import_hooks10.useCallback)(
       (ch) => {
         if (!(value != null ? value : []).find((x) => x === ch)) {
           onChange(field, (value != null ? value : []).concat(ch.value));
@@ -18509,7 +18659,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const remove = (0, import_hooks9.useCallback)(
+    const remove = (0, import_hooks10.useCallback)(
       (ch) => {
         onChange(
           field,
@@ -18570,7 +18720,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const addTarget = (0, import_hooks9.useCallback)(
+    const addTarget = (0, import_hooks10.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).find((e2) => e2.who === who))
           onChange(field, (value != null ? value : []).concat({ amount: 1, who }));
@@ -18578,10 +18728,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [field, onChange, value]
     );
-    const onClick = (0, import_hooks9.useCallback)(() => {
+    const onClick = (0, import_hooks10.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
-    const remove = (0, import_hooks9.useCallback)(
+    const remove = (0, import_hooks10.useCallback)(
       (who) => onChange(
         field,
         (value != null ? value : []).filter((x) => x.who !== who)
@@ -18655,32 +18805,32 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     onCancel,
     onExecute
   }) {
-    const [config, setConfig] = (0, import_hooks9.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks9.useCallback)(
+    const [config, setConfig] = (0, import_hooks10.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks10.useCallback)(
       (key, value) => setConfig((old) => ({ ...old, [key]: value })),
       []
     );
-    (0, import_hooks9.useEffect)(() => {
+    (0, import_hooks10.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
     }, [action, activeCombatant.value, config]);
-    const errors = (0, import_hooks9.useMemo)(
+    const errors = (0, import_hooks10.useMemo)(
       () => getConfigErrors(g, action, config).messages,
       [g, action, config]
     );
-    const disabled = (0, import_hooks9.useMemo)(() => errors.length > 0, [errors]);
-    const damage = (0, import_hooks9.useMemo)(() => action.getDamage(config), [action, config]);
-    const description = (0, import_hooks9.useMemo)(
+    const disabled = (0, import_hooks10.useMemo)(() => errors.length > 0, [errors]);
+    const damage = (0, import_hooks10.useMemo)(() => action.getDamage(config), [action, config]);
+    const description = (0, import_hooks10.useMemo)(
       () => action.getDescription(config),
       [action, config]
     );
-    const heal = (0, import_hooks9.useMemo)(() => action.getHeal(config), [action, config]);
-    const time = (0, import_hooks9.useMemo)(() => action.getTime(config), [action, config]);
+    const heal = (0, import_hooks10.useMemo)(() => action.getHeal(config), [action, config]);
+    const time = (0, import_hooks10.useMemo)(() => action.getTime(config), [action, config]);
     const isReaction = time === "reaction";
-    const execute = (0, import_hooks9.useCallback)(() => {
+    const execute = (0, import_hooks10.useCallback)(() => {
       if (checkConfig(g, action, config))
         onExecute(action, config);
     }, [g, action, config, onExecute]);
-    const elements = (0, import_hooks9.useMemo)(
+    const elements = (0, import_hooks10.useMemo)(
       () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
         const subProps = {
           key,
@@ -18758,22 +18908,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/EventLog.tsx
-  var import_hooks11 = __toESM(require_hooks());
-
-  // src/ui/EventLog.module.scss
-  var EventLog_module_default = {
-    "container": "_container_fnmiq_1",
-    "main": "_main_fnmiq_14",
-    "messageWrapper": "_messageWrapper_fnmiq_22",
-    "message": "_message_fnmiq_22"
+  // src/ui/components/CombatUI.module.scss
+  var CombatUI_module_default = {
+    "sidePanel": "_sidePanel_4415i_1"
   };
 
+  // src/ui/components/EventLog.tsx
+  var import_hooks12 = __toESM(require_hooks());
+
   // src/ui/hooks/useTimeout.ts
-  var import_hooks10 = __toESM(require_hooks());
+  var import_hooks11 = __toESM(require_hooks());
   function useTimeout(handler, ms = void 0) {
-    const [handle, setHandle] = (0, import_hooks10.useState)();
-    const fire = (0, import_hooks10.useCallback)(
+    const [handle, setHandle] = (0, import_hooks11.useState)();
+    const fire = (0, import_hooks11.useCallback)(
       () => setHandle((old) => {
         if (old)
           return old;
@@ -18784,7 +18931,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }),
       [handler, ms]
     );
-    const cancel = (0, import_hooks10.useCallback)(
+    const cancel = (0, import_hooks11.useCallback)(
       () => setHandle((old) => {
         if (old)
           clearTimeout(old);
@@ -18792,7 +18939,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }),
       []
     );
-    (0, import_hooks10.useEffect)(() => cancel, [cancel]);
+    (0, import_hooks11.useEffect)(() => cancel, [cancel]);
     return { cancel, fire, handle };
   }
 
@@ -18946,37 +19093,34 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }
   });
 
-  // src/ui/utils/UIResponse.ts
-  var UISource = { name: "UI" };
-  var UIResponse = class {
-    constructor(who, apply) {
-      this.who = who;
-      this.apply = apply;
-      this.source = UISource;
-      this.priority = 0;
-    }
+  // src/ui/components/EventLog.module.scss
+  var EventLog_module_default = {
+    "container": "_container_fnmiq_1",
+    "main": "_main_fnmiq_14",
+    "messageWrapper": "_messageWrapper_fnmiq_22",
+    "message": "_message_fnmiq_22"
   };
 
-  // src/ui/EventLog.tsx
+  // src/ui/components/EventLog.tsx
   function LogMessage({ message }) {
     const text = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.text).join("");
     const children = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.element);
     return /* @__PURE__ */ u("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ u("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
   }
   function EventLog({ g }) {
-    const ref = (0, import_hooks11.useRef)(null);
-    const [messages, setMessages] = (0, import_hooks11.useState)([]);
+    const ref = (0, import_hooks12.useRef)(null);
+    const [messages, setMessages] = (0, import_hooks12.useState)([]);
     const { fire } = useTimeout(
       () => {
         var _a, _b;
         return (_b = (_a = ref.current) == null ? void 0 : _a.scrollIntoView) == null ? void 0 : _b.call(_a, { behavior: "smooth" });
       }
     );
-    const addMessage = (0, import_hooks11.useCallback)((el) => {
+    const addMessage = (0, import_hooks12.useCallback)((el) => {
       setMessages((old) => old.concat(el).slice(-50));
       fire();
     }, []);
-    (0, import_hooks11.useEffect)(() => {
+    (0, import_hooks12.useEffect)(() => {
       g.events.on(
         "Attack",
         ({ detail }) => detail.interrupt.add(
@@ -19036,13 +19180,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/ListChoiceDialog.tsx
+  // src/ui/components/ListChoiceDialog.tsx
+  var import_hooks14 = __toESM(require_hooks());
+
+  // src/ui/components/Dialog.tsx
   var import_hooks13 = __toESM(require_hooks());
 
-  // src/ui/Dialog.tsx
-  var import_hooks12 = __toESM(require_hooks());
-
-  // src/ui/Dialog.module.scss
+  // src/ui/components/Dialog.module.scss
   var Dialog_module_default = {
     "main": "_main_1hd4j_1",
     "shade": "_shade_1hd4j_5",
@@ -19050,9 +19194,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "title": "_title_1hd4j_24"
   };
 
-  // src/ui/Dialog.tsx
+  // src/ui/components/Dialog.tsx
   function ReactDialog({ title, text, children }) {
-    const titleId = (0, import_hooks12.useId)();
+    const titleId = (0, import_hooks13.useId)();
     return /* @__PURE__ */ u("div", { className: Dialog_module_default.shade, children: /* @__PURE__ */ u(
       "div",
       {
@@ -19072,12 +19216,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return /* @__PURE__ */ u(ReactDialog, { ...props });
   }
 
-  // src/ui/ListChoiceDialog.tsx
+  // src/ui/components/ListChoiceDialog.tsx
   function ListChoiceDialog({
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks13.useCallback)(
+    const decide = (0, import_hooks14.useCallback)(
       (value) => {
         chooseFromList.value = void 0;
         resolve(value);
@@ -19090,13 +19234,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/Menu.module.scss
+  // src/ui/components/Menu.module.scss
   var Menu_module_default = {
     "main": "_main_1j00q_1",
     "sub": "_sub_1j00q_14"
   };
 
-  // src/ui/Menu.tsx
+  // src/ui/components/Menu.tsx
   function Menu({ caption, items, onClick, x, y }) {
     return /* @__PURE__ */ u("menu", { className: Menu_module_default.main, style: { left: x, top: y }, children: /* @__PURE__ */ u(Labelled, { label: caption, contentsClass: Menu_module_default.sub, children: items.length === 0 ? /* @__PURE__ */ u("div", { children: "(empty)" }) : items.map(({ label, value, disabled }) => /* @__PURE__ */ u(
       "button",
@@ -19110,14 +19254,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     )) }) });
   }
 
-  // src/ui/MultiListChoiceDialog.tsx
-  var import_hooks15 = __toESM(require_hooks());
+  // src/ui/components/MultiListChoiceDialog.tsx
+  var import_hooks16 = __toESM(require_hooks());
 
   // src/ui/hooks/useList.ts
-  var import_hooks14 = __toESM(require_hooks());
+  var import_hooks15 = __toESM(require_hooks());
   function useList(initialValue = []) {
-    const [list, setList] = (0, import_hooks14.useState)(initialValue);
-    const toggle = (0, import_hooks14.useCallback)(
+    const [list, setList] = (0, import_hooks15.useState)(initialValue);
+    const toggle = (0, import_hooks15.useCallback)(
       (item) => setList(
         (old) => old.includes(item) ? old.filter((x) => x !== item) : old.concat(item)
       ),
@@ -19126,14 +19270,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return { list, setList, toggle };
   }
 
-  // src/ui/MultiListChoiceDialog.tsx
+  // src/ui/components/MultiListChoiceDialog.tsx
   function MultiListChoiceDialog({
     interruption,
     resolve
   }) {
     const { list, toggle } = useList();
     const invalidSelection = list.length < interruption.minimum || list.length > interruption.maximum;
-    const decide = (0, import_hooks15.useCallback)(() => {
+    const decide = (0, import_hooks16.useCallback)(() => {
       chooseManyFromList.value = void 0;
       resolve(list);
     }, [list, resolve]);
@@ -19162,118 +19306,49 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/utils/icons.ts
-  var getIconUrl = (item) => item.icon && item.icon.url;
-  function getAllIcons(g) {
-    return new Set(
-      Array.from(g.combatants.keys()).flatMap((who) => [
-        ...who.inventory,
-        ...who.equipment,
-        ...who.knownSpells,
-        ...who.preparedSpells,
-        ...who.spellcastingMethods
-      ]).map(getIconUrl).filter(isDefined)
-    );
-  }
-
-  // src/ui/utils/types.ts
-  function getUnitData(who) {
-    const {
-      id,
-      name,
-      img,
-      sizeInUnits,
-      attacksSoFar,
-      movedSoFar,
-      speed,
-      side,
-      hp,
-      hpMax,
-      temporaryHP,
-      deathSaveFailures,
-      deathSaveSuccesses,
-      effects: effectsMap,
-      conditions: conditionsSet
-    } = who;
-    const effects = [];
-    for (const [effect, config] of effectsMap) {
-      if (effect.quiet)
-        continue;
-      effects.push({
-        name: effect.name,
-        icon: effect.icon,
-        duration: config.duration,
-        effect,
-        config
-      });
-    }
-    const conditions = [];
-    for (const condition of conditionsSet)
-      conditions.push(condition);
-    return {
-      who,
-      position: who.position,
-      id,
-      name,
-      img,
-      sizeInUnits,
-      attacksSoFar: attacksSoFar.length,
-      movedSoFar,
-      speed,
-      side,
-      hp,
-      hpMax,
-      temporaryHP,
-      deathSaveFailures,
-      deathSaveSuccesses,
-      effects,
-      conditions
-    };
-  }
-
-  // src/ui/YesNoDialog.tsx
-  var import_hooks16 = __toESM(require_hooks());
+  // src/ui/components/YesNoDialog.tsx
+  var import_hooks17 = __toESM(require_hooks());
   function YesNoDialog({
     interruption,
     resolve
   }) {
-    const decide = (0, import_hooks16.useCallback)(
+    const decide = (0, import_hooks17.useCallback)(
       (value) => {
         chooseYesNo.value = void 0;
         resolve(value);
       },
       [resolve]
     );
-    const onYes = (0, import_hooks16.useCallback)(() => decide(true), [decide]);
-    const onNo = (0, import_hooks16.useCallback)(() => decide(false), [decide]);
+    const onYes = (0, import_hooks17.useCallback)(() => decide(true), [decide]);
+    const onNo = (0, import_hooks17.useCallback)(() => decide(false), [decide]);
     return /* @__PURE__ */ u(Dialog, { title: interruption.title, text: interruption.text, children: [
       /* @__PURE__ */ u("button", { onClick: onYes, children: "Yes" }),
       /* @__PURE__ */ u("button", { onClick: onNo, children: "No" })
     ] });
   }
 
-  // src/ui/App.tsx
-  function App({ g, onMount }) {
-    const cache = (0, import_hooks17.useContext)(SVGCacheContext);
-    const [target, setTarget] = (0, import_hooks17.useState)();
-    const [action, setAction] = (0, import_hooks17.useState)();
-    const [actionMenu, setActionMenu] = (0, import_hooks17.useState)({
+  // src/ui/components/CombatUI.tsx
+  function CombatUI({ g, template }) {
+    const cache = (0, import_hooks18.useContext)(SVGCacheContext);
+    const [target, setTarget] = (0, import_hooks18.useState)();
+    const [action, setAction] = (0, import_hooks18.useState)();
+    const [actionMenu, setActionMenu] = (0, import_hooks18.useState)({
       show: false,
       x: NaN,
       y: NaN,
       items: []
     });
-    const hideActionMenu = (0, import_hooks17.useCallback)(
+    const hideActionMenu = (0, import_hooks18.useCallback)(
       () => setActionMenu({ show: false, x: NaN, y: NaN, items: [] }),
       []
     );
-    const refreshUnits = (0, import_hooks17.useCallback)(() => {
+    const refreshUnits = (0, import_hooks18.useCallback)(() => {
       allCombatants.value = Array.from(g.combatants, getUnitData);
     }, [g]);
-    const refreshAreas = (0, import_hooks17.useCallback)(() => {
+    const refreshAreas = (0, import_hooks18.useCallback)(() => {
       allEffects.value = Array.from(g.effects);
     }, [g]);
-    const onFinishBoundedMove = (0, import_hooks17.useCallback)(() => {
+    const onFinishBoundedMove = (0, import_hooks18.useCallback)(() => {
       if (moveBounds.value) {
         moveBounds.value.detail.resolve();
         moveBounds.value = void 0;
@@ -19283,7 +19358,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       }
     }, [g]);
-    const processMove = (0, import_hooks17.useCallback)(
+    const processMove = (0, import_hooks18.useCallback)(
       (mover) => {
         void mover.then((result) => {
           if (result.type === "error")
@@ -19295,74 +19370,78 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [onFinishBoundedMove]
     );
-    (0, import_hooks17.useEffect)(() => {
-      const subscriptions = [
-        g.events.on("CombatantPlaced", refreshUnits),
-        g.events.on("CombatantMoved", refreshUnits),
-        g.events.on("CombatantDied", refreshUnits),
-        g.events.on("EffectAdded", refreshUnits),
-        g.events.on("EffectRemoved", refreshUnits),
-        g.events.on("AreaPlaced", refreshAreas),
-        g.events.on("AreaRemoved", refreshAreas),
-        g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
-          interrupt.add(
-            new UIResponse(who, async () => {
+    (0, import_hooks18.useEffect)(() => {
+      (0, import_signals2.batch)(() => {
+        showSideHP.value = [0];
+        showSideUnderlay.value = false;
+      });
+      g.events.on("CombatantPlaced", refreshUnits);
+      g.events.on("CombatantMoved", refreshUnits);
+      g.events.on("CombatantDied", refreshUnits);
+      g.events.on("EffectAdded", refreshUnits);
+      g.events.on("EffectRemoved", refreshUnits);
+      g.events.on("AreaPlaced", refreshAreas);
+      g.events.on("AreaRemoved", refreshAreas);
+      g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+        interrupt.add(
+          new UIResponse(who, async () => {
+            (0, import_signals2.batch)(() => {
               activeCombatantId.value = who.id;
               moveHandler.value = getDefaultMovement(who);
               movingCombatantId.value = who.id;
               hideActionMenu();
               refreshUnits();
               allActions.value = g.getActions(who);
-            })
-          );
-        }),
-        g.events.on("ListChoice", (e2) => chooseFromList.value = e2),
-        g.events.on("MultiListChoice", (e2) => chooseManyFromList.value = e2),
-        g.events.on("YesNoChoice", (e2) => chooseYesNo.value = e2),
-        g.events.on("BoundedMove", (e2) => {
-          const { who, handler } = e2.detail;
-          (0, import_signals2.batch)(() => {
-            moveBounds.value = e2;
-            moveHandler.value = handler;
-            movingCombatantId.value = who.id;
-            if (handler.teleportation) {
-              const shape = {
-                type: "within",
-                who,
-                radius: handler.maximum
-              };
-              teleportInfo.value = shape;
-              const area = resolveArea(shape);
-              wantsPoint.value = (p) => {
-                if (p && area.has(p)) {
-                  processMove(g.move(who, p, handler));
-                  (0, import_signals2.batch)(() => {
-                    wantsPoint.value = void 0;
-                    teleportInfo.value = void 0;
-                  });
-                }
-              };
-            }
-          });
-        })
-      ];
-      onMount == null ? void 0 : onMount(g);
-      for (const iconUrl of getAllIcons(g))
-        cache.get(iconUrl);
-      return () => {
-        for (const cleanup of subscriptions)
-          cleanup();
-      };
+            });
+          })
+        );
+      });
+      g.events.on("ListChoice", (e2) => chooseFromList.value = e2);
+      g.events.on("MultiListChoice", (e2) => chooseManyFromList.value = e2);
+      g.events.on("YesNoChoice", (e2) => chooseYesNo.value = e2);
+      g.events.on("BoundedMove", (e2) => {
+        const { who, handler } = e2.detail;
+        (0, import_signals2.batch)(() => {
+          moveBounds.value = e2;
+          moveHandler.value = handler;
+          movingCombatantId.value = who.id;
+          if (handler.teleportation) {
+            const shape = {
+              type: "within",
+              who,
+              radius: handler.maximum
+            };
+            teleportInfo.value = shape;
+            const area = resolveArea(shape);
+            wantsPoint.value = (p) => {
+              if (p && area.has(p)) {
+                processMove(g.move(who, p, handler));
+                (0, import_signals2.batch)(() => {
+                  wantsPoint.value = void 0;
+                  teleportInfo.value = void 0;
+                });
+              }
+            };
+          }
+        });
+      });
+      if (template)
+        void initialiseFromTemplate(g, template).then((arg) => {
+          for (const iconUrl of getAllIcons(g))
+            cache.get(iconUrl);
+          return arg;
+        });
+      return g.reset.bind(g);
     }, [
       cache,
       g,
       hideActionMenu,
-      onMount,
       processMove,
       refreshAreas,
-      refreshUnits
+      refreshUnits,
+      template
     ]);
-    const onExecuteAction = (0, import_hooks17.useCallback)(
+    const onExecuteAction = (0, import_hooks18.useCallback)(
       (action2, config) => {
         setAction(void 0);
         actionAreas.value = void 0;
@@ -19375,7 +19454,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [g, refreshUnits]
     );
-    const onClickAction = (0, import_hooks17.useCallback)(
+    const onClickAction = (0, import_hooks18.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(void 0);
@@ -19388,7 +19467,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [g, hideActionMenu, onExecuteAction, target]
     );
-    const onClickBattlefield = (0, import_hooks17.useCallback)(
+    const onClickBattlefield = (0, import_hooks18.useCallback)(
       (p) => {
         const givePoint = wantsPoint.peek();
         if (givePoint) {
@@ -19400,7 +19479,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [hideActionMenu]
     );
-    const onClickCombatant = (0, import_hooks17.useCallback)(
+    const onClickCombatant = (0, import_hooks18.useCallback)(
       (who, e2) => {
         e2.stopPropagation();
         const giveCombatant = wantsCombatant.peek();
@@ -19436,7 +19515,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [g]
     );
-    const onMoveCombatant = (0, import_hooks17.useCallback)(
+    const onMoveCombatant = (0, import_hooks18.useCallback)(
       (who, dir) => {
         if (moveHandler.value) {
           hideActionMenu();
@@ -19445,23 +19524,23 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [g, hideActionMenu, processMove]
     );
-    const onPass = (0, import_hooks17.useCallback)(() => {
+    const onPass = (0, import_hooks18.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
       void g.nextTurn();
     }, [g]);
-    const onCancelAction = (0, import_hooks17.useCallback)(() => {
+    const onCancelAction = (0, import_hooks18.useCallback)(() => {
       setAction(void 0);
       actionAreas.value = void 0;
     }, []);
-    const onChooseAction = (0, import_hooks17.useCallback)(
+    const onChooseAction = (0, import_hooks18.useCallback)(
       (action2) => {
         hideActionMenu();
         setAction(action2);
       },
       [hideActionMenu]
     );
-    return /* @__PURE__ */ u("div", { className: App_module_default.main, children: [
+    return /* @__PURE__ */ u("div", { className: CombatUI_module_default.main, children: [
       /* @__PURE__ */ u(
         Battlefield,
         {
@@ -19471,7 +19550,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         }
       ),
       actionMenu.show && /* @__PURE__ */ u(Menu, { caption: "Quick Actions", ...actionMenu, onClick: onClickAction }),
-      /* @__PURE__ */ u("div", { className: App_module_default.sidePanel, children: moveBounds.value ? /* @__PURE__ */ u(
+      /* @__PURE__ */ u("div", { className: CombatUI_module_default.sidePanel, children: moveBounds.value ? /* @__PURE__ */ u(
         BoundedMovePanel,
         {
           bounds: moveBounds.value.detail,
@@ -19503,19 +19582,49 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
+  // src/ui/components/EditUI.tsx
+  var import_hooks19 = __toESM(require_hooks());
+  function EditUI({ g, template }) {
+    (0, import_hooks19.useEffect)(() => {
+      void initialiseFromTemplate(g, template).then((arg) => {
+        resetAllState();
+        allCombatants.value = Array.from(g.combatants, getUnitData);
+        showSideHP.value = enumerate(0, 9);
+        showSideUnderlay.value = true;
+        return arg;
+      });
+      return g.reset.bind(g);
+    }, [g, template]);
+    return /* @__PURE__ */ u(import_preact3.Fragment, { children: /* @__PURE__ */ u(Battlefield, { showHoveredTile: true }) });
+  }
+
+  // src/ui/components/App.tsx
+  function App() {
+    const g = (0, import_hooks20.useMemo)(() => {
+      const engine = new Engine();
+      window.g = engine;
+      return engine;
+    }, []);
+    const [editing, , , toggleMode] = useBool(true);
+    const [template, setTemplate] = (0, import_hooks20.useState)(daviesVsFiends);
+    return /* @__PURE__ */ u("main", { className: App_module_default.container, children: [
+      editing ? /* @__PURE__ */ u(EditUI, { g, template, onUpdate: setTemplate }) : /* @__PURE__ */ u(CombatUI, { g, template }),
+      /* @__PURE__ */ u(
+        "button",
+        {
+          onClick: toggleMode,
+          className: App_module_default.modeSwitch,
+          disabled: template.combatants.length < 1,
+          children: editing ? "Play" : "Edit"
+        }
+      )
+    ] });
+  }
+
   // src/index.tsx
-  var template = daviesVsFiends;
   var svgCache = new FetchCache();
-  var gInstance = new Engine();
-  window.g = gInstance;
   (0, import_preact4.render)(
-    /* @__PURE__ */ u(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ u(
-      App,
-      {
-        g: gInstance,
-        onMount: () => initialiseFromTemplate(gInstance, template)
-      }
-    ) }),
+    /* @__PURE__ */ u(SVGCacheContext.Provider, { value: svgCache, children: /* @__PURE__ */ u(App, {}) }),
     document.body
   );
 })();

@@ -1,13 +1,13 @@
 import { useMemo } from "preact/hooks";
 import { JSXInternal } from "preact/src/jsx";
 
-import { MapSquareSize } from "../MapSquare";
-import { AreaTag, SpecifiedEffectShape } from "../types/EffectArea";
-import Point from "../types/Point";
-import { resolveArea } from "../utils/areas";
+import { MapSquareSize } from "../../MapSquare";
+import { AreaTag, SpecifiedEffectShape } from "../../types/EffectArea";
+import Point from "../../types/Point";
+import { resolveArea } from "../../utils/areas";
+import classnames from "../utils/classnames";
+import { scale } from "../utils/state";
 import styles from "./BattlefieldEffect.module.scss";
-import classnames from "./utils/classnames";
-import { scale } from "./utils/state";
 
 function getAuraColour(tags: Set<AreaTag>) {
   if (tags.has("heavily obscured")) return "silver";
@@ -21,7 +21,11 @@ interface AffectedSquareProps {
   tint: string;
   top?: boolean;
 }
-function AffectedSquare({ point, tint, top = false }: AffectedSquareProps) {
+export function AffectedSquare({
+  point,
+  tint,
+  top = false,
+}: AffectedSquareProps) {
   const style = useMemo<JSXInternal.CSSProperties>(
     () => ({
       left: point.x * scale.value,

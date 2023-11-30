@@ -1,15 +1,12 @@
 import { useCallback, useState } from "preact/hooks";
 
-import { MapSquareSize } from "../MapSquare";
-import Combatant from "../types/Combatant";
-import MoveDirection from "../types/MoveDirection";
-import Point from "../types/Point";
-import { round } from "../utils/numbers";
-import styles from "./Battlefield.module.scss";
-import BattlefieldEffect from "./BattlefieldEffect";
-import usePanning from "./hooks/usePanning";
-import Unit from "./Unit";
-import classnames from "./utils/classnames";
+import { MapSquareSize } from "../../MapSquare";
+import Combatant from "../../types/Combatant";
+import MoveDirection from "../../types/MoveDirection";
+import Point from "../../types/Point";
+import { round } from "../../utils/numbers";
+import usePanning from "../hooks/usePanning";
+import classnames from "../utils/classnames";
 import {
   actionAreas,
   allCombatants,
@@ -17,34 +14,51 @@ import {
   movingCombatantId,
   scale,
   teleportInfo,
-} from "./utils/state";
+} from "../utils/state";
+import styles from "./Battlefield.module.scss";
+import BattlefieldEffect, { AffectedSquare } from "./BattlefieldEffect";
+import Unit from "./Unit";
 
 interface Props {
-  onClickBattlefield(pos: Point, e: MouseEvent): void;
-  onClickCombatant(who: Combatant, e: MouseEvent): void;
-  onMoveCombatant(who: Combatant, dir: MoveDirection): void;
+  onClickBattlefield?: (pos: Point, e: MouseEvent) => void;
+  onClickCombatant?: (who: Combatant, e: MouseEvent) => void;
+  onMoveCombatant?: (who: Combatant, dir: MoveDirection) => void;
+  showHoveredTile?: boolean;
 }
 
 export default function Battlefield({
   onClickBattlefield,
   onClickCombatant,
   onMoveCombatant,
+  showHoveredTile,
 }: Props) {
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+  const [hover, setHover] = useState<Point>();
+
+  const convertCoordinate = useCallback(
+    (e: MouseEvent) => {
+      const x = round(
+        Math.floor((e.pageX - offset.x) / scale.value),
+        MapSquareSize,
+      );
+      const y = round(
+        Math.floor((e.pageY - offset.y) / scale.value),
+        MapSquareSize,
+      );
+      return { x, y };
+    },
+    [offset.x, offset.y],
+  );
 
   const { isPanning, onMouseDown, onMouseEnter, onMouseMove, onMouseUp } =
-    usePanning((dx, dy) =>
-      setOffset((old) => ({ x: old.x + dx, y: old.y + dy })),
+    usePanning(
+      (dx, dy) => setOffset((old) => ({ x: old.x + dx, y: old.y + dy })),
+      (e) => setHover(convertCoordinate(e)),
     );
-
-  const convertCoordinate = useCallback((e: MouseEvent) => {
-    const x = round(Math.floor(e.pageX / scale.value), MapSquareSize);
-    const y = round(Math.floor(e.pageY / scale.value), MapSquareSize);
-    return { x, y };
-  }, []);
+  const onMouseOut = () => setHover(undefined);
 
   const onClick = useCallback(
-    (e: MouseEvent) => onClickBattlefield(convertCoordinate(e), e),
+    (e: MouseEvent) => onClickBattlefield?.(convertCoordinate(e), e),
     [convertCoordinate, onClickBattlefield],
   );
 
@@ -58,6 +72,7 @@ export default function Battlefield({
       onMouseEnter={onMouseEnter}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
+      onMouseLeave={onMouseOut}
       onContextMenu={(e) => {
         e.preventDefault();
         return false;
@@ -86,6 +101,9 @@ export default function Battlefield({
             top={true}
             name="Teleport"
           />
+        )}
+        {showHoveredTile && hover && (
+          <AffectedSquare point={hover} tint="silver" />
         )}
       </div>
     </main>

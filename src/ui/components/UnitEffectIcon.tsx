@@ -1,7 +1,7 @@
 import unknownIconUrl from "@img/ui/missing-icon.svg";
 
+import { UnitEffect } from "../utils/types";
 import SVGIcon from "./SVGIcon";
-import { UnitEffect } from "./utils/types";
 
 interface Props {
   effect: UnitEffect;

@@ -1,4 +1,4 @@
-import { BoundedMoveDetail } from "../events/BoundedMoveEvent";
+import { BoundedMoveDetail } from "../../events/BoundedMoveEvent";
 import commonStyles from "./common.module.scss";
 import Labelled from "./Labelled";
 

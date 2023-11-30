@@ -1,0 +1,14 @@
+:root {
+  --scale: 100px;
+}
+
+.container {
+}
+
+.modeSwitch {
+  z-index: 100;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  background: white;
+}

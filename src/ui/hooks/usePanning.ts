@@ -1,6 +1,9 @@
 import { useCallback, useState } from "preact/hooks";
 
-export default function usePanning(onPan: (dx: number, dy: number) => void) {
+export default function usePanning(
+  onPan: (dx: number, dy: number) => void,
+  onHover?: (e: MouseEvent) => void,
+) {
   const [isPanning, setIsPanning] = useState(false);
   const [panStartCoords, setPanStartCoords] = useState({ x: 0, y: 0 });
 
@@ -23,9 +26,9 @@ export default function usePanning(onPan: (dx: number, dy: number) => void) {
         const deltaY = e.clientY - panStartCoords.y;
         onPan(-deltaX, -deltaY);
         setPanStartCoords({ x: e.clientX, y: e.clientY });
-      }
+      } else onHover?.(e);
     },
-    [isPanning, onPan, panStartCoords.x, panStartCoords.y],
+    [isPanning, onHover, onPan, panStartCoords.x, panStartCoords.y],
   );
 
   const onMouseUp = useCallback(() => {

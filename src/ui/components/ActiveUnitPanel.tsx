@@ -1,10 +1,10 @@
-import Action from "../types/Action";
-import ActionTime from "../types/ActionTime";
+import Action from "../../types/Action";
+import ActionTime from "../../types/ActionTime";
+import { allActions } from "../utils/state";
+import { UnitData } from "../utils/types";
 import commonStyles from "./common.module.scss";
 import IconButton from "./IconButton";
 import Labelled from "./Labelled";
-import { allActions } from "./utils/state";
-import { UnitData } from "./utils/types";
 
 interface Props {
   onChooseAction(action: Action): void;

@@ -1,4 +1,4 @@
-import Icon from "../types/Icon";
+import Icon from "../../types/Icon";
 import styles from "./IconButton.module.scss";
 import SVGIcon from "./SVGIcon";
 
