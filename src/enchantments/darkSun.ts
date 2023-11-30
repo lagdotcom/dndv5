@@ -12,6 +12,7 @@ const darkSun: Enchantment<"weapon"> = {
     item.rarity = "Rare";
     if (item.icon) item.icon.colour = ItemRarityColours.Rare;
 
+    // [I]f used in daylight, the weapon deals an additional 1d10 radiant damage on hit. Otherwise, it deals an additional 1d10 necrotic damage on hit.
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, critical, weapon, map, interrupt } }) => {

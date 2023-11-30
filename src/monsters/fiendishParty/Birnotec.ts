@@ -90,7 +90,6 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
         ability: "dex",
         spell: EldritchBurstSpell,
         method,
-        fail: "normal",
         save: "zero",
         tags: ["magic"],
       });

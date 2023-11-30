@@ -6,7 +6,6 @@ import Icon from "./types/Icon";
 import { SetInitialiser } from "./utils/set";
 
 interface EffectConfig {
-  durationTimer?: EffectDurationTimer;
   quiet?: boolean;
   icon?: Icon;
   tags?: SetInitialiser<EffectTag>;

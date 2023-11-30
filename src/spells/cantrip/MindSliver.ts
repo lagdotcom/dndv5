@@ -70,7 +70,6 @@ const MindSliver = simpleSpell<HasTarget>({
       ability: "int",
       spell: MindSliver,
       method,
-      fail: "normal",
       save: "zero",
       tags: ["magic"],
     });

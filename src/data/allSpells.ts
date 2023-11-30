@@ -1,8 +1,12 @@
 import AcidSplash from "../spells/cantrip/AcidSplash";
+import BladeWard from "../spells/cantrip/BladeWard";
+import ChillTouch from "../spells/cantrip/ChillTouch";
 import FireBolt from "../spells/cantrip/FireBolt";
 import MagicStone from "../spells/cantrip/MagicStone";
 import MindSliver from "../spells/cantrip/MindSliver";
+import PrimalSavagery from "../spells/cantrip/PrimalSavagery";
 import RayOfFrost from "../spells/cantrip/RayOfFrost";
+import SacredFlame from "../spells/cantrip/SacredFlame";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import Thunderclap from "../spells/cantrip/Thunderclap";
 import ArmorOfAgathys from "../spells/level1/ArmorOfAgathys";
@@ -61,10 +65,14 @@ import ConeOfCold from "../spells/level5/ConeOfCold";
 
 const allSpells = {
   "acid splash": AcidSplash,
+  "blade ward": BladeWard,
+  "chill touch": ChillTouch,
   "fire bolt": FireBolt,
   "magic stone": MagicStone,
   "mind sliver": MindSliver,
+  "primal savagery": PrimalSavagery,
   "ray of frost": RayOfFrost,
+  "sacred flame": SacredFlame,
   thaumaturgy: Thaumaturgy,
   thunderclap: Thunderclap,
 

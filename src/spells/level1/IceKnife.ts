@@ -107,7 +107,6 @@ const IceKnife = scalingSpell<HasTarget>({
         spell: IceKnife,
         method,
         who: victim,
-        fail: "normal",
         save: "zero",
         tags: ["magic"],
       });

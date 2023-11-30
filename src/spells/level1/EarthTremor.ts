@@ -59,7 +59,6 @@ const EarthTremor = scalingSpell({
         spell: EarthTremor,
         method,
         who: target,
-        fail: "normal",
         save: "zero",
         tags: ["magic"],
       });

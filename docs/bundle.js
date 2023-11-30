@@ -5612,7 +5612,6 @@
           ability: "dex",
           spell: EldritchBurstSpell,
           method,
-          fail: "normal",
           save: "zero",
           tags: ["magic"]
         });
@@ -9971,7 +9970,6 @@ This increases to two additional dice at 13th level and three additional dice at
           ability: "dex",
           spell: AcidSplash,
           method,
-          fail: "normal",
           save: "zero",
           tags: ["magic"]
         });
@@ -9986,6 +9984,92 @@ This increases to two additional dice at 13th level and three additional dice at
     }
   });
   var AcidSplash_default = AcidSplash;
+
+  // src/spells/cantrip/BladeWard.ts
+  var BladeWardEffect = new Effect(
+    "Blade Ward",
+    "turnStart",
+    (g) => {
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, attack, damageType, response } }) => {
+          if (who.hasEffect(BladeWardEffect) && (attack == null ? void 0 : attack.pre.weapon) && MundaneDamageTypes.includes(damageType))
+            response.add("resist", BladeWardEffect);
+        }
+      );
+    },
+    { tags: ["magic"] }
+  );
+  var BladeWard = simpleSpell({
+    status: "implemented",
+    name: "Blade Ward",
+    level: 0,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    lists: ["Bard", "Sorcerer", "Warlock", "Wizard"],
+    description: `You extend your hand and trace a sigil of warding in the air. Until the end of your next turn, you have resistance against bludgeoning, piercing, and slashing damage dealt by weapon attacks.`,
+    getConfig: () => ({}),
+    getAffected: (g, caster) => [caster],
+    getTargets: () => [],
+    async apply(g, caster) {
+      await caster.addEffect(BladeWardEffect, { duration: 1 });
+    }
+  });
+  var BladeWard_default = BladeWard;
+
+  // src/spells/cantrip/ChillTouch.ts
+  var ChillTouchEffect = new Effect(
+    "Chill Touch",
+    "turnStart",
+    (g) => {
+      g.events.on("GatherHeal", ({ detail: { target, multiplier } }) => {
+        if (target.hasEffect(ChillTouchEffect))
+          multiplier.add("zero", ChillTouchEffect);
+      });
+      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+        const config = who.getEffectConfig(ChillTouchEffect);
+        if (who.type === "undead" && config && target === config.caster)
+          diceType.add("disadvantage", ChillTouchEffect);
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var ChillTouch = simpleSpell({
+    status: "implemented",
+    name: "Chill Touch",
+    level: 0,
+    school: "Necromancy",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `You create a ghostly, skeletal hand in the space of a creature within range. Make a ranged spell attack against the creature to assail it with the chill of the grave. On a hit, the target takes 1d8 necrotic damage, and it can't regain hit points until the start of your next turn. Until then, the hand clings to the target.
+
+  If you hit an undead target, it also has disadvantage on attack rolls against you until the end of your next turn.
+  
+  This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    isHarmful: true,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(120, target))
+    })),
+    getConfig: (g) => ({ target: new TargetResolver(g, 120, []) }),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, caster, method, { target }) {
+      const rsa = new SpellAttack(g, caster, ChillTouch, method, "ranged", {
+        target
+      });
+      const { hit, attack } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(attack.pre.target);
+        await rsa.damage(attack.pre.target, damage);
+        await target.addEffect(ChillTouchEffect, { duration: 2, caster }, caster);
+      }
+    }
+  });
+  var ChillTouch_default = ChillTouch;
 
   // src/img/spl/fire-bolt.svg
   var fire_bolt_default = "./fire-bolt-OQ6JULT4.svg";
@@ -10187,7 +10271,6 @@ This increases to two additional dice at 13th level and three additional dice at
         ability: "int",
         spell: MindSliver,
         method,
-        fail: "normal",
         save: "zero",
         tags: ["magic"]
       });
@@ -10218,6 +10301,39 @@ This increases to two additional dice at 13th level and three additional dice at
     }
   });
   var MindSliver_default = MindSliver;
+
+  // src/spells/cantrip/PrimalSavagery.ts
+  var PrimalSavagery = simpleSpell({
+    status: "implemented",
+    name: "Primal Savagery",
+    level: 0,
+    school: "Transmutation",
+    s: true,
+    lists: ["Druid"],
+    isHarmful: true,
+    description: `You channel primal magic to cause your teeth or fingernails to sharpen, ready to deliver a corrosive attack. Make a melee spell attack against one creature within 5 feet of you. On a hit, the target takes 1d10 acid damage. After you make the attack, your teeth or fingernails return to normal.
+
+  The spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(5, target))
+    })),
+    getConfig: (g) => ({ target: new TargetResolver(g, 5, [notSelf]) }),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "acid")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, attacker, method, { target }) {
+      const rsa = new SpellAttack(g, attacker, PrimalSavagery, method, "melee", {
+        target
+      });
+      const { hit, attack } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(attack.pre.target);
+        await rsa.damage(attack.pre.target, damage);
+      }
+    }
+  });
+  var PrimalSavagery_default = PrimalSavagery;
 
   // src/img/spl/ray-of-frost.svg
   var ray_of_frost_default = "./ray-of-frost-5EAHUBPB.svg";
@@ -10272,6 +10388,59 @@ This increases to two additional dice at 13th level and three additional dice at
     }
   });
   var RayOfFrost_default = RayOfFrost;
+
+  // src/spells/cantrip/SacredFlame.ts
+  var SacredFlame = simpleSpell({
+    status: "incomplete",
+    name: "Sacred Flame",
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Cleric"],
+    isHarmful: true,
+    description: `Flame-like radiance descends on a creature that you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw.
+
+  The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, attacker, method, { target }) {
+      const damage = await g.rollDamage(getCantripDice(attacker), {
+        size: 8,
+        attacker,
+        damageType: "radiant",
+        spell: SacredFlame,
+        method,
+        source: SacredFlame,
+        target
+      });
+      const { damageResponse } = await g.save({
+        source: SacredFlame,
+        type: method.getSaveType(attacker, SacredFlame),
+        attacker,
+        who: target,
+        ability: "dex",
+        spell: SacredFlame,
+        method,
+        save: "zero",
+        tags: ["magic"]
+      });
+      await g.damage(
+        SacredFlame,
+        "radiant",
+        { attacker, target, spell: SacredFlame, method },
+        [["radiant", damage]],
+        damageResponse
+      );
+    }
+  });
+  var SacredFlame_default = SacredFlame;
 
   // src/spells/cantrip/Thaumaturgy.ts
   var Thaumaturgy = simpleSpell({
@@ -10573,7 +10742,6 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
           spell: EarthTremor,
           method,
           who: target,
-          fail: "normal",
           save: "zero",
           tags: ["magic"]
         });
@@ -10896,7 +11064,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
           spell: IceKnife,
           method,
           who: victim,
-          fail: "normal",
           save: "zero",
           tags: ["magic"]
         });
@@ -13472,10 +13639,14 @@ At the end of each of its turns, and each time it takes damage, the target can m
   // src/data/allSpells.ts
   var allSpells = {
     "acid splash": AcidSplash_default,
+    "blade ward": BladeWard_default,
+    "chill touch": ChillTouch_default,
     "fire bolt": FireBolt_default,
     "magic stone": MagicStone_default,
     "mind sliver": MindSliver_default,
+    "primal savagery": PrimalSavagery_default,
     "ray of frost": RayOfFrost_default,
+    "sacred flame": SacredFlame_default,
     thaumaturgy: Thaumaturgy_default,
     thunderclap: Thunderclap_default,
     "armor of agathys": ArmorOfAgathys_default,
