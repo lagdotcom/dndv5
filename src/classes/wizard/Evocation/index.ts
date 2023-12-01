@@ -28,7 +28,7 @@ const SculptSpells = new SimpleFeature(
               Array.from(affected, (value) => ({
                 value,
                 label: value.name,
-              })),
+              })).filter((choice) => g.canSee(me, choice.value)),
               0,
               level + 1,
               async (chosen) => {

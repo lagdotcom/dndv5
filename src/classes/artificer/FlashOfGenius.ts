@@ -4,6 +4,7 @@ import InterruptionCollector from "../../collectors/InterruptionCollector";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { canSee } from "../../filters";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { LongRestResource } from "../../resources";
@@ -25,7 +26,7 @@ class FlashOfGeniusAction extends AbstractAction<HasTarget> {
       actor,
       "Flash of Genius",
       "implemented",
-      { target: new TargetResolver(g, 30, []) },
+      { target: new TargetResolver(g, 30, [canSee]) },
       {
         time: "reaction",
         resources: [[FlashOfGeniusResource, 1]],

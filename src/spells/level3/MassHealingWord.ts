@@ -1,4 +1,5 @@
 import { HasTargets } from "../../configs";
+import { canSee } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { poWithin } from "../../utils/ai";
@@ -31,7 +32,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
   },
 
   getConfig: (g) => ({
-    targets: new MultiTargetResolver(g, 1, 6, 60, []),
+    targets: new MultiTargetResolver(g, 1, 6, 60, [canSee]),
   }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot ?? 3) - 2, size: 4 } },

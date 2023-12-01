@@ -1,5 +1,5 @@
 import { HasTarget } from "../../configs";
-import { notSelf } from "../../filters";
+import { canSee, notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
@@ -25,7 +25,7 @@ const SacredFlame = simpleSpell<HasTarget>({
       positioning: poSet(poWithin(60, target)),
     })),
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf, canSee]) }),
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],

@@ -4,6 +4,7 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
 import { EngineSaveConfig } from "../../Engine";
+import { canSee } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -96,7 +97,7 @@ const HideousLaughter = simpleSpell<HasTarget>({
 At the end of each of its turns, and each time it takes damage, the target can make another Wisdom saving throw. The target has advantage on the saving throw if it's triggered by damage. On a success, the spell ends.`,
   isHarmful: true,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+  getConfig: (g) => ({ target: new TargetResolver(g, 30, [canSee]) }),
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 

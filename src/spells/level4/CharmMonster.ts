@@ -3,7 +3,7 @@ import iconUrl from "@img/spl/charm-monster.svg";
 import { makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import { Charmed, CharmedConfig } from "../../effects";
-import { withinRangeOfEachOther } from "../../filters";
+import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { coSet } from "../../types/ConditionName";
 import { hours } from "../../utils/time";
@@ -29,7 +29,7 @@ const CharmMonster = scalingSpell<HasTargets>({
       1,
       (slot ?? 4) - 3,
       30,
-      [],
+      [canSee],
       [withinRangeOfEachOther(30)],
     ),
   }),

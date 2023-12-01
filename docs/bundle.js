@@ -6630,7 +6630,7 @@
       }));
     },
     getConfig: (g) => ({
-      targets: new MultiTargetResolver(g, 1, 6, 60, [])
+      targets: new MultiTargetResolver(g, 1, 6, 60, [canSee])
     }),
     getHeal: (g, caster, method, { slot }) => [
       { type: "dice", amount: { count: (slot != null ? slot : 3) - 2, size: 4 } },
@@ -9232,7 +9232,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
         actor,
         "Flash of Genius",
         "implemented",
-        { target: new TargetResolver(g, 30, []) },
+        { target: new TargetResolver(g, 30, [canSee]) },
         {
           time: "reaction",
           resources: [[FlashOfGeniusResource, 1]],
@@ -10416,7 +10416,7 @@ This increases to two additional dice at 13th level and three additional dice at
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf, canSee]) }),
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
@@ -10951,7 +10951,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
 
 At the end of each of its turns, and each time it takes damage, the target can make another Wisdom saving throw. The target has advantage on the saving throw if it's triggered by damage. On a success, the spell ends.`,
     isHarmful: true,
-    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+    getConfig: (g) => ({ target: new TargetResolver(g, 30, [canSee]) }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
     async apply(g, caster, method, { target }) {
@@ -13282,7 +13282,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
         1,
         (slot != null ? slot : 4) - 3,
         30,
-        [],
+        [canSee],
         [withinRangeOfEachOther(30)]
       )
     }),
@@ -17698,7 +17698,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
                 Array.from(affected, (value) => ({
                   value,
                   label: value.name
-                })),
+                })).filter((choice) => g.canSee(me, choice.value)),
                 0,
                 level + 1,
                 async (chosen) => {
