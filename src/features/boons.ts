@@ -36,7 +36,7 @@ class HissFleeAction extends AbstractAction {
       actor,
       new BoundedMove(this, round(actor.speed / 2, MapSquareSize), {
         mustUseAll: true,
-        provokesOpportunityAttacks: false,
+        forced: true,
         check: ({ detail: { from, to, error } }) => {
           const { oldDistance, newDistance } = compareDistances(
             other,
@@ -66,7 +66,7 @@ class HissAction extends AbstractAction<HasTarget> {
         icon: makeIcon(hissIconUrl),
         time: "bonus action",
         resources: [[HissResource, 1]],
-        isHarmful: true,
+        tags: ["harmful"],
       },
     );
   }

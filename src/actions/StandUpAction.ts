@@ -24,6 +24,7 @@ export default class StandUpAction extends AbstractAction {
       {
         icon: StandUpIcon,
         description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`,
+        tags: ["escape move prevention"], // makes sense to me
       },
     );
   }

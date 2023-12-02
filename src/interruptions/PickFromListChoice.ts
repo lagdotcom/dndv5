@@ -20,6 +20,7 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     public chosen: (choice: T) => Promise<void>,
     public allowNone = false,
     public priority: number = 10,
+    public isStillValid?: () => boolean,
   ) {}
 
   async apply(g: Engine) {

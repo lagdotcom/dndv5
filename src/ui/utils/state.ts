@@ -5,6 +5,7 @@ import YesNoChoiceEvent from "../../events/YesNoChoiceEvent";
 import Action from "../../types/Action";
 import Combatant from "../../types/Combatant";
 import EffectArea, { SpecifiedEffectShape } from "../../types/EffectArea";
+import MoveDirection from "../../types/MoveDirection";
 import MoveHandler from "../../types/MoveHandler";
 import Point from "../../types/Point";
 import { CompleteEvaluation } from "../../utils/ai";
@@ -32,6 +33,8 @@ export const allCombatants = signal<UnitData[]>([]);
 export const allEffects = signal<EffectArea[]>([]);
 
 export const canDragUnits = signal<boolean>(false);
+
+export const canMoveDirections = signal<MoveDirection[]>([]);
 
 export const chooseFromList = signal<ListChoiceEvent | undefined>(undefined);
 
@@ -73,6 +76,7 @@ export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
   allCombatants,
   allEffects,
   canDragUnits,
+  canMoveDirections,
   chooseFromList,
   chooseManyFromList,
   chooseYesNo,

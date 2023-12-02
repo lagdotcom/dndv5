@@ -39,7 +39,7 @@ class FrenzyAttack extends AbstractAction<HasTarget> {
         subIcon: FrenzyIcon,
         damage: [weapon.damage],
         time: "bonus action",
-        isHarmful: true,
+        tags: ["attack", "harmful"],
       },
     );
 

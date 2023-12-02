@@ -38,6 +38,7 @@ class BreakFreeFromWebAction extends AbstractAction {
         icon: WebIcon,
         time: "action",
         description: `Make a Strength check to break free of the webs.`,
+        tags: ["escape move prevention"],
       },
     );
   }

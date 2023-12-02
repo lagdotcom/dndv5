@@ -7,4 +7,6 @@ export default interface Interruption {
   source: Source;
   apply(g: Engine): Promise<unknown>;
   priority: number;
+
+  isStillValid?: () => boolean;
 }

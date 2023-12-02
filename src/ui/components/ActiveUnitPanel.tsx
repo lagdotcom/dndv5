@@ -34,7 +34,7 @@ function splitActions(actionList: Action[]) {
 
   for (const action of actionList) {
     const time = action.getTime({});
-    const label = action.isAttack
+    const label = action.tags.has("costs attack")
       ? "Attacks"
       : time
         ? niceTime[time]

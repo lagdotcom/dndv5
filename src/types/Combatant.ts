@@ -52,6 +52,7 @@ export default interface Combatant extends Source {
 
   diesAtZero: boolean;
   level: number;
+  cr: number;
   hp: number;
   baseHpMax: number;
   hpMax: number;

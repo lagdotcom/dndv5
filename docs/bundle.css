@@ -95,21 +95,24 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/Unit.module.scss */
-._main_120hg_1 {
+._main_15bsq_1 {
   position: absolute;
   cursor: pointer;
   border-radius: 1000px;
   z-index: 20;
 }
-._main_120hg_1:hover {
+._main_15bsq_1:hover {
   box-shadow: silver 0px 0px 4px 4px;
 }
-._token_120hg_11 {
+._moving_15bsq_11 {
+  z-index: 21;
+}
+._token_15bsq_15 {
   position: absolute;
   left: 0;
   top: 0;
 }
-._icons_120hg_17 {
+._icons_15bsq_21 {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -170,50 +173,54 @@
 :root {
   --movebtn-size: 30px;
 }
-._main_etih8_5 {
+._main_1gd19_5 {
   position: absolute;
   padding: 0;
   cursor: pointer;
   background: #ccc;
-  z-index: 21;
+  z-index: 22;
   opacity: 0.75;
 }
-._main_etih8_5:hover:enabled {
+._main_1gd19_5:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+._main_1gd19_5:hover {
   background: #eee;
 }
-._moveE_etih8_17 {
+._moveE_1gd19_21 {
   right: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveSE_etih8_23 {
+._moveSE_1gd19_27 {
   right: 0;
   bottom: 0;
 }
-._moveS_etih8_23 {
+._moveS_1gd19_27 {
   bottom: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveSW_etih8_34 {
+._moveSW_1gd19_38 {
   left: 0;
   bottom: 0;
 }
-._moveW_etih8_39 {
+._moveW_1gd19_43 {
   left: 0;
   top: 50%;
   margin-top: calc(var(--movebtn-size) / -2);
 }
-._moveNW_etih8_45 {
+._moveNW_1gd19_49 {
   left: 0;
   top: 0;
 }
-._moveN_etih8_45 {
+._moveN_1gd19_49 {
   top: 0;
   left: 50%;
   margin-left: calc(var(--movebtn-size) / -2);
 }
-._moveNE_etih8_56 {
+._moveNE_1gd19_60 {
   right: 0;
   top: 0;
 }

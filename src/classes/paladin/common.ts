@@ -1,7 +1,6 @@
 import iconUrl from "@img/class/paladin.svg";
 
 import { ClassColours, makeIcon } from "../../colours";
-import { ShortRestResource } from "../../resources";
 import NormalSpellcasting from "../../spells/NormalSpellcasting";
 
 export const PaladinIcon = makeIcon(iconUrl, ClassColours.Paladin);
@@ -14,11 +13,6 @@ export const PaladinSpellcasting = new NormalSpellcasting(
   "Paladin",
   "Paladin",
   PaladinIcon,
-);
-
-export const ChannelDivinityResource = new ShortRestResource(
-  "Channel Divinity",
-  1,
 );
 
 export function getPaladinAuraRadius(level: number) {

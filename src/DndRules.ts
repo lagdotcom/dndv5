@@ -92,7 +92,7 @@ export const ArmorProficiencyRule = new DndRule("Armor Proficiency", (g) => {
       diceType.add("disadvantage", ArmorProficiencyRule);
   });
   g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (action.isSpell && lacksArmorProficiency(action.actor))
+    if (action.tags.has("spell") && lacksArmorProficiency(action.actor))
       error.add("not proficient", ArmorProficiencyRule);
   });
 });
@@ -217,7 +217,9 @@ export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
   g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
     if (who.exhaustion >= 6)
       interrupt.add(
-        new EvaluateLater(who, ExhaustionRule, async () => g.kill(who)),
+        new EvaluateLater(who, ExhaustionRule, async () => {
+          await g.kill(who);
+        }),
       );
   });
 });
@@ -285,7 +287,7 @@ export const IncapacitatedRule = new DndRule("Incapacitated", (g) => {
   g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
     if (
       action.actor.conditions.has("Incapacitated") &&
-      (action.isAttack || action.getTime(config))
+      (action.tags.has("costs attack") || action.getTime(config))
     )
       error.add("incapacitated", IncapacitatedRule);
   });
@@ -339,7 +341,7 @@ export const ObscuredRule = new DndRule("Obscured", (g) => {
 
 export const OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
   g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (action.isAttack && action.actor.attacksSoFar.length)
+    if (action.tags.has("costs attack") && action.actor.attacksSoFar.length)
       error.add("No attacks left", OneAttackPerTurnRule);
   });
 });
@@ -402,8 +404,19 @@ export const OpportunityAttacksRule = new DndRule(
   (g) => {
     g.events.on(
       "BeforeMove",
-      ({ detail: { handler, who, from, to, interrupt } }) => {
-        if (!handler.provokesOpportunityAttacks) return;
+      ({
+        detail: {
+          handler,
+          who,
+          from,
+          to,
+          interrupt,
+          simulation,
+          success,
+          error,
+        },
+      }) => {
+        if (!handler.provokesOpportunityAttacks || simulation) return;
 
         for (const attacker of g.combatants) {
           if (attacker.side === who.side) continue;
@@ -431,6 +444,8 @@ export const OpportunityAttacksRule = new DndRule(
                   await g.act(opportunity, { target: who });
                 },
                 true,
+                1,
+                () => success.result !== "fail" && error.result,
               ),
             );
         }
@@ -473,7 +488,7 @@ export const ParalyzedRule = new DndRule("Paralyzed", (g) => {
   });
   // ...or speak.
   g.events.on("CheckAction", ({ detail: { action, error } }) => {
-    if (action.actor.conditions.has("Paralyzed") && action.vocal)
+    if (action.actor.conditions.has("Paralyzed") && action.tags.has("vocal"))
       error.add("paralyzed", ParalyzedRule);
   });
 
@@ -571,6 +586,13 @@ export const RestrainedRule = new DndRule("Restrained", (g) => {
   g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
     if (who.conditions.has("Restrained") && ability === "dex")
       diceType.add("disadvantage", RestrainedRule);
+  });
+});
+
+export const SpeedRule = new DndRule("Speed", (g) => {
+  g.events.on("BeforeMove", ({ detail: { handler, cost, who, error } }) => {
+    if (handler.turnMovement && cost + who.movedSoFar > who.speed)
+      error.add("cannot exceed speed", SpeedRule);
   });
 });
 

@@ -11,7 +11,7 @@ import {
 } from "../../spells/NormalSpellcasting";
 import Combatant from "../../types/Combatant";
 import { enumerate, ordinal } from "../../utils/numbers";
-import { ChannelDivinityResource } from "./ChannelDivinity";
+import { ChannelDivinityResource } from "../common";
 
 const HarnessDivinePowerResource = new LongRestResource(
   "Harness Divine Power",

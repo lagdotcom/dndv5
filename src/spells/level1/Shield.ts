@@ -39,6 +39,7 @@ const ShieldEffect = new Effect(
             await after();
           },
           true,
+          1,
         ),
       );
     };

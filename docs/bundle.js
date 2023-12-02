@@ -434,12 +434,14 @@
       this.method = method;
       this.spell = spell;
       this.name = `${spell.name} (${method.name})`;
-      this.isSpell = true;
       this.time = spell.time;
       this.icon = spell.icon;
       this.subIcon = method.icon;
-      this.vocal = spell.v;
-      this.isHarmful = spell.isHarmful;
+      this.tags = /* @__PURE__ */ new Set(["spell"]);
+      if (spell.v)
+        this.tags.add("vocal");
+      if (spell.isHarmful)
+        this.tags.add("harmful");
     }
     get status() {
       return this.spell.status;
@@ -612,9 +614,9 @@
       description,
       heal,
       icon,
-      isHarmful,
       resources,
       subIcon,
+      tags,
       time
     } = {}) {
       this.g = g;
@@ -625,12 +627,12 @@
       this.area = area;
       this.damage = damage;
       this.description = description;
-      this.isHarmful = isHarmful;
       this.heal = heal;
       this.resources = new Map(resources);
       this.time = time;
       this.icon = icon;
       this.subIcon = subIcon;
+      this.tags = new Set(tags);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     generateAttackConfigs(targets) {
@@ -1746,6 +1748,7 @@
       hp = hpMax,
       level = NaN,
       pb = 2,
+      cr = NaN,
       reach = MapSquareSize,
       chaScore = 10,
       conScore = 10,
@@ -1769,6 +1772,7 @@
       this.baseHpMax = hpMax;
       this.img = img;
       this.level = level;
+      this.cr = cr;
       this.pb = pb;
       this.reach = reach;
       this.side = side;
@@ -2375,7 +2379,9 @@
         {},
         {
           icon: StandUpIcon,
-          description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`
+          description: `Standing up takes more effort; doing so costs an amount of movement equal to half your speed. For example, if your speed is 30 feet, you must spend 15 feet of movement to stand up. You can't stand up if you don't have enough movement left or if your speed is 0.`,
+          tags: ["escape move prevention"]
+          // makes sense to me
         }
       );
     }
@@ -2545,7 +2551,7 @@
         var _a;
         const charm = action.actor.getEffectConfig(Charmed);
         const targets = (_a = action.getTargets(config)) != null ? _a : [];
-        if ((charm == null ? void 0 : charm.by) && targets.includes(charm.by) && action.isHarmful)
+        if ((charm == null ? void 0 : charm.by) && targets.includes(charm.by) && action.tags.has("harmful"))
           error.add(
             "can't attack the charmer or target the charmer with harmful abilities or magical effects",
             Charmed
@@ -2567,20 +2573,21 @@
   var AbstractAttackAction = class extends AbstractAction {
     constructor(g, actor, name, status, config, options = {}) {
       super(g, actor, name, status, config, options);
-      this.isAttack = true;
-      this.isHarmful = true;
+      this.tags.add("attack");
+      this.tags.add("costs attack");
+      this.tags.add("harmful");
     }
     generateHealingConfigs() {
       return [];
     }
     getTime() {
-      if (this.actor.hasEffect(UsedAttackAction))
+      if (this.tags.has("costs attack") && this.actor.hasEffect(UsedAttackAction))
         return void 0;
       return "action";
     }
     async apply(config) {
       await super.apply(config);
-      if (this.isAttack) {
+      if (this.tags.has("costs attack")) {
         this.actor.attacksSoFar.push(this);
         await this.actor.addEffect(UsedAttackAction, { duration: 1 });
       }
@@ -2589,7 +2596,7 @@
 
   // src/actions/WeaponAttack.ts
   var WeaponAttack = class extends AbstractAttackAction {
-    constructor(g, actor, weapon, ammo, tags) {
+    constructor(g, actor, weapon, ammo, attackTags) {
       super(
         g,
         actor,
@@ -2602,7 +2609,7 @@
       );
       this.weapon = weapon;
       this.ammo = ammo;
-      this.tags = tags;
+      this.attackTags = attackTags;
       this.ability = getWeaponAbility(actor, weapon);
     }
     generateAttackConfigs(targets) {
@@ -2655,7 +2662,7 @@
         source: this,
         target,
         weapon: this.weapon,
-        tags: this.tags
+        tags: this.attackTags
       });
     }
   };
@@ -2738,7 +2745,7 @@
   var OpportunityAttack = class extends WeaponAttack {
     constructor(g, actor, weapon) {
       super(g, actor, weapon);
-      this.isAttack = false;
+      this.tags.delete("costs attack");
     }
     getTime() {
       return "reaction";
@@ -2832,8 +2839,11 @@
   var TwoWeaponAttack = class extends WeaponAttack {
     constructor(g, actor, weapon) {
       super(g, actor, weapon, void 0, ["two-weapon"]);
-      this.isAttack = false;
+      this.tags.delete("costs attack");
       this.name = `Two-Weapon ${this.name}`;
+    }
+    getTime() {
+      return "bonus action";
     }
   };
 
@@ -2846,7 +2856,7 @@
 
   // src/interruptions/PickFromListChoice.ts
   var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen, allowNone = false, priority = 10) {
+    constructor(who, source, title, text, items, chosen, allowNone = false, priority = 10, isStillValid) {
       this.who = who;
       this.source = source;
       this.title = title;
@@ -2855,6 +2865,7 @@
       this.chosen = chosen;
       this.allowNone = allowNone;
       this.priority = priority;
+      this.isStillValid = isStillValid;
     }
     async apply(g) {
       const choice = await new Promise(
@@ -2967,7 +2978,7 @@
         diceType.add("disadvantage", ArmorProficiencyRule);
     });
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.isSpell && lacksArmorProficiency(action.actor))
+      if (action.tags.has("spell") && lacksArmorProficiency(action.actor))
         error.add("not proficient", ArmorProficiencyRule);
     });
   });
@@ -3067,7 +3078,9 @@
     g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
       if (who.exhaustion >= 6)
         interrupt.add(
-          new EvaluateLater(who, ExhaustionRule, async () => g.kill(who))
+          new EvaluateLater(who, ExhaustionRule, async () => {
+            await g.kill(who);
+          })
         );
     });
   });
@@ -3115,7 +3128,7 @@
   });
   var IncapacitatedRule = new DndRule("Incapacitated", (g) => {
     g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-      if (action.actor.conditions.has("Incapacitated") && (action.isAttack || action.getTime(config)))
+      if (action.actor.conditions.has("Incapacitated") && (action.tags.has("costs attack") || action.getTime(config)))
         error.add("incapacitated", IncapacitatedRule);
     });
   });
@@ -3154,7 +3167,7 @@
   });
   var OneAttackPerTurnRule = new DndRule("Attacks per turn", (g) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.isAttack && action.actor.attacksSoFar.length)
+      if (action.tags.has("costs attack") && action.actor.attacksSoFar.length)
         error.add("No attacks left", OneAttackPerTurnRule);
     });
   });
@@ -3194,8 +3207,19 @@
     (g) => {
       g.events.on(
         "BeforeMove",
-        ({ detail: { handler, who, from, to, interrupt } }) => {
-          if (!handler.provokesOpportunityAttacks)
+        ({
+          detail: {
+            handler,
+            who,
+            from,
+            to,
+            interrupt,
+            simulation,
+            success,
+            error
+          }
+        }) => {
+          if (!handler.provokesOpportunityAttacks || simulation)
             return;
           for (const attacker of g.combatants) {
             if (attacker.side === who.side)
@@ -3222,7 +3246,9 @@
                   async (opportunity) => {
                     await g.act(opportunity, { target: who });
                   },
-                  true
+                  true,
+                  1,
+                  () => success.result !== "fail" && error.result
                 )
               );
           }
@@ -3249,7 +3275,7 @@
         error.add("paralyzed", ParalyzedRule);
     });
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.actor.conditions.has("Paralyzed") && action.vocal)
+      if (action.actor.conditions.has("Paralyzed") && action.tags.has("vocal"))
         error.add("paralyzed", ParalyzedRule);
     });
     g.events.on(
@@ -3323,6 +3349,12 @@
     g.events.on("BeforeSave", ({ detail: { who, ability, diceType } }) => {
       if (who.conditions.has("Restrained") && ability === "dex")
         diceType.add("disadvantage", RestrainedRule);
+    });
+  });
+  var SpeedRule = new DndRule("Speed", (g) => {
+    g.events.on("BeforeMove", ({ detail: { handler, cost, who, error } }) => {
+      if (handler.turnMovement && cost + who.movedSoFar > who.speed)
+        error.add("cannot exceed speed", SpeedRule);
     });
   });
   var StunnedRule = new DndRule("Stunned", (g) => {
@@ -3667,7 +3699,7 @@
 
   // src/interruptions/YesNoChoice.ts
   var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority = 10) {
+    constructor(who, source, title, text, yes, no, priority = 10, isStillValid) {
       this.who = who;
       this.source = source;
       this.title = title;
@@ -3675,6 +3707,7 @@
       this.yes = yes;
       this.no = no;
       this.priority = priority;
+      this.isStillValid = isStillValid;
     }
     async apply(g) {
       var _a, _b;
@@ -3688,6 +3721,68 @@
       return choice;
     }
   };
+
+  // src/movement.ts
+  var getDefaultMovement = (who) => ({
+    name: "Movement",
+    maximum: who.speed,
+    forced: false,
+    mustUseAll: false,
+    provokesOpportunityAttacks: true,
+    teleportation: false,
+    turnMovement: true,
+    onMove(who2, cost) {
+      who2.movedSoFar += cost;
+      return who2.movedSoFar >= who2.speed;
+    }
+  });
+  var getTeleportation = (maximum, name = "Teleport", turnMovement = false) => ({
+    name,
+    maximum,
+    forced: false,
+    mustUseAll: false,
+    provokesOpportunityAttacks: false,
+    teleportation: true,
+    turnMovement,
+    onMove: () => true
+  });
+  var BoundedMove = class {
+    constructor(source, maximum, {
+      check,
+      forced = false,
+      mustUseAll = false,
+      teleportation = false,
+      turnMovement = false,
+      provokesOpportunityAttacks = !(forced || teleportation)
+    } = {}) {
+      this.source = source;
+      this.maximum = maximum;
+      this.name = source.name;
+      this.used = 0;
+      this.check = check;
+      this.forced = forced;
+      this.mustUseAll = mustUseAll;
+      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
+      this.teleportation = teleportation;
+      this.turnMovement = turnMovement;
+    }
+    onMove(who, cost) {
+      this.used += cost;
+      return this.used >= this.maximum;
+    }
+  };
+
+  // src/types/MoveDirection.ts
+  var MoveDirections = [
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast"
+  ];
 
   // src/types/SaveTag.ts
   var svSet = (...items) => new Set(items);
@@ -3995,41 +4090,50 @@
       const position = movePoint(old, direction);
       return this.move(who, position, handler, type, direction);
     }
-    async move(who, position, handler, type = "speed", direction) {
+    async beforeMove(who, to, handler, type = "speed", direction, simulation) {
       var _a;
-      const old = who.position;
-      const error = new ErrorCollector();
-      const pre = await this.resolve(
-        new BeforeMoveEvent({
-          who,
-          from: old,
-          to: position,
-          direction,
-          handler,
-          type,
-          error,
-          interrupt: new InterruptionCollector(),
-          success: new SuccessResponseCollector()
-        })
-      );
-      (_a = handler.check) == null ? void 0 : _a.call(handler, pre);
-      if (pre.detail.success.result === "fail")
-        return { type: "prevented" };
-      if (!error.result)
-        return { type: "error", error };
       const multiplier = new MultiplierCollector();
       this.fire(
         new GetMoveCostEvent({
           who,
-          from: old,
-          to: position,
+          from: who.position,
+          to,
           handler,
           type,
           multiplier
         })
       );
+      const cost = multiplier.result * MapSquareSize;
+      const error = new ErrorCollector();
+      const pre = await this.resolve(
+        new BeforeMoveEvent({
+          who,
+          from: who.position,
+          to,
+          cost,
+          direction,
+          handler,
+          type,
+          error,
+          interrupt: new InterruptionCollector(),
+          success: new SuccessResponseCollector(),
+          simulation
+        })
+      );
+      (_a = handler.check) == null ? void 0 : _a.call(handler, pre);
+      return pre;
+    }
+    async move(who, position, handler, type = "speed", direction) {
+      const old = who.position;
+      const {
+        detail: { success, error, cost }
+      } = await this.beforeMove(who, position, handler, type, direction);
+      if (success.result === "fail")
+        return { type: "prevented" };
+      if (!error.result)
+        return { type: "error", error };
       who.position = position;
-      const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+      const handlerDone = handler.onMove(who, cost);
       await this.resolve(
         new CombatantMovedEvent({
           who,
@@ -4175,9 +4279,12 @@
       }
     }
     async kill(target, attacker) {
-      this.combatants.delete(target);
-      await target.addEffect(Dead, { duration: Infinity });
-      this.fire(new CombatantDiedEvent({ who: target, attacker }));
+      const result = await target.addEffect(Dead, { duration: Infinity });
+      if (result) {
+        this.combatants.delete(target);
+        this.fire(new CombatantDiedEvent({ who: target, attacker }));
+      }
+      return result;
     }
     async failDeathSave(who, count = 1, attacker) {
       who.deathSaveFailures += count;
@@ -4332,8 +4439,11 @@
     }
     async resolve(e2) {
       this.events.fire(e2);
-      for (const interruption of e2.detail.interrupt)
+      for (const interruption of e2.detail.interrupt) {
+        if (interruption.isStillValid && !interruption.isStillValid())
+          continue;
         await interruption.apply(this);
+      }
       return e2;
     }
     addEffectArea(area) {
@@ -4475,18 +4585,32 @@
     }
     async forcePush(who, away, dist, source) {
       const path = getPathAwayFrom(who.position, away.position, dist);
+      const handler = new BoundedMove(source, Infinity, { forced: true });
       for (const point of path) {
-        const result = await this.move(who, point, {
-          maximum: Infinity,
-          mustUseAll: false,
-          provokesOpportunityAttacks: false,
-          teleportation: false,
-          onMove: () => false,
-          name: source.name
-        });
+        const result = await this.move(who, point, handler);
         if (result.type !== "ok")
           break;
       }
+    }
+    async getValidMoves(who, handler) {
+      const valid = [];
+      for (const direction of MoveDirections) {
+        const old = who.position;
+        const position = movePoint(old, direction);
+        const {
+          detail: { success, error }
+        } = await this.beforeMove(
+          who,
+          position,
+          handler,
+          "speed",
+          direction,
+          true
+        );
+        if (success.result !== "fail" && error.result)
+          valid.push(direction);
+      }
+      return valid;
     }
   };
 
@@ -5267,10 +5391,10 @@
         size,
         img,
         side: 1,
+        cr,
         hpMax,
         rules
       });
-      this.cr = cr;
     }
     don(item, giveProficiency = false) {
       super.don(item);
@@ -5322,13 +5446,13 @@
   function makeMultiattack(text, canStillAttack) {
     return new SimpleFeature("Multiattack", text, (g, me) => {
       g.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.actor === me && action.isAttack && canStillAttack(me, action))
+        if (action.actor === me && action.tags.has("costs attack") && canStillAttack(me, action))
           error.ignore(OneAttackPerTurnRule);
       });
     });
   }
   function isMeleeAttackAction(action) {
-    if (!action.isAttack)
+    if (!action.tags.has("attack"))
       return false;
     if (!(action instanceof WeaponAttack))
       return false;
@@ -5749,7 +5873,7 @@
           time: "reaction",
           icon: RebukeIcon,
           description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
-          isHarmful: true
+          tags: ["harmful", "spell"]
         }
       );
       this.dc = dc;
@@ -6173,48 +6297,6 @@
   // src/img/act/hiss.svg
   var hiss_default = "./hiss-4J2EPM5H.svg";
 
-  // src/movement.ts
-  var getDefaultMovement = (who) => ({
-    name: "Movement",
-    maximum: who.speed,
-    mustUseAll: false,
-    provokesOpportunityAttacks: true,
-    teleportation: false,
-    onMove(who2, cost) {
-      who2.movedSoFar += cost;
-      return who2.movedSoFar >= who2.speed;
-    }
-  });
-  var getTeleportation = (maximum, name = "Teleport") => ({
-    name,
-    maximum,
-    mustUseAll: false,
-    provokesOpportunityAttacks: false,
-    teleportation: true,
-    onMove: () => true
-  });
-  var BoundedMove = class {
-    constructor(source, maximum, {
-      check,
-      mustUseAll = false,
-      provokesOpportunityAttacks = true,
-      teleportation = false
-    } = {}) {
-      this.source = source;
-      this.maximum = maximum;
-      this.name = source.name;
-      this.used = 0;
-      this.check = check;
-      this.mustUseAll = mustUseAll;
-      this.provokesOpportunityAttacks = provokesOpportunityAttacks;
-      this.teleportation = teleportation;
-    }
-    onMove(who, cost) {
-      this.used += cost;
-      return this.used >= this.maximum;
-    }
-  };
-
   // src/features/boons.ts
   var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
   var HissFleeAction = class extends AbstractAction {
@@ -6229,7 +6311,7 @@
         actor,
         new BoundedMove(this, round(actor.speed / 2, MapSquareSize), {
           mustUseAll: true,
-          provokesOpportunityAttacks: false,
+          forced: true,
           check: ({ detail: { from, to, error } }) => {
             const { oldDistance, newDistance } = compareDistances(
               other,
@@ -6257,7 +6339,7 @@
           icon: makeIcon(hiss_default),
           time: "bonus action",
           resources: [[HissResource, 1]],
-          isHarmful: true
+          tags: ["harmful"]
         }
       );
     }
@@ -6717,7 +6799,7 @@
         "Shield Bash",
         "implemented",
         { target: new TargetResolver(g, actor.reach, [isEnemy]) },
-        { icon: ShieldBashIcon, time: "action", isHarmful: true }
+        { icon: ShieldBashIcon, time: "action", tags: ["harmful"] }
       );
       this.ability = ability;
     }
@@ -6890,7 +6972,8 @@
         {
           time: "action",
           icon: cheerIcon,
-          description: `One ally within 30 ft. may make a melee attack against an enemy in range.`
+          description: `One ally within 30 ft. may make a melee attack against an enemy in range.`,
+          tags: ["vocal"]
         }
       );
     }
@@ -6954,7 +7037,7 @@
           time: "action",
           icon: discordIcon,
           description: `One enemy within 30 ft. must make a Charisma save or use its reaction to make one melee attack against an ally in range.`,
-          isHarmful: true
+          tags: ["harmful", "vocal"]
         }
       );
     }
@@ -7031,7 +7114,7 @@
           time: "action",
           icon: irritationIcon,
           description: `One enemy within 30ft. must make a Constitution check or lose concentration.`,
-          isHarmful: true
+          tags: ["harmful", "vocal"]
         }
       );
     }
@@ -7200,7 +7283,7 @@
           icon: BullRushIcon,
           time: "action",
           description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`,
-          isHarmful: true
+          tags: ["harmful"]
         }
       );
     }
@@ -7221,6 +7304,8 @@
       await g.applyBoundedMove(actor, {
         name: "Bull Rush",
         maximum,
+        turnMovement: false,
+        forced: false,
         provokesOpportunityAttacks: true,
         mustUseAll: false,
         teleportation: false,
@@ -8498,7 +8583,8 @@
         {
           icon: WebIcon,
           time: "action",
-          description: `Make a Strength check to break free of the webs.`
+          description: `Make a Strength check to break free of the webs.`,
+          tags: ["escape move prevention"]
         }
       );
       this.caster = caster;
@@ -8868,7 +8954,7 @@
         {},
         {
           area: [{ type: "within", radius: 15, who: actor }],
-          isHarmful: true,
+          tags: ["harmful"],
           time: "action",
           resources: /* @__PURE__ */ new Map([[RingOfAweResource, 1]]),
           description: `By holding the ring aloft and speaking a command word, you project a field of awe around you. Each creature of your choice in a 15-foot sphere centred on you must succeed on a DC ${dc} Wisdom save or become frightened for 1 minute. On each affected creature's turn, it may repeat the Wisdom saving throw. On a successful save, the effect ends for that creature.`
@@ -8918,156 +9004,37 @@
     }
   };
 
-  // src/img/class/paladin.svg
-  var paladin_default = "./paladin-QFY4DOD4.svg";
-
-  // src/spells/NormalSpellcasting.ts
-  var SpellSlots = {
-    full: [
-      [2],
-      [3],
-      [4, 2],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 2, 1, 1]
-    ],
-    half: [
-      [],
-      [2],
-      [3],
-      [4],
-      [4, 2],
-      [4, 2],
-      [4, 3],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2]
-    ]
-  };
-  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
-  var SpellSlotResources = enumerate(0, 9).map(
-    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
-  );
-  function getMaxSpellSlotAvailable(who) {
-    for (let level = 1; level <= 9; level++) {
-      const name = getSpellSlotResourceName(level);
-      if (!who.resources.has(name))
-        return level - 1;
-    }
-    return 9;
+  // src/classes/common.ts
+  function asiSetup(g, me, config) {
+    if (config.type === "ability")
+      for (const ability of config.abilities)
+        me[ability].score++;
+    else
+      me.addFeature(allFeatures_default[config.feat]);
   }
-  var NormalSpellcasting = class {
-    constructor(name, text, ability, strength, className, spellList, icon) {
-      this.name = name;
-      this.text = text;
-      this.ability = ability;
-      this.strength = strength;
-      this.className = className;
-      this.spellList = spellList;
-      this.icon = icon;
-      this.entries = /* @__PURE__ */ new Map();
-      this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
-        var _a;
-        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
-        me.spellcastingMethods.add(this);
-        g.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me) {
-            for (const spell of me.preparedSpells) {
-              if (this.canCast(spell, who))
-                actions.push(new CastSpell(g, me, this, spell));
-            }
-          }
-        });
-      });
-    }
-    getEntry(who) {
-      const entry = this.entries.get(who);
-      if (!entry)
-        throw new Error(
-          `${who.name} has not initialised their ${this.name} spellcasting method.`
-        );
-      return entry;
-    }
-    canCast(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      return spell.lists.includes(this.spellList) || spells.has(spell);
-    }
-    addCastableSpell(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      spells.add(spell);
-    }
-    initialise(who, casterLevel) {
-      const slots = SpellSlots[this.strength][casterLevel - 1];
-      const resources = [];
-      for (let i2 = 0; i2 < slots.length; i2++) {
-        const resource = SpellSlotResources[i2 + 1];
-        who.initResource(resource, slots[i2]);
-        resources.push(resource);
-      }
-      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
-    }
-    getMinSlot(spell) {
-      return spell.level;
-    }
-    getMaxSlot(spell, who) {
-      if (!spell.scaling)
-        return spell.level;
-      const { resources } = this.getEntry(who);
-      return resources.length;
-    }
-    getResourceForSpell(spell, level, who) {
-      const { resources } = this.getEntry(who);
-      return resources[level - 1];
-    }
-    getSaveType() {
-      return { type: "ability", ability: this.ability };
-    }
-  };
+  function makeASI(className, level) {
+    return new ConfiguredFeature(
+      `Ability Score Improvement (${className} ${level})`,
+      `When you reach ${ordinal(
+        level
+      )} level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
 
-  // src/classes/paladin/common.ts
-  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
-  var PaladinSpellcasting = new NormalSpellcasting(
-    "Paladin",
-    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
-    "cha",
-    "half",
-    "Paladin",
-    "Paladin",
-    PaladinIcon
-  );
+If your DM allows the use of feats, you may instead take a feat.`,
+      asiSetup
+    );
+  }
+  function makeExtraAttack(name, text, extra = 1) {
+    return new SimpleFeature(name, text, (g, me) => {
+      g.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action.tags.has("costs attack") && action.actor === me && action.actor.attacksSoFar.length <= extra)
+          error.ignore(OneAttackPerTurnRule);
+      });
+    });
+  }
   var ChannelDivinityResource = new ShortRestResource(
     "Channel Divinity",
     1
   );
-  function getPaladinAuraRadius(level) {
-    if (level < 18)
-      return 10;
-    return 30;
-  }
 
   // src/items/wondrous/SilverShiningAmulet.ts
   var SilverShiningAmulet = class extends AbstractWondrous {
@@ -9195,33 +9162,132 @@
   };
   var allItems_default = allItems;
 
-  // src/classes/common.ts
-  function asiSetup(g, me, config) {
-    if (config.type === "ability")
-      for (const ability of config.abilities)
-        me[ability].score++;
-    else
-      me.addFeature(allFeatures_default[config.feat]);
+  // src/spells/NormalSpellcasting.ts
+  var SpellSlots = {
+    full: [
+      [2],
+      [3],
+      [4, 2],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]
+    ],
+    half: [
+      [],
+      [2],
+      [3],
+      [4],
+      [4, 2],
+      [4, 2],
+      [4, 3],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2]
+    ]
+  };
+  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var SpellSlotResources = enumerate(0, 9).map(
+    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+  );
+  function getMaxSpellSlotAvailable(who) {
+    for (let level = 1; level <= 9; level++) {
+      const name = getSpellSlotResourceName(level);
+      if (!who.resources.has(name))
+        return level - 1;
+    }
+    return 9;
   }
-  function makeASI(className, level) {
-    return new ConfiguredFeature(
-      `Ability Score Improvement (${className} ${level})`,
-      `When you reach ${ordinal(
-        level
-      )} level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
-
-If your DM allows the use of feats, you may instead take a feat.`,
-      asiSetup
-    );
-  }
-  function makeExtraAttack(name, text, extra = 1) {
-    return new SimpleFeature(name, text, (g, me) => {
-      g.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.isAttack && action.actor === me && action.actor.attacksSoFar.length <= extra)
-          error.ignore(OneAttackPerTurnRule);
+  var NormalSpellcasting = class {
+    constructor(name, text, ability, strength, className, spellList, icon) {
+      this.name = name;
+      this.text = text;
+      this.ability = ability;
+      this.strength = strength;
+      this.className = className;
+      this.spellList = spellList;
+      this.icon = icon;
+      this.entries = /* @__PURE__ */ new Map();
+      this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
+        var _a;
+        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        me.spellcastingMethods.add(this);
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me) {
+            for (const spell of me.preparedSpells) {
+              if (this.canCast(spell, who))
+                actions.push(new CastSpell(g, me, this, spell));
+            }
+          }
+        });
       });
-    });
-  }
+    }
+    getEntry(who) {
+      const entry = this.entries.get(who);
+      if (!entry)
+        throw new Error(
+          `${who.name} has not initialised their ${this.name} spellcasting method.`
+        );
+      return entry;
+    }
+    canCast(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      return spell.lists.includes(this.spellList) || spells.has(spell);
+    }
+    addCastableSpell(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      spells.add(spell);
+    }
+    initialise(who, casterLevel) {
+      const slots = SpellSlots[this.strength][casterLevel - 1];
+      const resources = [];
+      for (let i2 = 0; i2 < slots.length; i2++) {
+        const resource = SpellSlotResources[i2 + 1];
+        who.initResource(resource, slots[i2]);
+        resources.push(resource);
+      }
+      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell, who) {
+      if (!spell.scaling)
+        return spell.level;
+      const { resources } = this.getEntry(who);
+      return resources.length;
+    }
+    getResourceForSpell(spell, level, who) {
+      const { resources } = this.getEntry(who);
+      return resources[level - 1];
+    }
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
+    }
+  };
 
   // src/classes/artificer/FlashOfGenius.ts
   var FlashOfGeniusResource = new LongRestResource("Flash of Genius", 1);
@@ -9510,7 +9576,7 @@ While holding the object, a creature can take an action to produce the spell's e
         }
       );
       g.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.actor.hasEffect(RageEffect) && action.isSpell)
+        if (action.actor.hasEffect(RageEffect) && action.tags.has("spell"))
           error.add("cannot cast spells", RageEffect);
       });
       g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
@@ -10840,7 +10906,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
             async ({ action, config }) => {
               await g.act(action, config);
             },
-            true
+            true,
+            1
           )
         );
       }
@@ -11301,7 +11368,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       );
       g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
         var _a, _b;
-        if (!action.isHarmful)
+        if (!action.tags.has("harmful"))
           return;
         const effects = getSanctuaryEffects(action.actor);
         const targets = (_b = (_a = action.getTargets(config)) == null ? void 0 : _a.filter((who) => who.hasEffect(SanctuaryEffect))) != null ? _b : [];
@@ -11405,7 +11472,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
               await g.act(action, {});
               await after();
             },
-            true
+            true,
+            1
           )
         );
       };
@@ -12293,7 +12361,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
           icon: MoonbeamIcon,
           time: "action",
           description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
-          isHarmful: true
+          tags: ["harmful"]
+          // TODO spell?
         }
       );
       this.controller = controller;
@@ -13037,7 +13106,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
           time: "bonus action",
           damage: [_dd(2, 6, "fire")],
           description: `You can expend one or two of the meteors, sending them streaking toward a point or points you choose within 120 feet of you. Once a meteor reaches its destination or impacts against a solid surface, the meteor explodes. Each creature within 5 feet of the point where the meteor explodes must make a Dexterity saving throw. A creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one.`,
-          isHarmful: true
+          tags: ["harmful"]
+          // TODO spell?
         }
       );
       this.method = method;
@@ -13854,10 +13924,6 @@ You learn two additional spells from any classes at 14th level and again at 18th
   var bard_default = Bard;
 
   // src/classes/cleric/ChannelDivinity.ts
-  var ChannelDivinityResource2 = new ShortRestResource(
-    "Channel Divinity",
-    1
-  );
   function getChannelCount(level) {
     if (level < 6)
       return 1;
@@ -13873,7 +13939,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     (g, me) => {
       var _a;
       me.initResource(
-        ChannelDivinityResource2,
+        ChannelDivinityResource,
         getChannelCount((_a = me.classLevels.get("Cleric")) != null ? _a : 1)
       );
     }
@@ -13910,7 +13976,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
         {
           time: "bonus action",
           resources: [
-            [ChannelDivinityResource2, 1],
+            [ChannelDivinityResource, 1],
             [HarnessDivinePowerResource, 1]
           ],
           description: `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`
@@ -13954,12 +14020,161 @@ Some Channel Divinity effects require saving throws. When you use such an effect
   );
   var HarnessDivinePower_default = HarnessDivinePower;
 
+  // src/classes/turned.ts
+  var TurnedEffect = new Effect(
+    "Turned",
+    "turnEnd",
+    (g) => {
+      g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(TurnedEffect))
+          interrupt.add(
+            new EvaluateLater(who, TurnedEffect, async () => {
+              await who.removeEffect(TurnedEffect);
+            })
+          );
+      });
+      g.events.on(
+        "BeforeMove",
+        ({ detail: { who, handler, from, to, error } }) => {
+          const config = who.getEffectConfig(TurnedEffect);
+          if (config && !handler.forced) {
+            const { oldDistance, newDistance } = compareDistances(
+              config.turner,
+              config.turner.position,
+              who,
+              from,
+              to
+            );
+            if (newDistance > oldDistance)
+              return;
+            if (newDistance <= 30)
+              error.add(
+                `cannot willingly move within 30' of ${config.turner.name}`,
+                TurnedEffect
+              );
+            else
+              error.add(
+                `must move away from ${config.turner.name}`,
+                TurnedEffect
+              );
+          }
+        }
+      );
+      g.events.on("CheckAction", ({ detail }) => {
+        if (!detail.action.actor.hasEffect(TurnedEffect))
+          return;
+        if (detail.action.getTime(detail.config) === "reaction")
+          detail.error.add("cannot take reactions", TurnedEffect);
+        else {
+          if (detail.action.tags.has("escape move prevention"))
+            return;
+          if (detail.action instanceof DashAction)
+            return;
+          if (detail.action instanceof DodgeAction)
+            return;
+          detail.error.add(
+            "must Dash or escape an effect that prevents movement",
+            TurnedEffect
+          );
+        }
+      });
+    }
+  );
+
   // src/classes/cleric/TurnUndead.ts
-  var TurnUndead = notImplementedFeature(
+  function getDestroyUndeadCR(level) {
+    if (level < 5)
+      return -Infinity;
+    if (level < 8)
+      return 0.5;
+    if (level < 11)
+      return 1;
+    if (level < 14)
+      return 2;
+    if (level < 17)
+      return 3;
+    return 4;
+  }
+  var getTurnUndeadArea = (who) => ({
+    type: "within",
+    who,
+    radius: 30
+  });
+  var TurnUndeadAction = class extends AbstractAction {
+    constructor(g, actor, affectsTypes, method, destroyCR = -Infinity) {
+      super(
+        g,
+        actor,
+        "Turn Undead",
+        "incomplete",
+        {},
+        {
+          area: [getTurnUndeadArea(actor)],
+          resources: [[ChannelDivinityResource, 1]],
+          tags: ["harmful"],
+          time: "action",
+          description: `As an action, you present your holy symbol and speak a prayer censuring the undead. Each undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes any damage.
+
+        A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
+        }
+      );
+      this.affectsTypes = affectsTypes;
+      this.method = method;
+      this.destroyCR = destroyCR;
+    }
+    getAffected() {
+      return this.g.getInside(getTurnUndeadArea(this.actor)).filter((who) => this.affectsTypes.includes(who.type));
+    }
+    async apply() {
+      await super.apply({});
+      const { g, actor: attacker, method, destroyCR } = this;
+      const type = method.getSaveType(attacker);
+      for (const who of this.getAffected()) {
+        const effect = TurnedEffect;
+        const config = {
+          turner: attacker,
+          duration: minutes(1)
+        };
+        const { outcome } = await g.save({
+          source: this,
+          type,
+          attacker,
+          who,
+          ability: "wis",
+          method,
+          effect,
+          config,
+          tags: ["frightened"]
+        });
+        if (outcome === "fail") {
+          if (who.cr < destroyCR && await g.kill(who, attacker))
+            return;
+          await who.addEffect(effect, config, attacker);
+        }
+      }
+    }
+  };
+  var TurnUndead = new SimpleFeature(
     "Turn Undead",
     `As an action, you present your holy symbol and speak a prayer censuring the undead. Each undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes any damage.
 
-A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
+A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
+    (g, me) => {
+      var _a;
+      const destroyCr = getDestroyUndeadCR((_a = me.classLevels.get("Cleric")) != null ? _a : 2);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new TurnUndeadAction(
+              g,
+              who,
+              ["undead"],
+              ClericSpellcasting,
+              destroyCr
+            )
+          );
+      });
+    }
   );
   var TurnUndead_default = TurnUndead;
 
@@ -14105,7 +14320,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         }),
         // You can't cast spells
         g.events.on("CheckAction", ({ detail: { action, error } }) => {
-          if (action.actor === me && action.isSpell)
+          if (action.actor === me && action.tags.has("spell"))
             error.add("cannot cast spells", WildShape);
         })
       );
@@ -14509,7 +14724,7 @@ Once you use this feature, you must finish a short or long rest before you can u
     constructor(g, actor, weapon) {
       super(g, actor, weapon);
       this.name = `Martial Arts (${weapon.name})`;
-      this.isAttack = false;
+      this.tags.delete("costs attack");
     }
     getTime() {
       return "bonus action";
@@ -14578,7 +14793,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         "Flurry of Blows",
         "implemented",
         { target: new TargetResolver(g, actor.reach + weapon.reach, []) },
-        { isHarmful: true, resources: [[KiResource, 1]], time: "bonus action" }
+        {
+          resources: [[KiResource, 1]],
+          time: "bonus action",
+          description: `Immediately after you take the Attack action on your turn, you can spend 1 ki point to make two unarmed strikes as a bonus action.`,
+          tags: ["attack", "harmful"]
+        }
       );
       this.weapon = weapon;
       this.available = available;
@@ -14667,7 +14887,7 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
         }
       });
       g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
-        if (action.actor === me && action.isAttack) {
+        if (action.actor === me && action.tags.has("costs attack")) {
           const target = config.target;
           const weapon = getMonkUnarmedWeapon(g, me);
           if (target && weapon) {
@@ -14922,6 +15142,26 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     ])
   };
   var monk_default = Monk;
+
+  // src/img/class/paladin.svg
+  var paladin_default = "./paladin-QFY4DOD4.svg";
+
+  // src/classes/paladin/common.ts
+  var PaladinIcon = makeIcon(paladin_default, ClassColours.Paladin);
+  var PaladinSpellcasting = new NormalSpellcasting(
+    "Paladin",
+    `By 2nd level, you have learned to draw on divine magic through meditation and prayer to cast spells as a cleric does.`,
+    "cha",
+    "half",
+    "Paladin",
+    "Paladin",
+    PaladinIcon
+  );
+  function getPaladinAuraRadius(level) {
+    if (level < 18)
+      return 10;
+    return 30;
+  }
 
   // src/classes/paladin/AuraOfProtection.ts
   var AuraOfProtection = new SimpleFeature(
@@ -15308,7 +15548,7 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
 When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
 Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
     (g, me) => {
-      me.initResource(ChannelDivinityResource);
+      me.initResource(ChannelDivinityResource, 1);
     }
   );
   var MartialVersatility2 = nonCombatFeature(
@@ -17154,7 +17394,7 @@ When you create a device, choose one of the following options:
           subIcon: FrenzyIcon,
           damage: [weapon.damage],
           time: "bonus action",
-          isHarmful: true
+          tags: ["attack", "harmful"]
         }
       );
       this.weapon = weapon;
@@ -17492,11 +17732,27 @@ You can end this effect on your turn as part of any other action. If you are no 
   var SacredWeapon_default = SacredWeapon;
 
   // src/classes/paladin/Devotion/index.ts
-  var TurnTheUnholy = notImplementedFeature(
+  var TurnTheUnholyAction = class extends TurnUndeadAction {
+    constructor(g, actor) {
+      super(g, actor, ["fiend", "undead"], PaladinSpellcasting);
+      this.name = "Turn the Unholy";
+      this.subIcon = PaladinIcon;
+      this.description = `As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.
+
+    A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`;
+    }
+  };
+  var TurnTheUnholy = new SimpleFeature(
     "Channel Divinity: Turn the Unholy",
     `As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.
 
-A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
+A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new TurnTheUnholyAction(g, me));
+      });
+    }
   );
   var AuraOfDevotion = new SimpleFeature(
     "Aura of Devotion",
@@ -17922,6 +18178,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var allCombatants = (0, import_signals.signal)([]);
   var allEffects = (0, import_signals.signal)([]);
   var canDragUnits = (0, import_signals.signal)(false);
+  var canMoveDirections = (0, import_signals.signal)([]);
   var chooseFromList = (0, import_signals.signal)(void 0);
   var chooseManyFromList = (0, import_signals.signal)(
     void 0
@@ -17948,6 +18205,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     allCombatants,
     allEffects,
     canDragUnits,
+    canMoveDirections,
     chooseFromList,
     chooseManyFromList,
     chooseYesNo,
@@ -18232,7 +18490,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const categories = /* @__PURE__ */ new Map();
     for (const action of actionList) {
       const time = action.getTime({});
-      const label = action.isAttack ? "Attacks" : time ? niceTime[time] : "Other Actions";
+      const label = action.tags.has("costs attack") ? "Attacks" : time ? niceTime[time] : "Other Actions";
       const category = (_a = categories.get(label)) != null ? _a : [];
       category.push(action);
       if (!categories.has(label))
@@ -18394,9 +18652,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/Unit.module.scss
   var Unit_module_default = {
-    "main": "_main_120hg_1",
-    "token": "_token_120hg_11",
-    "icons": "_icons_120hg_17"
+    "main": "_main_15bsq_1",
+    "moving": "_moving_15bsq_11",
+    "token": "_token_15bsq_15",
+    "icons": "_icons_15bsq_21"
   };
 
   // src/img/ui/missing-icon.svg
@@ -18503,15 +18762,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/UnitMoveButton.module.scss
   var UnitMoveButton_module_default = {
-    "main": "_main_etih8_5",
-    "moveE": "_moveE_etih8_17",
-    "moveSE": "_moveSE_etih8_23",
-    "moveS": "_moveS_etih8_23",
-    "moveSW": "_moveSW_etih8_34",
-    "moveW": "_moveW_etih8_39",
-    "moveNW": "_moveNW_etih8_45",
-    "moveN": "_moveN_etih8_45",
-    "moveNE": "_moveNE_etih8_56"
+    "main": "_main_1gd19_5",
+    "moveE": "_moveE_1gd19_21",
+    "moveSE": "_moveSE_1gd19_27",
+    "moveS": "_moveS_1gd19_27",
+    "moveSW": "_moveSW_1gd19_38",
+    "moveW": "_moveW_1gd19_43",
+    "moveNW": "_moveNW_1gd19_49",
+    "moveN": "_moveN_1gd19_49",
+    "moveNE": "_moveNE_1gd19_60"
   };
 
   // src/ui/components/UnitMoveButton.tsx
@@ -18530,7 +18789,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     north: makeButtonType("moveN", n_default, "Move North"),
     northeast: makeButtonType("moveNE", ne_default, "Move Northeast")
   };
-  function UnitMoveButton({ disabled, onClick, type }) {
+  function UnitMoveButton({ onClick, type }) {
     const { className, iconUrl, label } = (0, import_hooks.useMemo)(
       () => buttonTypes[type],
       [type]
@@ -18545,7 +18804,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return /* @__PURE__ */ u(
       "button",
       {
-        disabled,
+        disabled: !canMoveDirections.value.includes(type),
         className: classnames(UnitMoveButton_module_default.main, className),
         onClick: clicked,
         "aria-label": label,
@@ -18570,7 +18829,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       height: u2.sizeInUnits * scale.value,
       backgroundColor: showSideUnderlay.value ? u2.side === 0 ? allyBg : u2.side === 1 ? enemyBg : otherBg : void 0
     };
-    const disabled = u2.movedSoFar >= u2.speed;
     const clicked = (0, import_hooks.useCallback)(
       (e2) => onClick == null ? void 0 : onClick(u2.who, e2),
       [onClick, u2]
@@ -18591,7 +18849,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       /* @__PURE__ */ u(
         "div",
         {
-          className: Unit_module_default.main,
+          className: classnames(Unit_module_default.main, { [Unit_module_default.moving]: isMoving }),
           style: containerStyle,
           title: u2.name,
           onClick: clicked,
@@ -18608,42 +18866,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               }
             ),
             isMoving && /* @__PURE__ */ u(import_preact3.Fragment, { children: [
-              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "east" }),
-              /* @__PURE__ */ u(
-                UnitMoveButton,
-                {
-                  disabled,
-                  onClick: moved,
-                  type: "southeast"
-                }
-              ),
-              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "south" }),
-              /* @__PURE__ */ u(
-                UnitMoveButton,
-                {
-                  disabled,
-                  onClick: moved,
-                  type: "southwest"
-                }
-              ),
-              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "west" }),
-              /* @__PURE__ */ u(
-                UnitMoveButton,
-                {
-                  disabled,
-                  onClick: moved,
-                  type: "northwest"
-                }
-              ),
-              /* @__PURE__ */ u(UnitMoveButton, { disabled, onClick: moved, type: "north" }),
-              /* @__PURE__ */ u(
-                UnitMoveButton,
-                {
-                  disabled,
-                  onClick: moved,
-                  type: "northeast"
-                }
-              )
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "east" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "southeast" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "south" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "southwest" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "west" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "northwest" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "north" }),
+              /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "northeast" })
             ] }),
             showSideHP.value.includes(u2.side) ? /* @__PURE__ */ u(UnitDetailedHP, { u: u2 }) : /* @__PURE__ */ u(UnitBriefHP, { u: u2 }),
             /* @__PURE__ */ u("div", { className: Unit_module_default.icons, children: u2.effects.map((effect, i2) => /* @__PURE__ */ u(UnitEffectIcon, { effect }, i2)) })
@@ -19292,7 +19522,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
       /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.namePanel, children: [
         /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.name, children: action.name }),
-        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.time, children: action.isAttack ? "attack" : time != null ? time : "no cost" })
+        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.time, children: action.tags.has("costs attack") ? "attack" : time != null ? time : "no cost" })
       ] }),
       statusWarning,
       description && /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, i2) => /* @__PURE__ */ u("p", { children: p }, i2)) }),
@@ -19743,9 +19973,18 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   function CombatUI({ g, template }) {
     const cache = (0, import_hooks.useContext)(SVGCacheContext);
     const [action, setAction] = (0, import_hooks.useState)();
+    const refreshMoveDirections = (0, import_hooks.useCallback)(() => {
+      const unit = activeCombatant.value;
+      const handler = moveHandler.value;
+      if (unit && handler) {
+        canMoveDirections.value = [];
+        return g.getValidMoves(unit.who, handler).then((valid) => canMoveDirections.value = valid);
+      }
+    }, [g]);
     const refreshUnits = (0, import_hooks.useCallback)(() => {
       allCombatants.value = Array.from(g.combatants, getUnitData);
-    }, [g]);
+      refreshMoveDirections();
+    }, [g, refreshMoveDirections]);
     const refreshAreas = (0, import_hooks.useCallback)(() => {
       allEffects.value = Array.from(g.effects);
     }, [g]);

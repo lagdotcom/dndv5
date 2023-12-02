@@ -1,6 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action, { ConfigWithPositioning } from "../types/Action";
+import Action, { ActionTag, ConfigWithPositioning } from "../types/Action";
 import { ActionConfig } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Amount from "../types/Amount";
@@ -12,6 +12,7 @@ import Icon from "../types/Icon";
 import ImplementationStatus from "../types/ImplementationStatus";
 import Resource from "../types/Resource";
 import { MapInitialiser } from "../utils/map";
+import { SetInitialiser } from "../utils/set";
 
 export interface AbstractActionOptions {
   area?: SpecifiedEffectShape[];
@@ -19,9 +20,9 @@ export interface AbstractActionOptions {
   description?: string;
   heal?: Amount[];
   icon?: Icon;
-  isHarmful?: boolean;
   resources?: MapInitialiser<Resource, number>;
   subIcon?: Icon;
+  tags?: SetInitialiser<ActionTag>;
   time?: ActionTime;
 }
 
@@ -30,13 +31,12 @@ export default abstract class AbstractAction<T extends object = Empty>
 {
   icon?: Icon;
   subIcon?: Icon;
-  isAttack?: boolean;
-  isHarmful?: boolean;
   area?: SpecifiedEffectShape[];
   damage?: DamageAmount[];
   description?: string;
   heal?: Amount[];
   resources: Map<Resource, number>;
+  tags: Set<ActionTag>;
   time?: ActionTime;
 
   constructor(
@@ -51,21 +51,21 @@ export default abstract class AbstractAction<T extends object = Empty>
       description,
       heal,
       icon,
-      isHarmful,
       resources,
       subIcon,
+      tags,
       time,
     }: AbstractActionOptions = {},
   ) {
     this.area = area;
     this.damage = damage;
     this.description = description;
-    this.isHarmful = isHarmful;
     this.heal = heal;
     this.resources = new Map(resources);
     this.time = time;
     this.icon = icon;
     this.subIcon = subIcon;
+    this.tags = new Set(tags);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

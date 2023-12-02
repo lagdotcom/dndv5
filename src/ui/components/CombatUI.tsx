@@ -20,6 +20,7 @@ import {
   allActions,
   allCombatants,
   allEffects,
+  canMoveDirections,
   chooseFromList,
   chooseManyFromList,
   chooseYesNo,
@@ -56,8 +57,21 @@ export default function CombatUI({ g, template }: Props) {
   const cache = useContext(SVGCacheContext);
   const [action, setAction] = useState<Action>();
 
+  const refreshMoveDirections = useCallback(() => {
+    const unit = activeCombatant.value;
+    const handler = moveHandler.value;
+
+    if (unit && handler) {
+      canMoveDirections.value = [];
+      return g
+        .getValidMoves(unit.who, handler)
+        .then((valid) => (canMoveDirections.value = valid));
+    }
+  }, [g]);
+
   const refreshUnits = useCallback(() => {
     allCombatants.value = Array.from(g.combatants, getUnitData);
+    refreshMoveDirections();
     // TODO
     // if (g.activeCombatant) {
     //   const evaluations = Array.from(
@@ -65,7 +79,7 @@ export default function CombatUI({ g, template }: Props) {
     //   ).sort((a, b) => b.score.result - a.score.result);
     //   aiEvaluation.value = evaluations[0];
     // } else aiEvaluation.value = undefined;
-  }, [g]);
+  }, [g, refreshMoveDirections]);
 
   const refreshAreas = useCallback(() => {
     allEffects.value = Array.from(g.effects);

@@ -10,7 +10,8 @@
 | 29  | event log               |
 | 25  | effect label (pending)  |
 | 23  | effect square (pending) |
-| 21  | unit move button        |
+| 22  | unit move button        |
+| 21  | moving unit             |
 | 20  | unit                    |
 | 12  | hp bar (label)          |
 | 11  | hp bar (current)        |

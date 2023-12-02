@@ -18,13 +18,9 @@ import { gains } from "../../utils/gain";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { hasAll } from "../../utils/set";
 import { distance } from "../../utils/units";
-import { makeASI, makeExtraAttack } from "../common";
+import { ChannelDivinityResource, makeASI, makeExtraAttack } from "../common";
 import AuraOfProtection from "./AuraOfProtection";
-import {
-  ChannelDivinityResource,
-  getPaladinAuraRadius,
-  PaladinSpellcasting,
-} from "./common";
+import { getPaladinAuraRadius, PaladinSpellcasting } from "./common";
 import HarnessDivinePower from "./HarnessDivinePower";
 import LayOnHands from "./LayOnHands";
 
@@ -99,7 +95,7 @@ const ChannelDivinity = new SimpleFeature(
 When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
 Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
   (g, me) => {
-    me.initResource(ChannelDivinityResource);
+    me.initResource(ChannelDivinityResource, 1);
   },
 );
 

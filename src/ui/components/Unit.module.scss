@@ -9,6 +9,10 @@
   }
 }
 
+.moving {
+  z-index: 21;
+}
+
 .token {
   position: absolute;
   left: 0;

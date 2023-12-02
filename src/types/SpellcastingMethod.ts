@@ -18,5 +18,5 @@ export default interface SpellcastingMethod extends Source {
     level: number,
     caster: Combatant,
   ): Resource | undefined;
-  getSaveType(caster: Combatant, spell: Spell, level?: number): SaveType;
+  getSaveType(caster: Combatant, spell?: Spell, level?: number): SaveType;
 }

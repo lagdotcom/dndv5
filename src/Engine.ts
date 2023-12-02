@@ -60,6 +60,7 @@ import TurnStartedEvent from "./events/TurnStartedEvent";
 import YesNoChoice from "./interruptions/YesNoChoice";
 import { MapSquareSize } from "./MapSquare";
 import MessageBuilder from "./MessageBuilder";
+import { BoundedMove } from "./movement";
 import PointSet from "./PointSet";
 import AbilityName from "./types/AbilityName";
 import Action from "./types/Action";
@@ -70,7 +71,7 @@ import DamageType from "./types/DamageType";
 import DiceType from "./types/DiceType";
 import EffectArea, { SpecifiedEffectShape } from "./types/EffectArea";
 import { EffectConfig } from "./types/EffectType";
-import MoveDirection from "./types/MoveDirection";
+import MoveDirection, { MoveDirections } from "./types/MoveDirection";
 import MoveHandler from "./types/MoveHandler";
 import MovementType from "./types/MovementType";
 import Point from "./types/Point";
@@ -409,6 +410,49 @@ export default class Engine {
     return this.move(who, position, handler, type, direction);
   }
 
+  private async beforeMove(
+    who: Combatant,
+    to: Point,
+    handler: MoveHandler,
+    type: MovementType = "speed",
+    direction?: MoveDirection,
+    simulation?: boolean,
+  ) {
+    const multiplier = new MultiplierCollector();
+    this.fire(
+      new GetMoveCostEvent({
+        who,
+        from: who.position,
+        to,
+        handler,
+        type,
+        multiplier,
+      }),
+    );
+
+    const cost = multiplier.result * MapSquareSize;
+
+    const error = new ErrorCollector();
+    const pre = await this.resolve(
+      new BeforeMoveEvent({
+        who,
+        from: who.position,
+        to,
+        cost,
+        direction,
+        handler,
+        type,
+        error,
+        interrupt: new InterruptionCollector(),
+        success: new SuccessResponseCollector(),
+        simulation,
+      }),
+    );
+    handler.check?.(pre);
+
+    return pre;
+  }
+
   async move(
     who: Combatant,
     position: Point,
@@ -418,40 +462,15 @@ export default class Engine {
   ) {
     const old = who.position;
 
-    const error = new ErrorCollector();
-    const pre = await this.resolve(
-      new BeforeMoveEvent({
-        who,
-        from: old,
-        to: position,
-        direction,
-        handler,
-        type,
-        error,
-        interrupt: new InterruptionCollector(),
-        success: new SuccessResponseCollector(),
-      }),
-    );
-    handler.check?.(pre);
+    const {
+      detail: { success, error, cost },
+    } = await this.beforeMove(who, position, handler, type, direction);
 
-    if (pre.detail.success.result === "fail")
-      return { type: "prevented" as const };
+    if (success.result === "fail") return { type: "prevented" as const };
     if (!error.result) return { type: "error" as const, error };
 
-    const multiplier = new MultiplierCollector();
-    this.fire(
-      new GetMoveCostEvent({
-        who,
-        from: old,
-        to: position,
-        handler,
-        type,
-        multiplier,
-      }),
-    );
-
     who.position = position;
-    const handlerDone = handler.onMove(who, multiplier.result * MapSquareSize);
+    const handlerDone = handler.onMove(who, cost);
 
     await this.resolve(
       new CombatantMovedEvent({
@@ -655,9 +674,13 @@ export default class Engine {
   }
 
   async kill(target: Combatant, attacker?: Combatant) {
-    this.combatants.delete(target);
-    await target.addEffect(Dead, { duration: Infinity });
-    this.fire(new CombatantDiedEvent({ who: target, attacker }));
+    const result = await target.addEffect(Dead, { duration: Infinity });
+    if (result) {
+      this.combatants.delete(target);
+      this.fire(new CombatantDiedEvent({ who: target, attacker }));
+    }
+
+    return result;
   }
 
   async failDeathSave(who: Combatant, count = 1, attacker?: Combatant) {
@@ -860,8 +883,11 @@ export default class Engine {
   ): Promise<CustomEvent<T>> {
     this.events.fire(e);
 
-    for (const interruption of e.detail.interrupt)
+    for (const interruption of e.detail.interrupt) {
+      if (interruption.isStillValid && !interruption.isStillValid()) continue;
+
       await interruption.apply(this);
+    }
 
     return e;
   }
@@ -1036,18 +1062,35 @@ export default class Engine {
     source: Source,
   ) {
     const path = getPathAwayFrom(who.position, away.position, dist);
+    const handler = new BoundedMove(source, Infinity, { forced: true });
     for (const point of path) {
-      const result = await this.move(who, point, {
-        maximum: Infinity,
-        mustUseAll: false,
-        provokesOpportunityAttacks: false,
-        teleportation: false,
-        onMove: () => false,
-        name: source.name,
-      });
-
+      const result = await this.move(who, point, handler);
       if (result.type !== "ok") break;
     }
+  }
+
+  async getValidMoves(who: Combatant, handler: MoveHandler) {
+    const valid: MoveDirection[] = [];
+
+    for (const direction of MoveDirections) {
+      const old = who.position;
+      const position = movePoint(old, direction);
+
+      const {
+        detail: { success, error },
+      } = await this.beforeMove(
+        who,
+        position,
+        handler,
+        "speed",
+        direction,
+        true,
+      );
+
+      if (success.result !== "fail" && error.result) valid.push(direction);
+    }
+
+    return valid;
   }
 }
 

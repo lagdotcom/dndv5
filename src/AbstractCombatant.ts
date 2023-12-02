@@ -93,6 +93,7 @@ export default abstract class AbstractCombatant implements Combatant {
   hands: number;
   reach: number;
   level: number;
+  cr: number;
 
   position: Point;
   initiative: number;
@@ -162,6 +163,7 @@ export default abstract class AbstractCombatant implements Combatant {
       hp = hpMax,
       level = NaN,
       pb = 2,
+      cr = NaN,
       reach = MapSquareSize,
       chaScore = 10,
       conScore = 10,
@@ -180,6 +182,7 @@ export default abstract class AbstractCombatant implements Combatant {
       hpMax?: number;
       img: string;
       level?: number;
+      cr?: number;
       pb?: number;
       reach?: number;
       side: number;
@@ -207,6 +210,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.baseHpMax = hpMax;
     this.img = img;
     this.level = level;
+    this.cr = cr;
     this.pb = pb;
     this.reach = reach;
     this.side = side;

@@ -13,6 +13,7 @@ export default class YesNoChoice implements Interruption {
     public yes?: () => Promise<void>,
     public no?: () => Promise<void>,
     public priority: number = 10,
+    public isStillValid?: () => boolean,
   ) {}
 
   async apply(g: Engine) {

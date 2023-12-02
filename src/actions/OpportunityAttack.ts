@@ -9,8 +9,7 @@ import WeaponAttack from "./WeaponAttack";
 export default class OpportunityAttack extends WeaponAttack {
   constructor(g: Engine, actor: Combatant, weapon: WeaponItem) {
     super(g, actor, weapon);
-
-    this.isAttack = false;
+    this.tags.delete("costs attack");
   }
 
   getTime(): ActionTime {

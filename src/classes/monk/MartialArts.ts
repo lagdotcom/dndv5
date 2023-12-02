@@ -88,7 +88,7 @@ class MartialArtsBonusAttack extends WeaponAttack {
     super(g, actor, weapon);
 
     this.name = `Martial Arts (${weapon.name})`;
-    this.isAttack = false;
+    this.tags.delete("costs attack");
   }
 
   getTime(): ActionTime {

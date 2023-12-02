@@ -43,14 +43,18 @@ export function makeMultiattack(
 ) {
   return new SimpleFeature("Multiattack", text, (g, me) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.actor === me && action.isAttack && canStillAttack(me, action))
+      if (
+        action.actor === me &&
+        action.tags.has("costs attack") &&
+        canStillAttack(me, action)
+      )
         error.ignore(OneAttackPerTurnRule);
     });
   });
 }
 
 export function isMeleeAttackAction(action: Action) {
-  if (!action.isAttack) return false;
+  if (!action.tags.has("attack")) return false;
   if (!(action instanceof WeaponAttack)) return false;
 
   // TODO this isn't right for throwing...

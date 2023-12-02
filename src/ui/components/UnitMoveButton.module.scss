@@ -7,10 +7,14 @@
   padding: 0;
   cursor: pointer;
   background: #ccc;
-  z-index: 21;
+  z-index: 22;
   opacity: 0.75;
 
-  &:hover:enabled {
+  &:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  &:hover {
     background: #eee;
   }
 }

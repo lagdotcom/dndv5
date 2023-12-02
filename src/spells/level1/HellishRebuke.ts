@@ -43,6 +43,7 @@ new DndRule("Hellish Rebuke", (g) => {
             await g.act(action, config);
           },
           true,
+          1,
         ),
       );
     },

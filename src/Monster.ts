@@ -10,7 +10,7 @@ export default class Monster extends AbstractCombatant {
   constructor(
     g: Engine,
     name: string,
-    public cr: number,
+    cr: number,
     type: CreatureType,
     size: SizeCategory,
     img: string,
@@ -22,6 +22,7 @@ export default class Monster extends AbstractCombatant {
       size,
       img,
       side: 1,
+      cr,
       hpMax,
       rules,
     });

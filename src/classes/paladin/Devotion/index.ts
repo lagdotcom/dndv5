@@ -1,3 +1,4 @@
+import Engine from "../../../Engine";
 import {
   bonusSpellsFeature,
   notImplementedFeature,
@@ -6,17 +7,38 @@ import SimpleFeature from "../../../features/SimpleFeature";
 import ProtectionFromEvilAndGood from "../../../spells/level1/ProtectionFromEvilAndGood";
 import Sanctuary from "../../../spells/level1/Sanctuary";
 import LesserRestoration from "../../../spells/level2/LesserRestoration";
+import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
 import { distance } from "../../../utils/units";
-import { getPaladinAuraRadius, PaladinSpellcasting } from "../common";
+import { TurnUndeadAction } from "../../cleric/TurnUndead";
+import {
+  getPaladinAuraRadius,
+  PaladinIcon,
+  PaladinSpellcasting,
+} from "../common";
 import SacredWeapon from "./SacredWeapon";
 
-// TODO
-const TurnTheUnholy = notImplementedFeature(
+class TurnTheUnholyAction extends TurnUndeadAction {
+  constructor(g: Engine, actor: Combatant) {
+    super(g, actor, ["fiend", "undead"], PaladinSpellcasting);
+    this.name = "Turn the Unholy";
+    this.subIcon = PaladinIcon;
+    this.description = `As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.
+
+    A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`;
+  }
+}
+
+const TurnTheUnholy = new SimpleFeature(
   "Channel Divinity: Turn the Unholy",
   `As an action, you present your holy symbol and speak a prayer censuring fiends and undead, using your Channel Divinity. Each fiend or undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes damage.
 
 A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new TurnTheUnholyAction(g, me));
+    });
+  },
 );
 
 const AuraOfDevotion = new SimpleFeature(

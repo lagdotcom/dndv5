@@ -78,7 +78,7 @@ describe("Rage Feature", () => {
 
     const spellCastingAction = {
       actor: me,
-      isSpell: true,
+      tags: new Set(["spell"]),
     } as Action;
 
     const errorCollector = new ErrorCollector();

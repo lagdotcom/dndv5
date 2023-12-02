@@ -79,7 +79,7 @@ class BullRushAction extends AbstractAction {
         icon: BullRushIcon,
         time: "action",
         description: `Until the beginning of your next turn, gain resistance to bludgeoning, piercing and slashing damage. Then, move up to your speed in a single direction. All enemies that you pass through must make a Dexterity save or be knocked prone.`,
-        isHarmful: true,
+        tags: ["harmful"],
       },
     );
   }
@@ -105,6 +105,8 @@ class BullRushAction extends AbstractAction {
     await g.applyBoundedMove(actor, {
       name: "Bull Rush",
       maximum,
+      turnMovement: false,
+      forced: false,
       provokesOpportunityAttacks: true,
       mustUseAll: false,
       teleportation: false,

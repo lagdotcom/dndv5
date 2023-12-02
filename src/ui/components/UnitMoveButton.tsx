@@ -10,6 +10,7 @@ import iconWUrl from "@img/ui/w.svg";
 import MoveDirection from "../../types/MoveDirection";
 import { useCallback, useMemo } from "../lib";
 import classnames from "../utils/classnames";
+import { canMoveDirections } from "../utils/state";
 import SVGIcon from "./SVGIcon";
 import styles from "./UnitMoveButton.module.scss";
 
@@ -29,13 +30,13 @@ const buttonTypes = {
   north: makeButtonType("moveN", iconNUrl, "Move North"),
   northeast: makeButtonType("moveNE", iconNEUrl, "Move Northeast"),
 };
+
 interface Props {
-  disabled: boolean;
   onClick(dir: MoveDirection): void;
   type: MoveDirection;
 }
 
-export default function UnitMoveButton({ disabled, onClick, type }: Props) {
+export default function UnitMoveButton({ onClick, type }: Props) {
   const { className, iconUrl, label } = useMemo(
     () => buttonTypes[type],
     [type],
@@ -51,7 +52,7 @@ export default function UnitMoveButton({ disabled, onClick, type }: Props) {
 
   return (
     <button
-      disabled={disabled}
+      disabled={!canMoveDirections.value.includes(type)}
       className={classnames(styles.main, className)}
       onClick={clicked}
       aria-label={label}

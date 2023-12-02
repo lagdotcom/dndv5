@@ -19,8 +19,9 @@ export default class AbstractAttackAction<
     options: AbstractActionOptions = {},
   ) {
     super(g, actor, name, status, config, options);
-    this.isAttack = true;
-    this.isHarmful = true;
+    this.tags.add("attack");
+    this.tags.add("costs attack");
+    this.tags.add("harmful");
   }
 
   generateHealingConfigs() {
@@ -29,7 +30,8 @@ export default class AbstractAttackAction<
 
   getTime(): ActionTime | undefined {
     // if we already used Attack, costs nothing
-    if (this.actor.hasEffect(UsedAttackAction)) return undefined;
+    if (this.tags.has("costs attack") && this.actor.hasEffect(UsedAttackAction))
+      return undefined;
 
     return "action";
   }
@@ -38,7 +40,7 @@ export default class AbstractAttackAction<
     await super.apply(config);
 
     // a subclass might override this (e.g. OpportunityAttack)
-    if (this.isAttack) {
+    if (this.tags.has("costs attack")) {
       this.actor.attacksSoFar.push(this);
       await this.actor.addEffect(UsedAttackAction, { duration: 1 });
     }

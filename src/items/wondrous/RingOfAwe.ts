@@ -78,7 +78,7 @@ class RingOfAweAction extends AbstractAction {
       {},
       {
         area: [{ type: "within", radius: 15, who: actor }],
-        isHarmful: true,
+        tags: ["harmful"],
         time: "action",
         resources: new Map([[RingOfAweResource, 1]]),
         description: `By holding the ring aloft and speaking a command word, you project a field of awe around you. Each creature of your choice in a 15-foot sphere centred on you must succeed on a DC ${dc} Wisdom save or become frightened for 1 minute. On each affected creature's turn, it may repeat the Wisdom saving throw. On a successful save, the effect ends for that creature.`,

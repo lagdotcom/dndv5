@@ -115,7 +115,7 @@ export const RageEffect = new Effect(
 
     // If you are able to cast spells, you can't cast them or concentrate on them while raging.
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (action.actor.hasEffect(RageEffect) && action.isSpell)
+      if (action.actor.hasEffect(RageEffect) && action.tags.has("spell"))
         error.add("cannot cast spells", RageEffect);
     });
 

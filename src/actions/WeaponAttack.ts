@@ -25,7 +25,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     actor: Combatant,
     public weapon: WeaponItem,
     public ammo?: AmmoItem,
-    public tags?: SetInitialiser<AttackTag>,
+    public attackTags?: SetInitialiser<AttackTag>,
   ) {
     super(
       g,
@@ -103,7 +103,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       source: this,
       target,
       weapon: this.weapon,
-      tags: this.tags,
+      tags: this.attackTags,
     });
   }
 }

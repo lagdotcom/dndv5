@@ -3,6 +3,7 @@ import { OneAttackPerTurnRule } from "../DndRules";
 import Engine from "../Engine";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
+import { ShortRestResource } from "../resources";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import PCClassName from "../types/PCClassName";
@@ -34,7 +35,7 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
   return new SimpleFeature(name, text, (g, me) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
       if (
-        action.isAttack &&
+        action.tags.has("costs attack") &&
         action.actor === me &&
         action.actor.attacksSoFar.length <= extra
       )
@@ -42,3 +43,8 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
     });
   });
 }
+
+export const ChannelDivinityResource = new ShortRestResource(
+  "Channel Divinity",
+  1,
+);

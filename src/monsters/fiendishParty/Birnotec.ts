@@ -234,7 +234,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
         time: "reaction",
         icon: RebukeIcon,
         description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
-        isHarmful: true,
+        tags: ["harmful", "spell"],
       },
     );
   }

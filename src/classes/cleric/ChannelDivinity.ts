@@ -1,10 +1,5 @@
 import SimpleFeature from "../../features/SimpleFeature";
-import { ShortRestResource } from "../../resources";
-
-export const ChannelDivinityResource = new ShortRestResource(
-  "Channel Divinity",
-  1,
-);
+import { ChannelDivinityResource } from "../common";
 
 function getChannelCount(level: number) {
   if (level < 6) return 1;

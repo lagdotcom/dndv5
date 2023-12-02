@@ -5,7 +5,7 @@ import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
 import MessageBuilder from "../MessageBuilder";
-import Action from "../types/Action";
+import Action, { ActionTag } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
 import Icon from "../types/Icon";
@@ -17,9 +17,7 @@ export default class CastSpell<T extends object> implements Action<T> {
   time: ActionTime;
   icon?: Icon;
   subIcon?: Icon;
-  isSpell: true;
-  vocal?: boolean;
-  isHarmful: boolean;
+  tags: Set<ActionTag>;
 
   constructor(
     public g: Engine,
@@ -28,12 +26,13 @@ export default class CastSpell<T extends object> implements Action<T> {
     public spell: Spell<T>,
   ) {
     this.name = `${spell.name} (${method.name})`;
-    this.isSpell = true;
     this.time = spell.time;
     this.icon = spell.icon;
     this.subIcon = method.icon;
-    this.vocal = spell.v;
-    this.isHarmful = spell.isHarmful;
+
+    this.tags = new Set(["spell"]);
+    if (spell.v) this.tags.add("vocal");
+    if (spell.isHarmful) this.tags.add("harmful");
   }
 
   get status() {

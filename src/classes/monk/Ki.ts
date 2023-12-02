@@ -33,7 +33,12 @@ class FlurryOfBlows extends AbstractAction<HasTarget> {
       "Flurry of Blows",
       "implemented",
       { target: new TargetResolver(g, actor.reach + weapon.reach, []) },
-      { isHarmful: true, resources: [[KiResource, 1]], time: "bonus action" },
+      {
+        resources: [[KiResource, 1]],
+        time: "bonus action",
+        description: `Immediately after you take the Attack action on your turn, you can spend 1 ki point to make two unarmed strikes as a bonus action.`,
+        tags: ["attack", "harmful"],
+      },
     );
   }
 
@@ -132,7 +137,8 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
     });
 
     g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
-      if (action.actor === me && action.isAttack) {
+      // TODO this is not technically correct; should be the Attack action
+      if (action.actor === me && action.tags.has("costs attack")) {
         const target = (config as HasTarget).target;
         const weapon = getMonkUnarmedWeapon(g, me);
 

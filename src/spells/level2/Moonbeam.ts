@@ -41,7 +41,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
         icon: MoonbeamIcon,
         time: "action",
         description: `On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction.`,
-        isHarmful: true,
+        tags: ["harmful"], // TODO spell?
       },
     );
   }

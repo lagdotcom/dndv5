@@ -167,7 +167,7 @@ export const Charmed = new Effect<{ by: Combatant }>(
       const charm = action.actor.getEffectConfig(Charmed);
       const targets = action.getTargets(config) ?? [];
 
-      if (charm?.by && targets.includes(charm.by) && action.isHarmful)
+      if (charm?.by && targets.includes(charm.by) && action.tags.has("harmful"))
         error.add(
           "can't attack the charmer or target the charmer with harmful abilities or magical effects",
           Charmed,

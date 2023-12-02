@@ -9,7 +9,7 @@ import ChannelDivinity from "./ChannelDivinity";
 import HarnessDivinePower from "./HarnessDivinePower";
 import TurnUndead from "./TurnUndead";
 
-const ClericSpellcasting = new NormalSpellcasting(
+export const ClericSpellcasting = new NormalSpellcasting(
   "Cleric",
   `As a conduit for divine power, you can cast cleric spells.`,
   "wis",

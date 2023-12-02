@@ -570,7 +570,7 @@ export default function ChooseActionConfigPanel<T extends object>({
       <div className={styles.namePanel}>
         <div className={styles.name}>{action.name}</div>
         <div className={styles.time}>
-          {action.isAttack ? "attack" : time ?? "no cost"}
+          {action.tags.has("costs attack") ? "attack" : time ?? "no cost"}
         </div>
       </div>
       {statusWarning}

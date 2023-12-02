@@ -1,6 +1,7 @@
 import Combatant from "../../types/Combatant";
 import MoveDirection from "../../types/MoveDirection";
 import { useCallback } from "../lib";
+import classnames from "../utils/classnames";
 import {
   canDragUnits,
   scale,
@@ -42,7 +43,6 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
           : otherBg
       : undefined,
   };
-  const disabled = u.movedSoFar >= u.speed;
 
   const clicked = useCallback(
     (e: MouseEvent) => onClick?.(u.who, e),
@@ -64,7 +64,7 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
-      className={styles.main}
+      className={classnames(styles.main, { [styles.moving]: isMoving })}
       style={containerStyle}
       title={u.name}
       onClick={clicked}
@@ -79,30 +79,14 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
       />
       {isMoving && (
         <>
-          <UnitMoveButton disabled={disabled} onClick={moved} type="east" />
-          <UnitMoveButton
-            disabled={disabled}
-            onClick={moved}
-            type="southeast"
-          />
-          <UnitMoveButton disabled={disabled} onClick={moved} type="south" />
-          <UnitMoveButton
-            disabled={disabled}
-            onClick={moved}
-            type="southwest"
-          />
-          <UnitMoveButton disabled={disabled} onClick={moved} type="west" />
-          <UnitMoveButton
-            disabled={disabled}
-            onClick={moved}
-            type="northwest"
-          />
-          <UnitMoveButton disabled={disabled} onClick={moved} type="north" />
-          <UnitMoveButton
-            disabled={disabled}
-            onClick={moved}
-            type="northeast"
-          />
+          <UnitMoveButton onClick={moved} type="east" />
+          <UnitMoveButton onClick={moved} type="southeast" />
+          <UnitMoveButton onClick={moved} type="south" />
+          <UnitMoveButton onClick={moved} type="southwest" />
+          <UnitMoveButton onClick={moved} type="west" />
+          <UnitMoveButton onClick={moved} type="northwest" />
+          <UnitMoveButton onClick={moved} type="north" />
+          <UnitMoveButton onClick={moved} type="northeast" />
         </>
       )}
       {showSideHP.value.includes(u.side) ? (

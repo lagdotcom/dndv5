@@ -1,4 +1,4 @@
-import { ChannelDivinityResource } from "../../classes/paladin/common";
+import { ChannelDivinityResource } from "../../classes/common";
 import Engine from "../../Engine";
 import { Listener } from "../../events/Dispatcher";
 import MessageBuilder from "../../MessageBuilder";

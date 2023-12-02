@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import MultiplierCollector from "../collectors/MultiplierCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import Combatant from "../types/Combatant";
 import MoveDirection from "../types/MoveDirection";
@@ -11,12 +12,14 @@ export interface BeforeMoveDetail {
   who: Combatant;
   from: Point;
   to: Point;
+  cost: number;
   direction?: MoveDirection;
   handler: MoveHandler;
   type: MovementType;
   error: ErrorCollector;
   interrupt: InterruptionCollector;
   success: SuccessResponseCollector;
+  simulation?: boolean;
 }
 
 export default class BeforeMoveEvent extends CustomEvent<BeforeMoveDetail> {

@@ -18,14 +18,21 @@ export type ConfigWithPositioning<T> = {
   positioning: Set<PositionConstraint>;
 };
 
+export const ActionTags = [
+  "attack",
+  "costs attack",
+  "escape move prevention",
+  "harmful",
+  "spell",
+  "vocal",
+] as const;
+export type ActionTag = (typeof ActionTags)[number];
+
 export default interface Action<T extends object = object> extends Source {
   status: ImplementationStatus;
   actor: Combatant;
   subIcon?: Icon;
-  isAttack?: boolean;
-  isHarmful?: boolean;
-  isSpell?: boolean;
-  vocal?: boolean;
+  tags: Set<ActionTag>;
 
   apply(config: T): Promise<void>;
   check(config: Partial<T>, collector: ErrorCollector): ErrorCollector;

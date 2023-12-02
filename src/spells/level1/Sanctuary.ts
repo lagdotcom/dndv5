@@ -37,7 +37,7 @@ const SanctuaryEffect = new Effect<{
     );
 
     g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-      if (!action.isHarmful) return;
+      if (!action.tags.has("harmful")) return;
 
       const effects = getSanctuaryEffects(action.actor);
       const targets =

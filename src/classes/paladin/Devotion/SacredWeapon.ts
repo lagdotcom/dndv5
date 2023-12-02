@@ -11,7 +11,8 @@ import MessageBuilder from "../../../MessageBuilder";
 import ChoiceResolver from "../../../resolvers/ChoiceResolver";
 import Combatant from "../../../types/Combatant";
 import { minutes } from "../../../utils/time";
-import { ChannelDivinityResource, PaladinIcon } from "../common";
+import { ChannelDivinityResource } from "../../common";
+import { PaladinIcon } from "../common";
 
 const SacredWeaponIcon = makeIcon(iconUrl, DamageColours.radiant);
 
