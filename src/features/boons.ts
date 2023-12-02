@@ -14,6 +14,7 @@ import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
 import { getExecutionMode } from "../utils/env";
 import { round } from "../utils/numbers";
+import { compareDistances } from "../utils/units";
 import SimpleFeature from "./SimpleFeature";
 
 const HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
@@ -29,12 +30,25 @@ class HissFleeAction extends AbstractAction {
 
   async apply() {
     await super.apply({});
-    await this.g.applyBoundedMove(
-      this.actor,
-      new BoundedMove(this, round(this.actor.speed / 2, MapSquareSize), {
-        cannotApproach: [this.other],
+
+    const { g, actor, other } = this;
+    await g.applyBoundedMove(
+      actor,
+      new BoundedMove(this, round(actor.speed / 2, MapSquareSize), {
         mustUseAll: true,
         provokesOpportunityAttacks: false,
+        check: ({ detail: { from, to, error } }) => {
+          const { oldDistance, newDistance } = compareDistances(
+            other,
+            other.position,
+            actor,
+            from,
+            to,
+          );
+
+          if (newDistance < oldDistance)
+            error.add(`cannot move closer to ${other.name}`, this);
+        },
       }),
     );
   }

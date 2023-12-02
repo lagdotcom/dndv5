@@ -104,7 +104,6 @@ class BullRushAction extends AbstractAction {
       name: "Bull Rush",
       maximum,
       provokesOpportunityAttacks: true,
-      cannotApproach: new Set(),
       mustUseAll: false,
       teleportation: false,
       onMove: (who, cost) => {

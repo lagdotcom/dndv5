@@ -1,13 +1,10 @@
-import DndRule from "./DndRule";
+import BeforeMoveEvent from "./events/BeforeMoveEvent";
 import Combatant from "./types/Combatant";
 import MoveHandler from "./types/MoveHandler";
 import Source from "./types/Source";
-import { SetInitialiser } from "./utils/set";
-import { compareDistances } from "./utils/units";
 
 export const getDefaultMovement = (who: Combatant): MoveHandler => ({
   name: "Movement",
-  cannotApproach: new Set(),
   maximum: who.speed,
   mustUseAll: false,
   provokesOpportunityAttacks: true,
@@ -23,7 +20,6 @@ export const getTeleportation = (
   name = "Teleport",
 ): MoveHandler => ({
   name,
-  cannotApproach: new Set(),
   maximum,
   mustUseAll: false,
   provokesOpportunityAttacks: false,
@@ -31,41 +27,21 @@ export const getTeleportation = (
   onMove: () => true,
 });
 
-export const BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
-  g.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
-    for (const other of handler.cannotApproach ?? []) {
-      const { oldDistance, newDistance } = compareDistances(
-        other,
-        other.position,
-        who,
-        from,
-        to,
-      );
-
-      if (newDistance < oldDistance)
-        error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
-    }
-  });
-});
-
-type BoundedMoveConfig = Omit<
-  MoveHandler,
-  "maximum" | "cannotApproach" | "onMove" | "name"
-> & { cannotApproach: SetInitialiser<Combatant> };
+type BoundedMoveConfig = Omit<MoveHandler, "maximum" | "onMove" | "name">;
 
 export class BoundedMove implements MoveHandler {
   name: string;
   used: number;
-  cannotApproach: Set<Combatant>;
   mustUseAll: boolean;
   provokesOpportunityAttacks: boolean;
   teleportation: boolean;
+  check?: (e: BeforeMoveEvent) => void;
 
   constructor(
     public source: Source,
     public maximum: number,
     {
-      cannotApproach,
+      check,
       mustUseAll = false,
       provokesOpportunityAttacks = true,
       teleportation = false,
@@ -73,7 +49,7 @@ export class BoundedMove implements MoveHandler {
   ) {
     this.name = source.name;
     this.used = 0;
-    this.cannotApproach = new Set(cannotApproach);
+    this.check = check;
     this.mustUseAll = mustUseAll;
     this.provokesOpportunityAttacks = provokesOpportunityAttacks;
     this.teleportation = teleportation;

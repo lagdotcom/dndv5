@@ -3996,6 +3996,7 @@
       return this.move(who, position, handler, type);
     }
     async move(who, position, handler, type = "speed") {
+      var _a;
       const old = who.position;
       const error = new ErrorCollector();
       const pre = await this.resolve(
@@ -4010,6 +4011,7 @@
           success: new SuccessResponseCollector()
         })
       );
+      (_a = handler.check) == null ? void 0 : _a.call(handler, pre);
       if (pre.detail.success.result === "fail")
         return { type: "prevented" };
       if (!error.result)
@@ -4475,7 +4477,6 @@
       for (const point of path) {
         const result = await this.move(who, point, {
           maximum: Infinity,
-          cannotApproach: /* @__PURE__ */ new Set(),
           mustUseAll: false,
           provokesOpportunityAttacks: false,
           teleportation: false,
@@ -6174,7 +6175,6 @@
   // src/movement.ts
   var getDefaultMovement = (who) => ({
     name: "Movement",
-    cannotApproach: /* @__PURE__ */ new Set(),
     maximum: who.speed,
     mustUseAll: false,
     provokesOpportunityAttacks: true,
@@ -6186,32 +6186,15 @@
   });
   var getTeleportation = (maximum, name = "Teleport") => ({
     name,
-    cannotApproach: /* @__PURE__ */ new Set(),
     maximum,
     mustUseAll: false,
     provokesOpportunityAttacks: false,
     teleportation: true,
     onMove: () => true
   });
-  var BoundedMoveRule = new DndRule("Bounded Movement", (g) => {
-    g.events.on("BeforeMove", ({ detail: { who, from, to, handler, error } }) => {
-      var _a;
-      for (const other of (_a = handler.cannotApproach) != null ? _a : []) {
-        const { oldDistance, newDistance } = compareDistances(
-          other,
-          other.position,
-          who,
-          from,
-          to
-        );
-        if (newDistance < oldDistance)
-          error.add(`cannot move towards ${other.name}`, BoundedMoveRule);
-      }
-    });
-  });
   var BoundedMove = class {
     constructor(source, maximum, {
-      cannotApproach,
+      check,
       mustUseAll = false,
       provokesOpportunityAttacks = true,
       teleportation = false
@@ -6220,7 +6203,7 @@
       this.maximum = maximum;
       this.name = source.name;
       this.used = 0;
-      this.cannotApproach = new Set(cannotApproach);
+      this.check = check;
       this.mustUseAll = mustUseAll;
       this.provokesOpportunityAttacks = provokesOpportunityAttacks;
       this.teleportation = teleportation;
@@ -6240,12 +6223,23 @@
     }
     async apply() {
       await super.apply({});
-      await this.g.applyBoundedMove(
-        this.actor,
-        new BoundedMove(this, round(this.actor.speed / 2, MapSquareSize), {
-          cannotApproach: [this.other],
+      const { g, actor, other } = this;
+      await g.applyBoundedMove(
+        actor,
+        new BoundedMove(this, round(actor.speed / 2, MapSquareSize), {
           mustUseAll: true,
-          provokesOpportunityAttacks: false
+          provokesOpportunityAttacks: false,
+          check: ({ detail: { from, to, error } }) => {
+            const { oldDistance, newDistance } = compareDistances(
+              other,
+              other.position,
+              actor,
+              from,
+              to
+            );
+            if (newDistance < oldDistance)
+              error.add(`cannot move closer to ${other.name}`, this);
+          }
         })
       );
     }
@@ -7227,7 +7221,6 @@
         name: "Bull Rush",
         maximum,
         provokesOpportunityAttacks: true,
-        cannotApproach: /* @__PURE__ */ new Set(),
         mustUseAll: false,
         teleportation: false,
         onMove: (who, cost) => {

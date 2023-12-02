@@ -430,6 +430,8 @@ export default class Engine {
         success: new SuccessResponseCollector(),
       }),
     );
+    handler.check?.(pre);
+
     if (pre.detail.success.result === "fail")
       return { type: "prevented" as const };
     if (!error.result) return { type: "error" as const, error };
@@ -1035,7 +1037,6 @@ export default class Engine {
     for (const point of path) {
       const result = await this.move(who, point, {
         maximum: Infinity,
-        cannotApproach: new Set(),
         mustUseAll: false,
         provokesOpportunityAttacks: false,
         teleportation: false,
