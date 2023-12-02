@@ -406,7 +406,7 @@ export default class Engine {
     const old = who.position;
     const position = movePoint(old, direction);
 
-    return this.move(who, position, handler, type);
+    return this.move(who, position, handler, type, direction);
   }
 
   async move(
@@ -414,6 +414,7 @@ export default class Engine {
     position: Point,
     handler: MoveHandler,
     type: MovementType = "speed",
+    direction?: MoveDirection,
   ) {
     const old = who.position;
 
@@ -423,6 +424,7 @@ export default class Engine {
         who,
         from: old,
         to: position,
+        direction,
         handler,
         type,
         error,

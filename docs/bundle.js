@@ -3993,9 +3993,9 @@
     async moveInDirection(who, direction, handler, type = "speed") {
       const old = who.position;
       const position = movePoint(old, direction);
-      return this.move(who, position, handler, type);
+      return this.move(who, position, handler, type, direction);
     }
-    async move(who, position, handler, type = "speed") {
+    async move(who, position, handler, type = "speed", direction) {
       var _a;
       const old = who.position;
       const error = new ErrorCollector();
@@ -4004,6 +4004,7 @@
           who,
           from: old,
           to: position,
+          direction,
           handler,
           type,
           error,
@@ -7193,7 +7194,7 @@
         g,
         actor,
         "Bull Rush",
-        "incomplete",
+        "implemented",
         {},
         {
           icon: BullRushIcon,
@@ -7216,8 +7217,8 @@
       await actor.addEffect(BullRushEffect, { duration: 1 });
       const maximum = actor.speed;
       let used = 0;
+      let rushDirection;
       await g.applyBoundedMove(actor, {
-        // TODO must keep moving in same direction
         name: "Bull Rush",
         maximum,
         provokesOpportunityAttacks: true,
@@ -7236,6 +7237,12 @@
           }
           used += cost;
           return used >= maximum;
+        },
+        check: ({ detail: { direction, error } }) => {
+          if (!rushDirection)
+            rushDirection = direction;
+          else if (rushDirection !== direction)
+            error.add("must move in same direction", this);
         }
       });
       await Promise.all(promises);

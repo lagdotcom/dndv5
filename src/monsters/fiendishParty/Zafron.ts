@@ -22,6 +22,7 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { WeaponItem } from "../../types/Item";
+import MoveDirection from "../../types/MoveDirection";
 import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
 
@@ -72,7 +73,7 @@ class BullRushAction extends AbstractAction {
       g,
       actor,
       "Bull Rush",
-      "incomplete",
+      "implemented",
       {},
       {
         icon: BullRushIcon,
@@ -99,8 +100,9 @@ class BullRushAction extends AbstractAction {
 
     const maximum = actor.speed;
     let used = 0;
+    let rushDirection: MoveDirection | undefined;
+
     await g.applyBoundedMove(actor, {
-      // TODO must keep moving in same direction
       name: "Bull Rush",
       maximum,
       provokesOpportunityAttacks: true,
@@ -126,6 +128,11 @@ class BullRushAction extends AbstractAction {
 
         used += cost;
         return used >= maximum;
+      },
+      check: ({ detail: { direction, error } }) => {
+        if (!rushDirection) rushDirection = direction;
+        else if (rushDirection !== direction)
+          error.add("must move in same direction", this);
       },
     });
 
