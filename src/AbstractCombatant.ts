@@ -438,12 +438,17 @@ export default abstract class AbstractCombatant implements Combatant {
 
     // TODO max attunements
     if (attune) this.attunements.add(item);
+
+    return true;
   }
 
   doff(item: Item) {
     if (this.equipment.delete(item)) {
       this.inventory.add(item);
+      return true;
     }
+
+    return false;
   }
 
   addProficiency(thing: HasProficiency, value: ProficiencyType) {

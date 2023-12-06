@@ -1990,11 +1990,14 @@
       this.equipment.add(item);
       if (attune)
         this.attunements.add(item);
+      return true;
     }
     doff(item) {
       if (this.equipment.delete(item)) {
         this.inventory.add(item);
+        return true;
       }
+      return false;
     }
     addProficiency(thing, value) {
       var _a, _b;
@@ -3202,11 +3205,10 @@
     }
     async apply({ item }) {
       await super.apply({ item });
-      this.actor.equipment.delete(item);
-      this.actor.inventory.add(item);
-      this.g.text(
-        new MessageBuilder().co(this.actor).text(" doffs their ").it(item).text(".")
-      );
+      if (this.actor.doff(item))
+        this.g.text(
+          new MessageBuilder().co(this.actor).text(" doffs their ").it(item).text(".")
+        );
     }
   };
 
@@ -3250,11 +3252,10 @@
     }
     async apply({ item }) {
       await super.apply({ item });
-      this.actor.inventory.delete(item);
-      this.actor.equipment.add(item);
-      this.g.text(
-        new MessageBuilder().co(this.actor).text(" dons their ").it(item).text(".")
-      );
+      if (this.actor.don(item))
+        this.g.text(
+          new MessageBuilder().co(this.actor).text(" dons their ").it(item).text(".")
+        );
     }
   };
 
@@ -5927,9 +5928,9 @@
       });
     }
     don(item, giveProficiency = false) {
-      super.don(item);
       if (giveProficiency)
         this.addProficiency(item, "proficient");
+      return super.don(item);
     }
   };
 

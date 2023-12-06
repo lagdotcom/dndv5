@@ -55,14 +55,13 @@ export default class DonAction extends AbstractAction<Config> {
   async apply({ item }: Config) {
     await super.apply({ item });
 
-    this.actor.inventory.delete(item);
-    this.actor.equipment.add(item);
-    this.g.text(
-      new MessageBuilder()
-        .co(this.actor)
-        .text(" dons their ")
-        .it(item)
-        .text("."),
-    );
+    if (this.actor.don(item))
+      this.g.text(
+        new MessageBuilder()
+          .co(this.actor)
+          .text(" dons their ")
+          .it(item)
+          .text("."),
+      );
   }
 }

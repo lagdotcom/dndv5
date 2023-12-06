@@ -47,14 +47,13 @@ export default class DoffAction extends AbstractAction<Config> {
   async apply({ item }: Config) {
     await super.apply({ item });
 
-    this.actor.equipment.delete(item);
-    this.actor.inventory.add(item);
-    this.g.text(
-      new MessageBuilder()
-        .co(this.actor)
-        .text(" doffs their ")
-        .it(item)
-        .text("."),
-    );
+    if (this.actor.doff(item))
+      this.g.text(
+        new MessageBuilder()
+          .co(this.actor)
+          .text(" doffs their ")
+          .it(item)
+          .text("."),
+      );
   }
 }

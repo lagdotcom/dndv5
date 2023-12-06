@@ -28,8 +28,8 @@ export default class Monster extends AbstractCombatant {
     });
   }
 
-  don(item: Item, giveProficiency = false): void {
-    super.don(item);
+  don(item: Item, giveProficiency = false) {
     if (giveProficiency) this.addProficiency(item, "proficient");
+    return super.don(item);
   }
 }

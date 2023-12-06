@@ -140,4 +140,6 @@ export default interface Combatant extends Source {
   regainTime(time: ActionTime): void;
   resetTime(): void;
   getCoefficient(co: AICoefficient): number;
+  don(item: Item): boolean;
+  doff(item: Item): boolean;
 }
