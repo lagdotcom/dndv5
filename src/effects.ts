@@ -3,13 +3,17 @@ import proneUrl from "@img/act/prone.svg";
 import charmedUrl from "@img/spl/charm-monster.svg";
 
 import DropProneAction from "./actions/DropProneAction";
+import EscapeGrappleAction from "./actions/EscapeGrappleAction";
 import StabilizeAction from "./actions/StabilizeAction";
 import StandUpAction from "./actions/StandUpAction";
 import { makeIcon } from "./colours";
 import Effect from "./Effect";
 import EvaluateLater from "./interruptions/EvaluateLater";
+import YesNoChoice from "./interruptions/YesNoChoice";
 import Combatant from "./types/Combatant";
 import { EffectConfig } from "./types/EffectType";
+import Point from "./types/Point";
+import { addPoints, subPoints } from "./utils/points";
 import { distance } from "./utils/units";
 
 export const Dying = new Effect(
@@ -186,4 +190,102 @@ export const Charmed = new Effect<{ by: Combatant }>(
     );
   },
   { icon: makeIcon(charmedUrl), tags: ["magic"] },
+);
+
+export const Grappled = new Effect<{ by: Combatant }>(
+  "Grappled",
+  "turnEnd",
+  (g) => {
+    const grappleRemover = (who: Combatant) =>
+      new EvaluateLater(who, Grappled, async () => {
+        await who.removeEffect(Grappled);
+      });
+
+    const grappleMover = (
+      who: Combatant,
+      grappled: Combatant,
+      displacement: Point,
+    ) =>
+      new YesNoChoice(
+        who,
+        Grappled,
+        "Grapple",
+        `Should ${who.name} drag ${grappled.name} as they move?`,
+        async () => {
+          const destination = addPoints(grappled.position, displacement);
+          await g.move(grappled, destination, {
+            name: "Drag",
+            forced: true,
+            maximum: 5,
+            mustUseAll: false,
+            provokesOpportunityAttacks: false,
+            teleportation: false,
+            turnMovement: false,
+            onMove: () => true,
+          });
+        },
+        async () => {
+          if (distance(who, grappled) > who.reach)
+            await grappled.removeEffect(Grappled);
+        },
+      );
+
+    g.events.on("GetConditions", ({ detail: { who, grappling } }) => {
+      for (const other of g.combatants) {
+        const config = other.getEffectConfig(Grappled);
+        if (config?.by === who) grappling.add(other);
+      }
+    });
+
+    // The condition ends if the grappler is incapacitated.
+    g.events.on("AfterAction", ({ detail }) => {
+      for (const who of g.combatants) {
+        const config = who.getEffectConfig(Grappled);
+        if (config?.by.conditions.has("Incapacitated"))
+          detail.interrupt.add(grappleRemover(who));
+      }
+    });
+
+    // The condition also ends if an effect removes the grappled creature from the reach of the grappler or grappling effect, such as when a creature is hurled away by the thunderwave spell.
+    g.events.on(
+      "CombatantMoved",
+      ({ detail: { who, handler, interrupt, old, position } }) => {
+        const config = who.getEffectConfig(Grappled);
+        if (
+          config &&
+          handler.forced &&
+          distance(who, config.by) > config.by.reach
+        )
+          interrupt.add(grappleRemover(who));
+
+        // When you move, you can drag or carry the grappled creature with you[...]
+        const displacement = subPoints(position, old);
+        for (const grappled of who.grappling)
+          interrupt.add(grappleMover(who, grappled, displacement));
+      },
+    );
+
+    // A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.
+    // When you move, you can drag or carry the grappled creature with you, but your speed is halved, unless the creature is two or more sizes smaller than you.
+    g.events.on("GetSpeed", ({ detail: { who, multiplier, bonus } }) => {
+      if (who.hasEffect(Grappled)) {
+        multiplier.add("zero", Grappled);
+        bonus.ignoreAll();
+        return;
+      }
+
+      for (const grappled of who.grappling) {
+        if (who.size - grappled.size < 2) {
+          multiplier.add("half", Grappled);
+          return;
+        }
+      }
+    });
+
+    // A grappled creature can use its action to escape.
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who.hasEffect(Grappled))
+        actions.push(new EscapeGrappleAction(g, who));
+    });
+  },
 );

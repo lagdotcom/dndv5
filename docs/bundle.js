@@ -91,6 +91,7 @@
   // src/collectors/AbstractCollector.ts
   var AbstractCollector = class {
     constructor(entries, ignoredSources, ignoredValues) {
+      this.completelyIgnored = false;
       this.entries = new Set(entries);
       this.ignoredSources = new Set(ignoredSources);
       this.ignoredValues = new Set(ignoredValues);
@@ -104,7 +105,12 @@
     ignoreValue(value) {
       this.ignoredValues.add(value);
     }
+    ignoreAll() {
+      this.completelyIgnored = true;
+    }
     isInvolved(source) {
+      if (this.completelyIgnored)
+        return false;
       if (this.ignoredSources.has(source))
         return false;
       for (const entry of this.entries)
@@ -113,6 +119,8 @@
       return false;
     }
     getEntries() {
+      if (this.completelyIgnored)
+        return [];
       return Array.from(this.entries).filter(
         (entry) => !(this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value))
       );
@@ -745,6 +753,18 @@
   // src/img/act/disengage.svg
   var disengage_default = "./disengage-6XMY6V34.svg";
 
+  // src/types/SizeCategory.ts
+  var SizeCategory = /* @__PURE__ */ ((SizeCategory2) => {
+    SizeCategory2[SizeCategory2["Tiny"] = 1] = "Tiny";
+    SizeCategory2[SizeCategory2["Small"] = 2] = "Small";
+    SizeCategory2[SizeCategory2["Medium"] = 3] = "Medium";
+    SizeCategory2[SizeCategory2["Large"] = 4] = "Large";
+    SizeCategory2[SizeCategory2["Huge"] = 6] = "Huge";
+    SizeCategory2[SizeCategory2["Gargantuan"] = 7] = "Gargantuan";
+    return SizeCategory2;
+  })(SizeCategory || {});
+  var SizeCategory_default = SizeCategory;
+
   // src/utils/combinatorics.ts
   function combinations(source, size) {
     const results = [];
@@ -1039,12 +1059,12 @@
 
   // src/utils/units.ts
   var categoryUnits = {
-    tiny: 1,
-    small: 1,
-    medium: 1,
-    large: 2,
-    huge: 3,
-    gargantuan: 4
+    [SizeCategory_default.Tiny]: 1,
+    [SizeCategory_default.Small]: 1,
+    [SizeCategory_default.Medium]: 1,
+    [SizeCategory_default.Large]: 2,
+    [SizeCategory_default.Huge]: 3,
+    [SizeCategory_default.Gargantuan]: 4
   };
   function convertSizeToUnit(size) {
     return categoryUnits[size] * MapSquareSize;
@@ -1147,6 +1167,11 @@
     name: `not ${types.join("/")}`,
     message: "wrong creature type",
     check: (g, action, value) => !types.includes(value.type)
+  });
+  var sizeOrLess = (size) => makeFilter({
+    name: `up to ${SizeCategory_default[size]}`,
+    message: "too big",
+    check: (g, action, value) => value.size <= size
   });
   var withinRangeOfEachOther = (range) => makeFilter({
     name: `within ${range}' of each other`,
@@ -1878,6 +1903,9 @@
     get frightenedBy() {
       return this.getConditions().frightenedBy;
     }
+    get grappling() {
+      return this.getConditions().grappling;
+    }
     get speed() {
       var _a;
       const bonus = new BonusCollector();
@@ -1908,8 +1936,14 @@
       for (const condition of this.conditionImmunities)
         conditions.ignoreValue(condition);
       const frightenedBy = /* @__PURE__ */ new Set();
+      const grappling = /* @__PURE__ */ new Set();
       this.g.fire(
-        new GetConditionsEvent({ who: this, conditions, frightenedBy })
+        new GetConditionsEvent({
+          who: this,
+          conditions,
+          frightenedBy,
+          grappling
+        })
       );
       for (const condition of conditions.getEntries()) {
         if (condition.value === "Paralyzed" || condition.value === "Petrified" || condition.value === "Stunned" || condition.value === "Unconscious")
@@ -1917,7 +1951,7 @@
       }
       if (!conditions.result.has("Frightened"))
         frightenedBy.clear();
-      return { conditions, frightenedBy };
+      return { conditions, frightenedBy, grappling };
     }
     addFeatures(features) {
       for (const feature of features != null ? features : [])
@@ -2330,8 +2364,91 @@
     }
   };
 
+  // src/resolvers/ChoiceResolver.ts
+  var ChoiceResolver = class {
+    constructor(g, entries) {
+      this.g = g;
+      this.entries = entries;
+      this.type = "Choice";
+    }
+    get name() {
+      if (this.entries.length === 0)
+        return "empty";
+      return `One of: ${this.entries.map((e2) => e2.label).join(", ")}`;
+    }
+    check(value, action, ec) {
+      if (this.entries.length === 0)
+        ec.add("No valid choices", this);
+      else if (!value)
+        ec.add("No choice made", this);
+      else if (!this.entries.find((e2) => e2.value === value))
+        ec.add("Invalid choice", this);
+      return ec;
+    }
+  };
+
   // src/types/CheckTag.ts
   var chSet = (...items) => new Set(items);
+
+  // src/actions/common.ts
+  var GrappleChoices = [
+    {
+      label: "Strength (Athletics)",
+      value: { ability: "str", skill: "Athletics" }
+    },
+    {
+      label: "Dexterity (Acrobatics)",
+      value: { ability: "dex", skill: "Acrobatics" }
+    }
+  ];
+
+  // src/actions/EscapeGrappleAction.ts
+  var EscapeGrappleAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Escape a Grapple",
+        "implemented",
+        { choice: new ChoiceResolver(g, GrappleChoices) },
+        {
+          description: `A grappled creature can use its action to escape. To do so, it must succeed on a Strength (Athletics) or Dexterity (Acrobatics) check contested by your Strength (Athletics) check.`,
+          tags: ["escape move prevention"],
+          time: "action"
+        }
+      );
+    }
+    check(config, ec) {
+      if (!this.actor.hasEffect(Grappled))
+        ec.add("not being grappled", this);
+      return super.check(config, ec);
+    }
+    async apply(config) {
+      await super.apply(config);
+      const { ability, skill } = config.choice;
+      const { g, actor } = this;
+      const grapple = actor.getEffectConfig(Grappled);
+      if (!grapple)
+        throw new Error("Trying to escape a non-existent grapple");
+      const { by: grappler } = grapple;
+      const { total: mine } = await g.abilityCheck(NaN, {
+        ability,
+        skill,
+        who: actor,
+        attacker: grappler,
+        tags: chSet("grapple")
+      });
+      const { total: theirs } = await g.abilityCheck(NaN, {
+        ability: "str",
+        skill: "Athletics",
+        who: grappler,
+        attacker: actor,
+        tags: chSet("grapple")
+      });
+      if (mine > theirs)
+        await actor.removeEffect(Grappled);
+    }
+  };
 
   // src/actions/StabilizeAction.ts
   var StabilizeAction = class extends AbstractAction {
@@ -2420,6 +2537,101 @@
       this.priority = priority;
     }
   };
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no, priority = 10, isStillValid) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+      this.priority = priority;
+      this.isStillValid = isStillValid;
+    }
+    async apply(g) {
+      var _a, _b;
+      const choice = await new Promise(
+        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        await ((_a = this.yes) == null ? void 0 : _a.call(this));
+      else
+        await ((_b = this.no) == null ? void 0 : _b.call(this));
+      return choice;
+    }
+  };
+
+  // src/utils/points.ts
+  var _p = (x, y) => ({ x, y });
+  function addPoints(a, b) {
+    return _p(a.x + b.x, a.y + b.y);
+  }
+  function mulPoint(z, mul) {
+    return _p(z.x * mul, z.y * mul);
+  }
+  function subPoints(a, b) {
+    return _p(a.x - b.x, a.y - b.y);
+  }
+  var moveOffsets = {
+    east: _p(MapSquareSize, 0),
+    southeast: _p(MapSquareSize, MapSquareSize),
+    south: _p(0, MapSquareSize),
+    southwest: _p(-MapSquareSize, MapSquareSize),
+    west: _p(-MapSquareSize, 0),
+    northwest: _p(-MapSquareSize, -MapSquareSize),
+    north: _p(0, -MapSquareSize),
+    northeast: _p(MapSquareSize, -MapSquareSize)
+  };
+  function movePoint(p, d) {
+    return addPoints(p, moveOffsets[d]);
+  }
+  function supercoverLine(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const nx = Math.abs(dx);
+    const ny = Math.abs(dy);
+    const moveX = dx > 0 ? MapSquareSize : -MapSquareSize;
+    const moveY = dy > 0 ? MapSquareSize : -MapSquareSize;
+    const p = _p(a.x, a.y);
+    const points = [_p(p.x, p.y)];
+    for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
+      const decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
+      if (decision === 0) {
+        p.x += moveX;
+        p.y += moveY;
+        ix += MapSquareSize;
+        iy += MapSquareSize;
+      } else if (decision < 0) {
+        p.x += moveX;
+        ix += MapSquareSize;
+      } else {
+        p.y += moveY;
+        iy += MapSquareSize;
+      }
+      points.push(_p(p.x, p.y));
+    }
+    return points;
+  }
+  function getPathAwayFrom(p, away, dist) {
+    const dy = p.y - away.y;
+    const dx = p.x - away.x;
+    const angle = Math.atan2(dy, dx);
+    const mx = dist * Math.cos(angle);
+    const my = dist * Math.sin(angle);
+    return supercoverLine(
+      p,
+      _p(Math.floor(p.x + mx), Math.floor(p.y + my))
+    ).slice(1);
+  }
 
   // src/effects.ts
   var Dying = new Effect(
@@ -2572,6 +2784,80 @@
       );
     },
     { icon: makeIcon(charm_monster_default), tags: ["magic"] }
+  );
+  var Grappled = new Effect(
+    "Grappled",
+    "turnEnd",
+    (g) => {
+      const grappleRemover = (who) => new EvaluateLater(who, Grappled, async () => {
+        await who.removeEffect(Grappled);
+      });
+      const grappleMover = (who, grappled, displacement) => new YesNoChoice(
+        who,
+        Grappled,
+        "Grapple",
+        `Should ${who.name} drag ${grappled.name} as they move?`,
+        async () => {
+          const destination = addPoints(grappled.position, displacement);
+          await g.move(grappled, destination, {
+            name: "Drag",
+            forced: true,
+            maximum: 5,
+            mustUseAll: false,
+            provokesOpportunityAttacks: false,
+            teleportation: false,
+            turnMovement: false,
+            onMove: () => true
+          });
+        },
+        async () => {
+          if (distance(who, grappled) > who.reach)
+            await grappled.removeEffect(Grappled);
+        }
+      );
+      g.events.on("GetConditions", ({ detail: { who, grappling } }) => {
+        for (const other of g.combatants) {
+          const config = other.getEffectConfig(Grappled);
+          if ((config == null ? void 0 : config.by) === who)
+            grappling.add(other);
+        }
+      });
+      g.events.on("AfterAction", ({ detail }) => {
+        for (const who of g.combatants) {
+          const config = who.getEffectConfig(Grappled);
+          if (config == null ? void 0 : config.by.conditions.has("Incapacitated"))
+            detail.interrupt.add(grappleRemover(who));
+        }
+      });
+      g.events.on(
+        "CombatantMoved",
+        ({ detail: { who, handler, interrupt, old, position } }) => {
+          const config = who.getEffectConfig(Grappled);
+          if (config && handler.forced && distance(who, config.by) > config.by.reach)
+            interrupt.add(grappleRemover(who));
+          const displacement = subPoints(position, old);
+          for (const grappled of who.grappling)
+            interrupt.add(grappleMover(who, grappled, displacement));
+        }
+      );
+      g.events.on("GetSpeed", ({ detail: { who, multiplier, bonus } }) => {
+        if (who.hasEffect(Grappled)) {
+          multiplier.add("zero", Grappled);
+          bonus.ignoreAll();
+          return;
+        }
+        for (const grappled of who.grappling) {
+          if (who.size - grappled.size < 2) {
+            multiplier.add("half", Grappled);
+            return;
+          }
+        }
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who.hasEffect(Grappled))
+          actions.push(new EscapeGrappleAction(g, who));
+      });
+    }
   );
 
   // src/actions/AbstractAttackAction.ts
@@ -2840,18 +3126,6 @@
     }
   };
 
-  // src/actions/TwoWeaponAttack.ts
-  var TwoWeaponAttack = class extends WeaponAttack {
-    constructor(g, actor, weapon) {
-      super(g, actor, weapon, void 0, ["two-weapon"]);
-      this.tags.delete("costs attack");
-      this.name = `Two-Weapon ${this.name}`;
-    }
-    getTime() {
-      return "bonus action";
-    }
-  };
-
   // src/events/ListChoiceEvent.ts
   var ListChoiceEvent = class extends CustomEvent {
     constructor(detail) {
@@ -2873,11 +3147,117 @@
       this.isStillValid = isStillValid;
     }
     async apply(g) {
+      var _a;
       const choice = await new Promise(
         (resolve) => g.fire(new ListChoiceEvent({ interruption: this, resolve }))
       );
       if (choice)
-        return this.chosen(choice);
+        return (_a = this.chosen) == null ? void 0 : _a.call(this, choice);
+    }
+  };
+
+  // src/actions/GrappleAction.ts
+  var isNotGrappling = (who) => ({
+    name: "not grappling",
+    message: "already grappling",
+    check: (g, action, value) => !who.grappling.has(value)
+  });
+  var GrappleAction = class extends AbstractAttackAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Grapple",
+        "implemented",
+        {
+          target: new TargetResolver(g, actor.reach, [
+            sizeOrLess(actor.size + 1),
+            isNotGrappling(actor)
+          ])
+        },
+        {
+          description: `When you want to grab a creature or wrestle with it, you can use the Attack action to make a special melee attack, a grapple. If you're able to make multiple attacks with the Attack action, this attack replaces one of them. The target of your grapple must be no more than one size larger than you, and it must be within your reach.
+
+    Using at least one free hand, you try to seize the target by making a grapple check, a Strength (Athletics) check contested by the target's Strength (Athletics) or Dexterity (Acrobatics) check (the target chooses the ability to use). You succeed automatically if the target is incapacitated. If you succeed, you subject the target to the grappled condition (see the appendix). The condition specifies the things that end it, and you can release the target whenever you like (no action required).`
+        }
+      );
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { actor, g } = this;
+      if (target.conditions.has("Incapacitated")) {
+        await this.applyGrapple(target);
+        return;
+      }
+      const { total: mine } = await g.abilityCheck(NaN, {
+        ability: "str",
+        skill: "Athletics",
+        who: actor,
+        attacker: target,
+        tags: chSet("grapple")
+      });
+      await new PickFromListChoice(
+        target,
+        this,
+        "Grapple",
+        `${actor.name} is trying to grapple ${target.name}. Contest with which skill?`,
+        GrappleChoices,
+        async ({ ability, skill }) => {
+          const { total: theirs } = await g.abilityCheck(NaN, {
+            ability,
+            skill,
+            who: target,
+            attacker: actor,
+            tags: chSet("grapple")
+          });
+          if (mine > theirs)
+            await this.applyGrapple(target);
+        }
+      ).apply(g);
+    }
+    async applyGrapple(target) {
+      await target.addEffect(Grappled, { duration: Infinity, by: this.actor });
+    }
+  };
+
+  // src/actions/ReleaseGrappleAction.ts
+  var isGrappling = (who) => ({
+    name: "grappling",
+    message: "not grappling",
+    check: (g, action, value) => who.grappling.has(value)
+  });
+  var ReleaseGrappleAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Release Grapple",
+        "implemented",
+        { target: new TargetResolver(g, Infinity, [isGrappling(actor)]) },
+        { description: `You can release the target whenever you like.` }
+      );
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      await target.removeEffect(Grappled);
+    }
+  };
+
+  // src/actions/TwoWeaponAttack.ts
+  var TwoWeaponAttack = class extends WeaponAttack {
+    constructor(g, actor, weapon) {
+      super(g, actor, weapon, void 0, ["two-weapon"]);
+      this.tags.delete("costs attack");
+      this.name = `Two-Weapon ${this.name}`;
+    }
+    getTime() {
+      return "bonus action";
     }
   };
 
@@ -3023,6 +3403,9 @@
       actions.push(new DashAction(g, who));
       actions.push(new DisengageAction(g, who));
       actions.push(new DodgeAction(g, who));
+      actions.push(new GrappleAction(g, who));
+      if (who.grappling.size)
+        actions.push(new ReleaseGrappleAction(g, who));
     });
   });
   var DeafenedRule = new DndRule("Deafened", (g) => {
@@ -3031,6 +3414,7 @@
         successResponse.add("fail", DeafenedRule);
     });
   });
+  var DifficultTerrainRule = { name: "Difficult Terrain" };
   var EffectsRule = new DndRule("Effects", (g) => {
     g.events.on(
       "TurnStarted",
@@ -3322,9 +3706,11 @@
     });
   });
   var RestrainedRule = new DndRule("Restrained", (g) => {
-    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-      if (who.conditions.has("Restrained"))
+    g.events.on("GetSpeed", ({ detail: { who, multiplier, bonus } }) => {
+      if (who.conditions.has("Restrained")) {
         multiplier.add("zero", RestrainedRule);
+        bonus.ignoreAll();
+      }
     });
     g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {
       if (target.conditions.has("Restrained"))
@@ -3683,38 +4069,6 @@
     }
   };
 
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority = 10, isStillValid) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
-      this.priority = priority;
-      this.isStillValid = isStillValid;
-    }
-    async apply(g) {
-      var _a, _b;
-      const choice = await new Promise(
-        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        await ((_a = this.yes) == null ? void 0 : _a.call(this));
-      else
-        await ((_b = this.no) == null ? void 0 : _b.call(this));
-      return choice;
-    }
-  };
-
   // src/movement.ts
   var getDefaultMovement = (who) => ({
     name: "Movement",
@@ -3779,66 +4133,6 @@
 
   // src/types/SaveTag.ts
   var svSet = (...items) => new Set(items);
-
-  // src/utils/points.ts
-  var _p = (x, y) => ({ x, y });
-  function addPoints(a, b) {
-    return _p(a.x + b.x, a.y + b.y);
-  }
-  function mulPoint(z, mul) {
-    return _p(z.x * mul, z.y * mul);
-  }
-  var moveOffsets = {
-    east: _p(MapSquareSize, 0),
-    southeast: _p(MapSquareSize, MapSquareSize),
-    south: _p(0, MapSquareSize),
-    southwest: _p(-MapSquareSize, MapSquareSize),
-    west: _p(-MapSquareSize, 0),
-    northwest: _p(-MapSquareSize, -MapSquareSize),
-    north: _p(0, -MapSquareSize),
-    northeast: _p(MapSquareSize, -MapSquareSize)
-  };
-  function movePoint(p, d) {
-    return addPoints(p, moveOffsets[d]);
-  }
-  function supercoverLine(a, b) {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const nx = Math.abs(dx);
-    const ny = Math.abs(dy);
-    const moveX = dx > 0 ? MapSquareSize : -MapSquareSize;
-    const moveY = dy > 0 ? MapSquareSize : -MapSquareSize;
-    const p = _p(a.x, a.y);
-    const points = [_p(p.x, p.y)];
-    for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
-      const decision = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
-      if (decision === 0) {
-        p.x += moveX;
-        p.y += moveY;
-        ix += MapSquareSize;
-        iy += MapSquareSize;
-      } else if (decision < 0) {
-        p.x += moveX;
-        ix += MapSquareSize;
-      } else {
-        p.y += moveY;
-        iy += MapSquareSize;
-      }
-      points.push(_p(p.x, p.y));
-    }
-    return points;
-  }
-  function getPathAwayFrom(p, away, dist) {
-    const dy = p.y - away.y;
-    const dx = p.x - away.x;
-    const angle = Math.atan2(dy, dx);
-    const mx = dist * Math.cos(angle);
-    const my = dist * Math.sin(angle);
-    return supercoverLine(
-      p,
-      _p(Math.floor(p.x + mx), Math.floor(p.y + my))
-    ).slice(1);
-  }
 
   // src/Engine.ts
   var Engine = class {
@@ -4034,7 +4328,7 @@
           forced
         })
       );
-      return { outcome, forced };
+      return { outcome, forced, total };
     }
     async roll(type, diceType = "normal") {
       const roll = this.dice.roll(type, diceType);
@@ -4103,7 +4397,7 @@
         })
       );
       if (difficult.result.size)
-        multiplier.add("double", { name: "Difficult Terrain" });
+        multiplier.add("double", DifficultTerrainRule);
       const cost = multiplier.result * MapSquareSize;
       const error = new ErrorCollector();
       const pre = await this.resolve(
@@ -4495,6 +4789,8 @@
       return this.applyHeal(gather.detail.target, total, gather.detail.actor);
     }
     async applyHeal(who, fullAmount, actor) {
+      if (fullAmount < 1)
+        return;
       const amount = Math.min(fullAmount, who.hpMax - who.hp);
       who.hp += amount;
       return this.resolve(
@@ -5481,7 +5777,7 @@
   };
   var Badger = class extends Monster {
     constructor(g) {
-      super(g, "badger", 0, "beast", "tiny", badger_default, 3);
+      super(g, "badger", 0, "beast", SizeCategory_default.Tiny, badger_default, 3);
       this.movement.set("speed", 20);
       this.movement.set("burrow", 5);
       this.setAbilityScores(4, 11, 12, 2, 12, 5);
@@ -5508,7 +5804,7 @@
   };
   var Bat = class extends Monster {
     constructor(g) {
-      super(g, "bat", 0, "beast", "tiny", bat_default, 1);
+      super(g, "bat", 0, "beast", SizeCategory_default.Tiny, bat_default, 1);
       this.movement.set("speed", 5);
       this.movement.set("fly", 30);
       this.setAbilityScores(2, 15, 8, 2, 12, 4);
@@ -5958,7 +6254,7 @@
   );
   var Birnotec = class extends Monster {
     constructor(g) {
-      super(g, "Birnotec", 5, "humanoid", "medium", birnotec_default, 35);
+      super(g, "Birnotec", 5, "humanoid", SizeCategory_default.Medium, birnotec_default, 35);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(6, 15, 8, 12, 13, 20);
@@ -6206,7 +6502,7 @@
   );
   var Kay = class extends Monster {
     constructor(g) {
-      super(g, hiddenName, 6, "humanoid", "medium", kay_default, 75);
+      super(g, hiddenName, 6, "humanoid", SizeCategory_default.Medium, kay_default, 75);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(14, 18, 16, 10, 8, 14);
@@ -6853,7 +7149,7 @@
   );
   var OGonrit = class extends Monster {
     constructor(g) {
-      super(g, "O Gonrit", 5, "fiend", "medium", o_gonrit_default, 65, [
+      super(g, "O Gonrit", 5, "fiend", SizeCategory_default.Medium, o_gonrit_default, 65, [
         new HealingRule(),
         new DamageRule(),
         new StayNearAlliesRule(FiendishMantleRange)
@@ -7211,7 +7507,7 @@
   );
   var Yulash = class extends Monster {
     constructor(g) {
-      super(g, "Yulash", 5, "monstrosity", "medium", yulash_default, 65);
+      super(g, "Yulash", 5, "monstrosity", SizeCategory_default.Medium, yulash_default, 65);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(8, 16, 14, 12, 13, 18);
@@ -7410,7 +7706,7 @@
   );
   var Zafron = class extends Monster {
     constructor(g) {
-      super(g, "Zafron Halehart", 5, "fiend", "medium", zafron_default, 105);
+      super(g, "Zafron Halehart", 5, "fiend", SizeCategory_default.Medium, zafron_default, 105);
       this.diesAtZero = false;
       this.movement.set("speed", 30);
       this.setAbilityScores(18, 14, 20, 7, 10, 13);
@@ -7457,7 +7753,7 @@
   };
   var GiantBadger = class extends Monster {
     constructor(g) {
-      super(g, "giant badger", 0.25, "beast", "medium", giant_badger_default, 13);
+      super(g, "giant badger", 0.25, "beast", SizeCategory_default.Medium, giant_badger_default, 13);
       this.movement.set("speed", 30);
       this.movement.set("burrow", 10);
       this.setAbilityScores(13, 10, 15, 2, 12, 5);
@@ -7504,7 +7800,7 @@
   );
   var Goblin = class extends Monster {
     constructor(g, wieldingBow = false) {
-      super(g, "goblin", 0.25, "humanoid", "small", goblin_default, 7);
+      super(g, "goblin", 0.25, "humanoid", SizeCategory_default.Small, goblin_default, 7);
       this.movement.set("speed", 30);
       this.addProficiency("Stealth", "expertise");
       this.senses.set("darkvision", 60);
@@ -7537,7 +7833,7 @@
   // src/monsters/Thug.ts
   var Thug = class extends Monster {
     constructor(g) {
-      super(g, "thug", 0.5, "humanoid", "medium", thug_default, 32);
+      super(g, "thug", 0.5, "humanoid", SizeCategory_default.Medium, thug_default, 32);
       this.don(new LeatherArmor(g), true);
       this.movement.set("speed", 30);
       this.setAbilityScores(15, 11, 14, 10, 10, 11);
@@ -8003,7 +8299,7 @@
     constructor(g, name, img, rules = defaultAIRules) {
       super(g, name, {
         type: "humanoid",
-        size: "medium",
+        size: SizeCategory_default.Medium,
         img,
         side: 0,
         diesAtZero: false,
@@ -9639,11 +9935,12 @@ While holding the object, a creature can take an action to produce the spell's e
             })
           );
       });
-      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-        if (isRaging(pre.who) && pre.who.side !== pre.target.side)
+      g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
+        var _a;
+        if (isRaging(action.actor) && action.tags.has("attack") && ((_a = action.getTargets(config)) == null ? void 0 : _a.find((who) => who.side !== action.actor.side)))
           interrupt.add(
-            new EvaluateLater(pre.who, RageEffect, async () => {
-              await pre.who.addEffect(DidAttackTag, { duration: Infinity });
+            new EvaluateLater(action.actor, RageEffect, async () => {
+              await action.actor.addEffect(DidAttackTag, { duration: Infinity });
             })
           );
       });
@@ -11862,39 +12159,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var Darkness_default = Darkness;
 
-  // src/resolvers/ChoiceResolver.ts
-  var ChoiceResolver = class {
-    constructor(g, entries) {
-      this.g = g;
-      this.entries = entries;
-      this.type = "Choice";
-    }
-    get name() {
-      if (this.entries.length === 0)
-        return "empty";
-      return `One of: ${this.entries.map((e2) => e2.label).join(", ")}`;
-    }
-    check(value, action, ec) {
-      if (this.entries.length === 0)
-        ec.add("No valid choices", this);
-      else if (!value)
-        ec.add("No choice made", this);
-      else if (!this.entries.find((e2) => e2.value === value))
-        ec.add("Invalid choice", this);
-      return ec;
-    }
-  };
-
-  // src/types/SizeCategory.ts
-  var SizeCategories = [
-    "tiny",
-    "small",
-    "medium",
-    "large",
-    "huge",
-    "gargantuan"
-  ];
-
   // src/spells/level2/EnlargeReduce.ts
   var EnlargeEffect = new Effect(
     "Enlarge",
@@ -11959,10 +12223,10 @@ At the end of each of its turns, and each time it takes damage, the target can m
     { tags: ["magic"] }
   );
   function applySizeChange(size, change) {
-    const index = SizeCategories.indexOf(size) + change;
-    if (index < 0 || index >= SizeCategories.length)
-      return void 0;
-    return SizeCategories[index];
+    const newCategory = size + change;
+    if (SizeCategory_default[newCategory])
+      return newCategory;
+    return void 0;
   }
   var EnlargeReduceController = class {
     constructor(caster, effect, config, victim, sizeChange = effect === EnlargeEffect ? 1 : -1) {
@@ -16681,7 +16945,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   // src/races/Dragonborn_FTD.ts
   var MetallicDragonborn = {
     name: "Dragonborn (Metallic)",
-    size: "medium",
+    size: SizeCategory_default.Medium,
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     languages: laSet("Common")
   };
@@ -16897,7 +17161,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     return {
       parent: MetallicDragonborn,
       name: `${a} Dragonborn`,
-      size: "medium",
+      size: SizeCategory_default.Medium,
       features: /* @__PURE__ */ new Set([breathWeapon, draconicResistance, metallicBreathWeapon])
     };
   }
@@ -16930,7 +17194,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var Dwarf = {
     name: "Dwarf",
     abilities: /* @__PURE__ */ new Map([["con", 2]]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     movement: /* @__PURE__ */ new Map([["speed", 25]]),
     features: /* @__PURE__ */ new Set([
       Darkvision60,
@@ -16952,7 +17216,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     parent: Dwarf,
     name: "Hill Dwarf",
     abilities: /* @__PURE__ */ new Map([["wis", 1]]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     features: /* @__PURE__ */ new Set([DwarvenToughness])
   };
   var DwarvenArmorTraining = new SimpleFeature(
@@ -16967,7 +17231,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     parent: Dwarf,
     name: "Mountain Dwarf",
     abilities: /* @__PURE__ */ new Map([["str", 2]]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     features: /* @__PURE__ */ new Set([DwarvenArmorTraining])
   };
 
@@ -16986,7 +17250,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var Elf = {
     name: "Elf",
     abilities: /* @__PURE__ */ new Map([["dex", 2]]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     features: /* @__PURE__ */ new Set([Darkvision60, KeenSenses, FeyAncestry, Trance]),
     languages: laSet("Common", "Elvish")
@@ -17024,14 +17288,14 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     parent: Elf,
     name: "High Elf",
     abilities: /* @__PURE__ */ new Map([["int", 1]]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     features: /* @__PURE__ */ new Set([ElfWeaponTraining, Cantrip, ExtraLanguage])
   };
 
   // src/races/Genasi_EEPC.ts
   var Genasi = {
     name: "Genasi",
-    size: "medium",
+    size: SizeCategory_default.Medium,
     abilities: /* @__PURE__ */ new Map([["con", 2]]),
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     languages: laSet("Common", "Primordial")
@@ -17064,7 +17328,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var AirGenasi = {
     parent: Genasi,
     name: "Air Genasi",
-    size: "medium",
+    size: SizeCategory_default.Medium,
     abilities: /* @__PURE__ */ new Map([["dex", 1]]),
     features: /* @__PURE__ */ new Set([UnendingBreath, MingleWithTheWind])
   };
@@ -17086,7 +17350,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var Gnome = {
     name: "Gnome",
     abilities: /* @__PURE__ */ new Map([["int", 2]]),
-    size: "small",
+    size: SizeCategory_default.Small,
     movement: /* @__PURE__ */ new Map([["speed", 25]]),
     features: /* @__PURE__ */ new Set([Darkvision60, GnomeCunning]),
     languages: laSet("Common", "Gnomish")
@@ -17107,7 +17371,7 @@ When you create a device, choose one of the following options:
     parent: Gnome,
     name: "Rock Gnome",
     abilities: /* @__PURE__ */ new Map([["con", 1]]),
-    size: "small",
+    size: SizeCategory_default.Small,
     features: /* @__PURE__ */ new Set([ArtificersLore, Tinker])
   };
 
@@ -17131,7 +17395,7 @@ When you create a device, choose one of the following options:
   var HalfElf = {
     name: "Half-Elf",
     abilities: /* @__PURE__ */ new Map([["cha", 2]]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     features: /* @__PURE__ */ new Set([
       Darkvision60,
@@ -17183,7 +17447,7 @@ When you create a device, choose one of the following options:
   var Halfling = {
     name: "Halfling",
     abilities: /* @__PURE__ */ new Map([["dex", 2]]),
-    size: "small",
+    size: SizeCategory_default.Small,
     movement: /* @__PURE__ */ new Map([["speed", 25]]),
     features: /* @__PURE__ */ new Set([Lucky2, Brave, HalflingNimbleness]),
     languages: laSet("Common", "Halfling")
@@ -17196,7 +17460,7 @@ When you create a device, choose one of the following options:
     parent: Halfling,
     name: "Lightfoot Halfling",
     abilities: /* @__PURE__ */ new Map([["cha", 1]]),
-    size: "small",
+    size: SizeCategory_default.Small,
     features: /* @__PURE__ */ new Set([NaturallyStealthy])
   };
   var StoutResilience = poisonResistance(
@@ -17207,7 +17471,7 @@ When you create a device, choose one of the following options:
     parent: Halfling,
     name: "Stout Halfling",
     abilities: /* @__PURE__ */ new Map([["con", 1]]),
-    size: "small",
+    size: SizeCategory_default.Small,
     features: /* @__PURE__ */ new Set([StoutResilience])
   };
 
@@ -17272,7 +17536,7 @@ When you create a device, choose one of the following options:
       ["str", 2],
       ["con", 1]
     ]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     features: /* @__PURE__ */ new Set([
       Darkvision60,
@@ -17294,7 +17558,7 @@ When you create a device, choose one of the following options:
       ["wis", 1],
       ["cha", 1]
     ]),
-    size: "medium",
+    size: SizeCategory_default.Medium,
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     languages: laSet("Common"),
     features: /* @__PURE__ */ new Set([ExtraLanguage])
@@ -17309,7 +17573,7 @@ When you create a device, choose one of the following options:
   );
   var Tiefling = {
     name: "Tiefling",
-    size: "medium",
+    size: SizeCategory_default.Medium,
     abilities: /* @__PURE__ */ new Map([["cha", 2]]),
     movement: /* @__PURE__ */ new Map([["speed", 30]]),
     features: /* @__PURE__ */ new Set([Darkvision60, HellishResistance]),
@@ -17345,7 +17609,7 @@ When you create a device, choose one of the following options:
   var Asmodeus = {
     parent: Tiefling,
     name: "Tiefling (Asmodeus)",
-    size: "medium",
+    size: SizeCategory_default.Medium,
     abilities: /* @__PURE__ */ new Map([["int", 1]]),
     features: /* @__PURE__ */ new Set([InfernalLegacy])
   };
@@ -17402,7 +17666,7 @@ When you create a device, choose one of the following options:
   );
   var Triton = {
     name: "Triton",
-    size: "medium",
+    size: SizeCategory_default.Medium,
     abilities: /* @__PURE__ */ new Map([
       ["str", 1],
       ["con", 1],
@@ -19750,7 +20014,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     " on a ",
     describeAbility(ability),
     skill ? ` (${skill})` : void 0,
-    ` ability check. (DC ${dc})`
+    " ability check.",
+    !isNaN(dc) ? `  (DC ${dc})` : ""
   ];
   var getInitiativeMessage = ({
     diceType,

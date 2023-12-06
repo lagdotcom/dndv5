@@ -3,6 +3,7 @@ import tokenUrl from "@img/tok/bat.png";
 import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
+import SizeCategory from "../types/SizeCategory";
 import { KeenHearing } from "./common";
 
 class Bite extends AbstractWeapon {
@@ -19,7 +20,7 @@ class Bite extends AbstractWeapon {
 
 export default class Bat extends Monster {
   constructor(g: Engine) {
-    super(g, "bat", 0, "beast", "tiny", tokenUrl, 1);
+    super(g, "bat", 0, "beast", SizeCategory.Tiny, tokenUrl, 1);
     this.movement.set("speed", 5);
     this.movement.set("fly", 30);
     this.setAbilityScores(2, 15, 8, 2, 12, 4);

@@ -1,5 +1,6 @@
 export const CheckTags = [
   "counterspell",
+  "grapple",
   "hearing",
   "sight",
   "smell",

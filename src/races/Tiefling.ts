@@ -10,6 +10,7 @@ import HellishRebuke from "../spells/level1/HellishRebuke";
 import Darkness from "../spells/level2/Darkness";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import { resistanceFeature } from "./common";
 
 const HellishResistance = resistanceFeature(
@@ -20,7 +21,7 @@ const HellishResistance = resistanceFeature(
 
 const Tiefling: PCRace = {
   name: "Tiefling",
-  size: "medium",
+  size: SizeCategory.Medium,
   abilities: new Map([["cha", 2]]),
   movement: new Map([["speed", 30]]),
   features: new Set([Darkvision60, HellishResistance]),
@@ -59,7 +60,7 @@ const InfernalLegacy = bonusSpellsFeature(
 export const Asmodeus: PCRace = {
   parent: Tiefling,
   name: "Tiefling (Asmodeus)",
-  size: "medium",
+  size: SizeCategory.Medium,
   abilities: new Map([["int", 1]]),
   features: new Set([InfernalLegacy]),
 };

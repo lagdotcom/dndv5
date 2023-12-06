@@ -27,6 +27,6 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     const choice = await new Promise<T | undefined>((resolve) =>
       g.fire(new ListChoiceEvent<T>({ interruption: this, resolve })),
     );
-    if (choice) return this.chosen(choice);
+    if (choice) return this.chosen?.(choice);
   }
 }

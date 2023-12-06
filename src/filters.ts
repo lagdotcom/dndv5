@@ -3,6 +3,7 @@ import Engine from "./Engine";
 import Action from "./types/Action";
 import Combatant from "./types/Combatant";
 import CreatureType from "./types/CreatureType";
+import SizeCategory from "./types/SizeCategory";
 import { combinations } from "./utils/combinatorics";
 import { distance } from "./utils/units";
 
@@ -86,6 +87,13 @@ export const notOfCreatureType = (...types: CreatureType[]) =>
     name: `not ${types.join("/")}`,
     message: "wrong creature type",
     check: (g, action, value) => !types.includes(value.type),
+  });
+
+export const sizeOrLess = (size: SizeCategory) =>
+  makeFilter<Combatant>({
+    name: `up to ${SizeCategory[size]}`,
+    message: "too big",
+    check: (g, action, value) => value.size <= size,
   });
 
 export const withinRangeOfEachOther = (range: number) =>

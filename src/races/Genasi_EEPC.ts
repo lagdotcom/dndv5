@@ -7,10 +7,11 @@ import InnateSpellcasting from "../spells/InnateSpellcasting";
 import Levitate from "../spells/level2/Levitate";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 
 const Genasi: PCRace = {
   name: "Genasi",
-  size: "medium",
+  size: SizeCategory.Medium,
   abilities: new Map([["con", 2]]),
   movement: new Map([["speed", 30]]),
   languages: laSet("Common", "Primordial"),
@@ -49,7 +50,7 @@ const MingleWithTheWind = new SimpleFeature(
 export const AirGenasi: PCRace = {
   parent: Genasi,
   name: "Air Genasi",
-  size: "medium",
+  size: SizeCategory.Medium,
   abilities: new Map([["dex", 1]]),
   features: new Set([UnendingBreath, MingleWithTheWind]),
 };

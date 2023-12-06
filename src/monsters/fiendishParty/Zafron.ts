@@ -23,6 +23,7 @@ import { coSet } from "../../types/ConditionName";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { WeaponItem } from "../../types/Item";
 import MoveDirection from "../../types/MoveDirection";
+import SizeCategory from "../../types/SizeCategory";
 import { round } from "../../utils/numbers";
 import { makeMultiattack } from "../common";
 
@@ -215,7 +216,7 @@ const SurvivalReflex = new SimpleFeature(
 
 export default class Zafron extends Monster {
   constructor(g: Engine) {
-    super(g, "Zafron Halehart", 5, "fiend", "medium", tokenUrl, 105);
+    super(g, "Zafron Halehart", 5, "fiend", SizeCategory.Medium, tokenUrl, 105);
     this.diesAtZero = false;
     this.movement.set("speed", 30);
     this.setAbilityScores(18, 14, 20, 7, 10, 13);

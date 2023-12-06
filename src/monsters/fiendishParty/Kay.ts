@@ -12,6 +12,7 @@ import { StuddedLeatherArmor } from "../../items/armor";
 import { Longbow, Spear } from "../../items/weapons";
 import Monster from "../../Monster";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import SizeCategory from "../../types/SizeCategory";
 import { makeMultiattack } from "../common";
 
 const hiddenName = "Shrouded Figure";
@@ -109,7 +110,7 @@ const SmoulderingRage = new SimpleFeature(
 
 export default class Kay extends Monster {
   constructor(g: Engine) {
-    super(g, hiddenName, 6, "humanoid", "medium", tokenUrl, 75);
+    super(g, hiddenName, 6, "humanoid", SizeCategory.Medium, tokenUrl, 75);
     this.diesAtZero = false;
     this.movement.set("speed", 30);
     this.setAbilityScores(14, 18, 16, 10, 8, 14);

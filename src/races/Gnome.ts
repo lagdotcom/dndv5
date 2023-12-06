@@ -3,6 +3,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import { MentalAbilities } from "../types/AbilityName";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import { isA } from "../utils/types";
 
 const GnomeCunning = new SimpleFeature(
@@ -22,7 +23,7 @@ const GnomeCunning = new SimpleFeature(
 const Gnome: PCRace = {
   name: "Gnome",
   abilities: new Map([["int", 2]]),
-  size: "small",
+  size: SizeCategory.Small,
   movement: new Map([["speed", 25]]),
   features: new Set([Darkvision60, GnomeCunning]),
   languages: laSet("Common", "Gnomish"),
@@ -48,6 +49,6 @@ export const RockGnome: PCRace = {
   parent: Gnome,
   name: "Rock Gnome",
   abilities: new Map([["con", 1]]),
-  size: "small",
+  size: SizeCategory.Small,
   features: new Set([ArtificersLore, Tinker]),
 };

@@ -5,6 +5,7 @@ export interface GetConditionsDetail {
   who: Combatant;
   conditions: ConditionCollector;
   frightenedBy: Set<Combatant>;
+  grappling: Set<Combatant>;
 }
 
 export default class GetConditionsEvent extends CustomEvent<GetConditionsDetail> {

@@ -130,11 +130,15 @@ export const RageEffect = new Effect(
     });
 
     // ...or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then.
-    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-      if (isRaging(pre.who) && pre.who.side !== pre.target.side)
+    g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
+      if (
+        isRaging(action.actor) &&
+        action.tags.has("attack") &&
+        action.getTargets(config)?.find((who) => who.side !== action.actor.side)
+      )
         interrupt.add(
-          new EvaluateLater(pre.who, RageEffect, async () => {
-            await pre.who.addEffect(DidAttackTag, { duration: Infinity });
+          new EvaluateLater(action.actor, RageEffect, async () => {
+            await action.actor.addEffect(DidAttackTag, { duration: Infinity });
           }),
         );
     });

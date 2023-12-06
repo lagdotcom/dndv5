@@ -25,6 +25,7 @@ import MassHealingWord from "../../spells/level3/MassHealingWord";
 import AbilityName from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
+import SizeCategory from "../../types/SizeCategory";
 import { distance } from "../../utils/units";
 import { FiendishParty } from "./common";
 
@@ -140,7 +141,7 @@ const Spellcasting = bonusSpellsFeature(
 
 export default class OGonrit extends Monster {
   constructor(g: Engine) {
-    super(g, "O Gonrit", 5, "fiend", "medium", tokenUrl, 65, [
+    super(g, "O Gonrit", 5, "fiend", SizeCategory.Medium, tokenUrl, 65, [
       new HealingRule(),
       new DamageRule(),
       new StayNearAlliesRule(FiendishMantleRange),

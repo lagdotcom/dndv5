@@ -3,6 +3,7 @@ import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import { poisonResistance } from "./common";
 
 const DwarvenResilience = poisonResistance(
@@ -36,7 +37,7 @@ const Stonecunning = nonCombatFeature(
 const Dwarf: PCRace = {
   name: "Dwarf",
   abilities: new Map([["con", 2]]),
-  size: "medium",
+  size: SizeCategory.Medium,
   movement: new Map([["speed", 25]]),
   features: new Set([
     Darkvision60,
@@ -60,7 +61,7 @@ export const HillDwarf: PCRace = {
   parent: Dwarf,
   name: "Hill Dwarf",
   abilities: new Map([["wis", 1]]),
-  size: "medium",
+  size: SizeCategory.Medium,
   features: new Set([DwarvenToughness]),
 };
 
@@ -77,6 +78,6 @@ export const MountainDwarf: PCRace = {
   parent: Dwarf,
   name: "Mountain Dwarf",
   abilities: new Map([["str", 2]]),
-  size: "medium",
+  size: SizeCategory.Medium,
   features: new Set([DwarvenArmorTraining]),
 };

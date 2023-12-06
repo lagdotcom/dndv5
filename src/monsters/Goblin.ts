@@ -7,6 +7,7 @@ import { Arrow } from "../items/ammunition";
 import { LeatherArmor, Shield } from "../items/armor";
 import { Scimitar, Shortbow } from "../items/weapons";
 import Monster from "../Monster";
+import SizeCategory from "../types/SizeCategory";
 import { featureNotComplete } from "../utils/env";
 
 const NimbleEscape = new SimpleFeature(
@@ -32,7 +33,7 @@ const NimbleEscape = new SimpleFeature(
 
 export default class Goblin extends Monster {
   constructor(g: Engine, wieldingBow = false) {
-    super(g, "goblin", 0.25, "humanoid", "small", tokenUrl, 7);
+    super(g, "goblin", 0.25, "humanoid", SizeCategory.Small, tokenUrl, 7);
     this.movement.set("speed", 30);
     this.addProficiency("Stealth", "expertise");
     this.senses.set("darkvision", 60);

@@ -11,12 +11,14 @@ abstract class AbstractCollector<T> {
   protected entries: Set<CollectorEntry<T>>;
   protected ignoredSources: Set<Source>;
   protected ignoredValues: Set<T>;
+  protected completelyIgnored: boolean;
 
   constructor(
     entries?: SetInitialiser<CollectorEntry<T>>,
     ignoredSources?: SetInitialiser<Source>,
     ignoredValues?: SetInitialiser<T>,
   ) {
+    this.completelyIgnored = false;
     this.entries = new Set(entries);
     this.ignoredSources = new Set(ignoredSources);
     this.ignoredValues = new Set(ignoredValues);
@@ -34,7 +36,12 @@ abstract class AbstractCollector<T> {
     this.ignoredValues.add(value);
   }
 
+  ignoreAll() {
+    this.completelyIgnored = true;
+  }
+
   isInvolved(source: Source) {
+    if (this.completelyIgnored) return false;
     if (this.ignoredSources.has(source)) return false;
     for (const entry of this.entries)
       if (entry.source === source && !this.ignoredValues.has(entry.value))
@@ -43,6 +50,8 @@ abstract class AbstractCollector<T> {
   }
 
   getEntries() {
+    if (this.completelyIgnored) return [];
+
     return Array.from(this.entries).filter(
       (entry) =>
         !(

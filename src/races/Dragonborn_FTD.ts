@@ -19,12 +19,13 @@ import ImplementationStatus from "../types/ImplementationStatus";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import Point from "../types/Point";
+import SizeCategory from "../types/SizeCategory";
 import { _dd } from "../utils/dice";
 import { resistanceFeature } from "./common";
 
 const MetallicDragonborn: PCRace = {
   name: "Dragonborn (Metallic)",
-  size: "medium",
+  size: SizeCategory.Medium,
   movement: new Map([["speed", 30]]),
   languages: laSet("Common"),
 };
@@ -272,7 +273,7 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
   return {
     parent: MetallicDragonborn,
     name: `${a} Dragonborn`,
-    size: "medium",
+    size: SizeCategory.Medium,
     features: new Set([breathWeapon, draconicResistance, metallicBreathWeapon]),
   };
 }

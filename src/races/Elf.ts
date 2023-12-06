@@ -5,6 +5,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import Spell from "../types/Spell";
 import { ExtraLanguage, FeyAncestry } from "./common";
 
@@ -24,7 +25,7 @@ const Trance = nonCombatFeature(
 const Elf: PCRace = {
   name: "Elf",
   abilities: new Map([["dex", 2]]),
-  size: "medium",
+  size: SizeCategory.Medium,
   movement: new Map([["speed", 30]]),
   features: new Set([Darkvision60, KeenSenses, FeyAncestry, Trance]),
   languages: laSet("Common", "Elvish"),
@@ -67,6 +68,6 @@ export const HighElf: PCRace = {
   parent: Elf,
   name: "High Elf",
   abilities: new Map([["int", 1]]),
-  size: "medium",
+  size: SizeCategory.Medium,
   features: new Set([ElfWeaponTraining, Cantrip, ExtraLanguage]),
 };

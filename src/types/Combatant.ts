@@ -102,6 +102,7 @@ export default interface Combatant extends Source {
   rules: Set<AIRule>;
   frightenedBy: Set<Combatant>;
   spellsSoFar: Spell[];
+  grappling: Set<Combatant>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

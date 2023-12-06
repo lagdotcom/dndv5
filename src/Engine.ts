@@ -16,7 +16,7 @@ import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import ValueCollector from "./collectors/ValueCollector";
 import DamageMap, { DamageInitialiser } from "./DamageMap";
 import DiceBag from "./DiceBag";
-import DndRules, { ProficiencyRule } from "./DndRules";
+import DndRules, { DifficultTerrainRule, ProficiencyRule } from "./DndRules";
 import Effect from "./Effect";
 import { Dead, Dying, Stable } from "./effects";
 import AbilityCheckEvent from "./events/AbilityCheckEvent";
@@ -344,7 +344,7 @@ export default class Engine {
       }),
     );
 
-    return { outcome, forced };
+    return { outcome, forced, total };
   }
 
   async roll<T extends RollType>(type: T, diceType: DiceType = "normal") {
@@ -438,8 +438,7 @@ export default class Engine {
       }),
     );
 
-    if (difficult.result.size)
-      multiplier.add("double", { name: "Difficult Terrain" });
+    if (difficult.result.size) multiplier.add("double", DifficultTerrainRule);
 
     const cost = multiplier.result * MapSquareSize;
 
@@ -796,7 +795,7 @@ export default class Engine {
     damageInitialiser: DamageInitialiser = [],
     startingMultiplier?: MultiplierType,
   ) {
-    // just skip it lol
+    // TODO should we go through the motions here in case something ignores it?
     if (startingMultiplier === "zero") return;
 
     const map = new DamageMap(damageInitialiser);
@@ -965,6 +964,8 @@ export default class Engine {
   }
 
   async applyHeal(who: Combatant, fullAmount: number, actor?: Combatant) {
+    if (fullAmount < 1) return;
+
     const amount = Math.min(fullAmount, who.hpMax - who.hp);
     who.hp += amount;
 

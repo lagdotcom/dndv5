@@ -317,6 +317,10 @@ export default abstract class AbstractCombatant implements Combatant {
     return this.getConditions().frightenedBy;
   }
 
+  get grappling(): Set<Combatant> {
+    return this.getConditions().grappling;
+  }
+
   get speed(): number {
     const bonus = new BonusCollector();
     bonus.add(this.movement.get("speed") ?? 0, this);
@@ -353,9 +357,15 @@ export default abstract class AbstractCombatant implements Combatant {
       conditions.ignoreValue(condition);
 
     const frightenedBy = new Set<Combatant>();
+    const grappling = new Set<Combatant>();
 
     this.g.fire(
-      new GetConditionsEvent({ who: this, conditions, frightenedBy }),
+      new GetConditionsEvent({
+        who: this,
+        conditions,
+        frightenedBy,
+        grappling,
+      }),
     );
 
     // cascading conditions
@@ -371,7 +381,7 @@ export default abstract class AbstractCombatant implements Combatant {
 
     if (!conditions.result.has("Frightened")) frightenedBy.clear();
 
-    return { conditions, frightenedBy };
+    return { conditions, frightenedBy, grappling };
   }
 
   addFeatures(features?: Feature[]) {

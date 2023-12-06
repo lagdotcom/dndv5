@@ -3,6 +3,7 @@ import ConfiguredFeature from "../features/ConfiguredFeature";
 import AbilityName from "../types/AbilityName";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import SkillName from "../types/SkillName";
 import { ExtraLanguage, FeyAncestry } from "./common";
 
@@ -25,7 +26,7 @@ export const AbilityScoreBonus = new ConfiguredFeature<AbilityName[]>(
 export const HalfElf: PCRace = {
   name: "Half-Elf",
   abilities: new Map([["cha", 2]]),
-  size: "medium",
+  size: SizeCategory.Medium,
   movement: new Map([["speed", 30]]),
   features: new Set([
     Darkvision60,

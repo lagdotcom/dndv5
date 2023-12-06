@@ -5,12 +5,12 @@ import Point from "../types/Point";
 import SizeCategory from "../types/SizeCategory";
 
 const categoryUnits: Record<SizeCategory, number> = {
-  tiny: 1,
-  small: 1,
-  medium: 1,
-  large: 2,
-  huge: 3,
-  gargantuan: 4,
+  [SizeCategory.Tiny]: 1,
+  [SizeCategory.Small]: 1,
+  [SizeCategory.Medium]: 1,
+  [SizeCategory.Large]: 2,
+  [SizeCategory.Huge]: 3,
+  [SizeCategory.Gargantuan]: 4,
 };
 
 export function convertSizeToUnit(size: SizeCategory) {

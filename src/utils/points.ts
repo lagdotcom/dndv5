@@ -12,6 +12,10 @@ export function mulPoint(z: Point, mul: number) {
   return _p(z.x * mul, z.y * mul);
 }
 
+export function subPoints(a: Point, b: Point) {
+  return _p(a.x - b.x, a.y - b.y);
+}
+
 const moveOffsets: Record<MoveDirection, Point> = {
   east: _p(MapSquareSize, 0),
   southeast: _p(MapSquareSize, MapSquareSize),

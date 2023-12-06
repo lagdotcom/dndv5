@@ -152,7 +152,8 @@ export const getAbilityCheckMessage = ({
   " on a ",
   describeAbility(ability),
   skill ? ` (${skill})` : undefined,
-  ` ability check. (DC ${dc})`,
+  " ability check.",
+  !isNaN(dc) ? `  (DC ${dc})` : "",
 ];
 
 export const getInitiativeMessage = ({

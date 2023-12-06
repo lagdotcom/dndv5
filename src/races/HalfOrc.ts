@@ -3,6 +3,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import EvaluateLater from "../interruptions/EvaluateLater";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 
 const Menacing = new SimpleFeature(
   "Menacing",
@@ -70,7 +71,7 @@ export const HalfOrc: PCRace = {
     ["str", 2],
     ["con", 1],
   ]),
-  size: "medium",
+  size: SizeCategory.Medium,
   movement: new Map([["speed", 30]]),
   features: new Set([
     Darkvision60,

@@ -2,7 +2,9 @@ import { isCastSpell } from "./actions/CastSpell";
 import DashAction from "./actions/DashAction";
 import DisengageAction from "./actions/DisengageAction";
 import DodgeAction from "./actions/DodgeAction";
+import GrappleAction from "./actions/GrappleAction";
 import OpportunityAttack from "./actions/OpportunityAttack";
+import ReleaseGrappleAction from "./actions/ReleaseGrappleAction";
 import { TwoWeaponAttack } from "./actions/TwoWeaponAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
@@ -146,7 +148,9 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
     actions.push(new DisengageAction(g, who));
     actions.push(new DodgeAction(g, who));
 
-    // TODO GrappleAction
+    actions.push(new GrappleAction(g, who));
+    if (who.grappling.size) actions.push(new ReleaseGrappleAction(g, who));
+
     // TODO ShoveAction
   });
 });
@@ -157,6 +161,8 @@ export const DeafenedRule = new DndRule("Deafened", (g) => {
       successResponse.add("fail", DeafenedRule);
   });
 });
+
+export const DifficultTerrainRule = { name: "Difficult Terrain" };
 
 export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) =>
@@ -233,12 +239,6 @@ export const FrightenedRule = new DndRule("Frightened", (g) => {
     }
   });
 });
-
-/* TODO Grappled
-- A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.
-- The condition ends if the grappler is incapacitated.
-- The condition also ends if an effect removes the grappled creature from the reach of the grappler or grappling effect, such as when a creature is hurled away by the thunderwave spell.
-*/
 
 export const HeavyArmorRule = new DndRule("Heavy Armor", (g) => {
   // Heavier armor interferes with the wearer's ability to move quickly, stealthily, and freely. If the Armor table shows "Str 13" or "Str 15" in the Strength column for an armor type, the armor reduces the wearer's speed by 10 feet unless the wearer has a Strength score equal to or higher than the listed score.
@@ -545,11 +545,11 @@ export const ResourcesRule = new DndRule("Resources", (g) => {
 
 export const RestrainedRule = new DndRule("Restrained", (g) => {
   // A restrained creature's speed becomes 0...
-  g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-    if (who.conditions.has("Restrained"))
+  g.events.on("GetSpeed", ({ detail: { who, multiplier, bonus } }) => {
+    if (who.conditions.has("Restrained")) {
       multiplier.add("zero", RestrainedRule);
-
-    // TODO ...and it can't benefit from any bonus to its speed.
+      bonus.ignoreAll();
+    }
   });
 
   g.events.on("BeforeAttack", ({ detail: { who, diceType, target } }) => {

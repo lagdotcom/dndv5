@@ -7,7 +7,7 @@ import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { EffectConfig } from "../../types/EffectType";
-import SizeCategory, { SizeCategories } from "../../types/SizeCategory";
+import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -84,10 +84,10 @@ const ReduceEffect = new Effect(
 );
 
 function applySizeChange(size: SizeCategory, change: number) {
-  const index = SizeCategories.indexOf(size) + change;
-  if (index < 0 || index >= SizeCategories.length) return undefined;
+  const newCategory = size + change;
+  if (SizeCategory[newCategory]) return newCategory as SizeCategory;
 
-  return SizeCategories[index];
+  return undefined;
 }
 
 class EnlargeReduceController {

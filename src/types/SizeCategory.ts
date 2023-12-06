@@ -1,10 +1,9 @@
-export const SizeCategories = [
-  "tiny",
-  "small",
-  "medium",
-  "large",
-  "huge",
-  "gargantuan",
-] as const;
-type SizeCategory = (typeof SizeCategories)[number];
+enum SizeCategory {
+  Tiny = 1,
+  Small = 2,
+  Medium = 3,
+  Large = 4,
+  Huge = 6,
+  Gargantuan = 7,
+}
 export default SizeCategory;

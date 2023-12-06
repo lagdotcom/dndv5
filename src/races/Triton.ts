@@ -11,6 +11,7 @@ import GustOfWind from "../spells/level2/GustOfWind";
 import WallOfWater from "../spells/level3/WallOfWater";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import { resistanceFeature } from "./common";
 
 // TODO [TERRAIN] [CHOKING]
@@ -69,7 +70,7 @@ const GuardiansOfTheDepths = resistanceFeature(
 
 const Triton: PCRace = {
   name: "Triton",
-  size: "medium",
+  size: SizeCategory.Medium,
   abilities: new Map([
     ["str", 1],
     ["con", 1],

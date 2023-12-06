@@ -13,6 +13,7 @@ import PCClass from "./types/PCClass";
 import PCClassName from "./types/PCClassName";
 import PCRace from "./types/PCRace";
 import PCSubclass from "./types/PCSubclass";
+import SizeCategory from "./types/SizeCategory";
 import { getDefaultHPRoll } from "./utils/dice";
 import { getProficiencyBonusByLevel } from "./utils/dnd";
 import { mergeSets } from "./utils/set";
@@ -47,7 +48,7 @@ export default class PC extends AbstractCombatant {
   ) {
     super(g, name, {
       type: "humanoid",
-      size: "medium",
+      size: SizeCategory.Medium,
       img,
       side: 0,
       diesAtZero: false,

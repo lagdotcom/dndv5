@@ -27,6 +27,7 @@ import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
+import SizeCategory from "../../types/SizeCategory";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility } from "../../utils/items";
 import { distance } from "../../utils/units";
@@ -320,7 +321,7 @@ const DancingStep = new SimpleFeature(
 
 export default class Yulash extends Monster {
   constructor(g: Engine) {
-    super(g, "Yulash", 5, "monstrosity", "medium", tokenUrl, 65);
+    super(g, "Yulash", 5, "monstrosity", SizeCategory.Medium, tokenUrl, 65);
     this.diesAtZero = false;
     this.movement.set("speed", 30);
     this.setAbilityScores(8, 16, 14, 12, 13, 18);

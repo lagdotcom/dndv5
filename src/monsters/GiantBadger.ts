@@ -4,6 +4,7 @@ import WeaponAttack from "../actions/WeaponAttack";
 import Engine from "../Engine";
 import { AbstractWeapon } from "../items/weapons";
 import Monster from "../Monster";
+import SizeCategory from "../types/SizeCategory";
 import { _dd } from "../utils/dice";
 import { KeenSmell, makeMultiattack } from "./common";
 
@@ -23,7 +24,7 @@ class Claws extends AbstractWeapon {
 
 export default class GiantBadger extends Monster {
   constructor(g: Engine) {
-    super(g, "giant badger", 0.25, "beast", "medium", tokenUrl, 13);
+    super(g, "giant badger", 0.25, "beast", SizeCategory.Medium, tokenUrl, 13);
     this.movement.set("speed", 30);
     this.movement.set("burrow", 10);
     this.setAbilityScores(13, 10, 15, 2, 12, 5);

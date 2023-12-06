@@ -23,6 +23,7 @@ import SpellAttack from "../../spells/SpellAttack";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import SizeCategory from "../../types/SizeCategory";
 import { poSet } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
@@ -319,7 +320,7 @@ const HellishRebuke = new SimpleFeature(
 
 export default class Birnotec extends Monster {
   constructor(g: Engine) {
-    super(g, "Birnotec", 5, "humanoid", "medium", tokenUrl, 35);
+    super(g, "Birnotec", 5, "humanoid", SizeCategory.Medium, tokenUrl, 35);
     this.diesAtZero = false;
     this.movement.set("speed", 30);
     this.setAbilityScores(6, 15, 8, 12, 13, 20);

@@ -1,5 +1,6 @@
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import { ExtraLanguage } from "./common";
 
 const Human: PCRace = {
@@ -12,7 +13,7 @@ const Human: PCRace = {
     ["wis", 1],
     ["cha", 1],
   ]),
-  size: "medium",
+  size: SizeCategory.Medium,
   movement: new Map([["speed", 30]]),
   languages: laSet("Common"),
   features: new Set([ExtraLanguage]),

@@ -3,6 +3,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import SizeCategory from "../types/SizeCategory";
 import { poisonResistance } from "./common";
 
 const Lucky = new SimpleFeature(
@@ -54,7 +55,7 @@ const HalflingNimbleness = notImplementedFeature(
 const Halfling: PCRace = {
   name: "Halfling",
   abilities: new Map([["dex", 2]]),
-  size: "small",
+  size: SizeCategory.Small,
   movement: new Map([["speed", 25]]),
   features: new Set([Lucky, Brave, HalflingNimbleness]),
   languages: laSet("Common", "Halfling"),
@@ -70,7 +71,7 @@ export const LightfootHalfling: PCRace = {
   parent: Halfling,
   name: "Lightfoot Halfling",
   abilities: new Map([["cha", 1]]),
-  size: "small",
+  size: SizeCategory.Small,
   features: new Set([NaturallyStealthy]),
 };
 
@@ -83,6 +84,6 @@ export const StoutHalfling: PCRace = {
   parent: Halfling,
   name: "Stout Halfling",
   abilities: new Map([["con", 1]]),
-  size: "small",
+  size: SizeCategory.Small,
   features: new Set([StoutResilience]),
 };

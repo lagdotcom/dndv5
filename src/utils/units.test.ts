@@ -1,11 +1,12 @@
 import Point from "../types/Point";
+import SizeCategory from "../types/SizeCategory";
 import { convertSizeToUnit, getDistanceBetween } from "./units";
 
 const p = (x: number, y: number): Point => ({ x, y });
 
-const Medium = convertSizeToUnit("medium");
-const Large = convertSizeToUnit("large");
-const Huge = convertSizeToUnit("huge");
+const Medium = convertSizeToUnit(SizeCategory.Medium);
+const Large = convertSizeToUnit(SizeCategory.Large);
+const Huge = convertSizeToUnit(SizeCategory.Huge);
 
 it("can calculate distances between units correctly", () => {
   expect(getDistanceBetween(p(0, 0), Medium, p(5, 0), Medium)).toBe(5);
