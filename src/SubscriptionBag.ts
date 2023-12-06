@@ -1,14 +1,14 @@
 import { Unsubscribe } from "./events/Dispatcher";
 
-export default class UnsubscribeBag {
+export default class SubscriptionBag {
   set: Set<Unsubscribe>;
 
   constructor(...items: Unsubscribe[]) {
     this.set = new Set(items);
   }
 
-  add(item: Unsubscribe) {
-    this.set.add(item);
+  add(...items: Unsubscribe[]) {
+    for (const item of items) this.set.add(item);
     return this;
   }
 

@@ -2,8 +2,8 @@ import { isCastSpell } from "../../actions/CastSpell";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
-import { Unsubscribe } from "../../events/Dispatcher";
 import PointResolver from "../../resolvers/PointResolver";
+import SubscriptionBag from "../../SubscriptionBag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -19,7 +19,7 @@ const getSilenceArea = (centre: Point): SpecifiedSphere => ({
 });
 
 class SilenceController {
-  subscriptions: Unsubscribe[];
+  bag: SubscriptionBag;
 
   constructor(
     public g: Engine,
@@ -33,7 +33,7 @@ class SilenceController {
     ),
     public squares = resolveArea(shape),
   ) {
-    this.subscriptions = [
+    this.bag = new SubscriptionBag(
       g.events.on(
         "GetDamageResponse",
         ({ detail: { damageType, who, response } }) => {
@@ -48,7 +48,7 @@ class SilenceController {
         if (isCastSpell(action) && action.spell.v)
           error.add("silenced", Silence);
       }),
-    ];
+    );
 
     g.addEffectArea(area);
   }
@@ -65,7 +65,7 @@ class SilenceController {
 
   onSpellEnd = async () => {
     this.g.removeEffectArea(this.area);
-    for (const cleanup of this.subscriptions) cleanup();
+    this.bag.cleanup();
   };
 }
 

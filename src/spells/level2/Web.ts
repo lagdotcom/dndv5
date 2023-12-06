@@ -6,9 +6,9 @@ import { makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
-import { Unsubscribe } from "../../events/Dispatcher";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
+import SubscriptionBag from "../../SubscriptionBag";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
@@ -94,8 +94,8 @@ const getWebArea = (centre: Point): SpecifiedCube => ({
 });
 
 class WebController {
-  subscriptions: Unsubscribe[];
   affectedThisTurn: Set<Combatant>;
+  bag: SubscriptionBag;
 
   constructor(
     public g: Engine,
@@ -116,10 +116,9 @@ class WebController {
     g.addEffectArea(area);
 
     this.affectedThisTurn = new Set();
-    this.subscriptions = [];
 
     // Each creature that starts its turn in the webs or that enters them during its turn must make a Dexterity saving throw. On a failed save, the creature is restrained as long as it remains in the webs or until it breaks free.
-    this.subscriptions.push(
+    this.bag = new SubscriptionBag(
       g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
         this.affectedThisTurn.clear();
         if (g.getInside(shape).includes(who))
@@ -166,7 +165,7 @@ class WebController {
 
   onSpellEnd = async () => {
     this.g.removeEffectArea(this.area);
-    for (const cleanup of this.subscriptions) cleanup();
+    this.bag.cleanup();
 
     for (const who of this.g.combatants) {
       if (who.hasEffect(Webbed)) await who.removeEffect(Webbed);

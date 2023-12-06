@@ -1,11 +1,11 @@
 import AbstractAction from "../../actions/AbstractAction";
 import allMonsters, { MonsterName } from "../../data/allMonsters";
 import Engine from "../../Engine";
-import { Unsubscribe } from "../../events/Dispatcher";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { ShortRestResource } from "../../resources";
+import SubscriptionBag from "../../SubscriptionBag";
 import Combatant from "../../types/Combatant";
 import Feature from "../../types/Feature";
 import { featureNotComplete } from "../../utils/env";
@@ -39,7 +39,7 @@ class WildShapeController {
   dex: number;
   con: number;
   removeFeatures: Set<Feature>;
-  subscriptions: Unsubscribe[];
+  bag: SubscriptionBag;
 
   constructor(
     public g: Engine,
@@ -74,7 +74,7 @@ class WildShapeController {
       if (!me.features.has(name)) this.removeFeatures.add(feature);
     }
 
-    this.subscriptions = [];
+    this.bag = new SubscriptionBag();
   }
 
   async apply() {
@@ -105,12 +105,12 @@ class WildShapeController {
     me.con.score = form.con.score;
     me.damageResponses = form.damageResponses;
 
-    const cleanup = g.events.tap((cleanup) => this.subscriptions.push(cleanup));
+    const closeTap = g.events.tap((cleanup) => this.bag.add(cleanup));
     for (const [name, feature] of form.features) {
       me.addFeature(feature);
       feature.setup(g, me, form.getConfig(name));
     }
-    cleanup();
+    closeTap();
 
     /* TODO
 While you are transformed, the following rules apply:
@@ -122,7 +122,7 @@ While you are transformed, the following rules apply:
 - You choose whether your equipment falls to the ground in your space, merges into your new form, or is worn by it. Worn equipment functions as normal, but the DM decides whether it is practical for the new form to wear a piece of equipment, based on the creature's shape and size. Your equipment doesn't change size or shape to match the new form, and any equipment that the new form can't wear must either fall to the ground or merge with it. Equipment that merges with the form has no effect until you leave the form.
     */
 
-    this.subscriptions.push(
+    this.bag.add(
       // You can revert to your normal form earlier by using a bonus action on your turn.
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) actions.push(new RevertAction(g, me, this));
@@ -147,8 +147,7 @@ While you are transformed, the following rules apply:
   }
 
   remove() {
-    const { me, backup, str, dex, con, removeFeatures, subscriptions, g } =
-      this;
+    const { me, backup, str, dex, con, removeFeatures, bag, g } = this;
 
     Object.assign(me, backup);
 
@@ -158,7 +157,7 @@ While you are transformed, the following rules apply:
 
     for (const feature of removeFeatures) me.features.delete(feature.name);
 
-    for (const cleanup of subscriptions) cleanup();
+    bag.cleanup();
 
     g.text(new MessageBuilder().co(me).text(" returns to their normal form."));
   }

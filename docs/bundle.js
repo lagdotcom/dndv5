@@ -9172,6 +9172,24 @@
     }
   };
 
+  // src/SubscriptionBag.ts
+  var SubscriptionBag = class {
+    constructor(...items) {
+      this.set = new Set(items);
+    }
+    add(...items) {
+      for (const item of items)
+        this.set.add(item);
+      return this;
+    }
+    cleanup() {
+      for (const cleanup of this.set)
+        cleanup();
+      this.set.clear();
+      return this;
+    }
+  };
+
   // src/types/EffectArea.ts
   var arSet = (...items) => new Set(items);
 
@@ -9256,8 +9274,7 @@
       this.area = area;
       this.onSpellEnd = async () => {
         this.g.removeEffectArea(this.area);
-        for (const cleanup of this.subscriptions)
-          cleanup();
+        this.bag.cleanup();
         for (const who of this.g.combatants) {
           if (who.hasEffect(Webbed))
             await who.removeEffect(Webbed);
@@ -9265,8 +9282,7 @@
       };
       g.addEffectArea(area);
       this.affectedThisTurn = /* @__PURE__ */ new Set();
-      this.subscriptions = [];
-      this.subscriptions.push(
+      this.bag = new SubscriptionBag(
         g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
           this.affectedThisTurn.clear();
           if (g.getInside(shape).includes(who))
@@ -12863,13 +12879,12 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.item = item;
       this.bonus = bonus;
       this.onSpellEnd = async () => {
-        const { item, oldName, oldColour, subscriptions } = this;
+        const { item, oldName, oldColour, bag } = this;
         item.magical = false;
         item.name = oldName;
         if (item.icon)
           item.icon.colour = oldColour;
-        for (const cleanup of subscriptions)
-          cleanup();
+        bag.cleanup();
         const msg = new MessageBuilder();
         if (item.possessor)
           msg.co(item.possessor).nosp().text("'s ");
@@ -12877,10 +12892,10 @@ At the end of each of its turns, and each time it takes damage, the target can m
       };
       var _a;
       const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
-      this.subscriptions = [
+      this.bag = new SubscriptionBag(
         g.events.on("BeforeAttack", handler),
         g.events.on("GatherDamage", handler)
-      ];
+      );
       this.oldName = item.name;
       this.oldColour = (_a = item.icon) == null ? void 0 : _a.colour;
       item.magical = true;
@@ -13050,8 +13065,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.slot = slot;
       this.onSpellEnd = async () => {
         this.g.removeEffectArea(this.area);
-        for (const cleanup of this.subscriptions)
-          cleanup();
+        this.bag.cleanup();
       };
       this.shape = getMoonbeamArea(centre);
       this.area = new ActiveEffectArea(
@@ -13063,8 +13077,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.addEffectArea(this.area);
       this.hasBeenATurn = false;
       this.hurtThisTurn = /* @__PURE__ */ new Set();
-      this.subscriptions = [];
-      this.subscriptions.push(
+      this.bag = new SubscriptionBag(
         g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
           this.hurtThisTurn.clear();
           if (who === this.caster)
@@ -13077,7 +13090,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
             interrupt.add(this.getDamager(who));
         })
       );
-      this.subscriptions.push(
+      this.bag.add(
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === this.caster && this.hasBeenATurn)
             actions.push(new MoveMoonbeamAction(g, this));
@@ -13183,10 +13196,9 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.squares = squares;
       this.onSpellEnd = async () => {
         this.g.removeEffectArea(this.area);
-        for (const cleanup of this.subscriptions)
-          cleanup();
+        this.bag.cleanup();
       };
-      this.subscriptions = [
+      this.bag = new SubscriptionBag(
         g.events.on(
           "GetDamageResponse",
           ({ detail: { damageType, who, response } }) => {
@@ -13202,7 +13214,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
           if (isCastSpell(action) && action.spell.v)
             error.add("silenced", Silence);
         })
-      ];
+      );
       g.addEffectArea(area);
     }
     entirelyContains(who) {
@@ -14953,7 +14965,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         if (!me.features.has(name))
           this.removeFeatures.add(feature);
       }
-      this.subscriptions = [];
+      this.bag = new SubscriptionBag();
     }
     async apply() {
       const { g, me, form } = this;
@@ -14978,13 +14990,13 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       me.dex.score = form.dex.score;
       me.con.score = form.con.score;
       me.damageResponses = form.damageResponses;
-      const cleanup = g.events.tap((cleanup2) => this.subscriptions.push(cleanup2));
+      const closeTap = g.events.tap((cleanup) => this.bag.add(cleanup));
       for (const [name, feature] of form.features) {
         me.addFeature(feature);
         feature.setup(g, me, form.getConfig(name));
       }
-      cleanup();
-      this.subscriptions.push(
+      closeTap();
+      this.bag.add(
         // You can revert to your normal form earlier by using a bonus action on your turn.
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me)
@@ -15006,15 +15018,14 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       );
     }
     remove() {
-      const { me, backup, str, dex, con, removeFeatures, subscriptions, g } = this;
+      const { me, backup, str, dex, con, removeFeatures, bag, g } = this;
       Object.assign(me, backup);
       me.str.score = str;
       me.dex.score = dex;
       me.con.score = con;
       for (const feature of removeFeatures)
         me.features.delete(feature.name);
-      for (const cleanup of subscriptions)
-        cleanup();
+      bag.cleanup();
       g.text(new MessageBuilder().co(me).text(" returns to their normal form."));
     }
   };

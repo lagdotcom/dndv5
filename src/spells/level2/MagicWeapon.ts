@@ -3,9 +3,9 @@ import iconUrl from "@img/spl/magic-weapon.svg";
 import { makeIcon } from "../../colours";
 import { getWeaponPlusHandler } from "../../enchantments/plus";
 import Engine from "../../Engine";
-import { Unsubscribe } from "../../events/Dispatcher";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
+import SubscriptionBag from "../../SubscriptionBag";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import { hours } from "../../utils/time";
@@ -20,7 +20,7 @@ function slotToBonus(slot: number) {
 class MagicWeaponController {
   oldName: string;
   oldColour?: string;
-  subscriptions: Unsubscribe[];
+  bag: SubscriptionBag;
 
   constructor(
     public g: Engine,
@@ -30,10 +30,10 @@ class MagicWeaponController {
     public bonus = slotToBonus(slot),
   ) {
     const handler = getWeaponPlusHandler(item, bonus, MagicWeapon);
-    this.subscriptions = [
+    this.bag = new SubscriptionBag(
       g.events.on("BeforeAttack", handler),
       g.events.on("GatherDamage", handler),
-    ];
+    );
 
     this.oldName = item.name;
     this.oldColour = item.icon?.colour;
@@ -53,12 +53,12 @@ class MagicWeaponController {
   }
 
   onSpellEnd = async () => {
-    const { item, oldName, oldColour, subscriptions } = this;
+    const { item, oldName, oldColour, bag } = this;
 
     item.magical = false;
     item.name = oldName;
     if (item.icon) item.icon.colour = oldColour;
-    for (const cleanup of subscriptions) cleanup();
+    bag.cleanup();
 
     const msg = new MessageBuilder();
     if (item.possessor) msg.co(item.possessor).nosp().text("'s ");

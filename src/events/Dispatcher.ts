@@ -16,7 +16,7 @@ export default class Dispatcher {
     this.taps = new Set();
   }
 
-  tap(listener: Tap) {
+  tap(listener: Tap): Unsubscribe {
     this.taps.add(listener);
     return () => this.taps.delete(listener);
   }

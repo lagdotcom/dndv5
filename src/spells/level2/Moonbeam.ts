@@ -5,10 +5,10 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
-import { Unsubscribe } from "../../events/Dispatcher";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
 import PointToPointResolver from "../../resolvers/PointToPointResolver";
+import SubscriptionBag from "../../SubscriptionBag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedCylinder } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -75,7 +75,7 @@ class MoonbeamController {
   hasBeenATurn: boolean;
   hurtThisTurn: Set<Combatant>;
   shape: SpecifiedCylinder;
-  subscriptions: Unsubscribe[];
+  bag: SubscriptionBag;
 
   constructor(
     public g: Engine,
@@ -95,9 +95,8 @@ class MoonbeamController {
 
     this.hasBeenATurn = false;
     this.hurtThisTurn = new Set();
-    this.subscriptions = [];
 
-    this.subscriptions.push(
+    this.bag = new SubscriptionBag(
       g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
         this.hurtThisTurn.clear();
         if (who === this.caster) this.hasBeenATurn = true;
@@ -112,7 +111,7 @@ class MoonbeamController {
     );
 
     /* On each of your turns after you cast this spell, you can use an action to move the beam up to 60 feet in any direction. */
-    this.subscriptions.push(
+    this.bag.add(
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === this.caster && this.hasBeenATurn)
           actions.push(new MoveMoonbeamAction(g, this));
@@ -170,7 +169,7 @@ class MoonbeamController {
 
   onSpellEnd = async () => {
     this.g.removeEffectArea(this.area);
-    for (const cleanup of this.subscriptions) cleanup();
+    this.bag.cleanup();
   };
 }
 
