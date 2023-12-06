@@ -14412,7 +14412,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "sacred flame": SacredFlame_default,
     thaumaturgy: Thaumaturgy_default,
     thunderclap: Thunderclap_default,
-    "armor of agathys": ArmorOfAgathys_default,
+    "armor of Agathys": ArmorOfAgathys_default,
     bless: Bless_default,
     "cure wounds": CureWounds_default,
     "divine favor": DivineFavor_default,

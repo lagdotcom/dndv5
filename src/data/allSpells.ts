@@ -76,7 +76,7 @@ const allSpells = {
   thaumaturgy: Thaumaturgy,
   thunderclap: Thunderclap,
 
-  "armor of agathys": ArmorOfAgathys,
+  "armor of Agathys": ArmorOfAgathys,
   bless: Bless,
   "cure wounds": CureWounds,
   "divine favor": DivineFavor,

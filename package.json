@@ -4,6 +4,7 @@
   "description": "Yet another attempt at a D&D engine.",
   "main": "index.js",
   "scripts": {
+    "collate": "node collate.mjs",
     "build": "node build.mjs",
     "start": "node watch.mjs",
     "watch": "node watch.mjs",
