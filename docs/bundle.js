@@ -3360,7 +3360,11 @@
     }
     // TODO [HANDS]
     async applyGrapple(target) {
-      await target.addEffect(Grappled, { duration: Infinity, by: this.actor });
+      await target.addEffect(
+        Grappled,
+        { duration: Infinity, by: this.actor },
+        this.actor
+      );
     }
   };
 
@@ -3390,6 +3394,79 @@
     async apply({ target }) {
       await super.apply({ target });
       await target.removeEffect(Grappled);
+    }
+  };
+
+  // src/actions/ShoveAction.ts
+  var shoveTypeChoices = [
+    { label: "knock prone", value: "prone" },
+    { label: "push 5 feet away", value: "push" }
+  ];
+  var ShoveAction = class extends AbstractAttackAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Shove",
+        "implemented",
+        {
+          target: new TargetResolver(g, actor.reach, [
+            sizeOrLess(actor.size + 1)
+          ]),
+          type: new ChoiceResolver(g, shoveTypeChoices)
+        },
+        {
+          description: `Using the Attack action, you can make a special melee attack to shove a creature, either to knock it prone or push it away from you. If you're able to make multiple attacks with the Attack action, this attack replaces one of them.
+
+    The target of your shove must be no more than one size larger than you, and it must be within your reach. You make a Strength (Athletics) check contested by the target's Strength (Athletics) or Dexterity (Acrobatics) check (the target chooses the ability to use). You succeed automatically if the target is incapacitated. If you succeed, you either knock the target prone or push it 5 feet away from you.`
+        }
+      );
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    async apply(config) {
+      await super.apply(config);
+      const { target, type } = config;
+      const { g, actor } = this;
+      if (target.conditions.has("Incapacitated")) {
+        await this.applyShove(target, type);
+        return;
+      }
+      const { total: mine } = await g.abilityCheck(NaN, {
+        ability: "str",
+        skill: "Athletics",
+        who: actor,
+        attacker: target,
+        tags: chSet("shove")
+      });
+      await new PickFromListChoice(
+        target,
+        this,
+        "Grapple",
+        `${actor.name} is trying to shove ${target.name}. Contest with which skill?`,
+        GrappleChoices,
+        async ({ ability, skill }) => {
+          const { total: theirs } = await g.abilityCheck(NaN, {
+            ability,
+            skill,
+            who: target,
+            attacker: actor,
+            tags: chSet("shove")
+          });
+          if (mine > theirs)
+            await this.applyShove(target, type);
+        }
+      ).apply(g);
+    }
+    async applyShove(target, type) {
+      if (type === "prone")
+        await target.addEffect(Prone, { duration: Infinity }, this.actor);
+      else
+        await this.g.forcePush(target, this.actor, 5, this);
     }
   };
 
@@ -3550,6 +3627,7 @@
       actions.push(new GrappleAction(g, who));
       if (who.grappling.size)
         actions.push(new ReleaseGrappleAction(g, who));
+      actions.push(new ShoveAction(g, who));
       if (who.inventory.size && who.freeHands)
         actions.push(new DonAction(g, who));
       if (who.equipment.size)

@@ -7,6 +7,7 @@ import DonAction from "./actions/DonAction";
 import GrappleAction from "./actions/GrappleAction";
 import OpportunityAttack from "./actions/OpportunityAttack";
 import ReleaseGrappleAction from "./actions/ReleaseGrappleAction";
+import ShoveAction from "./actions/ShoveAction";
 import { TwoWeaponAttack } from "./actions/TwoWeaponAttack";
 import WeaponAttack from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
@@ -153,7 +154,7 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
     actions.push(new GrappleAction(g, who));
     if (who.grappling.size) actions.push(new ReleaseGrappleAction(g, who));
 
-    // TODO ShoveAction
+    actions.push(new ShoveAction(g, who));
 
     if (who.inventory.size && who.freeHands)
       actions.push(new DonAction(g, who));

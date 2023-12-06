@@ -91,6 +91,10 @@ export default class GrappleAction extends AbstractAttackAction<HasTarget> {
 
   // TODO [HANDS]
   async applyGrapple(target: Combatant) {
-    await target.addEffect(Grappled, { duration: Infinity, by: this.actor });
+    await target.addEffect(
+      Grappled,
+      { duration: Infinity, by: this.actor },
+      this.actor,
+    );
   }
 }
