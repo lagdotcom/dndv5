@@ -85,6 +85,13 @@ class UncannyDodgeAction extends AbstractAction<HasTarget> {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply({ target }: HasTarget) {
     await super.apply({ target });
     this.multiplier.add("half", this);

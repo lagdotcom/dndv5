@@ -41,6 +41,13 @@ export default class DisengageAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply(): Promise<void> {
     await super.apply({});
     await this.actor.addEffect(DisengageEffect, { duration: 1 });

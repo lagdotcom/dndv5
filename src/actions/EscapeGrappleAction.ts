@@ -4,6 +4,7 @@ import Engine from "../Engine";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import { chSet } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
+import { sieve } from "../utils/array";
 import AbstractAction from "./AbstractAction";
 import { GrappleChoice, GrappleChoices } from "./common";
 
@@ -23,6 +24,13 @@ export default class EscapeGrappleAction extends AbstractAction<Config> {
         time: "action",
       },
     );
+  }
+
+  getAffected() {
+    return [this.actor, this.actor.getEffectConfig(Grappled)!.by];
+  }
+  getTargets() {
+    return sieve(this.actor.getEffectConfig(Grappled)?.by);
   }
 
   check(config: Config, ec: ErrorCollector) {

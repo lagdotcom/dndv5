@@ -1,3 +1,4 @@
+import ErrorCollector from "../collectors/ErrorCollector";
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine, { EngineAttackResult } from "../Engine";
@@ -94,6 +95,13 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     return [target];
   }
 
+  check(config: Partial<HasTarget>, ec: ErrorCollector) {
+    if (this.weapon.properties.has("two-handed") && this.actor.freeHands < 1)
+      ec.add("need two hands", this);
+
+    return super.check(config, ec);
+  }
+
   async apply({ target }: HasTarget) {
     await super.apply({ target });
     await doStandardAttack(this.g, {
@@ -142,6 +150,8 @@ export async function doStandardAttack(
 
   if (weapon.category !== "natural") tags.add("weapon");
   if (weapon.magical || ammo?.magical) tags.add("magical");
+
+  // TODO versatile
 
   return getAttackResult(
     g,

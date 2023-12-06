@@ -28,6 +28,7 @@ import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import SizeCategory from "../../types/SizeCategory";
+import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility } from "../../utils/items";
 import { distance } from "../../utils/units";
@@ -72,6 +73,13 @@ class CheerAction extends AbstractAction<HasTarget> {
         tags: ["vocal"],
       },
     );
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
@@ -142,6 +150,13 @@ class DiscordAction extends AbstractAction<HasTarget> {
         tags: ["harmful", "vocal"],
       },
     );
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
@@ -226,6 +241,13 @@ class IrritationAction extends AbstractAction<HasTarget> {
     );
   }
 
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
+  }
+
   async apply({ target }: HasTarget) {
     await super.apply({ target });
 
@@ -280,6 +302,13 @@ class DancingStepAction extends AbstractAction<HasTarget> {
         description: `When an enemy moves within 5 ft., you may teleport to a spot within ${distance} ft. that you can see.`,
       },
     );
+  }
+
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
   }
 
   async apply(config: HasTarget) {

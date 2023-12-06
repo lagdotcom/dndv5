@@ -10,6 +10,7 @@ import YesNoChoice from "../interruptions/YesNoChoice";
 import MessageBuilder from "../MessageBuilder";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
+import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
 import { isEquipmentAttuned } from "../utils/items";
 import { Shield } from "./armor";
@@ -34,6 +35,13 @@ class ArrowCatchingShieldAction extends AbstractAction<HasTarget> {
         description: `Whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.`,
       },
     );
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

@@ -10,6 +10,7 @@ import { canSee, isAlly, isEnemy, notSelf } from "../../filters";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
+import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import SimpleFeature from "../SimpleFeature";
 
@@ -38,6 +39,13 @@ class ProtectionAction extends AbstractAction<Config> {
         description: `When a creature you can see attacks a target other than you that is within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wielding a shield.`,
       },
     );
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   check(config: Partial<Config>, ec: ErrorCollector) {

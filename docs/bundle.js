@@ -659,10 +659,6 @@
       return this.area;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffected(config) {
-      return [this.actor];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getConfig(config) {
       return this.config;
     }
@@ -681,10 +677,6 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getResources(config) {
       return this.resources;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getTargets(config) {
-      return [];
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getTime(config) {
@@ -738,6 +730,12 @@
         Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
         }
       );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     check(config, ec) {
       if (this.actor.speed <= 0)
@@ -1931,6 +1929,12 @@
       );
       return bonus.result * e2.detail.multiplier.result;
     }
+    get freeHands() {
+      let free = this.hands;
+      for (const item of this.equipment)
+        free -= item.hands;
+      return free;
+    }
     getConditions() {
       const conditions = new ConditionCollector();
       for (const condition of this.conditionImmunities)
@@ -2194,6 +2198,7 @@
       this.time.add("action");
       this.time.add("bonus action");
       this.time.add("reaction");
+      this.time.add("item interaction");
     }
     regainTime(time) {
       this.time.add(time);
@@ -2350,6 +2355,12 @@
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check(config, ec) {
       if (this.actor.conditions.has("Prone"))
         ec.add("already prone", this);
@@ -2417,6 +2428,13 @@
           time: "action"
         }
       );
+    }
+    getAffected() {
+      return [this.actor, this.actor.getEffectConfig(Grappled).by];
+    }
+    getTargets() {
+      var _a;
+      return sieve((_a = this.actor.getEffectConfig(Grappled)) == null ? void 0 : _a.by);
     }
     check(config, ec) {
       if (!this.actor.hasEffect(Grappled))
@@ -2509,6 +2527,12 @@
     }
     get cost() {
       return round(this.actor.speed / 2, MapSquareSize);
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     check(config, ec) {
       if (!this.actor.conditions.has("Prone"))
@@ -2944,6 +2968,11 @@
     getAffected({ target }) {
       return [target];
     }
+    check(config, ec) {
+      if (this.weapon.properties.has("two-handed") && this.actor.freeHands < 1)
+        ec.add("need two hands", this);
+      return super.check(config, ec);
+    }
     async apply({ target }) {
       await super.apply({ target });
       await doStandardAttack(this.g, {
@@ -3076,6 +3105,12 @@
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply() {
       await super.apply({});
       await this.actor.addEffect(DisengageEffect, { duration: 1 });
@@ -3120,9 +3155,106 @@
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply() {
       await super.apply({});
       await this.actor.addEffect(DodgeEffect, { duration: 1 });
+    }
+  };
+
+  // src/actions/DoffAction.ts
+  var DoffAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Doff",
+        "implemented",
+        {
+          item: new ChoiceResolver(
+            g,
+            Array.from(actor.equipment, (value) => ({
+              label: value.name,
+              value
+            })).filter(({ value }) => value.hands)
+          )
+        },
+        {
+          description: `You can interact with one object or feature of the environment for free, during either your move or your action. For example, you could open a door during your move as you stride toward a foe, or you could draw your weapon as part of the same action you use to attack. If you want to interact with a second object, you need to use your action.`
+        }
+      );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
+    getTime() {
+      if (this.actor.hasTime("item interaction"))
+        return "item interaction";
+      return "action";
+    }
+    async apply({ item }) {
+      await super.apply({ item });
+      this.actor.equipment.delete(item);
+      this.actor.inventory.add(item);
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(" doffs their ").it(item).text(".")
+      );
+    }
+  };
+
+  // src/actions/DonAction.ts
+  var DonAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Don",
+        "implemented",
+        {
+          item: new ChoiceResolver(
+            g,
+            Array.from(actor.inventory, (value) => ({
+              label: value.name,
+              value
+            })).filter(({ value }) => value.hands)
+          )
+        },
+        {
+          description: `You can interact with one object or feature of the environment for free, during either your move or your action. For example, you could open a door during your move as you stride toward a foe, or you could draw your weapon as part of the same action you use to attack. If you want to interact with a second object, you need to use your action.`
+        }
+      );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
+    check(config, ec) {
+      if (config.item && config.item.hands > this.actor.freeHands)
+        ec.add("not enough hands", this);
+      return super.check(config, ec);
+    }
+    getTime() {
+      if (this.actor.hasTime("item interaction"))
+        return "item interaction";
+      return "action";
+    }
+    async apply({ item }) {
+      await super.apply({ item });
+      this.actor.inventory.delete(item);
+      this.actor.equipment.add(item);
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(" dons their ").it(item).text(".")
+      );
     }
   };
 
@@ -3188,6 +3320,11 @@
     getAffected({ target }) {
       return [target];
     }
+    check(config, ec) {
+      if (this.actor.freeHands < 1)
+        ec.add("no free hands", this);
+      return super.check(config, ec);
+    }
     async apply({ target }) {
       await super.apply({ target });
       const { actor, g } = this;
@@ -3221,6 +3358,7 @@
         }
       ).apply(g);
     }
+    // TODO [HANDS]
     async applyGrapple(target) {
       await target.addEffect(Grappled, { duration: Infinity, by: this.actor });
     }
@@ -3242,6 +3380,12 @@
         { target: new TargetResolver(g, Infinity, [isGrappling(actor)]) },
         { description: `You can release the target whenever you like.` }
       );
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -3406,6 +3550,10 @@
       actions.push(new GrappleAction(g, who));
       if (who.grappling.size)
         actions.push(new ReleaseGrappleAction(g, who));
+      if (who.inventory.size && who.freeHands)
+        actions.push(new DonAction(g, who));
+      if (who.equipment.size)
+        actions.push(new DoffAction(g, who));
     });
   });
   var DeafenedRule = new DndRule("Deafened", (g) => {
@@ -6117,6 +6265,12 @@
       this.dc = dc;
       this.success = success;
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor, dc, success } = this;
@@ -6190,6 +6344,9 @@
     }
     getDamage() {
       return [_dd(2, 10, "fire")];
+    }
+    getAffected({ target }) {
+      return [target];
     }
     getTargets({ target }) {
       return sieve(target);
@@ -6608,6 +6765,12 @@
       super(g, actor, "Flee from Hiss", "implemented", {}, { time: "reaction" });
       this.other = other;
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply() {
       await super.apply({});
       const { g, actor, other } = this;
@@ -6646,6 +6809,9 @@
           tags: ["harmful"]
         }
       );
+    }
+    getAffected({ target }) {
+      return [target];
     }
     getTargets({ target }) {
       return sieve(target);
@@ -6756,6 +6922,12 @@
         }
       );
       this.diceType = diceType;
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
     }
     check(config, ec) {
       if (!this.actor.shield)
@@ -7105,6 +7277,12 @@
       );
       this.ability = ability;
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     async apply({ target }) {
       await super.apply({ target });
       const { g, actor, ability } = this;
@@ -7279,6 +7457,12 @@
         }
       );
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     check({ target }, ec) {
       if (target && !this.getValidAttacks(target).length)
         ec.add("no valid attack", this);
@@ -7342,6 +7526,12 @@
           tags: ["harmful", "vocal"]
         }
       );
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
     }
     check({ target }, ec) {
       if (target) {
@@ -7420,6 +7610,12 @@
         }
       );
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     async apply({ target }) {
       await super.apply({ target });
       const { outcome } = await this.g.save({
@@ -7470,6 +7666,12 @@
         }
       );
       this.distance = distance2;
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     async apply(config) {
       await super.apply(config);
@@ -7588,6 +7790,12 @@
           tags: ["harmful"]
         }
       );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     check(config, ec) {
       if (this.actor.speed <= 0)
@@ -7832,7 +8040,7 @@
 
   // src/monsters/Thug.ts
   var Thug = class extends Monster {
-    constructor(g) {
+    constructor(g, wieldingCrossbow = false) {
       super(g, "thug", 0.5, "humanoid", SizeCategory_default.Medium, thug_default, 32);
       this.don(new LeatherArmor(g), true);
       this.movement.set("speed", 30);
@@ -7848,8 +8056,17 @@
           return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
         })
       );
-      this.don(new Mace(g), true);
-      this.don(new HeavyCrossbow(g), true);
+      const mace = new Mace(g);
+      const crossbow = new HeavyCrossbow(g);
+      if (wieldingCrossbow) {
+        this.don(crossbow, true);
+        this.inventory.add(mace);
+        this.weaponProficiencies.add("mace");
+      } else {
+        this.don(mace, true);
+        this.inventory.add(crossbow);
+        this.weaponProficiencies.add("heavy crossbow");
+      }
       this.inventory.add(new CrossbowBolt(g, Infinity));
     }
   };
@@ -7862,6 +8079,7 @@
     goblin: (g) => new Goblin(g),
     "goblin [bow]": (g) => new Goblin(g, true),
     thug: (g) => new Thug(g),
+    "thug [crossbow]": (g) => new Thug(g, true),
     Birnotec: (g) => new Birnotec(g),
     "Kay of the Abyss": (g) => new Kay(g),
     "O Gonrit": (g) => new OGonrit(g),
@@ -8786,6 +9004,12 @@
       );
       this.attack = attack;
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     async apply({ target }) {
       await super.apply({ target });
       if (!this.attack)
@@ -8893,6 +9117,12 @@
       this.caster = caster;
       this.method = method;
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply() {
       await super.apply({});
       const type = this.method.getSaveType(this.caster, Web);
@@ -8950,6 +9180,10 @@
         this.g.removeEffectArea(this.area);
         for (const cleanup of this.subscriptions)
           cleanup();
+        for (const who of this.g.combatants) {
+          if (who.hasEffect(Webbed))
+            await who.removeEffect(Webbed);
+        }
       };
       g.addEffectArea(area);
       this.affectedThisTurn = /* @__PURE__ */ new Set();
@@ -9127,6 +9361,12 @@
       );
       this.cloak = cloak;
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply() {
       await super.apply({});
       this.cloak.hoodUp = !this.cloak.hoodUp;
@@ -9275,6 +9515,9 @@
     }
     getAffected() {
       return this.g.getInside({ type: "within", radius: 15, who: this.actor }).filter((co) => co.side !== this.actor.side);
+    }
+    getTargets() {
+      return [];
     }
     async apply() {
       await super.apply({});
@@ -9873,6 +10116,12 @@ While holding the object, a creature can take an action to produce the spell's e
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
         ec.add("Not raging", this);
@@ -10002,6 +10251,12 @@ If you are able to cast spells, you can't cast them or concentrate on them while
 Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`
         }
       );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     async apply() {
       await super.apply({});
@@ -10562,6 +10817,12 @@ This increases to two additional dice at 13th level and three additional dice at
         config: { target },
         positioning: poSet(poWithin(60, target))
       }));
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -14315,6 +14576,12 @@ Some Channel Divinity effects require saving throws. When you use such an effect
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check({ slot }, ec) {
       if (slot) {
         const resource = SpellSlotResources[slot];
@@ -14456,6 +14723,9 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     }
     getAffected() {
       return this.g.getInside(getTurnUndeadArea(this.actor)).filter((who) => this.affectsTypes.includes(who.type));
+    }
+    getTargets() {
+      return [];
     }
     async apply() {
       await super.apply({});
@@ -14675,6 +14945,12 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       super(g, actor, "Revert Form", "implemented", {}, { time: "bonus action" });
       this.controller = controller;
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply(config) {
       await super.apply(config);
       this.controller.remove();
@@ -14696,6 +14972,12 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         { time: "action", resources: [[WildShapeResource, 1]] }
       );
       this.forms = forms;
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     async apply({ form }) {
       await super.apply({ form });
@@ -14831,6 +15113,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check(config, ec) {
       if (this.actor.hasEffect(UsedActionSurgeThisTurn))
         ec.add("already used this turn", this);
@@ -14894,6 +15182,12 @@ You can use this feature twice between long rests starting at 13th level and thr
         }
       );
       this.bonus = bonus;
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     async apply() {
       await super.apply({});
@@ -15264,6 +15558,12 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
       );
       this.size = size;
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     async apply() {
       await super.apply({});
       const { g, actor, size } = this;
@@ -15576,6 +15876,12 @@ At 18th level, the range of this aura increases to 30 feet.`,
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check({ slot }, ec) {
       if (slot) {
         const resource = SpellSlotResources[slot];
@@ -15697,6 +16003,12 @@ At 18th level, the range of this aura increases to 30 feet.`,
         }
       );
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     generateHealingConfigs(targets) {
       const resourceMax = this.actor.getResource(LayOnHandsResource);
       return targets.flatMap(
@@ -15760,6 +16072,12 @@ At 18th level, the range of this aura increases to 30 feet.`,
           description: `As an action, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.`
         }
       );
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
     }
     getConfig({ target }) {
       const valid = target ? getCurableEffects(target) : [];
@@ -16319,6 +16637,12 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check(config, ec) {
       if (this.actor.movedSoFar)
         ec.add("Already moved this turn", this);
@@ -16391,6 +16715,12 @@ In addition, you understand a set of secret signs and symbols used to convey sho
         }
       );
       this.multiplier = multiplier;
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     async apply({ target }) {
       await super.apply({ target });
@@ -16981,6 +17311,12 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       if (point)
         return [getBreathArea(this.actor, point)];
     }
+    getAffected({ point }) {
+      return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
+    }
+    getTargets() {
+      return [];
+    }
     async apply({ point }) {
       await super.apply({ point });
       const { actor: attacker, g, damageDice, damageType } = this;
@@ -17037,6 +17373,12 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }) {
       if (point)
         return [getBreathArea(this.actor, point)];
+    }
+    getAffected({ point }) {
+      return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
+    }
+    getTargets() {
+      return [];
     }
   };
   var EnervatingBreathEffect = new Effect(
@@ -17729,6 +18071,12 @@ When you create a device, choose one of the following options:
       this.weapon = weapon;
       this.ability = getWeaponAbility(actor, weapon);
     }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
     async apply({ target }) {
       await super.apply({ target });
       await doStandardAttack(this.g, {
@@ -18029,6 +18377,12 @@ The creature is aware of this effect before it makes its attack against you.`
         }
       );
     }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
     check(config, ec) {
       if (this.actor.hasEffect(SacredWeaponEffect))
         ec.add("already active", this);
@@ -18156,6 +18510,12 @@ Once you use this feature, you can't use it again until you finish a long rest.`
           description: `You can move up to half your speed as a reaction when an enemy ends its turn within 5 feet of you. This movement doesn't provoke opportunity attacks.`
         }
       );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
     }
     check({ target }, ec) {
       if (this.actor.speed <= 0)
@@ -18805,13 +19165,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "Bonus Actions",
     "Other Actions",
     "Reactions",
-    "Out of Combat Actions"
+    "Out of Combat Actions",
+    "Item Interactions"
   ];
   var niceTime = {
     action: "Actions",
     "bonus action": "Bonus Actions",
     long: "Out of Combat Actions",
-    reaction: "Reactions"
+    reaction: "Reactions",
+    "item interaction": "Item Interactions"
   };
   function splitActions(actionList) {
     var _a;

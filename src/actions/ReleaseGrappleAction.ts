@@ -4,6 +4,7 @@ import Engine from "../Engine";
 import { ErrorFilter } from "../filters";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
+import { sieve } from "../utils/array";
 import AbstractAction from "./AbstractAction";
 
 const isGrappling = (who: Combatant): ErrorFilter<Combatant> => ({
@@ -22,6 +23,13 @@ export default class ReleaseGrappleAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, Infinity, [isGrappling(actor)]) },
       { description: `You can release the target whenever you like.` },
     );
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

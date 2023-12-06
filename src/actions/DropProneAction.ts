@@ -25,6 +25,13 @@ export default class DropProneAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: never, ec: ErrorCollector) {
     if (this.actor.conditions.has("Prone")) ec.add("already prone", this);
 

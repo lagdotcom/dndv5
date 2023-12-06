@@ -2,6 +2,8 @@ import { isCastSpell } from "./actions/CastSpell";
 import DashAction from "./actions/DashAction";
 import DisengageAction from "./actions/DisengageAction";
 import DodgeAction from "./actions/DodgeAction";
+import DoffAction from "./actions/DoffAction";
+import DonAction from "./actions/DonAction";
 import GrappleAction from "./actions/GrappleAction";
 import OpportunityAttack from "./actions/OpportunityAttack";
 import ReleaseGrappleAction from "./actions/ReleaseGrappleAction";
@@ -152,6 +154,10 @@ export const CombatActionsRule = new DndRule("Combat Actions", (g) => {
     if (who.grappling.size) actions.push(new ReleaseGrappleAction(g, who));
 
     // TODO ShoveAction
+
+    if (who.inventory.size && who.freeHands)
+      actions.push(new DonAction(g, who));
+    if (who.equipment.size) actions.push(new DoffAction(g, who));
   });
 });
 

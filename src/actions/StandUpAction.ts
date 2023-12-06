@@ -33,6 +33,13 @@ export default class StandUpAction extends AbstractAction {
     return round(this.actor.speed / 2, MapSquareSize);
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: Empty, ec: ErrorCollector) {
     if (!this.actor.conditions.has("Prone")) ec.add("not prone", this);
 

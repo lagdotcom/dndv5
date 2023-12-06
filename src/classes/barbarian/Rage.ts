@@ -52,6 +52,13 @@ export class EndRageAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasEffect(RageEffect)) ec.add("Not raging", this);
     return super.check(config, ec);
@@ -202,6 +209,13 @@ If you are able to cast spells, you can't cast them or concentrate on them while
 Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if your turn ends and you haven't attacked a hostile creature since your last turn or taken damage since then. You can also end your rage on your turn as a bonus action.`,
       },
     );
+  }
+
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
   }
 
   async apply() {

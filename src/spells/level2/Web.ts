@@ -44,6 +44,13 @@ class BreakFreeFromWebAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply() {
     await super.apply({});
 
@@ -160,6 +167,10 @@ class WebController {
   onSpellEnd = async () => {
     this.g.removeEffectArea(this.area);
     for (const cleanup of this.subscriptions) cleanup();
+
+    for (const who of this.g.combatants) {
+      if (who.hasEffect(Webbed)) await who.removeEffect(Webbed);
+    }
   };
 }
 

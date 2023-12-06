@@ -30,6 +30,13 @@ class SecondWindAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply(): Promise<void> {
     await super.apply({});
 

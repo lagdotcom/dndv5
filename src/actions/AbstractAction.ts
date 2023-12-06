@@ -84,9 +84,7 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getAffected(config: T) {
-    return [this.actor];
-  }
+  abstract getAffected(config: T): Combatant[];
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getConfig(config: Partial<T>) {
@@ -114,9 +112,7 @@ export default abstract class AbstractAction<T extends object = Empty>
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getTargets(config: Partial<T>): Combatant[] {
-    return [];
-  }
+  abstract getTargets(config: Partial<T>): Combatant[];
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getTime(config: Partial<T>) {

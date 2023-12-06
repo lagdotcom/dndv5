@@ -69,6 +69,12 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
   getAffectedArea({ point }: Partial<HasPoint>) {
     if (point) return [getBreathArea(this.actor, point)];
   }
+  getAffected({ point }: HasPoint) {
+    return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
+  }
+  getTargets() {
+    return [];
+  }
 
   async apply({ point }: HasPoint) {
     await super.apply({ point });
@@ -135,6 +141,12 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
     point,
   }: Partial<HasPoint>): SpecifiedEffectShape[] | undefined {
     if (point) return [getBreathArea(this.actor, point)];
+  }
+  getAffected({ point }: HasPoint) {
+    return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
+  }
+  getTargets() {
+    return [];
   }
 }
 

@@ -166,6 +166,13 @@ class AntimagicProdigyAction extends AbstractAction<HasTarget> {
     );
   }
 
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
+  }
+
   async apply({ target }: HasTarget) {
     await super.apply({ target });
     const { g, actor, dc, success } = this;
@@ -251,6 +258,9 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
     return [_dd(2, 10, "fire")];
   }
 
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
   getTargets({ target }: Partial<HasTarget>) {
     return sieve(target);
   }

@@ -62,6 +62,13 @@ class SteadyAimAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: never, ec: ErrorCollector) {
     if (this.actor.movedSoFar) ec.add("Already moved this turn", this);
 

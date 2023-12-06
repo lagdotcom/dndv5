@@ -27,6 +27,13 @@ class CloakHoodAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply() {
     await super.apply({});
     this.cloak.hoodUp = !this.cloak.hoodUp;

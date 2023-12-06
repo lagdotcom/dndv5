@@ -44,7 +44,10 @@ it("supports Fog Cloud", async () => {
     g,
     user,
     combatants: [pc, enemy],
-  } = await setupBattleTest(["Tethilssethanar", 0, 0, 20], ["thug", 30, 0, 10]);
+  } = await setupBattleTest(
+    ["Tethilssethanar", 0, 0, 20],
+    ["thug [crossbow]", 30, 0, 10],
+  );
 
   const getFogCloud = () => btn("Fog Cloud (Control Air and Water)");
 

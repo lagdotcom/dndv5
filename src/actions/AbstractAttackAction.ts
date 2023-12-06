@@ -7,7 +7,7 @@ import Empty from "../types/Empty";
 import ImplementationStatus from "../types/ImplementationStatus";
 import AbstractAction, { AbstractActionOptions } from "./AbstractAction";
 
-export default class AbstractAttackAction<
+export default abstract class AbstractAttackAction<
   T extends object = Empty,
 > extends AbstractAction<T> {
   constructor(

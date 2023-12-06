@@ -28,6 +28,13 @@ class HissFleeAction extends AbstractAction {
     super(g, actor, "Flee from Hiss", "implemented", {}, { time: "reaction" });
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply() {
     await super.apply({});
 
@@ -71,6 +78,9 @@ class HissAction extends AbstractAction<HasTarget> {
     );
   }
 
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
   getTargets({ target }: Partial<HasTarget>) {
     return sieve(target);
   }

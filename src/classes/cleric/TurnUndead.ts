@@ -57,6 +57,9 @@ export class TurnUndeadAction extends AbstractAction {
       .getInside(getTurnUndeadArea(this.actor))
       .filter((who) => this.affectsTypes.includes(who.type));
   }
+  getTargets() {
+    return [];
+  }
 
   async apply() {
     await super.apply({});

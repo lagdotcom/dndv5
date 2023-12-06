@@ -19,6 +19,7 @@ export const ActionTypes = [
   "Other Actions",
   "Reactions",
   "Out of Combat Actions",
+  "Item Interactions",
 ] as const;
 export type ActionType = (typeof ActionTypes)[number];
 
@@ -27,6 +28,7 @@ const niceTime: Record<ActionTime, ActionType> = {
   "bonus action": "Bonus Actions",
   long: "Out of Combat Actions",
   reaction: "Reactions",
+  "item interaction": "Item Interactions",
 };
 
 function splitActions(actionList: Action[]) {

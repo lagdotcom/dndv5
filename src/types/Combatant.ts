@@ -45,6 +45,7 @@ export default interface Combatant extends Source {
   sizeInUnits: number;
   side: number;
   hands: number;
+  freeHands: number;
   reach: number;
 
   initiative: number;

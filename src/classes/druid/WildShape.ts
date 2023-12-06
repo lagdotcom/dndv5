@@ -173,6 +173,13 @@ class RevertAction extends AbstractAction {
     super(g, actor, "Revert Form", "implemented", {}, { time: "bonus action" });
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply(config: never) {
     await super.apply(config);
     this.controller.remove();
@@ -198,6 +205,13 @@ class WildShapeAction extends AbstractAction<HasForm> {
       },
       { time: "action", resources: [[WildShapeResource, 1]] },
     );
+  }
+
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
   }
 
   async apply({ form }: HasForm) {

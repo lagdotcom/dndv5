@@ -26,6 +26,7 @@ import AbilityName from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import SizeCategory from "../../types/SizeCategory";
+import { sieve } from "../../utils/array";
 import { distance } from "../../utils/units";
 import { FiendishParty } from "./common";
 
@@ -92,6 +93,13 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
       { target: new TargetResolver(g, actor.reach, [isEnemy]) },
       { icon: ShieldBashIcon, time: "action", tags: ["harmful"] },
     );
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

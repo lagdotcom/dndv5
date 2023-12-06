@@ -57,6 +57,13 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check({ slot }: Partial<Scales>, ec: ErrorCollector): ErrorCollector {
     if (slot) {
       const resource = SpellSlotResources[slot];

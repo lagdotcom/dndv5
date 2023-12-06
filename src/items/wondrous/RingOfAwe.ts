@@ -91,6 +91,9 @@ class RingOfAweAction extends AbstractAction {
       .getInside({ type: "within", radius: 15, who: this.actor })
       .filter((co) => co.side !== this.actor.side);
   }
+  getTargets() {
+    return [];
+  }
 
   async apply() {
     await super.apply({});

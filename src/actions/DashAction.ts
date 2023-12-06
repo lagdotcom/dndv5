@@ -38,6 +38,13 @@ export default class DashAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: never, ec: ErrorCollector): ErrorCollector {
     if (this.actor.speed <= 0) ec.add("Zero speed", this);
     return super.check(config, ec);

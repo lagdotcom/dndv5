@@ -17,6 +17,7 @@ const allMonsters = {
   goblin: (g) => new Goblin(g),
   "goblin [bow]": (g) => new Goblin(g, true),
   thug: (g) => new Thug(g),
+  "thug [crossbow]": (g) => new Thug(g, true),
 
   Birnotec: (g) => new Birnotec(g),
   "Kay of the Abyss": (g) => new Kay(g),

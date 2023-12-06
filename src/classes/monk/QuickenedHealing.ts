@@ -29,6 +29,13 @@ class QuickenedHealingAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   async apply() {
     await super.apply({});
 

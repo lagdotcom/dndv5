@@ -57,6 +57,13 @@ class SacredWeaponAction extends AbstractAction<HasWeapon> {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: never, ec: ErrorCollector) {
     if (this.actor.hasEffect(SacredWeaponEffect))
       ec.add("already active", this);

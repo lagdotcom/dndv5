@@ -13,6 +13,7 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
 
@@ -46,6 +47,13 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
       config: { target },
       positioning: poSet(poWithin(60, target)),
     }));
+  }
+
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
   }
 
   async apply({ target }: HasTarget) {

@@ -1,4 +1,5 @@
 export const ActionTimes = [
+  "item interaction",
   "action",
   "bonus action",
   "reaction",

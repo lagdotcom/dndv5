@@ -16,6 +16,7 @@ import Combatant from "../../types/Combatant";
 import EffectType from "../../types/EffectType";
 import Resource from "../../types/Resource";
 import { poSet, poWithin } from "../../utils/ai";
+import { sieve } from "../../utils/array";
 import { enumerate } from "../../utils/numbers";
 import { PaladinIcon } from "./common";
 
@@ -45,6 +46,13 @@ class LayOnHandsHealAction extends AbstractAction<HealConfig> {
         description: `As an action, you can touch a creature and draw power from the pool to restore a number of hit points to that creature, up to the maximum amount remaining in your pool.`,
       },
     );
+  }
+
+  getAffected({ target }: HealConfig) {
+    return [target];
+  }
+  getTargets({ target }: HealConfig) {
+    return sieve(target);
   }
 
   generateHealingConfigs(targets: Combatant[]) {
@@ -121,6 +129,13 @@ class LayOnHandsCureAction extends AbstractAction<CureConfig> {
         description: `As an action, you can expend 5 hit points from your pool of healing to cure the target of one disease or neutralize one poison affecting it. You can cure multiple diseases and neutralize multiple poisons with a single use of Lay on Hands, expending hit points separately for each one.`,
       },
     );
+  }
+
+  getAffected({ target }: CureConfig) {
+    return [target];
+  }
+  getTargets({ target }: CureConfig) {
+    return sieve(target);
   }
 
   getConfig({ target }: Partial<CureConfig>) {

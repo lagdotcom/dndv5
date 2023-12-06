@@ -34,6 +34,13 @@ class ActionSurgeAction extends AbstractAction {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check(config: never, ec: ErrorCollector) {
     if (this.actor.hasEffect(UsedActionSurgeThisTurn))
       ec.add("already used this turn", this);

@@ -1,3 +1,4 @@
+import ErrorCollector from "../collectors/ErrorCollector";
 import { HasTarget } from "../configs";
 import { Grappled } from "../effects";
 import Engine from "../Engine";
@@ -16,7 +17,6 @@ const isNotGrappling = (who: Combatant): ErrorFilter<Combatant> => ({
   check: (g, action, value) => !who.grappling.has(value),
 });
 
-// TODO [HANDS]
 export default class GrappleAction extends AbstractAttackAction<HasTarget> {
   constructor(g: Engine, actor: Combatant) {
     super(
@@ -43,6 +43,11 @@ export default class GrappleAction extends AbstractAttackAction<HasTarget> {
   }
   getAffected({ target }: HasTarget) {
     return [target];
+  }
+
+  check(config: Partial<HasTarget>, ec: ErrorCollector) {
+    if (this.actor.freeHands < 1) ec.add("no free hands", this);
+    return super.check(config, ec);
   }
 
   async apply({ target }: HasTarget) {
@@ -84,6 +89,7 @@ export default class GrappleAction extends AbstractAttackAction<HasTarget> {
     ).apply(g);
   }
 
+  // TODO [HANDS]
   async applyGrapple(target: Combatant) {
     await target.addEffect(Grappled, { duration: Infinity, by: this.actor });
   }

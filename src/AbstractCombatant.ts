@@ -351,6 +351,13 @@ export default abstract class AbstractCombatant implements Combatant {
     return bonus.result * e.detail.multiplier.result;
   }
 
+  get freeHands() {
+    let free = this.hands;
+    for (const item of this.equipment) free -= item.hands;
+
+    return free;
+  }
+
   private getConditions() {
     const conditions = new ConditionCollector();
     for (const condition of this.conditionImmunities)
@@ -683,6 +690,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.time.add("action");
     this.time.add("bonus action");
     this.time.add("reaction");
+    this.time.add("item interaction");
   }
 
   regainTime(time: ActionTime): void {

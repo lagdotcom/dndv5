@@ -29,6 +29,13 @@ class SkirmisherAction extends AbstractAction<HasTarget> {
     );
   }
 
+  getAffected() {
+    return [this.actor];
+  }
+  getTargets() {
+    return [];
+  }
+
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
     if (this.actor.speed <= 0) ec.add("cannot move", this);
     return super.check({ target }, ec);
