@@ -29,6 +29,7 @@ import Stoneskin from "../../../spells/level4/Stoneskin";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
 import { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
+import { makeLandsStride } from "../../common";
 import { DruidSpellcasting } from "..";
 
 export const BonusCantrip = new ConfiguredFeature<SpellName>(
@@ -164,9 +165,7 @@ Once you gain access to a circle spell, you always have it prepared, and it does
   },
 );
 
-// TODO
-const LandsStride = notImplementedFeature(
-  "Land's Stride",
+const DruidLandsStride = makeLandsStride(
   `Starting at 6th level, moving through nonmagical difficult terrain costs you no extra movement. You can also pass through nonmagical plants without being slowed by them and without taking damage from them if they have thorns, spines, or a similar hazard.
 
 In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`,
@@ -212,7 +211,7 @@ const Land: PCSubclass = {
   name: "Circle of the Land",
   features: new Map([
     [2, [BonusCantrip, NaturalRecovery, CircleSpells]],
-    [6, [LandsStride]],
+    [6, [DruidLandsStride]],
     [10, [NaturesWard]],
     [14, [NaturesSanctuary]],
   ]),

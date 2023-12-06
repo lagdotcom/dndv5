@@ -8,7 +8,7 @@ import Combatant from "../types/Combatant";
 import Source from "../types/Source";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
-import { getExecutionMode } from "../utils/env";
+import { implementationWarning } from "../utils/env";
 import { enumerate } from "../utils/numbers";
 
 export function getCantripDice(who: Combatant) {
@@ -218,11 +218,13 @@ export const scalingSpell = <T extends object>({
   getTargets,
 });
 
-export function spellImplementationWarning(spell: Spell, owner: Source) {
-  if (getExecutionMode() === "test") return;
+export function spellImplementationWarning(spell: Spell, who: Source) {
+  const status =
+    spell.status === "incomplete"
+      ? "Not Complete"
+      : spell.status === "missing"
+        ? "Missing"
+        : "";
 
-  if (spell.status === "incomplete")
-    console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
-  else if (spell.status === "missing")
-    console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
+  if (status) implementationWarning("Spell", status, spell.name, who.name);
 }

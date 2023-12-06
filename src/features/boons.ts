@@ -12,7 +12,7 @@ import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
 import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
-import { getExecutionMode } from "../utils/env";
+import { featureNotComplete } from "../utils/env";
 import { round } from "../utils/numbers";
 import { compareDistances } from "../utils/units";
 import SimpleFeature from "./SimpleFeature";
@@ -101,8 +101,7 @@ export const BoonOfVassetri = new SimpleFeature(
   - You may cast the spell [speak with animals] at will, but it can only target snakes.
   - As a bonus action, you hiss threateningly at an enemy within 5 feet. If the enemy fails a Wisdom save, they must spend their reaction to move half of their speed away from you in any direction. The DC is 8 + your proficiency bonus + your Charisma modifier. You can only use this ability once per short or long rest, and only when you are able to speak.`,
   (g, me) => {
-    if (getExecutionMode() !== "test")
-      console.warn(`[Feature Not Complete] Boon of Vassetri (on ${me.name})`);
+    featureNotComplete(BoonOfVassetri, me);
 
     me.initResource(HissResource);
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

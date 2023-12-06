@@ -5,7 +5,7 @@ import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
-import { getExecutionMode } from "../utils/env";
+import { implementationWarning } from "../utils/env";
 import ConfiguredFeature from "./ConfiguredFeature";
 import SimpleFeature from "./SimpleFeature";
 
@@ -66,15 +66,13 @@ export function nonCombatFeature(name: string, text: string) {
 
 export function notImplementedFeat(name: string, text: string) {
   return new SimpleFeature(name, text, (g, me) => {
-    if (getExecutionMode() !== "test")
-      console.warn(`[Feat Missing] ${name} (on ${me.name})`);
+    implementationWarning("Feat", "Missing", name, me.name);
   });
 }
 
 export function notImplementedFeature(name: string, text: string) {
   return new SimpleFeature(name, text, (g, me) => {
-    if (getExecutionMode() !== "test")
-      console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+    implementationWarning("Feature", "Missing", name, me.name);
   });
 }
 

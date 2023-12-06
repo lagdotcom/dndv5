@@ -14,6 +14,7 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import { efSet } from "../../types/EffectTag";
+import { EffectConfig } from "../../types/EffectType";
 import Point from "../../types/Point";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
@@ -58,7 +59,9 @@ class BreakFreeFromWebAction extends AbstractAction {
   }
 }
 
-const Webbed = new Effect<{ caster: Combatant; method: SpellcastingMethod }>(
+type Config = { caster: Combatant; method: SpellcastingMethod };
+
+const Webbed = new Effect<Config>(
   "Webbed",
   "turnStart",
   (g) => {
@@ -98,6 +101,9 @@ class WebController {
       shape,
       arSet("difficult terrain", "lightly obscured"),
       "white",
+      ({ detail: { where, difficult } }) => {
+        if (area.points.has(where)) difficult.add("magical webs", Web);
+      },
     ),
   ) {
     g.addEffectArea(area);
@@ -126,6 +132,14 @@ class WebController {
       if (this.affectedThisTurn.has(target)) return;
       this.affectedThisTurn.add(target);
 
+      const effect = Webbed;
+      const config: EffectConfig<Config> = {
+        caster,
+        method,
+        duration: minutes(1),
+        conditions: coSet("Restrained"),
+      };
+
       const { outcome } = await g.save({
         source: Web,
         type: this.method.getSaveType(this.caster, Web),
@@ -133,17 +147,13 @@ class WebController {
         attacker: caster,
         method,
         spell: Web,
+        effect,
+        config,
         who: target,
-        tags: ["magic"],
+        tags: ["magic", "impedes movement"],
       });
 
-      if (outcome === "fail")
-        await target.addEffect(Webbed, {
-          caster,
-          method,
-          duration: minutes(1),
-          conditions: coSet("Restrained"),
-        });
+      if (outcome === "fail") await target.addEffect(effect, config);
     });
   }
 

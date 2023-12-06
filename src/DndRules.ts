@@ -158,27 +158,6 @@ export const DeafenedRule = new DndRule("Deafened", (g) => {
   });
 });
 
-export const DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
-  const isDifficultTerrainAnywhere = (squares: PointSet) => {
-    for (const effect of g.effects) {
-      if (!effect.tags.has("difficult terrain")) continue;
-
-      const area = resolveArea(effect.shape);
-      for (const square of squares) {
-        if (area.has(square)) return true;
-      }
-    }
-
-    return false;
-  };
-
-  g.events.on("GetMoveCost", ({ detail: { who, to, multiplier } }) => {
-    const squares = getSquares(who, to);
-    if (isDifficultTerrainAnywhere(squares))
-      multiplier.add("double", DifficultTerrainRule);
-  });
-});
-
 export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) =>
     who.tickEffects("turnStart"),

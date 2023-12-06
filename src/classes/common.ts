@@ -6,7 +6,9 @@ import SimpleFeature from "../features/SimpleFeature";
 import { ShortRestResource } from "../resources";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
+import { MundaneDifficultTerrainTypes } from "../types/DifficultTerrainType";
 import PCClassName from "../types/PCClassName";
+import { featureNotComplete } from "../utils/env";
 import { ordinal } from "../utils/numbers";
 
 type ASIConfig =
@@ -42,6 +44,30 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
         error.ignore(OneAttackPerTurnRule);
     });
   });
+}
+
+export function makeLandsStride(text: string) {
+  const feature = new SimpleFeature("Land's Stride", text, (g, me) => {
+    featureNotComplete(feature, me);
+
+    // [...] moving through nonmagical difficult terrain costs you no extra movement.
+    g.events.on("GetMoveCost", ({ detail: { who, difficult } }) => {
+      if (who === me) {
+        for (const type of MundaneDifficultTerrainTypes)
+          difficult.ignoreValue(type);
+      }
+    });
+
+    // TODO You can also pass through nonmagical plants without being slowed by them and without taking damage from them if they have thorns, spines, or a similar hazard.
+
+    // In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.
+    g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
+      if (who === me && tags.has("impedes movement") && tags.has("plant"))
+        diceType.add("advantage", feature);
+    });
+  });
+
+  return feature;
 }
 
 export const ChannelDivinityResource = new ShortRestResource(

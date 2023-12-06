@@ -18,7 +18,7 @@ import PCClass from "../../types/PCClass";
 import SkillName from "../../types/SkillName";
 import { wtSet } from "../../types/WeaponType";
 import { checkConfig } from "../../utils/config";
-import { getExecutionMode } from "../../utils/env";
+import { featureNotComplete } from "../../utils/env";
 import { gains } from "../../utils/gain";
 import { makeASI } from "../common";
 import { RogueIcon } from "./common";
@@ -48,8 +48,7 @@ const CunningAction = new SimpleFeature(
   "Cunning Action",
   `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
   (g, me) => {
-    if (getExecutionMode() !== "test")
-      console.warn(`[Feature Not Complete] Cunning Action (on ${me.name})`);
+    featureNotComplete(CunningAction, me);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) {

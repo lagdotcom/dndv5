@@ -190,6 +190,10 @@
     }
   };
 
+  // src/collectors/DifficultTerrainCollector.ts
+  var DifficultTerrainCollector = class extends SetCollector {
+  };
+
   // src/collectors/ErrorCollector.ts
   var ErrorCollector = class {
     constructor() {
@@ -1526,8 +1530,12 @@
   };
 
   // src/utils/env.ts
-  function getExecutionMode() {
-    return "build";
+  function implementationWarning(type, status, name, who) {
+    if (true)
+      console.warn(`[${type} ${status}] ${name} (on ${who})`);
+  }
+  function featureNotComplete(feature, who) {
+    implementationWarning("Feature", "Not Complete", feature.name, who.name);
   }
 
   // src/spells/common.ts
@@ -1683,13 +1691,10 @@
     },
     getTargets
   });
-  function spellImplementationWarning(spell, owner) {
-    if (getExecutionMode() === "test")
-      return;
-    if (spell.status === "incomplete")
-      console.warn(`[Spell Not Complete] ${spell.name} (on ${owner.name})`);
-    else if (spell.status === "missing")
-      console.warn(`[Spell Missing] ${spell.name} (on ${owner.name})`);
+  function spellImplementationWarning(spell, who) {
+    const status = spell.status === "incomplete" ? "Not Complete" : spell.status === "missing" ? "Missing" : "";
+    if (status)
+      implementationWarning("Spell", status, spell.name, who.name);
   }
 
   // src/utils/items.ts
@@ -3026,25 +3031,6 @@
         successResponse.add("fail", DeafenedRule);
     });
   });
-  var DifficultTerrainRule = new DndRule("Difficult Terrain", (g) => {
-    const isDifficultTerrainAnywhere = (squares) => {
-      for (const effect of g.effects) {
-        if (!effect.tags.has("difficult terrain"))
-          continue;
-        const area = resolveArea(effect.shape);
-        for (const square of squares) {
-          if (area.has(square))
-            return true;
-        }
-      }
-      return false;
-    };
-    g.events.on("GetMoveCost", ({ detail: { who, to, multiplier } }) => {
-      const squares = getSquares(who, to);
-      if (isDifficultTerrainAnywhere(squares))
-        multiplier.add("double", DifficultTerrainRule);
-    });
-  });
   var EffectsRule = new DndRule("Effects", (g) => {
     g.events.on(
       "TurnStarted",
@@ -3655,6 +3641,13 @@
     }
   };
 
+  // src/events/GetTerrainEvent.ts
+  var GetTerrainEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("GetTerrain", { detail });
+    }
+  };
+
   // src/events/SaveEvent.ts
   var SaveEvent = class extends CustomEvent {
     constructor(detail) {
@@ -4092,17 +4085,25 @@
     }
     async beforeMove(who, to, handler, type = "speed", direction, simulation) {
       var _a;
+      const squares = getSquares(who, to);
+      const difficult = new DifficultTerrainCollector();
+      for (const where of squares)
+        this.getTerrain(where, who, difficult);
       const multiplier = new MultiplierCollector();
       this.fire(
         new GetMoveCostEvent({
           who,
           from: who.position,
           to,
+          squares,
           handler,
           type,
-          multiplier
+          multiplier,
+          difficult
         })
       );
+      if (difficult.result.size)
+        multiplier.add("double", { name: "Difficult Terrain" });
       const cost = multiplier.result * MapSquareSize;
       const error = new ErrorCollector();
       const pre = await this.resolve(
@@ -4450,10 +4451,14 @@
       area.id = this.nextId();
       this.effects.add(area);
       this.fire(new AreaPlacedEvent({ area }));
+      if (area.handler)
+        this.events.on("GetTerrain", area.handler);
     }
     removeEffectArea(area) {
       this.effects.delete(area);
       this.fire(new AreaRemovedEvent({ area }));
+      if (area.handler)
+        this.events.off("GetTerrain", area.handler);
     }
     getInside(area, ignore = []) {
       const points = resolveArea(area);
@@ -4611,6 +4616,9 @@
           valid.push(direction);
       }
       return valid;
+    }
+    getTerrain(where, who, difficult = new DifficultTerrainCollector()) {
+      return this.fire(new GetTerrainEvent({ where, who, difficult })).detail;
     }
   };
 
@@ -6371,8 +6379,7 @@
   - You may cast the spell [speak with animals] at will, but it can only target snakes.
   - As a bonus action, you hiss threateningly at an enemy within 5 feet. If the enemy fails a Wisdom save, they must spend their reaction to move half of their speed away from you in any direction. The DC is 8 + your proficiency bonus + your Charisma modifier. You can only use this ability once per short or long rest, and only when you are able to speak.`,
     (g, me) => {
-      if (getExecutionMode() !== "test")
-        console.warn(`[Feature Not Complete] Boon of Vassetri (on ${me.name})`);
+      featureNotComplete(BoonOfVassetri, me);
       me.initResource(HissResource);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -6567,8 +6574,7 @@
   }
   function notImplementedFeature(name, text) {
     return new SimpleFeature(name, text, (g, me) => {
-      if (getExecutionMode() !== "test")
-        console.warn(`[Feature Missing] ${name} (on ${me.name})`);
+      implementationWarning("Feature", "Missing", name, me.name);
     });
   }
   function wrapperFeature(name, text) {
@@ -7483,8 +7489,7 @@
     "Nimble Escape",
     `The goblin can take the Disengage or Hide action as a bonus action on each of its turns.`,
     (g, me) => {
-      if (getExecutionMode() !== "test")
-        console.warn(`[Feature Not Complete] Nimble Escape (on ${me.name})`);
+      featureNotComplete(NimbleEscape, me);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
           const cunning = [new DisengageAction(g, who)];
@@ -8535,11 +8540,13 @@
 
   // src/ActiveEffectArea.ts
   var ActiveEffectArea = class {
-    constructor(name, shape, tags, tint) {
+    constructor(name, shape, tags, tint, handler, points = resolveArea(shape)) {
       this.name = name;
       this.shape = shape;
       this.tags = tags;
       this.tint = tint;
+      this.handler = handler;
+      this.points = points;
       this.id = NaN;
     }
   };
@@ -8631,7 +8638,11 @@
       "Web",
       shape,
       arSet("difficult terrain", "lightly obscured"),
-      "white"
+      "white",
+      ({ detail: { where, difficult } }) => {
+        if (area.points.has(where))
+          difficult.add("magical webs", Web);
+      }
     )) {
       this.g = g;
       this.caster = caster;
@@ -8665,6 +8676,13 @@
         if (this.affectedThisTurn.has(target))
           return;
         this.affectedThisTurn.add(target);
+        const effect = Webbed;
+        const config = {
+          caster,
+          method,
+          duration: minutes(1),
+          conditions: coSet("Restrained")
+        };
         const { outcome } = await g.save({
           source: Web,
           type: this.method.getSaveType(this.caster, Web),
@@ -8672,16 +8690,13 @@
           attacker: caster,
           method,
           spell: Web,
+          effect,
+          config,
           who: target,
-          tags: ["magic"]
+          tags: ["magic", "impedes movement"]
         });
         if (outcome === "fail")
-          await target.addEffect(Webbed, {
-            caster,
-            method,
-            duration: minutes(1),
-            conditions: coSet("Restrained")
-          });
+          await target.addEffect(effect, config);
       });
     }
   };
@@ -9004,6 +9019,27 @@
     }
   };
 
+  // src/types/DifficultTerrainType.ts
+  var MundaneDifficultTerrainTypes = [
+    "ice",
+    "plants",
+    "rubble",
+    "snow",
+    "webs"
+  ];
+  var MagicalDifficultTerrainTypes = [
+    "magical ice",
+    "magical plants",
+    "magical rubble",
+    // ???
+    "magical snow",
+    "magical webs"
+  ];
+  var DifficultTerrainTypes = [
+    ...MundaneDifficultTerrainTypes,
+    ...MagicalDifficultTerrainTypes
+  ];
+
   // src/classes/common.ts
   function asiSetup(g, me, config) {
     if (config.type === "ability")
@@ -9030,6 +9066,22 @@ If your DM allows the use of feats, you may instead take a feat.`,
           error.ignore(OneAttackPerTurnRule);
       });
     });
+  }
+  function makeLandsStride(text) {
+    const feature = new SimpleFeature("Land's Stride", text, (g, me) => {
+      featureNotComplete(feature, me);
+      g.events.on("GetMoveCost", ({ detail: { who, difficult } }) => {
+        if (who === me) {
+          for (const type of MundaneDifficultTerrainTypes)
+            difficult.ignoreValue(type);
+        }
+      });
+      g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("impedes movement") && tags.has("plant"))
+          diceType.add("advantage", feature);
+      });
+    });
+    return feature;
   }
   var ChannelDivinityResource = new ShortRestResource(
     "Channel Divinity",
@@ -12641,15 +12693,18 @@ At the end of each of its turns, and each time it takes damage, the target can m
         "Spike Growth",
         getSpikeGrowthArea(point),
         arSet("difficult terrain", "plants"),
-        "green"
+        "green",
+        ({ detail: { where, difficult } }) => {
+          if (area.points.has(where))
+            difficult.add("magical plants", SpikeGrowth);
+        }
       );
       g.addEffectArea(area);
-      const spiky = resolveArea(area.shape);
       const unsubscribe = g.events.on(
         "CombatantMoved",
         ({ detail: { who, position, interrupt } }) => {
           const squares = getSquares(who, position);
-          if (spiky.overlaps(squares))
+          if (area.points.overlaps(squares))
             interrupt.add(
               new EvaluateLater(who, SpikeGrowth, async () => {
                 const amount = await g.rollDamage(2, {
@@ -12747,7 +12802,11 @@ At the end of each of its turns, and each time it takes damage, the target can m
         "Erupting Earth",
         shape,
         arSet("difficult terrain"),
-        "brown"
+        "brown",
+        ({ detail: { where, difficult } }) => {
+          if (area.points.has(where))
+            difficult.add("rubble", EruptingEarth);
+        }
       );
       g.addEffectArea(area);
     }
@@ -13489,6 +13548,15 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on("BeforeAttack", ({ detail: { who, ability, diceType } }) => {
         if (who.hasEffect(GreatTreeEffect) && (ability === "dex" || ability === "wis"))
           diceType.add("advantage", GreatTreeEffect);
+      });
+      g.events.on("GetTerrain", ({ detail: { who, where, difficult } }) => {
+        const trees = Array.from(g.combatants).filter(
+          (other) => other.hasEffect(GreatTreeEffect)
+        );
+        for (const tree of trees) {
+          if (who.side !== tree.side && distanceTo(tree, where) <= 15)
+            difficult.add("magical plants", GreatTreeEffect);
+        }
       });
     },
     { tags: ["magic", "shapechange"] }
@@ -14375,8 +14443,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     "Wild Shape",
     `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
     (g, me, forms) => {
-      if (getExecutionMode() !== "test")
-        console.warn(`[Feature Not Complete] Wild Shape (on ${me.name})`);
+      featureNotComplete(WildShape, me);
       me.initResource(WildShapeResource);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -14983,8 +15050,8 @@ At 9th level, you gain the ability to move along vertical surfaces and across li
     (g, me) => {
       var _a;
       const level = (_a = me.classLevels.get("Monk")) != null ? _a : 2;
-      if (getExecutionMode() !== "test" && level >= 9)
-        console.warn(`[Feature Not Complete] Unarmored Movement (on ${me.name})`);
+      if (level >= 9)
+        featureNotComplete(UnarmoredMovement, me);
       const speed = getUnarmoredMovementBonus(level);
       g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {
         if (who === me && !me.armor && !me.shield)
@@ -15766,8 +15833,7 @@ You can cast each of these spells once without expending a spell slot. Once you 
     "Roving",
     `Your walking speed increases by 5, and you gain a climbing speed and a swimming speed equal to your walking speed.`
   );
-  var LandsStride = notImplementedFeature(
-    "Land's Stride",
+  var RangerLandsStride = makeLandsStride(
     `Starting at 8th level, moving through nonmagical difficult terrain costs you no extra movement. You can also pass through nonmagical plants without being slowed by them and without taking damage from them if they have thorns, spines, or a similar hazard.
 
 In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`
@@ -15851,7 +15917,7 @@ In addition, whenever you finish a short rest, your exhaustion level, if any, is
       [3, [Awareness]],
       [4, [ASI49, MartialVersatility3]],
       [5, [ExtraAttack6]],
-      [8, [ASI89, LandsStride]],
+      [8, [ASI89, RangerLandsStride]],
       [10, [HideVeil]],
       [12, [ASI129]],
       [14, [Vanish]],
@@ -16033,8 +16099,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
     "Cunning Action",
     `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
     (g, me) => {
-      if (getExecutionMode() !== "test")
-        console.warn(`[Feature Not Complete] Cunning Action (on ${me.name})`);
+      featureNotComplete(CunningAction, me);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
           const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
@@ -17617,8 +17682,7 @@ Once you gain access to a circle spell, you always have it prepared, and it does
       feature == null ? void 0 : feature.setup(g, me);
     }
   );
-  var LandsStride2 = notImplementedFeature(
-    "Land's Stride",
+  var DruidLandsStride = makeLandsStride(
     `Starting at 6th level, moving through nonmagical difficult terrain costs you no extra movement. You can also pass through nonmagical plants without being slowed by them and without taking damage from them if they have thorns, spines, or a similar hazard.
 
 In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`
@@ -17652,7 +17716,7 @@ The creature is aware of this effect before it makes its attack against you.`
     name: "Circle of the Land",
     features: /* @__PURE__ */ new Map([
       [2, [BonusCantrip, NaturalRecovery, CircleSpells]],
-      [6, [LandsStride2]],
+      [6, [DruidLandsStride]],
       [10, [NaturesWard]],
       [14, [NaturesSanctuary]]
     ])

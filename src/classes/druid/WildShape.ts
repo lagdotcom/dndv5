@@ -8,7 +8,7 @@ import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { ShortRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Feature from "../../types/Feature";
-import { getExecutionMode } from "../../utils/env";
+import { featureNotComplete } from "../../utils/env";
 
 type HasForm = { form: MonsterName };
 
@@ -212,8 +212,7 @@ const WildShape = new ConfiguredFeature<MonsterName[]>(
   "Wild Shape",
   `Starting at 2nd level, you can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
   (g, me, forms) => {
-    if (getExecutionMode() !== "test")
-      console.warn(`[Feature Not Complete] Wild Shape (on ${me.name})`);
+    featureNotComplete(WildShape, me);
     me.initResource(WildShapeResource);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

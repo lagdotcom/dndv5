@@ -7,7 +7,6 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
 import { arSet, SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
-import { resolveArea } from "../../utils/areas";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
@@ -48,15 +47,18 @@ const SpikeGrowth = simpleSpell<HasPoint>({
       getSpikeGrowthArea(point),
       arSet("difficult terrain", "plants"),
       "green",
+      ({ detail: { where, difficult } }) => {
+        if (area.points.has(where))
+          difficult.add("magical plants", SpikeGrowth);
+      },
     );
     g.addEffectArea(area);
-    const spiky = resolveArea(area.shape);
 
     const unsubscribe = g.events.on(
       "CombatantMoved",
       ({ detail: { who, position, interrupt } }) => {
         const squares = getSquares(who, position);
-        if (spiky.overlaps(squares))
+        if (area.points.overlaps(squares))
           interrupt.add(
             new EvaluateLater(who, SpikeGrowth, async () => {
               const amount = await g.rollDamage(2, {

@@ -4,6 +4,7 @@ import AttackOutcomeCollector from "./collectors/AttackOutcomeCollector";
 import BonusCollector from "./collectors/BonusCollector";
 import DamageResponseCollector from "./collectors/DamageResponseCollector";
 import DiceTypeCollector from "./collectors/DiceTypeCollector";
+import DifficultTerrainCollector from "./collectors/DifficultTerrainCollector";
 import ErrorCollector from "./collectors/ErrorCollector";
 import InterruptionCollector from "./collectors/InterruptionCollector";
 import MultiplierCollector, {
@@ -52,6 +53,7 @@ import GetDamageResponseEvent from "./events/GetDamageResponseEvent";
 import GetInitiativeEvent from "./events/GetInitiativeEvent";
 import GetMoveCostEvent from "./events/GetMoveCostEvent";
 import GetSaveDCEvent, { GetSaveDCDetail } from "./events/GetSaveDCEvent";
+import GetTerrainEvent from "./events/GetTerrainEvent";
 import SaveEvent from "./events/SaveEvent";
 import TextEvent from "./events/TextEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
@@ -418,17 +420,26 @@ export default class Engine {
     direction?: MoveDirection,
     simulation?: boolean,
   ) {
+    const squares = getSquares(who, to);
+    const difficult = new DifficultTerrainCollector();
+    for (const where of squares) this.getTerrain(where, who, difficult);
+
     const multiplier = new MultiplierCollector();
     this.fire(
       new GetMoveCostEvent({
         who,
         from: who.position,
         to,
+        squares,
         handler,
         type,
         multiplier,
+        difficult,
       }),
     );
+
+    if (difficult.result.size)
+      multiplier.add("double", { name: "Difficult Terrain" });
 
     const cost = multiplier.result * MapSquareSize;
 
@@ -896,11 +907,15 @@ export default class Engine {
     area.id = this.nextId();
     this.effects.add(area);
     this.fire(new AreaPlacedEvent({ area }));
+
+    if (area.handler) this.events.on("GetTerrain", area.handler);
   }
 
   removeEffectArea(area: EffectArea) {
     this.effects.delete(area);
     this.fire(new AreaRemovedEvent({ area }));
+
+    if (area.handler) this.events.off("GetTerrain", area.handler);
   }
 
   getInside(area: SpecifiedEffectShape, ignore: Combatant[] = []) {
@@ -1091,6 +1106,16 @@ export default class Engine {
     }
 
     return valid;
+  }
+
+  getTerrain(
+    where: Point,
+    who: Combatant,
+    difficult = new DifficultTerrainCollector(),
+  ) {
+    // TODO static terrain entries
+
+    return this.fire(new GetTerrainEvent({ where, who, difficult })).detail;
   }
 }
 

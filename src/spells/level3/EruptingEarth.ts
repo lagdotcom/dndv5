@@ -80,6 +80,9 @@ const EruptingEarth = scalingSpell<HasPoint>({
       shape,
       arSet("difficult terrain"),
       "brown",
+      ({ detail: { where, difficult } }) => {
+        if (area.points.has(where)) difficult.add("rubble", EruptingEarth);
+      },
     );
     g.addEffectArea(area);
   },

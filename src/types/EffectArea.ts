@@ -1,3 +1,5 @@
+import { Listener } from "../events/Dispatcher";
+import PointSet from "../PointSet";
 import Combatant from "./Combatant";
 import {
   ConeShape,
@@ -40,5 +42,7 @@ export default interface EffectArea extends Source {
   id: number;
   tags: Set<AreaTag>;
   shape: SpecifiedEffectShape;
+  points: PointSet;
   tint: string;
+  handler?: Listener<"GetTerrain">;
 }

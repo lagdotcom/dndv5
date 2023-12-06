@@ -1,5 +1,5 @@
 import SimpleFeature from "../../features/SimpleFeature";
-import { getExecutionMode } from "../../utils/env";
+import { featureNotComplete } from "../../utils/env";
 
 function getUnarmoredMovementBonus(level: number) {
   if (level < 6) return 10;
@@ -16,8 +16,7 @@ const UnarmoredMovement = new SimpleFeature(
 At 9th level, you gain the ability to move along vertical surfaces and across liquids on your turn without falling during the move.`,
   (g, me) => {
     const level = me.classLevels.get("Monk") ?? 2;
-    if (getExecutionMode() !== "test" && level >= 9)
-      console.warn(`[Feature Not Complete] Unarmored Movement (on ${me.name})`);
+    if (level >= 9) featureNotComplete(UnarmoredMovement, me);
 
     const speed = getUnarmoredMovementBonus(level);
     g.events.on("GetSpeed", ({ detail: { who, bonus } }) => {

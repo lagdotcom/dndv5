@@ -3,6 +3,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { minutes } from "../../utils/time";
+import { distanceTo } from "../../utils/units";
 import { simpleSpell } from "../common";
 
 type Form = "Primal Beast" | "Great Tree";
@@ -82,7 +83,18 @@ const GreatTreeEffect = new Effect(
         diceType.add("advantage", GreatTreeEffect);
     });
 
-    // TODO While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.
+    // While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.
+    g.events.on("GetTerrain", ({ detail: { who, where, difficult } }) => {
+      const trees = Array.from(g.combatants).filter((other) =>
+        other.hasEffect(GreatTreeEffect),
+      );
+
+      for (const tree of trees) {
+        // TODO While you are on the ground...
+        if (who.side !== tree.side && distanceTo(tree, where) <= 15)
+          difficult.add("magical plants", GreatTreeEffect);
+      }
+    });
   },
   { tags: ["magic", "shapechange"] },
 );

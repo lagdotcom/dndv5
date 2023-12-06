@@ -7,14 +7,13 @@ import { Arrow } from "../items/ammunition";
 import { LeatherArmor, Shield } from "../items/armor";
 import { Scimitar, Shortbow } from "../items/weapons";
 import Monster from "../Monster";
-import { getExecutionMode } from "../utils/env";
+import { featureNotComplete } from "../utils/env";
 
 const NimbleEscape = new SimpleFeature(
   "Nimble Escape",
   `The goblin can take the Disengage or Hide action as a bonus action on each of its turns.`,
   (g, me) => {
-    if (getExecutionMode() !== "test")
-      console.warn(`[Feature Not Complete] Nimble Escape (on ${me.name})`);
+    featureNotComplete(NimbleEscape, me);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) {

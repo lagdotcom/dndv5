@@ -9,7 +9,7 @@ import { abSet } from "../../types/AbilityName";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
 import { gains } from "../../utils/gain";
-import { makeASI, makeExtraAttack } from "../common";
+import { makeASI, makeExtraAttack, makeLandsStride } from "../common";
 
 export const Favored = wrapperFeature(
   "Favored Enemy/Foe",
@@ -144,9 +144,7 @@ const Roving = notImplementedFeature(
   `Your walking speed increases by 5, and you gain a climbing speed and a swimming speed equal to your walking speed.`,
 );
 
-// TODO
-const LandsStride = notImplementedFeature(
-  "Land's Stride",
+const RangerLandsStride = makeLandsStride(
   `Starting at 8th level, moving through nonmagical difficult terrain costs you no extra movement. You can also pass through nonmagical plants without being slowed by them and without taking damage from them if they have thorns, spines, or a similar hazard.
 
 In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.`,
@@ -245,7 +243,7 @@ const Ranger: PCClass = {
     [3, [Awareness]],
     [4, [ASI4, MartialVersatility]],
     [5, [ExtraAttack]],
-    [8, [ASI8, LandsStride]],
+    [8, [ASI8, RangerLandsStride]],
     [10, [HideVeil]],
     [12, [ASI12]],
     [14, [Vanish]],

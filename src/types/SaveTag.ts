@@ -5,7 +5,9 @@ export const SaveTags = [
   "disease",
   "forced movement",
   "frightened",
+  "impedes movement",
   "magic",
+  "plant",
   "poison",
 ] as const;
 type SaveTag = (typeof SaveTags)[number];
