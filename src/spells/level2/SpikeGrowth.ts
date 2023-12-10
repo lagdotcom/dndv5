@@ -5,6 +5,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
+import { atSet } from "../../types/AttackTag";
 import { arSet, SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { minutes } from "../../utils/time";
@@ -69,6 +70,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
                 damageType: "piercing",
                 spell: SpikeGrowth,
                 method,
+                tags: atSet("magical", "spell"),
               });
               await g.damage(
                 SpikeGrowth,

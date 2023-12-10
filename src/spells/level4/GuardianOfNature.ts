@@ -2,6 +2,7 @@ import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
+import { atSet } from "../../types/AttackTag";
 import { minutes } from "../../utils/time";
 import { distanceTo } from "../../utils/units";
 import { simpleSpell } from "../common";
@@ -52,6 +53,7 @@ const PrimalBeastEffect = new Effect(
                   target,
                   size: 6,
                   damageType: "force",
+                  tags: atSet("magical"),
                 },
                 critical,
               );

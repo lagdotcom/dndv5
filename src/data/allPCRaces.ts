@@ -1,7 +1,7 @@
-import { BronzeDragonborn } from "../races/Dragonborn_FTD";
+import { BronzeDragonborn, GoldDragonborn } from "../races/Dragonborn_FTD";
 import { HillDwarf, MountainDwarf } from "../races/Dwarf";
 import { HighElf } from "../races/Elf";
-import { AirGenasi } from "../races/Genasi_EEPC";
+import { AirGenasi, FireGenasi } from "../races/Genasi_EEPC";
 import { RockGnome } from "../races/Gnome";
 import { HalfElf } from "../races/HalfElf";
 import { LightfootHalfling, StoutHalfling } from "../races/Halfling";
@@ -12,6 +12,7 @@ import Triton from "../races/Triton";
 
 const allPCRaces = {
   "Bronze Dragonborn": BronzeDragonborn,
+  "Gold Dragonborn": GoldDragonborn,
 
   "Hill Dwarf": HillDwarf,
   "Mountain Dwarf": MountainDwarf,
@@ -19,6 +20,7 @@ const allPCRaces = {
   "High Elf": HighElf,
 
   "Air Genasi": AirGenasi,
+  "Fire Genasi": FireGenasi,
 
   "Rock Gnome": RockGnome,
 

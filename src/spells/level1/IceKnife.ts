@@ -71,6 +71,7 @@ const IceKnife = scalingSpell<HasTarget>({
           spell: IceKnife,
           method: attack.pre.method,
           damageType: "piercing",
+          tags: attack.pre.tags,
         },
         critical,
       );
@@ -97,6 +98,7 @@ const IceKnife = scalingSpell<HasTarget>({
       spell: IceKnife,
       method,
       damageType: "cold",
+      tags: atSet("magical", "spell"),
     });
     for (const victim of g.getInside(getIceKnifeArea(target))) {
       const { damageResponse } = await g.save({

@@ -1,6 +1,7 @@
 import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { TurnResource } from "../../resources";
+import { atSet } from "../../types/AttackTag";
 import { getFlanker } from "../../utils/dnd";
 
 function getSneakAttackDice(level: number) {
@@ -72,6 +73,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                       damageType,
                       weapon,
                       ability,
+                      tags: atSet(),
                     },
                     critical,
                   );

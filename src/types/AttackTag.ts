@@ -1,4 +1,5 @@
 export const AttackTags = [
+  "breath weapon",
   "magical",
   "melee",
   "ranged",
@@ -6,6 +7,8 @@ export const AttackTags = [
   "spell",
   "thrown",
   "two-weapon",
+  "two hands",
+  "versatile",
   "weapon",
 ] as const;
 type AttackTag = (typeof AttackTags)[number];

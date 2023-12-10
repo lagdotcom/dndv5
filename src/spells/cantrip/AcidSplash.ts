@@ -4,6 +4,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { atSet } from "../../types/AttackTag";
 import { poWithin } from "../../utils/ai";
 import { combinationsMulti } from "../../utils/combinatorics";
 import { _dd } from "../../utils/dice";
@@ -57,6 +58,7 @@ const AcidSplash = simpleSpell<HasTargets>({
       spell: AcidSplash,
       method,
       damageType: "acid",
+      tags: atSet("magical", "spell"),
     });
 
     for (const target of targets) {

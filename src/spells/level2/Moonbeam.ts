@@ -9,6 +9,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import PointResolver from "../../resolvers/PointResolver";
 import PointToPointResolver from "../../resolvers/PointToPointResolver";
 import SubscriptionBag from "../../SubscriptionBag";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedCylinder } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -134,6 +135,7 @@ class MoonbeamController {
         source: Moonbeam,
         spell: Moonbeam,
         target,
+        tags: atSet("magical", "spell"),
       });
 
       // TODO A shapechanger makes its saving throw with disadvantage.

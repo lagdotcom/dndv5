@@ -4,6 +4,7 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { atSet } from "../../types/AttackTag";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -50,6 +51,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
       method,
       damageType: "bludgeoning",
       attacker,
+      tags: atSet("magical", "spell"),
     });
 
     const shape = getEruptingEarthArea(point);

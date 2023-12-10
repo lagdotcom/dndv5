@@ -11,6 +11,7 @@ import Engine from "../Engine";
 import SimpleFeature from "../features/SimpleFeature";
 import PointResolver from "../resolvers/PointResolver";
 import { LongRestResource } from "../resources";
+import { atSet } from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { coSet } from "../types/ConditionName";
 import DamageType from "../types/DamageType";
@@ -85,6 +86,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       attacker,
       size: 10,
       damageType,
+      tags: atSet("breath weapon"),
     });
 
     for (const target of g.getInside(getBreathArea(attacker, point))) {
@@ -291,3 +293,4 @@ function makeAncestry(a: Ancestry, dt: DamageType): PCRace {
 }
 
 export const BronzeDragonborn = makeAncestry("Bronze", "lightning");
+export const GoldDragonborn = makeAncestry("Gold", "fire");

@@ -1,5 +1,6 @@
 import { ItemRarityColours } from "../colours";
 import EvaluateLater from "../interruptions/EvaluateLater";
+import { atSet } from "../types/AttackTag";
 import Enchantment from "../types/Enchantment";
 import { weaponPlus1 } from "./plus";
 
@@ -24,7 +25,13 @@ const darkSun: Enchantment<"weapon"> = {
                 damageType,
                 await g.rollDamage(
                   1,
-                  { source: darkSun, size: 10, attacker, damageType },
+                  {
+                    source: darkSun,
+                    size: 10,
+                    attacker,
+                    damageType,
+                    tags: atSet("magical"),
+                  },
                   critical,
                 ),
               );

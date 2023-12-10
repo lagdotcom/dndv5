@@ -1,5 +1,6 @@
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import { atSet } from "../../types/AttackTag";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -22,6 +23,7 @@ const DivineFavorEffect = new Effect(
                     size: 4,
                     attacker,
                     damageType: "radiant",
+                    tags: atSet("magical"),
                   },
                   critical,
                 ),

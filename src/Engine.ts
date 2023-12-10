@@ -752,7 +752,7 @@ export default class Engine {
     const { target, who, ability } = pre.detail;
     const ac = await this.getAC(target, pre.detail);
     const roll = await this.roll(
-      { type: "attack", who, target, ac, ability },
+      { type: "attack", who, target, ac, ability, tags: pre.detail.tags },
       diceType.result,
     );
 

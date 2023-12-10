@@ -11,6 +11,7 @@ import { Arrow } from "../../items/ammunition";
 import { StuddedLeatherArmor } from "../../items/armor";
 import { Longbow, Spear } from "../../items/weapons";
 import Monster from "../../Monster";
+import { atSet } from "../../types/AttackTag";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import SizeCategory from "../../types/SizeCategory";
 import { makeMultiattack } from "../common";
@@ -36,6 +37,7 @@ const ScreamingInside = new SimpleFeature(
                   target,
                   size: 6,
                   damageType: "psychic",
+                  tags: atSet("magical"),
                 },
                 critical,
               );

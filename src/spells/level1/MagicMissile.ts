@@ -4,6 +4,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasAllocations } from "../../configs";
 import { canSee } from "../../filters";
 import AllocationResolver from "../../resolvers/AllocationResolver";
+import { atSet } from "../../types/AttackTag";
 import DamageAmount from "../../types/DamageAmount";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
@@ -52,6 +53,7 @@ const MagicMissile = scalingSpell<HasAllocations>({
         attacker,
         damageType: "force",
         size: 4,
+        tags: atSet("magical", "spell"),
       })) + 1;
 
     for (const { amount, who } of targets) {

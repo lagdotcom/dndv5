@@ -37,7 +37,7 @@ export default class SpellAttack<T extends object> {
 
   async getDamage(target?: Combatant) {
     if (!this.attackResult) throw new Error("Run .attack() first");
-    const { critical } = this.attackResult;
+    const { attack, critical } = this.attackResult;
     const { g, caster: attacker, config, method, spell } = this;
 
     const damage = spell.getDamage(g, attacker, method, config);
@@ -64,6 +64,7 @@ export default class SpellAttack<T extends object> {
               target,
               spell,
               method,
+              tags: attack!.pre.tags,
             },
             critical,
           );

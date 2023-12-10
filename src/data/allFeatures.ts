@@ -4,6 +4,7 @@ import FightingStyleArchery from "../features/fightingStyles/Archery";
 import BlindFighting from "../features/fightingStyles/BlindFighting";
 import Defense from "../features/fightingStyles/Defense";
 import Dueling from "../features/fightingStyles/Dueling";
+import GreatWeaponFighting from "../features/fightingStyles/GreatWeaponFighting";
 import Protection from "../features/fightingStyles/Protection";
 
 const allFeatures = {
@@ -12,6 +13,7 @@ const allFeatures = {
   "Fighting Style: Blind Fighting": BlindFighting,
   "Fighting Style: Defense": Defense,
   "Fighting Style: Dueling": Dueling,
+  "Fighting Style: Great Weapon Fighting": GreatWeaponFighting,
   "Fighting Style: Protection": Protection,
   Lucky,
 } as const;

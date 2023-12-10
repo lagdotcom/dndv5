@@ -7,6 +7,7 @@ import Engine from "../../Engine";
 import MessageBuilder from "../../MessageBuilder";
 import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
@@ -33,6 +34,7 @@ async function fireMeteors(
     spell: MelfsMinuteMeteors,
     method,
     damageType: "fire",
+    tags: atSet("magical", "spell"),
   });
   for (const point of points) {
     for (const target of g.getInside({

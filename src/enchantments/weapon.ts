@@ -3,6 +3,7 @@ import PickFromListChoice, {
   PickChoice,
 } from "../interruptions/PickFromListChoice";
 import { TurnResource } from "../resources";
+import { atSet } from "../types/AttackTag";
 import DamageType from "../types/DamageType";
 import Enchantment from "../types/Enchantment";
 import { isEquipmentAttuned } from "../utils/items";
@@ -53,12 +54,14 @@ export const chaoticBurst: Enchantment<"weapon"> = {
             type: "damage",
             attacker,
             size: 8,
+            tags: atSet("magical"),
           }).values.final;
           const b = g.dice.roll({
             source: chaoticBurst,
             type: "damage",
             attacker,
             size: 8,
+            tags: atSet("magical"),
           }).values.final;
           const addBurst = (type: DamageType) => map.add(type, a + b);
 

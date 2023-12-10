@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { atSet } from "../../types/AttackTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -60,6 +61,7 @@ const MindSliver = simpleSpell<HasTarget>({
       method,
       size: 6,
       damageType: "psychic",
+      tags: atSet("magical", "spell"),
     });
 
     const { damageResponse, outcome } = await g.save({

@@ -155,6 +155,7 @@ This increases to two additional dice at 13th level and three additional dice at
                     size: base.amount.size,
                     target,
                     weapon,
+                    tags: attack.pre.tags,
                   },
                   false,
                 );

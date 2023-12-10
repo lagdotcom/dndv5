@@ -24,6 +24,9 @@ export const gleanVsGoblins: BattleTemplate = {
   combatants: [
     addPC("Marvoril", 15, 30),
     addPC("Shaira", 10, 35),
+    addPC("Es'les", 10, 5),
+    addPC("Faerfarn", 10, 20),
+    addPC("Litt", 5, 15),
     addMonster("goblin [bow]", 15, 0),
     addMonster("goblin [bow]", 25, 0),
     addMonster("goblin", 20, 5),

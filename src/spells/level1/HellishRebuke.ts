@@ -6,6 +6,7 @@ import { HasTarget } from "../../configs";
 import DndRule from "../../DndRule";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { atSet } from "../../types/AttackTag";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { enumerate } from "../../utils/numbers";
@@ -76,6 +77,7 @@ const HellishRebuke = scalingSpell<HasTarget>({
       attacker,
       target,
       damageType: "fire",
+      tags: atSet("magical", "spell"),
     });
 
     const { damageResponse } = await g.save({

@@ -17,9 +17,12 @@ export default class ValueCollector {
   add(value: number, prefer: Prefer) {
     const comparator = comparators[prefer];
 
-    if (comparator(this.final, value)) {
-      this.others.push(this.final);
-      this.final = value;
-    } else this.others.push(value);
+    if (comparator(this.final, value)) this.replace(value);
+    else this.others.push(value);
+  }
+
+  replace(value: number) {
+    this.others.push(this.final);
+    this.final = value;
   }
 }

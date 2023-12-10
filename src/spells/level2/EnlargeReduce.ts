@@ -5,6 +5,7 @@ import { canSee } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { EffectConfig } from "../../types/EffectType";
 import SizeCategory from "../../types/SizeCategory";
@@ -35,7 +36,12 @@ const EnlargeEffect = new Effect(
             new EvaluateLater(attacker, EnlargeEffect, async () => {
               const amount = await g.rollDamage(
                 1,
-                { source: EnlargeEffect, attacker, size: 4 },
+                {
+                  source: EnlargeEffect,
+                  attacker,
+                  size: 4,
+                  tags: atSet("magical"),
+                },
                 critical,
               );
               bonus.add(amount, EnlargeEffect);
@@ -71,7 +77,12 @@ const ReduceEffect = new Effect(
             new EvaluateLater(attacker, ReduceEffect, async () => {
               const amount = await g.rollDamage(
                 1,
-                { source: ReduceEffect, attacker, size: 4 },
+                {
+                  source: ReduceEffect,
+                  attacker,
+                  size: 4,
+                  tags: atSet("magical"),
+                },
                 critical,
               );
               bonus.add(-amount, ReduceEffect);

@@ -4,6 +4,7 @@ import { aimLine } from "../../aim";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -49,6 +50,7 @@ const LightningBolt = scalingSpell<HasPoint>({
       method,
       damageType: "lightning",
       attacker,
+      tags: atSet("magical", "spell"),
     });
 
     // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.

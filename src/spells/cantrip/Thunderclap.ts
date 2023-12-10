@@ -1,3 +1,4 @@
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { _dd } from "../../utils/dice";
@@ -38,6 +39,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
       source: Thunderclap,
       spell: Thunderclap,
       method,
+      tags: atSet("magical", "spell"),
     });
 
     for (const target of affected) {

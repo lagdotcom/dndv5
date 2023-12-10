@@ -20,6 +20,7 @@ import { simpleSpell } from "../../spells/common";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import ArmorOfAgathysSpell from "../../spells/level1/ArmorOfAgathys";
 import SpellAttack from "../../spells/SpellAttack";
+import { atSet } from "../../types/AttackTag";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
@@ -76,7 +77,13 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
 
     const damage = await g.rollDamage(
       1,
-      { size: 10, source: this, attacker: caster, damageType: "force" },
+      {
+        size: 10,
+        source: this,
+        attacker: caster,
+        damageType: "force",
+        tags: atSet("magical", "ranged", "spell"),
+      },
       critical,
     );
 
@@ -275,6 +282,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
       attacker,
       target,
       damageType: "fire",
+      tags: atSet("magical", "spell"),
     });
 
     const { damageResponse } = await g.save({

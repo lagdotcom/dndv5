@@ -23,6 +23,7 @@ import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import GuidingBolt from "../../spells/level1/GuidingBolt";
 import MassHealingWord from "../../spells/level3/MassHealingWord";
 import AbilityName from "../../types/AbilityName";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import SizeCategory from "../../types/SizeCategory";
@@ -54,6 +55,7 @@ const FiendishMantle = new SimpleFeature(
                   source: FiendishMantle,
                   damageType: "necrotic",
                   size: 4,
+                  tags: atSet("magical"),
                 },
                 critical,
               );

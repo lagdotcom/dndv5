@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/fireball.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { atSet } from "../../types/AttackTag";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -47,6 +48,7 @@ const Fireball = scalingSpell<HasPoint>({
       method,
       damageType: "fire",
       attacker,
+      tags: atSet("magical", "spell"),
     });
 
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.

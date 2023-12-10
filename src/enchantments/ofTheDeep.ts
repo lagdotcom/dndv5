@@ -1,5 +1,6 @@
 import { ItemRarityColours } from "../colours";
 import YesNoChoice from "../interruptions/YesNoChoice";
+import { atSet } from "../types/AttackTag";
 import Enchantment from "../types/Enchantment";
 
 const ofTheDeep: Enchantment<"weapon"> = {
@@ -28,6 +29,7 @@ const ofTheDeep: Enchantment<"weapon"> = {
                 damageType: "acid",
                 size: 6,
                 source: ofTheDeep,
+                tags: atSet("magical"),
               });
 
               const targets = g.getInside(

@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/earth-tremor.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { poSet } from "../../utils/ai";
@@ -47,6 +48,7 @@ const EarthTremor = scalingSpell({
       method,
       damageType: "bludgeoning",
       attacker,
+      tags: atSet("magical", "spell"),
     });
 
     const shape = getEarthTremorArea(attacker);

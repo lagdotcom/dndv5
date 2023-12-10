@@ -64,6 +64,9 @@
     combatants: [
       addPC("Marvoril", 15, 30),
       addPC("Shaira", 10, 35),
+      addPC("Es'les", 10, 5),
+      addPC("Faerfarn", 10, 20),
+      addPC("Litt", 5, 15),
       addMonster("goblin [bow]", 15, 0),
       addMonster("goblin [bow]", 25, 0),
       addMonster("goblin", 20, 5),
@@ -314,11 +317,14 @@
     }
     add(value, prefer) {
       const comparator = comparators[prefer];
-      if (comparator(this.final, value)) {
-        this.others.push(this.final);
-        this.final = value;
-      } else
+      if (comparator(this.final, value))
+        this.replace(value);
+      else
         this.others.push(value);
+    }
+    replace(value) {
+      this.others.push(this.final);
+      this.final = value;
     }
   };
 
@@ -1176,6 +1182,38 @@
     message: `within ${range}' of each other`,
     check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
   });
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, yes, no, priority = 10, isStillValid) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.yes = yes;
+      this.no = no;
+      this.priority = priority;
+      this.isStillValid = isStillValid;
+    }
+    async apply(g) {
+      var _a, _b;
+      const choice = await new Promise(
+        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        await ((_a = this.yes) == null ? void 0 : _a.call(this));
+      else
+        await ((_b = this.no) == null ? void 0 : _b.call(this));
+      return choice;
+    }
+  };
 
   // src/types/AbilityName.ts
   var PhysicalAbilities = ["str", "dex", "con"];
@@ -2565,38 +2603,6 @@
     }
   };
 
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority = 10, isStillValid) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.yes = yes;
-      this.no = no;
-      this.priority = priority;
-      this.isStillValid = isStillValid;
-    }
-    async apply(g) {
-      var _a, _b;
-      const choice = await new Promise(
-        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        await ((_a = this.yes) == null ? void 0 : _a.call(this));
-      else
-        await ((_b = this.no) == null ? void 0 : _b.call(this));
-      return choice;
-    }
-  };
-
   // src/utils/points.ts
   var _p = (x, y) => ({ x, y });
   function addPoints(a, b) {
@@ -2989,6 +2995,7 @@
       });
     }
   };
+  var Versatile = { name: "Versatile" };
   async function doStandardAttack(g, {
     ability,
     ammo,
@@ -3011,6 +3018,19 @@
       tags.add("weapon");
     if (weapon.magical || (ammo == null ? void 0 : ammo.magical))
       tags.add("magical");
+    if (weapon.properties.has("two-handed"))
+      tags.add("two hands");
+    if (weapon.properties.has("versatile") && attacker.freeHands > 0)
+      await new YesNoChoice(
+        attacker,
+        Versatile,
+        "Versatile",
+        `Use both hands to attack with ${attacker.name}'s ${weapon.name}?`,
+        async () => {
+          tags.add("two hands");
+          tags.add("versatile");
+        }
+      ).apply(g);
     return getAttackResult(
       g,
       source,
@@ -3026,9 +3046,11 @@
         const { damage } = weapon;
         const baseDamage = [];
         if (damage.type === "dice") {
-          const { count, size } = damage.amount;
+          let { size } = damage.amount;
+          if (e2.attack.pre.tags.has("versatile"))
+            size += 2;
           const amount = await g.rollDamage(
-            count,
+            damage.amount.count,
             {
               source,
               size,
@@ -3036,7 +3058,8 @@
               attacker,
               target,
               ability,
-              weapon
+              weapon,
+              tags: e2.attack.pre.tags
             },
             e2.critical
           );
@@ -4852,7 +4875,7 @@
       const { target, who, ability } = pre.detail;
       const ac = await this.getAC(target, pre.detail);
       const roll = await this.roll(
-        { type: "attack", who, target, ac, ability },
+        { type: "attack", who, target, ac, ability, tags: pre.detail.tags },
         diceType.result
       );
       const total = roll.values.final + bonus.result;
@@ -6174,7 +6197,7 @@
     async getDamage(target) {
       if (!this.attackResult)
         throw new Error("Run .attack() first");
-      const { critical } = this.attackResult;
+      const { attack, critical } = this.attackResult;
       const { g, caster: attacker, config, method, spell } = this;
       const damage = spell.getDamage(g, attacker, method, config);
       if (damage) {
@@ -6196,7 +6219,8 @@
                 attacker,
                 target,
                 spell,
-                method
+                method,
+                tags: attack.pre.tags
               },
               critical
             );
@@ -6265,7 +6289,13 @@
       }
       const damage = await g.rollDamage(
         1,
-        { size: 10, source: this, attacker: caster, damageType: "force" },
+        {
+          size: 10,
+          source: this,
+          attacker: caster,
+          damageType: "force",
+          tags: atSet("magical", "ranged", "spell")
+        },
         critical
       );
       for (const other of g.getInside(getEldritchBurstArea(finalTarget))) {
@@ -6438,7 +6468,8 @@
         size: 10,
         attacker,
         target,
-        damageType: "fire"
+        damageType: "fire",
+        tags: atSet("magical", "spell")
       });
       const { damageResponse } = await g.save({
         source: HellishRebuke,
@@ -6675,7 +6706,8 @@
                     attacker,
                     target,
                     size: 6,
-                    damageType: "psychic"
+                    damageType: "psychic",
+                    tags: atSet("magical")
                   },
                   critical
                 );
@@ -6978,6 +7010,36 @@
   );
   var Dueling_default = FightingStyleDueling;
 
+  // src/features/fightingStyles/GreatWeaponFighting.ts
+  var FightingStyleGreatWeaponFighting = new SimpleFeature(
+    "Fighting Style: Great Weapon Fighting",
+    `When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll, even if the new roll is a 1 or a 2. The weapon must have the two-handed or versatile property for you to gain this benefit.`,
+    (g, me) => {
+      g.events.on(
+        "DiceRolled",
+        ({ detail: { type, values, interrupt, size } }) => {
+          if (type.type === "damage" && type.attacker === me && type.tags.has("melee") && type.tags.has("weapon") && type.tags.has("two hands") && values.final <= 2)
+            interrupt.add(
+              new EvaluateLater(
+                me,
+                FightingStyleGreatWeaponFighting,
+                async () => {
+                  const newRoll = await g.roll({
+                    type: "other",
+                    source: FightingStyleGreatWeaponFighting,
+                    who: me,
+                    size
+                  });
+                  values.replace(newRoll.values.final);
+                }
+              )
+            );
+        }
+      );
+    }
+  );
+  var GreatWeaponFighting_default = FightingStyleGreatWeaponFighting;
+
   // src/img/act/protection.svg
   var protection_default = "./protection-NGWVG7SN.svg";
 
@@ -7058,6 +7120,7 @@
     "Fighting Style: Blind Fighting": BlindFighting_default,
     "Fighting Style: Defense": Defense_default,
     "Fighting Style: Dueling": Dueling_default,
+    "Fighting Style: Great Weapon Fighting": GreatWeaponFighting_default,
     "Fighting Style: Protection": Protection_default,
     Lucky: Lucky_default
   };
@@ -7081,7 +7144,7 @@
   };
 
   // src/features/common.ts
-  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList) {
+  function bonusSpellsFeature(name, text, levelType, method, entries, addAsList, additionalSetup) {
     return new SimpleFeature(name, text, (g, me) => {
       var _a, _b;
       const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
@@ -7102,6 +7165,7 @@
             for (const { spell } of spells)
               actions.push(new CastSpell(g, me, method, spell));
         });
+      additionalSetup == null ? void 0 : additionalSetup(g, me);
     });
   }
   function darkvisionFeature(range = 60) {
@@ -7321,7 +7385,8 @@
                     attacker,
                     source: FiendishMantle,
                     damageType: "necrotic",
-                    size: 4
+                    size: 4,
+                    tags: atSet("magical")
                   },
                   critical
                 );
@@ -8440,6 +8505,99 @@
   };
   var Salgar_default = Salgar;
 
+  // src/img/tok/pc/esles.png
+  var esles_default = "./esles-DH2ROBMH.png";
+
+  // src/pcs/glean/Es'les.ts
+  var Esles = {
+    name: "Es'les",
+    tokenUrl: esles_default,
+    abilities: [8, 13, 14, 10, 12, 15],
+    race: { name: "Tiefling (Asmodeus)" },
+    background: { name: "Sage", languages: ["Abyssal", "Celestial"] },
+    levels: [
+      {
+        class: "Warlock",
+        subclass: "Fiend",
+        proficiencies: ["Deception", "Nature"]
+      }
+    ],
+    items: [
+      { name: "quarterstaff", equip: true },
+      { name: "leather armor", equip: true },
+      { name: "crossbow bolt", quantity: 20 },
+      { name: "light crossbow" },
+      { name: "dagger", quantity: 2 }
+    ],
+    prepared: [
+      // "minor illusion",
+      "charm person",
+      "command"
+    ]
+  };
+  var Es_les_default = Esles;
+
+  // src/img/tok/pc/faerfarn.png
+  var faerfarn_default = "./faerfarn-XU3HLPJI.png";
+
+  // src/pcs/glean/Faerfarn.ts
+  var Faerfarn = {
+    name: "Faefarn Alruuth",
+    tokenUrl: faerfarn_default,
+    abilities: [15, 14, 12, 10, 13, 8],
+    race: { name: "Gold Dragonborn" },
+    background: { name: "Soldier", proficiencies: ["dragonchess set"] },
+    levels: [
+      {
+        class: "Fighter",
+        proficiencies: ["Acrobatics", "Survival"],
+        configs: {
+          "Fighting Style (Fighter)": "Fighting Style: Great Weapon Fighting"
+        }
+      }
+    ],
+    items: [
+      { name: "longsword", equip: true },
+      { name: "leather armor", equip: true },
+      { name: "light crossbow" },
+      { name: "longbow" },
+      { name: "arrow", quantity: 20 },
+      { name: "crossbow bolt", quantity: 20 }
+    ]
+  };
+  var Faerfarn_default = Faerfarn;
+
+  // src/img/tok/pc/litt.png
+  var litt_default = "./litt-OO7HQERP.png";
+
+  // src/pcs/glean/Litt.ts
+  var Litt = {
+    name: "Litt",
+    tokenUrl: litt_default,
+    abilities: [8, 10, 14, 12, 15, 13],
+    race: { name: "Fire Genasi" },
+    background: {
+      name: "Outlander",
+      proficiencies: ["pan flute"],
+      languages: []
+      // TODO
+    },
+    levels: [{ class: "Druid", proficiencies: ["Animal Handling", "Insight"] }],
+    items: [
+      { name: "leather armor", equip: true },
+      { name: "quarterstaff", equip: true },
+      { name: "dagger" }
+    ],
+    prepared: [
+      "gust",
+      "poison spray",
+      // "animal friendship",
+      "faerie fire"
+      // "speak with animals",
+    ]
+  };
+  var Litt_default = Litt;
+
   // src/img/tok/pc/marvoril.png
   var marvoril_default = "./marvoril-LEL3VCQJ.png";
 
@@ -8548,6 +8706,9 @@
     Hagrond: Hagrond_default,
     Salgar: Salgar_default,
     Tethilssethanar: Tethilssethanar_default,
+    "Es'les": Es_les_default,
+    Faerfarn: Faerfarn_default,
+    Litt: Litt_default,
     Marvoril: Marvoril_default,
     Shaira: Shaira_default
   };
@@ -8778,6 +8939,20 @@
   };
   var Noble_default = Noble;
 
+  // src/backgrounds/Outlander.ts
+  var Outlander = {
+    name: "Outlander",
+    description: `You grew up in the wilds, far from civilization and the comforts of town and technology. You've witnessed the migration of herds larger than forests, survived weather more extreme than any city-dweller could comprehend, and enjoyed the solitude of being the only thinking creature for miles in any direction. The wilds are in your blood, whether you were a nomad, an explorer, a recluse, a hunter-gatherer, or even a marauder. Even in places where you don't know the specific features of the terrain, you know the ways of the wild.`,
+    feature: {
+      name: "Wanderer",
+      description: `You have an excellent memory for maps and geography, and you can always recall the general layout of terrain, settlements, and other features around you. In addition, you can find food and fresh water for yourself and up to five other people each day, provided that the land offers berries, small game, water, and so forth.`
+    },
+    skills: gains(["Athletics", "Survival"]),
+    tools: gains([], 1, Instruments),
+    languages: gains([], 1, LanguageNames)
+  };
+  var Outlander_default = Outlander;
+
   // src/backgrounds/Sage.ts
   var Sage = {
     name: "Sage",
@@ -8791,6 +8966,21 @@
   };
   var Sage_default = Sage;
 
+  // src/backgrounds/Soldier.ts
+  var Soldier = {
+    name: "Soldier",
+    description: `War has been your life for as long as you care to remember. You trained as a youth, studied the use of weapons and armor, learned basic survival techniques, including how to stay alive on the battlefield. You might have been part of a standing national army or a mercenary company, or perhaps a member of a local militia who rose to prominence during a recent war.
+
+  When you choose this background, work with your DM to determine which military organization you were a part of, how far through its ranks you progressed, and what kind of experiences you had during your military career. Was it a standing army, a town guard, or a village militia? Or it might have been a noble's or merchant's private army, or a mercenary company.`,
+    feature: {
+      name: "Military Rank",
+      description: `You have a military rank from your career as a soldier. Soldiers loyal to your former military organization still recognize your authority and influence, and they defer to you if they are of a lower rank. You can invoke your rank to exert influence over other soldiers and requisition simple equipment or horses for temporary use. You can also usually gain access to friendly military encampments and fortresses where your rank is recognized.`
+    },
+    skills: gains(["Athletics", "Intimidation"]),
+    tools: gains(["vehicles (land)"], 1, GamingSets)
+  };
+  var Soldier_default = Soldier;
+
   // src/data/allBackgrounds.ts
   var allBackgrounds = {
     Acolyte: Acolyte_default,
@@ -8798,7 +8988,9 @@
     "Folk Hero": FolkHero_default,
     Knight: Knight_default,
     Noble: Noble_default,
-    Sage: Sage_default
+    Outlander: Outlander_default,
+    Sage: Sage_default,
+    Soldier: Soldier_default
   };
   var allBackgrounds_default = allBackgrounds;
 
@@ -8861,7 +9053,13 @@
                   damageType,
                   await g.rollDamage(
                     1,
-                    { source: darkSun, size: 10, attacker, damageType },
+                    {
+                      source: darkSun,
+                      size: 10,
+                      attacker,
+                      damageType,
+                      tags: atSet("magical")
+                    },
                     critical
                   )
                 );
@@ -8897,7 +9095,8 @@
                   attacker: roll.type.who,
                   damageType: "acid",
                   size: 6,
-                  source: ofTheDeep
+                  source: ofTheDeep,
+                  tags: atSet("magical")
                 });
                 const targets = g.getInside(
                   { type: "within", radius: 10, who: roll.type.target },
@@ -8979,13 +9178,15 @@
               source: chaoticBurst,
               type: "damage",
               attacker,
-              size: 8
+              size: 8,
+              tags: atSet("magical")
             }).values.final;
             const b = g.dice.roll({
               source: chaoticBurst,
               type: "damage",
               attacker,
-              size: 8
+              size: 8,
+              tags: atSet("magical")
             }).values.final;
             const addBurst = (type) => map.add(type, a + b);
             if (a === b)
@@ -10613,7 +10814,8 @@ This increases to two additional dice at 13th level and three additional dice at
                       damageType: base.damageType,
                       size: base.amount.size,
                       target,
-                      weapon
+                      weapon,
+                      tags: attack.pre.tags
                     },
                     false
                   );
@@ -10734,7 +10936,8 @@ This increases to two additional dice at 13th level and three additional dice at
         attacker,
         spell: AcidSplash,
         method,
-        damageType: "acid"
+        damageType: "acid",
+        tags: atSet("magical", "spell")
       });
       for (const target of targets) {
         const { damageResponse } = await g.save({
@@ -10884,6 +11087,42 @@ This increases to two additional dice at 13th level and three additional dice at
   });
   var FireBolt_default = FireBolt;
 
+  // src/spells/cantrip/Gust.ts
+  var Gust = simpleSpell({
+    status: "incomplete",
+    name: "Gust",
+    level: 0,
+    school: "Transmutation",
+    v: true,
+    s: true,
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    description: `You seize the air and compel it to create one of the following effects at a point you can see within range:
+
+  - One Medium or smaller creature that you choose must succeed on a Strength saving throw or be pushed up to 5 feet away from you.
+  - You create a small blast of air capable of moving one object that is neither held nor carried and that weighs no more than 5 pounds. The object is pushed up to 10 feet away from you. It isn't pushed with enough force to cause damage.
+  - You create a harmless sensory effect using air, such as causing leaves to rustle, wind to slam shutters closed, or your clothing to ripple in a breeze.`,
+    getConfig: (g) => ({
+      target: new TargetResolver(g, 30, [sizeOrLess(SizeCategory_default.Medium)])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, caster, method, { target }) {
+      const { outcome } = await g.save({
+        source: Gust,
+        type: method.getSaveType(caster, Gust),
+        attacker: caster,
+        who: target,
+        ability: "str",
+        spell: Gust,
+        method,
+        tags: ["forced movement"]
+      });
+      if (outcome === "fail")
+        await g.forcePush(target, caster, 5, Gust);
+    }
+  });
+  var Gust_default = Gust;
+
   // src/img/spl/magic-stone.svg
   var magic_stone_default = "./magic-stone-WVSVVWF5.svg";
 
@@ -10943,7 +11182,8 @@ This increases to two additional dice at 13th level and three additional dice at
             target: attack.pre.target,
             ability: attack.pre.ability,
             spell: MagicStone,
-            method: attack.pre.method
+            method: attack.pre.method,
+            tags: attack.pre.tags
           },
           critical
         );
@@ -11042,7 +11282,8 @@ This increases to two additional dice at 13th level and three additional dice at
         spell: MindSliver,
         method,
         size: 6,
-        damageType: "psychic"
+        damageType: "psychic",
+        tags: atSet("magical", "spell")
       });
       const { damageResponse, outcome } = await g.save({
         source: MindSliver,
@@ -11083,6 +11324,60 @@ This increases to two additional dice at 13th level and three additional dice at
   });
   var MindSliver_default = MindSliver;
 
+  // src/spells/cantrip/PoisonSpray.ts
+  var PoisonSpray = simpleSpell({
+    status: "implemented",
+    name: "Poison Spray",
+    level: 0,
+    school: "Conjuration",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    isHarmful: true,
+    description: `You extend your hand toward a creature you can see within range and project a puff of noxious gas from your palm. The creature must succeed on a Constitution saving throw or take 1d12 poison damage.
+
+  This spell's damage increases by 1d12 when you reach 5th level (2d12), 11th level (3d12), and 17th level (4d12).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(10, target))
+    })),
+    getConfig: (g) => ({ target: new TargetResolver(g, 10, [canSee]) }),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, attacker, method, { target }) {
+      const { damageResponse } = await g.save({
+        source: PoisonSpray,
+        type: method.getSaveType(attacker, PoisonSpray),
+        who: target,
+        attacker,
+        ability: "con",
+        spell: PoisonSpray,
+        method,
+        save: "zero",
+        tags: ["magic", "poison"]
+      });
+      const damage = await g.rollDamage(getCantripDice(attacker), {
+        attacker,
+        damageType: "poison",
+        spell: PoisonSpray,
+        method,
+        size: 12,
+        source: PoisonSpray,
+        target,
+        tags: atSet("magical", "spell")
+      });
+      await g.damage(
+        PoisonSpray,
+        "poison",
+        { attacker, target, spell: PoisonSpray, method },
+        [["poison", damage]],
+        damageResponse
+      );
+    }
+  });
+  var PoisonSpray_default = PoisonSpray;
+
   // src/spells/cantrip/PrimalSavagery.ts
   var PrimalSavagery = simpleSpell({
     status: "implemented",
@@ -11115,6 +11410,42 @@ This increases to two additional dice at 13th level and three additional dice at
     }
   });
   var PrimalSavagery_default = PrimalSavagery;
+
+  // src/spells/cantrip/ProduceFlame.ts
+  var ProduceFlame = simpleSpell({
+    status: "incomplete",
+    name: "Produce Flame",
+    level: 0,
+    school: "Conjuration",
+    v: true,
+    s: true,
+    lists: ["Druid"],
+    description: `A flickering flame appears in your hand. The flame remains there for the duration and harms neither you nor your equipment. The flame sheds bright light in a 10-foot radius and dim light for an additional 10 feet. The spell ends if you dismiss it as an action or if you cast it again.
+
+  You can also attack with the flame, although doing so ends the spell. When you cast this spell, or as an action on a later turn, you can hurl the flame at a creature within 30 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 fire damage.
+  
+  This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    isHarmful: true,
+    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(30, target))
+    })),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "fire")],
+    async apply(g, caster, method, { target }) {
+      const rsa = new SpellAttack(g, caster, ProduceFlame, method, "ranged", {
+        target
+      });
+      const { hit, attack } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(attack.pre.target);
+        await rsa.damage(attack.pre.target, damage);
+      }
+    }
+  });
+  var ProduceFlame_default = ProduceFlame;
 
   // src/img/spl/ray-of-frost.svg
   var ray_of_frost_default = "./ray-of-frost-5EAHUBPB.svg";
@@ -11199,7 +11530,8 @@ This increases to two additional dice at 13th level and three additional dice at
         spell: SacredFlame,
         method,
         source: SacredFlame,
-        target
+        target,
+        tags: atSet("magical", "spell")
       });
       const { damageResponse } = await g.save({
         source: SacredFlame,
@@ -11278,7 +11610,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
         attacker,
         source: Thunderclap,
         spell: Thunderclap,
-        method
+        method,
+        tags: atSet("magical", "spell")
       });
       for (const target of affected) {
         const { outcome, damageResponse } = await g.save({
@@ -11366,6 +11699,134 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
   });
   var Bless_default = Bless;
 
+  // src/spells/level1/BurningHands.ts
+  var getBurningHandsArea = (centre, target) => ({
+    type: "cone",
+    radius: 15,
+    centre,
+    target
+  });
+  var BurningHands = scalingSpell({
+    status: "incomplete",
+    name: "Burning Hands",
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    description: `As you hold your hands with thumbs touching and fingers spread, a thin sheet of flames shoots forth from your outstretched fingertips. Each creature in a 15-foot cone must make a Dexterity saving throw. A creature takes 3d6 fire damage on a failed save, or half as much damage on a successful one.
+
+  The fire ignites any flammable objects in the area that aren't being worn or carried.
+  
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
+    isHarmful: true,
+    getConfig: (g) => ({
+      point: new PointResolver(g, 15)
+    }),
+    // TODO generateAttackConfigs,
+    getAffectedArea: (g, caster, { point }) => point && [getBurningHandsArea(caster.position, point)],
+    getAffected: (g, caster, { point }) => g.getInside(getBurningHandsArea(caster.position, point), [caster]),
+    getTargets: () => [],
+    getDamage: (g, caster, method, { slot }) => [_dd((slot != null ? slot : 1) + 2, 6, "fire")],
+    async apply(g, caster, method, { point, slot }) {
+      const damage = await g.rollDamage(slot + 2, {
+        attacker: caster,
+        damageType: "fire",
+        spell: BurningHands,
+        method,
+        size: 6,
+        source: BurningHands,
+        tags: atSet("magical", "spell")
+      });
+      for (const target of this.getAffected(g, caster, { point, slot })) {
+        const { damageResponse } = await g.save({
+          source: BurningHands,
+          type: method.getSaveType(caster, BurningHands, slot),
+          attacker: caster,
+          who: target,
+          ability: "dex",
+          spell: BurningHands,
+          method,
+          tags: ["magic"]
+        });
+        await g.damage(
+          BurningHands,
+          "fire",
+          { attacker: caster, spell: BurningHands, method, target },
+          [["fire", damage]],
+          damageResponse
+        );
+      }
+    }
+  });
+  var BurningHands_default = BurningHands;
+
+  // src/spells/level1/CharmPerson.ts
+  var CharmPerson = scalingSpell({
+    name: "Charm Person",
+    level: 1,
+    school: "Enchantment",
+    v: true,
+    lists: ["Bard", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    description: `You attempt to charm a humanoid you can see within range. It must make a Wisdom saving throw, and does so with advantage if you or your companions are fighting it. If it fails the saving throw, it is charmed by you until the spell ends or until you or your companions do anything harmful to it. The charmed creature regards you as a friendly acquaintance. When the spell ends, the creature knows it was charmed by you.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st. The creatures must be within 30 feet of each other when you target them.`,
+    isHarmful: true,
+    getConfig: (g, actor, method, { slot }) => ({
+      targets: new MultiTargetResolver(
+        g,
+        1,
+        slot != null ? slot : 1,
+        60,
+        [],
+        [withinRangeOfEachOther(30)]
+      )
+    }),
+    // TODO generateAttackConfigs,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
+    async apply(g, caster, method, { targets }) {
+    }
+  });
+  var CharmPerson_default = CharmPerson;
+
+  // src/spells/level1/Command.ts
+  var Command = scalingSpell({
+    name: "Command",
+    level: 1,
+    school: "Enchantment",
+    v: true,
+    lists: ["Cleric", "Paladin"],
+    description: `You speak a one-word command to a creature you can see within range. The target must succeed on a Wisdom saving throw or follow the command on its next turn. The spell has no effect if the target is undead, if it doesn't understand your language, or if your command is directly harmful to it.
+
+  Some typical commands and their effects follow. You might issue a command other than one described here. If you do so, the DM determines how the target behaves. If the target can't follow your command, the spell ends.
+  
+  Approach. The target moves toward you by the shortest and most direct route, ending its turn if it moves within 5 feet of you.
+  Drop. The target drops whatever it is holding and then ends its turn.
+  Flee. The target spends its turn moving away from you by the fastest available means.
+  Grovel. The target falls prone and then ends its turn.
+  Halt. The target doesn't move and takes no actions. A flying creature stays aloft, provided that it is able to do so. If it must move to stay aloft, it flies the minimum distance needed to remain in the air.
+  
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can affect one additional creature for each slot level above 1st. The creatures must be within 30 feet of each other when you target them.`,
+    isHarmful: true,
+    getConfig: (g, actor, method, { slot }) => ({
+      targets: new MultiTargetResolver(
+        g,
+        1,
+        slot != null ? slot : 1,
+        60,
+        [],
+        [withinRangeOfEachOther(30)]
+      )
+    }),
+    // TODO generateAttackConfigs,
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
+    async apply(g, caster, method, { targets }) {
+    }
+  });
+  var Command_default = Command;
+
   // src/spells/level1/CureWounds.ts
   var cannotHeal3 = ctSet("undead", "construct");
   var CureWounds = scalingSpell({
@@ -11434,7 +11895,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
                       source: DivineFavor,
                       size: 4,
                       attacker,
-                      damageType: "radiant"
+                      damageType: "radiant",
+                      tags: atSet("magical")
                     },
                     critical
                   )
@@ -11511,7 +11973,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
         spell: EarthTremor,
         method,
         damageType: "bludgeoning",
-        attacker
+        attacker,
+        tags: atSet("magical", "spell")
       });
       const shape = getEarthTremorArea(attacker);
       for (const target of g.getInside(shape, [attacker])) {
@@ -11547,6 +12010,79 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     }
   });
   var EarthTremor_default = EarthTremor;
+
+  // src/spells/level1/FaerieFire.ts
+  var getFaerieFireArea = (centre) => ({
+    type: "cube",
+    centre,
+    length: 20
+  });
+  var FaerieFireEffect = new Effect(
+    "Faerie Fire",
+    "turnEnd",
+    (g) => {
+      g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
+        if (target.hasEffect(FaerieFireEffect))
+          diceType.add("advantage", FaerieFireEffect);
+      });
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(FaerieFireEffect))
+          conditions.ignoreValue("Invisible");
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var FaerieFire = simpleSpell({
+    status: "implemented",
+    name: "Faerie Fire",
+    level: 1,
+    school: "Evocation",
+    concentration: true,
+    v: true,
+    lists: ["Artificer", "Bard", "Druid"],
+    description: `Each object in a 20-foot cube within range is outlined in blue, green, or violet light (your choice). Any creature in the area when the spell is cast is also outlined in light if it fails a Dexterity saving throw. For the duration, objects and affected creatures shed dim light in a 10-foot radius.
+
+  Any attack roll against an affected creature or object has advantage if the attacker can see it, and the affected creature or object can't benefit from being invisible.`,
+    isHarmful: true,
+    getConfig: (g) => ({ point: new PointResolver(g, 60) }),
+    getAffectedArea: (g, caster, { point }) => point && [getFaerieFireArea(point)],
+    getAffected: (g, caster, { point }) => g.getInside(getFaerieFireArea(point)),
+    getTargets: () => [],
+    async apply(g, caster, method, { point }) {
+      const affected = /* @__PURE__ */ new Set();
+      for (const target of this.getAffected(g, caster, { point })) {
+        const effect = FaerieFireEffect;
+        const config = { duration: minutes(1) };
+        const { outcome } = await g.save({
+          source: FaerieFire,
+          type: method.getSaveType(caster, FaerieFire),
+          attacker: caster,
+          who: target,
+          ability: "dex",
+          spell: FaerieFire,
+          method,
+          effect,
+          config,
+          tags: ["magic"],
+          save: "zero"
+        });
+        if (outcome === "fail") {
+          const result = await target.addEffect(effect, config, caster);
+          if (result)
+            affected.add(target);
+        }
+      }
+      await caster.concentrateOn({
+        spell: FaerieFire,
+        duration: minutes(1),
+        async onSpellEnd() {
+          for (const target of affected)
+            await target.removeEffect(FaerieFireEffect);
+        }
+      });
+    }
+  });
+  var FaerieFire_default = FaerieFire;
 
   // src/spells/level1/FogCloud.ts
   var FogCloud = scalingSpell({
@@ -11641,7 +12177,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
         size: 10,
         attacker,
         target,
-        damageType: "fire"
+        damageType: "fire",
+        tags: atSet("magical", "spell")
       });
       const { damageResponse } = await g.save({
         source: HellishRebuke2,
@@ -11811,7 +12348,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
             target: attack.pre.target,
             spell: IceKnife,
             method: attack.pre.method,
-            damageType: "piercing"
+            damageType: "piercing",
+            tags: attack.pre.tags
           },
           critical
         );
@@ -11835,7 +12373,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
         attacker,
         spell: IceKnife,
         method,
-        damageType: "cold"
+        damageType: "cold",
+        tags: atSet("magical", "spell")
       });
       for (const victim of g.getInside(getIceKnifeArea(target))) {
         const { damageResponse } = await g.save({
@@ -11959,7 +12498,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
         method,
         attacker,
         damageType: "force",
-        size: 4
+        size: 4,
+        tags: atSet("magical", "spell")
       }) + 1;
       for (const { amount, who } of targets) {
         if (amount < 1)
@@ -12536,7 +13076,12 @@ At the end of each of its turns, and each time it takes damage, the target can m
               new EvaluateLater(attacker, EnlargeEffect, async () => {
                 const amount = await g.rollDamage(
                   1,
-                  { source: EnlargeEffect, attacker, size: 4 },
+                  {
+                    source: EnlargeEffect,
+                    attacker,
+                    size: 4,
+                    tags: atSet("magical")
+                  },
                   critical
                 );
                 bonus.add(amount, EnlargeEffect);
@@ -12567,7 +13112,12 @@ At the end of each of its turns, and each time it takes damage, the target can m
               new EvaluateLater(attacker, ReduceEffect, async () => {
                 const amount = await g.rollDamage(
                   1,
-                  { source: ReduceEffect, attacker, size: 4 },
+                  {
+                    source: ReduceEffect,
+                    attacker,
+                    size: 4,
+                    tags: atSet("magical")
+                  },
                   critical
                 );
                 bonus.add(-amount, ReduceEffect);
@@ -13111,7 +13661,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
           size: 10,
           source: Moonbeam,
           spell: Moonbeam,
-          target
+          target,
+          tags: atSet("magical", "spell")
         });
         const { damageResponse } = await g.save({
           source: Moonbeam,
@@ -13330,7 +13881,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
                   size: 4,
                   damageType: "piercing",
                   spell: SpikeGrowth,
-                  method
+                  method,
+                  tags: atSet("magical", "spell")
                 });
                 await g.damage(
                   SpikeGrowth,
@@ -13392,7 +13944,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
         spell: EruptingEarth,
         method,
         damageType: "bludgeoning",
-        attacker
+        attacker,
+        tags: atSet("magical", "spell")
       });
       const shape = getEruptingEarthArea(point);
       for (const target of g.getInside(shape)) {
@@ -13467,7 +14020,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
         spell: Fireball,
         method,
         damageType: "fire",
-        attacker
+        attacker,
+        tags: atSet("magical", "spell")
       });
       for (const target of g.getInside(getFireballArea(point))) {
         const save = await g.save({
@@ -13639,7 +14193,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
         spell: LightningBolt,
         method,
         damageType: "lightning",
-        attacker
+        attacker,
+        tags: atSet("magical", "spell")
       });
       for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
         const save = await g.save({
@@ -13730,7 +14285,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
       size: 6,
       spell: MelfsMinuteMeteors,
       method,
-      damageType: "fire"
+      damageType: "fire",
+      tags: atSet("magical", "spell")
     });
     for (const point of points) {
       for (const target of g.getInside({
@@ -14141,7 +14697,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
                     attacker,
                     target,
                     size: 6,
-                    damageType: "force"
+                    damageType: "force",
+                    tags: atSet("magical")
                   },
                   critical
                 );
@@ -14375,7 +14932,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
         spell: ConeOfCold,
         method,
         damageType: "cold",
-        attacker
+        attacker,
+        tags: atSet("magical", "spell")
       });
       for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
         const save = await g.save({
@@ -14406,18 +14964,25 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "blade ward": BladeWard_default,
     "chill touch": ChillTouch_default,
     "fire bolt": FireBolt_default,
+    gust: Gust_default,
     "magic stone": MagicStone_default,
     "mind sliver": MindSliver_default,
+    "poison spray": PoisonSpray_default,
     "primal savagery": PrimalSavagery_default,
+    "produce flame": ProduceFlame_default,
     "ray of frost": RayOfFrost_default,
     "sacred flame": SacredFlame_default,
     thaumaturgy: Thaumaturgy_default,
     thunderclap: Thunderclap_default,
     "armor of Agathys": ArmorOfAgathys_default,
     bless: Bless_default,
+    "burning hands": BurningHands_default,
+    "charm person": CharmPerson_default,
+    command: Command_default,
     "cure wounds": CureWounds_default,
     "divine favor": DivineFavor_default,
     "earth tremor": EarthTremor_default,
+    "faerie fire": FaerieFire_default,
     "fog cloud": FogCloud_default,
     "guiding bolt": GuidingBolt_default,
     "healing word": HealingWord_default,
@@ -16255,7 +16820,12 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
                   const extra = extraSmiteDiceTypes.has(target.type) ? 1 : 0;
                   const damage = await g.rollDamage(
                     count + extra,
-                    { source: DivineSmite, attacker, size: 8 },
+                    {
+                      source: DivineSmite,
+                      attacker,
+                      size: 8,
+                      tags: atSet("magical")
+                    },
                     critical
                   );
                   map.add("radiant", damage);
@@ -16330,7 +16900,8 @@ At 18th level, the range of this aura increases to 30 feet.`,
                     attacker,
                     target,
                     size: 8,
-                    damageType: "radiant"
+                    damageType: "radiant",
+                    tags: atSet("magical")
                   },
                   critical
                 );
@@ -16660,7 +17231,8 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                         size: 6,
                         damageType,
                         weapon,
-                        ability
+                        ability,
+                        tags: atSet()
                       },
                       critical
                     );
@@ -17414,7 +17986,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         source: this,
         attacker,
         size: 10,
-        damageType
+        damageType,
+        tags: atSet("breath weapon")
       });
       for (const target of g.getInside(getBreathArea(attacker, point))) {
         const { damageResponse } = await g.save({
@@ -17598,6 +18171,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     };
   }
   var BronzeDragonborn = makeAncestry("Bronze", "lightning");
+  var GoldDragonborn = makeAncestry("Gold", "fire");
 
   // src/races/Dwarf.ts
   var DwarvenResilience = poisonResistance(
@@ -17763,6 +18337,42 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     size: SizeCategory_default.Medium,
     abilities: /* @__PURE__ */ new Map([["dex", 1]]),
     features: /* @__PURE__ */ new Set([UnendingBreath, MingleWithTheWind])
+  };
+  var FireResistance = resistanceFeature(
+    "Fire Resistance",
+    `You have resistance to fire damage.`,
+    ["fire"]
+  );
+  var ReachToTheBlazeResource = new LongRestResource("Reach to the Blaze", 1);
+  var ReachToTheBlazeMethod = new InnateSpellcasting(
+    "Reach to the Blaze",
+    "con",
+    (spell) => {
+      if (spell === BurningHands_default)
+        return ReachToTheBlazeResource;
+    }
+  );
+  var ReachToTheBlaze = bonusSpellsFeature(
+    "Reach to the Blaze",
+    `You know the produce flame cantrip. Once you reach 3rd level, you can cast the burning hands spell once with this trait as a 1st-level spell, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells.`,
+    "level",
+    ReachToTheBlazeMethod,
+    [
+      { level: 1, spell: ProduceFlame_default },
+      { level: 3, spell: BurningHands_default, resource: ReachToTheBlazeResource }
+    ],
+    void 0,
+    (g, me) => {
+      me.knownSpells.add(ProduceFlame_default);
+      me.preparedSpells.add(ProduceFlame_default);
+    }
+  );
+  var FireGenasi = {
+    parent: Genasi,
+    name: "Fire Genasi",
+    size: SizeCategory_default.Medium,
+    abilities: /* @__PURE__ */ new Map([["int", 1]]),
+    features: /* @__PURE__ */ new Set([Darkvision60, FireResistance, ReachToTheBlaze])
   };
 
   // src/races/Gnome.ts
@@ -17949,7 +18559,8 @@ When you create a device, choose one of the following options:
                       damageType: base.damageType,
                       size: base.amount.size,
                       target,
-                      weapon
+                      weapon,
+                      tags: attack.pre.tags
                     },
                     false
                   );
@@ -18122,10 +18733,12 @@ When you create a device, choose one of the following options:
   // src/data/allPCRaces.ts
   var allPCRaces = {
     "Bronze Dragonborn": BronzeDragonborn,
+    "Gold Dragonborn": GoldDragonborn,
     "Hill Dwarf": HillDwarf,
     "Mountain Dwarf": MountainDwarf,
     "High Elf": HighElf,
     "Air Genasi": AirGenasi,
+    "Fire Genasi": FireGenasi,
     "Rock Gnome": RockGnome,
     "Half-Elf": HalfElf,
     "Lightfoot Halfling": LightfootHalfling,
@@ -18682,6 +19295,85 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
   };
   var Scout_default = Scout;
 
+  // src/classes/warlock/Fiend/index.ts
+  var ExpandedSpellList = bonusSpellsFeature(
+    "Expanded Spell List",
+    `The Fiend lets you choose from an expanded list of spells when you learn a warlock spell. The following spells are added to the warlock spell list for you.`,
+    "Warlock",
+    WarlockPactMagic,
+    [
+      { level: 1, spell: BurningHands_default },
+      { level: 1, spell: Command_default },
+      // { level: 2, spell: BlindnessDeafness },
+      // { level: 2, spell: ScorchingRay },
+      { level: 3, spell: Fireball_default },
+      // { level: 3, spell: StinkingCloud },
+      // { level: 4, spell: FireShield },
+      { level: 4, spell: WallOfFire_default }
+      // { level: 5, spell: FlameStrike },
+      // { level: 5, spell: Hallow },
+    ],
+    "Warlock"
+  );
+  var DarkOnesBlessing = new SimpleFeature(
+    "Dark One's Blessing",
+    `Starting at 1st level, when you reduce a hostile creature to 0 hit points, you gain temporary hit points equal to your Charisma modifier + your warlock level (minimum of 1).`,
+    (g, me) => {
+      g.events.on(
+        "CombatantDamaged",
+        ({ detail: { attacker, who, interrupt } }) => {
+          if (attacker === me && who.side !== me.side && who.hp < 1)
+            interrupt.add(
+              new EvaluateLater(
+                me,
+                DarkOnesBlessing,
+                async () => {
+                  var _a;
+                  if (who.hp < 1) {
+                    const amount = Math.max(
+                      1,
+                      me.cha.modifier + ((_a = me.classLevels.get("Warlock")) != null ? _a : 1)
+                    );
+                    await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
+                  }
+                },
+                0
+              )
+            );
+        }
+      );
+    }
+  );
+  var DarkOnesOwnLuck = notImplementedFeature(
+    "Dark One's Own Luck",
+    `Starting at 6th level, you can call on your patron to alter fate in your favor. When you make an ability check or a saving throw, you can use this feature to add a d10 to your roll. You can do so after seeing the initial roll but before any of the roll's effects occur.
+
+Once you use this feature, you can't use it again until you finish a short or long rest.`
+  );
+  var FiendishResilience = notImplementedFeature(
+    "Fiendish Resilience",
+    `Starting at 10th level, you can choose one damage type when you finish a short or long rest. You gain resistance to that damage type until you choose a different one with this feature. Damage from magical weapons or silver weapons ignores this resistance.`
+  );
+  var HurlThroughHell = notImplementedFeature(
+    "Hurl Through Hell",
+    `Starting at 14th level, when you hit a creature with an attack, you can use this feature to instantly transport the target through the lower planes. The creature disappears and hurtles through a nightmare landscape.
+
+At the end of your next turn, the target returns to the space it previously occupied, or the nearest unoccupied space. If the target is not a fiend, it takes 10d10 psychic damage as it reels from its horrific experience.
+
+Once you use this feature, you can't use it again until you finish a long rest.`
+  );
+  var Fiend = {
+    name: "The Fiend",
+    className: "Warlock",
+    features: /* @__PURE__ */ new Map([
+      [1, [ExpandedSpellList, DarkOnesBlessing]],
+      [6, [DarkOnesOwnLuck]],
+      [10, [FiendishResilience]],
+      [14, [HurlThroughHell]]
+    ])
+  };
+  var Fiend_default = Fiend;
+
   // src/events/MultiListChoiceEvent.ts
   var MultiListChoiceEvent = class extends CustomEvent {
     constructor(detail) {
@@ -18808,6 +19500,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     Devotion: Devotion_default,
     // Rogue
     Scout: Scout_default,
+    // Warlock
+    Fiend: Fiend_default,
     // Wizard
     Evocation: Evocation_default
   };

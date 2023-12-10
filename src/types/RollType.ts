@@ -1,5 +1,6 @@
 import Effect from "../Effect";
 import AbilityName from "./AbilityName";
+import AttackTag from "./AttackTag";
 import { CheckTag } from "./CheckTag";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
@@ -27,6 +28,7 @@ export type AttackRoll = {
   ability?: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
+  tags: Set<AttackTag>;
 };
 export type BlessRoll = { type: "bane" | "bless"; who: Combatant };
 export type DamageRoll = {
@@ -40,6 +42,7 @@ export type DamageRoll = {
   ability?: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;
+  tags: Set<AttackTag>;
 };
 export type HealRoll = {
   type: "heal";

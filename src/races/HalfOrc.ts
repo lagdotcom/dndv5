@@ -51,6 +51,7 @@ const SavageAttacks = new SimpleFeature(
                     size: base.amount.size,
                     target,
                     weapon,
+                    tags: attack.pre.tags,
                   },
                   false,
                 );

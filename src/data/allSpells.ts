@@ -2,18 +2,25 @@ import AcidSplash from "../spells/cantrip/AcidSplash";
 import BladeWard from "../spells/cantrip/BladeWard";
 import ChillTouch from "../spells/cantrip/ChillTouch";
 import FireBolt from "../spells/cantrip/FireBolt";
+import Gust from "../spells/cantrip/Gust";
 import MagicStone from "../spells/cantrip/MagicStone";
 import MindSliver from "../spells/cantrip/MindSliver";
+import PoisonSpray from "../spells/cantrip/PoisonSpray";
 import PrimalSavagery from "../spells/cantrip/PrimalSavagery";
+import ProduceFlame from "../spells/cantrip/ProduceFlame";
 import RayOfFrost from "../spells/cantrip/RayOfFrost";
 import SacredFlame from "../spells/cantrip/SacredFlame";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import Thunderclap from "../spells/cantrip/Thunderclap";
 import ArmorOfAgathys from "../spells/level1/ArmorOfAgathys";
 import Bless from "../spells/level1/Bless";
+import BurningHands from "../spells/level1/BurningHands";
+import CharmPerson from "../spells/level1/CharmPerson";
+import Command from "../spells/level1/Command";
 import CureWounds from "../spells/level1/CureWounds";
 import DivineFavor from "../spells/level1/DivineFavor";
 import EarthTremor from "../spells/level1/EarthTremor";
+import FaerieFire from "../spells/level1/FaerieFire";
 import FogCloud from "../spells/level1/FogCloud";
 import GuidingBolt from "../spells/level1/GuidingBolt";
 import HealingWord from "../spells/level1/HealingWord";
@@ -68,9 +75,12 @@ const allSpells = {
   "blade ward": BladeWard,
   "chill touch": ChillTouch,
   "fire bolt": FireBolt,
+  gust: Gust,
   "magic stone": MagicStone,
   "mind sliver": MindSliver,
+  "poison spray": PoisonSpray,
   "primal savagery": PrimalSavagery,
+  "produce flame": ProduceFlame,
   "ray of frost": RayOfFrost,
   "sacred flame": SacredFlame,
   thaumaturgy: Thaumaturgy,
@@ -78,9 +88,13 @@ const allSpells = {
 
   "armor of Agathys": ArmorOfAgathys,
   bless: Bless,
+  "burning hands": BurningHands,
+  "charm person": CharmPerson,
+  command: Command,
   "cure wounds": CureWounds,
   "divine favor": DivineFavor,
   "earth tremor": EarthTremor,
+  "faerie fire": FaerieFire,
   "fog cloud": FogCloud,
   "guiding bolt": GuidingBolt,
   "healing word": HealingWord,

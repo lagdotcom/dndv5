@@ -1,5 +1,6 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
+import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedCone } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -50,6 +51,7 @@ const ConeOfCold = scalingSpell<HasPoint>({
       method,
       damageType: "cold",
       attacker,
+      tags: atSet("magical", "spell"),
     });
 
     for (const target of g.getInside(getConeOfColdArea(attacker, point))) {

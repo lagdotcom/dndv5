@@ -3,6 +3,7 @@ import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine, { EngineAttackResult } from "../Engine";
 import { notSelf } from "../filters";
+import YesNoChoice from "../interruptions/YesNoChoice";
 import TargetResolver from "../resolvers/TargetResolver";
 import AbilityName from "../types/AbilityName";
 import AttackTag from "../types/AttackTag";
@@ -116,6 +117,8 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   }
 }
 
+export const Versatile: Source = { name: "Versatile" };
+
 export async function doStandardAttack(
   g: Engine,
   {
@@ -151,7 +154,19 @@ export async function doStandardAttack(
   if (weapon.category !== "natural") tags.add("weapon");
   if (weapon.magical || ammo?.magical) tags.add("magical");
 
-  // TODO versatile
+  if (weapon.properties.has("two-handed")) tags.add("two hands");
+
+  if (weapon.properties.has("versatile") && attacker.freeHands > 0)
+    await new YesNoChoice(
+      attacker,
+      Versatile,
+      "Versatile",
+      `Use both hands to attack with ${attacker.name}'s ${weapon.name}?`,
+      async () => {
+        tags.add("two hands");
+        tags.add("versatile");
+      },
+    ).apply(g);
 
   return getAttackResult(
     g,
@@ -177,9 +192,11 @@ async function getAttackResult(
       const baseDamage: DamageInitialiser = [];
 
       if (damage.type === "dice") {
-        const { count, size } = damage.amount;
+        let { size } = damage.amount;
+        if (e.attack.pre.tags.has("versatile")) size += 2;
+
         const amount = await g.rollDamage(
-          count,
+          damage.amount.count,
           {
             source,
             size,
@@ -188,6 +205,7 @@ async function getAttackResult(
             target,
             ability,
             weapon,
+            tags: e.attack.pre.tags,
           },
           e.critical,
         );

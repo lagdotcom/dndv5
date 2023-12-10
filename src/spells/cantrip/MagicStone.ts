@@ -83,6 +83,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
           ability: attack.pre.ability,
           spell: MagicStone,
           method: attack.pre.method,
+          tags: attack.pre.tags,
         },
         critical,
       );

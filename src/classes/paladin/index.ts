@@ -11,6 +11,7 @@ import {
   SpellSlotResources,
 } from "../../spells/NormalSpellcasting";
 import { abSet } from "../../types/AbilityName";
+import { atSet } from "../../types/AttackTag";
 import { ctSet } from "../../types/CreatureType";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
@@ -60,7 +61,12 @@ export const DivineSmite = new SimpleFeature(
 
                 const damage = await g.rollDamage(
                   count + extra,
-                  { source: DivineSmite, attacker, size: 8 },
+                  {
+                    source: DivineSmite,
+                    attacker,
+                    size: 8,
+                    tags: atSet("magical"),
+                  },
                   critical,
                 );
                 map.add("radiant", damage);
@@ -151,6 +157,7 @@ const ImprovedDivineSmite = new SimpleFeature(
                   target,
                   size: 8,
                   damageType: "radiant",
+                  tags: atSet("magical"),
                 },
                 critical,
               );

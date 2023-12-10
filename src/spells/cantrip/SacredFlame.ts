@@ -1,6 +1,7 @@
 import { HasTarget } from "../../configs";
 import { canSee, notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
+import { atSet } from "../../types/AttackTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -39,6 +40,7 @@ const SacredFlame = simpleSpell<HasTarget>({
       method,
       source: SacredFlame,
       target,
+      tags: atSet("magical", "spell"),
     });
 
     // TODO The target gains no benefit from cover for this saving throw.

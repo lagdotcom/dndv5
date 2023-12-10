@@ -1,6 +1,8 @@
 import CastSpell from "../actions/CastSpell";
 import allFeatures, { FeatureName } from "../data/allFeatures";
+import Engine from "../Engine";
 import { spellImplementationWarning } from "../spells/common";
+import Combatant from "../types/Combatant";
 import PCClassName from "../types/PCClassName";
 import Resource from "../types/Resource";
 import Spell, { SpellList } from "../types/Spell";
@@ -22,6 +24,7 @@ export function bonusSpellsFeature(
   method: SpellcastingMethod,
   entries: BonusSpellEntry[],
   addAsList?: SpellList,
+  additionalSetup?: (g: Engine, me: Combatant) => void,
 ) {
   return new SimpleFeature(name, text, (g, me) => {
     const casterLevel =
@@ -44,6 +47,8 @@ export function bonusSpellsFeature(
           for (const { spell } of spells)
             actions.push(new CastSpell(g, me, method, spell));
       });
+
+    additionalSetup?.(g, me);
   });
 }
 
