@@ -1177,6 +1177,11 @@
     message: "too big",
     check: (g, action, value) => value.size <= size
   });
+  var isGrappledBy = (grappler) => makeFilter({
+    name: "grappled",
+    message: `not grappled by ${grappler.name}`,
+    check: (g, action, value) => grappler.grappling.has(value)
+  });
   var withinRangeOfEachOther = (range) => makeFilter({
     name: `within ${range}' of each other`,
     message: `within ${range}' of each other`,
@@ -7094,6 +7099,10 @@
   };
 
   // src/features/common.ts
+  var Amphibious = notImplementedFeature(
+    "Amphibious",
+    `You can breathe air and water.`
+  );
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList, additionalSetup) {
     return new SimpleFeature(name, text, (g, me) => {
       var _a, _b;
@@ -8037,6 +8046,162 @@
     }
   };
 
+  // src/img/tok/chuul.png
+  var chuul_default = "./chuul-VYYM7NAD.png";
+
+  // src/monsters/NaturalWeapon.ts
+  var NaturalWeapon = class extends AbstractWeapon {
+    constructor(g, name, toHit, damage, { onHit } = {}) {
+      super(g, name, "natural", "melee", damage);
+      if (typeof toHit === "string")
+        this.forceAbilityScore = toHit;
+      else {
+      }
+      if (onHit)
+        g.events.on(
+          "CombatantDamaged",
+          ({ detail: { attack, interrupt, who } }) => {
+            if ((attack == null ? void 0 : attack.pre.weapon) === this)
+              interrupt.add(
+                new EvaluateLater(attack.pre.who, this, async () => onHit(who))
+              );
+          }
+        );
+    }
+  };
+
+  // src/monsters/poisons.ts
+  var ParalyzingPoisonEffect = new Effect(
+    "Paralyzing Poison",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
+        if (who.hasEffect(ParalyzingPoisonEffect)) {
+          conditions.add("Poisoned", ParalyzingPoisonEffect);
+          conditions.add("Paralyzed", ParalyzingPoisonEffect);
+        }
+      });
+      g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        const config = who.getEffectConfig(ParalyzingPoisonEffect);
+        if (config)
+          interrupt.add(
+            new EvaluateLater(who, ParalyzingPoisonEffect, async () => {
+              const { outcome } = await g.save({
+                source: ParalyzingPoisonEffect,
+                type: config.type,
+                ability: config.ability,
+                who,
+                effect: ParalyzingPoisonEffect,
+                config,
+                tags: ["poison"]
+              });
+              if (outcome === "success")
+                await who.removeEffect(ParalyzingPoisonEffect);
+            })
+          );
+      });
+    },
+    { tags: ["poison"] }
+  );
+
+  // src/monsters/srd/aberration.ts
+  var TentaclesAction = class extends AbstractAttackAction {
+    constructor(g, actor, dc = 13) {
+      super(
+        g,
+        actor,
+        "Tentacles",
+        "implemented",
+        { target: new TargetResolver(g, actor.reach, [isGrappledBy(actor)]) },
+        {
+          description: `One creature grappled by the chuul must succeed on a DC ${dc} Constitution saving throw or be poisoned for 1 minute. Until this poison ends, the target is paralyzed. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.`
+        }
+      );
+      this.dc = dc;
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor, dc } = this;
+      const type = { type: "flat", dc };
+      const ability = "con";
+      const effect = ParalyzingPoisonEffect;
+      const config = {
+        conditions: coSet("Poisoned", "Paralyzed"),
+        duration: minutes(1),
+        type,
+        ability
+      };
+      const { outcome } = await g.save({
+        source: this,
+        who: target,
+        type,
+        ability,
+        attacker: actor,
+        effect,
+        config,
+        tags: ["poison"]
+      });
+      if (outcome === "fail")
+        await target.addEffect(effect, config, actor);
+    }
+  };
+  var TentaclesFeature = new SimpleFeature("Tentacles", "", (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me)
+        actions.push(new TentaclesAction(g, me));
+    });
+  });
+  var Chuul = class extends Monster {
+    constructor(g) {
+      super(g, "Chuul", 4, "aberration", SizeCategory_default.Large, chuul_default, 93);
+      this.naturalAC = 16;
+      this.movement.set("speed", 30);
+      this.movement.set("swim", 30);
+      this.setAbilityScores(19, 10, 16, 5, 11, 5);
+      this.addProficiency("Perception", "expertise");
+      this.damageResponses.set("poison", "immune");
+      this.conditionImmunities.add("Poisoned");
+      this.senses.set("darkvision", 60);
+      this.languages.add("Deep Speech");
+      this.addFeature(Amphibious);
+      const pincer = "Pincer";
+      const tentacles = TentaclesFeature.name;
+      this.addFeature(
+        makeMultiattack(
+          `The chuul makes two pincer attacks. If the chuul is grappling a creature, the chuul can also use its tentacles once.`,
+          (me, action) => {
+            if (isMeleeAttackAction(action) && action.weapon.name === pincer)
+              return me.attacksSoFar.filter(
+                (attack) => isMeleeAttackAction(attack) && attack.weapon.name === pincer
+              ).length < 2;
+            if (action.name === tentacles)
+              return !me.attacksSoFar.find((attack) => attack.name === tentacles);
+            return false;
+          }
+        )
+      );
+      this.reach = 10;
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, pincer, "str", _dd(2, 6, "bludgeoning"), {
+          onHit: async (target) => {
+            if (this.grappling.size < 2 && target.size <= this.size && !this.grappling.has(target))
+              await target.addEffect(Grappled, {
+                by: this,
+                duration: Infinity
+              });
+          }
+        })
+      );
+      this.addFeature(TentaclesFeature);
+    }
+  };
+
   // src/img/tok/badger.png
   var badger_default = "./badger-53MEBA7R.png";
 
@@ -8045,17 +8210,6 @@
 
   // src/img/tok/giant-badger.png
   var giant_badger_default = "./giant-badger-R3QZK5QP.png";
-
-  // src/monsters/NaturalWeapon.ts
-  var NaturalWeapon = class extends AbstractWeapon {
-    constructor(g, name, toHit, damage) {
-      super(g, name, "natural", "melee", damage);
-      if (typeof toHit === "string")
-        this.forceAbilityScore = toHit;
-      else {
-      }
-    }
-  };
 
   // src/monsters/srd/beast.ts
   var Badger = class extends Monster {
@@ -8210,6 +8364,7 @@
 
   // src/data/allMonsters.ts
   var allMonsters = {
+    chuul: (g) => new Chuul(g),
     badger: (g) => new Badger(g),
     bat: (g) => new Bat(g),
     "giant badger": (g) => new GiantBadger(g),
@@ -18651,10 +18806,6 @@ When you create a device, choose one of the following options:
   };
 
   // src/races/Triton.ts
-  var Amphibious = notImplementedFeature(
-    "Amphibious",
-    `You can breathe air and water.`
-  );
   var FogCloudResource = new LongRestResource(
     "Control Air and Water: Fog Cloud",
     1

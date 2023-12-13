@@ -1,8 +1,8 @@
 import {
+  Amphibious,
   bonusSpellsFeature,
   Darkvision60,
   nonCombatFeature,
-  notImplementedFeature,
 } from "../features/common";
 import { LongRestResource } from "../resources";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
@@ -13,12 +13,6 @@ import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
 import { resistanceFeature } from "./common";
-
-// TODO [TERRAIN] [CHOKING]
-const Amphibious = notImplementedFeature(
-  "Amphibious",
-  `You can breathe air and water.`,
-);
 
 const FogCloudResource = new LongRestResource(
   "Control Air and Water: Fog Cloud",

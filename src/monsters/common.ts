@@ -53,7 +53,7 @@ export function makeMultiattack(
   });
 }
 
-export function isMeleeAttackAction(action: Action) {
+export function isMeleeAttackAction(action: Action): action is WeaponAttack {
   if (!action.tags.has("attack")) return false;
   if (!(action instanceof WeaponAttack)) return false;
 

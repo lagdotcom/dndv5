@@ -11,6 +11,12 @@ import { implementationWarning } from "../utils/env";
 import ConfiguredFeature from "./ConfiguredFeature";
 import SimpleFeature from "./SimpleFeature";
 
+// TODO [TERRAIN] [CHOKING]
+export const Amphibious = notImplementedFeature(
+  "Amphibious",
+  `You can breathe air and water.`,
+);
+
 export interface BonusSpellEntry {
   level: number;
   resource?: Resource;

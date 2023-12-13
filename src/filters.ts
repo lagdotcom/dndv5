@@ -96,6 +96,13 @@ export const sizeOrLess = (size: SizeCategory) =>
     check: (g, action, value) => value.size <= size,
   });
 
+export const isGrappledBy = (grappler: Combatant) =>
+  makeFilter<Combatant>({
+    name: "grappled",
+    message: `not grappled by ${grappler.name}`,
+    check: (g, action, value) => grappler.grappling.has(value),
+  });
+
 export const withinRangeOfEachOther = (range: number) =>
   makeFilter<Combatant[]>({
     name: `within ${range}' of each other`,
