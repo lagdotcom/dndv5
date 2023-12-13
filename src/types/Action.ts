@@ -13,10 +13,10 @@ import Source from "./Source";
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
 
-export type ConfigWithPositioning<T> = {
+export interface ConfigWithPositioning<T> {
   config: T;
   positioning: Set<PositionConstraint>;
-};
+}
 
 export const ActionTags = [
   "attack",

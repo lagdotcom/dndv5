@@ -4,11 +4,11 @@ import Action from "./Action";
 import Combatant from "./Combatant";
 import Point from "./Point";
 
-export type PositionConstraint = {
+export interface PositionConstraint {
   type: "within";
   range: number;
   of: Combatant;
-};
+}
 
 export interface ActionEvaluation<T extends object = object> {
   action: Action<T>;

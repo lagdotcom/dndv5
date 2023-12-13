@@ -9,7 +9,9 @@ import { simpleSpell } from "../common";
 
 const validConditions = coSet("Blinded", "Deafened", "Paralyzed", "Poisoned");
 
-type HasEffect = { effect: EffectType };
+interface HasEffect {
+  effect: EffectType;
+}
 
 const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
   status: "implemented",

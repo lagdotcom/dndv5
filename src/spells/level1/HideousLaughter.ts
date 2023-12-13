@@ -18,7 +18,10 @@ import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-type Config = { caster: Combatant; method: SpellcastingMethod };
+interface Config {
+  caster: Combatant;
+  method: SpellcastingMethod;
+}
 
 const getHideousLaughterSave = (
   who: Combatant,

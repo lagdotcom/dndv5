@@ -5,7 +5,10 @@ import DiceType from "./types/DiceType";
 import RollType from "./types/RollType";
 
 type MatchRollType = MarkRequired<Partial<RollType>, "type">;
-type ForcedRoll = { value: number; matcher: MatchRollType };
+interface ForcedRoll {
+  value: number;
+  matcher: MatchRollType;
+}
 
 function matches(rt: RollType, m: MatchRollType) {
   for (const [field, value] of Object.entries(m)) {

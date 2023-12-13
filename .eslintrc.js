@@ -21,7 +21,8 @@ module.exports = {
   ],
   extends: [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/strict",
+    "plugin:@typescript-eslint/stylistic",
     "plugin:jest/recommended",
     "plugin:jest-dom/recommended",
     "plugin:jsx-a11y/recommended",
@@ -34,10 +35,18 @@ module.exports = {
   ],
   rules: {
     "arrow-body-style": ["error", "as-needed"],
+    "no-duplicate-imports": ["error"],
     "object-shorthand": ["error", "always"],
     "prettier/prettier": ["error", { endOfLine: "crlf" }],
     "simple-import-sort/imports": "error",
     "simple-import-sort/exports": "error",
     "sonarjs/no-duplicate-string": ["off"],
   },
+
+  overrides: [
+    {
+      files: "*.test.ts",
+      rules: { "@typescript-eslint/no-non-null-assertion": "off" },
+    },
+  ],
 };

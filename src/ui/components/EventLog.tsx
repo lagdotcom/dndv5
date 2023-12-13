@@ -1,8 +1,7 @@
 import Engine from "../../Engine";
 import { isDefined } from "../../utils/types";
 import useTimeout from "../hooks/useTimeout";
-import { VNode } from "../lib";
-import { useCallback, useEffect, useRef, useState } from "../lib";
+import { useCallback, useEffect, useRef, useState, VNode } from "../lib";
 import {
   getAbilityCheckMessage,
   getAttackMessage,

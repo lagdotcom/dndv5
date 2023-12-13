@@ -2470,26 +2470,27 @@
         }
       );
     }
+    get grappler() {
+      var _a;
+      return (_a = this.actor.getEffectConfig(Grappled)) == null ? void 0 : _a.by;
+    }
     getAffected() {
-      return [this.actor, this.actor.getEffectConfig(Grappled).by];
+      return sieve(this.actor, this.grappler);
     }
     getTargets() {
-      var _a;
-      return sieve((_a = this.actor.getEffectConfig(Grappled)) == null ? void 0 : _a.by);
+      return sieve(this.grappler);
     }
     check(config, ec) {
-      if (!this.actor.hasEffect(Grappled))
+      if (!this.grappler)
         ec.add("not being grappled", this);
       return super.check(config, ec);
     }
     async apply(config) {
       await super.apply(config);
       const { ability, skill } = config.choice;
-      const { g, actor } = this;
-      const grapple = actor.getEffectConfig(Grappled);
-      if (!grapple)
+      const { g, actor, grappler } = this;
+      if (!grappler)
         throw new Error("Trying to escape a non-existent grapple");
-      const { by: grappler } = grapple;
       const { total: mine } = await g.abilityCheck(NaN, {
         ability,
         skill,
@@ -6197,7 +6198,9 @@
     async getDamage(target) {
       if (!this.attackResult)
         throw new Error("Run .attack() first");
-      const { attack, critical } = this.attackResult;
+      const { attack, critical, outcome } = this.attackResult;
+      if (outcome === "cancelled")
+        return;
       const { g, caster: attacker, config, method, spell } = this;
       const damage = spell.getDamage(g, attacker, method, config);
       if (damage) {
@@ -11785,7 +11788,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     // TODO generateAttackConfigs,
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { targets }) {
+    async apply() {
     }
   });
   var CharmPerson_default = CharmPerson;
@@ -11822,7 +11825,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     // TODO generateAttackConfigs,
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { targets }) {
+    async apply() {
     }
   });
   var Command_default = Command;
@@ -12701,8 +12704,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "Shield",
     "turnStart",
     (g) => {
-      const check = (message, who, interrupt, after = async () => {
-      }) => {
+      const check = (message, who, interrupt, after) => {
         const shield = g.getActions(who).filter((a) => isCastSpell(a, Shield2) && checkConfig(g, a, {}));
         if (!shield.length)
           return;
@@ -12715,7 +12717,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
             shield.map((value) => ({ value, label: value.name })),
             async (action) => {
               await g.act(action, {});
-              await after();
+              if (after)
+                await after();
             },
             true,
             1

@@ -12,7 +12,7 @@ export default class YesNoChoice implements Interruption {
     public text: string,
     public yes?: () => Promise<void>,
     public no?: () => Promise<void>,
-    public priority: number = 10,
+    public priority = 10,
     public isStillValid?: () => boolean,
   ) {}
 

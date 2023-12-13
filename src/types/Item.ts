@@ -96,9 +96,9 @@ export default Item;
 
 export type ItemType = Item["itemType"];
 
-export type ItemByTypeKey = {
+export interface ItemByTypeKey {
   armor: ArmorItem;
   ammo: AmmoItem;
   weapon: WeaponItem;
   wondrous: WondrousItem;
-};
+}

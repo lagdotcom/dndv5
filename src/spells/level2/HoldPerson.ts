@@ -12,11 +12,11 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
-type Config = {
+interface Config {
   affected: Set<Combatant>;
   caster: Combatant;
   method: SpellcastingMethod;
-};
+}
 
 const getHoldPersonSave = (
   who: Combatant,

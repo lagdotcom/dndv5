@@ -1,7 +1,10 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
-import Action, { ActionTag, ConfigWithPositioning } from "../types/Action";
-import { ActionConfig } from "../types/Action";
+import Action, {
+  ActionConfig,
+  ActionTag,
+  ConfigWithPositioning,
+} from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Amount from "../types/Amount";
 import Combatant from "../types/Combatant";

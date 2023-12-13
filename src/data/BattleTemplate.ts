@@ -8,8 +8,14 @@ import initialisePC from "./initialisePC";
 export type CombatantCreator = (g: Engine) => Combatant;
 export type ItemCreator = (g: Engine, quantity?: number) => Item;
 
-type PCEntry = { type: "pc"; name: PCName };
-type MonsterEntry = { type: "monster"; name: MonsterName };
+interface PCEntry {
+  type: "pc";
+  name: PCName;
+}
+interface MonsterEntry {
+  type: "monster";
+  name: MonsterName;
+}
 
 export type BattleTemplateEntry = (PCEntry | MonsterEntry) & {
   side?: number;
@@ -18,7 +24,9 @@ export type BattleTemplateEntry = (PCEntry | MonsterEntry) & {
   initiative?: number;
 };
 
-type BattleTemplate = { combatants: BattleTemplateEntry[] };
+interface BattleTemplate {
+  combatants: BattleTemplateEntry[];
+}
 export default BattleTemplate;
 
 export function initialiseFromTemplate(

@@ -8,6 +8,6 @@ export default class EvaluateLater implements Interruption {
     public who: Combatant,
     public source: Source,
     public apply: (g: Engine) => Promise<void>,
-    public priority: number = 5,
+    public priority = 5,
   ) {}
 }

@@ -29,15 +29,15 @@ describe("TwoWeaponAttack", () => {
       ["thug", 0, 0, 10],
     );
 
-    let thing: AttackDetail | undefined;
-    g.events.on("Attack", (event) => (thing = event.detail));
+    let detail: AttackDetail | undefined;
+    g.events.on("Attack", (event) => (detail = event.detail));
 
     const actions = g.getActions(me);
     const attack = actions.find((a) => a.name === "Attack (dagger)");
 
     expect(attack).toBeDefined();
     await g.act(attack!, { target });
-    expect(thing?.pre.bonus.result).toBe(3);
+    expect(detail?.pre.bonus.result).toBe(3);
 
     const actionsAfter = g.getActions(me);
     const second = actionsAfter.find(
@@ -46,6 +46,6 @@ describe("TwoWeaponAttack", () => {
 
     expect(second).toBeDefined();
     await g.act(second!, { target });
-    expect(thing?.pre.bonus.result).toBe(2);
+    expect(detail?.pre.bonus.result).toBe(2);
   });
 });

@@ -1,6 +1,9 @@
 import Source from "../types/Source";
 
-type ErrorEntry = { value: string; source: Source };
+interface ErrorEntry {
+  value: string;
+  source: Source;
+}
 
 export default class ErrorCollector {
   errors: Set<ErrorEntry>;

@@ -1,15 +1,13 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { HasItem } from "../configs";
 import Engine from "../Engine";
 import MessageBuilder from "../MessageBuilder";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
-import Item from "../types/Item";
 import AbstractAction from "./AbstractAction";
 
-type Config = { item: Item };
-
-export default class DonAction extends AbstractAction<Config> {
+export default class DonAction extends AbstractAction<HasItem> {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -38,7 +36,7 @@ export default class DonAction extends AbstractAction<Config> {
     return [];
   }
 
-  check(config: Partial<Config>, ec: ErrorCollector): ErrorCollector {
+  check(config: Partial<HasItem>, ec: ErrorCollector): ErrorCollector {
     if (config.item && config.item.hands > this.actor.freeHands)
       ec.add("not enough hands", this);
 
@@ -52,7 +50,7 @@ export default class DonAction extends AbstractAction<Config> {
     return "action";
   }
 
-  async apply({ item }: Config) {
+  async apply({ item }: HasItem) {
     await super.apply({ item });
 
     if (this.actor.don(item))

@@ -10,7 +10,9 @@ import Combatant from "../../types/Combatant";
 import Feature from "../../types/Feature";
 import { featureNotComplete } from "../../utils/env";
 
-type HasForm = { form: MonsterName };
+interface HasForm {
+  form: MonsterName;
+}
 
 const WildShapeResource = new ShortRestResource("Wild Shape", 2);
 

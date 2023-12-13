@@ -5,7 +5,9 @@ import EvaluateLater from "../interruptions/EvaluateLater";
 import Combatant from "../types/Combatant";
 import { compareDistances } from "../utils/units";
 
-export type TurnedConfig = { turner: Combatant };
+export interface TurnedConfig {
+  turner: Combatant;
+}
 
 export const TurnedEffect = new Effect<TurnedConfig>(
   "Turned",

@@ -2,7 +2,10 @@ import { PickChoice } from "../interruptions/PickFromListChoice";
 import AbilityName from "../types/AbilityName";
 import SkillName from "../types/SkillName";
 
-export type GrappleChoice = { ability: AbilityName; skill: SkillName };
+export interface GrappleChoice {
+  ability: AbilityName;
+  skill: SkillName;
+}
 
 export const GrappleChoices: PickChoice<GrappleChoice>[] = [
   {

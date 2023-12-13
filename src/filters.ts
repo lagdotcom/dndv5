@@ -7,11 +7,11 @@ import SizeCategory from "./types/SizeCategory";
 import { combinations } from "./utils/combinatorics";
 import { distance } from "./utils/units";
 
-export type ErrorFilter<T> = {
+export interface ErrorFilter<T> {
   name: string;
   message: string;
   check(g: Engine, action: Action, value: T): boolean;
-};
+}
 
 const makeFilter = <T>({
   name,

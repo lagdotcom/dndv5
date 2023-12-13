@@ -11,11 +11,11 @@ import { implementationWarning } from "../utils/env";
 import ConfiguredFeature from "./ConfiguredFeature";
 import SimpleFeature from "./SimpleFeature";
 
-export type BonusSpellEntry = {
+export interface BonusSpellEntry {
   level: number;
   resource?: Resource;
   spell: Spell;
-};
+}
 
 export function bonusSpellsFeature(
   name: string,

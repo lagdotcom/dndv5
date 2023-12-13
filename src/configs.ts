@@ -1,16 +1,34 @@
 import { Allocation } from "./resolvers/AllocationResolver";
 import Combatant from "./types/Combatant";
-import { WeaponItem } from "./types/Item";
+import Item, { WeaponItem } from "./types/Item";
 import Point from "./types/Point";
 
-export type HasAllocations = { targets: Allocation[] };
+export interface HasAllocations {
+  targets: Allocation[];
+}
 
-export type HasTarget = { target: Combatant };
-export type HasTargets = { targets: Combatant[] };
+export interface HasTarget {
+  target: Combatant;
+}
+export interface HasTargets {
+  targets: Combatant[];
+}
 
-export type HasPoint = { point: Point };
-export type HasPoints = { points: Point[] };
+export interface HasPoint {
+  point: Point;
+}
+export interface HasPoints {
+  points: Point[];
+}
 
-export type HasWeapon = { weapon: WeaponItem };
+export interface HasWeapon {
+  weapon: WeaponItem;
+}
 
-export type Scales = { slot: number };
+export interface Scales {
+  slot: number;
+}
+
+export interface HasItem {
+  item: Item;
+}

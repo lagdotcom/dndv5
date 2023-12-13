@@ -1,13 +1,29 @@
-export type ConeShape = { type: "cone"; radius: number };
-export type CubeShape = { type: "cube"; length: number };
-export type CylinderShape = {
+export interface ConeShape {
+  type: "cone";
+  radius: number;
+}
+export interface CubeShape {
+  type: "cube";
+  length: number;
+}
+export interface CylinderShape {
   type: "cylinder";
   radius: number;
   height: number;
-};
-export type LineShape = { type: "line"; length: number; width: number };
-export type SphereShape = { type: "sphere"; radius: number };
-export type WithinShape = { type: "within"; radius: number };
+}
+export interface LineShape {
+  type: "line";
+  length: number;
+  width: number;
+}
+export interface SphereShape {
+  type: "sphere";
+  radius: number;
+}
+export interface WithinShape {
+  type: "within";
+  radius: number;
+}
 
 type EffectShape =
   | ConeShape

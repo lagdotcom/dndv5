@@ -27,7 +27,10 @@ function getPactMagicSlots(level: number) {
 
 const PactMagicResource = new ShortRestResource("Pact Magic", 1);
 
-type Entry = { level: number; spells: Set<Spell> };
+interface Entry {
+  level: number;
+  spells: Set<Spell>;
+}
 
 export default class PactMagic implements SpellcastingMethod {
   entries: Map<Combatant, Entry>;

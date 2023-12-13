@@ -38,7 +38,7 @@ const Command = scalingSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, caster, method, { targets }) {
+  async apply() {
     // TODO
   },
 });

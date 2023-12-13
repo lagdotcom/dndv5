@@ -37,13 +37,13 @@ import commonStyles from "./common.module.scss";
 import Labelled from "./Labelled";
 import RangeInput from "./RangeInput";
 
-type ChooserProps<T, R = Resolver<T>> = {
+interface ChooserProps<T, R = Resolver<T>> {
   action: Action;
   field: string;
   onChange(key: string, value?: T): void;
   resolver: R;
   value?: T;
-};
+}
 
 function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
   const setTarget = useCallback(

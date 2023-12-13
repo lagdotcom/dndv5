@@ -45,7 +45,7 @@ import TurnSkippedEvent from "./TurnSkippedEvent";
 import TurnStartedEvent from "./TurnStartedEvent";
 import YesNoChoiceEvent from "./YesNoChoiceEvent";
 
-export type EventTypes = {
+export interface EventTypes {
   AbilityCheck: AbilityCheckEvent;
   AfterAction: AfterActionEvent;
   AreaPlaced: AreaPlacedEvent;
@@ -92,7 +92,7 @@ export type EventTypes = {
   TurnSkipped: TurnSkippedEvent;
   TurnStarted: TurnStartedEvent;
   YesNoChoice: YesNoChoiceEvent;
-};
+}
 
 type EventType = keyof EventTypes;
 export default EventType;

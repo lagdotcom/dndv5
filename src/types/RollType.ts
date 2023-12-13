@@ -12,15 +12,15 @@ import Source from "./Source";
 import Spell from "./Spell";
 import SpellcastingMethod from "./SpellcastingMethod";
 
-export type AbilityCheck = {
+export interface AbilityCheck {
   type: "check";
   who: Combatant;
   attacker?: Combatant;
   ability: AbilityName;
   skill?: SkillName;
   tags: Set<CheckTag>;
-};
-export type AttackRoll = {
+}
+export interface AttackRoll {
   type: "attack";
   who: Combatant;
   target: Combatant;
@@ -29,9 +29,12 @@ export type AttackRoll = {
   spell?: Spell;
   method?: SpellcastingMethod;
   tags: Set<AttackTag>;
-};
-export type BlessRoll = { type: "bane" | "bless"; who: Combatant };
-export type DamageRoll = {
+}
+export interface BlessRoll {
+  type: "bane" | "bless";
+  who: Combatant;
+}
+export interface DamageRoll {
   type: "damage";
   source: Source;
   attacker: Combatant;
@@ -43,8 +46,8 @@ export type DamageRoll = {
   spell?: Spell;
   method?: SpellcastingMethod;
   tags: Set<AttackTag>;
-};
-export type HealRoll = {
+}
+export interface HealRoll {
   type: "heal";
   source: Source;
   actor: Combatant;
@@ -52,16 +55,22 @@ export type HealRoll = {
   size: number;
   spell?: Spell;
   method?: SpellcastingMethod;
-};
-export type InitiativeRoll = { type: "initiative"; who: Combatant };
-export type LuckRoll = { type: "luck"; who: Combatant };
-export type OtherRoll = {
+}
+export interface InitiativeRoll {
+  type: "initiative";
+  who: Combatant;
+}
+export interface LuckRoll {
+  type: "luck";
+  who: Combatant;
+}
+export interface OtherRoll {
   type: "other";
   source: Source;
   who: Combatant;
   size: number;
-};
-export type SavingThrow<T = unknown> = {
+}
+export interface SavingThrow<T = unknown> {
   type: "save";
   who: Combatant;
   attacker?: Combatant;
@@ -71,7 +80,7 @@ export type SavingThrow<T = unknown> = {
   effect?: Effect<T>;
   config?: EffectConfig<T>;
   tags: Set<SaveTag>;
-};
+}
 
 type RollType =
   | AbilityCheck

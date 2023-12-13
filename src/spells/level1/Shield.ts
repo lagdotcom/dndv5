@@ -20,7 +20,7 @@ const ShieldEffect = new Effect(
       message: string,
       who: Combatant,
       interrupt: InterruptionCollector,
-      after = async () => {},
+      after?: () => Promise<void>,
     ) => {
       const shield = g
         .getActions(who)
@@ -36,7 +36,7 @@ const ShieldEffect = new Effect(
           shield.map((value) => ({ value, label: value.name })),
           async (action) => {
             await g.act(action, {});
-            await after();
+            if (after) await after();
           },
           true,
           1,

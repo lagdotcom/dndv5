@@ -8,7 +8,9 @@ import { sieve } from "../utils/array";
 import AbstractAction from "./AbstractAction";
 import { GrappleChoice, GrappleChoices } from "./common";
 
-type Config = { choice: GrappleChoice };
+interface Config {
+  choice: GrappleChoice;
+}
 
 export default class EscapeGrappleAction extends AbstractAction<Config> {
   constructor(g: Engine, actor: Combatant) {
@@ -26,26 +28,28 @@ export default class EscapeGrappleAction extends AbstractAction<Config> {
     );
   }
 
+  get grappler() {
+    return this.actor.getEffectConfig(Grappled)?.by;
+  }
+
   getAffected() {
-    return [this.actor, this.actor.getEffectConfig(Grappled)!.by];
+    return sieve(this.actor, this.grappler);
   }
   getTargets() {
-    return sieve(this.actor.getEffectConfig(Grappled)?.by);
+    return sieve(this.grappler);
   }
 
   check(config: Config, ec: ErrorCollector) {
-    if (!this.actor.hasEffect(Grappled)) ec.add("not being grappled", this);
+    if (!this.grappler) ec.add("not being grappled", this);
     return super.check(config, ec);
   }
 
   async apply(config: Config) {
     await super.apply(config);
     const { ability, skill } = config.choice;
-    const { g, actor } = this;
+    const { g, actor, grappler } = this;
 
-    const grapple = actor.getEffectConfig(Grappled);
-    if (!grapple) throw new Error("Trying to escape a non-existent grapple");
-    const { by: grappler } = grapple;
+    if (!grappler) throw new Error("Trying to escape a non-existent grapple");
 
     const { total: mine } = await g.abilityCheck(NaN, {
       ability,

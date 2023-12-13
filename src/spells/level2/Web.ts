@@ -66,7 +66,10 @@ class BreakFreeFromWebAction extends AbstractAction {
   }
 }
 
-type Config = { caster: Combatant; method: SpellcastingMethod };
+interface Config {
+  caster: Combatant;
+  method: SpellcastingMethod;
+}
 
 const Webbed = new Effect<Config>(
   "Webbed",

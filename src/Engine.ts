@@ -1124,7 +1124,7 @@ export type EngineAttackResult = ReturnType<Engine["attack"]>;
 
 export type EngineMoveResult = ReturnType<Engine["move"]>;
 
-export type EngineSaveConfig<E extends object> = {
+export interface EngineSaveConfig<E extends object> {
   source: Source;
   type: SaveType;
   attacker?: Combatant;
@@ -1138,4 +1138,4 @@ export type EngineSaveConfig<E extends object> = {
   save?: SaveDamageResponse;
   fail?: SaveDamageResponse;
   diceType?: DiceType;
-};
+}

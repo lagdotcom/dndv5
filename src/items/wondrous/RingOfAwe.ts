@@ -13,7 +13,10 @@ import AbstractWondrous from "../AbstractWondrous";
 
 const RingOfAweResource = new DawnResource("Ring of Awe", 1);
 
-type Config = { actor: Combatant; dc: number };
+interface Config {
+  actor: Combatant;
+  dc: number;
+}
 
 const getRingOfAweSave = (
   who: Combatant,
