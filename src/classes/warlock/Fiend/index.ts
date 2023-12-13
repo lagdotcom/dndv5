@@ -60,6 +60,7 @@ const DarkOnesBlessing = new SimpleFeature(
   },
 );
 
+// TODO
 const DarkOnesOwnLuck = notImplementedFeature(
   "Dark One's Own Luck",
   `Starting at 6th level, you can call on your patron to alter fate in your favor. When you make an ability check or a saving throw, you can use this feature to add a d10 to your roll. You can do so after seeing the initial roll but before any of the roll's effects occur.
@@ -67,11 +68,13 @@ const DarkOnesOwnLuck = notImplementedFeature(
 Once you use this feature, you can't use it again until you finish a short or long rest.`,
 );
 
+// TODO
 const FiendishResilience = notImplementedFeature(
   "Fiendish Resilience",
   `Starting at 10th level, you can choose one damage type when you finish a short or long rest. You gain resistance to that damage type until you choose a different one with this feature. Damage from magical weapons or silver weapons ignores this resistance.`,
 );
 
+// TODO
 const HurlThroughHell = notImplementedFeature(
   "Hurl Through Hell",
   `Starting at 14th level, when you hit a creature with an attack, you can use this feature to instantly transport the target through the lower planes. The creature disappears and hurtles through a nightmare landscape.

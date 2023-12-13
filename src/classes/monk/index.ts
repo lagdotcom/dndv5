@@ -50,7 +50,7 @@ If you reduce the damage to 0, you can catch the missile if it is small enough f
 // TODO
 const KiFueledAttack = notImplementedFeature(
   "Ki-Fueled Attack",
-  `f you spend 1 ki point or more as part of your action on your turn, you can make one attack with an unarmed strike or a monk weapon as a bonus action before the end of the turn.`,
+  `If you spend 1 ki point or more as part of your action on your turn, you can make one attack with an unarmed strike or a monk weapon as a bonus action before the end of the turn.`,
 );
 
 // TODO
