@@ -14,7 +14,7 @@ import PCClassName from "./types/PCClassName";
 import PCRace from "./types/PCRace";
 import PCSubclass from "./types/PCSubclass";
 import SizeCategory from "./types/SizeCategory";
-import { getDefaultHPRoll } from "./utils/dice";
+import { _fd, getDefaultHPRoll } from "./utils/dice";
 import { getProficiencyBonusByLevel } from "./utils/dnd";
 import { mergeSets } from "./utils/set";
 
@@ -28,7 +28,7 @@ export class UnarmedStrike extends AbstractWeapon {
       "unarmed strike",
       "natural",
       "melee",
-      { type: "flat", amount: 1, damageType: "bludgeoning" },
+      _fd(1, "bludgeoning"),
       undefined,
       punchUrl,
     );

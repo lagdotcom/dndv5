@@ -1,16 +1,16 @@
-import tokenUrl from "@img/tok/thug.png";
+import thugUrl from "@img/tok/thug.png";
 
-import Engine from "../Engine";
-import { CrossbowBolt } from "../items/ammunition";
-import { LeatherArmor } from "../items/armor";
-import { HeavyCrossbow, Mace } from "../items/weapons";
-import Monster from "../Monster";
-import SizeCategory from "../types/SizeCategory";
-import { isMeleeAttackAction, makeMultiattack, PackTactics } from "./common";
+import Engine from "../../Engine";
+import { CrossbowBolt } from "../../items/ammunition";
+import { LeatherArmor } from "../../items/armor";
+import { HeavyCrossbow, Mace } from "../../items/weapons";
+import Monster from "../../Monster";
+import SizeCategory from "../../types/SizeCategory";
+import { isMeleeAttackAction, makeMultiattack, PackTactics } from "../common";
 
-export default class Thug extends Monster {
+export class Thug extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
-    super(g, "thug", 0.5, "humanoid", SizeCategory.Medium, tokenUrl, 32);
+    super(g, "thug", 0.5, "humanoid", SizeCategory.Medium, thugUrl, 32);
     this.don(new LeatherArmor(g), true);
     this.movement.set("speed", 30);
     this.setAbilityScores(15, 11, 14, 10, 10, 11);

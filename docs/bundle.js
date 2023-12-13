@@ -5188,8 +5188,791 @@
     "modeSwitch": "_modeSwitch_1ojjx_5"
   };
 
-  // src/img/tok/badger.png
-  var badger_default = "./badger-53MEBA7R.png";
+  // src/img/act/eldritch-burst.svg
+  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
+
+  // src/img/spl/counterspell.svg
+  var counterspell_default = "./counterspell-XBGTQHAN.svg";
+
+  // src/img/spl/hellish-rebuke.svg
+  var hellish_rebuke_default = "./hellish-rebuke-2F7LGW6H.svg";
+
+  // src/img/tok/boss/birnotec.png
+  var birnotec_default = "./birnotec-JGKE3FD4.png";
+
+  // src/features/SimpleFeature.ts
+  var SimpleFeature = class {
+    constructor(name, text, setup) {
+      this.name = name;
+      this.text = text;
+      this.setup = setup;
+    }
+  };
+
+  // src/collectors/EvaluationCollector.ts
+  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
+    addEval(c, value, co) {
+      this.add(value * c.getCoefficient(co), co);
+    }
+    copy() {
+      return new _EvaluationCollector(
+        this.entries,
+        this.ignoredSources,
+        this.ignoredValues
+      );
+    }
+  };
+
+  // src/ai/coefficients.ts
+  var makeAICo = (name, defaultValue = 1) => ({
+    name,
+    defaultValue
+  });
+  var HealSelf = makeAICo("HealSelf");
+  var HealAllies = makeAICo("HealAllies");
+  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
+  var DamageEnemies = makeAICo("DamageEnemies");
+  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
+  var DamageAllies = makeAICo("DamageAllies", -1);
+  var StayNearAllies = makeAICo("StayNearAllies");
+
+  // src/ai/DamageRule.ts
+  var DamageRule = class {
+    evaluateActions(g, me, actions) {
+      const enemies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side !== me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
+          const amounts = action.getDamage(config);
+          if (!amounts)
+            return;
+          const targets = action.getAffected(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effective = 0;
+          let overKill = 0;
+          let friendlyFire = 0;
+          for (const target of targets) {
+            const remaining = target.hp;
+            const damage = Math.min(average, remaining);
+            if (target.side === me.side)
+              friendlyFire += damage;
+            else
+              effective += damage;
+            overKill += Math.max(average - remaining, 0);
+          }
+          score.addEval(me, effective, DamageEnemies);
+          score.addEval(me, overKill, OverKillEnemies);
+          score.addEval(me, friendlyFire, DamageAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/HealingRule.ts
+  var HealingRule = class {
+    evaluateActions(g, me, actions) {
+      const allies = Array.from(g.combatants.keys()).filter(
+        (who) => who.side === me.side
+      );
+      return actions.flatMap(
+        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
+          const amounts = action.getHeal(config);
+          if (!amounts)
+            return;
+          const targets = action.getAffected(config);
+          if (!targets)
+            return;
+          const { average } = describeDice(amounts);
+          const score = new EvaluationCollector();
+          let effectiveSelf = 0;
+          let effective = 0;
+          let overHeal = 0;
+          for (const target of targets) {
+            const missing = target.hpMax - target.hp;
+            const heal = Math.min(average, missing);
+            if (target === me)
+              effectiveSelf += heal;
+            else
+              effective += heal;
+            overHeal += Math.max(average - missing, 0);
+          }
+          if (effective + effectiveSelf <= 0)
+            return;
+          score.addEval(me, effectiveSelf, HealSelf);
+          score.addEval(me, effective, HealAllies);
+          score.addEval(me, overHeal, OverHealAllies);
+          return { action, config, positioning, score };
+        }).filter(isDefined)
+      );
+    }
+  };
+
+  // src/ai/data.ts
+  var defaultAIRules = [new HealingRule(), new DamageRule()];
+
+  // src/Monster.ts
+  var Monster = class extends AbstractCombatant {
+    constructor(g, name, cr, type, size, img, hpMax, rules = defaultAIRules) {
+      super(g, name, {
+        type,
+        size,
+        img,
+        side: 1,
+        cr,
+        hpMax,
+        rules
+      });
+    }
+    don(item, giveProficiency = false) {
+      if (giveProficiency)
+        this.addProficiency(item, "proficient");
+      return super.don(item);
+    }
+  };
+
+  // src/spells/InnateSpellcasting.ts
+  var InnateSpellcasting = class {
+    constructor(name, ability, getResourceForSpell, icon) {
+      this.name = name;
+      this.ability = ability;
+      this.getResourceForSpell = getResourceForSpell;
+      this.icon = icon;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    addCastableSpell() {
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell) {
+      return spell.level;
+    }
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
+    }
+  };
+
+  // src/img/spl/armor-of-agathys.svg
+  var armor_of_agathys_default = "./armor-of-agathys-V2ZDSJZ3.svg";
+
+  // src/types/EffectTag.ts
+  var efSet = (...items) => new Set(items);
+
+  // src/utils/time.ts
+  var TURNS_PER_MINUTE = 10;
+  var minutes = (n) => n * TURNS_PER_MINUTE;
+  var hours = (n) => minutes(n * 60);
+
+  // src/spells/level1/ArmorOfAgathys.ts
+  var ArmorOfAgathysIcon = makeIcon(armor_of_agathys_default, DamageColours.cold);
+  var ArmorOfAgathysEffect = new Effect(
+    "Armor of Agathys",
+    "turnStart",
+    (g) => {
+      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+        const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
+        if (config && pre.target.temporaryHPSource === ArmorOfAgathysEffect && pre.tags.has("melee"))
+          interrupt.add(
+            new EvaluateLater(pre.who, ArmorOfAgathysEffect, async () => {
+              await g.damage(
+                ArmorOfAgathysEffect,
+                "cold",
+                { attacker: pre.target, target: pre.who },
+                [["cold", config.count]]
+              );
+            })
+          );
+      });
+      g.events.on(
+        "CombatantDamaged",
+        ({ detail: { who, temporaryHPSource, interrupt } }) => {
+          if (temporaryHPSource === ArmorOfAgathysEffect && who.temporaryHP <= 0)
+            interrupt.add(
+              new EvaluateLater(who, ArmorOfAgathysEffect, async () => {
+                await who.removeEffect(ArmorOfAgathysEffect);
+              })
+            );
+        }
+      );
+    },
+    { icon: ArmorOfAgathysIcon, tags: efSet("magic") }
+  );
+  var ArmorOfAgathys = scalingSpell({
+    status: "implemented",
+    name: "Armor of Agathys",
+    icon: ArmorOfAgathysIcon,
+    level: 1,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    m: "a cup of water",
+    lists: ["Warlock"],
+    description: `A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
+    getConfig: () => ({}),
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
+    async apply(g, caster, method, { slot }) {
+      const count = slot * 5;
+      if (await g.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
+        const duration = hours(1);
+        await caster.addEffect(ArmorOfAgathysEffect, { count, duration }, caster);
+      }
+    }
+  });
+  var ArmorOfAgathys_default = ArmorOfAgathys;
+
+  // src/types/AttackTag.ts
+  var atSet = (...items) => new Set(items);
+
+  // src/spells/SpellAttack.ts
+  var SpellAttack = class {
+    constructor(g, caster, spell, method, type, config) {
+      this.g = g;
+      this.caster = caster;
+      this.spell = spell;
+      this.method = method;
+      this.type = type;
+      this.config = config;
+    }
+    async attack(target) {
+      const { caster: who, method, spell, type } = this;
+      this.attackResult = await this.g.attack({
+        who,
+        target,
+        ability: method.ability,
+        tags: atSet(type, "spell", "magical"),
+        spell,
+        method
+      });
+      return this.attackResult;
+    }
+    async getDamage(target) {
+      if (!this.attackResult)
+        throw new Error("Run .attack() first");
+      const { attack, critical, outcome } = this.attackResult;
+      if (outcome === "cancelled")
+        return;
+      const { g, caster: attacker, config, method, spell } = this;
+      const damage = spell.getDamage(g, attacker, method, config);
+      if (damage) {
+        const amounts = [];
+        let first = true;
+        for (const { type, amount, damageType } of damage) {
+          if (first) {
+            this.baseDamageType = damageType;
+            first = false;
+          }
+          if (type === "dice") {
+            const { count, size } = amount;
+            const roll = await g.rollDamage(
+              count,
+              {
+                source: spell,
+                size,
+                damageType,
+                attacker,
+                target,
+                spell,
+                method,
+                tags: attack.pre.tags
+              },
+              critical
+            );
+            amounts.push([damageType, roll]);
+          } else
+            amounts.push([damageType, amount]);
+        }
+        return amounts;
+      }
+    }
+    async damage(target, initialiser, startingMultiplier) {
+      if (!this.attackResult)
+        throw new Error("Run .attack() first");
+      const { attack, critical, hit } = this.attackResult;
+      if (!hit)
+        return;
+      const { g, baseDamageType, caster: attacker, method, spell } = this;
+      if (!baseDamageType)
+        throw new Error("Run .getDamage() first");
+      return g.damage(
+        spell,
+        baseDamageType,
+        { attack, attacker, target, critical, spell, method },
+        initialiser,
+        startingMultiplier
+      );
+    }
+  };
+
+  // src/utils/dice.ts
+  var _fd = (amount, damageType) => ({
+    type: "flat",
+    amount,
+    damageType
+  });
+  var _dd = (count, size, damageType) => ({ type: "dice", amount: { count, size }, damageType });
+  function getDefaultHPRoll(level, hitDieSize) {
+    if (level === 1)
+      return hitDieSize;
+    return Math.ceil(getDiceAverage(1, hitDieSize));
+  }
+
+  // src/monsters/fiendishParty/Birnotec.ts
+  var getEldritchBurstArea = (who) => ({
+    type: "within",
+    radius: 5,
+    who
+  });
+  var BurstIcon = makeIcon(eldritch_burst_default, DamageColours.force);
+  var EldritchBurstSpell = simpleSpell({
+    status: "implemented",
+    name: "Eldritch Burst",
+    icon: BurstIcon,
+    level: 0,
+    school: "Evocation",
+    lists: ["Warlock"],
+    description: `Make a ranged spell attack against the target. On a hit, the target takes 2d10 force damage. All other creatures within 5 ft. must make a Dexterity save or take 1d10 force damage.`,
+    getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
+    getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(target)],
+    getDamage: () => [_dd(2, 10, "force")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => g.getInside(getEldritchBurstArea(target)),
+    async apply(g, caster, method, { target }) {
+      const rsa = new SpellAttack(
+        g,
+        caster,
+        EldritchBurstSpell,
+        BirnotecSpellcasting,
+        "ranged",
+        { target }
+      );
+      const { outcome, attack, hit, critical } = await rsa.attack(target);
+      if (outcome === "cancelled")
+        return;
+      const { target: finalTarget } = attack.pre;
+      if (hit) {
+        const hitDamage = await rsa.getDamage(finalTarget);
+        await rsa.damage(finalTarget, hitDamage);
+      }
+      const damage = await g.rollDamage(
+        1,
+        {
+          size: 10,
+          source: this,
+          attacker: caster,
+          damageType: "force",
+          tags: atSet("magical", "ranged", "spell")
+        },
+        critical
+      );
+      for (const other of g.getInside(getEldritchBurstArea(finalTarget))) {
+        if (other === finalTarget)
+          continue;
+        const { damageResponse } = await g.save({
+          source: EldritchBurstSpell,
+          type: { type: "flat", dc: 15 },
+          attacker: caster,
+          who: other,
+          ability: "dex",
+          spell: EldritchBurstSpell,
+          method,
+          save: "zero",
+          tags: ["magic"]
+        });
+        await g.damage(
+          this,
+          "force",
+          { attacker: caster, target: other, spell: EldritchBurstSpell, method },
+          [["force", damage]],
+          damageResponse
+        );
+      }
+    }
+  });
+  var BirnotecSpellcasting = new InnateSpellcasting(
+    "Spellcasting",
+    "cha",
+    () => void 0
+  );
+  var EldritchBurst = new SimpleFeature(
+    "Eldritch Burst",
+    `Ranged Spell Attack: +8 to hit, range 120 ft., one target. Hit: 11 (2d10) force damage. All other creatures within 5 ft. must make a DC 15 Dexterity save or take 5 (1d10) force damage.`,
+    (g, me) => {
+      me.spellcastingMethods.add(BirnotecSpellcasting);
+      me.preparedSpells.add(EldritchBurstSpell);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new CastSpell(g, me, BirnotecSpellcasting, EldritchBurstSpell)
+          );
+      });
+    }
+  );
+  var ArmorOfAgathys2 = new SimpleFeature(
+    "Armor of Agathys",
+    `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`,
+    (g, me) => {
+      g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
+        interrupt.add(
+          new EvaluateLater(me, ArmorOfAgathys2, async () => {
+            await ArmorOfAgathys_default.apply(g, me, BirnotecSpellcasting, {
+              slot: 3
+            });
+          })
+        );
+      });
+    }
+  );
+  var AntimagicIcon = makeIcon(counterspell_default);
+  var AntimagicProdigyAction = class extends AbstractAction {
+    constructor(g, actor, dc, success) {
+      super(
+        g,
+        actor,
+        "Antimagic Prodigy",
+        "implemented",
+        { target: new TargetResolver(g, Infinity, [isEnemy]) },
+        {
+          time: "reaction",
+          icon: AntimagicIcon,
+          description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`
+        }
+      );
+      this.dc = dc;
+      this.success = success;
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor, dc, success } = this;
+      const save = await g.abilityCheck(dc, {
+        who: target,
+        attacker: actor,
+        skill: "Arcana",
+        ability: "int",
+        tags: chSet("counterspell")
+      });
+      if (save.outcome === "fail") {
+        success.add("fail", AntimagicProdigy);
+        g.text(new MessageBuilder().co(actor).text(" counters the spell."));
+      }
+    }
+  };
+  var AntimagicProdigy = new SimpleFeature(
+    "Antimagic Prodigy",
+    `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new AntimagicProdigyAction(g, me, 15, new SuccessResponseCollector())
+          );
+      });
+      g.events.on(
+        "SpellCast",
+        ({ detail: { who: target, interrupt, success } }) => {
+          const action = new AntimagicProdigyAction(g, me, 15, success);
+          const config = { target };
+          if (checkConfig(g, action, config))
+            interrupt.add(
+              new YesNoChoice(
+                me,
+                AntimagicProdigy,
+                "Antimagic Prodigy",
+                `Use ${me.name}'s reaction to attempt to counter the spell?`,
+                async () => {
+                  await g.act(action, config);
+                }
+              )
+            );
+        }
+      );
+    }
+  );
+  var RebukeIcon = makeIcon(hellish_rebuke_default, DamageColours.fire);
+  var HellishRebukeAction = class extends AbstractAction {
+    constructor(g, actor, dc) {
+      super(
+        g,
+        actor,
+        "Hellish Rebuke",
+        "implemented",
+        { target: new TargetResolver(g, Infinity, [isEnemy]) },
+        {
+          time: "reaction",
+          icon: RebukeIcon,
+          description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
+          tags: ["harmful", "spell"]
+        }
+      );
+      this.dc = dc;
+    }
+    generateAttackConfigs(targets) {
+      return targets.map((target) => ({
+        config: { target },
+        positioning: poSet()
+      }));
+    }
+    getDamage() {
+      return [_dd(2, 10, "fire")];
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor: attacker, dc } = this;
+      const damage = await g.rollDamage(2, {
+        source: HellishRebuke,
+        size: 10,
+        attacker,
+        target,
+        damageType: "fire",
+        tags: atSet("magical", "spell")
+      });
+      const { damageResponse } = await g.save({
+        source: HellishRebuke,
+        type: { type: "flat", dc },
+        who: target,
+        attacker,
+        ability: "dex",
+        tags: ["magic"]
+      });
+      await g.damage(
+        HellishRebuke,
+        "fire",
+        { attacker, target },
+        [["fire", damage]],
+        damageResponse
+      );
+    }
+  };
+  var HellishRebuke = new SimpleFeature(
+    "Hellish Rebuke",
+    `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new HellishRebukeAction(g, me, 15));
+      });
+      g.events.on(
+        "CombatantDamaged",
+        ({ detail: { who, attacker, interrupt } }) => {
+          if (who === me) {
+            const action = new HellishRebukeAction(g, me, 15);
+            const config = { target: attacker };
+            if (checkConfig(g, action, config))
+              interrupt.add(
+                new YesNoChoice(
+                  me,
+                  HellishRebuke,
+                  "Hellish Rebuke",
+                  `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
+                  async () => {
+                    await g.act(action, config);
+                  }
+                )
+              );
+          }
+        }
+      );
+    }
+  );
+  var Birnotec = class extends Monster {
+    constructor(g) {
+      super(g, "Birnotec", 5, "humanoid", SizeCategory_default.Medium, birnotec_default, 35);
+      this.diesAtZero = false;
+      this.movement.set("speed", 30);
+      this.setAbilityScores(6, 15, 8, 12, 13, 20);
+      this.pb = 3;
+      this.saveProficiencies.add("wis");
+      this.saveProficiencies.add("cha");
+      this.addProficiency("Arcana", "proficient");
+      this.addProficiency("Nature", "proficient");
+      this.damageResponses.set("poison", "immune");
+      this.conditionImmunities.add("Poisoned");
+      this.languages.add("Abyssal");
+      this.languages.add("Common");
+      this.addFeature(ArmorOfAgathys2);
+      this.addFeature(EldritchBurst);
+      this.addFeature(AntimagicProdigy);
+      this.addFeature(HellishRebuke);
+    }
+  };
+
+  // src/img/act/wreathed-in-shadow.svg
+  var wreathed_in_shadow_default = "./wreathed-in-shadow-DXCZM5CC.svg";
+
+  // src/img/tok/boss/kay.png
+  var kay_default = "./kay-LUSXSSD5.png";
+
+  // src/features/Evasion.ts
+  var Evasion = new SimpleFeature(
+    "Evasion",
+    `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`,
+    (g, me) => {
+      g.events.on(
+        "BeforeSave",
+        ({
+          detail: { who, ability, failDamageResponse, saveDamageResponse }
+        }) => {
+          if (who === me && ability === "dex" && saveDamageResponse.fallback === "half") {
+            failDamageResponse.add("half", Evasion);
+            saveDamageResponse.add("zero", Evasion);
+          }
+        }
+      );
+    }
+  );
+  var Evasion_default = Evasion;
+
+  // src/img/eq/arrow.svg
+  var arrow_default = "./arrow-RG5OYDZ5.svg";
+
+  // src/img/eq/bolt.svg
+  var bolt_default = "./bolt-RV5OQWXW.svg";
+
+  // src/items/AbstractItem.ts
+  var AbstractItem = class {
+    constructor(g, itemType, name, hands = 0, iconUrl) {
+      this.g = g;
+      this.itemType = itemType;
+      this.name = name;
+      this.hands = hands;
+      this.iconUrl = iconUrl;
+      this.enchantments = /* @__PURE__ */ new Set();
+      this.rarity = "Common";
+    }
+    get icon() {
+      if (this.iconUrl)
+        return { url: this.iconUrl, colour: ItemRarityColours[this.rarity] };
+    }
+    addEnchantment(e2) {
+      this.enchantments.add(e2);
+      e2.setup(this.g, this);
+    }
+  };
+
+  // src/items/ammunition.ts
+  var AbstractAmmo = class extends AbstractItem {
+    constructor(g, name, ammunitionTag, quantity, iconUrl) {
+      super(g, "ammo", name, 0, iconUrl);
+      this.ammunitionTag = ammunitionTag;
+      this.quantity = quantity;
+    }
+  };
+  var Arrow = class extends AbstractAmmo {
+    constructor(g, quantity) {
+      super(g, "arrow", "bow", quantity, arrow_default);
+    }
+  };
+  var BlowgunNeedle = class extends AbstractAmmo {
+    constructor(g, quantity) {
+      super(g, "blowgun needle", "blowgun", quantity);
+    }
+  };
+  var CrossbowBolt = class extends AbstractAmmo {
+    constructor(g, quantity) {
+      super(g, "crossbow bolt", "crossbow", quantity, bolt_default);
+    }
+  };
+  var SlingBullet = class extends AbstractAmmo {
+    constructor(g, quantity) {
+      super(g, "sling bullet", "sling", quantity);
+    }
+  };
+
+  // src/items/armor.ts
+  var AbstractArmor = class extends AbstractItem {
+    constructor(g, name, category, ac, stealthDisadvantage = false, minimumStrength = 0, iconUrl) {
+      super(g, "armor", name, 0, iconUrl);
+      this.category = category;
+      this.ac = ac;
+      this.stealthDisadvantage = stealthDisadvantage;
+      this.minimumStrength = minimumStrength;
+    }
+  };
+  var PaddedArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "padded armor", "light", 11, true);
+    }
+  };
+  var LeatherArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "leather armor", "light", 11);
+    }
+  };
+  var StuddedLeatherArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "studded leather armor", "light", 12);
+    }
+  };
+  var HideArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "hide armor", "medium", 12);
+    }
+  };
+  var ChainShirtArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "chain shirt armor", "medium", 13);
+    }
+  };
+  var ScaleMailArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "scale mail armor", "medium", 14, true);
+    }
+  };
+  var BreastplateArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "breastplate armor", "medium", 14);
+    }
+  };
+  var HalfPlateArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "half plate armor", "medium", 15, true);
+    }
+  };
+  var RingMailArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "ring mail armor", "heavy", 14, true);
+    }
+  };
+  var ChainMailArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "chain mail armor", "heavy", 16, true, 13);
+    }
+  };
+  var SplintArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "splint armor", "heavy", 17, true, 15);
+    }
+  };
+  var PlateArmor = class extends AbstractArmor {
+    constructor(g) {
+      super(g, "plate armor", "heavy", 18, true, 15);
+    }
+  };
+  var Shield = class extends AbstractArmor {
+    constructor(g, iconUrl) {
+      super(g, "shield", "shield", 2, false, void 0, iconUrl);
+      this.hands = 1;
+    }
+  };
 
   // src/img/eq/club.svg
   var club_default = "./club-RZOLCPSS.svg";
@@ -5220,39 +6003,6 @@
 
   // src/img/eq/trident.svg
   var trident_default = "./trident-XL6WP2YY.svg";
-
-  // src/utils/dice.ts
-  var _dd = (count, size, damage) => ({
-    type: "dice",
-    amount: { count, size },
-    damageType: damage
-  });
-  function getDefaultHPRoll(level, hitDieSize) {
-    if (level === 1)
-      return hitDieSize;
-    return Math.ceil(getDiceAverage(1, hitDieSize));
-  }
-
-  // src/items/AbstractItem.ts
-  var AbstractItem = class {
-    constructor(g, itemType, name, hands = 0, iconUrl) {
-      this.g = g;
-      this.itemType = itemType;
-      this.name = name;
-      this.hands = hands;
-      this.iconUrl = iconUrl;
-      this.enchantments = /* @__PURE__ */ new Set();
-      this.rarity = "Common";
-    }
-    get icon() {
-      if (this.iconUrl)
-        return { url: this.iconUrl, colour: ItemRarityColours[this.rarity] };
-    }
-    addEnchantment(e2) {
-      this.enchantments.add(e2);
-      e2.setup(this.g, this);
-    }
-  };
 
   // src/items/weapons.ts
   var AbstractWeapon = class extends AbstractItem {
@@ -5754,7 +6504,7 @@
         "blowgun",
         "martial",
         "ranged",
-        { type: "flat", amount: 1, damageType: "piercing" },
+        _fd(1, "piercing"),
         ["ammunition", "loading"],
         void 0,
         // TODO [ICON]
@@ -5821,7 +6571,7 @@
         "net",
         "martial",
         "ranged",
-        { type: "flat", amount: 0, damageType: "bludgeoning" },
+        _fd(0, "bludgeoning"),
         ["thrown"],
         void 0,
         // TODO [ICON]
@@ -5832,140 +6582,12 @@
     }
   };
 
-  // src/collectors/EvaluationCollector.ts
-  var EvaluationCollector = class _EvaluationCollector extends BonusCollector {
-    addEval(c, value, co) {
-      this.add(value * c.getCoefficient(co), co);
-    }
-    copy() {
-      return new _EvaluationCollector(
-        this.entries,
-        this.ignoredSources,
-        this.ignoredValues
-      );
-    }
-  };
-
-  // src/ai/coefficients.ts
-  var makeAICo = (name, defaultValue = 1) => ({
-    name,
-    defaultValue
-  });
-  var HealSelf = makeAICo("HealSelf");
-  var HealAllies = makeAICo("HealAllies");
-  var OverHealAllies = makeAICo("OverHealAllies", -0.5);
-  var DamageEnemies = makeAICo("DamageEnemies");
-  var OverKillEnemies = makeAICo("OverKillEnemies", -0.25);
-  var DamageAllies = makeAICo("DamageAllies", -1);
-  var StayNearAllies = makeAICo("StayNearAllies");
-
-  // src/ai/DamageRule.ts
-  var DamageRule = class {
-    evaluateActions(g, me, actions) {
-      const enemies = Array.from(g.combatants.keys()).filter(
-        (who) => who.side !== me.side
-      );
-      return actions.flatMap(
-        (action) => action.generateAttackConfigs(enemies).map(({ config, positioning }) => {
-          const amounts = action.getDamage(config);
-          if (!amounts)
-            return;
-          const targets = action.getAffected(config);
-          if (!targets)
-            return;
-          const { average } = describeDice(amounts);
-          const score = new EvaluationCollector();
-          let effective = 0;
-          let overKill = 0;
-          let friendlyFire = 0;
-          for (const target of targets) {
-            const remaining = target.hp;
-            const damage = Math.min(average, remaining);
-            if (target.side === me.side)
-              friendlyFire += damage;
-            else
-              effective += damage;
-            overKill += Math.max(average - remaining, 0);
-          }
-          score.addEval(me, effective, DamageEnemies);
-          score.addEval(me, overKill, OverKillEnemies);
-          score.addEval(me, friendlyFire, DamageAllies);
-          return { action, config, positioning, score };
-        }).filter(isDefined)
-      );
-    }
-  };
-
-  // src/ai/HealingRule.ts
-  var HealingRule = class {
-    evaluateActions(g, me, actions) {
-      const allies = Array.from(g.combatants.keys()).filter(
-        (who) => who.side === me.side
-      );
-      return actions.flatMap(
-        (action) => action.generateHealingConfigs(allies).map(({ config, positioning }) => {
-          const amounts = action.getHeal(config);
-          if (!amounts)
-            return;
-          const targets = action.getAffected(config);
-          if (!targets)
-            return;
-          const { average } = describeDice(amounts);
-          const score = new EvaluationCollector();
-          let effectiveSelf = 0;
-          let effective = 0;
-          let overHeal = 0;
-          for (const target of targets) {
-            const missing = target.hpMax - target.hp;
-            const heal = Math.min(average, missing);
-            if (target === me)
-              effectiveSelf += heal;
-            else
-              effective += heal;
-            overHeal += Math.max(average - missing, 0);
-          }
-          if (effective + effectiveSelf <= 0)
-            return;
-          score.addEval(me, effectiveSelf, HealSelf);
-          score.addEval(me, effective, HealAllies);
-          score.addEval(me, overHeal, OverHealAllies);
-          return { action, config, positioning, score };
-        }).filter(isDefined)
-      );
-    }
-  };
-
-  // src/ai/data.ts
-  var defaultAIRules = [new HealingRule(), new DamageRule()];
-
-  // src/Monster.ts
-  var Monster = class extends AbstractCombatant {
-    constructor(g, name, cr, type, size, img, hpMax, rules = defaultAIRules) {
-      super(g, name, {
-        type,
-        size,
-        img,
-        side: 1,
-        cr,
-        hpMax,
-        rules
-      });
-    }
-    don(item, giveProficiency = false) {
-      if (giveProficiency)
-        this.addProficiency(item, "proficient");
-      return super.don(item);
-    }
-  };
-
-  // src/features/SimpleFeature.ts
-  var SimpleFeature = class {
-    constructor(name, text, setup) {
-      this.name = name;
-      this.text = text;
-      this.setup = setup;
-    }
-  };
+  // src/types/DamageType.ts
+  var MundaneDamageTypes = [
+    "bludgeoning",
+    "piercing",
+    "slashing"
+  ];
 
   // src/monsters/common.ts
   var KeenHearing = new SimpleFeature(
@@ -6013,681 +6635,6 @@
       return false;
     return action.weapon.rangeCategory === "melee";
   }
-
-  // src/monsters/Badger.ts
-  var Bite = class extends AbstractWeapon {
-    constructor(g) {
-      super(g, "Bite", "natural", "melee", {
-        type: "flat",
-        amount: 1,
-        damageType: "piercing"
-      });
-      this.hands = 0;
-      this.forceAbilityScore = "dex";
-    }
-  };
-  var Badger = class extends Monster {
-    constructor(g) {
-      super(g, "badger", 0, "beast", SizeCategory_default.Tiny, badger_default, 3);
-      this.movement.set("speed", 20);
-      this.movement.set("burrow", 5);
-      this.setAbilityScores(4, 11, 12, 2, 12, 5);
-      this.senses.set("darkvision", 30);
-      this.addFeature(KeenSmell);
-      this.naturalWeapons.add(new Bite(g));
-    }
-  };
-
-  // src/img/tok/bat.png
-  var bat_default = "./bat-N3PIK5K4.png";
-
-  // src/monsters/Bat.ts
-  var Bite2 = class extends AbstractWeapon {
-    constructor(g) {
-      super(g, "Bite", "natural", "melee", {
-        type: "flat",
-        amount: 1,
-        damageType: "piercing"
-      });
-      this.hands = 0;
-      this.forceAbilityScore = "dex";
-    }
-  };
-  var Bat = class extends Monster {
-    constructor(g) {
-      super(g, "bat", 0, "beast", SizeCategory_default.Tiny, bat_default, 1);
-      this.movement.set("speed", 5);
-      this.movement.set("fly", 30);
-      this.setAbilityScores(2, 15, 8, 2, 12, 4);
-      this.senses.set("blindsight", 60);
-      this.addFeature(KeenHearing);
-      this.naturalWeapons.add(new Bite2(g));
-    }
-  };
-
-  // src/img/act/eldritch-burst.svg
-  var eldritch_burst_default = "./eldritch-burst-CNPKMEMY.svg";
-
-  // src/img/spl/counterspell.svg
-  var counterspell_default = "./counterspell-XBGTQHAN.svg";
-
-  // src/img/spl/hellish-rebuke.svg
-  var hellish_rebuke_default = "./hellish-rebuke-2F7LGW6H.svg";
-
-  // src/img/tok/boss/birnotec.png
-  var birnotec_default = "./birnotec-JGKE3FD4.png";
-
-  // src/spells/InnateSpellcasting.ts
-  var InnateSpellcasting = class {
-    constructor(name, ability, getResourceForSpell, icon) {
-      this.name = name;
-      this.ability = ability;
-      this.getResourceForSpell = getResourceForSpell;
-      this.icon = icon;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    addCastableSpell() {
-    }
-    getMinSlot(spell) {
-      return spell.level;
-    }
-    getMaxSlot(spell) {
-      return spell.level;
-    }
-    getSaveType() {
-      return { type: "ability", ability: this.ability };
-    }
-  };
-
-  // src/img/spl/armor-of-agathys.svg
-  var armor_of_agathys_default = "./armor-of-agathys-V2ZDSJZ3.svg";
-
-  // src/types/EffectTag.ts
-  var efSet = (...items) => new Set(items);
-
-  // src/utils/time.ts
-  var TURNS_PER_MINUTE = 10;
-  var minutes = (n) => n * TURNS_PER_MINUTE;
-  var hours = (n) => minutes(n * 60);
-
-  // src/spells/level1/ArmorOfAgathys.ts
-  var ArmorOfAgathysIcon = makeIcon(armor_of_agathys_default, DamageColours.cold);
-  var ArmorOfAgathysEffect = new Effect(
-    "Armor of Agathys",
-    "turnStart",
-    (g) => {
-      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-        const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
-        if (config && pre.target.temporaryHPSource === ArmorOfAgathysEffect && pre.tags.has("melee"))
-          interrupt.add(
-            new EvaluateLater(pre.who, ArmorOfAgathysEffect, async () => {
-              await g.damage(
-                ArmorOfAgathysEffect,
-                "cold",
-                { attacker: pre.target, target: pre.who },
-                [["cold", config.count]]
-              );
-            })
-          );
-      });
-      g.events.on(
-        "CombatantDamaged",
-        ({ detail: { who, temporaryHPSource, interrupt } }) => {
-          if (temporaryHPSource === ArmorOfAgathysEffect && who.temporaryHP <= 0)
-            interrupt.add(
-              new EvaluateLater(who, ArmorOfAgathysEffect, async () => {
-                await who.removeEffect(ArmorOfAgathysEffect);
-              })
-            );
-        }
-      );
-    },
-    { icon: ArmorOfAgathysIcon, tags: efSet("magic") }
-  );
-  var ArmorOfAgathys = scalingSpell({
-    status: "implemented",
-    name: "Armor of Agathys",
-    icon: ArmorOfAgathysIcon,
-    level: 1,
-    school: "Abjuration",
-    v: true,
-    s: true,
-    m: "a cup of water",
-    lists: ["Warlock"],
-    description: `A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
-
-  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, { slot }) {
-      const count = slot * 5;
-      if (await g.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
-        const duration = hours(1);
-        await caster.addEffect(ArmorOfAgathysEffect, { count, duration }, caster);
-      }
-    }
-  });
-  var ArmorOfAgathys_default = ArmorOfAgathys;
-
-  // src/types/AttackTag.ts
-  var atSet = (...items) => new Set(items);
-
-  // src/spells/SpellAttack.ts
-  var SpellAttack = class {
-    constructor(g, caster, spell, method, type, config) {
-      this.g = g;
-      this.caster = caster;
-      this.spell = spell;
-      this.method = method;
-      this.type = type;
-      this.config = config;
-    }
-    async attack(target) {
-      const { caster: who, method, spell, type } = this;
-      this.attackResult = await this.g.attack({
-        who,
-        target,
-        ability: method.ability,
-        tags: atSet(type, "spell", "magical"),
-        spell,
-        method
-      });
-      return this.attackResult;
-    }
-    async getDamage(target) {
-      if (!this.attackResult)
-        throw new Error("Run .attack() first");
-      const { attack, critical, outcome } = this.attackResult;
-      if (outcome === "cancelled")
-        return;
-      const { g, caster: attacker, config, method, spell } = this;
-      const damage = spell.getDamage(g, attacker, method, config);
-      if (damage) {
-        const amounts = [];
-        let first = true;
-        for (const { type, amount, damageType } of damage) {
-          if (first) {
-            this.baseDamageType = damageType;
-            first = false;
-          }
-          if (type === "dice") {
-            const { count, size } = amount;
-            const roll = await g.rollDamage(
-              count,
-              {
-                source: spell,
-                size,
-                damageType,
-                attacker,
-                target,
-                spell,
-                method,
-                tags: attack.pre.tags
-              },
-              critical
-            );
-            amounts.push([damageType, roll]);
-          } else
-            amounts.push([damageType, amount]);
-        }
-        return amounts;
-      }
-    }
-    async damage(target, initialiser, startingMultiplier) {
-      if (!this.attackResult)
-        throw new Error("Run .attack() first");
-      const { attack, critical, hit } = this.attackResult;
-      if (!hit)
-        return;
-      const { g, baseDamageType, caster: attacker, method, spell } = this;
-      if (!baseDamageType)
-        throw new Error("Run .getDamage() first");
-      return g.damage(
-        spell,
-        baseDamageType,
-        { attack, attacker, target, critical, spell, method },
-        initialiser,
-        startingMultiplier
-      );
-    }
-  };
-
-  // src/monsters/fiendishParty/Birnotec.ts
-  var getEldritchBurstArea = (who) => ({
-    type: "within",
-    radius: 5,
-    who
-  });
-  var BurstIcon = makeIcon(eldritch_burst_default, DamageColours.force);
-  var EldritchBurstSpell = simpleSpell({
-    status: "implemented",
-    name: "Eldritch Burst",
-    icon: BurstIcon,
-    level: 0,
-    school: "Evocation",
-    lists: ["Warlock"],
-    description: `Make a ranged spell attack against the target. On a hit, the target takes 2d10 force damage. All other creatures within 5 ft. must make a Dexterity save or take 1d10 force damage.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
-    getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(target)],
-    getDamage: () => [_dd(2, 10, "force")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => g.getInside(getEldritchBurstArea(target)),
-    async apply(g, caster, method, { target }) {
-      const rsa = new SpellAttack(
-        g,
-        caster,
-        EldritchBurstSpell,
-        BirnotecSpellcasting,
-        "ranged",
-        { target }
-      );
-      const { outcome, attack, hit, critical } = await rsa.attack(target);
-      if (outcome === "cancelled")
-        return;
-      const { target: finalTarget } = attack.pre;
-      if (hit) {
-        const hitDamage = await rsa.getDamage(finalTarget);
-        await rsa.damage(finalTarget, hitDamage);
-      }
-      const damage = await g.rollDamage(
-        1,
-        {
-          size: 10,
-          source: this,
-          attacker: caster,
-          damageType: "force",
-          tags: atSet("magical", "ranged", "spell")
-        },
-        critical
-      );
-      for (const other of g.getInside(getEldritchBurstArea(finalTarget))) {
-        if (other === finalTarget)
-          continue;
-        const { damageResponse } = await g.save({
-          source: EldritchBurstSpell,
-          type: { type: "flat", dc: 15 },
-          attacker: caster,
-          who: other,
-          ability: "dex",
-          spell: EldritchBurstSpell,
-          method,
-          save: "zero",
-          tags: ["magic"]
-        });
-        await g.damage(
-          this,
-          "force",
-          { attacker: caster, target: other, spell: EldritchBurstSpell, method },
-          [["force", damage]],
-          damageResponse
-        );
-      }
-    }
-  });
-  var BirnotecSpellcasting = new InnateSpellcasting(
-    "Spellcasting",
-    "cha",
-    () => void 0
-  );
-  var EldritchBurst = new SimpleFeature(
-    "Eldritch Burst",
-    `Ranged Spell Attack: +8 to hit, range 120 ft., one target. Hit: 11 (2d10) force damage. All other creatures within 5 ft. must make a DC 15 Dexterity save or take 5 (1d10) force damage.`,
-    (g, me) => {
-      me.spellcastingMethods.add(BirnotecSpellcasting);
-      me.preparedSpells.add(EldritchBurstSpell);
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me)
-          actions.push(
-            new CastSpell(g, me, BirnotecSpellcasting, EldritchBurstSpell)
-          );
-      });
-    }
-  );
-  var ArmorOfAgathys2 = new SimpleFeature(
-    "Armor of Agathys",
-    `Birnotec has 15 temporary hit points. While these persist, any creature that hits him in melee takes 15 cold damage.`,
-    (g, me) => {
-      g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
-        interrupt.add(
-          new EvaluateLater(me, ArmorOfAgathys2, async () => {
-            await ArmorOfAgathys_default.apply(g, me, BirnotecSpellcasting, {
-              slot: 3
-            });
-          })
-        );
-      });
-    }
-  );
-  var AntimagicIcon = makeIcon(counterspell_default);
-  var AntimagicProdigyAction = class extends AbstractAction {
-    constructor(g, actor, dc, success) {
-      super(
-        g,
-        actor,
-        "Antimagic Prodigy",
-        "implemented",
-        { target: new TargetResolver(g, Infinity, [isEnemy]) },
-        {
-          time: "reaction",
-          icon: AntimagicIcon,
-          description: `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`
-        }
-      );
-      this.dc = dc;
-      this.success = success;
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
-      const { g, actor, dc, success } = this;
-      const save = await g.abilityCheck(dc, {
-        who: target,
-        attacker: actor,
-        skill: "Arcana",
-        ability: "int",
-        tags: chSet("counterspell")
-      });
-      if (save.outcome === "fail") {
-        success.add("fail", AntimagicProdigy);
-        g.text(new MessageBuilder().co(actor).text(" counters the spell."));
-      }
-    }
-  };
-  var AntimagicProdigy = new SimpleFeature(
-    "Antimagic Prodigy",
-    `When an enemy casts a spell, Birnotec forces them to make a DC 15 Arcana check or lose the spell.`,
-    (g, me) => {
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me)
-          actions.push(
-            new AntimagicProdigyAction(g, me, 15, new SuccessResponseCollector())
-          );
-      });
-      g.events.on(
-        "SpellCast",
-        ({ detail: { who: target, interrupt, success } }) => {
-          const action = new AntimagicProdigyAction(g, me, 15, success);
-          const config = { target };
-          if (checkConfig(g, action, config))
-            interrupt.add(
-              new YesNoChoice(
-                me,
-                AntimagicProdigy,
-                "Antimagic Prodigy",
-                `Use ${me.name}'s reaction to attempt to counter the spell?`,
-                async () => {
-                  await g.act(action, config);
-                }
-              )
-            );
-        }
-      );
-    }
-  );
-  var RebukeIcon = makeIcon(hellish_rebuke_default, DamageColours.fire);
-  var HellishRebukeAction = class extends AbstractAction {
-    constructor(g, actor, dc) {
-      super(
-        g,
-        actor,
-        "Hellish Rebuke",
-        "implemented",
-        { target: new TargetResolver(g, Infinity, [isEnemy]) },
-        {
-          time: "reaction",
-          icon: RebukeIcon,
-          description: `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
-          tags: ["harmful", "spell"]
-        }
-      );
-      this.dc = dc;
-    }
-    generateAttackConfigs(targets) {
-      return targets.map((target) => ({
-        config: { target },
-        positioning: poSet()
-      }));
-    }
-    getDamage() {
-      return [_dd(2, 10, "fire")];
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
-      const { g, actor: attacker, dc } = this;
-      const damage = await g.rollDamage(2, {
-        source: HellishRebuke,
-        size: 10,
-        attacker,
-        target,
-        damageType: "fire",
-        tags: atSet("magical", "spell")
-      });
-      const { damageResponse } = await g.save({
-        source: HellishRebuke,
-        type: { type: "flat", dc },
-        who: target,
-        attacker,
-        ability: "dex",
-        tags: ["magic"]
-      });
-      await g.damage(
-        HellishRebuke,
-        "fire",
-        { attacker, target },
-        [["fire", damage]],
-        damageResponse
-      );
-    }
-  };
-  var HellishRebuke = new SimpleFeature(
-    "Hellish Rebuke",
-    `When an enemy damages Birnotec, they must make a DC 15 Dexterity save or take 11 (2d10) fire damage, or half on a success.`,
-    (g, me) => {
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me)
-          actions.push(new HellishRebukeAction(g, me, 15));
-      });
-      g.events.on(
-        "CombatantDamaged",
-        ({ detail: { who, attacker, interrupt } }) => {
-          if (who === me) {
-            const action = new HellishRebukeAction(g, me, 15);
-            const config = { target: attacker };
-            if (checkConfig(g, action, config))
-              interrupt.add(
-                new YesNoChoice(
-                  me,
-                  HellishRebuke,
-                  "Hellish Rebuke",
-                  `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                  async () => {
-                    await g.act(action, config);
-                  }
-                )
-              );
-          }
-        }
-      );
-    }
-  );
-  var Birnotec = class extends Monster {
-    constructor(g) {
-      super(g, "Birnotec", 5, "humanoid", SizeCategory_default.Medium, birnotec_default, 35);
-      this.diesAtZero = false;
-      this.movement.set("speed", 30);
-      this.setAbilityScores(6, 15, 8, 12, 13, 20);
-      this.pb = 3;
-      this.saveProficiencies.add("wis");
-      this.saveProficiencies.add("cha");
-      this.addProficiency("Arcana", "proficient");
-      this.addProficiency("Nature", "proficient");
-      this.damageResponses.set("poison", "immune");
-      this.conditionImmunities.add("Poisoned");
-      this.languages.add("Abyssal");
-      this.languages.add("Common");
-      this.addFeature(ArmorOfAgathys2);
-      this.addFeature(EldritchBurst);
-      this.addFeature(AntimagicProdigy);
-      this.addFeature(HellishRebuke);
-    }
-  };
-
-  // src/img/act/wreathed-in-shadow.svg
-  var wreathed_in_shadow_default = "./wreathed-in-shadow-DXCZM5CC.svg";
-
-  // src/img/tok/boss/kay.png
-  var kay_default = "./kay-LUSXSSD5.png";
-
-  // src/features/Evasion.ts
-  var Evasion = new SimpleFeature(
-    "Evasion",
-    `Beginning at 7th level, you can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or an ice storm spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.`,
-    (g, me) => {
-      g.events.on(
-        "BeforeSave",
-        ({
-          detail: { who, ability, failDamageResponse, saveDamageResponse }
-        }) => {
-          if (who === me && ability === "dex" && saveDamageResponse.fallback === "half") {
-            failDamageResponse.add("half", Evasion);
-            saveDamageResponse.add("zero", Evasion);
-          }
-        }
-      );
-    }
-  );
-  var Evasion_default = Evasion;
-
-  // src/img/eq/arrow.svg
-  var arrow_default = "./arrow-RG5OYDZ5.svg";
-
-  // src/img/eq/bolt.svg
-  var bolt_default = "./bolt-RV5OQWXW.svg";
-
-  // src/items/ammunition.ts
-  var AbstractAmmo = class extends AbstractItem {
-    constructor(g, name, ammunitionTag, quantity, iconUrl) {
-      super(g, "ammo", name, 0, iconUrl);
-      this.ammunitionTag = ammunitionTag;
-      this.quantity = quantity;
-    }
-  };
-  var Arrow = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "arrow", "bow", quantity, arrow_default);
-    }
-  };
-  var BlowgunNeedle = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "blowgun needle", "blowgun", quantity);
-    }
-  };
-  var CrossbowBolt = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "crossbow bolt", "crossbow", quantity, bolt_default);
-    }
-  };
-  var SlingBullet = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "sling bullet", "sling", quantity);
-    }
-  };
-
-  // src/items/armor.ts
-  var AbstractArmor = class extends AbstractItem {
-    constructor(g, name, category, ac, stealthDisadvantage = false, minimumStrength = 0, iconUrl) {
-      super(g, "armor", name, 0, iconUrl);
-      this.category = category;
-      this.ac = ac;
-      this.stealthDisadvantage = stealthDisadvantage;
-      this.minimumStrength = minimumStrength;
-    }
-  };
-  var PaddedArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "padded armor", "light", 11, true);
-    }
-  };
-  var LeatherArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "leather armor", "light", 11);
-    }
-  };
-  var StuddedLeatherArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "studded leather armor", "light", 12);
-    }
-  };
-  var HideArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "hide armor", "medium", 12);
-    }
-  };
-  var ChainShirtArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "chain shirt armor", "medium", 13);
-    }
-  };
-  var ScaleMailArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "scale mail armor", "medium", 14, true);
-    }
-  };
-  var BreastplateArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "breastplate armor", "medium", 14);
-    }
-  };
-  var HalfPlateArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "half plate armor", "medium", 15, true);
-    }
-  };
-  var RingMailArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "ring mail armor", "heavy", 14, true);
-    }
-  };
-  var ChainMailArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "chain mail armor", "heavy", 16, true, 13);
-    }
-  };
-  var SplintArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "splint armor", "heavy", 17, true, 15);
-    }
-  };
-  var PlateArmor = class extends AbstractArmor {
-    constructor(g) {
-      super(g, "plate armor", "heavy", 18, true, 15);
-    }
-  };
-  var Shield = class extends AbstractArmor {
-    constructor(g, iconUrl) {
-      super(g, "shield", "shield", 2, false, void 0, iconUrl);
-      this.hands = 1;
-    }
-  };
-
-  // src/types/DamageType.ts
-  var MundaneDamageTypes = [
-    "bludgeoning",
-    "piercing",
-    "slashing"
-  ];
 
   // src/monsters/fiendishParty/Kay.ts
   var hiddenName = "Shrouded Figure";
@@ -8090,25 +8037,64 @@
     }
   };
 
+  // src/img/tok/badger.png
+  var badger_default = "./badger-53MEBA7R.png";
+
+  // src/img/tok/bat.png
+  var bat_default = "./bat-N3PIK5K4.png";
+
   // src/img/tok/giant-badger.png
   var giant_badger_default = "./giant-badger-R3QZK5QP.png";
 
-  // src/monsters/GiantBadger.ts
-  var Bite3 = class extends AbstractWeapon {
-    constructor(g) {
-      super(g, "Bite", "natural", "melee", _dd(1, 6, "piercing"));
-      this.hands = 0;
+  // src/monsters/NaturalWeapon.ts
+  var NaturalWeapon = class extends AbstractWeapon {
+    constructor(g, name, toHit, damage) {
+      super(g, name, "natural", "melee", damage);
+      if (typeof toHit === "string")
+        this.forceAbilityScore = toHit;
+      else {
+      }
     }
   };
-  var Claws = class extends AbstractWeapon {
+
+  // src/monsters/srd/beast.ts
+  var Badger = class extends Monster {
     constructor(g) {
-      super(g, "Claws", "natural", "melee", _dd(2, 4, "slashing"));
-      this.hands = 0;
+      super(g, "badger", 0, "beast", SizeCategory_default.Tiny, badger_default, 3);
+      this.movement.set("speed", 20);
+      this.movement.set("burrow", 5);
+      this.setAbilityScores(4, 11, 12, 2, 12, 5);
+      this.senses.set("darkvision", 30);
+      this.addFeature(KeenSmell);
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Bite", "dex", _fd(1, "piercing"))
+      );
+    }
+  };
+  var Bat = class extends Monster {
+    constructor(g) {
+      super(g, "bat", 0, "beast", SizeCategory_default.Tiny, bat_default, 1);
+      this.movement.set("speed", 5);
+      this.movement.set("fly", 30);
+      this.setAbilityScores(2, 15, 8, 2, 12, 4);
+      this.senses.set("blindsight", 60);
+      this.addFeature(KeenHearing);
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Bite", 0, _fd(1, "piercing"))
+      );
     }
   };
   var GiantBadger = class extends Monster {
     constructor(g) {
-      super(g, "giant badger", 0.25, "beast", SizeCategory_default.Medium, giant_badger_default, 13);
+      super(
+        g,
+        "giant badger",
+        0.25,
+        "beast",
+        SizeCategory_default.Medium,
+        giant_badger_default,
+        13
+      );
       this.movement.set("speed", 30);
       this.movement.set("burrow", 10);
       this.setAbilityScores(13, 10, 15, 2, 12, 5);
@@ -8127,15 +8113,19 @@
           }
         )
       );
-      this.naturalWeapons.add(new Bite3(g));
-      this.naturalWeapons.add(new Claws(g));
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Bite", "str", _dd(1, 6, "piercing"))
+      );
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Claws", "str", _dd(2, 4, "slashing"))
+      );
     }
   };
 
   // src/img/tok/goblin.png
   var goblin_default = "./goblin-KBFKWGXU.png";
 
-  // src/monsters/Goblin.ts
+  // src/monsters/srd/goblinoid.ts
   var NimbleEscape = new SimpleFeature(
     "Nimble Escape",
     `The goblin can take the Disengage or Hide action as a bonus action on each of its turns.`,
@@ -8185,7 +8175,7 @@
   // src/img/tok/thug.png
   var thug_default = "./thug-IXRM6PKF.png";
 
-  // src/monsters/Thug.ts
+  // src/monsters/srd/humanoid.ts
   var Thug = class extends Monster {
     constructor(g, wieldingCrossbow = false) {
       super(g, "thug", 0.5, "humanoid", SizeCategory_default.Medium, thug_default, 32);
@@ -8749,7 +8739,7 @@
         "unarmed strike",
         "natural",
         "melee",
-        { type: "flat", amount: 1, damageType: "bludgeoning" },
+        _fd(1, "bludgeoning"),
         void 0,
         punch_default
       );
@@ -12462,7 +12452,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
   // src/spells/level1/MagicMissile.ts
   var getDamage = (slot) => [
     _dd(slot + 2, 4, "force"),
-    { type: "flat", amount: slot + 2, damageType: "force" }
+    _fd(slot + 2, "force")
   ];
   var MagicMissile = scalingSpell({
     status: "implemented",

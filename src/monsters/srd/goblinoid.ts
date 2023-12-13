@@ -1,14 +1,14 @@
-import tokenUrl from "@img/tok/goblin.png";
+import goblinUrl from "@img/tok/goblin.png";
 
-import DisengageAction from "../actions/DisengageAction";
-import Engine from "../Engine";
-import SimpleFeature from "../features/SimpleFeature";
-import { Arrow } from "../items/ammunition";
-import { LeatherArmor, Shield } from "../items/armor";
-import { Scimitar, Shortbow } from "../items/weapons";
-import Monster from "../Monster";
-import SizeCategory from "../types/SizeCategory";
-import { featureNotComplete } from "../utils/env";
+import DisengageAction from "../../actions/DisengageAction";
+import Engine from "../../Engine";
+import SimpleFeature from "../../features/SimpleFeature";
+import { Arrow } from "../../items/ammunition";
+import { LeatherArmor, Shield } from "../../items/armor";
+import { Scimitar, Shortbow } from "../../items/weapons";
+import Monster from "../../Monster";
+import SizeCategory from "../../types/SizeCategory";
+import { featureNotComplete } from "../../utils/env";
 
 const NimbleEscape = new SimpleFeature(
   "Nimble Escape",
@@ -31,9 +31,9 @@ const NimbleEscape = new SimpleFeature(
   },
 );
 
-export default class Goblin extends Monster {
+export class Goblin extends Monster {
   constructor(g: Engine, wieldingBow = false) {
-    super(g, "goblin", 0.25, "humanoid", SizeCategory.Small, tokenUrl, 7);
+    super(g, "goblin", 0.25, "humanoid", SizeCategory.Small, goblinUrl, 7);
     this.movement.set("speed", 30);
     this.addProficiency("Stealth", "expertise");
     this.senses.set("darkvision", 60);

@@ -6,12 +6,12 @@ import { canSee } from "../../filters";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import { atSet } from "../../types/AttackTag";
 import DamageAmount from "../../types/DamageAmount";
-import { _dd } from "../../utils/dice";
+import { _dd, _fd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
 const getDamage = (slot: number): DamageAmount[] => [
   _dd(slot + 2, 4, "force"),
-  { type: "flat", amount: slot + 2, damageType: "force" },
+  _fd(slot + 2, "force"),
 ];
 
 const MagicMissile = scalingSpell<HasAllocations>({

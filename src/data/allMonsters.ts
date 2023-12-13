@@ -1,13 +1,11 @@
-import Badger from "../monsters/Badger";
-import Bat from "../monsters/Bat";
 import Birnotec from "../monsters/fiendishParty/Birnotec";
 import Kay from "../monsters/fiendishParty/Kay";
 import OGonrit from "../monsters/fiendishParty/OGonrit";
 import Yulash from "../monsters/fiendishParty/Yulash";
 import Zafron from "../monsters/fiendishParty/Zafron";
-import GiantBadger from "../monsters/GiantBadger";
-import Goblin from "../monsters/Goblin";
-import Thug from "../monsters/Thug";
+import { Badger, Bat, GiantBadger } from "../monsters/srd/beast";
+import { Goblin } from "../monsters/srd/goblinoid";
+import { Thug } from "../monsters/srd/humanoid";
 import { CombatantCreator } from "./BattleTemplate";
 
 const allMonsters = {

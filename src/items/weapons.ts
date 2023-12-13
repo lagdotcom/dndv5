@@ -19,7 +19,7 @@ import {
   WeaponProperty,
   WeaponRangeCategory,
 } from "../types/Item";
-import { _dd } from "../utils/dice";
+import { _dd, _fd } from "../utils/dice";
 import { SetInitialiser } from "../utils/set";
 import { distance } from "../utils/units";
 import AbstractItem from "./AbstractItem";
@@ -550,7 +550,7 @@ export class Blowgun extends AbstractWeapon {
       "blowgun",
       "martial",
       "ranged",
-      { type: "flat", amount: 1, damageType: "piercing" },
+      _fd(1, "piercing"),
       ["ammunition", "loading"],
       undefined, // TODO [ICON]
       25,
@@ -618,7 +618,7 @@ export class Net extends AbstractWeapon {
       "net",
       "martial",
       "ranged",
-      { type: "flat", amount: 0, damageType: "bludgeoning" },
+      _fd(0, "bludgeoning"),
       ["thrown"],
       undefined, // TODO [ICON]
       5,
