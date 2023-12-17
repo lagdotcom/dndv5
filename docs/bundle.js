@@ -6619,6 +6619,22 @@
     "piercing",
     "slashing"
   ];
+  var MagicDamageTypes = [
+    "acid",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "necrotic",
+    "poison",
+    "psychic",
+    "radiant",
+    "thunder"
+  ];
+  var DamageTypes = [
+    ...MundaneDamageTypes,
+    ...MagicDamageTypes
+  ];
 
   // src/monsters/common.ts
   var KeenHearing = new SimpleFeature(
@@ -9315,6 +9331,51 @@
   };
   var ofTheDeep_default = ofTheDeep;
 
+  // src/enchantments/resistantArmor.ts
+  var resistanceTo = (type) => ({
+    name: `${type} resistance`,
+    setup(g, item) {
+      item.name = `${item.name} of resistance to ${type}`;
+      item.rarity = "Rare";
+      item.attunement = true;
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (isEquipmentAttuned(item, who) && damageType === type)
+            response.add("resist", this);
+        }
+      );
+    }
+  });
+  var acidResistance = resistanceTo("acid");
+  var coldResistance = resistanceTo("cold");
+  var fireResistance = resistanceTo("fire");
+  var forceResistance = resistanceTo("force");
+  var lightningResistance = resistanceTo("lightning");
+  var necroticResistance = resistanceTo("necrotic");
+  var poisonResistance = resistanceTo("poison");
+  var psychicResistance = resistanceTo("psychic");
+  var radiantResistance = resistanceTo("radiant");
+  var thunderResistance = resistanceTo("thunder");
+  var vulnerability = (type) => ({
+    name: `vulnerability (${type})`,
+    setup(g, item) {
+      item.name = `${item.name} of vulnerability (${type})`;
+      item.rarity = "Rare";
+      item.attunement = true;
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (isEquipmentAttuned(item, who) && isA(damageType, MundaneDamageTypes))
+            response.add(damageType === type ? "resist" : "vulnerable", this);
+        }
+      );
+    }
+  });
+  var vulnerabilityBludgeoning = vulnerability("bludgeoning");
+  var vulnerabilityPiercing = vulnerability("piercing");
+  var vulnerabilitySlashing = vulnerability("slashing");
+
   // src/enchantments/silvered.ts
   var silvered = {
     name: "silvered",
@@ -9412,18 +9473,34 @@
 
   // src/data/allEnchantments.ts
   var allEnchantments = {
+    // armor
     adamantine: adamantine_default,
-    "dark sun": darkSun_default,
-    "of the deep": ofTheDeep_default,
     "+1 armor": armorPlus1,
     "+2 armor": armorPlus2,
     "+3 armor": armorPlus3,
+    "acid resistance": acidResistance,
+    "cold resistance": coldResistance,
+    "fire resistance": fireResistance,
+    "force resistance": forceResistance,
+    "lightning resistance": lightningResistance,
+    "necrotic resistance": necroticResistance,
+    "poison resistance": poisonResistance,
+    "psychic resistance": psychicResistance,
+    "radiant resistance": radiantResistance,
+    "thunder resistance": thunderResistance,
+    "vulnerability (bludgeoning)": vulnerabilityBludgeoning,
+    "vulnerability (piercing)": vulnerabilityPiercing,
+    "vulnerability (slashing)": vulnerabilitySlashing,
+    // weapon
     "+1 weapon": weaponPlus1,
     "+2 weapon": weaponPlus2,
     "+3 weapon": weaponPlus3,
-    silvered: silvered_default,
     "chaotic burst": chaoticBurst,
-    vicious
+    silvered: silvered_default,
+    vicious,
+    // homebrew
+    "dark sun": darkSun_default,
+    "of the deep": ofTheDeep_default
   };
   var allEnchantments_default = allEnchantments;
 
@@ -9579,6 +9656,38 @@
             response.add("resist", this);
         }
       );
+    }
+  };
+
+  // src/items/srd/wondrous/BracersOfArchery.ts
+  var BracersOfArchery = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Bracers of Archery");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who)) {
+          who.weaponProficiencies.add("longbow");
+          who.weaponProficiencies.add("shortbow");
+        }
+      });
+      g.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
+        if (isEquipmentAttuned(this, attacker) && (weapon == null ? void 0 : weapon.ammunitionTag) === "bow")
+          bonus.add(2, this);
+      });
+    }
+  };
+
+  // src/items/srd/wondrous/BracersOfDefense.ts
+  var BracersOfDefense = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Bracers of Defense");
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("GetAC", ({ detail }) => {
+        if (isEquipmentAttuned(this, detail.who) && !detail.who.armor && !detail.who.shield)
+          detail.bonus.add(2, this);
+      });
     }
   };
 
@@ -10263,6 +10372,8 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "belt of cloud giant strength": (g) => new BeltOfGiantStrength(g, "Cloud"),
     "belt of storm giant strength": (g) => new BeltOfGiantStrength(g, "Storm"),
     "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
+    "bracers of archery": (g) => new BracersOfArchery(g),
+    "bracers of defense": (g) => new BracersOfDefense(g),
     "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
     "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
     "cloak of protection": (g) => new CloakOfProtection(g),
@@ -18120,7 +18231,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var special_breath_default = "./special-breath-PGWJ2QD5.svg";
 
   // src/races/common.ts
-  function poisonResistance(name, text) {
+  function poisonResistanceFeature(name, text) {
     const feature = new SimpleFeature(name, text, (g, me) => {
       g.events.on("BeforeSave", ({ detail: { who, diceType, tags } }) => {
         if (who === me && tags.has("poison"))
@@ -18411,7 +18522,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   var GoldDragonborn = makeAncestry("Gold", "fire");
 
   // src/races/Dwarf.ts
-  var DwarvenResilience = poisonResistance(
+  var DwarvenResilience = poisonResistanceFeature(
     "Dwarven Resilience",
     `You have advantage on saving throws against poison, and you have resistance against poison damage.`
   );
@@ -18742,7 +18853,7 @@ When you create a device, choose one of the following options:
     size: SizeCategory_default.Small,
     features: /* @__PURE__ */ new Set([NaturallyStealthy])
   };
-  var StoutResilience = poisonResistance(
+  var StoutResilience = poisonResistanceFeature(
     "Stout Resilience",
     `You have advantage on saving throws against poison, and you have resistance against poison damage.`
   );

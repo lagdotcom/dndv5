@@ -4,7 +4,7 @@ import YesNoChoice from "../interruptions/YesNoChoice";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
-import { poisonResistance } from "./common";
+import { poisonResistanceFeature } from "./common";
 
 const Lucky = new SimpleFeature(
   "Lucky",
@@ -75,7 +75,7 @@ export const LightfootHalfling: PCRace = {
   features: new Set([NaturallyStealthy]),
 };
 
-const StoutResilience = poisonResistance(
+const StoutResilience = poisonResistanceFeature(
   "Stout Resilience",
   `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
 );

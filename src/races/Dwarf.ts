@@ -4,9 +4,9 @@ import SimpleFeature from "../features/SimpleFeature";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
-import { poisonResistance } from "./common";
+import { poisonResistanceFeature } from "./common";
 
-const DwarvenResilience = poisonResistance(
+const DwarvenResilience = poisonResistanceFeature(
   "Dwarven Resilience",
   `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
 );

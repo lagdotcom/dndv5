@@ -3,7 +3,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import DamageType from "../types/DamageType";
 import LanguageName from "../types/LanguageName";
 
-export function poisonResistance(name: string, text: string) {
+export function poisonResistanceFeature(name: string, text: string) {
   const feature = new SimpleFeature(name, text, (g, me) => {
     g.events.on("BeforeSave", ({ detail: { who, diceType, tags } }) => {
       if (who === me && tags.has("poison")) diceType.add("advantage", feature);

@@ -28,6 +28,8 @@ import {
   HeadbandOfIntellect,
 } from "../items/srd/wondrous/baseStatItems";
 import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
+import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
+import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
 import { WandOfWeb } from "../items/wands";
 import {
   Battleaxe,
@@ -171,6 +173,8 @@ const allItems = {
   "belt of cloud giant strength": (g) => new BeltOfGiantStrength(g, "Cloud"),
   "belt of storm giant strength": (g) => new BeltOfGiantStrength(g, "Storm"),
   "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
+  "bracers of archery": (g) => new BracersOfArchery(g),
+  "bracers of defense": (g) => new BracersOfDefense(g),
   "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
   "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
   "cloak of protection": (g) => new CloakOfProtection(g),
