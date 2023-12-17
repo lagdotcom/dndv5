@@ -1,3 +1,5 @@
+import { MonsterName } from "../../data/allMonsters";
+import { PCName } from "../../data/allPCs";
 import BattleTemplate, {
   initialiseFromTemplate,
 } from "../../data/BattleTemplate";
@@ -7,7 +9,7 @@ import Point from "../../types/Point";
 import { exceptFor, patchAt } from "../../utils/array";
 import { enumerate } from "../../utils/numbers";
 import useMenu from "../hooks/useMenu";
-import { StateUpdater, useCallback, useEffect } from "../lib";
+import { StateUpdater, useCallback, useEffect, useState } from "../lib";
 import {
   allCombatants,
   canDragUnits,
@@ -16,6 +18,8 @@ import {
   showSideUnderlay,
 } from "../utils/state";
 import { getUnitData } from "../utils/types";
+import AddMonsterDialog from "./AddMonsterDialog";
+import AddPCDialog from "./AddPCDialog";
 import Battlefield from "./Battlefield";
 import buttonStyles from "./button.module.scss";
 import Menu, { MenuItem } from "./Menu";
@@ -26,7 +30,11 @@ interface EditUIProps {
   onUpdate: StateUpdater<BattleTemplate>;
 }
 
-type UnitAction = { type: "side"; side: number } | { type: "remove" };
+type UnitAction =
+  | { type: "side"; side: number }
+  | { type: "remove" }
+  | { type: "pc"; pos: Point }
+  | { type: "monster"; pos: Point };
 
 const sideItem = (side: number, current: number): MenuItem<UnitAction> => ({
   label: side === 0 ? "Ally" : side === 1 ? "Enemy" : `Side #${side}`,
@@ -49,6 +57,35 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
     return g.reset.bind(g);
   }, [g, template]);
 
+  const [destination, setDestination] = useState<Point>({ x: NaN, y: NaN });
+  const [add, setAdd] = useState<"monster" | "pc">();
+
+  const onCancelAdd = () => setAdd(undefined);
+  const onAddMonster = (name: MonsterName) => {
+    setAdd(undefined);
+    onUpdate((old) => ({
+      ...old,
+      combatants: old.combatants.concat({
+        type: "monster",
+        name,
+        x: destination.x,
+        y: destination.y,
+      }),
+    }));
+  };
+  const onAddPC = (name: PCName) => {
+    setAdd(undefined);
+    onUpdate((old) => ({
+      ...old,
+      combatants: old.combatants.concat({
+        type: "pc",
+        name,
+        x: destination.x,
+        y: destination.y,
+      }),
+    }));
+  };
+
   const menu = useMenu<UnitAction, number>(
     "Unit Actions",
     useCallback(
@@ -68,6 +105,12 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
               ...old,
               combatants: exceptFor(old.combatants, index),
             }));
+
+          case "monster":
+          case "pc":
+            setDestination(action.pos);
+            setAdd(action.type);
+            return;
         }
       },
       [onUpdate],
@@ -109,9 +152,17 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
     [onUpdate],
   );
 
-  const onClickBattlefield = useCallback(() => {
-    menu.hide();
-  }, [menu]);
+  const onClickBattlefield = useCallback(
+    (pos: Point, e: MouseEvent) => {
+      if (menu.isShown) menu.hide();
+      else
+        menu.show(e, [
+          { label: "Add PC", value: { type: "pc", pos } },
+          { label: "Add Monster", value: { type: "monster", pos } },
+        ]);
+    },
+    [menu],
+  );
 
   return (
     <>
@@ -122,6 +173,12 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
         onDragCombatant={onDragCombatant}
       />
       {menu.isShown && <Menu {...menu.props} />}
+      {add === "monster" && (
+        <AddMonsterDialog onChoose={onAddMonster} onCancel={onCancelAdd} />
+      )}
+      {add === "pc" && (
+        <AddPCDialog onChoose={onAddPC} onCancel={onCancelAdd} />
+      )}
     </>
   );
 }

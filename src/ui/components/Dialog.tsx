@@ -4,7 +4,7 @@ import styles from "./Dialog.module.scss";
 
 interface Props {
   title: string;
-  text: string;
+  text?: string;
   children: ComponentChildren;
 }
 
@@ -19,7 +19,7 @@ function HTML5Dialog({ title, text, children }: Props) {
       <div id={titleId} className={styles.title}>
         {title}
       </div>
-      <p className={styles.text}>{text}</p>
+      {text && <p className={styles.text}>{text}</p>}
 
       {children}
     </dialog>
@@ -40,7 +40,7 @@ function ReactDialog({ title, text, children }: Props) {
         <div id={titleId} className={styles.title}>
           {title}
         </div>
-        <p className={styles.text}>{text}</p>
+        {text && <p className={styles.text}>{text}</p>}
 
         {children}
       </div>

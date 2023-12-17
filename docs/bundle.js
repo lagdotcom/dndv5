@@ -21679,7 +21679,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         className: classnames(Dialog_module_default.main, Dialog_module_default.react),
         children: [
           /* @__PURE__ */ u("div", { id: titleId, className: Dialog_module_default.title, children: title }),
-          /* @__PURE__ */ u("p", { className: Dialog_module_default.text, children: text }),
+          text && /* @__PURE__ */ u("p", { className: Dialog_module_default.text, children: text }),
           children
         ]
       }
@@ -22045,6 +22045,61 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
+  // src/ui/components/SearchableList.tsx
+  function SearchableList({
+    items,
+    value,
+    setValue,
+    maxResults = 10
+  }) {
+    const [search, setSearch] = (0, import_hooks.useState)("");
+    const { matches: matches2, message } = (0, import_hooks.useMemo)(() => {
+      const found = search ? items.filter((x) => x.includes(search)) : items;
+      const matches3 = found.slice(0, maxResults);
+      const message2 = matches3.length < found.length ? `...and ${found.length - matches3.length} more...` : void 0;
+      return { matches: matches3, message: message2 };
+    }, [items, maxResults, search]);
+    return /* @__PURE__ */ u("div", { children: [
+      /* @__PURE__ */ u(
+        "input",
+        {
+          type: "search",
+          value: search,
+          onInput: (e2) => setSearch(e2.currentTarget.value)
+        }
+      ),
+      /* @__PURE__ */ u("ul", { children: [
+        matches2.map((item) => /* @__PURE__ */ u("li", { children: /* @__PURE__ */ u(
+          "button",
+          {
+            className: classnames({ [button_module_default.active]: item === value }),
+            onClick: () => setValue(item),
+            children: item
+          }
+        ) }, item)),
+        message && /* @__PURE__ */ u("li", { children: message })
+      ] })
+    ] });
+  }
+
+  // src/ui/components/AddMonsterDialog.tsx
+  var monsterNames = Object.keys(allMonsters_default);
+  function AddMonsterDialog({ onCancel, onChoose }) {
+    return /* @__PURE__ */ u(Dialog, { title: "Add Monster", children: [
+      /* @__PURE__ */ u(SearchableList, { items: monsterNames, setValue: onChoose }),
+      /* @__PURE__ */ u("button", { onClick: onCancel, children: "Cancel" })
+    ] });
+  }
+
+  // src/ui/components/AddPCDialog.tsx
+  var pcNames = Object.keys(allPCs_default);
+  function AddPCDialog({ onCancel, onChoose }) {
+    return /* @__PURE__ */ u(Dialog, { title: "Add Monster", children: [
+      /* @__PURE__ */ u(SearchableList, { items: pcNames, setValue: onChoose }),
+      /* @__PURE__ */ u("button", { onClick: onCancel, children: "Cancel" })
+    ] });
+  }
+
   // src/ui/components/EditUI.tsx
   var sideItem = (side, current) => ({
     label: side === 0 ? "Ally" : side === 1 ? "Enemy" : `Side #${side}`,
@@ -22064,6 +22119,33 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       });
       return g.reset.bind(g);
     }, [g, template]);
+    const [destination, setDestination] = (0, import_hooks.useState)({ x: NaN, y: NaN });
+    const [add, setAdd] = (0, import_hooks.useState)();
+    const onCancelAdd = () => setAdd(void 0);
+    const onAddMonster = (name) => {
+      setAdd(void 0);
+      onUpdate((old) => ({
+        ...old,
+        combatants: old.combatants.concat({
+          type: "monster",
+          name,
+          x: destination.x,
+          y: destination.y
+        })
+      }));
+    };
+    const onAddPC = (name) => {
+      setAdd(void 0);
+      onUpdate((old) => ({
+        ...old,
+        combatants: old.combatants.concat({
+          type: "pc",
+          name,
+          x: destination.x,
+          y: destination.y
+        })
+      }));
+    };
     const menu = useMenu(
       "Unit Actions",
       (0, import_hooks.useCallback)(
@@ -22082,6 +22164,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
                 ...old,
                 combatants: exceptFor(old.combatants, index)
               }));
+            case "monster":
+            case "pc":
+              setDestination(action.pos);
+              setAdd(action.type);
+              return;
           }
         },
         [onUpdate]
@@ -22120,9 +22207,18 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [onUpdate]
     );
-    const onClickBattlefield = (0, import_hooks.useCallback)(() => {
-      menu.hide();
-    }, [menu]);
+    const onClickBattlefield = (0, import_hooks.useCallback)(
+      (pos, e2) => {
+        if (menu.isShown)
+          menu.hide();
+        else
+          menu.show(e2, [
+            { label: "Add PC", value: { type: "pc", pos } },
+            { label: "Add Monster", value: { type: "monster", pos } }
+          ]);
+      },
+      [menu]
+    );
     return /* @__PURE__ */ u(import_preact3.Fragment, { children: [
       /* @__PURE__ */ u(
         Battlefield,
@@ -22133,7 +22229,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           onDragCombatant
         }
       ),
-      menu.isShown && /* @__PURE__ */ u(Menu, { ...menu.props })
+      menu.isShown && /* @__PURE__ */ u(Menu, { ...menu.props }),
+      add === "monster" && /* @__PURE__ */ u(AddMonsterDialog, { onChoose: onAddMonster, onCancel: onCancelAdd }),
+      add === "pc" && /* @__PURE__ */ u(AddPCDialog, { onChoose: onAddPC, onCancel: onCancelAdd })
     ] });
   }
 
