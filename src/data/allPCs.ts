@@ -9,6 +9,7 @@ import Litt from "../pcs/glean/Litt";
 import Marvoril from "../pcs/glean/Marvoril";
 import Shaira from "../pcs/glean/Shaira";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
+import PCTemplate from "./PCTemplate";
 
 const allPCs = {
   Aura,
@@ -28,3 +29,11 @@ const allPCs = {
 export default allPCs;
 
 export type PCName = keyof typeof allPCs;
+
+export function injectTestPC(template: PCTemplate): PCName {
+  const name = template.name as PCName;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  allPCs[name] = template;
+  return name;
+}

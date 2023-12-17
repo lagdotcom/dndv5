@@ -1,13 +1,10 @@
-import allPCs, { PCName } from "../../data/allPCs";
-import PCTemplate from "../../data/PCTemplate";
+import { injectTestPC } from "../../data/allPCs";
 import { SaveEventDetail } from "../../events/SaveEvent";
 import setupBattleTest from "../../tests/setupBattleTest";
 import { enumerate } from "../../utils/numbers";
 import { RageEffect } from "./Rage";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-allPCs.Conan = {
+const Conan = injectTestPC({
   name: "Conan",
   tokenUrl: "",
   abilities: [10, 10, 10, 10, 10, 10],
@@ -26,17 +23,14 @@ allPCs.Conan = {
     },
   },
   items: [],
-} satisfies PCTemplate;
+});
 
 describe("Relentless Rage", () => {
   it("should trigger when reduced below 1hp", async () => {
     const {
       g,
       combatants: [me, enemy],
-    } = await setupBattleTest(
-      ["Conan" as PCName, 0, 0, 10],
-      ["thug", 5, 0, 20],
-    );
+    } = await setupBattleTest([Conan, 0, 0, 10], ["thug", 5, 0, 20]);
 
     me.hp = 2;
     await me.addEffect(RageEffect, { duration: Infinity });

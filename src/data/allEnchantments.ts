@@ -1,3 +1,4 @@
+import adamantine from "../enchantments/adamantine";
 import darkSun from "../enchantments/darkSun";
 import ofTheDeep from "../enchantments/ofTheDeep";
 import {
@@ -12,6 +13,7 @@ import silvered from "../enchantments/silvered";
 import { chaoticBurst, vicious } from "../enchantments/weapon";
 
 const allEnchantments = {
+  adamantine,
   "dark sun": darkSun,
   "of the deep": ofTheDeep,
   "+1 armor": armorPlus1,

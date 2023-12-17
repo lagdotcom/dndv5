@@ -161,7 +161,18 @@
         return "critical";
       if (values.includes("hit"))
         return "hit";
-      return this.getDefaultResult();
+      let result = this.getDefaultResult();
+      if (result === "critical") {
+        if (!this.ignoredValues.has("critical"))
+          return "critical";
+        result = "hit";
+      }
+      if (result === "hit") {
+        if (!this.ignoredValues.has("hit"))
+          return "hit";
+        result = "miss";
+      }
+      return result;
     }
     get hits() {
       return this.result !== "miss";
@@ -9142,6 +9153,20 @@
   };
   var allBackgrounds_default = allBackgrounds;
 
+  // src/enchantments/adamantine.ts
+  var adamantine = {
+    name: "adamantine",
+    setup(g, item) {
+      item.name = `adamantine ${item.name}`;
+      item.rarity = "Uncommon";
+      g.events.on("Attack", ({ detail: { pre, outcome } }) => {
+        if (pre.target.armor === item)
+          outcome.ignoreValue("critical");
+      });
+    }
+  };
+  var adamantine_default = adamantine;
+
   // src/enchantments/plus.ts
   function getWeaponPlusHandler(item, value, source) {
     return ({ detail: { weapon, ammo, bonus } }) => {
@@ -9372,6 +9397,7 @@
 
   // src/data/allEnchantments.ts
   var allEnchantments = {
+    adamantine: adamantine_default,
     "dark sun": darkSun_default,
     "of the deep": ofTheDeep_default,
     "+1 armor": armorPlus1,

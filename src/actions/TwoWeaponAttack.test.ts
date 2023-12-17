@@ -1,11 +1,8 @@
-import allPCs, { PCName } from "../data/allPCs";
-import PCTemplate from "../data/PCTemplate";
+import { injectTestPC } from "../data/allPCs";
 import { AttackDetail } from "../events/AttackEvent";
 import setupBattleTest from "../tests/setupBattleTest";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-allPCs.Stabby = {
+const Stabby = injectTestPC({
   name: "Stabby",
   tokenUrl: "",
   abilities: [10, 11, 10, 10, 10, 10],
@@ -17,17 +14,14 @@ allPCs.Stabby = {
     { name: "dagger", equip: true },
   ],
   proficiencies: ["simple"],
-} satisfies PCTemplate;
+});
 
 describe("TwoWeaponAttack", () => {
   it("should allow a two-weapon attack", async () => {
     const {
       g,
       combatants: [me, target],
-    } = await setupBattleTest(
-      ["Stabby" as PCName, 0, 5, 20],
-      ["thug", 0, 0, 10],
-    );
+    } = await setupBattleTest([Stabby, 0, 5, 20], ["thug", 0, 0, 10]);
 
     let detail: AttackDetail | undefined;
     g.events.on("Attack", (event) => (detail = event.detail));

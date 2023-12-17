@@ -19,7 +19,17 @@ export default class AttackOutcomeCollector extends AbstractSumCollector<AttackO
     if (values.includes("critical")) return "critical";
     if (values.includes("hit")) return "hit";
 
-    return this.getDefaultResult();
+    let result = this.getDefaultResult();
+    if (result === "critical") {
+      if (!this.ignoredValues.has("critical")) return "critical";
+      result = "hit";
+    }
+    if (result === "hit") {
+      if (!this.ignoredValues.has("hit")) return "hit";
+      result = "miss";
+    }
+
+    return result;
   }
 
   get hits() {
