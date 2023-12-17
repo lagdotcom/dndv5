@@ -127,12 +127,10 @@ export default class RingOfAwe extends AbstractWondrous {
     this.rarity = "Rare";
 
     // While wearing this ring, your Charisma score increases by 1, to a maximum of 20.
-    g.events.on("BattleStarted", () => {
-      for (const who of g.combatants) {
-        if (isEquipmentAttuned(this, who)) {
-          who.cha.score++;
-          who.initResource(RingOfAweResource);
-        }
+    g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+      if (isEquipmentAttuned(this, who)) {
+        who.cha.score++;
+        who.initResource(RingOfAweResource);
       }
     });
 

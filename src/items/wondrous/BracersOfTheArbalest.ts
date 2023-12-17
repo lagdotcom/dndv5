@@ -9,13 +9,12 @@ export default class BracersOfTheArbalest extends AbstractWondrous {
     this.rarity = "Uncommon";
 
     // While wearing these bracers, you have proficiency with all crossbows
-    g.events.on("BattleStarted", () => {
-      for (const who of g.combatants)
-        if (isEquipmentAttuned(this, who)) {
-          who.weaponProficiencies.add("hand crossbow");
-          who.weaponProficiencies.add("light crossbow");
-          who.weaponProficiencies.add("heavy crossbow");
-        }
+    g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+      if (isEquipmentAttuned(this, who)) {
+        who.weaponProficiencies.add("hand crossbow");
+        who.weaponProficiencies.add("light crossbow");
+        who.weaponProficiencies.add("heavy crossbow");
+      }
     });
 
     // ... you gain a +2 bonus to damage rolls on ranged attacks made with such weapons.

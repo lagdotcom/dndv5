@@ -9853,13 +9853,12 @@
       super(g, "Bracers of the Arbalest");
       this.attunement = true;
       this.rarity = "Uncommon";
-      g.events.on("BattleStarted", () => {
-        for (const who of g.combatants)
-          if (isEquipmentAttuned(this, who)) {
-            who.weaponProficiencies.add("hand crossbow");
-            who.weaponProficiencies.add("light crossbow");
-            who.weaponProficiencies.add("heavy crossbow");
-          }
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who)) {
+          who.weaponProficiencies.add("hand crossbow");
+          who.weaponProficiencies.add("light crossbow");
+          who.weaponProficiencies.add("heavy crossbow");
+        }
       });
       g.events.on("GatherDamage", ({ detail: { attacker, weapon, bonus } }) => {
         if (isEquipmentAttuned(this, attacker) && (weapon == null ? void 0 : weapon.ammunitionTag) === "crossbow")
@@ -10070,12 +10069,10 @@
       super(g, "Ring of Awe", 0);
       this.attunement = true;
       this.rarity = "Rare";
-      g.events.on("BattleStarted", () => {
-        for (const who of g.combatants) {
-          if (isEquipmentAttuned(this, who)) {
-            who.cha.score++;
-            who.initResource(RingOfAweResource);
-          }
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who)) {
+          who.cha.score++;
+          who.initResource(RingOfAweResource);
         }
       });
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
