@@ -40,14 +40,12 @@ const vulnerability = (type: MundaneDamageType): Enchantment<"armor"> => ({
     item.name = `${item.name} of vulnerability (${type})`;
     item.rarity = "Rare";
     item.attunement = true;
+    item.cursed = true;
 
     g.events.on(
       "GetDamageResponse",
       ({ detail: { who, damageType, response } }) => {
-        if (
-          isEquipmentAttuned(item, who) &&
-          isA(damageType, MundaneDamageTypes)
-        )
+        if (who.attunements.has(item) && isA(damageType, MundaneDamageTypes))
           response.add(damageType === type ? "resist" : "vulnerable", this);
       },
     );

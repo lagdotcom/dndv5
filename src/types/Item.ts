@@ -20,6 +20,7 @@ export interface BaseItem extends Source {
   hands: number;
   rarity: ItemRarity;
   attunement?: boolean;
+  cursed?: boolean;
   magical?: boolean;
 }
 
