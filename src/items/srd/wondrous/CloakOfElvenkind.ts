@@ -1,11 +1,11 @@
 import iconUrl from "@img/eq/hood.svg";
 
-import AbstractAction from "../../actions/AbstractAction";
-import Engine from "../../Engine";
-import MessageBuilder from "../../MessageBuilder";
-import Combatant from "../../types/Combatant";
-import { isEquipmentAttuned } from "../../utils/items";
-import AbstractWondrous from "../AbstractWondrous";
+import AbstractAction from "../../../actions/AbstractAction";
+import Engine from "../../../Engine";
+import MessageBuilder from "../../../MessageBuilder";
+import Combatant from "../../../types/Combatant";
+import { isEquipmentAttuned } from "../../../utils/items";
+import AbstractWondrous from "../../AbstractWondrous";
 
 class CloakHoodAction extends AbstractAction {
   constructor(

@@ -1,6 +1,6 @@
-import Engine from "../../Engine";
-import { ItemRarity } from "../../types/Item";
-import AbstractWondrous from "../AbstractWondrous";
+import Engine from "../../../Engine";
+import { ItemRarity } from "../../../types/Item";
+import AbstractWondrous from "../../AbstractWondrous";
 
 export const FigurineTypes = [
   "Bronze Griffin",

@@ -1,6 +1,6 @@
-import Engine from "../Engine";
-import AbstractWondrous from "./AbstractWondrous";
-import { GiantStats, GiantType } from "./srd/common";
+import Engine from "../../../Engine";
+import AbstractWondrous from "../../AbstractWondrous";
+import { GiantStats, GiantType } from "../common";
 
 export class PotionOfGiantStrength extends AbstractWondrous {
   constructor(

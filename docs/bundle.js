@@ -5899,7 +5899,7 @@
     }
   };
 
-  // src/items/ammunition.ts
+  // src/items/AbstractAmmo.ts
   var AbstractAmmo = class extends AbstractItem {
     constructor(g, name, ammunitionTag, quantity, iconUrl) {
       super(g, "ammo", name, 0, iconUrl);
@@ -5907,6 +5907,8 @@
       this.quantity = quantity;
     }
   };
+
+  // src/items/srd/ammunition.ts
   var Arrow = class extends AbstractAmmo {
     constructor(g, quantity) {
       super(g, "arrow", "bow", quantity, arrow_default);
@@ -5928,7 +5930,7 @@
     }
   };
 
-  // src/items/armor.ts
+  // src/items/AbstractArmor.ts
   var AbstractArmor = class extends AbstractItem {
     constructor(g, name, category, ac, stealthDisadvantage = false, minimumStrength = 0, iconUrl) {
       super(g, "armor", name, 0, iconUrl);
@@ -5938,6 +5940,8 @@
       this.minimumStrength = minimumStrength;
     }
   };
+
+  // src/items/srd/armor.ts
   var PaddedArmor = class extends AbstractArmor {
     constructor(g) {
       super(g, "padded armor", "light", 11, true);
@@ -6035,7 +6039,7 @@
   // src/img/eq/trident.svg
   var trident_default = "./trident-XL6WP2YY.svg";
 
-  // src/items/weapons.ts
+  // src/items/AbstractWeapon.ts
   var AbstractWeapon = class extends AbstractItem {
     constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange, weaponType = name) {
       super(g, "weapon", name, 1, iconUrl);
@@ -6053,6 +6057,8 @@
       return this.properties.has("reach") ? 5 : 0;
     }
   };
+
+  // src/items/srd/weapons.ts
   var Club = class extends AbstractWeapon {
     constructor(g) {
       super(
@@ -9505,36 +9511,10 @@
   };
   var allEnchantments_default = allEnchantments;
 
-  // src/items/AbstractWondrous.ts
-  var AbstractWondrous = class extends AbstractItem {
-    constructor(g, name, hands = 0, iconUrl) {
-      super(g, "wondrous", name, hands, iconUrl);
-    }
-  };
-
-  // src/items/srd/common.ts
-  var GiantStats = {
-    Hill: { str: 21, potionRarity: "Uncommon", beltRarity: "Rare" },
-    Stone: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
-    Frost: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
-    Fire: { str: 25, potionRarity: "Rare", beltRarity: "Very Rare" },
-    Cloud: { str: 27, potionRarity: "Very Rare", beltRarity: "Legendary" },
-    Storm: { str: 29, potionRarity: "Legendary", beltRarity: "Legendary" }
-  };
-
-  // src/items/potions.ts
-  var PotionOfGiantStrength = class extends AbstractWondrous {
-    constructor(g, type) {
-      super(g, `Potion of ${type} Giant Strength`, 0);
-      this.type = type;
-      this.rarity = GiantStats[type].potionRarity;
-    }
-  };
-
   // src/img/eq/arrow-catching-shield.svg
   var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
 
-  // src/items/shields.ts
+  // src/items/srd/shields.ts
   var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
   var ArrowCatchingShieldAction = class extends AbstractAction {
     constructor(g, actor, attack) {
@@ -9602,6 +9582,23 @@
         }
       });
     }
+  };
+
+  // src/items/AbstractWondrous.ts
+  var AbstractWondrous = class extends AbstractItem {
+    constructor(g, name, hands = 0, iconUrl) {
+      super(g, "wondrous", name, hands, iconUrl);
+    }
+  };
+
+  // src/items/srd/common.ts
+  var GiantStats = {
+    Hill: { str: 21, potionRarity: "Uncommon", beltRarity: "Rare" },
+    Stone: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Frost: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Fire: { str: 25, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Cloud: { str: 27, potionRarity: "Very Rare", beltRarity: "Legendary" },
+    Storm: { str: 29, potionRarity: "Legendary", beltRarity: "Legendary" }
   };
 
   // src/items/srd/wondrous/baseStatItems.ts
@@ -9689,6 +9686,114 @@
         if (isEquipmentAttuned(this, detail.who) && !detail.who.armor && !detail.who.shield)
           detail.bonus.add(2, this);
       });
+    }
+  };
+
+  // src/img/eq/hood.svg
+  var hood_default = "./hood-7E4VG7WM.svg";
+
+  // src/items/srd/wondrous/CloakOfElvenkind.ts
+  var CloakHoodAction = class extends AbstractAction {
+    constructor(g, actor, cloak) {
+      super(
+        g,
+        actor,
+        cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
+        "incomplete",
+        {},
+        {
+          icon: cloak.icon,
+          time: "action",
+          description: `While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak's color shifts to camouflage you.`
+        }
+      );
+      this.cloak = cloak;
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
+    async apply() {
+      await super.apply({});
+      this.cloak.hoodUp = !this.cloak.hoodUp;
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(
+          this.cloak.hoodUp ? " pulls the hood of their cloak up." : " pulls the hood of their cloak down."
+        )
+      );
+    }
+  };
+  var CloakOfElvenkind = class extends AbstractWondrous {
+    constructor(g, hoodUp = true) {
+      super(g, "Cloak of Elvenkind", 0, hood_default);
+      this.hoodUp = hoodUp;
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      const cloaked = (who) => isEquipmentAttuned(this, who) && this.hoodUp;
+      g.events.on(
+        "BeforeCheck",
+        ({ detail: { who, target, skill, diceType } }) => {
+          if (skill === "Perception" && cloaked(target))
+            diceType.add("disadvantage", this);
+          if (skill === "Stealth" && cloaked(who))
+            diceType.add("advantage", this);
+        }
+      );
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new CloakHoodAction(g, who, this));
+      });
+    }
+  };
+
+  // src/items/srd/wondrous/CloakOfProtection.ts
+  var CloakOfProtection = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Cloak of Protection");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
+        if (isEquipmentAttuned(this, who))
+          for (const method of methods) {
+            method.ac++;
+            method.uses.add(this);
+          }
+      });
+      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+        if (isEquipmentAttuned(this, who))
+          bonus.add(1, this);
+      });
+    }
+  };
+
+  // src/items/srd/wondrous/FigurineOfWondrousPower.ts
+  var FigurineData = {
+    "Bronze Griffin": { rarity: "Rare" },
+    "Ebony Fly": { rarity: "Rare" },
+    "Golden Lions": { rarity: "Rare" },
+    "Ivory Goats": { rarity: "Rare" },
+    "Marble Elephant": { rarity: "Rare" },
+    "Obsidian Steed": { rarity: "Very Rare" },
+    "Onyx Dog": { rarity: "Rare" },
+    "Serpentine Owl": { rarity: "Rare" },
+    "Silver Raven": { rarity: "Uncommon" }
+  };
+  var FigurineOfWondrousPower = class extends AbstractWondrous {
+    constructor(g, type) {
+      super(g, `Figurine of Wondrous Power, ${type}`, 0);
+      this.type = type;
+      this.rarity = FigurineData[type].rarity;
+    }
+  };
+
+  // src/items/srd/wondrous/potions.ts
+  var PotionOfGiantStrength = class extends AbstractWondrous {
+    constructor(g, type) {
+      super(g, `Potion of ${type} Giant Strength`, 0);
+      this.type = type;
+      this.rarity = GiantStats[type].potionRarity;
     }
   };
 
@@ -9918,7 +10023,7 @@
   });
   var Web_default = Web;
 
-  // src/items/wands.ts
+  // src/items/AbstractWand.ts
   var AbstractWand = class extends AbstractWondrous {
     constructor(g, name, rarity, charges, maxCharges, resource, spell, saveDC, method = {
       name,
@@ -9942,6 +10047,8 @@
       });
     }
   };
+
+  // src/items/srd/wondrous/wands.ts
   var WandOfWeb = class extends AbstractWand {
     constructor(g, charges = 7) {
       super(
@@ -9977,85 +10084,6 @@
     }
   };
 
-  // src/img/eq/hood.svg
-  var hood_default = "./hood-7E4VG7WM.svg";
-
-  // src/items/wondrous/CloakOfElvenkind.ts
-  var CloakHoodAction = class extends AbstractAction {
-    constructor(g, actor, cloak) {
-      super(
-        g,
-        actor,
-        cloak.hoodUp ? "Pull Hood Down" : "Pull Hood Up",
-        "incomplete",
-        {},
-        {
-          icon: cloak.icon,
-          time: "action",
-          description: `While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak's color shifts to camouflage you.`
-        }
-      );
-      this.cloak = cloak;
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
-      this.cloak.hoodUp = !this.cloak.hoodUp;
-      this.g.text(
-        new MessageBuilder().co(this.actor).text(
-          this.cloak.hoodUp ? " pulls the hood of their cloak up." : " pulls the hood of their cloak down."
-        )
-      );
-    }
-  };
-  var CloakOfElvenkind = class extends AbstractWondrous {
-    constructor(g, hoodUp = true) {
-      super(g, "Cloak of Elvenkind", 0, hood_default);
-      this.hoodUp = hoodUp;
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      const cloaked = (who) => isEquipmentAttuned(this, who) && this.hoodUp;
-      g.events.on(
-        "BeforeCheck",
-        ({ detail: { who, target, skill, diceType } }) => {
-          if (skill === "Perception" && cloaked(target))
-            diceType.add("disadvantage", this);
-          if (skill === "Stealth" && cloaked(who))
-            diceType.add("advantage", this);
-        }
-      );
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (isEquipmentAttuned(this, who))
-          actions.push(new CloakHoodAction(g, who, this));
-      });
-    }
-  };
-
-  // src/items/wondrous/CloakOfProtection.ts
-  var CloakOfProtection = class extends AbstractWondrous {
-    constructor(g) {
-      super(g, "Cloak of Protection");
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
-        if (isEquipmentAttuned(this, who))
-          for (const method of methods) {
-            method.ac++;
-            method.uses.add(this);
-          }
-      });
-      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-        if (isEquipmentAttuned(this, who))
-          bonus.add(1, this);
-      });
-    }
-  };
-
   // src/items/wondrous/DragonTouchedFocus.ts
   var DragonTouchedFocus = class extends AbstractWondrous {
     constructor(g, level) {
@@ -10066,26 +10094,6 @@
         if (isEquipmentAttuned(this, who))
           diceType.add("advantage", this);
       });
-    }
-  };
-
-  // src/items/wondrous/FigurineOfWondrousPower.ts
-  var FigurineData = {
-    "Bronze Griffin": { rarity: "Rare" },
-    "Ebony Fly": { rarity: "Rare" },
-    "Golden Lions": { rarity: "Rare" },
-    "Ivory Goats": { rarity: "Rare" },
-    "Marble Elephant": { rarity: "Rare" },
-    "Obsidian Steed": { rarity: "Very Rare" },
-    "Onyx Dog": { rarity: "Rare" },
-    "Serpentine Owl": { rarity: "Rare" },
-    "Silver Raven": { rarity: "Uncommon" }
-  };
-  var FigurineOfWondrousPower = class extends AbstractWondrous {
-    constructor(g, type) {
-      super(g, `Figurine of Wondrous Power, ${type}`, 0);
-      this.type = type;
-      this.rarity = FigurineData[type].rarity;
     }
   };
 
@@ -10292,7 +10300,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
   };
 
   // src/data/allItems.ts
-  var allItems = {
+  var srdItems = {
     // armor
     "padded armor": (g) => new PaddedArmor(g),
     "leather armor": (g) => new LeatherArmor(g),
@@ -10375,13 +10383,8 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
     "bracers of archery": (g) => new BracersOfArchery(g),
     "bracers of defense": (g) => new BracersOfDefense(g),
-    "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
     "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
     "cloak of protection": (g) => new CloakOfProtection(g),
-    "dragon-touched focus (slumbering)": (g) => new DragonTouchedFocus(g, "Slumbering"),
-    "dragon-touched focus (stirring)": (g) => new DragonTouchedFocus(g, "Stirring"),
-    "dragon-touched focus (wakened)": (g) => new DragonTouchedFocus(g, "Wakened"),
-    "dragon-touched focus (ascendant)": (g) => new DragonTouchedFocus(g, "Ascendant"),
     "figurine of wondrous power, bronze griffin": (g) => new FigurineOfWondrousPower(g, "Bronze Griffin"),
     "figurine of wondrous power, ebony fly": (g) => new FigurineOfWondrousPower(g, "Ebony Fly"),
     "figurine of wondrous power, golden lions": (g) => new FigurineOfWondrousPower(g, "Golden Lions"),
@@ -10392,7 +10395,17 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "figurine of wondrous power, serpentine owl": (g) => new FigurineOfWondrousPower(g, "Serpentine Owl"),
     "figurine of wondrous power, silver raven": (g) => new FigurineOfWondrousPower(g, "Silver Raven"),
     "gauntlets of ogre power": (g) => new GauntletsOfOgrePower(g),
-    "headband of intellect": (g) => new HeadbandOfIntellect(g),
+    "headband of intellect": (g) => new HeadbandOfIntellect(g)
+  };
+  var allItems = {
+    ...srdItems,
+    // TCE
+    "dragon-touched focus (slumbering)": (g) => new DragonTouchedFocus(g, "Slumbering"),
+    "dragon-touched focus (stirring)": (g) => new DragonTouchedFocus(g, "Stirring"),
+    "dragon-touched focus (wakened)": (g) => new DragonTouchedFocus(g, "Wakened"),
+    "dragon-touched focus (ascendant)": (g) => new DragonTouchedFocus(g, "Ascendant"),
+    // homebrew
+    "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
     "ring of awe": (g) => new RingOfAwe(g),
     "silver shining amulet": (g) => new SilverShiningAmulet(g)
   };

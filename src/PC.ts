@@ -3,7 +3,7 @@ import punchUrl from "@img/eq/punch.svg";
 import AbstractCombatant from "./AbstractCombatant";
 import { defaultAIRules } from "./ai/data";
 import Engine from "./Engine";
-import { AbstractWeapon } from "./items/weapons";
+import AbstractWeapon from "./items/AbstractWeapon";
 import AIRule from "./types/AIRule";
 import Gain from "./types/Gain";
 import HasProficiency from "./types/HasProficiency";

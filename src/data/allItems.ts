@@ -3,7 +3,7 @@ import {
   BlowgunNeedle,
   CrossbowBolt,
   SlingBullet,
-} from "../items/ammunition";
+} from "../items/srd/ammunition";
 import {
   BreastplateArmor,
   ChainMailArmor,
@@ -18,19 +18,8 @@ import {
   Shield,
   SplintArmor,
   StuddedLeatherArmor,
-} from "../items/armor";
-import { PotionOfGiantStrength } from "../items/potions";
-import { ArrowCatchingShield } from "../items/shields";
-import {
-  AmuletOfHealth,
-  BeltOfGiantStrength,
-  GauntletsOfOgrePower,
-  HeadbandOfIntellect,
-} from "../items/srd/wondrous/baseStatItems";
-import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
-import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
-import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
-import { WandOfWeb } from "../items/wands";
+} from "../items/srd/armor";
+import { ArrowCatchingShield } from "../items/srd/shields";
 import {
   Battleaxe,
   Blowgun,
@@ -69,17 +58,28 @@ import {
   Warhammer,
   WarPick,
   Whip,
-} from "../items/weapons";
+} from "../items/srd/weapons";
+import {
+  AmuletOfHealth,
+  BeltOfGiantStrength,
+  GauntletsOfOgrePower,
+  HeadbandOfIntellect,
+} from "../items/srd/wondrous/baseStatItems";
+import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
+import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
+import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
+import CloakOfElvenkind from "../items/srd/wondrous/CloakOfElvenkind";
+import CloakOfProtection from "../items/srd/wondrous/CloakOfProtection";
+import FigurineOfWondrousPower from "../items/srd/wondrous/FigurineOfWondrousPower";
+import { PotionOfGiantStrength } from "../items/srd/wondrous/potions";
+import { WandOfWeb } from "../items/srd/wondrous/wands";
 import BracersOfTheArbalest from "../items/wondrous/BracersOfTheArbalest";
-import CloakOfElvenkind from "../items/wondrous/CloakOfElvenkind";
-import CloakOfProtection from "../items/wondrous/CloakOfProtection";
 import DragonTouchedFocus from "../items/wondrous/DragonTouchedFocus";
-import FigurineOfWondrousPower from "../items/wondrous/FigurineOfWondrousPower";
 import RingOfAwe from "../items/wondrous/RingOfAwe";
 import SilverShiningAmulet from "../items/wondrous/SilverShiningAmulet";
 import { ItemCreator } from "./BattleTemplate";
 
-const allItems = {
+const srdItems = {
   // armor
   "padded armor": (g) => new PaddedArmor(g),
   "leather armor": (g) => new LeatherArmor(g),
@@ -175,16 +175,8 @@ const allItems = {
   "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
   "bracers of archery": (g) => new BracersOfArchery(g),
   "bracers of defense": (g) => new BracersOfDefense(g),
-  "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
   "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
   "cloak of protection": (g) => new CloakOfProtection(g),
-  "dragon-touched focus (slumbering)": (g) =>
-    new DragonTouchedFocus(g, "Slumbering"),
-  "dragon-touched focus (stirring)": (g) =>
-    new DragonTouchedFocus(g, "Stirring"),
-  "dragon-touched focus (wakened)": (g) => new DragonTouchedFocus(g, "Wakened"),
-  "dragon-touched focus (ascendant)": (g) =>
-    new DragonTouchedFocus(g, "Ascendant"),
   "figurine of wondrous power, bronze griffin": (g) =>
     new FigurineOfWondrousPower(g, "Bronze Griffin"),
   "figurine of wondrous power, ebony fly": (g) =>
@@ -205,6 +197,22 @@ const allItems = {
     new FigurineOfWondrousPower(g, "Silver Raven"),
   "gauntlets of ogre power": (g) => new GauntletsOfOgrePower(g),
   "headband of intellect": (g) => new HeadbandOfIntellect(g),
+} as const satisfies Record<string, ItemCreator>;
+
+const allItems = {
+  ...srdItems,
+
+  // TCE
+  "dragon-touched focus (slumbering)": (g) =>
+    new DragonTouchedFocus(g, "Slumbering"),
+  "dragon-touched focus (stirring)": (g) =>
+    new DragonTouchedFocus(g, "Stirring"),
+  "dragon-touched focus (wakened)": (g) => new DragonTouchedFocus(g, "Wakened"),
+  "dragon-touched focus (ascendant)": (g) =>
+    new DragonTouchedFocus(g, "Ascendant"),
+
+  // homebrew
+  "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
   "ring of awe": (g) => new RingOfAwe(g),
   "silver shining amulet": (g) => new SilverShiningAmulet(g),
 } as const satisfies Record<string, ItemCreator>;

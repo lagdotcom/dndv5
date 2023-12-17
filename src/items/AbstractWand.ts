@@ -1,7 +1,5 @@
 import CastSpell from "../actions/CastSpell";
 import Engine from "../Engine";
-import { DawnResource } from "../resources";
-import Web from "../spells/level2/Web";
 import { ItemRarity } from "../types/Item";
 import Resource from "../types/Resource";
 import Spell from "../types/Spell";
@@ -9,7 +7,7 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 import { isEquipmentAttuned } from "../utils/items";
 import AbstractWondrous from "./AbstractWondrous";
 
-class AbstractWand extends AbstractWondrous {
+export default class AbstractWand extends AbstractWondrous {
   constructor(
     g: Engine,
     name: string,
@@ -35,20 +33,5 @@ class AbstractWand extends AbstractWondrous {
         actions.push(new CastSpell(g, who, method, spell));
       }
     });
-  }
-}
-
-export class WandOfWeb extends AbstractWand {
-  constructor(g: Engine, charges = 7) {
-    super(
-      g,
-      "Wand of Web",
-      "Uncommon",
-      charges,
-      7,
-      new DawnResource("charge", 7),
-      Web,
-      15,
-    );
   }
 }

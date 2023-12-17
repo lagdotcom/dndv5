@@ -1,21 +1,8 @@
 import arrowUrl from "@img/eq/arrow.svg";
 import boltUrl from "@img/eq/bolt.svg";
 
-import Engine from "../Engine";
-import { AmmoItem, AmmunitionTag } from "../types/Item";
-import AbstractItem from "./AbstractItem";
-
-export class AbstractAmmo extends AbstractItem<"ammo"> implements AmmoItem {
-  constructor(
-    g: Engine,
-    name: string,
-    public ammunitionTag: AmmunitionTag,
-    public quantity: number,
-    iconUrl?: string,
-  ) {
-    super(g, "ammo", name, 0, iconUrl);
-  }
-}
+import Engine from "../../Engine";
+import AbstractAmmo from "../AbstractAmmo";
 
 export class Arrow extends AbstractAmmo {
   constructor(g: Engine, quantity: number) {

@@ -1,5 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
-import { Shortbow } from "../items/weapons";
+import { Shortbow } from "../items/srd/weapons";
 import setupBattleTest from "../tests/setupBattleTest";
 import OpportunityAttack from "./OpportunityAttack";
 
