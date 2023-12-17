@@ -9,7 +9,7 @@ import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
 import { isEquipmentAttuned } from "../../utils/items";
 import { minutes } from "../../utils/time";
-import AbstractWondrous from "../AbstractWondrous";
+import WondrousItemBase from "../WondrousItemBase";
 
 const RingOfAweResource = new DawnResource("Ring of Awe", 1);
 
@@ -120,7 +120,7 @@ class RingOfAweAction extends AbstractAction {
   }
 }
 
-export default class RingOfAwe extends AbstractWondrous {
+export default class RingOfAwe extends WondrousItemBase {
   constructor(g: Engine) {
     super(g, "Ring of Awe", 0);
     this.attunement = true;

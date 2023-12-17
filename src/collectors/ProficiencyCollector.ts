@@ -1,5 +1,5 @@
 import ProficiencyType from "../types/ProficiencyType";
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export default class ProficiencyCollector extends AbstractSumCollector<
   ProficiencyType,

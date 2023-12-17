@@ -9,10 +9,10 @@ import {
   WeaponRangeCategory,
 } from "../types/Item";
 import { SetInitialiser } from "../utils/set";
-import AbstractItem from "./AbstractItem";
+import ItemBase from "./ItemBase";
 
-export default abstract class AbstractWeapon
-  extends AbstractItem<"weapon">
+export default class WeaponBase
+  extends ItemBase<"weapon">
   implements WeaponItem
 {
   ammunitionTag?: AmmunitionTag;

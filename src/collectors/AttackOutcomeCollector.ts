@@ -1,5 +1,5 @@
 import AttackOutcome from "../types/AttackOutcome";
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export default class AttackOutcomeCollector extends AbstractSumCollector<AttackOutcome> {
   defaultGet?: () => AttackOutcome;

@@ -1,9 +1,9 @@
 import punchUrl from "@img/eq/punch.svg";
 
-import AbstractCombatant from "./AbstractCombatant";
 import { defaultAIRules } from "./ai/data";
+import CombatantBase from "./CombatantBase";
 import Engine from "./Engine";
-import AbstractWeapon from "./items/AbstractWeapon";
+import WeaponBase from "./items/WeaponBase";
 import AIRule from "./types/AIRule";
 import Gain from "./types/Gain";
 import HasProficiency from "./types/HasProficiency";
@@ -18,7 +18,7 @@ import { _fd, getDefaultHPRoll } from "./utils/dice";
 import { getProficiencyBonusByLevel } from "./utils/dnd";
 import { mergeSets } from "./utils/set";
 
-export class UnarmedStrike extends AbstractWeapon {
+export class UnarmedStrike extends WeaponBase {
   constructor(
     g: Engine,
     public owner: PC,
@@ -35,7 +35,7 @@ export class UnarmedStrike extends AbstractWeapon {
   }
 }
 
-export default class PC extends AbstractCombatant {
+export default class PC extends CombatantBase {
   background?: PCBackground;
   race?: PCRace;
   subclasses: Map<PCClassName, PCSubclass>;

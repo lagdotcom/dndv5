@@ -1,5 +1,5 @@
 import DiceType from "../types/DiceType";
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export default class DiceTypeCollector extends AbstractSumCollector<DiceType> {
   getSum(values: DiceType[]): DiceType {

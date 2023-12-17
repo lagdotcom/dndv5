@@ -1,5 +1,5 @@
 import SaveDamageResponse from "../types/SaveDamageResponse";
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export default class SaveDamageResponseCollector extends AbstractSumCollector<SaveDamageResponse> {
   constructor(public fallback: SaveDamageResponse) {

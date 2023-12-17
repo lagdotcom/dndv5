@@ -1,11 +1,11 @@
 import Engine from "../Engine";
 import EvaluateLater from "../interruptions/EvaluateLater";
-import AbstractWeapon from "../items/AbstractWeapon";
+import WeaponBase from "../items/WeaponBase";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import DamageAmount from "../types/DamageAmount";
 
-export default class NaturalWeapon extends AbstractWeapon {
+export default class NaturalWeapon extends WeaponBase {
   constructor(
     g: Engine,
     name: string,

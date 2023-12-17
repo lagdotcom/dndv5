@@ -1,5 +1,5 @@
 import DamageResponse from "../types/DamageResponse";
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export default class DamageResponseCollector extends AbstractSumCollector<DamageResponse> {
   getSum(values: DamageResponse[]): DamageResponse {

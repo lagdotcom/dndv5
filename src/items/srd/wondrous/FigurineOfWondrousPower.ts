@@ -1,6 +1,6 @@
 import Engine from "../../../Engine";
 import { ItemRarity } from "../../../types/Item";
-import AbstractWondrous from "../../AbstractWondrous";
+import WondrousItemBase from "../../WondrousItemBase";
 
 export const FigurineTypes = [
   "Bronze Griffin",
@@ -27,7 +27,7 @@ export const FigurineData: Record<FigurineType, { rarity: ItemRarity }> = {
   "Silver Raven": { rarity: "Uncommon" },
 };
 
-export default class FigurineOfWondrousPower extends AbstractWondrous {
+export default class FigurineOfWondrousPower extends WondrousItemBase {
   constructor(
     g: Engine,
     public type: FigurineType,

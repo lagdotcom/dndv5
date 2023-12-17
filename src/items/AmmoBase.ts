@@ -1,11 +1,8 @@
 import Engine from "../Engine";
 import { AmmoItem, AmmunitionTag } from "../types/Item";
-import AbstractItem from "./AbstractItem";
+import ItemBase from "./ItemBase";
 
-export default class AbstractAmmo
-  extends AbstractItem<"ammo">
-  implements AmmoItem
-{
+export default class AmmoBase extends ItemBase<"ammo"> implements AmmoItem {
   constructor(
     g: Engine,
     name: string,

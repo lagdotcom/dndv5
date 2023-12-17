@@ -1,9 +1,9 @@
 import Engine from "../Engine";
 import { WondrousItem } from "../types/Item";
-import AbstractItem from "./AbstractItem";
+import ItemBase from "./ItemBase";
 
-export default class AbstractWondrous
-  extends AbstractItem<"wondrous">
+export default class WondrousItemBase
+  extends ItemBase<"wondrous">
   implements WondrousItem
 {
   constructor(g: Engine, name: string, hands = 0, iconUrl?: string) {

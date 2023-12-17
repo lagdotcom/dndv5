@@ -5,7 +5,7 @@ import Engine from "../../../Engine";
 import MessageBuilder from "../../../MessageBuilder";
 import Combatant from "../../../types/Combatant";
 import { isEquipmentAttuned } from "../../../utils/items";
-import AbstractWondrous from "../../AbstractWondrous";
+import WondrousItemBase from "../../WondrousItemBase";
 
 class CloakHoodAction extends AbstractAction {
   constructor(
@@ -50,7 +50,7 @@ class CloakHoodAction extends AbstractAction {
   }
 }
 
-export default class CloakOfElvenkind extends AbstractWondrous {
+export default class CloakOfElvenkind extends WondrousItemBase {
   constructor(
     g: Engine,
     public hoodUp = true,

@@ -1,5 +1,5 @@
-import AbstractCombatant from "../AbstractCombatant";
 import ErrorCollector from "../collectors/ErrorCollector";
+import CombatantBase from "../CombatantBase";
 import Engine from "../Engine";
 import { ErrorFilter } from "../filters";
 import Action from "../types/Action";
@@ -28,7 +28,7 @@ export default class TargetResolver implements Resolver<Combatant> {
   }
 
   check(value: unknown, action: Action, ec: ErrorCollector) {
-    if (!(value instanceof AbstractCombatant)) {
+    if (!(value instanceof CombatantBase)) {
       ec.add("No target", this);
     } else {
       const isOutOfRange = distance(action.actor, value) > this.maxRange;

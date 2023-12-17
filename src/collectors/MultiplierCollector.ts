@@ -1,4 +1,4 @@
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export type MultiplierType = "double" | "half" | "normal" | "zero";
 

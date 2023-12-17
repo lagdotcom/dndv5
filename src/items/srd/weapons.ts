@@ -12,9 +12,9 @@ import tridentUrl from "@img/eq/trident.svg";
 import Engine from "../../Engine";
 import { _dd, _fd } from "../../utils/dice";
 import { distance } from "../../utils/units";
-import AbstractWeapon from "../AbstractWeapon";
+import WeaponBase from "../WeaponBase";
 
-export class Club extends AbstractWeapon {
+export class Club extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -28,7 +28,7 @@ export class Club extends AbstractWeapon {
   }
 }
 
-export class Dagger extends AbstractWeapon {
+export class Dagger extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -44,7 +44,7 @@ export class Dagger extends AbstractWeapon {
   }
 }
 
-export class Greatclub extends AbstractWeapon {
+export class Greatclub extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -58,7 +58,7 @@ export class Greatclub extends AbstractWeapon {
   }
 }
 
-export class Handaxe extends AbstractWeapon {
+export class Handaxe extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -74,7 +74,7 @@ export class Handaxe extends AbstractWeapon {
   }
 }
 
-export class Javelin extends AbstractWeapon {
+export class Javelin extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -90,7 +90,7 @@ export class Javelin extends AbstractWeapon {
   }
 }
 
-export class LightHammer extends AbstractWeapon {
+export class LightHammer extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -106,7 +106,7 @@ export class LightHammer extends AbstractWeapon {
   }
 }
 
-export class Mace extends AbstractWeapon {
+export class Mace extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -120,7 +120,7 @@ export class Mace extends AbstractWeapon {
   }
 }
 
-export class Quarterstaff extends AbstractWeapon {
+export class Quarterstaff extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -134,7 +134,7 @@ export class Quarterstaff extends AbstractWeapon {
   }
 }
 
-export class Sickle extends AbstractWeapon {
+export class Sickle extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -148,7 +148,7 @@ export class Sickle extends AbstractWeapon {
   }
 }
 
-export class Spear extends AbstractWeapon {
+export class Spear extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -164,7 +164,7 @@ export class Spear extends AbstractWeapon {
   }
 }
 
-export class LightCrossbow extends AbstractWeapon {
+export class LightCrossbow extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -181,7 +181,7 @@ export class LightCrossbow extends AbstractWeapon {
   }
 }
 
-export class Dart extends AbstractWeapon {
+export class Dart extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -197,7 +197,7 @@ export class Dart extends AbstractWeapon {
   }
 }
 
-export class Shortbow extends AbstractWeapon {
+export class Shortbow extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -214,7 +214,7 @@ export class Shortbow extends AbstractWeapon {
   }
 }
 
-export class Sling extends AbstractWeapon {
+export class Sling extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -231,7 +231,7 @@ export class Sling extends AbstractWeapon {
   }
 }
 
-export class Battleaxe extends AbstractWeapon {
+export class Battleaxe extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -245,7 +245,7 @@ export class Battleaxe extends AbstractWeapon {
   }
 }
 
-export class Flail extends AbstractWeapon {
+export class Flail extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -258,7 +258,7 @@ export class Flail extends AbstractWeapon {
   }
 }
 
-export class Glaive extends AbstractWeapon {
+export class Glaive extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -272,7 +272,7 @@ export class Glaive extends AbstractWeapon {
   }
 }
 
-export class Greataxe extends AbstractWeapon {
+export class Greataxe extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -286,7 +286,7 @@ export class Greataxe extends AbstractWeapon {
   }
 }
 
-export class Greatsword extends AbstractWeapon {
+export class Greatsword extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -300,7 +300,7 @@ export class Greatsword extends AbstractWeapon {
   }
 }
 
-export class Halberd extends AbstractWeapon {
+export class Halberd extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -314,7 +314,7 @@ export class Halberd extends AbstractWeapon {
   }
 }
 
-export class Lance extends AbstractWeapon {
+export class Lance extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -338,7 +338,7 @@ export class Lance extends AbstractWeapon {
   }
 }
 
-export class Longsword extends AbstractWeapon {
+export class Longsword extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -352,7 +352,7 @@ export class Longsword extends AbstractWeapon {
   }
 }
 
-export class Maul extends AbstractWeapon {
+export class Maul extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -366,7 +366,7 @@ export class Maul extends AbstractWeapon {
   }
 }
 
-export class Morningstar extends AbstractWeapon {
+export class Morningstar extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -380,7 +380,7 @@ export class Morningstar extends AbstractWeapon {
   }
 }
 
-export class Pike extends AbstractWeapon {
+export class Pike extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -394,7 +394,7 @@ export class Pike extends AbstractWeapon {
   }
 }
 
-export class Rapier extends AbstractWeapon {
+export class Rapier extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -408,7 +408,7 @@ export class Rapier extends AbstractWeapon {
   }
 }
 
-export class Scimitar extends AbstractWeapon {
+export class Scimitar extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -422,7 +422,7 @@ export class Scimitar extends AbstractWeapon {
   }
 }
 
-export class Shortsword extends AbstractWeapon {
+export class Shortsword extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -436,7 +436,7 @@ export class Shortsword extends AbstractWeapon {
   }
 }
 
-export class Trident extends AbstractWeapon {
+export class Trident extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -452,7 +452,7 @@ export class Trident extends AbstractWeapon {
   }
 }
 
-export class WarPick extends AbstractWeapon {
+export class WarPick extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -466,7 +466,7 @@ export class WarPick extends AbstractWeapon {
   }
 }
 
-export class Warhammer extends AbstractWeapon {
+export class Warhammer extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -480,7 +480,7 @@ export class Warhammer extends AbstractWeapon {
   }
 }
 
-export class Whip extends AbstractWeapon {
+export class Whip extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -494,7 +494,7 @@ export class Whip extends AbstractWeapon {
   }
 }
 
-export class Blowgun extends AbstractWeapon {
+export class Blowgun extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -511,7 +511,7 @@ export class Blowgun extends AbstractWeapon {
   }
 }
 
-export class HandCrossbow extends AbstractWeapon {
+export class HandCrossbow extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -528,7 +528,7 @@ export class HandCrossbow extends AbstractWeapon {
   }
 }
 
-export class HeavyCrossbow extends AbstractWeapon {
+export class HeavyCrossbow extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -545,7 +545,7 @@ export class HeavyCrossbow extends AbstractWeapon {
   }
 }
 
-export class Longbow extends AbstractWeapon {
+export class Longbow extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,
@@ -562,7 +562,7 @@ export class Longbow extends AbstractWeapon {
   }
 }
 
-export class Net extends AbstractWeapon {
+export class Net extends WeaponBase {
   constructor(g: Engine) {
     super(
       g,

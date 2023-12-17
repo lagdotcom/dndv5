@@ -1,6 +1,6 @@
 import Engine from "../../Engine";
 import { isEquipmentAttuned } from "../../utils/items";
-import AbstractWondrous from "../AbstractWondrous";
+import WondrousItemBase from "../WondrousItemBase";
 
 const DragonTouchedLevels = [
   "Slumbering",
@@ -9,7 +9,7 @@ const DragonTouchedLevels = [
   "Ascendant",
 ] as const;
 type DragonTouchedLevel = (typeof DragonTouchedLevels)[number];
-export default class DragonTouchedFocus extends AbstractWondrous {
+export default class DragonTouchedFocus extends WondrousItemBase {
   constructor(g: Engine, level: DragonTouchedLevel) {
     super(g, `Dragon-Touched Focus (${level})`, 1);
     this.attunement = true;

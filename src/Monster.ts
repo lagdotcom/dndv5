@@ -1,12 +1,12 @@
-import AbstractCombatant from "./AbstractCombatant";
 import { defaultAIRules } from "./ai/data";
+import CombatantBase from "./CombatantBase";
 import Engine from "./Engine";
 import AIRule from "./types/AIRule";
 import CreatureType from "./types/CreatureType";
 import Item from "./types/Item";
 import SizeCategory from "./types/SizeCategory";
 
-export default class Monster extends AbstractCombatant {
+export default class Monster extends CombatantBase {
   constructor(
     g: Engine,
     name: string,

@@ -19,6 +19,7 @@ import {
   SplintArmor,
   StuddedLeatherArmor,
 } from "../items/srd/armor";
+import { PotionOfGiantStrength, PotionOfHealing } from "../items/srd/potions";
 import { ArrowCatchingShield } from "../items/srd/shields";
 import {
   Battleaxe,
@@ -71,7 +72,6 @@ import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
 import CloakOfElvenkind from "../items/srd/wondrous/CloakOfElvenkind";
 import CloakOfProtection from "../items/srd/wondrous/CloakOfProtection";
 import FigurineOfWondrousPower from "../items/srd/wondrous/FigurineOfWondrousPower";
-import { PotionOfGiantStrength } from "../items/srd/wondrous/potions";
 import { WandOfWeb } from "../items/srd/wondrous/wands";
 import BracersOfTheArbalest from "../items/wondrous/BracersOfTheArbalest";
 import DragonTouchedFocus from "../items/wondrous/DragonTouchedFocus";
@@ -147,6 +147,11 @@ const srdItems = {
   "sling bullet": (g) => new SlingBullet(g),
 
   // potions
+  "potion of healing": (g) => new PotionOfHealing(g, "standard"),
+  "potion of greater healing": (g) => new PotionOfHealing(g, "greater"),
+  "potion of superior healing": (g) => new PotionOfHealing(g, "superior"),
+  "potion of supreme healing": (g) => new PotionOfHealing(g, "supreme"),
+
   "potion of hill giant strength": (g) => new PotionOfGiantStrength(g, "Hill"),
   "potion of stone giant strength": (g) =>
     new PotionOfGiantStrength(g, "Stone"),

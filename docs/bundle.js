@@ -91,8 +91,8 @@
     combatants: [addPC("Tethilssethanar", 5, 5), addMonster("goblin", 15, 5)]
   };
 
-  // src/collectors/AbstractCollector.ts
-  var AbstractCollector = class {
+  // src/collectors/CollectorBase.ts
+  var CollectorBase = class {
     constructor(entries, ignoredSources, ignoredValues) {
       this.completelyIgnored = false;
       this.entries = new Set(entries);
@@ -132,12 +132,12 @@
       return this.getEntries().map((entry) => entry.value);
     }
   };
-  var AbstractSumCollector = class extends AbstractCollector {
+  var AbstractSumCollector = class extends CollectorBase {
     get result() {
       return this.getSum(this.getValues());
     }
   };
-  var SetCollector = class extends AbstractCollector {
+  var SetCollector = class extends CollectorBase {
     get result() {
       return new Set(this.getValues());
     }
@@ -1407,7 +1407,7 @@
     if (!Array.isArray(value))
       return false;
     for (const who of value)
-      if (!(who instanceof AbstractCombatant))
+      if (!(who instanceof CombatantBase))
         return false;
     return true;
   }
@@ -1815,7 +1815,7 @@
     return (who == null ? void 0 : who.equipment.has(item)) === true && who.attunements.has(item);
   }
 
-  // src/AbstractCombatant.ts
+  // src/CombatantBase.ts
   var defaultHandsAmount = {
     aberration: 0,
     beast: 0,
@@ -1832,7 +1832,7 @@
     plant: 0,
     undead: 2
   };
-  var AbstractCombatant = class {
+  var CombatantBase = class {
     constructor(g, name, {
       img,
       side,
@@ -2315,7 +2315,7 @@
       return clauses.length ? clauses.join(", ") : "any target";
     }
     check(value, action, ec) {
-      if (!(value instanceof AbstractCombatant)) {
+      if (!(value instanceof CombatantBase)) {
         ec.add("No target", this);
       } else {
         const isOutOfRange = distance(action.actor, value) > this.maxRange;
@@ -5362,7 +5362,7 @@
   var defaultAIRules = [new HealingRule(), new DamageRule()];
 
   // src/Monster.ts
-  var Monster = class extends AbstractCombatant {
+  var Monster = class extends CombatantBase {
     constructor(g, name, cr, type, size, img, hpMax, rules = defaultAIRules) {
       super(g, name, {
         type,
@@ -5893,8 +5893,8 @@
   // src/img/eq/bolt.svg
   var bolt_default = "./bolt-RV5OQWXW.svg";
 
-  // src/items/AbstractItem.ts
-  var AbstractItem = class {
+  // src/items/ItemBase.ts
+  var ItemBase = class {
     constructor(g, itemType, name, hands = 0, iconUrl) {
       this.g = g;
       this.itemType = itemType;
@@ -5914,8 +5914,8 @@
     }
   };
 
-  // src/items/AbstractAmmo.ts
-  var AbstractAmmo = class extends AbstractItem {
+  // src/items/AmmoBase.ts
+  var AmmoBase = class extends ItemBase {
     constructor(g, name, ammunitionTag, iconUrl) {
       super(g, "ammo", name, 0, iconUrl);
       this.ammunitionTag = ammunitionTag;
@@ -5923,29 +5923,29 @@
   };
 
   // src/items/srd/ammunition.ts
-  var Arrow = class extends AbstractAmmo {
+  var Arrow = class extends AmmoBase {
     constructor(g) {
       super(g, "arrow", "bow", arrow_default);
     }
   };
-  var BlowgunNeedle = class extends AbstractAmmo {
+  var BlowgunNeedle = class extends AmmoBase {
     constructor(g) {
       super(g, "blowgun needle", "blowgun");
     }
   };
-  var CrossbowBolt = class extends AbstractAmmo {
+  var CrossbowBolt = class extends AmmoBase {
     constructor(g) {
       super(g, "crossbow bolt", "crossbow", bolt_default);
     }
   };
-  var SlingBullet = class extends AbstractAmmo {
+  var SlingBullet = class extends AmmoBase {
     constructor(g) {
       super(g, "sling bullet", "sling");
     }
   };
 
-  // src/items/AbstractArmor.ts
-  var AbstractArmor = class extends AbstractItem {
+  // src/items/ArmorBase.ts
+  var ArmorBase = class extends ItemBase {
     constructor(g, name, category, ac, stealthDisadvantage = false, minimumStrength = 0, iconUrl) {
       super(g, "armor", name, 0, iconUrl);
       this.category = category;
@@ -5956,67 +5956,67 @@
   };
 
   // src/items/srd/armor.ts
-  var PaddedArmor = class extends AbstractArmor {
+  var PaddedArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "padded armor", "light", 11, true);
     }
   };
-  var LeatherArmor = class extends AbstractArmor {
+  var LeatherArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "leather armor", "light", 11);
     }
   };
-  var StuddedLeatherArmor = class extends AbstractArmor {
+  var StuddedLeatherArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "studded leather armor", "light", 12);
     }
   };
-  var HideArmor = class extends AbstractArmor {
+  var HideArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "hide armor", "medium", 12);
     }
   };
-  var ChainShirtArmor = class extends AbstractArmor {
+  var ChainShirtArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "chain shirt armor", "medium", 13);
     }
   };
-  var ScaleMailArmor = class extends AbstractArmor {
+  var ScaleMailArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "scale mail armor", "medium", 14, true);
     }
   };
-  var BreastplateArmor = class extends AbstractArmor {
+  var BreastplateArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "breastplate armor", "medium", 14);
     }
   };
-  var HalfPlateArmor = class extends AbstractArmor {
+  var HalfPlateArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "half plate armor", "medium", 15, true);
     }
   };
-  var RingMailArmor = class extends AbstractArmor {
+  var RingMailArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "ring mail armor", "heavy", 14, true);
     }
   };
-  var ChainMailArmor = class extends AbstractArmor {
+  var ChainMailArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "chain mail armor", "heavy", 16, true, 13);
     }
   };
-  var SplintArmor = class extends AbstractArmor {
+  var SplintArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "splint armor", "heavy", 17, true, 15);
     }
   };
-  var PlateArmor = class extends AbstractArmor {
+  var PlateArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "plate armor", "heavy", 18, true, 15);
     }
   };
-  var Shield = class extends AbstractArmor {
+  var Shield = class extends ArmorBase {
     constructor(g, iconUrl) {
       super(g, "shield", "shield", 2, false, void 0, iconUrl);
       this.hands = 1;
@@ -6053,8 +6053,8 @@
   // src/img/eq/trident.svg
   var trident_default = "./trident-XL6WP2YY.svg";
 
-  // src/items/AbstractWeapon.ts
-  var AbstractWeapon = class extends AbstractItem {
+  // src/items/WeaponBase.ts
+  var WeaponBase = class extends ItemBase {
     constructor(g, name, category, rangeCategory, damage, properties, iconUrl, shortRange, longRange, weaponType = name) {
       super(g, "weapon", name, 1, iconUrl);
       this.g = g;
@@ -6072,7 +6072,7 @@
   };
 
   // src/items/srd/weapons.ts
-  var Club = class extends AbstractWeapon {
+  var Club = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6085,7 +6085,7 @@
       );
     }
   };
-  var Dagger = class extends AbstractWeapon {
+  var Dagger = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6101,7 +6101,7 @@
       );
     }
   };
-  var Greatclub = class extends AbstractWeapon {
+  var Greatclub = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6115,7 +6115,7 @@
       );
     }
   };
-  var Handaxe = class extends AbstractWeapon {
+  var Handaxe = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6131,7 +6131,7 @@
       );
     }
   };
-  var Javelin = class extends AbstractWeapon {
+  var Javelin = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6147,7 +6147,7 @@
       );
     }
   };
-  var LightHammer = class extends AbstractWeapon {
+  var LightHammer = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6163,7 +6163,7 @@
       );
     }
   };
-  var Mace = class extends AbstractWeapon {
+  var Mace = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6176,7 +6176,7 @@
       );
     }
   };
-  var Quarterstaff = class extends AbstractWeapon {
+  var Quarterstaff = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6189,7 +6189,7 @@
       );
     }
   };
-  var Sickle = class extends AbstractWeapon {
+  var Sickle = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6203,7 +6203,7 @@
       );
     }
   };
-  var Spear = class extends AbstractWeapon {
+  var Spear = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6218,7 +6218,7 @@
       );
     }
   };
-  var LightCrossbow = class extends AbstractWeapon {
+  var LightCrossbow = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6234,7 +6234,7 @@
       this.ammunitionTag = "crossbow";
     }
   };
-  var Dart = class extends AbstractWeapon {
+  var Dart = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6250,7 +6250,7 @@
       );
     }
   };
-  var Shortbow = class extends AbstractWeapon {
+  var Shortbow = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6267,7 +6267,7 @@
       this.ammunitionTag = "bow";
     }
   };
-  var Sling = class extends AbstractWeapon {
+  var Sling = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6284,7 +6284,7 @@
       this.ammunitionTag = "sling";
     }
   };
-  var Battleaxe = class extends AbstractWeapon {
+  var Battleaxe = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6298,7 +6298,7 @@
       );
     }
   };
-  var Flail = class extends AbstractWeapon {
+  var Flail = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6311,7 +6311,7 @@
       );
     }
   };
-  var Glaive = class extends AbstractWeapon {
+  var Glaive = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6325,7 +6325,7 @@
       );
     }
   };
-  var Greataxe = class extends AbstractWeapon {
+  var Greataxe = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6338,7 +6338,7 @@
       );
     }
   };
-  var Greatsword = class extends AbstractWeapon {
+  var Greatsword = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6352,7 +6352,7 @@
       );
     }
   };
-  var Halberd = class extends AbstractWeapon {
+  var Halberd = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6366,7 +6366,7 @@
       );
     }
   };
-  var Lance = class extends AbstractWeapon {
+  var Lance = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6387,7 +6387,7 @@
       );
     }
   };
-  var Longsword = class extends AbstractWeapon {
+  var Longsword = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6400,7 +6400,7 @@
       );
     }
   };
-  var Maul = class extends AbstractWeapon {
+  var Maul = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6414,7 +6414,7 @@
       );
     }
   };
-  var Morningstar = class extends AbstractWeapon {
+  var Morningstar = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6428,7 +6428,7 @@
       );
     }
   };
-  var Pike = class extends AbstractWeapon {
+  var Pike = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6442,7 +6442,7 @@
       );
     }
   };
-  var Rapier = class extends AbstractWeapon {
+  var Rapier = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6455,7 +6455,7 @@
       );
     }
   };
-  var Scimitar = class extends AbstractWeapon {
+  var Scimitar = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6469,7 +6469,7 @@
       );
     }
   };
-  var Shortsword = class extends AbstractWeapon {
+  var Shortsword = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6483,7 +6483,7 @@
       );
     }
   };
-  var Trident = class extends AbstractWeapon {
+  var Trident = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6498,7 +6498,7 @@
       );
     }
   };
-  var WarPick = class extends AbstractWeapon {
+  var WarPick = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6512,7 +6512,7 @@
       );
     }
   };
-  var Warhammer = class extends AbstractWeapon {
+  var Warhammer = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6526,7 +6526,7 @@
       );
     }
   };
-  var Whip = class extends AbstractWeapon {
+  var Whip = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6540,7 +6540,7 @@
       );
     }
   };
-  var Blowgun = class extends AbstractWeapon {
+  var Blowgun = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6557,7 +6557,7 @@
       this.ammunitionTag = "blowgun";
     }
   };
-  var HandCrossbow = class extends AbstractWeapon {
+  var HandCrossbow = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6574,7 +6574,7 @@
       this.ammunitionTag = "crossbow";
     }
   };
-  var HeavyCrossbow = class extends AbstractWeapon {
+  var HeavyCrossbow = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6591,7 +6591,7 @@
       this.ammunitionTag = "crossbow";
     }
   };
-  var Longbow = class extends AbstractWeapon {
+  var Longbow = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -6607,7 +6607,7 @@
       this.ammunitionTag = "bow";
     }
   };
-  var Net = class extends AbstractWeapon {
+  var Net = class extends WeaponBase {
     constructor(g) {
       super(
         g,
@@ -8103,7 +8103,7 @@
   var chuul_default = "./chuul-VYYM7NAD.png";
 
   // src/monsters/NaturalWeapon.ts
-  var NaturalWeapon = class extends AbstractWeapon {
+  var NaturalWeapon = class extends WeaponBase {
     constructor(g, name, toHit, damage, { onHit } = {}) {
       super(g, name, "natural", "melee", damage);
       if (typeof toHit === "string")
@@ -8940,7 +8940,7 @@
   }
 
   // src/PC.ts
-  var UnarmedStrike = class extends AbstractWeapon {
+  var UnarmedStrike = class extends WeaponBase {
     constructor(g, owner) {
       super(
         g,
@@ -8954,7 +8954,7 @@
       this.owner = owner;
     }
   };
-  var PC = class extends AbstractCombatant {
+  var PC = class extends CombatantBase {
     constructor(g, name, img, rules = defaultAIRules) {
       super(g, name, {
         type: "humanoid",
@@ -9516,6 +9516,126 @@
   };
   var allEnchantments_default = allEnchantments;
 
+  // src/items/AbstractPotion.ts
+  var DrinkAction = class extends AbstractAction {
+    constructor(g, actor, item) {
+      super(
+        g,
+        actor,
+        `Drink (${item.name})`,
+        item.status,
+        {},
+        { time: "action", description: item.description }
+      );
+      this.item = item;
+    }
+    getTargets() {
+      return [];
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    async apply() {
+      await super.apply({});
+      this.actor.removeFromInventory(this.item);
+      await this.item.apply(this.actor, this);
+    }
+  };
+  var AbstractPotion = class extends ItemBase {
+    constructor(g, name, rarity, status = "missing", description, iconUrl) {
+      super(g, "potion", name, 0, iconUrl);
+      this.rarity = rarity;
+      this.status = status;
+      this.description = description;
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who.inventory.has(this))
+          actions.push(this.getDrinkAction(who));
+      });
+    }
+    getDrinkAction(actor) {
+      return new DrinkAction(this.g, actor, this);
+    }
+  };
+
+  // src/items/srd/common.ts
+  var GiantStats = {
+    Hill: { str: 21, potionRarity: "Uncommon", beltRarity: "Rare" },
+    Stone: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Frost: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Fire: { str: 25, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Cloud: { str: 27, potionRarity: "Very Rare", beltRarity: "Legendary" },
+    Storm: { str: 29, potionRarity: "Legendary", beltRarity: "Legendary" }
+  };
+
+  // src/items/srd/potions.ts
+  var PotionOfGiantStrength = class extends AbstractPotion {
+    constructor(g, type) {
+      super(
+        g,
+        `Potion of ${type} Giant Strength`,
+        GiantStats[type].potionRarity,
+        "missing",
+        `When you drink this potion, your Strength score changes to ${GiantStats[type].str} for 1 hour. The potion has no effect on you if your Strength is equal to or greater than that score.`
+      );
+      this.type = type;
+    }
+    async apply() {
+    }
+  };
+  var HealingPotionData = {
+    standard: { name: "Potion of Healing", rarity: "Common", dice: 2, bonus: 2 },
+    greater: {
+      name: "Potion of Greater Healing",
+      rarity: "Uncommon",
+      dice: 4,
+      bonus: 4
+    },
+    superior: {
+      name: "Potion of Superior Healing",
+      rarity: "Rare",
+      dice: 8,
+      bonus: 8
+    },
+    supreme: {
+      name: "Potion of Supreme Healing",
+      rarity: "Very Rare",
+      dice: 10,
+      bonus: 20
+    }
+  };
+  var PotionOfHealing = class extends AbstractPotion {
+    constructor(g, type) {
+      super(
+        g,
+        HealingPotionData[type].name,
+        HealingPotionData[type].rarity,
+        "implemented"
+      );
+      this.type = type;
+      const { dice, bonus } = HealingPotionData[type];
+      this.description = `You regain ${dice}d4 + ${bonus} hit points when you drink this potion. The potion's red liquid glimmers when agitated.`;
+    }
+    async apply(actor, action) {
+      const { dice, bonus } = HealingPotionData[this.type];
+      const rolled = await this.g.rollHeal(dice, {
+        size: 4,
+        source: this,
+        actor,
+        target: actor
+      });
+      await this.g.heal(this, rolled + bonus, {
+        action,
+        actor,
+        target: actor
+      });
+    }
+    getDrinkAction(actor) {
+      const action = super.getDrinkAction(actor);
+      action.time = "bonus action";
+      return action;
+    }
+  };
+
   // src/img/eq/arrow-catching-shield.svg
   var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
 
@@ -9589,25 +9709,15 @@
     }
   };
 
-  // src/items/AbstractWondrous.ts
-  var AbstractWondrous = class extends AbstractItem {
+  // src/items/WondrousItemBase.ts
+  var WondrousItemBase = class extends ItemBase {
     constructor(g, name, hands = 0, iconUrl) {
       super(g, "wondrous", name, hands, iconUrl);
     }
   };
 
-  // src/items/srd/common.ts
-  var GiantStats = {
-    Hill: { str: 21, potionRarity: "Uncommon", beltRarity: "Rare" },
-    Stone: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
-    Frost: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
-    Fire: { str: 25, potionRarity: "Rare", beltRarity: "Very Rare" },
-    Cloud: { str: 27, potionRarity: "Very Rare", beltRarity: "Legendary" },
-    Storm: { str: 29, potionRarity: "Legendary", beltRarity: "Legendary" }
-  };
-
   // src/items/srd/wondrous/baseStatItems.ts
-  var BaseStatItem = class extends AbstractWondrous {
+  var BaseStatItem = class extends WondrousItemBase {
     constructor(g, name, ability, score, rarity = "Rare") {
       super(g, name);
       this.attunement = true;
@@ -9647,7 +9757,7 @@
   };
 
   // src/items/srd/wondrous/BootsOfTheWinterlands.ts
-  var BootsOfTheWinterlands = class extends AbstractWondrous {
+  var BootsOfTheWinterlands = class extends WondrousItemBase {
     constructor(g) {
       super(g, "Boots of the Winterlands");
       this.attunement = true;
@@ -9663,7 +9773,7 @@
   };
 
   // src/items/srd/wondrous/BracersOfArchery.ts
-  var BracersOfArchery = class extends AbstractWondrous {
+  var BracersOfArchery = class extends WondrousItemBase {
     constructor(g) {
       super(g, "Bracers of Archery");
       this.attunement = true;
@@ -9682,7 +9792,7 @@
   };
 
   // src/items/srd/wondrous/BracersOfDefense.ts
-  var BracersOfDefense = class extends AbstractWondrous {
+  var BracersOfDefense = class extends WondrousItemBase {
     constructor(g) {
       super(g, "Bracers of Defense");
       this.attunement = true;
@@ -9730,7 +9840,7 @@
       );
     }
   };
-  var CloakOfElvenkind = class extends AbstractWondrous {
+  var CloakOfElvenkind = class extends WondrousItemBase {
     constructor(g, hoodUp = true) {
       super(g, "Cloak of Elvenkind", 0, hood_default);
       this.hoodUp = hoodUp;
@@ -9754,7 +9864,7 @@
   };
 
   // src/items/srd/wondrous/CloakOfProtection.ts
-  var CloakOfProtection = class extends AbstractWondrous {
+  var CloakOfProtection = class extends WondrousItemBase {
     constructor(g) {
       super(g, "Cloak of Protection");
       this.attunement = true;
@@ -9785,20 +9895,11 @@
     "Serpentine Owl": { rarity: "Rare" },
     "Silver Raven": { rarity: "Uncommon" }
   };
-  var FigurineOfWondrousPower = class extends AbstractWondrous {
+  var FigurineOfWondrousPower = class extends WondrousItemBase {
     constructor(g, type) {
       super(g, `Figurine of Wondrous Power, ${type}`, 0);
       this.type = type;
       this.rarity = FigurineData[type].rarity;
-    }
-  };
-
-  // src/items/srd/wondrous/potions.ts
-  var PotionOfGiantStrength = class extends AbstractWondrous {
-    constructor(g, type) {
-      super(g, `Potion of ${type} Giant Strength`, 0);
-      this.type = type;
-      this.rarity = GiantStats[type].potionRarity;
     }
   };
 
@@ -10028,8 +10129,8 @@
   });
   var Web_default = Web;
 
-  // src/items/AbstractWand.ts
-  var AbstractWand = class extends AbstractWondrous {
+  // src/items/WandBase.ts
+  var WandBase = class extends WondrousItemBase {
     constructor(g, name, rarity, charges, maxCharges, resource, spell, saveDC, method = {
       name,
       getResourceForSpell: () => resource,
@@ -10054,7 +10155,7 @@
   };
 
   // src/items/srd/wondrous/wands.ts
-  var WandOfWeb = class extends AbstractWand {
+  var WandOfWeb = class extends WandBase {
     constructor(g, charges = 7) {
       super(
         g,
@@ -10070,7 +10171,7 @@
   };
 
   // src/items/wondrous/BracersOfTheArbalest.ts
-  var BracersOfTheArbalest = class extends AbstractWondrous {
+  var BracersOfTheArbalest = class extends WondrousItemBase {
     constructor(g) {
       super(g, "Bracers of the Arbalest");
       this.attunement = true;
@@ -10090,7 +10191,7 @@
   };
 
   // src/items/wondrous/DragonTouchedFocus.ts
-  var DragonTouchedFocus = class extends AbstractWondrous {
+  var DragonTouchedFocus = class extends WondrousItemBase {
     constructor(g, level) {
       super(g, `Dragon-Touched Focus (${level})`, 1);
       this.attunement = true;
@@ -10187,7 +10288,7 @@
       }
     }
   };
-  var RingOfAwe = class extends AbstractWondrous {
+  var RingOfAwe = class extends WondrousItemBase {
     constructor(g) {
       super(g, "Ring of Awe", 0);
       this.attunement = true;
@@ -10275,7 +10376,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
   );
 
   // src/items/wondrous/SilverShiningAmulet.ts
-  var SilverShiningAmulet = class extends AbstractWondrous {
+  var SilverShiningAmulet = class extends WondrousItemBase {
     constructor(g, charged = true) {
       super(g, "Silver Shining Amulet", 0);
       this.charged = charged;
@@ -10367,6 +10468,10 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "crossbow bolt": (g) => new CrossbowBolt(g),
     "sling bullet": (g) => new SlingBullet(g),
     // potions
+    "potion of healing": (g) => new PotionOfHealing(g, "standard"),
+    "potion of greater healing": (g) => new PotionOfHealing(g, "greater"),
+    "potion of superior healing": (g) => new PotionOfHealing(g, "superior"),
+    "potion of supreme healing": (g) => new PotionOfHealing(g, "supreme"),
     "potion of hill giant strength": (g) => new PotionOfGiantStrength(g, "Hill"),
     "potion of stone giant strength": (g) => new PotionOfGiantStrength(g, "Stone"),
     "potion of frost giant strength": (g) => new PotionOfGiantStrength(g, "Frost"),
@@ -16342,7 +16447,7 @@ Once you use this feature, you must finish a short or long rest before you can u
     }
     return true;
   }
-  var MonkWeaponWrapper = class extends AbstractWeapon {
+  var MonkWeaponWrapper = class extends WeaponBase {
     constructor(g, weapon, size) {
       super(
         g,

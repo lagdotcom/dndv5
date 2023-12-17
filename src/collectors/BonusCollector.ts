@@ -1,4 +1,4 @@
-import { AbstractSumCollector } from "./AbstractCollector";
+import { AbstractSumCollector } from "./CollectorBase";
 
 export default class BonusCollector extends AbstractSumCollector<number> {
   getSum(values: number[]): number {

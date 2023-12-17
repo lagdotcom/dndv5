@@ -84,13 +84,18 @@ export interface ArmorItem extends BaseItem {
   addEnchantment(e: Enchantment<"armor">): void;
 }
 
+export interface PotionItem extends BaseItem {
+  itemType: "potion";
+  description?: string;
+}
+
 export interface WondrousItem extends BaseItem {
   itemType: "wondrous";
 
   addEnchantment(e: Enchantment<"wondrous">): void;
 }
 
-type Item = WeaponItem | AmmoItem | ArmorItem | WondrousItem;
+type Item = WeaponItem | AmmoItem | ArmorItem | PotionItem | WondrousItem;
 export default Item;
 
 export type ItemType = Item["itemType"];
@@ -98,6 +103,7 @@ export type ItemType = Item["itemType"];
 export interface ItemByTypeKey {
   armor: ArmorItem;
   ammo: AmmoItem;
+  potion: PotionItem;
   weapon: WeaponItem;
   wondrous: WondrousItem;
 }

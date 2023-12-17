@@ -1,8 +1,8 @@
 import Engine from "../../../Engine";
 import { isEquipmentAttuned } from "../../../utils/items";
-import AbstractWondrous from "../../AbstractWondrous";
+import WondrousItemBase from "../../WondrousItemBase";
 
-export default class BracersOfArchery extends AbstractWondrous {
+export default class BracersOfArchery extends WondrousItemBase {
   constructor(g: Engine) {
     super(g, "Bracers of Archery");
     this.attunement = true;

@@ -2,10 +2,10 @@ import Engine from "../../../Engine";
 import AbilityName from "../../../types/AbilityName";
 import { ItemRarity } from "../../../types/Item";
 import { isEquipmentAttuned } from "../../../utils/items";
-import AbstractWondrous from "../../AbstractWondrous";
+import WondrousItemBase from "../../WondrousItemBase";
 import { GiantStats, GiantType } from "../common";
 
-class BaseStatItem extends AbstractWondrous {
+class BaseStatItem extends WondrousItemBase {
   constructor(
     g: Engine,
     name: string,

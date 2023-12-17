@@ -1,11 +1,8 @@
 import Engine from "../Engine";
 import { ArmorCategory, ArmorItem } from "../types/Item";
-import AbstractItem from "./AbstractItem";
+import ItemBase from "./ItemBase";
 
-export default abstract class AbstractArmor
-  extends AbstractItem<"armor">
-  implements ArmorItem
-{
+export default class ArmorBase extends ItemBase<"armor"> implements ArmorItem {
   constructor(
     g: Engine,
     name: string,

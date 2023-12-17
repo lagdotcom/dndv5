@@ -1,9 +1,9 @@
 import Engine from "../../../Engine";
 import { DawnResource } from "../../../resources";
 import Web from "../../../spells/level2/Web";
-import AbstractWand from "../../AbstractWand";
+import WandBase from "../../WandBase";
 
-export class WandOfWeb extends AbstractWand {
+export class WandOfWeb extends WandBase {
   constructor(g: Engine, charges = 7) {
     super(
       g,

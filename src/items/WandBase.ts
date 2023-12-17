@@ -5,9 +5,9 @@ import Resource from "../types/Resource";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { isEquipmentAttuned } from "../utils/items";
-import AbstractWondrous from "./AbstractWondrous";
+import WondrousItemBase from "./WondrousItemBase";
 
-export default class AbstractWand extends AbstractWondrous {
+export default class WandBase extends WondrousItemBase {
   constructor(
     g: Engine,
     name: string,

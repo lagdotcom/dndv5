@@ -85,7 +85,7 @@ const defaultHandsAmount: Record<CreatureType, number> = {
   undead: 2,
 };
 
-export default abstract class AbstractCombatant implements Combatant {
+export default class CombatantBase implements Combatant {
   id: number;
   img: string;
   type: CreatureType;

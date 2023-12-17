@@ -1,4 +1,4 @@
-import AbstractCombatant from "../AbstractCombatant";
+import CombatantBase from "../CombatantBase";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
 
@@ -15,8 +15,7 @@ export function isA<T extends string>(
 
 export function isCombatantArray(value: unknown): value is Combatant[] {
   if (!Array.isArray(value)) return false;
-  for (const who of value)
-    if (!(who instanceof AbstractCombatant)) return false;
+  for (const who of value) if (!(who instanceof CombatantBase)) return false;
   return true;
 }
 

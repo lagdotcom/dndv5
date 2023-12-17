@@ -7,7 +7,7 @@ interface CollectorEntry<T> {
   source: Source;
 }
 
-abstract class AbstractCollector<T> {
+class CollectorBase<T> {
   protected entries: Set<CollectorEntry<T>>;
   protected ignoredSources: Set<Source>;
   protected ignoredValues: Set<T>;
@@ -67,7 +67,7 @@ abstract class AbstractCollector<T> {
 }
 
 export abstract class AbstractSumCollector<TValue, TResult = TValue>
-  extends AbstractCollector<TValue>
+  extends CollectorBase<TValue>
   implements Collector<TValue, TResult>
 {
   abstract getSum(values: TValue[]): TResult;
@@ -78,7 +78,7 @@ export abstract class AbstractSumCollector<TValue, TResult = TValue>
 }
 
 export class SetCollector<T>
-  extends AbstractCollector<T>
+  extends CollectorBase<T>
   implements Collector<T, Set<T>>
 {
   get result() {

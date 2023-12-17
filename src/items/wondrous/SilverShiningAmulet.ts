@@ -3,9 +3,9 @@ import Engine from "../../Engine";
 import { Listener } from "../../events/Dispatcher";
 import MessageBuilder from "../../MessageBuilder";
 import { isEquipmentAttuned } from "../../utils/items";
-import AbstractWondrous from "../AbstractWondrous";
+import WondrousItemBase from "../WondrousItemBase";
 
-export default class SilverShiningAmulet extends AbstractWondrous {
+export default class SilverShiningAmulet extends WondrousItemBase {
   constructor(
     g: Engine,
     private charged = true,

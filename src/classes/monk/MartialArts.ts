@@ -3,7 +3,7 @@ import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import AbstractWeapon from "../../items/AbstractWeapon";
+import WeaponBase from "../../items/WeaponBase";
 import Action from "../../types/Action";
 import ActionTime from "../../types/ActionTime";
 import Combatant from "../../types/Combatant";
@@ -52,7 +52,7 @@ function canUseMartialArts(who: Combatant) {
   return true;
 }
 
-class MonkWeaponWrapper extends AbstractWeapon {
+class MonkWeaponWrapper extends WeaponBase {
   constructor(
     g: Engine,
     public weapon: WeaponItem,

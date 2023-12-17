@@ -5,7 +5,7 @@ import Enchantment from "../types/Enchantment";
 import Icon from "../types/Icon";
 import { ItemByTypeKey, ItemRarity, ItemType } from "../types/Item";
 
-export default abstract class AbstractItem<T extends ItemType> {
+export default class ItemBase<T extends ItemType> {
   attunement?: boolean;
   magic?: boolean;
   enchantments: Set<Enchantment<T>>;
