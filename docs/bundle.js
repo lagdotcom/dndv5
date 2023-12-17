@@ -1501,12 +1501,13 @@
 
   // src/AbilityScore.ts
   var AbilityScore = class {
-    constructor(baseScore = 10, baseMaximum = 20) {
+    constructor(baseScore = 10, baseMaximum = 20, baseMinimum = 0) {
       this.baseScore = baseScore;
       this.baseMaximum = baseMaximum;
+      this.baseMinimum = baseMinimum;
     }
     get score() {
-      return Math.min(this.baseScore, this.maximum);
+      return Math.max(this.baseMinimum, Math.min(this.baseScore, this.maximum));
     }
     set score(value) {
       this.baseScore = value;
@@ -1516,6 +1517,12 @@
     }
     set maximum(value) {
       this.baseMaximum = Math.max(this.baseMaximum, value);
+    }
+    get minimum() {
+      return this.baseMinimum;
+    }
+    set minimum(value) {
+      this.baseMinimum = Math.max(this.baseMinimum, value);
     }
     get modifier() {
       return getAbilityModifier(this.score);
@@ -1530,6 +1537,13 @@
   var BeforeEffectEvent = class extends CustomEvent {
     constructor(detail) {
       super("BeforeEffect", { detail });
+    }
+  };
+
+  // src/events/CombatantFinalising.ts
+  var CombatantFinalisingEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CombatantFinalising", { detail });
     }
   };
 
@@ -2162,6 +2176,7 @@
     finalise() {
       for (const feature of this.features.values())
         feature.setup(this.g, this, this.getConfig(feature.name));
+      this.g.fire(new CombatantFinalisingEvent({ who: this }));
       this.hp = this.hpMax;
       for (const spell of this.preparedSpells)
         spellImplementationWarning(spell, this);
@@ -9419,20 +9434,22 @@
     }
   };
 
-  // src/items/potions.ts
+  // src/items/srd/common.ts
   var GiantStats = {
-    Hill: { str: 21, rarity: "Uncommon" },
-    Stone: { str: 23, rarity: "Rare" },
-    Frost: { str: 23, rarity: "Rare" },
-    Fire: { str: 25, rarity: "Rare" },
-    Cloud: { str: 27, rarity: "Very Rare" },
-    Storm: { str: 29, rarity: "Legendary" }
+    Hill: { str: 21, potionRarity: "Uncommon", beltRarity: "Rare" },
+    Stone: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Frost: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Fire: { str: 25, potionRarity: "Rare", beltRarity: "Very Rare" },
+    Cloud: { str: 27, potionRarity: "Very Rare", beltRarity: "Legendary" },
+    Storm: { str: 29, potionRarity: "Legendary", beltRarity: "Legendary" }
   };
+
+  // src/items/potions.ts
   var PotionOfGiantStrength = class extends AbstractWondrous {
     constructor(g, type) {
       super(g, `Potion of ${type} Giant Strength`, 0);
       this.type = type;
-      this.rarity = GiantStats[type].rarity;
+      this.rarity = GiantStats[type].potionRarity;
     }
   };
 
@@ -9506,6 +9523,62 @@
             );
         }
       });
+    }
+  };
+
+  // src/items/srd/wondrous/baseStatItems.ts
+  var BaseStatItem = class extends AbstractWondrous {
+    constructor(g, name, ability, score, rarity = "Rare") {
+      super(g, name);
+      this.attunement = true;
+      this.rarity = rarity;
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who))
+          who[ability].minimum = score;
+      });
+    }
+  };
+  var AmuletOfHealth = class extends BaseStatItem {
+    constructor(g) {
+      super(g, "Amulet of Health", "con", 19);
+    }
+  };
+  var BeltOfGiantStrength = class extends BaseStatItem {
+    constructor(g, type) {
+      super(
+        g,
+        `Belt of ${type} Giant Strength`,
+        "str",
+        GiantStats[type].str,
+        GiantStats[type].beltRarity
+      );
+      this.type = type;
+    }
+  };
+  var GauntletsOfOgrePower = class extends BaseStatItem {
+    constructor(g) {
+      super(g, "Gauntlets of Ogre Power", "str", 19);
+    }
+  };
+  var HeadbandOfIntellect = class extends BaseStatItem {
+    constructor(g) {
+      super(g, "Headband of Intellect", "int", 19);
+    }
+  };
+
+  // src/items/srd/wondrous/BootsOfTheWinterlands.ts
+  var BootsOfTheWinterlands = class extends AbstractWondrous {
+    constructor(g) {
+      super(g, "Boots of the Winterlands");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (isEquipmentAttuned(this, who) && damageType === "cold")
+            response.add("resist", this);
+        }
+      );
     }
   };
 
@@ -9770,22 +9843,6 @@
         new DawnResource("charge", 7),
         Web_default,
         15
-      );
-    }
-  };
-
-  // src/items/wondrous/BootsOfTheWinterlands.ts
-  var BootsOfTheWinterlands = class extends AbstractWondrous {
-    constructor(g) {
-      super(g, "Boots of the Winterlands");
-      this.attunement = true;
-      this.rarity = "Uncommon";
-      g.events.on(
-        "GetDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (isEquipmentAttuned(this, who) && damageType === "cold")
-            response.add("resist", this);
-        }
       );
     }
   };
@@ -10201,6 +10258,13 @@ If your DM allows the use of feats, you may instead take a feat.`,
     // wands
     "wand of web": (g, qty = 1) => new WandOfWeb(g, qty),
     // wondrous
+    "amulet of health": (g) => new AmuletOfHealth(g),
+    "belt of hill giant strength": (g) => new BeltOfGiantStrength(g, "Hill"),
+    "belt of stone giant strength": (g) => new BeltOfGiantStrength(g, "Stone"),
+    "belt of frost giant strength": (g) => new BeltOfGiantStrength(g, "Frost"),
+    "belt of fire giant strength": (g) => new BeltOfGiantStrength(g, "Fire"),
+    "belt of cloud giant strength": (g) => new BeltOfGiantStrength(g, "Cloud"),
+    "belt of storm giant strength": (g) => new BeltOfGiantStrength(g, "Storm"),
     "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
     "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
     "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
@@ -10218,6 +10282,8 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "figurine of wondrous power, onyx dog": (g) => new FigurineOfWondrousPower(g, "Onyx Dog"),
     "figurine of wondrous power, serpentine owl": (g) => new FigurineOfWondrousPower(g, "Serpentine Owl"),
     "figurine of wondrous power, silver raven": (g) => new FigurineOfWondrousPower(g, "Silver Raven"),
+    "gauntlets of ogre power": (g) => new GauntletsOfOgrePower(g),
+    "headband of intellect": (g) => new HeadbandOfIntellect(g),
     "ring of awe": (g) => new RingOfAwe(g),
     "silver shining amulet": (g) => new SilverShiningAmulet(g)
   };

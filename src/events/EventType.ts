@@ -14,6 +14,7 @@ import CheckActionEvent from "./CheckActionEvent";
 import CheckVisionEvent from "./CheckVisionEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
+import CombatantFinalisingEvent from "./CombatantFinalising";
 import CombatantHealedEvent from "./CombatantHealedEvent";
 import CombatantInitiativeEvent from "./CombatantInitiativeEvent";
 import CombatantMovedEvent from "./CombatantMovedEvent";
@@ -62,6 +63,7 @@ export interface EventTypes {
   CheckVision: CheckVisionEvent;
   CombatantDamaged: CombatantDamagedEvent;
   CombatantDied: CombatantDiedEvent;
+  CombatantFinalising: CombatantFinalisingEvent;
   CombatantHealed: CombatantHealedEvent;
   CombatantInitiative: CombatantInitiativeEvent;
   CombatantMoved: CombatantMovedEvent;

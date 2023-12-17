@@ -6,6 +6,7 @@ import MultiplierCollector from "./collectors/MultiplierCollector";
 import SuccessResponseCollector from "./collectors/SuccessResponseCollector";
 import Engine from "./Engine";
 import BeforeEffectEvent from "./events/BeforeEffectEvent";
+import CombatantFinalisingEvent from "./events/CombatantFinalising";
 import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
 import ExhaustionEvent from "./events/ExhaustionEvent";
@@ -582,6 +583,9 @@ export default abstract class AbstractCombatant implements Combatant {
   finalise() {
     for (const feature of this.features.values())
       feature.setup(this.g, this, this.getConfig(feature.name));
+
+    // this is where items should apply stuff
+    this.g.fire(new CombatantFinalisingEvent({ who: this }));
 
     this.hp = this.hpMax;
 

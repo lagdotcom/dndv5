@@ -21,6 +21,13 @@ import {
 } from "../items/armor";
 import { PotionOfGiantStrength } from "../items/potions";
 import { ArrowCatchingShield } from "../items/shields";
+import {
+  AmuletOfHealth,
+  BeltOfGiantStrength,
+  GauntletsOfOgrePower,
+  HeadbandOfIntellect,
+} from "../items/srd/wondrous/baseStatItems";
+import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
 import { WandOfWeb } from "../items/wands";
 import {
   Battleaxe,
@@ -61,7 +68,6 @@ import {
   WarPick,
   Whip,
 } from "../items/weapons";
-import BootsOfTheWinterlands from "../items/wondrous/BootsOfTheWinterlands";
 import BracersOfTheArbalest from "../items/wondrous/BracersOfTheArbalest";
 import CloakOfElvenkind from "../items/wondrous/CloakOfElvenkind";
 import CloakOfProtection from "../items/wondrous/CloakOfProtection";
@@ -157,6 +163,13 @@ const allItems = {
   "wand of web": (g, qty = 1) => new WandOfWeb(g, qty),
 
   // wondrous
+  "amulet of health": (g) => new AmuletOfHealth(g),
+  "belt of hill giant strength": (g) => new BeltOfGiantStrength(g, "Hill"),
+  "belt of stone giant strength": (g) => new BeltOfGiantStrength(g, "Stone"),
+  "belt of frost giant strength": (g) => new BeltOfGiantStrength(g, "Frost"),
+  "belt of fire giant strength": (g) => new BeltOfGiantStrength(g, "Fire"),
+  "belt of cloud giant strength": (g) => new BeltOfGiantStrength(g, "Cloud"),
+  "belt of storm giant strength": (g) => new BeltOfGiantStrength(g, "Storm"),
   "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
   "bracers of the arbalest": (g) => new BracersOfTheArbalest(g),
   "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
@@ -186,6 +199,8 @@ const allItems = {
     new FigurineOfWondrousPower(g, "Serpentine Owl"),
   "figurine of wondrous power, silver raven": (g) =>
     new FigurineOfWondrousPower(g, "Silver Raven"),
+  "gauntlets of ogre power": (g) => new GauntletsOfOgrePower(g),
+  "headband of intellect": (g) => new HeadbandOfIntellect(g),
   "ring of awe": (g) => new RingOfAwe(g),
   "silver shining amulet": (g) => new SilverShiningAmulet(g),
 } as const satisfies Record<string, ItemCreator>;

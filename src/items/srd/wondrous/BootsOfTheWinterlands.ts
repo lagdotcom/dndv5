@@ -1,6 +1,6 @@
-import Engine from "../../Engine";
-import { isEquipmentAttuned } from "../../utils/items";
-import AbstractWondrous from "../AbstractWondrous";
+import Engine from "../../../Engine";
+import { isEquipmentAttuned } from "../../../utils/items";
+import AbstractWondrous from "../../AbstractWondrous";
 
 export default class BootsOfTheWinterlands extends AbstractWondrous {
   constructor(g: Engine) {
