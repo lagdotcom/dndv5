@@ -5,6 +5,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { sieve } from "../../utils/array";
 import { hours } from "../../utils/time";
+import { isA } from "../../utils/types";
 import { simpleSpell } from "../common";
 
 const StoneskinEffect = new Effect(
@@ -17,7 +18,7 @@ const StoneskinEffect = new Effect(
         if (
           who.hasEffect(StoneskinEffect) &&
           !attack?.pre.tags.has("magical") &&
-          MundaneDamageTypes.includes(damageType)
+          isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", StoneskinEffect);
       },

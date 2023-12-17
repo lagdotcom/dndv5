@@ -5,25 +5,25 @@ import Engine from "../../Engine";
 import AbstractAmmo from "../AbstractAmmo";
 
 export class Arrow extends AbstractAmmo {
-  constructor(g: Engine, quantity: number) {
-    super(g, "arrow", "bow", quantity, arrowUrl);
+  constructor(g: Engine) {
+    super(g, "arrow", "bow", arrowUrl);
   }
 }
 
 export class BlowgunNeedle extends AbstractAmmo {
-  constructor(g: Engine, quantity: number) {
-    super(g, "blowgun needle", "blowgun", quantity);
+  constructor(g: Engine) {
+    super(g, "blowgun needle", "blowgun");
   }
 }
 
 export class CrossbowBolt extends AbstractAmmo {
-  constructor(g: Engine, quantity: number) {
-    super(g, "crossbow bolt", "crossbow", quantity, boltUrl);
+  constructor(g: Engine) {
+    super(g, "crossbow bolt", "crossbow", boltUrl);
   }
 }
 
 export class SlingBullet extends AbstractAmmo {
-  constructor(g: Engine, quantity: number) {
-    super(g, "sling bullet", "sling", quantity);
+  constructor(g: Engine) {
+    super(g, "sling bullet", "sling");
   }
 }

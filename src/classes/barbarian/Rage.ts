@@ -13,6 +13,7 @@ import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
+import { isA } from "../../utils/types";
 import { BarbarianIcon } from "./common";
 
 const RageIcon = makeIcon(rageIconUrl, "red");
@@ -115,7 +116,7 @@ export const RageEffect = new Effect(
     g.events.on(
       "GetDamageResponse",
       ({ detail: { who, damageType, response } }) => {
-        if (isRaging(who) && MundaneDamageTypes.includes(damageType))
+        if (isRaging(who) && isA(damageType, MundaneDamageTypes))
           response.add("resist", RageEffect);
       },
     );

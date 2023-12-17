@@ -51,19 +51,19 @@ export class Goblin extends Monster {
     if (wieldingBow) {
       this.don(bow, true);
 
-      this.inventory.add(scimitar);
+      this.addToInventory(scimitar);
       this.weaponProficiencies.add("scimitar");
 
-      this.inventory.add(shield);
+      this.addToInventory(shield);
       this.armorProficiencies.add("shield");
     } else {
       this.don(scimitar, true);
       this.don(shield, true);
 
-      this.inventory.add(bow);
+      this.addToInventory(bow);
       this.weaponProficiencies.add("shortbow");
     }
 
-    this.inventory.add(new Arrow(g, 10));
+    this.addToInventory(new Arrow(g), 10);
   }
 }

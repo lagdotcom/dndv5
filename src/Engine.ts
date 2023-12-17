@@ -147,7 +147,7 @@ export default class Engine {
       who.finalise();
       who.initiative = await this.rollInitiative(who);
 
-      const items = [...who.inventory, ...who.equipment];
+      const items = [...who.inventory.keys(), ...who.equipment];
       for (const item of items) {
         item.owner = who;
         item.possessor = who;

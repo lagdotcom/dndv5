@@ -6,7 +6,7 @@ import allPCs, { PCName } from "./allPCs";
 import initialisePC from "./initialisePC";
 
 export type CombatantCreator = (g: Engine) => Combatant;
-export type ItemCreator = (g: Engine, quantity?: number) => Item;
+export type ItemCreator = (g: Engine) => Item;
 
 interface PCEntry {
   type: "pc";

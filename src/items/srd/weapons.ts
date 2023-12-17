@@ -29,7 +29,7 @@ export class Club extends AbstractWeapon {
 }
 
 export class Dagger extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "dagger",
@@ -41,7 +41,6 @@ export class Dagger extends AbstractWeapon {
       20,
       60,
     );
-    this.quantity = quantity;
   }
 }
 
@@ -60,7 +59,7 @@ export class Greatclub extends AbstractWeapon {
 }
 
 export class Handaxe extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "handaxe",
@@ -72,12 +71,11 @@ export class Handaxe extends AbstractWeapon {
       20,
       60,
     );
-    this.quantity = quantity;
   }
 }
 
 export class Javelin extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "javelin",
@@ -89,12 +87,11 @@ export class Javelin extends AbstractWeapon {
       30,
       120,
     );
-    this.quantity = quantity;
   }
 }
 
 export class LightHammer extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "light hammer",
@@ -106,7 +103,6 @@ export class LightHammer extends AbstractWeapon {
       20,
       60,
     );
-    this.quantity = quantity;
   }
 }
 
@@ -153,7 +149,7 @@ export class Sickle extends AbstractWeapon {
 }
 
 export class Spear extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "spear",
@@ -165,7 +161,6 @@ export class Spear extends AbstractWeapon {
       20,
       60,
     );
-    this.quantity = quantity;
   }
 }
 
@@ -187,7 +182,7 @@ export class LightCrossbow extends AbstractWeapon {
 }
 
 export class Dart extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "dart",
@@ -199,7 +194,6 @@ export class Dart extends AbstractWeapon {
       20,
       60,
     );
-    this.quantity = quantity;
   }
 }
 
@@ -443,7 +437,7 @@ export class Shortsword extends AbstractWeapon {
 }
 
 export class Trident extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "trident",
@@ -455,7 +449,6 @@ export class Trident extends AbstractWeapon {
       20,
       60,
     );
-    this.quantity = quantity;
   }
 }
 
@@ -570,7 +563,7 @@ export class Longbow extends AbstractWeapon {
 }
 
 export class Net extends AbstractWeapon {
-  constructor(g: Engine, quantity: number) {
+  constructor(g: Engine) {
     super(
       g,
       "net",
@@ -582,7 +575,6 @@ export class Net extends AbstractWeapon {
       5,
       15,
     );
-    this.quantity = quantity;
 
     // TODO A Large or smaller creature hit by a net is restrained until it is freed. A net has no effect on creatures that are formless, or creatures that are Huge or larger. A creature can use its action to make a DC 10 Strength check, freeing itself or another creature within its reach on a success. Dealing 5 slashing damage to the net (AC 10) also frees the creature without harming it, ending the effect and destroying the net. When you use an action, bonus action, or reaction to attack with a net, you can make only one attack regardless of the number of attacks you can normally make.
   }

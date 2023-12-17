@@ -25,6 +25,7 @@ import { WeaponItem } from "../../types/Item";
 import MoveDirection from "../../types/MoveDirection";
 import SizeCategory from "../../types/SizeCategory";
 import { round } from "../../utils/numbers";
+import { isA } from "../../utils/types";
 import { makeMultiattack } from "../common";
 
 const LustForBattle = new ConfiguredFeature<WeaponItem>(
@@ -59,7 +60,7 @@ const BullRushEffect = new Effect(
       ({ detail: { who, damageType, response } }) => {
         if (
           who.hasEffect(BullRushEffect) &&
-          MundaneDamageTypes.includes(damageType)
+          isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", BullRushEffect);
       },

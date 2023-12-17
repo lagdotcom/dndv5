@@ -1,5 +1,6 @@
 import Effect from "../../Effect";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import { isA } from "../../utils/types";
 import { simpleSpell } from "../common";
 
 const BladeWardEffect = new Effect(
@@ -12,7 +13,7 @@ const BladeWardEffect = new Effect(
         if (
           who.hasEffect(BladeWardEffect) &&
           attack?.pre.weapon &&
-          MundaneDamageTypes.includes(damageType)
+          isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", BladeWardEffect);
       },

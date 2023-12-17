@@ -57,7 +57,7 @@ export default function initialisePC(g: Engine, t: PCTemplate) {
   addLanguages(t.languages);
 
   for (const { name, equip, attune, enchantments, quantity } of t.items) {
-    const item = allItems[name](g, quantity);
+    const item = allItems[name](g);
     if (attune) pc.attunements.add(item);
 
     for (const name of enchantments ?? []) {
@@ -66,7 +66,7 @@ export default function initialisePC(g: Engine, t: PCTemplate) {
     }
 
     if (equip) pc.don(item);
-    else pc.inventory.add(item);
+    else pc.addToInventory(item, quantity);
   }
 
   for (const spell of t.known ?? []) pc.knownSpells.add(allSpells[spell]);

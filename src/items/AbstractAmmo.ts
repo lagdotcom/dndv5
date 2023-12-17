@@ -10,7 +10,6 @@ export default class AbstractAmmo
     g: Engine,
     name: string,
     public ammunitionTag: AmmunitionTag,
-    public quantity: number,
     iconUrl?: string,
   ) {
     super(g, "ammo", name, 0, iconUrl);

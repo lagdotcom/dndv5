@@ -17,7 +17,7 @@ export default class DonAction extends AbstractAction<HasItem> {
       {
         item: new ChoiceResolver(
           g,
-          Array.from(actor.inventory, (value) => ({
+          Array.from(actor.inventory.keys(), (value) => ({
             label: value.name,
             value,
           })).filter(({ value }) => value.hands),

@@ -99,7 +99,7 @@ class WildShapeController {
     me.movement = form.movement;
     me.skills; // TODO
     me.equipment = new Set();
-    me.inventory = new Set();
+    me.inventory = new Map();
     me.senses = form.senses;
     me.naturalWeapons = form.naturalWeapons;
     me.str.score = form.str.score;

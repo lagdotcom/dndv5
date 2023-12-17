@@ -97,18 +97,18 @@ const srdItems = {
 
   // simple melee
   club: (g) => new Club(g),
-  dagger: (g, qty = 1) => new Dagger(g, qty),
+  dagger: (g) => new Dagger(g),
   greatclub: (g) => new Greatclub(g),
-  handaxe: (g, qty = 1) => new Handaxe(g, qty),
-  javelin: (g, qty = 1) => new Javelin(g, qty),
-  "light hammer": (g, qty = 1) => new LightHammer(g, qty),
+  handaxe: (g) => new Handaxe(g),
+  javelin: (g) => new Javelin(g),
+  "light hammer": (g) => new LightHammer(g),
   mace: (g) => new Mace(g),
   quarterstaff: (g) => new Quarterstaff(g),
   sickle: (g) => new Sickle(g),
-  spear: (g, qty = 1) => new Spear(g, qty),
+  spear: (g) => new Spear(g),
 
   // simple ranged
-  dart: (g, qty = 1) => new Dart(g, qty),
+  dart: (g) => new Dart(g),
   "light crossbow": (g) => new LightCrossbow(g),
   sling: (g) => new Sling(g),
   shortbow: (g) => new Shortbow(g),
@@ -128,7 +128,7 @@ const srdItems = {
   rapier: (g) => new Rapier(g),
   scimitar: (g) => new Scimitar(g),
   shortsword: (g) => new Shortsword(g),
-  trident: (g, qty = 1) => new Trident(g, qty),
+  trident: (g) => new Trident(g),
   warhammer: (g) => new Warhammer(g),
   "war pick": (g) => new WarPick(g),
   whip: (g) => new Whip(g),
@@ -138,13 +138,13 @@ const srdItems = {
   "hand crossbow": (g) => new HandCrossbow(g),
   "heavy crossbow": (g) => new HeavyCrossbow(g),
   longbow: (g) => new Longbow(g),
-  net: (g, qty = 1) => new Net(g, qty),
+  net: (g) => new Net(g),
 
   // ammunition
-  arrow: (g, qty = 1) => new Arrow(g, qty),
-  "blowgun needle": (g, qty = 1) => new BlowgunNeedle(g, qty),
-  "crossbow bolt": (g, qty = 1) => new CrossbowBolt(g, qty),
-  "sling bullet": (g, qty = 1) => new SlingBullet(g, qty),
+  arrow: (g) => new Arrow(g),
+  "blowgun needle": (g) => new BlowgunNeedle(g),
+  "crossbow bolt": (g) => new CrossbowBolt(g),
+  "sling bullet": (g) => new SlingBullet(g),
 
   // potions
   "potion of hill giant strength": (g) => new PotionOfGiantStrength(g, "Hill"),
@@ -162,7 +162,7 @@ const srdItems = {
   "arrow-catching shield": (g) => new ArrowCatchingShield(g),
 
   // wands
-  "wand of web": (g, qty = 1) => new WandOfWeb(g, qty),
+  "wand of web": (g) => new WandOfWeb(g),
 
   // wondrous
   "amulet of health": (g) => new AmuletOfHealth(g),

@@ -58,7 +58,6 @@ export interface WeaponItem extends BaseItem {
   longRange?: number;
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: AbilityName;
-  quantity: number;
   reach: number;
 
   addEnchantment(e: Enchantment<"weapon">): void;
@@ -67,7 +66,6 @@ export interface WeaponItem extends BaseItem {
 export interface AmmoItem extends BaseItem {
   itemType: "ammo";
   ammunitionTag: AmmunitionTag;
-  quantity: number;
 
   addEnchantment(e: Enchantment<"ammo">): void;
 }

@@ -8,7 +8,7 @@ export function getAllIcons(g: Engine) {
   return new Set(
     Array.from(g.combatants.keys())
       .flatMap((who) => [
-        ...who.inventory,
+        ...who.inventory.keys(),
         ...who.equipment,
         ...who.knownSpells,
         ...who.preparedSpells,

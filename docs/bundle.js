@@ -1808,7 +1808,7 @@
   }
   function getValidAmmunition(who, weapon) {
     return who.ammunition.filter(
-      (ammo) => ammo.ammunitionTag === weapon.ammunitionTag && ammo.quantity > 0
+      (ammo) => ammo.ammunitionTag === weapon.ammunitionTag
     );
   }
   function isEquipmentAttuned(item, who) {
@@ -1884,7 +1884,7 @@
       this.skills = /* @__PURE__ */ new Map();
       this.languages = /* @__PURE__ */ new Set();
       this.equipment = /* @__PURE__ */ new Set();
-      this.inventory = /* @__PURE__ */ new Set();
+      this.inventory = /* @__PURE__ */ new Map();
       this.senses = /* @__PURE__ */ new Map();
       this.armorProficiencies = /* @__PURE__ */ new Set();
       this.weaponCategoryProficiencies = /* @__PURE__ */ new Set();
@@ -1957,7 +1957,7 @@
         if (item.itemType === "ammo")
           ammo.push(item);
       }
-      for (const item of this.inventory) {
+      for (const item of this.inventory.keys()) {
         if (item.itemType === "ammo")
           ammo.push(item);
       }
@@ -2062,7 +2062,7 @@
     }
     doff(item) {
       if (this.equipment.delete(item)) {
-        this.inventory.add(item);
+        this.addToInventory(item);
         return true;
       }
       return false;
@@ -2281,6 +2281,21 @@
         values.push(group.getCoefficient(co));
       const filtered = values.filter(isDefined);
       return filtered.length ? filtered.reduce((p, c) => p * c, 1) : co.defaultValue;
+    }
+    addToInventory(item, quantity = 1) {
+      var _a;
+      const count = (_a = this.inventory.get(item)) != null ? _a : 0;
+      this.inventory.set(item, count + quantity);
+    }
+    removeFromInventory(item, quantity = 1) {
+      const count = this.inventory.get(item);
+      if (typeof count === "undefined" || count < quantity)
+        return false;
+      if (count === quantity)
+        this.inventory.delete(item);
+      else
+        this.inventory.set(item, count - quantity);
+      return true;
     }
   };
 
@@ -3073,7 +3088,7 @@
     if (e2.hit) {
       const { who: attacker, target, ability, weapon, ammo } = e2.attack.pre;
       if (ammo)
-        ammo.quantity--;
+        attacker.removeFromInventory(ammo, 1);
       if (weapon) {
         const { damage } = weapon;
         const baseDamage = [];
@@ -3278,7 +3293,7 @@
         {
           item: new ChoiceResolver(
             g,
-            Array.from(actor.inventory, (value) => ({
+            Array.from(actor.inventory.keys(), (value) => ({
               label: value.name,
               value
             })).filter(({ value }) => value.hands)
@@ -4454,7 +4469,7 @@
       for (const who of this.combatants) {
         who.finalise();
         who.initiative = await this.rollInitiative(who);
-        const items = [...who.inventory, ...who.equipment];
+        const items = [...who.inventory.keys(), ...who.equipment];
         for (const item of items) {
           item.owner = who;
           item.possessor = who;
@@ -5901,32 +5916,31 @@
 
   // src/items/AbstractAmmo.ts
   var AbstractAmmo = class extends AbstractItem {
-    constructor(g, name, ammunitionTag, quantity, iconUrl) {
+    constructor(g, name, ammunitionTag, iconUrl) {
       super(g, "ammo", name, 0, iconUrl);
       this.ammunitionTag = ammunitionTag;
-      this.quantity = quantity;
     }
   };
 
   // src/items/srd/ammunition.ts
   var Arrow = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "arrow", "bow", quantity, arrow_default);
+    constructor(g) {
+      super(g, "arrow", "bow", arrow_default);
     }
   };
   var BlowgunNeedle = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "blowgun needle", "blowgun", quantity);
+    constructor(g) {
+      super(g, "blowgun needle", "blowgun");
     }
   };
   var CrossbowBolt = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "crossbow bolt", "crossbow", quantity, bolt_default);
+    constructor(g) {
+      super(g, "crossbow bolt", "crossbow", bolt_default);
     }
   };
   var SlingBullet = class extends AbstractAmmo {
-    constructor(g, quantity) {
-      super(g, "sling bullet", "sling", quantity);
+    constructor(g) {
+      super(g, "sling bullet", "sling");
     }
   };
 
@@ -6051,7 +6065,6 @@
       this.longRange = longRange;
       this.weaponType = weaponType;
       this.properties = new Set(properties);
-      this.quantity = 1;
     }
     get reach() {
       return this.properties.has("reach") ? 5 : 0;
@@ -6073,7 +6086,7 @@
     }
   };
   var Dagger = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "dagger",
@@ -6086,7 +6099,6 @@
         20,
         60
       );
-      this.quantity = quantity;
     }
   };
   var Greatclub = class extends AbstractWeapon {
@@ -6104,7 +6116,7 @@
     }
   };
   var Handaxe = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "handaxe",
@@ -6117,11 +6129,10 @@
         20,
         60
       );
-      this.quantity = quantity;
     }
   };
   var Javelin = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "javelin",
@@ -6134,11 +6145,10 @@
         30,
         120
       );
-      this.quantity = quantity;
     }
   };
   var LightHammer = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "light hammer",
@@ -6151,7 +6161,6 @@
         20,
         60
       );
-      this.quantity = quantity;
     }
   };
   var Mace = class extends AbstractWeapon {
@@ -6195,7 +6204,7 @@
     }
   };
   var Spear = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "spear",
@@ -6207,7 +6216,6 @@
         20,
         60
       );
-      this.quantity = quantity;
     }
   };
   var LightCrossbow = class extends AbstractWeapon {
@@ -6227,7 +6235,7 @@
     }
   };
   var Dart = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "dart",
@@ -6240,7 +6248,6 @@
         20,
         60
       );
-      this.quantity = quantity;
     }
   };
   var Shortbow = class extends AbstractWeapon {
@@ -6477,7 +6484,7 @@
     }
   };
   var Trident = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "trident",
@@ -6489,7 +6496,6 @@
         20,
         60
       );
-      this.quantity = quantity;
     }
   };
   var WarPick = class extends AbstractWeapon {
@@ -6602,7 +6608,7 @@
     }
   };
   var Net = class extends AbstractWeapon {
-    constructor(g, quantity) {
+    constructor(g) {
       super(
         g,
         "net",
@@ -6615,7 +6621,6 @@
         5,
         15
       );
-      this.quantity = quantity;
     }
   };
 
@@ -6765,7 +6770,7 @@
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, attack, response } }) => {
-          if (who === me && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && MundaneDamageTypes.includes(damageType))
+          if (who === me && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
             response.add("resist", SmoulderingRage);
         }
       );
@@ -6798,8 +6803,8 @@
       this.addFeature(SmoulderingRage);
       this.don(new StuddedLeatherArmor(g), true);
       this.don(new Longbow(g), true);
-      this.don(new Spear(g, 1), true);
-      this.inventory.add(new Arrow(g, Infinity));
+      this.don(new Spear(g), true);
+      this.addToInventory(new Arrow(g), Infinity);
     }
   };
 
@@ -7919,7 +7924,7 @@
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, response } }) => {
-          if (who.hasEffect(BullRushEffect) && MundaneDamageTypes.includes(damageType))
+          if (who.hasEffect(BullRushEffect) && isA(damageType, MundaneDamageTypes))
             response.add("resist", BullRushEffect);
         }
       );
@@ -8360,17 +8365,17 @@
       const bow = new Shortbow(g);
       if (wieldingBow) {
         this.don(bow, true);
-        this.inventory.add(scimitar);
+        this.addToInventory(scimitar);
         this.weaponProficiencies.add("scimitar");
-        this.inventory.add(shield);
+        this.addToInventory(shield);
         this.armorProficiencies.add("shield");
       } else {
         this.don(scimitar, true);
         this.don(shield, true);
-        this.inventory.add(bow);
+        this.addToInventory(bow);
         this.weaponProficiencies.add("shortbow");
       }
-      this.inventory.add(new Arrow(g, 10));
+      this.addToInventory(new Arrow(g), 10);
     }
   };
 
@@ -8399,14 +8404,14 @@
       const crossbow = new HeavyCrossbow(g);
       if (wieldingCrossbow) {
         this.don(crossbow, true);
-        this.inventory.add(mace);
+        this.addToInventory(mace);
         this.weaponProficiencies.add("mace");
       } else {
         this.don(mace, true);
-        this.inventory.add(crossbow);
+        this.addToInventory(crossbow);
         this.weaponProficiencies.add("heavy crossbow");
       }
-      this.inventory.add(new CrossbowBolt(g, Infinity));
+      this.addToInventory(new CrossbowBolt(g), Infinity);
     }
   };
 
@@ -10317,17 +10322,17 @@ If your DM allows the use of feats, you may instead take a feat.`,
     shield: (g) => new Shield(g),
     // simple melee
     club: (g) => new Club(g),
-    dagger: (g, qty = 1) => new Dagger(g, qty),
+    dagger: (g) => new Dagger(g),
     greatclub: (g) => new Greatclub(g),
-    handaxe: (g, qty = 1) => new Handaxe(g, qty),
-    javelin: (g, qty = 1) => new Javelin(g, qty),
-    "light hammer": (g, qty = 1) => new LightHammer(g, qty),
+    handaxe: (g) => new Handaxe(g),
+    javelin: (g) => new Javelin(g),
+    "light hammer": (g) => new LightHammer(g),
     mace: (g) => new Mace(g),
     quarterstaff: (g) => new Quarterstaff(g),
     sickle: (g) => new Sickle(g),
-    spear: (g, qty = 1) => new Spear(g, qty),
+    spear: (g) => new Spear(g),
     // simple ranged
-    dart: (g, qty = 1) => new Dart(g, qty),
+    dart: (g) => new Dart(g),
     "light crossbow": (g) => new LightCrossbow(g),
     sling: (g) => new Sling(g),
     shortbow: (g) => new Shortbow(g),
@@ -10346,7 +10351,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
     rapier: (g) => new Rapier(g),
     scimitar: (g) => new Scimitar(g),
     shortsword: (g) => new Shortsword(g),
-    trident: (g, qty = 1) => new Trident(g, qty),
+    trident: (g) => new Trident(g),
     warhammer: (g) => new Warhammer(g),
     "war pick": (g) => new WarPick(g),
     whip: (g) => new Whip(g),
@@ -10355,12 +10360,12 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "hand crossbow": (g) => new HandCrossbow(g),
     "heavy crossbow": (g) => new HeavyCrossbow(g),
     longbow: (g) => new Longbow(g),
-    net: (g, qty = 1) => new Net(g, qty),
+    net: (g) => new Net(g),
     // ammunition
-    arrow: (g, qty = 1) => new Arrow(g, qty),
-    "blowgun needle": (g, qty = 1) => new BlowgunNeedle(g, qty),
-    "crossbow bolt": (g, qty = 1) => new CrossbowBolt(g, qty),
-    "sling bullet": (g, qty = 1) => new SlingBullet(g, qty),
+    arrow: (g) => new Arrow(g),
+    "blowgun needle": (g) => new BlowgunNeedle(g),
+    "crossbow bolt": (g) => new CrossbowBolt(g),
+    "sling bullet": (g) => new SlingBullet(g),
     // potions
     "potion of hill giant strength": (g) => new PotionOfGiantStrength(g, "Hill"),
     "potion of stone giant strength": (g) => new PotionOfGiantStrength(g, "Stone"),
@@ -10371,7 +10376,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
     // shields
     "arrow-catching shield": (g) => new ArrowCatchingShield(g),
     // wands
-    "wand of web": (g, qty = 1) => new WandOfWeb(g, qty),
+    "wand of web": (g) => new WandOfWeb(g),
     // wondrous
     "amulet of health": (g) => new AmuletOfHealth(g),
     "belt of hill giant strength": (g) => new BeltOfGiantStrength(g, "Hill"),
@@ -10826,7 +10831,7 @@ While holding the object, a creature can take an action to produce the spell's e
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, response } }) => {
-          if (isRaging(who) && MundaneDamageTypes.includes(damageType))
+          if (isRaging(who) && isA(damageType, MundaneDamageTypes))
             response.add("resist", RageEffect);
         }
       );
@@ -11333,7 +11338,7 @@ This increases to two additional dice at 13th level and three additional dice at
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, attack, damageType, response } }) => {
-          if (who.hasEffect(BladeWardEffect) && (attack == null ? void 0 : attack.pre.weapon) && MundaneDamageTypes.includes(damageType))
+          if (who.hasEffect(BladeWardEffect) && (attack == null ? void 0 : attack.pre.weapon) && isA(damageType, MundaneDamageTypes))
             response.add("resist", BladeWardEffect);
         }
       );
@@ -15183,7 +15188,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, response, attack } }) => {
-          if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && MundaneDamageTypes.includes(damageType))
+          if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
             response.add("resist", StoneskinEffect);
         }
       );
@@ -15911,7 +15916,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       me.movement = form.movement;
       me.skills;
       me.equipment = /* @__PURE__ */ new Set();
-      me.inventory = /* @__PURE__ */ new Set();
+      me.inventory = /* @__PURE__ */ new Map();
       me.senses = form.senses;
       me.naturalWeapons = form.naturalWeapons;
       me.str.score = form.str.score;
@@ -19904,7 +19909,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     addConfigs(t.configs);
     addLanguages(t.languages);
     for (const { name, equip, attune, enchantments, quantity } of t.items) {
-      const item = allItems_default[name](g, quantity);
+      const item = allItems_default[name](g);
       if (attune)
         pc.attunements.add(item);
       for (const name2 of enchantments != null ? enchantments : []) {
@@ -19914,7 +19919,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (equip)
         pc.don(item);
       else
-        pc.inventory.add(item);
+        pc.addToInventory(item, quantity);
     }
     for (const spell of (_c = t.known) != null ? _c : [])
       pc.knownSpells.add(allSpells_default[spell]);
@@ -19986,7 +19991,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   function getAllIcons(g) {
     return new Set(
       Array.from(g.combatants.keys()).flatMap((who) => [
-        ...who.inventory,
+        ...who.inventory.keys(),
         ...who.equipment,
         ...who.knownSpells,
         ...who.preparedSpells,

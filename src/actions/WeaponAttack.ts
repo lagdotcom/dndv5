@@ -184,7 +184,7 @@ async function getAttackResult(
     // TODO [SPAWNITEMS] throwing
 
     const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
-    if (ammo) ammo.quantity--;
+    if (ammo) attacker.removeFromInventory(ammo, 1);
 
     if (weapon) {
       const { damage } = weapon;

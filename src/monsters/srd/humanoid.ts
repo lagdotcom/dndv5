@@ -32,15 +32,15 @@ export class Thug extends Monster {
     if (wieldingCrossbow) {
       this.don(crossbow, true);
 
-      this.inventory.add(mace);
+      this.addToInventory(mace);
       this.weaponProficiencies.add("mace");
     } else {
       this.don(mace, true);
 
-      this.inventory.add(crossbow);
+      this.addToInventory(crossbow);
       this.weaponProficiencies.add("heavy crossbow");
     }
 
-    this.inventory.add(new CrossbowBolt(g, Infinity));
+    this.addToInventory(new CrossbowBolt(g), Infinity);
   }
 }

@@ -18,7 +18,6 @@ export default abstract class AbstractWeapon
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: AbilityName;
   properties: Set<WeaponProperty>;
-  quantity: number;
 
   constructor(
     public g: Engine,
@@ -33,9 +32,7 @@ export default abstract class AbstractWeapon
     public weaponType = name,
   ) {
     super(g, "weapon", name, 1, iconUrl);
-
     this.properties = new Set(properties);
-    this.quantity = 1;
   }
 
   get reach() {

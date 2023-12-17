@@ -116,7 +116,7 @@ export default abstract class AbstractCombatant implements Combatant {
   skills: Map<SkillName, ProficiencyType>;
   languages: Set<LanguageName>;
   equipment: Set<Item>;
-  inventory: Set<Item>;
+  inventory: Map<Item, number>;
   senses: Map<SenseName, number>;
   weaponProficiencies: Set<WeaponType>;
   weaponCategoryProficiencies: Set<WeaponCategory>;
@@ -228,7 +228,7 @@ export default abstract class AbstractCombatant implements Combatant {
     this.skills = new Map();
     this.languages = new Set();
     this.equipment = new Set();
-    this.inventory = new Set();
+    this.inventory = new Map();
     this.senses = new Map();
     this.armorProficiencies = new Set();
     this.weaponCategoryProficiencies = new Set();
@@ -304,7 +304,7 @@ export default abstract class AbstractCombatant implements Combatant {
     for (const item of this.equipment) {
       if (item.itemType === "ammo") ammo.push(item);
     }
-    for (const item of this.inventory) {
+    for (const item of this.inventory.keys()) {
       if (item.itemType === "ammo") ammo.push(item);
     }
     return ammo;
@@ -445,7 +445,7 @@ export default abstract class AbstractCombatant implements Combatant {
 
   doff(item: Item) {
     if (this.equipment.delete(item)) {
-      this.inventory.add(item);
+      this.addToInventory(item);
       return true;
     }
 
@@ -714,5 +714,19 @@ export default abstract class AbstractCombatant implements Combatant {
     return filtered.length
       ? filtered.reduce((p, c) => p * c, 1)
       : co.defaultValue;
+  }
+
+  addToInventory(item: Item, quantity = 1) {
+    const count = this.inventory.get(item) ?? 0;
+    this.inventory.set(item, count + quantity);
+  }
+
+  removeFromInventory(item: Item, quantity = 1) {
+    const count = this.inventory.get(item);
+    if (typeof count === "undefined" || count < quantity) return false;
+
+    if (count === quantity) this.inventory.delete(item);
+    else this.inventory.set(item, count - quantity);
+    return true;
   }
 }

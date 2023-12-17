@@ -72,7 +72,7 @@ export default interface Combatant extends Source {
   skills: Map<SkillName, ProficiencyType>;
   languages: Set<LanguageName>;
   equipment: Set<Item>;
-  inventory: Set<Item>;
+  inventory: Map<Item, number>;
   senses: Map<SenseName, number>;
   weaponProficiencies: Set<string>;
   weaponCategoryProficiencies: Set<WeaponCategory>;
@@ -142,4 +142,7 @@ export default interface Combatant extends Source {
   getCoefficient(co: AICoefficient): number;
   don(item: Item): boolean;
   doff(item: Item): boolean;
+
+  addToInventory(item: Item, quantity?: number): void;
+  removeFromInventory(item: Item, quantity?: number): boolean;
 }

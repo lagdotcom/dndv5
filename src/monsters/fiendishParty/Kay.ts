@@ -14,6 +14,7 @@ import Monster from "../../Monster";
 import { atSet } from "../../types/AttackTag";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import SizeCategory from "../../types/SizeCategory";
+import { isA } from "../../utils/types";
 import { makeMultiattack } from "../common";
 
 const hiddenName = "Shrouded Figure";
@@ -102,7 +103,7 @@ const SmoulderingRage = new SimpleFeature(
         if (
           who === me &&
           !attack?.pre.tags.has("magical") &&
-          MundaneDamageTypes.includes(damageType)
+          isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", SmoulderingRage);
       },
@@ -140,7 +141,7 @@ export default class Kay extends Monster {
 
     this.don(new StuddedLeatherArmor(g), true);
     this.don(new Longbow(g), true);
-    this.don(new Spear(g, 1), true);
-    this.inventory.add(new Arrow(g, Infinity));
+    this.don(new Spear(g), true);
+    this.addToInventory(new Arrow(g), Infinity);
   }
 }
