@@ -20,6 +20,7 @@ export interface BeforeAttackDetail {
   method?: SpellcastingMethod;
   tags: Set<AttackTag>;
   diceType: DiceTypeCollector;
+  pb: BonusCollector;
   proficiency: ProficiencyCollector;
   bonus: BonusCollector;
   interrupt: InterruptionCollector;

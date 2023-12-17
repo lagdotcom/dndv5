@@ -4512,10 +4512,10 @@
       this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
       return value;
     }
-    addProficiencyBonus(who, proficiency, bonus) {
+    addProficiencyBonus(who, proficiency, bonus, pb) {
       const result = proficiency.result;
       if (result) {
-        const value = Math.floor(result * who.pb);
+        const value = Math.floor(result * (who.pb + pb.result));
         bonus.add(value, ProficiencyRule);
       }
     }
@@ -4528,6 +4528,7 @@
       fail: "normal"
     }) {
       const successResponse = new SuccessResponseCollector();
+      const pb = new BonusCollector();
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
@@ -4539,6 +4540,7 @@
         new BeforeSaveEvent({
           ...e2,
           dc,
+          pb,
           proficiency,
           bonus,
           diceType,
@@ -4548,7 +4550,7 @@
           interrupt: new InterruptionCollector()
         })
       );
-      this.addProficiencyBonus(e2.who, proficiency, bonus);
+      this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
       let roll = {
         type: { type: "save", ...e2 },
         diceType: "normal",
@@ -4588,6 +4590,7 @@
     }
     async abilityCheck(dc, e2) {
       const successResponse = new SuccessResponseCollector();
+      const pb = new BonusCollector();
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
@@ -4595,6 +4598,7 @@
         new BeforeCheckEvent({
           ...e2,
           dc,
+          pb,
           proficiency,
           bonus,
           diceType,
@@ -4602,7 +4606,7 @@
           interrupt: new InterruptionCollector()
         })
       );
-      this.addProficiencyBonus(e2.who, proficiency, bonus);
+      this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
       let forced = false;
       let success = false;
       const roll = await this.roll({ type: "check", ...e2 }, diceType.result);
@@ -4906,6 +4910,7 @@
       );
     }
     async attack(e2) {
+      const pb = new BonusCollector();
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
@@ -4913,6 +4918,7 @@
       const pre = await this.resolve(
         new BeforeAttackEvent({
           ...e2,
+          pb,
           proficiency,
           bonus,
           diceType,
@@ -4922,7 +4928,7 @@
       );
       if (success.result === "fail")
         return { outcome: "cancelled", hit: false };
-      this.addProficiencyBonus(e2.who, proficiency, bonus);
+      this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
       const { target, who, ability } = pre.detail;
       const ac = await this.getAC(target, pre.detail);
       const roll = await this.roll(
@@ -9751,46 +9757,6 @@
     }
   };
 
-  // src/items/srd/wondrous/baseStatItems.ts
-  var BaseStatItem = class extends WondrousItemBase {
-    constructor(g, name, ability, score, rarity = "Rare") {
-      super(g, name);
-      this.attunement = true;
-      this.rarity = rarity;
-      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
-        if (isEquipmentAttuned(this, who))
-          who[ability].minimum = score;
-      });
-    }
-  };
-  var AmuletOfHealth = class extends BaseStatItem {
-    constructor(g) {
-      super(g, "Amulet of Health", "con", 19);
-    }
-  };
-  var BeltOfGiantStrength = class extends BaseStatItem {
-    constructor(g, type) {
-      super(
-        g,
-        `Belt of ${type} Giant Strength`,
-        "str",
-        GiantStats[type].str,
-        GiantStats[type].beltRarity
-      );
-      this.type = type;
-    }
-  };
-  var GauntletsOfOgrePower = class extends BaseStatItem {
-    constructor(g) {
-      super(g, "Gauntlets of Ogre Power", "str", 19);
-    }
-  };
-  var HeadbandOfIntellect = class extends BaseStatItem {
-    constructor(g) {
-      super(g, "Headband of Intellect", "int", 19);
-    }
-  };
-
   // src/items/srd/wondrous/BootsOfTheWinterlands.ts
   var BootsOfTheWinterlands = class extends WondrousItemBase {
     constructor(g) {
@@ -10070,6 +10036,92 @@
       super(g, `Figurine of Wondrous Power, ${type}`, 0);
       this.type = type;
       this.rarity = FigurineData[type].rarity;
+    }
+  };
+
+  // src/items/srd/wondrous/iounStones.ts
+  var AbilityIounStone = class extends WondrousItemBase {
+    constructor(g, name, ability) {
+      super(g, `Ioun stone of ${name}`);
+      this.attunement = true;
+      this.rarity = "Very Rare";
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who))
+          who[ability].score += 2;
+      });
+    }
+  };
+  var iounStoneOfAgility = (g) => new AbilityIounStone(g, "Agility", "dex");
+  var iounStoneOfFortitude = (g) => new AbilityIounStone(g, "Fortitude", "con");
+  var iounStoneOfInsight = (g) => new AbilityIounStone(g, "Insight", "wis");
+  var iounStoneOfIntellect = (g) => new AbilityIounStone(g, "Intellect", "int");
+  var iounStoneOfLeadership = (g) => new AbilityIounStone(g, "Leadership", "cha");
+  var iounStoneOfStrength = (g) => new AbilityIounStone(g, "Strength", "str");
+  var IounStoneOfMastery = class extends WondrousItemBase {
+    constructor(g) {
+      super(g, "Ioun stone of mastery");
+      this.attunement = true;
+      this.rarity = "Legendary";
+      const handler = ({
+        detail
+      }) => {
+        if (isEquipmentAttuned(this, detail.who))
+          detail.pb.add(1, this);
+      };
+      g.events.on("BeforeAttack", handler);
+      g.events.on("BeforeCheck", handler);
+      g.events.on("BeforeSave", handler);
+    }
+  };
+  var IounStoneOfProtection = class extends WondrousItemBase {
+    constructor(g) {
+      super(g, "Ioun stone of protection");
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("GetAC", ({ detail: { who, bonus } }) => {
+        if (isEquipmentAttuned(this, who))
+          bonus.add(1, this);
+      });
+    }
+  };
+
+  // src/items/srd/wondrous/minimumScoreItems.ts
+  var BaseStatItem = class extends WondrousItemBase {
+    constructor(g, name, ability, score, rarity = "Rare") {
+      super(g, name);
+      this.attunement = true;
+      this.rarity = rarity;
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who))
+          who[ability].minimum = score;
+      });
+    }
+  };
+  var AmuletOfHealth = class extends BaseStatItem {
+    constructor(g) {
+      super(g, "Amulet of Health", "con", 19);
+    }
+  };
+  var BeltOfGiantStrength = class extends BaseStatItem {
+    constructor(g, type) {
+      super(
+        g,
+        `Belt of ${type} Giant Strength`,
+        "str",
+        GiantStats[type].str,
+        GiantStats[type].beltRarity
+      );
+      this.type = type;
+    }
+  };
+  var GauntletsOfOgrePower = class extends BaseStatItem {
+    constructor(g) {
+      super(g, "Gauntlets of Ogre Power", "str", 19);
+    }
+  };
+  var HeadbandOfIntellect = class extends BaseStatItem {
+    constructor(g) {
+      super(g, "Headband of Intellect", "int", 19);
     }
   };
 
@@ -10677,6 +10729,14 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "figurine of wondrous power, serpentine owl": (g) => new FigurineOfWondrousPower(g, "Serpentine Owl"),
     "figurine of wondrous power, silver raven": (g) => new FigurineOfWondrousPower(g, "Silver Raven"),
     "gauntlets of ogre power": (g) => new GauntletsOfOgrePower(g),
+    "Ioun stone of agility": iounStoneOfAgility,
+    "Ioun stone of fortitude": iounStoneOfFortitude,
+    "Ioun stone of insight": iounStoneOfInsight,
+    "Ioun stone of intellect": iounStoneOfIntellect,
+    "Ioun stone of leadership": iounStoneOfLeadership,
+    "Ioun stone of mastery": (g) => new IounStoneOfMastery(g),
+    "Ioun stone of protection": (g) => new IounStoneOfProtection(g),
+    "Ioun stone of strength": iounStoneOfStrength,
     "headband of intellect": (g) => new HeadbandOfIntellect(g)
   };
   var allItems = {

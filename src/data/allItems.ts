@@ -22,12 +22,6 @@ import {
 import { ArrowCatchingShield } from "../items/shields";
 import { ElvenChain } from "../items/srd/armor";
 import { PotionOfGiantStrength, PotionOfHealing } from "../items/srd/potions";
-import {
-  AmuletOfHealth,
-  BeltOfGiantStrength,
-  GauntletsOfOgrePower,
-  HeadbandOfIntellect,
-} from "../items/srd/wondrous/baseStatItems";
 import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
 import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
 import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
@@ -35,6 +29,22 @@ import BroochOfShielding from "../items/srd/wondrous/BroochOfShielding";
 import CloakOfElvenkind from "../items/srd/wondrous/CloakOfElvenkind";
 import CloakOfProtection from "../items/srd/wondrous/CloakOfProtection";
 import FigurineOfWondrousPower from "../items/srd/wondrous/FigurineOfWondrousPower";
+import {
+  iounStoneOfAgility,
+  iounStoneOfFortitude,
+  iounStoneOfInsight,
+  iounStoneOfIntellect,
+  iounStoneOfLeadership,
+  IounStoneOfMastery,
+  IounStoneOfProtection,
+  iounStoneOfStrength,
+} from "../items/srd/wondrous/iounStones";
+import {
+  AmuletOfHealth,
+  BeltOfGiantStrength,
+  GauntletsOfOgrePower,
+  HeadbandOfIntellect,
+} from "../items/srd/wondrous/minimumScoreItems";
 import { WandOfWeb } from "../items/srd/wondrous/wands";
 import {
   Battleaxe,
@@ -205,6 +215,14 @@ const srdItems = {
   "figurine of wondrous power, silver raven": (g) =>
     new FigurineOfWondrousPower(g, "Silver Raven"),
   "gauntlets of ogre power": (g) => new GauntletsOfOgrePower(g),
+  "Ioun stone of agility": iounStoneOfAgility,
+  "Ioun stone of fortitude": iounStoneOfFortitude,
+  "Ioun stone of insight": iounStoneOfInsight,
+  "Ioun stone of intellect": iounStoneOfIntellect,
+  "Ioun stone of leadership": iounStoneOfLeadership,
+  "Ioun stone of mastery": (g) => new IounStoneOfMastery(g),
+  "Ioun stone of protection": (g) => new IounStoneOfProtection(g),
+  "Ioun stone of strength": iounStoneOfStrength,
   "headband of intellect": (g) => new HeadbandOfIntellect(g),
 } as const satisfies Record<string, ItemCreator>;
 

@@ -57,6 +57,7 @@ describe("Rage Feature", () => {
         dc: 10,
         tags: chSet(),
         diceType,
+        pb: new BonusCollector(),
         proficiency: new ProficiencyCollector(),
         bonus: new BonusCollector(),
         successResponse: new SuccessResponseCollector(),

@@ -209,10 +209,11 @@ export default class Engine {
     who: Combatant,
     proficiency: ProficiencyCollector,
     bonus: BonusCollector,
+    pb: BonusCollector,
   ) {
     const result = proficiency.result;
     if (result) {
-      const value = Math.floor(result * who.pb);
+      const value = Math.floor(result * (who.pb + pb.result));
       bonus.add(value, ProficiencyRule);
     }
   }
@@ -234,6 +235,7 @@ export default class Engine {
     },
   ) {
     const successResponse = new SuccessResponseCollector();
+    const pb = new BonusCollector();
     const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
@@ -246,6 +248,7 @@ export default class Engine {
       new BeforeSaveEvent({
         ...e,
         dc,
+        pb,
         proficiency,
         bonus,
         diceType,
@@ -256,7 +259,7 @@ export default class Engine {
       }),
     );
 
-    this.addProficiencyBonus(e.who, proficiency, bonus);
+    this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 
     let roll: DiceRolledDetail<SavingThrow> = {
       type: { type: "save", ...e },
@@ -302,6 +305,7 @@ export default class Engine {
 
   async abilityCheck(dc: number, e: Omit<AbilityCheck, "dc" | "type">) {
     const successResponse = new SuccessResponseCollector();
+    const pb = new BonusCollector();
     const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
@@ -310,6 +314,7 @@ export default class Engine {
       new BeforeCheckEvent({
         ...e,
         dc,
+        pb,
         proficiency,
         bonus,
         diceType,
@@ -318,7 +323,7 @@ export default class Engine {
       }),
     );
 
-    this.addProficiencyBonus(e.who, proficiency, bonus);
+    this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 
     let forced = false;
     let success = false;
@@ -731,9 +736,10 @@ export default class Engine {
   async attack(
     e: Omit<
       BeforeAttackDetail,
-      "proficiency" | "bonus" | "diceType" | "interrupt" | "success"
+      "pb" | "proficiency" | "bonus" | "diceType" | "interrupt" | "success"
     >,
   ) {
+    const pb = new BonusCollector();
     const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
@@ -742,6 +748,7 @@ export default class Engine {
     const pre = await this.resolve(
       new BeforeAttackEvent({
         ...e,
+        pb,
         proficiency,
         bonus,
         diceType,
@@ -752,7 +759,7 @@ export default class Engine {
     if (success.result === "fail")
       return { outcome: "cancelled", hit: false } as const;
 
-    this.addProficiencyBonus(e.who, proficiency, bonus);
+    this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 
     // these COULD be changed during the event
     const { target, who, ability } = pre.detail;

@@ -18,6 +18,7 @@ export interface BeforeCheckDetail {
   tool?: ToolName;
   diceType: DiceTypeCollector;
   proficiency: ProficiencyCollector;
+  pb: BonusCollector;
   bonus: BonusCollector;
   successResponse: SuccessResponseCollector;
   tags: Set<CheckTag>;

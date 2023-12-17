@@ -19,6 +19,7 @@ export interface BeforeSaveDetail<T = unknown> {
   ability?: AbilityName;
   diceType: DiceTypeCollector;
   proficiency: ProficiencyCollector;
+  pb: BonusCollector;
   bonus: BonusCollector;
   successResponse: SuccessResponseCollector;
   saveDamageResponse: SaveDamageResponseCollector;
