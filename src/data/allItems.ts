@@ -3,7 +3,7 @@ import {
   BlowgunNeedle,
   CrossbowBolt,
   SlingBullet,
-} from "../items/srd/ammunition";
+} from "../items/ammunition";
 import {
   BreastplateArmor,
   ChainMailArmor,
@@ -18,9 +18,24 @@ import {
   Shield,
   SplintArmor,
   StuddedLeatherArmor,
-} from "../items/srd/armor";
+} from "../items/armor";
+import { ArrowCatchingShield } from "../items/shields";
+import { ElvenChain } from "../items/srd/armor";
 import { PotionOfGiantStrength, PotionOfHealing } from "../items/srd/potions";
-import { ArrowCatchingShield } from "../items/srd/shields";
+import {
+  AmuletOfHealth,
+  BeltOfGiantStrength,
+  GauntletsOfOgrePower,
+  HeadbandOfIntellect,
+} from "../items/srd/wondrous/baseStatItems";
+import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
+import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
+import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
+import BroochOfShielding from "../items/srd/wondrous/BroochOfShielding";
+import CloakOfElvenkind from "../items/srd/wondrous/CloakOfElvenkind";
+import CloakOfProtection from "../items/srd/wondrous/CloakOfProtection";
+import FigurineOfWondrousPower from "../items/srd/wondrous/FigurineOfWondrousPower";
+import { WandOfWeb } from "../items/srd/wondrous/wands";
 import {
   Battleaxe,
   Blowgun,
@@ -59,20 +74,7 @@ import {
   Warhammer,
   WarPick,
   Whip,
-} from "../items/srd/weapons";
-import {
-  AmuletOfHealth,
-  BeltOfGiantStrength,
-  GauntletsOfOgrePower,
-  HeadbandOfIntellect,
-} from "../items/srd/wondrous/baseStatItems";
-import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
-import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
-import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
-import CloakOfElvenkind from "../items/srd/wondrous/CloakOfElvenkind";
-import CloakOfProtection from "../items/srd/wondrous/CloakOfProtection";
-import FigurineOfWondrousPower from "../items/srd/wondrous/FigurineOfWondrousPower";
-import { WandOfWeb } from "../items/srd/wondrous/wands";
+} from "../items/weapons";
 import BracersOfTheArbalest from "../items/wondrous/BracersOfTheArbalest";
 import DragonTouchedFocus from "../items/wondrous/DragonTouchedFocus";
 import RingOfAwe from "../items/wondrous/RingOfAwe";
@@ -180,8 +182,10 @@ const srdItems = {
   "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
   "bracers of archery": (g) => new BracersOfArchery(g),
   "bracers of defense": (g) => new BracersOfDefense(g),
+  "brooch of shielding": (g) => new BroochOfShielding(g),
   "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
   "cloak of protection": (g) => new CloakOfProtection(g),
+  "elven chain": (g) => new ElvenChain(g),
   "figurine of wondrous power, bronze griffin": (g) =>
     new FigurineOfWondrousPower(g, "Bronze Griffin"),
   "figurine of wondrous power, ebony fly": (g) =>

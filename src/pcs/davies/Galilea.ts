@@ -46,6 +46,8 @@ const Galilea: PCTemplate = {
     { name: "wand of web", attune: true },
     { name: "light crossbow" },
     { name: "crossbow bolt", quantity: 20 },
+    { name: "light hammer" },
+    { name: "greatsword" },
   ],
   prepared: ["bless", "divine favor", "shield of faith", "aid", "magic weapon"],
 };

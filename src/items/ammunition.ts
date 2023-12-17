@@ -1,8 +1,8 @@
 import arrowUrl from "@img/eq/arrow.svg";
 import boltUrl from "@img/eq/bolt.svg";
 
-import Engine from "../../Engine";
-import AmmoBase from "../AmmoBase";
+import Engine from "../Engine";
+import AmmoBase from "./AmmoBase";
 
 export class Arrow extends AmmoBase {
   constructor(g: Engine) {

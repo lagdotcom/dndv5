@@ -9,10 +9,10 @@ import rapierUrl from "@img/eq/rapier.svg";
 import spearUrl from "@img/eq/spear.svg";
 import tridentUrl from "@img/eq/trident.svg";
 
-import Engine from "../../Engine";
-import { _dd, _fd } from "../../utils/dice";
-import { distance } from "../../utils/units";
-import WeaponBase from "../WeaponBase";
+import Engine from "../Engine";
+import { _dd, _fd } from "../utils/dice";
+import { distance } from "../utils/units";
+import WeaponBase from "./WeaponBase";
 
 export class Club extends WeaponBase {
   constructor(g: Engine) {

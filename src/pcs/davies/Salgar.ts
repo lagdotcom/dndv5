@@ -44,6 +44,10 @@ const Salgar: PCTemplate = {
     { name: "hide armor", equip: true },
     { name: "handaxe" },
     { name: "shortsword", enchantments: ["silvered"] },
+    // TODO { name: "Ioun stone of reserve", equip: true, attune: true },
+    // TODO { name: "potion of speed" },
+    // TODO { name: "pale mushroom poison", quantity: 4 },
+    // TODO { name: "potion of necrotic resistance" },
   ],
   prepared: [
     // "druidcraft",

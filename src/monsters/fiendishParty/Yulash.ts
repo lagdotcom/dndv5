@@ -18,8 +18,8 @@ import {
 } from "../../filters";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import YesNoChoice from "../../interruptions/YesNoChoice";
-import { LeatherArmor } from "../../items/srd/armor";
-import { Rapier } from "../../items/srd/weapons";
+import { LeatherArmor } from "../../items/armor";
+import { Rapier } from "../../items/weapons";
 import Monster from "../../Monster";
 import { getTeleportation } from "../../movement";
 import TargetResolver from "../../resolvers/TargetResolver";

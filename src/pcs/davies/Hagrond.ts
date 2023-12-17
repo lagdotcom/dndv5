@@ -44,6 +44,10 @@ const Hagrond: PCTemplate = {
     { name: "handaxe" },
     { name: "spear" },
     { name: "potion of hill giant strength" },
+    { name: "longsword" },
+    { name: "potion of healing" },
+    // TODO { name: "thieves' tools" },
+    // TODO { name: "woodcarver's tools" },
   ],
 };
 export default Hagrond;

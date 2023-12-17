@@ -500,6 +500,7 @@ export default class Engine {
   private async applyDamage(
     damage: DamageMap,
     {
+      source,
       attack,
       attacker,
       multiplier: baseMultiplier = 1,
@@ -513,6 +514,7 @@ export default class Engine {
     },
   ) {
     const { total, healAmount, breakdown } = this.calculateDamage(
+      source,
       damage,
       target,
       baseMultiplier,
@@ -550,6 +552,7 @@ export default class Engine {
   }
 
   private calculateDamage(
+    source: Source,
     damage: DamageMap,
     target: Combatant,
     baseMultiplier: number,
@@ -561,6 +564,7 @@ export default class Engine {
 
     for (const [damageType, raw] of damage) {
       const { response, amount } = this.calculateDamageResponse(
+        source,
         damageType,
         raw,
         target,
@@ -581,6 +585,7 @@ export default class Engine {
   }
 
   private calculateDamageResponse(
+    source: Source,
     damageType: DamageType,
     raw: number,
     target: Combatant,
@@ -596,6 +601,7 @@ export default class Engine {
 
     this.fire(
       new GetDamageResponseEvent({
+        source,
         attack,
         who: target,
         damageType,

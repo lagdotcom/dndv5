@@ -38,6 +38,11 @@ const Beldalynn: PCTemplate = {
     { name: "quarterstaff", enchantments: ["chaotic burst"], equip: true },
     { name: "dragon-touched focus (slumbering)", equip: true, attune: true },
     { name: "dagger" },
+    // TODO { name: "scroll of bestow curse" },
+    // TODO { name: "scroll of dispel magic" },
+    // TODO { name: "potion of clairvoyance" },
+    // TODO { name: "potion of water breathing" },
+    // TODO { name: "Keoghtom's ointment", quantity: 4 },
   ],
   prepared: [
     "acid splash",

@@ -1,9 +1,9 @@
 import thugUrl from "@img/tok/thug.png";
 
 import Engine from "../../Engine";
-import { CrossbowBolt } from "../../items/srd/ammunition";
-import { LeatherArmor } from "../../items/srd/armor";
-import { HeavyCrossbow, Mace } from "../../items/srd/weapons";
+import { CrossbowBolt } from "../../items/ammunition";
+import { LeatherArmor } from "../../items/armor";
+import { HeavyCrossbow, Mace } from "../../items/weapons";
 import Monster from "../../Monster";
 import SizeCategory from "../../types/SizeCategory";
 import { isMeleeAttackAction, makeMultiattack, PackTactics } from "../common";

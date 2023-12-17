@@ -39,6 +39,9 @@ const Aura: PCTemplate = {
     { name: "rapier" },
     { name: "crossbow bolt", quantity: 20 },
     { name: "crossbow bolt", enchantments: ["+1 weapon"], quantity: 15 },
+    // TODO { name: "bag of 1,000 ball bearings" },
+    // TODO { name: "flask of oil", quantity: 2 },
+    // TODO { name: "thieves' tools" },
   ],
 };
 export default Aura;

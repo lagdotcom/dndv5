@@ -4741,12 +4741,14 @@
       return { type: "ok" };
     }
     async applyDamage(damage, {
+      source,
       attack,
       attacker,
       multiplier: baseMultiplier = 1,
       target
     }) {
       const { total, healAmount, breakdown } = this.calculateDamage(
+        source,
         damage,
         target,
         baseMultiplier,
@@ -4777,12 +4779,13 @@
         await this.handleConcentrationCheck(target, total);
       }
     }
-    calculateDamage(damage, target, baseMultiplier, attack) {
+    calculateDamage(source, damage, target, baseMultiplier, attack) {
       let total = 0;
       let healAmount = 0;
       const breakdown = /* @__PURE__ */ new Map();
       for (const [damageType, raw] of damage) {
         const { response, amount } = this.calculateDamageResponse(
+          source,
           damageType,
           raw,
           target,
@@ -4798,7 +4801,7 @@
       }
       return { total, healAmount, breakdown };
     }
-    calculateDamageResponse(damageType, raw, target, baseMultiplier, attack) {
+    calculateDamageResponse(source, damageType, raw, target, baseMultiplier, attack) {
       const collector = new DamageResponseCollector();
       const innateResponse = target.damageResponses.get(damageType);
       if (innateResponse) {
@@ -4806,6 +4809,7 @@
       }
       this.fire(
         new GetDamageResponseEvent({
+          source,
           attack,
           who: target,
           damageType,
@@ -5922,7 +5926,7 @@
     }
   };
 
-  // src/items/srd/ammunition.ts
+  // src/items/ammunition.ts
   var Arrow = class extends AmmoBase {
     constructor(g) {
       super(g, "arrow", "bow", arrow_default);
@@ -5955,7 +5959,7 @@
     }
   };
 
-  // src/items/srd/armor.ts
+  // src/items/armor.ts
   var PaddedArmor = class extends ArmorBase {
     constructor(g) {
       super(g, "padded armor", "light", 11, true);
@@ -6071,7 +6075,7 @@
     }
   };
 
-  // src/items/srd/weapons.ts
+  // src/items/weapons.ts
   var Club = class extends WeaponBase {
     constructor(g) {
       super(
@@ -8474,6 +8478,9 @@
       { name: "rapier" },
       { name: "crossbow bolt", quantity: 20 },
       { name: "crossbow bolt", enchantments: ["+1 weapon"], quantity: 15 }
+      // TODO { name: "bag of 1,000 ball bearings" },
+      // TODO { name: "flask of oil", quantity: 2 },
+      // TODO { name: "thieves' tools" },
     ]
   };
   var Aura_default = Aura;
@@ -8518,6 +8525,11 @@
       { name: "quarterstaff", enchantments: ["chaotic burst"], equip: true },
       { name: "dragon-touched focus (slumbering)", equip: true, attune: true },
       { name: "dagger" }
+      // TODO { name: "scroll of bestow curse" },
+      // TODO { name: "scroll of dispel magic" },
+      // TODO { name: "potion of clairvoyance" },
+      // TODO { name: "potion of water breathing" },
+      // TODO { name: "Keoghtom's ointment", quantity: 4 },
     ],
     prepared: [
       "acid splash",
@@ -8585,7 +8597,9 @@
       { name: "figurine of wondrous power, silver raven" },
       { name: "wand of web", attune: true },
       { name: "light crossbow" },
-      { name: "crossbow bolt", quantity: 20 }
+      { name: "crossbow bolt", quantity: 20 },
+      { name: "light hammer" },
+      { name: "greatsword" }
     ],
     prepared: ["bless", "divine favor", "shield of faith", "aid", "magic weapon"]
   };
@@ -8636,7 +8650,11 @@
       { name: "dagger", quantity: 4 },
       { name: "handaxe" },
       { name: "spear" },
-      { name: "potion of hill giant strength" }
+      { name: "potion of hill giant strength" },
+      { name: "longsword" },
+      { name: "potion of healing" }
+      // TODO { name: "thieves' tools" },
+      // TODO { name: "woodcarver's tools" },
     ]
   };
   var Hagrond_default = Hagrond;
@@ -8687,6 +8705,10 @@
       { name: "hide armor", equip: true },
       { name: "handaxe" },
       { name: "shortsword", enchantments: ["silvered"] }
+      // TODO { name: "Ioun stone of reserve", equip: true, attune: true },
+      // TODO { name: "potion of speed" },
+      // TODO { name: "pale mushroom poison", quantity: 4 },
+      // TODO { name: "potion of necrotic resistance" },
     ],
     prepared: [
       // "druidcraft",
@@ -9516,6 +9538,92 @@
   };
   var allEnchantments_default = allEnchantments;
 
+  // src/img/eq/arrow-catching-shield.svg
+  var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
+
+  // src/items/shields.ts
+  var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
+  var ArrowCatchingShieldAction = class extends AbstractAction {
+    constructor(g, actor, attack) {
+      super(
+        g,
+        actor,
+        "Arrow-Catching Shield",
+        "implemented",
+        { target: new TargetResolver(g, 5, [notSelf]) },
+        // TODO isAlly?
+        {
+          time: "reaction",
+          icon: acsIcon,
+          description: `Whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.`
+        }
+      );
+      this.attack = attack;
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      if (!this.attack)
+        throw new Error(`No attack to modify.`);
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(" redirects the attack on").sp().co(this.attack.target).text(" to themselves.")
+      );
+      this.attack.target = this.actor;
+    }
+  };
+  var ArrowCatchingShield = class extends Shield {
+    constructor(g) {
+      super(g, arrow_catching_shield_default);
+      this.name = "Arrow-Catching Shield";
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
+        if (isEquipmentAttuned(this, who) && (pre == null ? void 0 : pre.tags.has("ranged")))
+          bonus.add(2, this);
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new ArrowCatchingShieldAction(g, who));
+      });
+      g.events.on("BeforeAttack", ({ detail }) => {
+        if (isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
+          const config = { target: detail.target };
+          const action = new ArrowCatchingShieldAction(g, this.possessor, detail);
+          if (checkConfig(g, action, config))
+            detail.interrupt.add(
+              new YesNoChoice(
+                this.possessor,
+                this,
+                this.name,
+                `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
+                async () => {
+                  await g.act(action, config);
+                }
+              )
+            );
+        }
+      });
+    }
+  };
+
+  // src/items/srd/armor.ts
+  var ElvenChain = class extends ChainShirtArmor {
+    constructor(g) {
+      super(g);
+      this.rarity = "Rare";
+      this.ac++;
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (who.armor === this)
+          who.armorProficiencies.add(this.category);
+      });
+    }
+  };
+
   // src/items/AbstractPotion.ts
   var DrinkAction = class extends AbstractAction {
     constructor(g, actor, item) {
@@ -9636,79 +9744,6 @@
     }
   };
 
-  // src/img/eq/arrow-catching-shield.svg
-  var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
-
-  // src/items/srd/shields.ts
-  var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
-  var ArrowCatchingShieldAction = class extends AbstractAction {
-    constructor(g, actor, attack) {
-      super(
-        g,
-        actor,
-        "Arrow-Catching Shield",
-        "implemented",
-        { target: new TargetResolver(g, 5, [notSelf]) },
-        // TODO isAlly?
-        {
-          time: "reaction",
-          icon: acsIcon,
-          description: `Whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.`
-        }
-      );
-      this.attack = attack;
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
-      if (!this.attack)
-        throw new Error(`No attack to modify.`);
-      this.g.text(
-        new MessageBuilder().co(this.actor).text(" redirects the attack on").sp().co(this.attack.target).text(" to themselves.")
-      );
-      this.attack.target = this.actor;
-    }
-  };
-  var ArrowCatchingShield = class extends Shield {
-    constructor(g) {
-      super(g, arrow_catching_shield_default);
-      this.name = "Arrow-Catching Shield";
-      this.attunement = true;
-      this.rarity = "Rare";
-      g.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
-        if (isEquipmentAttuned(this, who) && (pre == null ? void 0 : pre.tags.has("ranged")))
-          bonus.add(2, this);
-      });
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (isEquipmentAttuned(this, who))
-          actions.push(new ArrowCatchingShieldAction(g, who));
-      });
-      g.events.on("BeforeAttack", ({ detail }) => {
-        if (isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
-          const config = { target: detail.target };
-          const action = new ArrowCatchingShieldAction(g, this.possessor, detail);
-          if (checkConfig(g, action, config))
-            detail.interrupt.add(
-              new YesNoChoice(
-                this.possessor,
-                this,
-                this.name,
-                `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
-                async () => {
-                  await g.act(action, config);
-                }
-              )
-            );
-        }
-      });
-    }
-  };
-
   // src/items/WondrousItemBase.ts
   var WondrousItemBase = class extends ItemBase {
     constructor(g, name, hands = 0, iconUrl) {
@@ -9801,6 +9836,141 @@
         if (isEquipmentAttuned(this, detail.who) && !detail.who.armor && !detail.who.shield)
           detail.bonus.add(2, this);
       });
+    }
+  };
+
+  // src/img/spl/magic-missile.svg
+  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
+
+  // src/resolvers/AllocationResolver.ts
+  function isAllocation(value) {
+    return typeof value === "object" && typeof value.amount === "number" && typeof value.who === "object";
+  }
+  function isAllocationArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const entry of value) {
+      if (!isAllocation(entry))
+        return false;
+    }
+    return true;
+  }
+  var AllocationResolver = class {
+    constructor(g, rangeName, minimum, maximum, maxRange, filters) {
+      this.g = g;
+      this.rangeName = rangeName;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.maxRange = maxRange;
+      this.filters = filters;
+      this.type = "Allocations";
+    }
+    get name() {
+      let name = `${this.rangeName}: ${describeRange(
+        this.minimum,
+        this.maximum
+      )} allocations${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+      for (const filter of this.filters)
+        name += `, ${filter.name}`;
+      return name;
+    }
+    check(value, action, ec) {
+      if (!isAllocationArray(value))
+        ec.add("No targets", this);
+      else {
+        const total = value.reduce((p, entry) => p + entry.amount, 0);
+        if (total < this.minimum)
+          ec.add(`At least ${this.minimum} allocations`, this);
+        if (total > this.maximum)
+          ec.add(`At most ${this.maximum} allocations`, this);
+        for (const { who } of value) {
+          const isOutOfRange = distance(action.actor, who) > this.maxRange;
+          const errors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => `${who.name}: ${filter.message}`);
+          if (isOutOfRange)
+            ec.add(`${who.name}: Out of range`, this);
+          ec.addMany(errors, this);
+        }
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/level1/MagicMissile.ts
+  var getDamage = (slot) => [
+    _dd(slot + 2, 4, "force"),
+    _fd(slot + 2, "force")
+  ];
+  var MagicMissile = scalingSpell({
+    status: "implemented",
+    name: "Magic Missile",
+    icon: makeIcon(magic_missile_default, DamageColours.force),
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
+    // TODO: generateAttackConfigs
+    getConfig: (g, caster, method, { slot }) => ({
+      targets: new AllocationResolver(
+        g,
+        "Missiles",
+        (slot != null ? slot : 1) + 2,
+        (slot != null ? slot : 1) + 2,
+        120,
+        [canSee]
+      )
+    }),
+    getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
+    getTargets: (g, caster, { targets }) => {
+      var _a;
+      return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
+    },
+    getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
+    async apply(g, attacker, method, { targets }) {
+      const perBolt = await g.rollDamage(1, {
+        source: MagicMissile,
+        spell: MagicMissile,
+        method,
+        attacker,
+        damageType: "force",
+        size: 4,
+        tags: atSet("magical", "spell")
+      }) + 1;
+      for (const { amount, who } of targets) {
+        if (amount < 1)
+          continue;
+        await g.damage(
+          MagicMissile,
+          "force",
+          { spell: MagicMissile, method, target: who, attacker },
+          [["force", perBolt * amount]]
+        );
+      }
+    }
+  });
+  var MagicMissile_default = MagicMissile;
+
+  // src/items/srd/wondrous/BroochOfShielding.ts
+  var BroochOfShielding = class extends WondrousItemBase {
+    constructor(g) {
+      super(g, "Brooch of Shielding");
+      this.attunement = true;
+      this.rarity = "Uncommon";
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, source, damageType, response } }) => {
+          if (isEquipmentAttuned(this, who)) {
+            if (source === MagicMissile_default)
+              response.add("immune", this);
+            else if (damageType === "force")
+              response.add("resist", this);
+          }
+        }
+      );
     }
   };
 
@@ -10493,8 +10663,10 @@ If your DM allows the use of feats, you may instead take a feat.`,
     "boots of the winterlands": (g) => new BootsOfTheWinterlands(g),
     "bracers of archery": (g) => new BracersOfArchery(g),
     "bracers of defense": (g) => new BracersOfDefense(g),
+    "brooch of shielding": (g) => new BroochOfShielding(g),
     "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
     "cloak of protection": (g) => new CloakOfProtection(g),
+    "elven chain": (g) => new ElvenChain(g),
     "figurine of wondrous power, bronze griffin": (g) => new FigurineOfWondrousPower(g, "Bronze Griffin"),
     "figurine of wondrous power, ebony fly": (g) => new FigurineOfWondrousPower(g, "Ebony Fly"),
     "figurine of wondrous power, golden lions": (g) => new FigurineOfWondrousPower(g, "Golden Lions"),
@@ -12871,121 +13043,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
   });
   var IceKnife_default = IceKnife;
-
-  // src/img/spl/magic-missile.svg
-  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
-
-  // src/resolvers/AllocationResolver.ts
-  function isAllocation(value) {
-    return typeof value === "object" && typeof value.amount === "number" && typeof value.who === "object";
-  }
-  function isAllocationArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const entry of value) {
-      if (!isAllocation(entry))
-        return false;
-    }
-    return true;
-  }
-  var AllocationResolver = class {
-    constructor(g, rangeName, minimum, maximum, maxRange, filters) {
-      this.g = g;
-      this.rangeName = rangeName;
-      this.minimum = minimum;
-      this.maximum = maximum;
-      this.maxRange = maxRange;
-      this.filters = filters;
-      this.type = "Allocations";
-    }
-    get name() {
-      let name = `${this.rangeName}: ${describeRange(
-        this.minimum,
-        this.maximum
-      )} allocations${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
-      for (const filter of this.filters)
-        name += `, ${filter.name}`;
-      return name;
-    }
-    check(value, action, ec) {
-      if (!isAllocationArray(value))
-        ec.add("No targets", this);
-      else {
-        const total = value.reduce((p, entry) => p + entry.amount, 0);
-        if (total < this.minimum)
-          ec.add(`At least ${this.minimum} allocations`, this);
-        if (total > this.maximum)
-          ec.add(`At most ${this.maximum} allocations`, this);
-        for (const { who } of value) {
-          const isOutOfRange = distance(action.actor, who) > this.maxRange;
-          const errors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => `${who.name}: ${filter.message}`);
-          if (isOutOfRange)
-            ec.add(`${who.name}: Out of range`, this);
-          ec.addMany(errors, this);
-        }
-      }
-      return ec;
-    }
-  };
-
-  // src/spells/level1/MagicMissile.ts
-  var getDamage = (slot) => [
-    _dd(slot + 2, 4, "force"),
-    _fd(slot + 2, "force")
-  ];
-  var MagicMissile = scalingSpell({
-    status: "implemented",
-    name: "Magic Missile",
-    icon: makeIcon(magic_missile_default, DamageColours.force),
-    level: 1,
-    school: "Evocation",
-    v: true,
-    s: true,
-    lists: ["Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
-
-  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
-    // TODO: generateAttackConfigs
-    getConfig: (g, caster, method, { slot }) => ({
-      targets: new AllocationResolver(
-        g,
-        "Missiles",
-        (slot != null ? slot : 1) + 2,
-        (slot != null ? slot : 1) + 2,
-        120,
-        [canSee]
-      )
-    }),
-    getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
-    getTargets: (g, caster, { targets }) => {
-      var _a;
-      return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
-    },
-    getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
-    async apply(g, attacker, method, { targets }) {
-      const perBolt = await g.rollDamage(1, {
-        source: MagicMissile,
-        spell: MagicMissile,
-        method,
-        attacker,
-        damageType: "force",
-        size: 4,
-        tags: atSet("magical", "spell")
-      }) + 1;
-      for (const { amount, who } of targets) {
-        if (amount < 1)
-          continue;
-        await g.damage(
-          MagicMissile,
-          "force",
-          { spell: MagicMissile, method, target: who, attacker },
-          [["force", perBolt * amount]]
-        );
-      }
-    }
-  });
-  var MagicMissile_default = MagicMissile;
 
   // src/img/spl/protection-evil-good.svg
   var protection_evil_good_default = "./protection-evil-good-MRHA6REQ.svg";
