@@ -4,6 +4,7 @@ import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
+import Priority from "../../types/Priority";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -19,9 +20,9 @@ const MindSliverEffect = new Effect(
         bonus.add(-values.final, MindSliver);
 
         interrupt.add(
-          new EvaluateLater(who, MindSliverEffect, async () => {
-            who.removeEffect(MindSliverEffect);
-          }),
+          new EvaluateLater(who, MindSliverEffect, Priority.Normal, () =>
+            who.removeEffect(MindSliverEffect),
+          ),
         );
       }
     });
@@ -91,9 +92,9 @@ const MindSliver = simpleSpell<HasTarget>({
           if (who === attacker && endCounter-- <= 0) {
             removeTurnTracker();
             interrupt.add(
-              new EvaluateLater(who, MindSliver, async () => {
-                await target.removeEffect(MindSliverEffect);
-              }),
+              new EvaluateLater(who, MindSliver, Priority.Normal, () =>
+                target.removeEffect(MindSliverEffect),
+              ),
             );
           }
         },

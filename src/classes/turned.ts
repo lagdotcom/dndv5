@@ -3,6 +3,7 @@ import DodgeAction from "../actions/DodgeAction";
 import Effect from "../Effect";
 import EvaluateLater from "../interruptions/EvaluateLater";
 import Combatant from "../types/Combatant";
+import Priority from "../types/Priority";
 import { compareDistances } from "../utils/units";
 
 export interface TurnedConfig {
@@ -17,7 +18,7 @@ export const TurnedEffect = new Effect<TurnedConfig>(
     g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(TurnedEffect))
         interrupt.add(
-          new EvaluateLater(who, TurnedEffect, async () => {
+          new EvaluateLater(who, TurnedEffect, Priority.Normal, async () => {
             await who.removeEffect(TurnedEffect);
           }),
         );

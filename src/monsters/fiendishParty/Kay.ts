@@ -13,6 +13,7 @@ import { Longbow, Spear } from "../../items/weapons";
 import Monster from "../../Monster";
 import { atSet } from "../../types/AttackTag";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { isA } from "../../utils/types";
 import { makeMultiattack } from "../common";
@@ -29,21 +30,26 @@ const ScreamingInside = new SimpleFeature(
       ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
         if (attacker === me && attack?.pre.tags.has("weapon"))
           interrupt.add(
-            new EvaluateLater(me, ScreamingInside, async () => {
-              const amount = await g.rollDamage(
-                1,
-                {
-                  source: ScreamingInside,
-                  attacker,
-                  target,
-                  size: 6,
-                  damageType: "psychic",
-                  tags: atSet("magical"),
-                },
-                critical,
-              );
-              map.add("psychic", amount);
-            }),
+            new EvaluateLater(
+              me,
+              ScreamingInside,
+              Priority.Normal,
+              async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  {
+                    source: ScreamingInside,
+                    attacker,
+                    target,
+                    size: 6,
+                    damageType: "psychic",
+                    tags: atSet("magical"),
+                  },
+                  critical,
+                );
+                map.add("psychic", amount);
+              },
+            ),
           );
       },
     );
@@ -62,10 +68,15 @@ const WreathedInShadowEffect = new Effect(
     g.events.on("CombatantDamaged", ({ detail: { who, total, interrupt } }) => {
       if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
         interrupt.add(
-          new EvaluateLater(who, WreathedInShadowEffect, async () => {
-            await who.removeEffect(WreathedInShadowEffect);
-            who.name = realName;
-          }),
+          new EvaluateLater(
+            who,
+            WreathedInShadowEffect,
+            Priority.Late,
+            async () => {
+              await who.removeEffect(WreathedInShadowEffect);
+              who.name = realName;
+            },
+          ),
         );
     });
   },
@@ -77,10 +88,15 @@ const WreathedInShadow = new SimpleFeature(
   "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
   (g, me) => {
     // TODO Only a DC 22 Perception check can reveal his identity.
-    const wreathe = new EvaluateLater(me, WreathedInShadow, async () => {
-      await me.addEffect(WreathedInShadowEffect, { duration: Infinity });
-      me.name = hiddenName;
-    });
+    const wreathe = new EvaluateLater(
+      me,
+      WreathedInShadow,
+      Priority.Normal,
+      async () => {
+        await me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+        me.name = hiddenName;
+      },
+    );
 
     g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
       interrupt.add(wreathe);

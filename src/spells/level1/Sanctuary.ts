@@ -4,7 +4,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant, { CombatantID } from "../../types/Combatant";
-import { efSet } from "../../types/EffectTag";
+import Priority from "../../types/Priority";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
@@ -54,38 +54,43 @@ const SanctuaryEffect = new Effect<{
 
       if (config)
         interrupt.add(
-          new EvaluateLater(who, SanctuaryEffect, async (g) => {
-            const { outcome } = await g.save({
-              source: SanctuaryEffect,
-              type: config.method.getSaveType(config.caster, Sanctuary),
-              who,
-              ability: "wis",
-              tags: ["charm", "magic"],
-            });
+          new EvaluateLater(
+            who,
+            SanctuaryEffect,
+            Priority.ChangesOutcome,
+            async () => {
+              const { outcome } = await g.save({
+                source: SanctuaryEffect,
+                type: config.method.getSaveType(config.caster, Sanctuary),
+                who,
+                ability: "wis",
+                tags: ["charm", "magic"],
+              });
 
-            if (outcome === "fail") {
-              g.text(
-                new MessageBuilder()
-                  .co(who)
-                  .text(" fails to break ")
-                  .co(target)
-                  .nosp()
-                  .text("'s Sanctuary."),
-              );
+              if (outcome === "fail") {
+                g.text(
+                  new MessageBuilder()
+                    .co(who)
+                    .text(" fails to break ")
+                    .co(target)
+                    .nosp()
+                    .text("'s Sanctuary."),
+                );
 
-              getSanctuaryEffects(who).add(target.id);
+                getSanctuaryEffects(who).add(target.id);
 
-              // TODO [ROLLBACKATTACK] ...the creature must choose a new target or lose the attack or spell.
-            }
-          }),
+                // TODO [ROLLBACKATTACK] ...the creature must choose a new target or lose the attack or spell.
+              }
+            },
+          ),
         );
     });
 
     // If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.
     const getRemover = (who: Combatant) =>
-      new EvaluateLater(who, SanctuaryEffect, async () => {
-        await who.removeEffect(SanctuaryEffect);
-      });
+      new EvaluateLater(who, SanctuaryEffect, Priority.Normal, () =>
+        who.removeEffect(SanctuaryEffect),
+      );
     g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
       if (pre.who.hasEffect(SanctuaryEffect))
         interrupt.add(getRemover(pre.who));
@@ -104,7 +109,7 @@ const SanctuaryEffect = new Effect<{
         interrupt.add(getRemover(attacker));
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const Sanctuary = simpleSpell<HasTarget>({

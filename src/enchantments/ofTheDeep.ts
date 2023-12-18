@@ -2,6 +2,7 @@ import { ItemRarityColours } from "../colours";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import { atSet } from "../types/AttackTag";
 import Enchantment from "../types/Enchantment";
+import Priority from "../types/Priority";
 
 const ofTheDeep: Enchantment<"weapon"> = {
   name: "weapon of the deep",
@@ -21,6 +22,7 @@ const ofTheDeep: Enchantment<"weapon"> = {
             ofTheDeep,
             item.name,
             "Speak the command word and emit a spray of acid?",
+            Priority.Late,
             async () => {
               charges--;
 

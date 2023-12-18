@@ -9,6 +9,7 @@ import YesNoChoice from "../../interruptions/YesNoChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
+import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { describeCheck, describeSave } from "../../utils/text";
@@ -73,9 +74,8 @@ You can use this feature a number of times equal to your Intelligence modifier (
             FlashOfGenius,
             "Flash of Genius",
             `Use ${me.name}'s reaction to give +${me.int.modifier} to ${description}?`,
-            async () => {
-              await g.act(action, config);
-            },
+            Priority.ChangesOutcome,
+            () => g.act(action, config),
           ),
         );
     };

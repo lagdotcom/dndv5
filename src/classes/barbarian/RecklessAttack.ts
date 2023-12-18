@@ -8,6 +8,7 @@ import { TurnResource } from "../../resources";
 import AbilityName from "../../types/AbilityName";
 import AttackTag from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
+import Priority from "../../types/Priority";
 import { hasAll } from "../../utils/set";
 
 const RecklessAttackIcon = makeIcon(recklessAttackUrl);
@@ -60,6 +61,7 @@ export const RecklessAttack = new SimpleFeature(
               RecklessAttack,
               "Reckless Attack",
               `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
+              Priority.ChangesOutcome,
               async () => {
                 await me.addEffect(RecklessAttackEffect, { duration: 1 });
 

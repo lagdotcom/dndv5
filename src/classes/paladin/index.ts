@@ -15,6 +15,7 @@ import { atSet } from "../../types/AttackTag";
 import { ctSet } from "../../types/CreatureType";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
+import Priority from "../../types/Priority";
 import { gains } from "../../utils/gain";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { hasAll } from "../../utils/set";
@@ -48,6 +49,7 @@ export const DivineSmite = new SimpleFeature(
               DivineSmite,
               "Divine Smite",
               "Choose a spell slot to use.",
+              Priority.Normal,
               enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
                 label: ordinal(value),
                 value,
@@ -148,21 +150,26 @@ const ImprovedDivineSmite = new SimpleFeature(
           attack.pre.tags.has("weapon")
         )
           interrupt.add(
-            new EvaluateLater(attacker, ImprovedDivineSmite, async () => {
-              const amount = await g.rollDamage(
-                1,
-                {
-                  source: ImprovedDivineSmite,
-                  attacker,
-                  target,
-                  size: 8,
-                  damageType: "radiant",
-                  tags: atSet("magical"),
-                },
-                critical,
-              );
-              map.add("radiant", amount);
-            }),
+            new EvaluateLater(
+              attacker,
+              ImprovedDivineSmite,
+              Priority.Normal,
+              async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  {
+                    source: ImprovedDivineSmite,
+                    attacker,
+                    target,
+                    size: 8,
+                    damageType: "radiant",
+                    tags: atSet("magical"),
+                  },
+                  critical,
+                );
+                map.add("radiant", amount);
+              },
+            ),
           );
       },
     );

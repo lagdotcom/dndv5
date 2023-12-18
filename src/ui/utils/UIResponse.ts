@@ -1,5 +1,6 @@
 import Combatant from "../../types/Combatant";
 import Interruption from "../../types/Interruption";
+import Priority from "../../types/Priority";
 import Source from "../../types/Source";
 
 const UISource = { name: "UI" };
@@ -13,6 +14,6 @@ export default class UIResponse implements Interruption {
     public apply: () => Promise<void>,
   ) {
     this.source = UISource;
-    this.priority = 0;
+    this.priority = Priority.UI;
   }
 }

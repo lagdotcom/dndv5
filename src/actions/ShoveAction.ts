@@ -9,6 +9,7 @@ import ChoiceResolver from "../resolvers/ChoiceResolver";
 import TargetResolver from "../resolvers/TargetResolver";
 import { chSet } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
+import Priority from "../types/Priority";
 import { sieve } from "../utils/array";
 import AbstractAttackAction from "./AbstractAttackAction";
 import { GrappleChoices } from "./common";
@@ -75,6 +76,7 @@ export default class ShoveAction extends AbstractAttackAction<Config> {
       this,
       "Grapple",
       `${actor.name} is trying to shove ${target.name}. Contest with which skill?`,
+      Priority.Normal,
       GrappleChoices,
       async ({ ability, skill }) => {
         const { total: theirs } = await g.abilityCheck(NaN, {

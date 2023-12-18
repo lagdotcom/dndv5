@@ -11,8 +11,8 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import DiceType from "../../types/DiceType";
-import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
+import Priority from "../../types/Priority";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
@@ -64,7 +64,7 @@ const LaughterEffect = new Effect<Config>(
       diceType: DiceType = "normal",
     ) =>
       i.add(
-        new EvaluateLater(who, LaughterEffect, async () => {
+        new EvaluateLater(who, LaughterEffect, Priority.Normal, async () => {
           const { outcome } = await g.save(
             getHideousLaughterSave(who, config, diceType),
           );
@@ -82,7 +82,7 @@ const LaughterEffect = new Effect<Config>(
       if (config) resave(interrupt, who, config, "advantage");
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const HideousLaughter = simpleSpell<HasTarget>({

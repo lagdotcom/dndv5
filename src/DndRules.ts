@@ -22,6 +22,7 @@ import Combatant from "./types/Combatant";
 import ConditionName from "./types/ConditionName";
 import Item from "./types/Item";
 import Point from "./types/Point";
+import Priority from "./types/Priority";
 import { resolveArea } from "./utils/areas";
 import { checkConfig } from "./utils/config";
 import { getValidAmmunition } from "./utils/items";
@@ -210,9 +211,9 @@ export const ExhaustionRule = new DndRule("Exhaustion", (g) => {
   g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
     if (who.exhaustion >= 6)
       interrupt.add(
-        new EvaluateLater(who, ExhaustionRule, async () => {
-          await g.kill(who);
-        }),
+        new EvaluateLater(who, ExhaustionRule, Priority.Late, () =>
+          g.kill(who),
+        ),
       );
   });
 });
@@ -423,6 +424,7 @@ export const OpportunityAttacksRule = new DndRule(
                 OpportunityAttacksRule,
                 "Opportunity Attack",
                 `${who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
+                Priority.Late,
                 validActions.map((value) => ({
                   label: value.weapon.name,
                   value,
@@ -431,7 +433,6 @@ export const OpportunityAttacksRule = new DndRule(
                   await g.act(opportunity, { target: who });
                 },
                 true,
-                1,
                 () => success.result !== "fail" && error.result,
               ),
             );

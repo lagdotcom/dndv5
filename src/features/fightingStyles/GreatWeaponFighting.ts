@@ -1,4 +1,5 @@
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import Priority from "../../types/Priority";
 import SimpleFeature from "../SimpleFeature";
 
 const FightingStyleGreatWeaponFighting = new SimpleFeature(
@@ -20,6 +21,7 @@ const FightingStyleGreatWeaponFighting = new SimpleFeature(
             new EvaluateLater(
               me,
               FightingStyleGreatWeaponFighting,
+              Priority.ChangesOutcome,
               async () => {
                 const newRoll = await g.roll({
                   type: "other",

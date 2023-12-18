@@ -10,6 +10,7 @@ import { canSee, isAlly, isEnemy, notSelf } from "../../filters";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
+import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import SimpleFeature from "../SimpleFeature";
@@ -82,9 +83,8 @@ const FightingStyleProtection = new SimpleFeature(
               FightingStyleProtection,
               "Fighting Style: Protection",
               `${target.name} is being attacked by ${who.name}. Use ${me.name}'s reaction to impose disadvantage?`,
-              async () => {
-                await g.act(action, config);
-              },
+              Priority.ChangesOutcome,
+              () => g.act(action, config),
             ),
           );
       },

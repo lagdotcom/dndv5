@@ -11,6 +11,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import { MundaneDamageTypes } from "../../types/DamageType";
+import Priority from "../../types/Priority";
 import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
 import { isA } from "../../utils/types";
@@ -132,9 +133,9 @@ export const RageEffect = new Effect(
     g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
       if (isRaging(who) && who.conditions.has("Unconscious"))
         interrupt.add(
-          new EvaluateLater(who, RageEffect, async () => {
-            await who.removeEffect(RageEffect);
-          }),
+          new EvaluateLater(who, RageEffect, Priority.Normal, () =>
+            who.removeEffect(RageEffect),
+          ),
         );
     });
 
@@ -146,30 +147,30 @@ export const RageEffect = new Effect(
         action.getTargets(config)?.find((who) => who.side !== action.actor.side)
       )
         interrupt.add(
-          new EvaluateLater(action.actor, RageEffect, async () => {
-            await action.actor.addEffect(DidAttackTag, { duration: Infinity });
-          }),
+          new EvaluateLater(action.actor, RageEffect, Priority.Normal, () =>
+            action.actor.addEffect(DidAttackTag, { duration: Infinity }),
+          ),
         );
     });
     g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
       if (isRaging(who))
         interrupt.add(
-          new EvaluateLater(who, RageEffect, async () => {
-            await who.addEffect(TookDamageTag, { duration: Infinity });
-          }),
+          new EvaluateLater(who, RageEffect, Priority.Normal, () =>
+            who.addEffect(TookDamageTag, { duration: Infinity }),
+          ),
         );
     });
     g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(RageEffect)) {
         if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
           interrupt.add(
-            new EvaluateLater(who, RageEffect, async () => {
-              await who.removeEffect(RageEffect);
-            }),
+            new EvaluateLater(who, RageEffect, Priority.Normal, () =>
+              who.removeEffect(RageEffect),
+            ),
           );
         else
           interrupt.add(
-            new EvaluateLater(who, RageEffect, async () => {
+            new EvaluateLater(who, RageEffect, Priority.Normal, async () => {
               await who.removeEffect(DidAttackTag);
               await who.removeEffect(TookDamageTag);
             }),

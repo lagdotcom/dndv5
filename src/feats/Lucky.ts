@@ -4,6 +4,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import { LongRestResource } from "../resources";
 import Combatant from "../types/Combatant";
+import Priority from "../types/Priority";
 
 export const LuckPoint = new LongRestResource("Luck Point", 3);
 
@@ -15,7 +16,7 @@ function addLuckyOpportunity(
   callback: (roll: number) => void,
 ) {
   interrupt.add(
-    new YesNoChoice(who, Lucky, "Lucky", message, async () => {
+    new YesNoChoice(who, Lucky, "Lucky", message, Priority.Late, async () => {
       who.spendResource(LuckPoint);
 
       const nr = await g.roll({ type: "luck", who });

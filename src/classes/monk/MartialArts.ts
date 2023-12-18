@@ -9,6 +9,7 @@ import ActionTime from "../../types/ActionTime";
 import Combatant from "../../types/Combatant";
 import DamageAmount from "../../types/DamageAmount";
 import { WeaponItem } from "../../types/Item";
+import Priority from "../../types/Priority";
 import { _dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
 
@@ -143,11 +144,9 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         canUseMartialArts(me)
       )
         interrupt.add(
-          new EvaluateLater(action.actor, MartialArts, async () => {
-            await action.actor.addEffect(HasBonusAttackThisTurn, {
-              duration: 1,
-            });
-          }),
+          new EvaluateLater(action.actor, MartialArts, Priority.Normal, () =>
+            action.actor.addEffect(HasBonusAttackThisTurn, { duration: 1 }),
+          ),
         );
     });
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

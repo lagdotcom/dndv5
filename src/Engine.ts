@@ -77,6 +77,7 @@ import MoveDirection, { MoveDirections } from "./types/MoveDirection";
 import MoveHandler from "./types/MoveHandler";
 import MovementType from "./types/MovementType";
 import Point from "./types/Point";
+import Priority from "./types/Priority";
 import RollType, {
   AbilityCheck,
   DamageRoll,
@@ -1001,6 +1002,7 @@ export default class Engine {
         source,
         `Replace Temporary HP?`,
         `${who.name} already has ${who.temporaryHP} temporary HP from ${who.temporaryHPSource?.name}. Replace with ${count} temporary HP from ${source.name}?`,
+        Priority.Normal,
         async () => this.setTemporaryHP(who, count, source),
       ).apply(this);
 

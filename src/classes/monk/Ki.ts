@@ -12,6 +12,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { ShortRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
+import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility } from "../../utils/items";
@@ -153,9 +154,8 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
                 Ki,
                 "Flurry of Blows",
                 `Spend 1 ki to activate Flurry of Blows?`,
-                async () => {
-                  await g.act(action, config);
-                },
+                Priority.Normal,
+                () => g.act(action, config),
               ),
             );
         }

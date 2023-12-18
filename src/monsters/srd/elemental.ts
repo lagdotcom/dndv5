@@ -12,6 +12,7 @@ import Monster from "../../Monster";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { _dd } from "../../utils/dice";
 import { distance } from "../../utils/units";
@@ -143,14 +144,9 @@ const FireForm = new SimpleFeature(
         distance(pre.who, me) <= 5
       )
         interrupt.add(
-          new EvaluateLater(
-            me,
-            FireForm,
-            async () => {
-              if (outcome.hits) await applyFireDamage(pre.target);
-            },
-            1,
-          ),
+          new EvaluateLater(me, FireForm, Priority.Late, async () => {
+            if (outcome.hits) await applyFireDamage(pre.target);
+          }),
         );
     });
 
@@ -167,7 +163,7 @@ const FireForm = new SimpleFeature(
           .filter((other) => !thisTurn.has(other))) {
           thisTurn.add(target);
           interrupt.add(
-            new EvaluateLater(me, FireForm, async () => {
+            new EvaluateLater(me, FireForm, Priority.Normal, async () => {
               await applyFireDamage(target);
               await target.addEffect(OnFire, { duration: Infinity }, me);
             }),

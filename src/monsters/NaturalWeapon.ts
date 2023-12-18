@@ -4,6 +4,7 @@ import WeaponBase from "../items/WeaponBase";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import DamageAmount from "../types/DamageAmount";
+import Priority from "../types/Priority";
 
 export default class NaturalWeapon extends WeaponBase {
   constructor(
@@ -26,7 +27,12 @@ export default class NaturalWeapon extends WeaponBase {
         ({ detail: { attack, interrupt, who } }) => {
           if (attack?.pre.weapon === this)
             interrupt.add(
-              new EvaluateLater(attack.pre.who, this, async () => onHit(who)),
+              new EvaluateLater(
+                attack.pre.who,
+                this,
+                Priority.Normal,
+                async () => onHit(who),
+              ),
             );
         },
       );

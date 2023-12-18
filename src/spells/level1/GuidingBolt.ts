@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
+import Priority from "../../types/Priority";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -19,9 +20,9 @@ const GuidingBoltEffect = new Effect(
         if (target.hasEffect(GuidingBoltEffect)) {
           diceType.add("advantage", GuidingBoltEffect);
           interrupt.add(
-            new EvaluateLater(target, GuidingBoltEffect, async () => {
-              await target.removeEffect(GuidingBoltEffect);
-            }),
+            new EvaluateLater(target, GuidingBoltEffect, Priority.Normal, () =>
+              target.removeEffect(GuidingBoltEffect),
+            ),
           );
         }
       },

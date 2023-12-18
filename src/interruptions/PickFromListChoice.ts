@@ -2,6 +2,7 @@ import Engine from "../Engine";
 import ListChoiceEvent from "../events/ListChoiceEvent";
 import Combatant from "../types/Combatant";
 import Interruption from "../types/Interruption";
+import Priority from "../types/Priority";
 import Source from "../types/Source";
 
 export interface PickChoice<T> {
@@ -16,10 +17,10 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     public source: Source,
     public title: string,
     public text: string,
+    public priority: Priority,
     public items: PickChoice<T>[],
-    public chosen: (choice: T) => Promise<void>,
+    public chosen: (choice: T) => Promise<unknown>,
     public allowNone = false,
-    public priority = 10,
     public isStillValid?: () => boolean,
   ) {}
 

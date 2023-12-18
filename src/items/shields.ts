@@ -10,6 +10,7 @@ import YesNoChoice from "../interruptions/YesNoChoice";
 import MessageBuilder from "../MessageBuilder";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
+import Priority from "../types/Priority";
 import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
 import { isEquipmentAttuned } from "../utils/items";
@@ -94,9 +95,8 @@ export class ArrowCatchingShield extends Shield {
               this,
               this.name,
               `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
-              async () => {
-                await g.act(action, config);
-              },
+              Priority.ChangesTarget,
+              () => g.act(action, config),
             ),
           );
       }

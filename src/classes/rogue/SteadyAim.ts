@@ -8,6 +8,7 @@ import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Combatant from "../../types/Combatant";
+import Priority from "../../types/Priority";
 import { RogueIcon } from "./common";
 
 const SteadyAimIcon = makeIcon(iconUrl);
@@ -36,9 +37,12 @@ const SteadyAimAdvantageEffect = new Effect(
     g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
       if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
         interrupt.add(
-          new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
-            await pre.who.removeEffect(SteadyAimAdvantageEffect);
-          }),
+          new EvaluateLater(
+            pre.who,
+            SteadyAimAdvantageEffect,
+            Priority.Normal,
+            () => pre.who.removeEffect(SteadyAimAdvantageEffect),
+          ),
         );
     });
   },

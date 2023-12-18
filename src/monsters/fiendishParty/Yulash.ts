@@ -27,6 +27,7 @@ import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
@@ -106,6 +107,7 @@ class CheerAction extends AbstractAction<HasTarget> {
       this,
       "Cheer",
       `Pick an attack to make.`,
+      Priority.Normal,
       attacks.map((value) => ({
         value,
         label: `attack ${value.target.name} with ${value.weapon.name}`,
@@ -196,6 +198,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
       this,
       "Discord",
       `Pick an attack to make.`,
+      Priority.Normal,
       attacks.map((value) => ({
         value,
         label: `attack ${value.target.name} with ${value.weapon.name}`,
@@ -339,9 +342,8 @@ const DancingStep = new SimpleFeature(
             DancingStep,
             "Dancing Step",
             `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
-            async () => {
-              await g.act(step, config);
-            },
+            Priority.Normal,
+            () => g.act(step, config),
           ),
         );
     });

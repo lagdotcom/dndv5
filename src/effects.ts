@@ -19,6 +19,7 @@ import { atSet } from "./types/AttackTag";
 import Combatant from "./types/Combatant";
 import { EffectConfig } from "./types/EffectType";
 import Point from "./types/Point";
+import Priority from "./types/Priority";
 import { sieve } from "./utils/array";
 import { addPoints, subPoints } from "./utils/points";
 import { distance } from "./utils/units";
@@ -43,7 +44,7 @@ export const Dying = new Effect(
       Rolling 1 or 20. When you make a death saving throw and roll a 1 on the d20, it counts as two failures. If you roll a 20 on the d20, you regain 1 hit point. */
       if (who.hasEffect(Dying))
         interrupt.add(
-          new EvaluateLater(who, Dying, async () => {
+          new EvaluateLater(who, Dying, Priority.ChangesOutcome, async () => {
             const {
               outcome,
               roll: { values },
@@ -66,7 +67,7 @@ export const Dying = new Effect(
       // This unconsciousness ends if you regain any hit points.
       if (who.hasEffect(Dying))
         interrupt.add(
-          new EvaluateLater(who, Dying, async () => {
+          new EvaluateLater(who, Dying, Priority.ChangesOutcome, async () => {
             who.deathSaveFailures = 0;
             who.deathSaveSuccesses = 0;
             await who.removeEffect(Dying);
@@ -97,7 +98,7 @@ export const Stable = new Effect("Stable", "turnStart", (g) => {
   g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
     if (who.hasEffect(Stable))
       interrupt.add(
-        new EvaluateLater(who, Stable, async () => {
+        new EvaluateLater(who, Stable, Priority.ChangesOutcome, async () => {
           await who.removeEffect(Stable);
           await who.addEffect(Prone, { duration: Infinity });
         }),
@@ -204,9 +205,9 @@ export const Grappled = new Effect<{ by: Combatant }>(
   "turnEnd",
   (g) => {
     const grappleRemover = (who: Combatant) =>
-      new EvaluateLater(who, Grappled, async () => {
-        await who.removeEffect(Grappled);
-      });
+      new EvaluateLater(who, Grappled, Priority.Normal, () =>
+        who.removeEffect(Grappled),
+      );
 
     const grappleMover = (
       who: Combatant,
@@ -218,6 +219,7 @@ export const Grappled = new Effect<{ by: Combatant }>(
         Grappled,
         "Grapple",
         `Should ${who.name} drag ${grappled.name} as they move?`,
+        Priority.ChangesOutcome,
         async () => {
           const destination = addPoints(grappled.position, displacement);
           await g.move(grappled, destination, {
@@ -333,7 +335,7 @@ export const OnFire = new Effect(
     g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(OnFire))
         interrupt.add(
-          new EvaluateLater(who, OnFire, async () => {
+          new EvaluateLater(who, OnFire, Priority.ChangesOutcome, async () => {
             const damage = await g.rollDamage(1, {
               size: 10,
               damageType: "fire",

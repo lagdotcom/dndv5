@@ -2,6 +2,7 @@ import Engine from "../Engine";
 import YesNoChoiceEvent from "../events/YesNoChoiceEvent";
 import Combatant from "../types/Combatant";
 import Interruption from "../types/Interruption";
+import Priority from "../types/Priority";
 import Source from "../types/Source";
 
 export default class YesNoChoice implements Interruption {
@@ -10,9 +11,9 @@ export default class YesNoChoice implements Interruption {
     public source: Source,
     public title: string,
     public text: string,
-    public yes?: () => Promise<void>,
-    public no?: () => Promise<void>,
-    public priority = 10,
+    public priority: Priority,
+    public yes?: () => Promise<unknown>,
+    public no?: () => Promise<unknown>,
     public isStillValid?: () => boolean,
   ) {}
 

@@ -2,6 +2,7 @@ import { ItemRarityColours } from "../colours";
 import EvaluateLater from "../interruptions/EvaluateLater";
 import { atSet } from "../types/AttackTag";
 import Enchantment from "../types/Enchantment";
+import Priority from "../types/Priority";
 import { weaponPlus1 } from "./plus";
 
 const darkSun: Enchantment<"weapon"> = {
@@ -19,7 +20,7 @@ const darkSun: Enchantment<"weapon"> = {
       ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
         if (weapon === item && attacker?.attunements.has(weapon))
           interrupt.add(
-            new EvaluateLater(attacker, this, async () => {
+            new EvaluateLater(attacker, this, Priority.Normal, async () => {
               const damageType = "radiant"; // TODO [TERRAIN] daylight check
               map.add(
                 damageType,

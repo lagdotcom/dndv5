@@ -48,9 +48,7 @@ const ShieldOfFaith = simpleSpell<HasTarget>({
     caster.concentrateOn({
       spell: ShieldOfFaith,
       duration: minutes(10),
-      onSpellEnd: async () => {
-        await target.removeEffect(ShieldOfFaithEffect);
-      },
+      onSpellEnd: () => target.removeEffect(ShieldOfFaithEffect),
     });
   },
 });

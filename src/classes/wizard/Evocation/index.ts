@@ -5,6 +5,7 @@ import {
 import SimpleFeature from "../../../features/SimpleFeature";
 import MultiListChoice from "../../../interruptions/MultiListChoice";
 import PCSubclass from "../../../types/PCSubclass";
+import Priority from "../../../types/Priority";
 
 const EvocationSavant = nonCombatFeature(
   "Evocation Savant",
@@ -25,6 +26,7 @@ const SculptSpells = new SimpleFeature(
               SculptSpells,
               "Sculpt Spells",
               `Pick combatants who will be somewhat protected from your spell.`,
+              Priority.Normal,
               Array.from(affected, (value) => ({
                 value,
                 label: value.name,

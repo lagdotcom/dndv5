@@ -4,7 +4,6 @@ import { Heal, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
-import { efSet } from "../../types/EffectTag";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -19,7 +18,7 @@ const AidEffect = new Effect<{ amount: number }>(
       if (config) bonus.add(config.amount, AidEffect);
     });
   },
-  { icon: AidIcon, tags: efSet("magic") },
+  { icon: AidIcon, tags: ["magic"] },
 );
 
 const Aid = scalingSpell<HasTargets>({

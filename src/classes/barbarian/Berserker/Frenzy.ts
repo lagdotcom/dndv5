@@ -14,6 +14,7 @@ import TargetResolver from "../../../resolvers/TargetResolver";
 import AbilityName from "../../../types/AbilityName";
 import Combatant from "../../../types/Combatant";
 import { WeaponItem } from "../../../types/Item";
+import Priority from "../../../types/Priority";
 import { sieve } from "../../../utils/array";
 import { getWeaponAbility } from "../../../utils/items";
 import { minutes } from "../../../utils/time";
@@ -82,7 +83,7 @@ const FrenzyEffect = new Effect(
     g.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
       if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
         interrupt.add(
-          new EvaluateLater(who, FrenzyEffect, async () => {
+          new EvaluateLater(who, FrenzyEffect, Priority.Normal, async () => {
             await who.removeEffect(FrenzyEffect);
             await who.changeExhaustion(1);
           }),
@@ -105,9 +106,8 @@ const Frenzy = new SimpleFeature(
             Frenzy,
             "Frenzy",
             `Should ${me.name} enter a Frenzy?`,
-            async () => {
-              await me.addEffect(FrenzyEffect, { duration: minutes(1) });
-            },
+            Priority.Normal,
+            () => me.addEffect(FrenzyEffect, { duration: minutes(1) }),
           ),
         );
     });

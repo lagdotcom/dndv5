@@ -1,6 +1,7 @@
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { atSet } from "../../types/AttackTag";
+import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -13,22 +14,27 @@ const DivineFavorEffect = new Effect(
       ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
         if (attacker?.hasEffect(DivineFavorEffect) && weapon)
           interrupt.add(
-            new EvaluateLater(attacker, DivineFavorEffect, async () => {
-              map.add(
-                "radiant",
-                await g.rollDamage(
-                  1,
-                  {
-                    source: DivineFavor,
-                    size: 4,
-                    attacker,
-                    damageType: "radiant",
-                    tags: atSet("magical"),
-                  },
-                  critical,
-                ),
-              );
-            }),
+            new EvaluateLater(
+              attacker,
+              DivineFavorEffect,
+              Priority.Normal,
+              async () => {
+                map.add(
+                  "radiant",
+                  await g.rollDamage(
+                    1,
+                    {
+                      source: DivineFavor,
+                      size: 4,
+                      attacker,
+                      damageType: "radiant",
+                      tags: atSet("magical"),
+                    },
+                    critical,
+                  ),
+                );
+              },
+            ),
           );
       },
     );

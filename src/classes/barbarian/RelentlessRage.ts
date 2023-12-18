@@ -3,6 +3,7 @@ import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import MessageBuilder from "../../MessageBuilder";
 import { ShortRestResource } from "../../resources";
+import Priority from "../../types/Priority";
 import { RageEffect } from "./Rage";
 
 const RelentlessRageResource = new ShortRestResource(
@@ -31,6 +32,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
             RelentlessRage,
             "Relentless Rage",
             `${me.name} is about to fall unconscious. Try to stay conscious with Relentless Rage?`,
+            Priority.ChangesOutcome,
             async () => {
               const dc = me.getResource(RelentlessRageResource) ?? 10;
               who.giveResource(RelentlessRageResource, 5);

@@ -8,6 +8,7 @@ import { abSet } from "../../types/AbilityName";
 import { coSet } from "../../types/ConditionName";
 import Item, { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
+import Priority from "../../types/Priority";
 import SkillName from "../../types/SkillName";
 import { gains } from "../../utils/gain";
 import { round } from "../../utils/numbers";
@@ -99,7 +100,7 @@ const InstinctivePounce = new SimpleFeature(
     g.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
       if (action instanceof RageAction && action.actor === me)
         interrupt.add(
-          new EvaluateLater(me, InstinctivePounce, async () =>
+          new EvaluateLater(me, InstinctivePounce, Priority.Late, async () =>
             g.applyBoundedMove(
               me,
               new BoundedMove(
@@ -145,23 +146,28 @@ This increases to two additional dice at 13th level and three additional dice at
 
           if (base?.type === "dice") {
             interrupt.add(
-              new EvaluateLater(me, BrutalCritical, async () => {
-                const damage = await g.rollDamage(
-                  count,
-                  {
-                    source: BrutalCritical,
-                    attacker: me,
-                    damageType: base.damageType,
-                    size: base.amount.size,
-                    target,
-                    weapon,
-                    tags: attack.pre.tags,
-                  },
-                  false,
-                );
+              new EvaluateLater(
+                me,
+                BrutalCritical,
+                Priority.Normal,
+                async () => {
+                  const damage = await g.rollDamage(
+                    count,
+                    {
+                      source: BrutalCritical,
+                      attacker: me,
+                      damageType: base.damageType,
+                      size: base.amount.size,
+                      target,
+                      weapon,
+                      tags: attack.pre.tags,
+                    },
+                    false,
+                  );
 
-                bonus.add(damage, BrutalCritical);
-              }),
+                  bonus.add(damage, BrutalCritical);
+                },
+              ),
             );
           }
         }

@@ -15,6 +15,7 @@ import { abSet } from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
 import { acSet, wcSet } from "../../types/Item";
 import PCClass from "../../types/PCClass";
+import Priority from "../../types/Priority";
 import SkillName from "../../types/SkillName";
 import { wtSet } from "../../types/WeaponType";
 import { checkConfig } from "../../utils/config";
@@ -120,9 +121,8 @@ const UncannyDodge = new SimpleFeature(
                 UncannyDodge,
                 "Uncanny Dodge",
                 `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                async () => {
-                  await g.act(action, config);
-                },
+                Priority.ChangesOutcome,
+                () => g.act(action, config),
               ),
             );
         }

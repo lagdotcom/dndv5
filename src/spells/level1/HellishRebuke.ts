@@ -7,6 +7,7 @@ import DndRule from "../../DndRule";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
+import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { enumerate } from "../../utils/numbers";
@@ -41,12 +42,12 @@ new DndRule("Hellish Rebuke", (g) => {
           HellishRebuke,
           "Hellish Rebuke",
           `${attacker.name} damaged ${who.name}. Respond by casting Hellish Rebuke?`,
+          Priority.Late,
           rebuke.map((value) => ({ value, label: value.action.name })),
           async ({ action, config }) => {
             await g.act(action, config);
           },
           true,
-          1,
         ),
       );
     },

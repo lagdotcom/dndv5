@@ -3,7 +3,7 @@ import iconUrl from "@img/spl/armor-of-agathys.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import { efSet } from "../../types/EffectTag";
+import Priority from "../../types/Priority";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
@@ -22,14 +22,18 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
         pre.tags.has("melee")
       )
         interrupt.add(
-          new EvaluateLater(pre.who, ArmorOfAgathysEffect, async () => {
-            await g.damage(
-              ArmorOfAgathysEffect,
-              "cold",
-              { attacker: pre.target, target: pre.who },
-              [["cold", config.count]],
-            );
-          }),
+          new EvaluateLater(
+            pre.who,
+            ArmorOfAgathysEffect,
+            Priority.Normal,
+            async () =>
+              g.damage(
+                ArmorOfAgathysEffect,
+                "cold",
+                { attacker: pre.target, target: pre.who },
+                [["cold", config.count]],
+              ),
+          ),
         );
     });
 
@@ -38,14 +42,14 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
       ({ detail: { who, temporaryHPSource, interrupt } }) => {
         if (temporaryHPSource === ArmorOfAgathysEffect && who.temporaryHP <= 0)
           interrupt.add(
-            new EvaluateLater(who, ArmorOfAgathysEffect, async () => {
-              await who.removeEffect(ArmorOfAgathysEffect);
-            }),
+            new EvaluateLater(who, ArmorOfAgathysEffect, Priority.Normal, () =>
+              who.removeEffect(ArmorOfAgathysEffect),
+            ),
           );
       },
     );
   },
-  { icon: ArmorOfAgathysIcon, tags: efSet("magic") },
+  { icon: ArmorOfAgathysIcon, tags: ["magic"] },
 );
 
 /* A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.

@@ -1208,14 +1208,14 @@
 
   // src/interruptions/YesNoChoice.ts
   var YesNoChoice = class {
-    constructor(who, source, title, text, yes, no, priority = 10, isStillValid) {
+    constructor(who, source, title, text, priority, yes, no, isStillValid) {
       this.who = who;
       this.source = source;
       this.title = title;
       this.text = text;
+      this.priority = priority;
       this.yes = yes;
       this.no = no;
-      this.priority = priority;
       this.isStillValid = isStillValid;
     }
     async apply(g) {
@@ -2328,6 +2328,17 @@
     }
   };
 
+  // src/types/Priority.ts
+  var Priority = /* @__PURE__ */ ((Priority2) => {
+    Priority2[Priority2["ChangesTarget"] = 20] = "ChangesTarget";
+    Priority2[Priority2["ChangesOutcome"] = 10] = "ChangesOutcome";
+    Priority2[Priority2["Normal"] = 0] = "Normal";
+    Priority2[Priority2["Late"] = -10] = "Late";
+    Priority2[Priority2["UI"] = -100] = "UI";
+    return Priority2;
+  })(Priority || {});
+  var Priority_default = Priority;
+
   // src/utils/config.ts
   function getConfigErrors(g, action, config) {
     const ec = g.check(action, config);
@@ -2642,11 +2653,11 @@
 
   // src/interruptions/EvaluateLater.ts
   var EvaluateLater = class {
-    constructor(who, source, apply, priority = 5) {
+    constructor(who, source, priority, apply) {
       this.who = who;
       this.source = source;
-      this.apply = apply;
       this.priority = priority;
+      this.apply = apply;
     }
   };
 
@@ -2731,7 +2742,7 @@
       g.events.on("TurnSkipped", ({ detail: { who, interrupt } }) => {
         if (who.hasEffect(Dying))
           interrupt.add(
-            new EvaluateLater(who, Dying, async () => {
+            new EvaluateLater(who, Dying, Priority_default.ChangesOutcome, async () => {
               const {
                 outcome,
                 roll: { values }
@@ -2755,7 +2766,7 @@
       g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
         if (who.hasEffect(Dying))
           interrupt.add(
-            new EvaluateLater(who, Dying, async () => {
+            new EvaluateLater(who, Dying, Priority_default.ChangesOutcome, async () => {
               who.deathSaveFailures = 0;
               who.deathSaveSuccesses = 0;
               await who.removeEffect(Dying);
@@ -2784,7 +2795,7 @@
     g.events.on("CombatantHealed", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(Stable))
         interrupt.add(
-          new EvaluateLater(who, Stable, async () => {
+          new EvaluateLater(who, Stable, Priority_default.ChangesOutcome, async () => {
             await who.removeEffect(Stable);
             await who.addEffect(Prone, { duration: Infinity });
           })
@@ -2872,14 +2883,18 @@
     "Grappled",
     "turnEnd",
     (g) => {
-      const grappleRemover = (who) => new EvaluateLater(who, Grappled, async () => {
-        await who.removeEffect(Grappled);
-      });
+      const grappleRemover = (who) => new EvaluateLater(
+        who,
+        Grappled,
+        Priority_default.Normal,
+        () => who.removeEffect(Grappled)
+      );
       const grappleMover = (who, grappled, displacement) => new YesNoChoice(
         who,
         Grappled,
         "Grapple",
         `Should ${who.name} drag ${grappled.name} as they move?`,
+        Priority_default.ChangesOutcome,
         async () => {
           const destination = addPoints(grappled.position, displacement);
           await g.move(grappled, destination, {
@@ -2974,7 +2989,7 @@
       g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
         if (who.hasEffect(OnFire))
           interrupt.add(
-            new EvaluateLater(who, OnFire, async () => {
+            new EvaluateLater(who, OnFire, Priority_default.ChangesOutcome, async () => {
               const damage = await g.rollDamage(1, {
                 size: 10,
                 damageType: "fire",
@@ -3129,10 +3144,8 @@
         Versatile,
         "Versatile",
         `Use both hands to attack with ${attacker.name}'s ${weapon.name}?`,
-        async () => {
-          tags.add("two hands");
-          tags.add("versatile");
-        }
+        Priority_default.Normal,
+        async () => tags.add("two hands").add("versatile")
       ).apply(g);
     return getAttackResult(
       g,
@@ -3394,15 +3407,15 @@
 
   // src/interruptions/PickFromListChoice.ts
   var PickFromListChoice = class {
-    constructor(who, source, title, text, items, chosen, allowNone = false, priority = 10, isStillValid) {
+    constructor(who, source, title, text, priority, items, chosen, allowNone = false, isStillValid) {
       this.who = who;
       this.source = source;
       this.title = title;
       this.text = text;
+      this.priority = priority;
       this.items = items;
       this.chosen = chosen;
       this.allowNone = allowNone;
-      this.priority = priority;
       this.isStillValid = isStillValid;
     }
     async apply(g) {
@@ -3471,6 +3484,7 @@
         this,
         "Grapple",
         `${actor.name} is trying to grapple ${target.name}. Contest with which skill?`,
+        Priority_default.Normal,
         GrappleChoices,
         async ({ ability, skill }) => {
           const { total: theirs } = await g.abilityCheck(NaN, {
@@ -3575,6 +3589,7 @@
         this,
         "Grapple",
         `${actor.name} is trying to shove ${target.name}. Contest with which skill?`,
+        Priority_default.Normal,
         GrappleChoices,
         async ({ ability, skill }) => {
           const { total: theirs } = await g.abilityCheck(NaN, {
@@ -3801,9 +3816,12 @@
     g.events.on("Exhaustion", ({ detail: { who, interrupt } }) => {
       if (who.exhaustion >= 6)
         interrupt.add(
-          new EvaluateLater(who, ExhaustionRule, async () => {
-            await g.kill(who);
-          })
+          new EvaluateLater(
+            who,
+            ExhaustionRule,
+            Priority_default.Late,
+            () => g.kill(who)
+          )
         );
     });
   });
@@ -3962,6 +3980,7 @@
                   OpportunityAttacksRule,
                   "Opportunity Attack",
                   `${who.name} is moving out of ${attacker.name}'s reach. Make an opportunity attack?`,
+                  Priority_default.Late,
                   validActions.map((value) => ({
                     label: value.weapon.name,
                     value
@@ -3970,7 +3989,6 @@
                     await g.act(opportunity, { target: who });
                   },
                   true,
-                  1,
                   () => success.result !== "fail" && error.result
                 )
               );
@@ -5174,6 +5192,7 @@
           source,
           `Replace Temporary HP?`,
           `${who.name} already has ${who.temporaryHP} temporary HP from ${(_a = who.temporaryHPSource) == null ? void 0 : _a.name}. Replace with ${count} temporary HP from ${source.name}?`,
+          Priority_default.Normal,
           async () => this.setTemporaryHP(who, count, source)
         ).apply(this);
       this.setTemporaryHP(who, count, source);
@@ -5472,9 +5491,6 @@
   // src/img/spl/armor-of-agathys.svg
   var armor_of_agathys_default = "./armor-of-agathys-V2ZDSJZ3.svg";
 
-  // src/types/EffectTag.ts
-  var efSet = (...items) => new Set(items);
-
   // src/utils/time.ts
   var TURNS_PER_MINUTE = 10;
   var minutes = (n) => n * TURNS_PER_MINUTE;
@@ -5490,14 +5506,17 @@
         const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
         if (config && pre.target.temporaryHPSource === ArmorOfAgathysEffect && pre.tags.has("melee"))
           interrupt.add(
-            new EvaluateLater(pre.who, ArmorOfAgathysEffect, async () => {
-              await g.damage(
+            new EvaluateLater(
+              pre.who,
+              ArmorOfAgathysEffect,
+              Priority_default.Normal,
+              async () => g.damage(
                 ArmorOfAgathysEffect,
                 "cold",
                 { attacker: pre.target, target: pre.who },
                 [["cold", config.count]]
-              );
-            })
+              )
+            )
           );
       });
       g.events.on(
@@ -5505,14 +5524,17 @@
         ({ detail: { who, temporaryHPSource, interrupt } }) => {
           if (temporaryHPSource === ArmorOfAgathysEffect && who.temporaryHP <= 0)
             interrupt.add(
-              new EvaluateLater(who, ArmorOfAgathysEffect, async () => {
-                await who.removeEffect(ArmorOfAgathysEffect);
-              })
+              new EvaluateLater(
+                who,
+                ArmorOfAgathysEffect,
+                Priority_default.Normal,
+                () => who.removeEffect(ArmorOfAgathysEffect)
+              )
             );
         }
       );
     },
-    { icon: ArmorOfAgathysIcon, tags: efSet("magic") }
+    { icon: ArmorOfAgathysIcon, tags: ["magic"] }
   );
   var ArmorOfAgathys = scalingSpell({
     status: "implemented",
@@ -5730,11 +5752,12 @@
     (g, me) => {
       g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
         interrupt.add(
-          new EvaluateLater(me, ArmorOfAgathys2, async () => {
-            await ArmorOfAgathys_default.apply(g, me, BirnotecSpellcasting, {
-              slot: 3
-            });
-          })
+          new EvaluateLater(
+            me,
+            ArmorOfAgathys2,
+            Priority_default.Normal,
+            () => ArmorOfAgathys_default.apply(g, me, BirnotecSpellcasting, { slot: 3 })
+          )
         );
       });
     }
@@ -5801,9 +5824,8 @@
                 AntimagicProdigy,
                 "Antimagic Prodigy",
                 `Use ${me.name}'s reaction to attempt to counter the spell?`,
-                async () => {
-                  await g.act(action, config);
-                }
+                Priority_default.ChangesOutcome,
+                () => g.act(action, config)
               )
             );
         }
@@ -5892,9 +5914,8 @@
                   HellishRebuke,
                   "Hellish Rebuke",
                   `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                  async () => {
-                    await g.act(action, config);
-                  }
+                  Priority_default.Late,
+                  () => g.act(action, config)
                 )
               );
           }
@@ -6792,21 +6813,26 @@
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("weapon")))
             interrupt.add(
-              new EvaluateLater(me, ScreamingInside, async () => {
-                const amount = await g.rollDamage(
-                  1,
-                  {
-                    source: ScreamingInside,
-                    attacker,
-                    target,
-                    size: 6,
-                    damageType: "psychic",
-                    tags: atSet("magical")
-                  },
-                  critical
-                );
-                map.add("psychic", amount);
-              })
+              new EvaluateLater(
+                me,
+                ScreamingInside,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(
+                    1,
+                    {
+                      source: ScreamingInside,
+                      attacker,
+                      target,
+                      size: 6,
+                      damageType: "psychic",
+                      tags: atSet("magical")
+                    },
+                    critical
+                  );
+                  map.add("psychic", amount);
+                }
+              )
             );
         }
       );
@@ -6823,10 +6849,15 @@
       g.events.on("CombatantDamaged", ({ detail: { who, total, interrupt } }) => {
         if (who.hasEffect(WreathedInShadowEffect) && total >= 10)
           interrupt.add(
-            new EvaluateLater(who, WreathedInShadowEffect, async () => {
-              await who.removeEffect(WreathedInShadowEffect);
-              who.name = realName;
-            })
+            new EvaluateLater(
+              who,
+              WreathedInShadowEffect,
+              Priority_default.Late,
+              async () => {
+                await who.removeEffect(WreathedInShadowEffect);
+                who.name = realName;
+              }
+            )
           );
       });
     },
@@ -6836,10 +6867,15 @@
     "Wreathed in Shadow",
     "Kay's appearance is hidden from view by a thick black fog that whirls about him. Only a DC 22 Perception check can reveal his identity. All attacks against him are at disadvantage. This effect is dispelled until the beginning of his next turn if he takes more than 10 damage in one hit.",
     (g, me) => {
-      const wreathe = new EvaluateLater(me, WreathedInShadow, async () => {
-        await me.addEffect(WreathedInShadowEffect, { duration: Infinity });
-        me.name = hiddenName;
-      });
+      const wreathe = new EvaluateLater(
+        me,
+        WreathedInShadow,
+        Priority_default.Normal,
+        async () => {
+          await me.addEffect(WreathedInShadowEffect, { duration: Infinity });
+          me.name = hiddenName;
+        }
+      );
       g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
         interrupt.add(wreathe);
       });
@@ -6922,7 +6958,7 @@
   var LuckPoint = new LongRestResource("Luck Point", 3);
   function addLuckyOpportunity(g, who, message, interrupt, callback) {
     interrupt.add(
-      new YesNoChoice(who, Lucky, "Lucky", message, async () => {
+      new YesNoChoice(who, Lucky, "Lucky", message, Priority_default.Late, async () => {
         who.spendResource(LuckPoint);
         const nr = await g.roll({ type: "luck", who });
         callback(nr.values.final);
@@ -7117,6 +7153,7 @@
               new EvaluateLater(
                 me,
                 FightingStyleGreatWeaponFighting,
+                Priority_default.ChangesOutcome,
                 async () => {
                   const newRoll = await g.roll({
                     type: "other",
@@ -7196,9 +7233,8 @@
                 FightingStyleProtection,
                 "Fighting Style: Protection",
                 `${target.name} is being attacked by ${who.name}. Use ${me.name}'s reaction to impose disadvantage?`,
-                async () => {
-                  await g.act(action, config);
-                }
+                Priority_default.ChangesOutcome,
+                () => g.act(action, config)
               )
             );
         }
@@ -7303,9 +7339,12 @@
           if (target.hasEffect(GuidingBoltEffect)) {
             diceType.add("advantage", GuidingBoltEffect);
             interrupt.add(
-              new EvaluateLater(target, GuidingBoltEffect, async () => {
-                await target.removeEffect(GuidingBoltEffect);
-              })
+              new EvaluateLater(
+                target,
+                GuidingBoltEffect,
+                Priority_default.Normal,
+                () => target.removeEffect(GuidingBoltEffect)
+              )
             );
           }
         }
@@ -7476,20 +7515,25 @@
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
           if (!me.conditions.has("Unconscious") && (attacker == null ? void 0 : attacker.side) === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
             interrupt.add(
-              new EvaluateLater(attacker, FiendishMantle, async () => {
-                const amount = await g.rollDamage(
-                  1,
-                  {
-                    attacker,
-                    source: FiendishMantle,
-                    damageType: "necrotic",
-                    size: 4,
-                    tags: atSet("magical")
-                  },
-                  critical
-                );
-                map.add("necrotic", amount);
-              })
+              new EvaluateLater(
+                attacker,
+                FiendishMantle,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(
+                    1,
+                    {
+                      attacker,
+                      source: FiendishMantle,
+                      damageType: "necrotic",
+                      size: 4,
+                      tags: atSet("magical")
+                    },
+                    critical
+                  );
+                  map.add("necrotic", amount);
+                }
+              )
             );
         }
       );
@@ -7725,6 +7769,7 @@
         this,
         "Cheer",
         `Pick an attack to make.`,
+        Priority_default.Normal,
         attacks.map((value) => ({
           value,
           label: `attack ${value.target.name} with ${value.weapon.name}`
@@ -7809,6 +7854,7 @@
         this,
         "Discord",
         `Pick an attack to make.`,
+        Priority_default.Normal,
         attacks.map((value) => ({
           value,
           label: `attack ${value.target.name} with ${value.weapon.name}`
@@ -7941,9 +7987,8 @@
               DancingStep,
               "Dancing Step",
               `${who.name} moved with 5 ft. of ${me.name}. Teleport up to 20 ft. away?`,
-              async () => {
-                await g.act(step, config);
-              }
+              Priority_default.Normal,
+              () => g.act(step, config)
             )
           );
       });
@@ -7991,7 +8036,7 @@
         ({ detail: { attack, attacker, interrupt } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.weapon) === weapon)
             interrupt.add(
-              new EvaluateLater(me, LustForBattle, async () => {
+              new EvaluateLater(me, LustForBattle, Priority_default.Normal, async () => {
                 if (await g.giveTemporaryHP(me, 5, LustForBattle))
                   g.text(
                     new MessageBuilder().co(me).text(" pulses with dark energy.")
@@ -8124,6 +8169,7 @@
               SurvivalReflex,
               "Survival Reflex",
               `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
+              Priority_default.ChangesOutcome,
               async () => {
                 me.useTime("reaction");
                 activated = true;
@@ -8141,6 +8187,7 @@
             new EvaluateLater(
               me,
               SurvivalReflex,
+              Priority_default.Late,
               async () => g.applyBoundedMove(
                 me,
                 new BoundedMove(
@@ -8202,7 +8249,12 @@
           ({ detail: { attack, interrupt, who } }) => {
             if ((attack == null ? void 0 : attack.pre.weapon) === this)
               interrupt.add(
-                new EvaluateLater(attack.pre.who, this, async () => onHit(who))
+                new EvaluateLater(
+                  attack.pre.who,
+                  this,
+                  Priority_default.Normal,
+                  async () => onHit(who)
+                )
               );
           }
         );
@@ -8224,19 +8276,24 @@
         const config = who.getEffectConfig(ParalyzingPoisonEffect);
         if (config)
           interrupt.add(
-            new EvaluateLater(who, ParalyzingPoisonEffect, async () => {
-              const { outcome } = await g.save({
-                source: ParalyzingPoisonEffect,
-                type: config.type,
-                ability: config.ability,
-                who,
-                effect: ParalyzingPoisonEffect,
-                config,
-                tags: ["poison"]
-              });
-              if (outcome === "success")
-                await who.removeEffect(ParalyzingPoisonEffect);
-            })
+            new EvaluateLater(
+              who,
+              ParalyzingPoisonEffect,
+              Priority_default.Normal,
+              async () => {
+                const { outcome } = await g.save({
+                  source: ParalyzingPoisonEffect,
+                  type: config.type,
+                  ability: config.ability,
+                  who,
+                  effect: ParalyzingPoisonEffect,
+                  config,
+                  tags: ["poison"]
+                });
+                if (outcome === "success")
+                  await who.removeEffect(ParalyzingPoisonEffect);
+              }
+            )
           );
       });
     },
@@ -8520,15 +8577,10 @@ If the saving throw is successful, the target takes half the bludgeoning damage 
       g.events.on("Attack", ({ detail: { pre, outcome, interrupt } }) => {
         if (pre.target === me && outcome.hits && pre.tags.has("melee") && distance(pre.who, me) <= 5)
           interrupt.add(
-            new EvaluateLater(
-              me,
-              FireForm,
-              async () => {
-                if (outcome.hits)
-                  await applyFireDamage(pre.target);
-              },
-              1
-            )
+            new EvaluateLater(me, FireForm, Priority_default.Late, async () => {
+              if (outcome.hits)
+                await applyFireDamage(pre.target);
+            })
           );
       });
       const area = { type: "within", who: me, radius: 0 };
@@ -8539,7 +8591,7 @@ If the saving throw is successful, the target takes half the bludgeoning damage 
           for (const target of g.getInside(area, [me]).filter((other) => !thisTurn.has(other))) {
             thisTurn.add(target);
             interrupt.add(
-              new EvaluateLater(me, FireForm, async () => {
+              new EvaluateLater(me, FireForm, Priority_default.Normal, async () => {
                 await applyFireDamage(target);
                 await target.addEffect(OnFire, { duration: Infinity }, me);
               })
@@ -9564,7 +9616,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
         ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
           if (weapon === item && (attacker == null ? void 0 : attacker.attunements.has(weapon)))
             interrupt.add(
-              new EvaluateLater(attacker, this, async () => {
+              new EvaluateLater(attacker, this, Priority_default.Normal, async () => {
                 const damageType = "radiant";
                 map.add(
                   damageType,
@@ -9606,6 +9658,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
               ofTheDeep,
               item.name,
               "Speak the command word and emit a spray of acid?",
+              Priority_default.Late,
               async () => {
                 charges--;
                 const damage = await g.rollDamage(4, {
@@ -9761,6 +9814,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
                   chaoticBurst,
                   "Chaotic Burst",
                   "Choose the damage type:",
+                  Priority_default.Normal,
                   [a, b].map(getOptionFromRoll),
                   async (type) => addBurst(type)
                 )
@@ -9881,9 +9935,8 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
                 this,
                 this.name,
                 `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
-                async () => {
-                  await g.act(action, config);
-                }
+                Priority_default.ChangesTarget,
+                () => g.act(action, config)
               )
             );
         }
@@ -10514,7 +10567,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
           conditions.add("Restrained", Webbed);
       });
     },
-    { icon: WebIcon, tags: efSet("magic") }
+    { icon: WebIcon, tags: ["magic"] }
   );
   var getWebArea = (centre) => ({
     type: "cube",
@@ -10562,7 +10615,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     }
     getWebber(target) {
       const { g, caster, method } = this;
-      return new EvaluateLater(target, Web, async () => {
+      return new EvaluateLater(target, Web, Priority_default.Late, async () => {
         if (this.affectedThisTurn.has(target))
           return;
         this.affectedThisTurn.add(target);
@@ -10729,7 +10782,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
         const config = who.getEffectConfig(RingOfAweEffect);
         if (config)
           interrupt.add(
-            new EvaluateLater(who, RingOfAweEffect, async () => {
+            new EvaluateLater(who, RingOfAweEffect, Priority_default.Normal, async () => {
               const { outcome } = await g.save(
                 getRingOfAweSave(who, config.actor, config.dc, config)
               );
@@ -10739,7 +10792,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
           );
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var RingOfAweAction = class extends AbstractAction {
     constructor(g, actor, item, dc = 13) {
@@ -11201,9 +11254,8 @@ You can use this feature a number of times equal to your Intelligence modifier (
               FlashOfGenius,
               "Flash of Genius",
               `Use ${me.name}'s reaction to give +${me.int.modifier} to ${description}?`,
-              async () => {
-                await g.act(action, config);
-              }
+              Priority_default.ChangesOutcome,
+              () => g.act(action, config)
             )
           );
       };
@@ -11453,39 +11505,51 @@ While holding the object, a creature can take an action to produce the spell's e
       g.events.on("EffectAdded", ({ detail: { who, interrupt } }) => {
         if (isRaging(who) && who.conditions.has("Unconscious"))
           interrupt.add(
-            new EvaluateLater(who, RageEffect, async () => {
-              await who.removeEffect(RageEffect);
-            })
+            new EvaluateLater(
+              who,
+              RageEffect,
+              Priority_default.Normal,
+              () => who.removeEffect(RageEffect)
+            )
           );
       });
       g.events.on("AfterAction", ({ detail: { action, config, interrupt } }) => {
         var _a;
         if (isRaging(action.actor) && action.tags.has("attack") && ((_a = action.getTargets(config)) == null ? void 0 : _a.find((who) => who.side !== action.actor.side)))
           interrupt.add(
-            new EvaluateLater(action.actor, RageEffect, async () => {
-              await action.actor.addEffect(DidAttackTag, { duration: Infinity });
-            })
+            new EvaluateLater(
+              action.actor,
+              RageEffect,
+              Priority_default.Normal,
+              () => action.actor.addEffect(DidAttackTag, { duration: Infinity })
+            )
           );
       });
       g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
         if (isRaging(who))
           interrupt.add(
-            new EvaluateLater(who, RageEffect, async () => {
-              await who.addEffect(TookDamageTag, { duration: Infinity });
-            })
+            new EvaluateLater(
+              who,
+              RageEffect,
+              Priority_default.Normal,
+              () => who.addEffect(TookDamageTag, { duration: Infinity })
+            )
           );
       });
       g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
         if (who.hasEffect(RageEffect)) {
           if (!who.hasEffect(DidAttackTag) && !who.hasEffect(TookDamageTag))
             interrupt.add(
-              new EvaluateLater(who, RageEffect, async () => {
-                await who.removeEffect(RageEffect);
-              })
+              new EvaluateLater(
+                who,
+                RageEffect,
+                Priority_default.Normal,
+                () => who.removeEffect(RageEffect)
+              )
             );
           else
             interrupt.add(
-              new EvaluateLater(who, RageEffect, async () => {
+              new EvaluateLater(who, RageEffect, Priority_default.Normal, async () => {
                 await who.removeEffect(DidAttackTag);
                 await who.removeEffect(TookDamageTag);
               })
@@ -11608,6 +11672,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
                 RecklessAttack,
                 "Reckless Attack",
                 `Get advantage on all melee weapon attack rolls using Strength this turn at the cost of all incoming attacks having advantage?`,
+                Priority_default.ChangesOutcome,
                 async () => {
                   await me.addEffect(RecklessAttackEffect, { duration: 1 });
                   if (canBeReckless(who, tags, ability))
@@ -11641,6 +11706,7 @@ Each time you use this feature after the first, the DC increases by 5. When you 
               RelentlessRage,
               "Relentless Rage",
               `${me.name} is about to fall unconscious. Try to stay conscious with Relentless Rage?`,
+              Priority_default.ChangesOutcome,
               async () => {
                 var _a;
                 const dc = (_a = me.getResource(RelentlessRageResource)) != null ? _a : 10;
@@ -11739,6 +11805,7 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
             new EvaluateLater(
               me,
               InstinctivePounce,
+              Priority_default.Late,
               async () => g.applyBoundedMove(
                 me,
                 new BoundedMove(
@@ -11783,22 +11850,27 @@ This increases to two additional dice at 13th level and three additional dice at
             const base = weapon == null ? void 0 : weapon.damage;
             if ((base == null ? void 0 : base.type) === "dice") {
               interrupt.add(
-                new EvaluateLater(me, BrutalCritical, async () => {
-                  const damage = await g.rollDamage(
-                    count,
-                    {
-                      source: BrutalCritical,
-                      attacker: me,
-                      damageType: base.damageType,
-                      size: base.amount.size,
-                      target,
-                      weapon,
-                      tags: attack.pre.tags
-                    },
-                    false
-                  );
-                  bonus.add(damage, BrutalCritical);
-                })
+                new EvaluateLater(
+                  me,
+                  BrutalCritical,
+                  Priority_default.Normal,
+                  async () => {
+                    const damage = await g.rollDamage(
+                      count,
+                      {
+                        source: BrutalCritical,
+                        attacker: me,
+                        damageType: base.damageType,
+                        size: base.amount.size,
+                        target,
+                        weapon,
+                        tags: attack.pre.tags
+                      },
+                      false
+                    );
+                    bonus.add(damage, BrutalCritical);
+                  }
+                )
               );
             }
           }
@@ -12224,9 +12296,12 @@ This increases to two additional dice at 13th level and three additional dice at
           const { values } = g.dice.roll({ type: "bane", who });
           bonus.add(-values.final, MindSliver);
           interrupt.add(
-            new EvaluateLater(who, MindSliverEffect, async () => {
-              who.removeEffect(MindSliverEffect);
-            })
+            new EvaluateLater(
+              who,
+              MindSliverEffect,
+              Priority_default.Normal,
+              () => who.removeEffect(MindSliverEffect)
+            )
           );
         }
       });
@@ -12289,9 +12364,12 @@ This increases to two additional dice at 13th level and three additional dice at
             if (who === attacker && endCounter-- <= 0) {
               removeTurnTracker();
               interrupt.add(
-                new EvaluateLater(who, MindSliver, async () => {
-                  await target.removeEffect(MindSliverEffect);
-                })
+                new EvaluateLater(
+                  who,
+                  MindSliver,
+                  Priority_default.Normal,
+                  () => target.removeEffect(MindSliverEffect)
+                )
               );
             }
           }
@@ -12864,22 +12942,27 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
         ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
           if ((attacker == null ? void 0 : attacker.hasEffect(DivineFavorEffect)) && weapon)
             interrupt.add(
-              new EvaluateLater(attacker, DivineFavorEffect, async () => {
-                map.add(
-                  "radiant",
-                  await g.rollDamage(
-                    1,
-                    {
-                      source: DivineFavor,
-                      size: 4,
-                      attacker,
-                      damageType: "radiant",
-                      tags: atSet("magical")
-                    },
-                    critical
-                  )
-                );
-              })
+              new EvaluateLater(
+                attacker,
+                DivineFavorEffect,
+                Priority_default.Normal,
+                async () => {
+                  map.add(
+                    "radiant",
+                    await g.rollDamage(
+                      1,
+                      {
+                        source: DivineFavor,
+                        size: 4,
+                        attacker,
+                        damageType: "radiant",
+                        tags: atSet("magical")
+                      },
+                      critical
+                    )
+                  );
+                }
+              )
             );
         }
       );
@@ -13123,12 +13206,12 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
             HellishRebuke2,
             "Hellish Rebuke",
             `${attacker.name} damaged ${who.name}. Respond by casting Hellish Rebuke?`,
+            Priority_default.Late,
             rebuke.map((value) => ({ value, label: value.action.name })),
             async ({ action, config }) => {
               await g.act(action, config);
             },
-            true,
-            1
+            true
           )
         );
       }
@@ -13205,7 +13288,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
           error.add("laughing too hard", LaughterEffect);
       });
       const resave = (i2, who, config, diceType = "normal") => i2.add(
-        new EvaluateLater(who, LaughterEffect, async () => {
+        new EvaluateLater(who, LaughterEffect, Priority_default.Normal, async () => {
           const { outcome } = await g.save(
             getHideousLaughterSave(who, config, diceType)
           );
@@ -13224,7 +13307,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
           resave(interrupt, who, config, "advantage");
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var HideousLaughter = simpleSpell({
     status: "implemented",
@@ -13491,26 +13574,34 @@ At the end of each of its turns, and each time it takes damage, the target can m
         const config = target.getEffectConfig(SanctuaryEffect);
         if (config)
           interrupt.add(
-            new EvaluateLater(who, SanctuaryEffect, async (g2) => {
-              const { outcome } = await g2.save({
-                source: SanctuaryEffect,
-                type: config.method.getSaveType(config.caster, Sanctuary),
-                who,
-                ability: "wis",
-                tags: ["charm", "magic"]
-              });
-              if (outcome === "fail") {
-                g2.text(
-                  new MessageBuilder().co(who).text(" fails to break ").co(target).nosp().text("'s Sanctuary.")
-                );
-                getSanctuaryEffects(who).add(target.id);
+            new EvaluateLater(
+              who,
+              SanctuaryEffect,
+              Priority_default.ChangesOutcome,
+              async () => {
+                const { outcome } = await g.save({
+                  source: SanctuaryEffect,
+                  type: config.method.getSaveType(config.caster, Sanctuary),
+                  who,
+                  ability: "wis",
+                  tags: ["charm", "magic"]
+                });
+                if (outcome === "fail") {
+                  g.text(
+                    new MessageBuilder().co(who).text(" fails to break ").co(target).nosp().text("'s Sanctuary.")
+                  );
+                  getSanctuaryEffects(who).add(target.id);
+                }
               }
-            })
+            )
           );
       });
-      const getRemover = (who) => new EvaluateLater(who, SanctuaryEffect, async () => {
-        await who.removeEffect(SanctuaryEffect);
-      });
+      const getRemover = (who) => new EvaluateLater(
+        who,
+        SanctuaryEffect,
+        Priority_default.Normal,
+        () => who.removeEffect(SanctuaryEffect)
+      );
       g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
         if (pre.who.hasEffect(SanctuaryEffect))
           interrupt.add(getRemover(pre.who));
@@ -13529,7 +13620,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
           interrupt.add(getRemover(attacker));
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var Sanctuary = simpleSpell({
     status: "incomplete",
@@ -13576,14 +13667,14 @@ At the end of each of its turns, and each time it takes damage, the target can m
             Shield2,
             "Shield",
             `${message} Cast Shield as a reaction?`,
+            Priority_default.Late,
             shield.map((value) => ({ value, label: value.name })),
             async (action) => {
               await g.act(action, {});
               if (after)
                 await after();
             },
-            true,
-            1
+            true
           )
         );
       };
@@ -13686,9 +13777,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       caster.concentrateOn({
         spell: ShieldOfFaith,
         duration: minutes(10),
-        onSpellEnd: async () => {
-          await target.removeEffect(ShieldOfFaithEffect);
-        }
+        onSpellEnd: () => target.removeEffect(ShieldOfFaithEffect)
       });
     }
   });
@@ -13735,9 +13824,12 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
         if (who.hasEffect(SleepEffect))
           interrupt.add(
-            new EvaluateLater(who, SleepEffect, async () => {
-              await who.removeEffect(SleepEffect);
-            })
+            new EvaluateLater(
+              who,
+              SleepEffect,
+              Priority_default.Normal,
+              () => who.removeEffect(SleepEffect)
+            )
           );
       });
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
@@ -13825,7 +13917,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
           bonus.add(config.amount, AidEffect);
       });
     },
-    { icon: AidIcon, tags: efSet("magic") }
+    { icon: AidIcon, tags: ["magic"] }
   );
   var Aid = scalingSpell({
     status: "implemented",
@@ -13938,19 +14030,24 @@ At the end of each of its turns, and each time it takes damage, the target can m
         ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
           if ((attacker == null ? void 0 : attacker.hasEffect(EnlargeEffect)) && weapon)
             interrupt.add(
-              new EvaluateLater(attacker, EnlargeEffect, async () => {
-                const amount = await g.rollDamage(
-                  1,
-                  {
-                    source: EnlargeEffect,
-                    attacker,
-                    size: 4,
-                    tags: atSet("magical")
-                  },
-                  critical
-                );
-                bonus.add(amount, EnlargeEffect);
-              })
+              new EvaluateLater(
+                attacker,
+                EnlargeEffect,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(
+                    1,
+                    {
+                      source: EnlargeEffect,
+                      attacker,
+                      size: 4,
+                      tags: atSet("magical")
+                    },
+                    critical
+                  );
+                  bonus.add(amount, EnlargeEffect);
+                }
+              )
             );
         }
       );
@@ -13974,19 +14071,24 @@ At the end of each of its turns, and each time it takes damage, the target can m
         ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
           if ((attacker == null ? void 0 : attacker.hasEffect(ReduceEffect)) && weapon)
             interrupt.add(
-              new EvaluateLater(attacker, ReduceEffect, async () => {
-                const amount = await g.rollDamage(
-                  1,
-                  {
-                    source: ReduceEffect,
-                    attacker,
-                    size: 4,
-                    tags: atSet("magical")
-                  },
-                  critical
-                );
-                bonus.add(-amount, ReduceEffect);
-              })
+              new EvaluateLater(
+                attacker,
+                ReduceEffect,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(
+                    1,
+                    {
+                      source: ReduceEffect,
+                      attacker,
+                      size: 4,
+                      tags: atSet("magical")
+                    },
+                    critical
+                  );
+                  bonus.add(-amount, ReduceEffect);
+                }
+              )
             );
         }
       );
@@ -14138,20 +14240,25 @@ At the end of each of its turns, and each time it takes damage, the target can m
         const config = who.getEffectConfig(HoldPersonEffect);
         if (config) {
           interrupt.add(
-            new EvaluateLater(who, HoldPersonEffect, async () => {
-              const { outcome } = await g.save(getHoldPersonSave(who, config));
-              if (outcome === "success") {
-                await who.removeEffect(HoldPersonEffect);
-                config.affected.delete(who);
-                if (config.affected.size < 1)
-                  await config.caster.endConcentration();
+            new EvaluateLater(
+              who,
+              HoldPersonEffect,
+              Priority_default.Normal,
+              async () => {
+                const { outcome } = await g.save(getHoldPersonSave(who, config));
+                if (outcome === "success") {
+                  await who.removeEffect(HoldPersonEffect);
+                  config.affected.delete(who);
+                  if (config.affected.size < 1)
+                    await config.caster.endConcentration();
+                }
               }
-            })
+            )
           );
         }
       });
     },
-    { tags: efSet("magic") }
+    { tags: ["magic"] }
   );
   var HoldPerson = scalingSpell({
     status: "implemented",
@@ -14515,7 +14622,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
     getDamager(target) {
       const { hurtThisTurn, g, slot, caster: attacker, method } = this;
-      return new EvaluateLater(target, Moonbeam, async () => {
+      return new EvaluateLater(target, Moonbeam, Priority_default.Normal, async () => {
         if (hurtThisTurn.has(target))
           return;
         hurtThisTurn.add(target);
@@ -14738,7 +14845,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
           const squares = getSquares(who, position);
           if (area.points.overlaps(squares))
             interrupt.add(
-              new EvaluateLater(who, SpikeGrowth, async () => {
+              new EvaluateLater(who, SpikeGrowth, Priority_default.Late, async () => {
                 const amount = await g.rollDamage(2, {
                   source: SpikeGrowth,
                   attacker,
@@ -15554,21 +15661,26 @@ At the end of each of its turns, and each time it takes damage, the target can m
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
           if ((attacker == null ? void 0 : attacker.hasEffect(PrimalBeastEffect)) && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
             interrupt.add(
-              new EvaluateLater(attacker, PrimalBeastEffect, async () => {
-                const amount = await g.rollDamage(
-                  1,
-                  {
-                    source: PrimalBeastEffect,
-                    attacker,
-                    target,
-                    size: 6,
-                    damageType: "force",
-                    tags: atSet("magical")
-                  },
-                  critical
-                );
-                map.add("radiant", amount);
-              })
+              new EvaluateLater(
+                attacker,
+                PrimalBeastEffect,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(
+                    1,
+                    {
+                      source: PrimalBeastEffect,
+                      attacker,
+                      target,
+                      size: 6,
+                      damageType: "force",
+                      tags: atSet("magical")
+                    },
+                    critical
+                  );
+                  map.add("radiant", amount);
+                }
+              )
             );
         }
       );
@@ -16148,7 +16260,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
       g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
         if (who.hasEffect(TurnedEffect))
           interrupt.add(
-            new EvaluateLater(who, TurnedEffect, async () => {
+            new EvaluateLater(who, TurnedEffect, Priority_default.Normal, async () => {
               await who.removeEffect(TurnedEffect);
             })
           );
@@ -16910,11 +17022,12 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
       g.events.on("AfterAction", ({ detail: { action, interrupt } }) => {
         if (action.actor === me && isMonkWeaponAttack(action) && canUseMartialArts(me))
           interrupt.add(
-            new EvaluateLater(action.actor, MartialArts, async () => {
-              await action.actor.addEffect(HasBonusAttackThisTurn, {
-                duration: 1
-              });
-            })
+            new EvaluateLater(
+              action.actor,
+              MartialArts,
+              Priority_default.Normal,
+              () => action.actor.addEffect(HasBonusAttackThisTurn, { duration: 1 })
+            )
           );
       });
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
@@ -17045,9 +17158,8 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
                   Ki,
                   "Flurry of Blows",
                   `Spend 1 ki to activate Flurry of Blows?`,
-                  async () => {
-                    await g.act(action2, config2);
-                  }
+                  Priority_default.Normal,
+                  () => g.act(action2, config2)
                 )
               );
           }
@@ -17674,6 +17786,7 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
                 DivineSmite,
                 "Divine Smite",
                 "Choose a spell slot to use.",
+                Priority_default.Normal,
                 enumerate(1, getMaxSpellSlotAvailable(me)).map((value) => ({
                   label: ordinal(value),
                   value,
@@ -17757,21 +17870,26 @@ At 18th level, the range of this aura increases to 30 feet.`,
         ({ detail: { attack, attacker, critical, target, interrupt, map } }) => {
           if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
             interrupt.add(
-              new EvaluateLater(attacker, ImprovedDivineSmite, async () => {
-                const amount = await g.rollDamage(
-                  1,
-                  {
-                    source: ImprovedDivineSmite,
-                    attacker,
-                    target,
-                    size: 8,
-                    damageType: "radiant",
-                    tags: atSet("magical")
-                  },
-                  critical
-                );
-                map.add("radiant", amount);
-              })
+              new EvaluateLater(
+                attacker,
+                ImprovedDivineSmite,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(
+                    1,
+                    {
+                      source: ImprovedDivineSmite,
+                      attacker,
+                      target,
+                      size: 8,
+                      damageType: "radiant",
+                      tags: atSet("magical")
+                    },
+                    critical
+                  );
+                  map.add("radiant", amount);
+                }
+              )
             );
         }
       );
@@ -18084,6 +18202,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                   SneakAttack,
                   "Sneak Attack",
                   `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
+                  Priority_default.Normal,
                   async () => {
                     me.spendResource(SneakAttackResource);
                     const damageType = weapon.damage.damageType;
@@ -18140,9 +18259,12 @@ The amount of the extra damage increases as you gain levels in this class, as sh
       g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
         if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
           interrupt.add(
-            new EvaluateLater(pre.who, SteadyAimAdvantageEffect, async () => {
-              await pre.who.removeEffect(SteadyAimAdvantageEffect);
-            })
+            new EvaluateLater(
+              pre.who,
+              SteadyAimAdvantageEffect,
+              Priority_default.Normal,
+              () => pre.who.removeEffect(SteadyAimAdvantageEffect)
+            )
           );
       });
     },
@@ -18275,9 +18397,8 @@ In addition, you understand a set of secret signs and symbols used to convey sho
                   UncannyDodge,
                   "Uncanny Dodge",
                   `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                  async () => {
-                    await g.act(action, config);
-                  }
+                  Priority_default.ChangesOutcome,
+                  () => g.act(action, config)
                 )
               );
           }
@@ -19327,6 +19448,7 @@ When you create a device, choose one of the following options:
               Lucky2,
               "Lucky",
               `${me.name} rolled a 1 on a ${t.type} check. Reroll it?`,
+              Priority_default.ChangesOutcome,
               async () => {
                 const newRoll = g.dice.roll(t).values.final;
                 values.add(newRoll, "higher");
@@ -19415,22 +19537,27 @@ When you create a device, choose one of the following options:
             const base = weapon == null ? void 0 : weapon.damage;
             if ((base == null ? void 0 : base.type) === "dice") {
               interrupt.add(
-                new EvaluateLater(me, SavageAttacks, async () => {
-                  const damage = await g.rollDamage(
-                    1,
-                    {
-                      source: SavageAttacks,
-                      attacker: me,
-                      damageType: base.damageType,
-                      size: base.amount.size,
-                      target,
-                      weapon,
-                      tags: attack.pre.tags
-                    },
-                    false
-                  );
-                  bonus.add(damage, SavageAttacks);
-                })
+                new EvaluateLater(
+                  me,
+                  SavageAttacks,
+                  Priority_default.Normal,
+                  async () => {
+                    const damage = await g.rollDamage(
+                      1,
+                      {
+                        source: SavageAttacks,
+                        attacker: me,
+                        damageType: base.damageType,
+                        size: base.amount.size,
+                        target,
+                        weapon,
+                        tags: attack.pre.tags
+                      },
+                      false
+                    );
+                    bonus.add(damage, SavageAttacks);
+                  }
+                )
               );
             }
           }
@@ -19667,7 +19794,7 @@ When you create a device, choose one of the following options:
       g.events.on("EffectRemoved", ({ detail: { who, effect, interrupt } }) => {
         if (effect === RageEffect && who.hasEffect(FrenzyEffect)) {
           interrupt.add(
-            new EvaluateLater(who, FrenzyEffect, async () => {
+            new EvaluateLater(who, FrenzyEffect, Priority_default.Normal, async () => {
               await who.removeEffect(FrenzyEffect);
               await who.changeExhaustion(1);
             })
@@ -19689,9 +19816,8 @@ When you create a device, choose one of the following options:
               Frenzy,
               "Frenzy",
               `Should ${me.name} enter a Frenzy?`,
-              async () => {
-                await me.addEffect(FrenzyEffect, { duration: minutes(1) });
-              }
+              Priority_default.Normal,
+              () => me.addEffect(FrenzyEffect, { duration: minutes(1) })
             )
           );
       });
@@ -20114,9 +20240,8 @@ Once you use this feature, you can't use it again until you finish a long rest.`
               Skirmisher,
               "Skirmisher",
               `Use ${me.name}'s reaction to move half their speed?`,
-              async () => {
-                await g.act(action, config);
-              }
+              Priority_default.Late,
+              () => g.act(action, config)
             )
           );
       });
@@ -20185,21 +20310,16 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
         ({ detail: { attacker, who, interrupt } }) => {
           if (attacker === me && who.side !== me.side && who.hp < 1)
             interrupt.add(
-              new EvaluateLater(
-                me,
-                DarkOnesBlessing,
-                async () => {
-                  var _a;
-                  if (who.hp < 1) {
-                    const amount = Math.max(
-                      1,
-                      me.cha.modifier + ((_a = me.classLevels.get("Warlock")) != null ? _a : 1)
-                    );
-                    await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
-                  }
-                },
-                0
-              )
+              new EvaluateLater(me, DarkOnesBlessing, Priority_default.Late, async () => {
+                var _a;
+                if (who.hp < 1) {
+                  const amount = Math.max(
+                    1,
+                    me.cha.modifier + ((_a = me.classLevels.get("Warlock")) != null ? _a : 1)
+                  );
+                  await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
+                }
+              })
             );
         }
       );
@@ -20244,16 +20364,16 @@ Once you use this feature, you can't use it again until you finish a long rest.`
 
   // src/interruptions/MultiListChoice.ts
   var MultiListChoice = class {
-    constructor(who, source, title, text, items, minimum, maximum = items.length, chosen, priority = 10) {
+    constructor(who, source, title, text, priority, items, minimum, maximum = items.length, chosen) {
       this.who = who;
       this.source = source;
       this.title = title;
       this.text = text;
+      this.priority = priority;
       this.items = items;
       this.minimum = minimum;
       this.maximum = maximum;
       this.chosen = chosen;
-      this.priority = priority;
     }
     async apply(g) {
       const choice = await new Promise(
@@ -20282,6 +20402,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
                 SculptSpells,
                 "Sculpt Spells",
                 `Pick combatants who will be somewhat protected from your spell.`,
+                Priority_default.Normal,
                 Array.from(affected, (value) => ({
                   value,
                   label: value.name
@@ -20658,7 +20779,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       this.who = who;
       this.apply = apply;
       this.source = UISource;
-      this.priority = 0;
+      this.priority = Priority_default.UI;
     }
   };
 

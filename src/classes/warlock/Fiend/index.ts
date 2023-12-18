@@ -9,6 +9,7 @@ import Command from "../../../spells/level1/Command";
 import Fireball from "../../../spells/level3/Fireball";
 import WallOfFire from "../../../spells/level4/WallOfFire";
 import PCSubclass from "../../../types/PCSubclass";
+import Priority from "../../../types/Priority";
 import { WarlockPactMagic } from "..";
 
 const ExpandedSpellList = bonusSpellsFeature(
@@ -40,20 +41,15 @@ const DarkOnesBlessing = new SimpleFeature(
       ({ detail: { attacker, who, interrupt } }) => {
         if (attacker === me && who.side !== me.side && who.hp < 1)
           interrupt.add(
-            new EvaluateLater(
-              me,
-              DarkOnesBlessing,
-              async () => {
-                if (who.hp < 1) {
-                  const amount = Math.max(
-                    1,
-                    me.cha.modifier + (me.classLevels.get("Warlock") ?? 1),
-                  );
-                  await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
-                }
-              },
-              0,
-            ),
+            new EvaluateLater(me, DarkOnesBlessing, Priority.Late, async () => {
+              if (who.hp < 1) {
+                const amount = Math.max(
+                  1,
+                  me.cha.modifier + (me.classLevels.get("Warlock") ?? 1),
+                );
+                await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
+              }
+            }),
           );
       },
     );

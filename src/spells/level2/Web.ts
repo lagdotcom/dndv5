@@ -13,9 +13,9 @@ import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
-import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
 import Point from "../../types/Point";
+import Priority from "../../types/Priority";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -87,7 +87,7 @@ const Webbed = new Effect<Config>(
       if (who.hasEffect(Webbed)) conditions.add("Restrained", Webbed);
     });
   },
-  { icon: WebIcon, tags: efSet("magic") },
+  { icon: WebIcon, tags: ["magic"] },
 );
 
 const getWebArea = (centre: Point): SpecifiedCube => ({
@@ -137,7 +137,7 @@ class WebController {
   getWebber(target: Combatant) {
     const { g, caster, method } = this;
 
-    return new EvaluateLater(target, Web, async () => {
+    return new EvaluateLater(target, Web, Priority.Late, async () => {
       if (this.affectedThisTurn.has(target)) return;
       this.affectedThisTurn.add(target);
 

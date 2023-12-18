@@ -8,6 +8,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { EffectConfig } from "../../types/EffectType";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
@@ -33,19 +34,24 @@ const EnlargeEffect = new Effect(
       ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
         if (attacker?.hasEffect(EnlargeEffect) && weapon)
           interrupt.add(
-            new EvaluateLater(attacker, EnlargeEffect, async () => {
-              const amount = await g.rollDamage(
-                1,
-                {
-                  source: EnlargeEffect,
-                  attacker,
-                  size: 4,
-                  tags: atSet("magical"),
-                },
-                critical,
-              );
-              bonus.add(amount, EnlargeEffect);
-            }),
+            new EvaluateLater(
+              attacker,
+              EnlargeEffect,
+              Priority.Normal,
+              async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  {
+                    source: EnlargeEffect,
+                    attacker,
+                    size: 4,
+                    tags: atSet("magical"),
+                  },
+                  critical,
+                );
+                bonus.add(amount, EnlargeEffect);
+              },
+            ),
           );
       },
     );
@@ -74,19 +80,24 @@ const ReduceEffect = new Effect(
       ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
         if (attacker?.hasEffect(ReduceEffect) && weapon)
           interrupt.add(
-            new EvaluateLater(attacker, ReduceEffect, async () => {
-              const amount = await g.rollDamage(
-                1,
-                {
-                  source: ReduceEffect,
-                  attacker,
-                  size: 4,
-                  tags: atSet("magical"),
-                },
-                critical,
-              );
-              bonus.add(-amount, ReduceEffect);
-            }),
+            new EvaluateLater(
+              attacker,
+              ReduceEffect,
+              Priority.Normal,
+              async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  {
+                    source: ReduceEffect,
+                    attacker,
+                    size: 4,
+                    tags: atSet("magical"),
+                  },
+                  critical,
+                );
+                bonus.add(-amount, ReduceEffect);
+              },
+            ),
           );
       },
     );

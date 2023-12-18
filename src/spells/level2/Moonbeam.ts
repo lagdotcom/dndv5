@@ -13,6 +13,7 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedCylinder } from "../../types/EffectArea";
 import Point from "../../types/Point";
+import Priority from "../../types/Priority";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
@@ -123,7 +124,7 @@ class MoonbeamController {
   getDamager(target: Combatant) {
     const { hurtThisTurn, g, slot, caster: attacker, method } = this;
 
-    return new EvaluateLater(target, Moonbeam, async () => {
+    return new EvaluateLater(target, Moonbeam, Priority.Normal, async () => {
       if (hurtThisTurn.has(target)) return;
       hurtThisTurn.add(target);
 

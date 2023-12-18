@@ -8,6 +8,7 @@ import PointResolver from "../../resolvers/PointResolver";
 import { atSet } from "../../types/AttackTag";
 import { arSet, SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
+import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
@@ -61,7 +62,7 @@ const SpikeGrowth = simpleSpell<HasPoint>({
         const squares = getSquares(who, position);
         if (area.points.overlaps(squares))
           interrupt.add(
-            new EvaluateLater(who, SpikeGrowth, async () => {
+            new EvaluateLater(who, SpikeGrowth, Priority.Late, async () => {
               const amount = await g.rollDamage(2, {
                 source: SpikeGrowth,
                 attacker,

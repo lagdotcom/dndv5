@@ -6,6 +6,7 @@ import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import Combatant from "../../types/Combatant";
+import Priority from "../../types/Priority";
 import { checkConfig } from "../../utils/config";
 import { simpleSpell } from "../common";
 import MagicMissile from "./MagicMissile";
@@ -33,13 +34,13 @@ const ShieldEffect = new Effect(
           Shield,
           "Shield",
           `${message} Cast Shield as a reaction?`,
+          Priority.Late,
           shield.map((value) => ({ value, label: value.name })),
           async (action) => {
             await g.act(action, {});
             if (after) await after();
           },
           true,
-          1,
         ),
       );
     };

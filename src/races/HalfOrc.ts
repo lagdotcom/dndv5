@@ -3,6 +3,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import EvaluateLater from "../interruptions/EvaluateLater";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import Priority from "../types/Priority";
 import SizeCategory from "../types/SizeCategory";
 
 const Menacing = new SimpleFeature(
@@ -41,23 +42,28 @@ const SavageAttacks = new SimpleFeature(
 
           if (base?.type === "dice") {
             interrupt.add(
-              new EvaluateLater(me, SavageAttacks, async () => {
-                const damage = await g.rollDamage(
-                  1,
-                  {
-                    source: SavageAttacks,
-                    attacker: me,
-                    damageType: base.damageType,
-                    size: base.amount.size,
-                    target,
-                    weapon,
-                    tags: attack.pre.tags,
-                  },
-                  false,
-                );
+              new EvaluateLater(
+                me,
+                SavageAttacks,
+                Priority.Normal,
+                async () => {
+                  const damage = await g.rollDamage(
+                    1,
+                    {
+                      source: SavageAttacks,
+                      attacker: me,
+                      damageType: base.damageType,
+                      size: base.amount.size,
+                      target,
+                      weapon,
+                      tags: attack.pre.tags,
+                    },
+                    false,
+                  );
 
-                bonus.add(damage, SavageAttacks);
-              }),
+                  bonus.add(damage, SavageAttacks);
+                },
+              ),
             );
           }
         }

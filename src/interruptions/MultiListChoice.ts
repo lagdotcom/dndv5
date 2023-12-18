@@ -2,6 +2,7 @@ import Engine from "../Engine";
 import MultiListChoiceEvent from "../events/MultiListChoiceEvent";
 import Combatant from "../types/Combatant";
 import Interruption from "../types/Interruption";
+import Priority from "../types/Priority";
 import Source from "../types/Source";
 import { PickChoice } from "./PickFromListChoice";
 
@@ -11,11 +12,11 @@ export default class MultiListChoice<T = unknown> implements Interruption {
     public source: Source,
     public title: string,
     public text: string,
+    public priority: Priority,
     public items: PickChoice<T>[],
     public minimum: number,
     public maximum: number = items.length,
-    public chosen: (choice: T[]) => Promise<void>,
-    public priority = 10,
+    public chosen: (choice: T[]) => Promise<unknown>,
   ) {}
 
   async apply(g: Engine) {

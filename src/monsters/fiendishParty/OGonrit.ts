@@ -26,6 +26,7 @@ import AbilityName from "../../types/AbilityName";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { distance } from "../../utils/units";
@@ -47,20 +48,25 @@ const FiendishMantle = new SimpleFeature(
           distance(me, attacker) <= FiendishMantleRange
         )
           interrupt.add(
-            new EvaluateLater(attacker, FiendishMantle, async () => {
-              const amount = await g.rollDamage(
-                1,
-                {
-                  attacker,
-                  source: FiendishMantle,
-                  damageType: "necrotic",
-                  size: 4,
-                  tags: atSet("magical"),
-                },
-                critical,
-              );
-              map.add("necrotic", amount);
-            }),
+            new EvaluateLater(
+              attacker,
+              FiendishMantle,
+              Priority.Normal,
+              async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  {
+                    attacker,
+                    source: FiendishMantle,
+                    damageType: "necrotic",
+                    size: 4,
+                    tags: atSet("magical"),
+                  },
+                  critical,
+                );
+                map.add("necrotic", amount);
+              },
+            ),
           );
       },
     );

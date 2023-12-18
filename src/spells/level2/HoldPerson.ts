@@ -6,8 +6,8 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
-import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
+import Priority from "../../types/Priority";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
@@ -46,22 +46,27 @@ const HoldPersonEffect = new Effect<Config>(
       const config = who.getEffectConfig(HoldPersonEffect);
       if (config) {
         interrupt.add(
-          new EvaluateLater(who, HoldPersonEffect, async () => {
-            const { outcome } = await g.save(getHoldPersonSave(who, config));
+          new EvaluateLater(
+            who,
+            HoldPersonEffect,
+            Priority.Normal,
+            async () => {
+              const { outcome } = await g.save(getHoldPersonSave(who, config));
 
-            if (outcome === "success") {
-              await who.removeEffect(HoldPersonEffect);
+              if (outcome === "success") {
+                await who.removeEffect(HoldPersonEffect);
 
-              config.affected.delete(who);
-              if (config.affected.size < 1)
-                await config.caster.endConcentration();
-            }
-          }),
+                config.affected.delete(who);
+                if (config.affected.size < 1)
+                  await config.caster.endConcentration();
+              }
+            },
+          ),
         );
       }
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 const HoldPerson = scalingSpell<HasTargets>({

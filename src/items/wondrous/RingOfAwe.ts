@@ -5,8 +5,8 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import { DawnResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
-import { efSet } from "../../types/EffectTag";
 import { EffectConfig } from "../../types/EffectType";
+import Priority from "../../types/Priority";
 import { isEquipmentAttuned } from "../../utils/items";
 import { minutes } from "../../utils/time";
 import WondrousItemBase from "../WondrousItemBase";
@@ -53,7 +53,7 @@ const RingOfAweEffect = new Effect<Config>(
       const config = who.getEffectConfig(RingOfAweEffect);
       if (config)
         interrupt.add(
-          new EvaluateLater(who, RingOfAweEffect, async () => {
+          new EvaluateLater(who, RingOfAweEffect, Priority.Normal, async () => {
             const { outcome } = await g.save(
               getRingOfAweSave(who, config.actor, config.dc, config),
             );
@@ -63,7 +63,7 @@ const RingOfAweEffect = new Effect<Config>(
         );
     });
   },
-  { tags: efSet("magic") },
+  { tags: ["magic"] },
 );
 
 class RingOfAweAction extends AbstractAction {

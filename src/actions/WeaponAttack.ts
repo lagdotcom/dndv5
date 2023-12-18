@@ -9,6 +9,7 @@ import AbilityName from "../types/AbilityName";
 import AttackTag from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
+import Priority from "../types/Priority";
 import Source from "../types/Source";
 import { poSet, poWithin } from "../utils/ai";
 import { sieve } from "../utils/array";
@@ -162,10 +163,8 @@ export async function doStandardAttack(
       Versatile,
       "Versatile",
       `Use both hands to attack with ${attacker.name}'s ${weapon.name}?`,
-      async () => {
-        tags.add("two hands");
-        tags.add("versatile");
-      },
+      Priority.Normal,
+      async () => tags.add("two hands").add("versatile"),
     ).apply(g);
 
   return getAttackResult(

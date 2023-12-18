@@ -12,6 +12,7 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
+import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { distance } from "../../utils/units";
@@ -61,9 +62,9 @@ const SleepEffect = new Effect(
     g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
       if (who.hasEffect(SleepEffect))
         interrupt.add(
-          new EvaluateLater(who, SleepEffect, async () => {
-            await who.removeEffect(SleepEffect);
-          }),
+          new EvaluateLater(who, SleepEffect, Priority.Normal, () =>
+            who.removeEffect(SleepEffect),
+          ),
         );
     });
 

@@ -24,6 +24,7 @@ import { atSet } from "../../types/AttackTag";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { poSet } from "../../utils/ai";
 import { sieve } from "../../utils/array";
@@ -140,11 +141,9 @@ const ArmorOfAgathys = new SimpleFeature(
   (g, me) => {
     g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
       interrupt.add(
-        new EvaluateLater(me, ArmorOfAgathys, async () => {
-          await ArmorOfAgathysSpell.apply(g, me, BirnotecSpellcasting, {
-            slot: 3,
-          });
-        }),
+        new EvaluateLater(me, ArmorOfAgathys, Priority.Normal, () =>
+          ArmorOfAgathysSpell.apply(g, me, BirnotecSpellcasting, { slot: 3 }),
+        ),
       );
     });
   },
@@ -221,9 +220,8 @@ const AntimagicProdigy = new SimpleFeature(
               AntimagicProdigy,
               "Antimagic Prodigy",
               `Use ${me.name}'s reaction to attempt to counter the spell?`,
-              async () => {
-                await g.act(action, config);
-              },
+              Priority.ChangesOutcome,
+              () => g.act(action, config),
             ),
           );
       },
@@ -325,9 +323,8 @@ const HellishRebuke = new SimpleFeature(
                 HellishRebuke,
                 "Hellish Rebuke",
                 `Use ${me.name}'s reaction to retaliate for 2d10 fire damage?`,
-                async () => {
-                  await g.act(action, config);
-                },
+                Priority.Late,
+                () => g.act(action, config),
               ),
             );
         }

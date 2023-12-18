@@ -6,6 +6,7 @@ import { TurnResource } from "../resources";
 import { atSet } from "../types/AttackTag";
 import DamageType from "../types/DamageType";
 import Enchantment from "../types/Enchantment";
+import Priority from "../types/Priority";
 import { isEquipmentAttuned } from "../utils/items";
 import { weaponPlus1 } from "./plus";
 
@@ -73,6 +74,7 @@ export const chaoticBurst: Enchantment<"weapon"> = {
                 chaoticBurst,
                 "Chaotic Burst",
                 "Choose the damage type:",
+                Priority.Normal,
                 [a, b].map(getOptionFromRoll),
                 async (type) => addBurst(type),
               ),

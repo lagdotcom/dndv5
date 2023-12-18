@@ -23,6 +23,7 @@ import { coSet } from "../../types/ConditionName";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { WeaponItem } from "../../types/Item";
 import MoveDirection from "../../types/MoveDirection";
+import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { round } from "../../utils/numbers";
 import { isA } from "../../utils/types";
@@ -37,7 +38,7 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
       ({ detail: { attack, attacker, interrupt } }) => {
         if (attacker === me && attack?.pre.weapon === weapon)
           interrupt.add(
-            new EvaluateLater(me, LustForBattle, async () => {
+            new EvaluateLater(me, LustForBattle, Priority.Normal, async () => {
               if (await g.giveTemporaryHP(me, 5, LustForBattle))
                 g.text(
                   new MessageBuilder().co(me).text(" pulses with dark energy."),
@@ -192,6 +193,7 @@ const SurvivalReflex = new SimpleFeature(
             SurvivalReflex,
             "Survival Reflex",
             `Use ${me.name}'s reaction to gain advantage and move half their speed?`,
+            Priority.ChangesOutcome,
             async () => {
               me.useTime("reaction");
               activated = true;
@@ -207,7 +209,7 @@ const SurvivalReflex = new SimpleFeature(
       if (activated && !me.conditions.has("Unconscious")) {
         activated = false;
         interrupt.add(
-          new EvaluateLater(me, SurvivalReflex, async () =>
+          new EvaluateLater(me, SurvivalReflex, Priority.Late, async () =>
             g.applyBoundedMove(
               me,
               new BoundedMove(

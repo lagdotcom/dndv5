@@ -3,6 +3,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import { PickChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { atSet } from "../../types/AttackTag";
+import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { distanceTo } from "../../utils/units";
 import { simpleSpell } from "../common";
@@ -44,21 +45,26 @@ const PrimalBeastEffect = new Effect(
           attack.pre.tags.has("weapon")
         )
           interrupt.add(
-            new EvaluateLater(attacker, PrimalBeastEffect, async () => {
-              const amount = await g.rollDamage(
-                1,
-                {
-                  source: PrimalBeastEffect,
-                  attacker,
-                  target,
-                  size: 6,
-                  damageType: "force",
-                  tags: atSet("magical"),
-                },
-                critical,
-              );
-              map.add("radiant", amount);
-            }),
+            new EvaluateLater(
+              attacker,
+              PrimalBeastEffect,
+              Priority.Normal,
+              async () => {
+                const amount = await g.rollDamage(
+                  1,
+                  {
+                    source: PrimalBeastEffect,
+                    attacker,
+                    target,
+                    size: 6,
+                    damageType: "force",
+                    tags: atSet("magical"),
+                  },
+                  critical,
+                );
+                map.add("radiant", amount);
+              },
+            ),
           );
       },
     );

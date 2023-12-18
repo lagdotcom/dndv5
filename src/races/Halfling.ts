@@ -3,6 +3,7 @@ import SimpleFeature from "../features/SimpleFeature";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
+import Priority from "../types/Priority";
 import SizeCategory from "../types/SizeCategory";
 import { poisonResistanceFeature } from "./common";
 
@@ -22,6 +23,7 @@ const Lucky = new SimpleFeature(
             Lucky,
             "Lucky",
             `${me.name} rolled a 1 on a ${t.type} check. Reroll it?`,
+            Priority.ChangesOutcome,
             async () => {
               const newRoll = g.dice.roll(t).values.final;
               values.add(newRoll, "higher");

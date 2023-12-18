@@ -7,6 +7,7 @@ import PickFromListChoice from "../interruptions/PickFromListChoice";
 import TargetResolver from "../resolvers/TargetResolver";
 import { chSet } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
+import Priority from "../types/Priority";
 import { sieve } from "../utils/array";
 import AbstractAttackAction from "./AbstractAttackAction";
 import { GrappleChoices } from "./common";
@@ -74,6 +75,7 @@ export default class GrappleAction extends AbstractAttackAction<HasTarget> {
       this,
       "Grapple",
       `${actor.name} is trying to grapple ${target.name}. Contest with which skill?`,
+      Priority.Normal,
       GrappleChoices,
       async ({ ability, skill }) => {
         const { total: theirs } = await g.abilityCheck(NaN, {

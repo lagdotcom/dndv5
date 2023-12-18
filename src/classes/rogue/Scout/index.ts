@@ -11,6 +11,7 @@ import { BoundedMove } from "../../../movement";
 import TargetResolver from "../../../resolvers/TargetResolver";
 import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
+import Priority from "../../../types/Priority";
 import { checkConfig } from "../../../utils/config";
 import { round } from "../../../utils/numbers";
 
@@ -70,9 +71,8 @@ const Skirmisher = new SimpleFeature(
             Skirmisher,
             "Skirmisher",
             `Use ${me.name}'s reaction to move half their speed?`,
-            async () => {
-              await g.act(action, config);
-            },
+            Priority.Late,
+            () => g.act(action, config),
           ),
         );
     });

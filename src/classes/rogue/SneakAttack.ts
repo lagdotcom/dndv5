@@ -2,6 +2,7 @@ import SimpleFeature from "../../features/SimpleFeature";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { TurnResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
+import Priority from "../../types/Priority";
 import { getFlanker } from "../../utils/dnd";
 
 function getSneakAttackDice(level: number) {
@@ -59,6 +60,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
                 SneakAttack,
                 "Sneak Attack",
                 `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
+                Priority.Normal,
                 async () => {
                   me.spendResource(SneakAttackResource);
 
