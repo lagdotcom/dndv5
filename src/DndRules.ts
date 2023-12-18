@@ -45,7 +45,8 @@ export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
   });
 
   g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-    if (ability) bonus.add(attacker[ability].modifier, AbilityScoreRule);
+    if (attacker && ability)
+      bonus.add(attacker[ability].modifier, AbilityScoreRule);
   });
 
   g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {

@@ -20,9 +20,17 @@ export const ExoticLanguages = [
   "Undercommon",
 ] as const;
 
+export const PrimordialDialects = [
+  "Aquan",
+  "Auran",
+  "Ignan",
+  "Terran",
+] as const;
+
 export const LanguageNames = [
   ...StandardLanguages,
   ...ExoticLanguages,
+  ...PrimordialDialects,
 ] as const;
 type LanguageName = (typeof LanguageNames)[number];
 export default LanguageName;

@@ -1,5 +1,6 @@
 export const EffectTags = [
   "disease",
+  "fire",
   "magic",
   "poison",
   "possession",

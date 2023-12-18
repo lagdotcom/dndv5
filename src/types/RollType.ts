@@ -37,7 +37,7 @@ export interface BlessRoll {
 export interface DamageRoll {
   type: "damage";
   source: Source;
-  attacker: Combatant;
+  attacker?: Combatant;
   target?: Combatant;
   size: number;
   damageType?: DamageType;

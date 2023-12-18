@@ -2,17 +2,24 @@ import dyingUrl from "@img/act/dying.svg";
 import proneUrl from "@img/act/prone.svg";
 import charmedUrl from "@img/spl/charm-monster.svg";
 
+import AbstractAction from "./actions/AbstractAction";
 import DropProneAction from "./actions/DropProneAction";
 import EscapeGrappleAction from "./actions/EscapeGrappleAction";
 import StabilizeAction from "./actions/StabilizeAction";
 import StandUpAction from "./actions/StandUpAction";
 import { makeIcon } from "./colours";
+import { HasTarget } from "./configs";
 import Effect from "./Effect";
+import Engine from "./Engine";
+import { hasEffect } from "./filters";
 import EvaluateLater from "./interruptions/EvaluateLater";
 import YesNoChoice from "./interruptions/YesNoChoice";
+import TargetResolver from "./resolvers/TargetResolver";
+import { atSet } from "./types/AttackTag";
 import Combatant from "./types/Combatant";
 import { EffectConfig } from "./types/EffectType";
 import Point from "./types/Point";
+import { sieve } from "./utils/array";
 import { addPoints, subPoints } from "./utils/points";
 import { distance } from "./utils/units";
 
@@ -288,4 +295,63 @@ export const Grappled = new Effect<{ by: Combatant }>(
         actions.push(new EscapeGrappleAction(g, who));
     });
   },
+);
+
+class DouseFireAction extends AbstractAction<HasTarget> {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Douse Fire",
+      "implemented",
+      { target: new TargetResolver(g, actor.reach, [hasEffect(OnFire)]) },
+      {
+        time: "action",
+        description: `Until a creature takes an action to douse the fire, the target takes 5 (1d10) fire damage at the start of each of its turns.`,
+      },
+    );
+  }
+
+  getTargets({ target }: Partial<HasTarget>) {
+    return sieve(target);
+  }
+  getAffected({ target }: HasTarget) {
+    return [target];
+  }
+
+  async apply({ target }: HasTarget) {
+    await super.apply({ target });
+    await target.removeEffect(OnFire);
+  }
+}
+
+export const OnFire = new Effect(
+  "On Fire",
+  "turnEnd",
+  (g) => {
+    // Until a creature takes an action to douse the fire, the target takes 5 (1d10) fire damage at the start of each of its turns.
+    g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+      if (who.hasEffect(OnFire))
+        interrupt.add(
+          new EvaluateLater(who, OnFire, async () => {
+            const damage = await g.rollDamage(1, {
+              size: 10,
+              damageType: "fire",
+              source: OnFire,
+              tags: atSet(),
+            });
+            await g.damage(OnFire, "fire", { target: who }, [["fire", damage]]);
+          }),
+        );
+    });
+
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      for (const other of g.combatants)
+        if (other.hasEffect(OnFire)) {
+          actions.push(new DouseFireAction(g, who));
+          return;
+        }
+    });
+  },
+  { tags: ["fire"] },
 );

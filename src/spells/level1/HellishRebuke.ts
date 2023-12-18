@@ -16,6 +16,8 @@ new DndRule("Hellish Rebuke", (g) => {
   g.events.on(
     "CombatantDamaged",
     ({ detail: { who, attacker, interrupt } }) => {
+      if (!attacker) return;
+
       const rebuke = g.getActions(who).flatMap((action) => {
         if (!isCastSpell(action, HellishRebuke)) return [];
 

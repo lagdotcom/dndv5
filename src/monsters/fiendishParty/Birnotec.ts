@@ -315,7 +315,7 @@ const HellishRebuke = new SimpleFeature(
     g.events.on(
       "CombatantDamaged",
       ({ detail: { who, attacker, interrupt } }) => {
-        if (who === me) {
+        if (who === me && attacker) {
           const action = new HellishRebukeAction(g, me, 15);
           const config: HasTarget = { target: attacker };
           if (checkConfig(g, action, config))

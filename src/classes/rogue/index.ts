@@ -110,7 +110,7 @@ const UncannyDodge = new SimpleFeature(
     g.events.on(
       "GatherDamage",
       ({ detail: { target, attack, interrupt, multiplier, attacker } }) => {
-        if (attack && target === me) {
+        if (attacker && attack && target === me) {
           const action = new UncannyDodgeAction(g, me, multiplier);
           const config: HasTarget = { target: attacker };
           if (checkConfig(g, action, config))

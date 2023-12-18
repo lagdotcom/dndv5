@@ -101,6 +101,7 @@ export const RageEffect = new Effect(
       "GatherDamage",
       ({ detail: { attacker, attack, ability, bonus } }) => {
         if (
+          attacker &&
           isRaging(attacker) &&
           hasAll(attack?.pre.tags, ["melee", "weapon"]) &&
           ability === "str"

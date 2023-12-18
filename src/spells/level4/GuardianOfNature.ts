@@ -39,7 +39,7 @@ const PrimalBeastEffect = new Effect(
       "GatherDamage",
       ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
         if (
-          attacker.hasEffect(PrimalBeastEffect) &&
+          attacker?.hasEffect(PrimalBeastEffect) &&
           attack?.pre.tags.has("melee") &&
           attack.pre.tags.has("weapon")
         )

@@ -2650,6 +2650,9 @@
     }
   };
 
+  // src/types/AttackTag.ts
+  var atSet = (...items) => new Set(items);
+
   // src/utils/points.ts
   var _p = (x, y) => ({ x, y });
   function addPoints(a, b) {
@@ -2938,6 +2941,59 @@
           actions.push(new EscapeGrappleAction(g, who));
       });
     }
+  );
+  var DouseFireAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Douse Fire",
+        "implemented",
+        { target: new TargetResolver(g, actor.reach, [hasEffect(OnFire)]) },
+        {
+          time: "action",
+          description: `Until a creature takes an action to douse the fire, the target takes 5 (1d10) fire damage at the start of each of its turns.`
+        }
+      );
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      await target.removeEffect(OnFire);
+    }
+  };
+  var OnFire = new Effect(
+    "On Fire",
+    "turnEnd",
+    (g) => {
+      g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(OnFire))
+          interrupt.add(
+            new EvaluateLater(who, OnFire, async () => {
+              const damage = await g.rollDamage(1, {
+                size: 10,
+                damageType: "fire",
+                source: OnFire,
+                tags: atSet()
+              });
+              await g.damage(OnFire, "fire", { target: who }, [["fire", damage]]);
+            })
+          );
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        for (const other of g.combatants)
+          if (other.hasEffect(OnFire)) {
+            actions.push(new DouseFireAction(g, who));
+            return;
+          }
+      });
+    },
+    { tags: ["fire"] }
   );
 
   // src/actions/AbstractAttackAction.ts
@@ -3613,7 +3669,7 @@
         bonus.add(who[ability].modifier, AbilityScoreRule);
     });
     g.events.on("GatherDamage", ({ detail: { attacker, ability, bonus } }) => {
-      if (ability)
+      if (attacker && ability)
         bonus.add(attacker[ability].modifier, AbilityScoreRule);
     });
     g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
@@ -5484,9 +5540,6 @@
   });
   var ArmorOfAgathys_default = ArmorOfAgathys;
 
-  // src/types/AttackTag.ts
-  var atSet = (...items) => new Set(items);
-
   // src/spells/SpellAttack.ts
   var SpellAttack = class {
     constructor(g, caster, spell, method, type, config) {
@@ -5829,7 +5882,7 @@
       g.events.on(
         "CombatantDamaged",
         ({ detail: { who, attacker, interrupt } }) => {
-          if (who === me) {
+          if (who === me && attacker) {
             const action = new HellishRebukeAction(g, me, 15);
             const config = { target: attacker };
             if (checkConfig(g, action, config))
@@ -6658,6 +6711,16 @@
   ];
 
   // src/monsters/common.ts
+  var ExhaustionImmunity = new SimpleFeature(
+    "Exhaustion Immunity",
+    `You are immune to exhaustion.`,
+    (g, me) => {
+      g.events.on("Exhaustion", ({ detail: { who, delta, success } }) => {
+        if (who === me && delta > 0)
+          success.add("fail", ExhaustionImmunity);
+      });
+    }
+  );
   var KeenHearing = new SimpleFeature(
     "Keen Hearing",
     `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
@@ -6676,6 +6739,19 @@
         if (who === me && tags.has("smell"))
           diceType.add("advantage", KeenSmell);
       });
+    }
+  );
+  var MundaneDamageResistance = new SimpleFeature(
+    "Mundane Damage Resistance",
+    "You resist bludgeoning, piercing, and slashing damage from nonmagical attacks.",
+    (g, me) => {
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, attack, response } }) => {
+          if (who === me && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
+            response.add("resist", MundaneDamageResistance);
+        }
+      );
     }
   );
   var PackTactics = new SimpleFeature(
@@ -7398,7 +7474,7 @@
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
-          if (!me.conditions.has("Unconscious") && attacker.side === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
+          if (!me.conditions.has("Unconscious") && (attacker == null ? void 0 : attacker.side) === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
             interrupt.add(
               new EvaluateLater(attacker, FiendishMantle, async () => {
                 const amount = await g.rollDamage(
@@ -8339,6 +8415,193 @@
     }
   };
 
+  // src/img/tok/air-elemental.png
+  var air_elemental_default = "./air-elemental-CX7UP465.png";
+
+  // src/img/tok/earth-elemental.png
+  var earth_elemental_default = "./earth-elemental-ZK5UMGLZ.png";
+
+  // src/img/tok/fire-elemental.png
+  var fire_elemental_default = "./fire-elemental-Z2K4OGUS.png";
+
+  // src/img/tok/water-elemental.png
+  var water_elemental_default = "./water-elemental-6HXVIUWU.png";
+
+  // src/monsters/srd/elemental.ts
+  var DoubleAttack = makeMultiattack(
+    `The elemental makes two attacks.`,
+    (me) => me.attacksSoFar.length < 2
+  );
+  var Elemental = class extends Monster {
+    constructor(g, name, tokenUrl, hpMax) {
+      super(g, name, 5, "elemental", SizeCategory_default.Large, tokenUrl, hpMax);
+      this.addFeature(MundaneDamageResistance);
+      this.damageResponses.set("poison", "immune");
+      this.addFeature(ExhaustionImmunity);
+      this.conditionImmunities.add("Paralyzed");
+      this.conditionImmunities.add("Petrified");
+      this.conditionImmunities.add("Poisoned");
+      this.conditionImmunities.add("Unconscious");
+      this.senses.set("darkvision", 60);
+      this.pb = 3;
+      this.addFeature(DoubleAttack);
+    }
+  };
+  var AirForm = notImplementedFeature(
+    "Air Form",
+    `The elemental can enter a hostile creature's space and stop there. It can move through a space as narrow as 1 inch wide without squeezing.`
+  );
+  var Whirlwind = notImplementedFeature(
+    "Whirlwind",
+    `Whirlwind (Recharge 4\u20136). Each creature in the elemental's space must make a DC 13 Strength saving throw. On a failure, a target takes 15 (3d8 + 2) bludgeoning damage and is flung up 20 feet away from the elemental in a random direction and knocked prone. If a thrown target strikes an object, such as a wall or floor, the target takes 3 (1d6) bludgeoning damage for every 10 feet it was thrown. If the target is thrown at another creature, that creature must succeed on a DC 13 Dexterity saving throw or take the same damage and be knocked prone.
+If the saving throw is successful, the target takes half the bludgeoning damage and isn't flung away or knocked prone.`
+  );
+  var AirElemental = class extends Elemental {
+    constructor(g) {
+      super(g, "air elemental", air_elemental_default, 90);
+      this.movement.set("speed", 0);
+      this.movement.set("fly", 90);
+      this.setAbilityScores(14, 20, 14, 6, 10, 6);
+      this.damageResponses.set("lightning", "resist");
+      this.damageResponses.set("thunder", "resist");
+      this.conditionImmunities.add("Grappled");
+      this.conditionImmunities.add("Prone");
+      this.conditionImmunities.add("Restrained");
+      this.languages.add("Auran");
+      this.addFeature(AirForm);
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Slam", "dex", _dd(2, 8, "bludgeoning"))
+      );
+      this.addFeature(Whirlwind);
+    }
+  };
+  var EarthGlide = notImplementedFeature(
+    "Earth Glide",
+    `The elemental can burrow through nonmagical, unworked earth and stone. While doing so, the elemental doesn't disturb the material it moves through.`
+  );
+  var SiegeMonster = notImplementedFeature(
+    "Siege Monster",
+    `The elemental deals double damage to objects and structures.`
+  );
+  var EarthElemental = class extends Elemental {
+    constructor(g) {
+      super(g, "earth elemental", earth_elemental_default, 126);
+      this.naturalAC = 18;
+      this.movement.set("speed", 30);
+      this.movement.set("burrow", 30);
+      this.setAbilityScores(20, 8, 20, 5, 10, 5);
+      this.damageResponses.set("thunder", "vulnerable");
+      this.senses.set("tremorsense", 60);
+      this.languages.add("Terran");
+      this.addFeature(EarthGlide);
+      this.addFeature(SiegeMonster);
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Slam", "str", _dd(2, 8, "bludgeoning"))
+      );
+    }
+  };
+  var FireForm = new SimpleFeature(
+    "Fire Form",
+    `The elemental can move through a space as narrow as 1 inch wide without squeezing. A creature that touches the elemental or hits it with a melee attack while within 5 feet of it takes 5 (1d10) fire damage. In addition, the elemental can enter a hostile creature's space and stop there. The first time it enters a creature's space on a turn, that creature takes 5 (1d10) fire damage and catches fire; until someone takes an action to douse the fire, the creature takes 5 (1d10) fire damage at the start of each of its turns.`,
+    (g, me) => {
+      const applyFireDamage = async (target) => {
+        const damage = await g.rollDamage(1, {
+          size: 10,
+          damageType: "fire",
+          attacker: me,
+          source: FireForm,
+          tags: atSet(),
+          target
+        });
+        await g.damage(FireForm, "fire", { attacker: me, target }, [
+          ["fire", damage]
+        ]);
+      };
+      g.events.on("Attack", ({ detail: { pre, outcome, interrupt } }) => {
+        if (pre.target === me && outcome.hits && pre.tags.has("melee") && distance(pre.who, me) <= 5)
+          interrupt.add(
+            new EvaluateLater(
+              me,
+              FireForm,
+              async () => {
+                if (outcome.hits)
+                  await applyFireDamage(pre.target);
+              },
+              1
+            )
+          );
+      });
+      const area = { type: "within", who: me, radius: 0 };
+      const thisTurn = /* @__PURE__ */ new Set();
+      g.events.on("TurnStarted", () => thisTurn.clear());
+      g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
+        if (who === me)
+          for (const target of g.getInside(area, [me]).filter((other) => !thisTurn.has(other))) {
+            thisTurn.add(target);
+            interrupt.add(
+              new EvaluateLater(me, FireForm, async () => {
+                await applyFireDamage(target);
+                await target.addEffect(OnFire, { duration: Infinity }, me);
+              })
+            );
+          }
+      });
+    }
+  );
+  var Illumination = notImplementedFeature(
+    "Illumination",
+    `The elemental sheds bright light in a 30-foot radius and dim light in an additional 30 feet.`
+  );
+  var WaterSusceptibility = notImplementedFeature(
+    "Water Susceptibility",
+    `For every 5 feet the elemental moves in water, or for every gallon of water splashed on it, it takes 1 cold damage.`
+  );
+  var FireElemental = class extends Elemental {
+    constructor(g) {
+      super(g, "fire elemental", fire_elemental_default, 102);
+      this.movement.set("speed", 50);
+      this.setAbilityScores(10, 17, 16, 6, 10, 7);
+      this.damageResponses.set("fire", "immune");
+      this.conditionImmunities.add("Grappled");
+      this.conditionImmunities.add("Prone");
+      this.conditionImmunities.add("Restrained");
+      this.languages.add("Ignan");
+      this.addFeature(FireForm);
+      this.addFeature(Illumination);
+      this.addFeature(WaterSusceptibility);
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Touch", "dex", _dd(2, 6, "fire"), {
+          onHit: async (target) => {
+            await target.addEffect(OnFire, { duration: Infinity }, this);
+          }
+        })
+      );
+    }
+  };
+  var Whelm = notImplementedFeature(
+    "Whelm",
+    `Whelm (Recharge 4\u20136). Each creature in the elemental's space must make a DC 15 Strength saving throw. On a failure, a target takes 13 (2d8 + 4) bludgeoning damage. If it is Large or smaller, it is also grappled (escape DC 14). Until this grapple ends, the target is restrained and unable to breathe unless it can breathe water. If the saving throw is successful, the target is pushed out of the elemental's space.
+The elemental can grapple one Large creature or up to two Medium or smaller creatures at one time. At the start of each of the elemental's turns, each target grappled by it takes 13 (2d8 + 4) bludgeoning damage. A creature within 5 feet of the elemental can pull a creature or object out of it by taking an action to make a DC 14 Strength check and succeeding.`
+  );
+  var WaterElemental = class extends Elemental {
+    constructor(g) {
+      super(g, "water elemental", water_elemental_default, 114);
+      this.naturalAC = 12;
+      this.movement.set("speed", 30);
+      this.movement.set("swim", 90);
+      this.setAbilityScores(18, 14, 18, 5, 10, 8);
+      this.damageResponses.set("acid", "resist");
+      this.conditionImmunities.add("Grappled");
+      this.conditionImmunities.add("Prone");
+      this.conditionImmunities.add("Restrained");
+      this.languages.add("Aquan");
+      this.naturalWeapons.add(
+        new NaturalWeapon(g, "Slam", "str", _dd(2, 8, "bludgeoning"))
+      );
+      this.addFeature(Whelm);
+    }
+  };
+
   // src/img/tok/goblin.png
   var goblin_default = "./goblin-KBFKWGXU.png";
 
@@ -8431,6 +8694,10 @@
     badger: (g) => new Badger(g),
     bat: (g) => new Bat(g),
     "giant badger": (g) => new GiantBadger(g),
+    "air elemental": (g) => new AirElemental(g),
+    "earth elemental": (g) => new EarthElemental(g),
+    "fire elemental": (g) => new FireElemental(g),
+    "water elemental": (g) => new WaterElemental(g),
     goblin: (g) => new Goblin(g),
     "goblin [bow]": (g) => new Goblin(g, true),
     thug: (g) => new Thug(g),
@@ -9072,9 +9339,16 @@
     "Sylvan",
     "Undercommon"
   ];
+  var PrimordialDialects = [
+    "Aquan",
+    "Auran",
+    "Ignan",
+    "Terran"
+  ];
   var LanguageNames = [
     ...StandardLanguages,
-    ...ExoticLanguages
+    ...ExoticLanguages,
+    ...PrimordialDialects
   ];
   var laSet = (...items) => new Set(items);
 
@@ -9288,7 +9562,7 @@
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
-          if (weapon === item && attacker.attunements.has(weapon))
+          if (weapon === item && (attacker == null ? void 0 : attacker.attunements.has(weapon)))
             interrupt.add(
               new EvaluateLater(attacker, this, async () => {
                 const damageType = "radiant";
@@ -11158,7 +11432,7 @@ While holding the object, a creature can take an action to produce the spell's e
         "GatherDamage",
         ({ detail: { attacker, attack, ability, bonus } }) => {
           var _a;
-          if (isRaging(attacker) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
+          if (attacker && isRaging(attacker) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
             bonus.add(
               getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
               RageEffect
@@ -12588,7 +12862,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
-          if (attacker.hasEffect(DivineFavorEffect) && weapon)
+          if ((attacker == null ? void 0 : attacker.hasEffect(DivineFavorEffect)) && weapon)
             interrupt.add(
               new EvaluateLater(attacker, DivineFavorEffect, async () => {
                 map.add(
@@ -12828,6 +13102,8 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     g.events.on(
       "CombatantDamaged",
       ({ detail: { who, attacker, interrupt } }) => {
+        if (!attacker)
+          return;
         const rebuke = g.getActions(who).flatMap((action) => {
           var _a, _b, _c, _d, _e, _f;
           if (!isCastSpell(action, HellishRebuke2))
@@ -13249,7 +13525,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
           }
       });
       g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
-        if (attacker.hasEffect(SanctuaryEffect))
+        if (attacker == null ? void 0 : attacker.hasEffect(SanctuaryEffect))
           interrupt.add(getRemover(attacker));
       });
     },
@@ -13660,7 +13936,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-          if (attacker.hasEffect(EnlargeEffect) && weapon)
+          if ((attacker == null ? void 0 : attacker.hasEffect(EnlargeEffect)) && weapon)
             interrupt.add(
               new EvaluateLater(attacker, EnlargeEffect, async () => {
                 const amount = await g.rollDamage(
@@ -13696,7 +13972,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-          if (attacker.hasEffect(ReduceEffect) && weapon)
+          if ((attacker == null ? void 0 : attacker.hasEffect(ReduceEffect)) && weapon)
             interrupt.add(
               new EvaluateLater(attacker, ReduceEffect, async () => {
                 const amount = await g.rollDamage(
@@ -15276,7 +15552,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
-          if (attacker.hasEffect(PrimalBeastEffect) && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
+          if ((attacker == null ? void 0 : attacker.hasEffect(PrimalBeastEffect)) && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
             interrupt.add(
               new EvaluateLater(attacker, PrimalBeastEffect, async () => {
                 const amount = await g.rollDamage(
@@ -17989,7 +18265,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       g.events.on(
         "GatherDamage",
         ({ detail: { target, attack, interrupt, multiplier, attacker } }) => {
-          if (attack && target === me) {
+          if (attacker && attack && target === me) {
             const action = new UncannyDodgeAction(g, me, multiplier);
             const config = { target: attacker };
             if (checkConfig(g, action, config))

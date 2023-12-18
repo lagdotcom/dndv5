@@ -11,7 +11,7 @@ const DivineFavorEffect = new Effect(
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, critical, map, weapon, interrupt } }) => {
-        if (attacker.hasEffect(DivineFavorEffect) && weapon)
+        if (attacker?.hasEffect(DivineFavorEffect) && weapon)
           interrupt.add(
             new EvaluateLater(attacker, DivineFavorEffect, async () => {
               map.add(

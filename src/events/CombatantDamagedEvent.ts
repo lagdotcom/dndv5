@@ -8,7 +8,7 @@ import { AttackDetail } from "./AttackEvent";
 export interface CombatantDamagedDetail {
   who: Combatant;
   attack?: AttackDetail;
-  attacker: Combatant;
+  attacker?: Combatant;
   total: number;
   takenByTemporaryHP: number;
   afterTemporaryHP: number;

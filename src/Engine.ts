@@ -513,7 +513,7 @@ export default class Engine {
     }: {
       source: Source;
       attack?: AttackDetail;
-      attacker: Combatant;
+      attacker?: Combatant;
       target: Combatant;
       multiplier?: number;
     },
@@ -661,7 +661,7 @@ export default class Engine {
     return { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource };
   }
 
-  private async handleCombatantDeath(target: Combatant, attacker: Combatant) {
+  private async handleCombatantDeath(target: Combatant, attacker?: Combatant) {
     await target.endConcentration();
 
     if (target.diesAtZero || target.hp <= -target.hpMax) {

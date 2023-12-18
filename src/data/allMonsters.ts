@@ -5,6 +5,12 @@ import Yulash from "../monsters/fiendishParty/Yulash";
 import Zafron from "../monsters/fiendishParty/Zafron";
 import { Chuul } from "../monsters/srd/aberration";
 import { Badger, Bat, GiantBadger } from "../monsters/srd/beast";
+import {
+  AirElemental,
+  EarthElemental,
+  FireElemental,
+  WaterElemental,
+} from "../monsters/srd/elemental";
 import { Goblin } from "../monsters/srd/goblinoid";
 import { Thug } from "../monsters/srd/humanoid";
 import { CombatantCreator } from "./BattleTemplate";
@@ -15,6 +21,11 @@ const allMonsters = {
   badger: (g) => new Badger(g),
   bat: (g) => new Bat(g),
   "giant badger": (g) => new GiantBadger(g),
+
+  "air elemental": (g) => new AirElemental(g),
+  "earth elemental": (g) => new EarthElemental(g),
+  "fire elemental": (g) => new FireElemental(g),
+  "water elemental": (g) => new WaterElemental(g),
 
   goblin: (g) => new Goblin(g),
   "goblin [bow]": (g) => new Goblin(g, true),

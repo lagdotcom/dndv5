@@ -3,7 +3,19 @@ import { OneAttackPerTurnRule } from "../DndRules";
 import SimpleFeature from "../features/SimpleFeature";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
+import { MundaneDamageTypes } from "../types/DamageType";
 import { getFlanker } from "../utils/dnd";
+import { isA } from "../utils/types";
+
+export const ExhaustionImmunity = new SimpleFeature(
+  "Exhaustion Immunity",
+  `You are immune to exhaustion.`,
+  (g, me) => {
+    g.events.on("Exhaustion", ({ detail: { who, delta, success } }) => {
+      if (who === me && delta > 0) success.add("fail", ExhaustionImmunity);
+    });
+  },
+);
 
 export const KeenHearing = new SimpleFeature(
   "Keen Hearing",
@@ -23,6 +35,24 @@ export const KeenSmell = new SimpleFeature(
     g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
       if (who === me && tags.has("smell")) diceType.add("advantage", KeenSmell);
     });
+  },
+);
+
+export const MundaneDamageResistance = new SimpleFeature(
+  "Mundane Damage Resistance",
+  "You resist bludgeoning, piercing, and slashing damage from nonmagical attacks.",
+  (g, me) => {
+    g.events.on(
+      "GetDamageResponse",
+      ({ detail: { who, damageType, attack, response } }) => {
+        if (
+          who === me &&
+          !attack?.pre.tags.has("magical") &&
+          isA(damageType, MundaneDamageTypes)
+        )
+          response.add("resist", MundaneDamageResistance);
+      },
+    );
   },
 );
 

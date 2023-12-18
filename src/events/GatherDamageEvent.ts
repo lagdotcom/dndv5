@@ -10,7 +10,7 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 import { AttackDetail } from "./AttackEvent";
 
 export interface GatherDamageDetail {
-  attacker: Combatant;
+  attacker?: Combatant;
   target: Combatant;
   ability?: AbilityName;
   weapon?: WeaponItem;

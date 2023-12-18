@@ -100,7 +100,7 @@ const SanctuaryEffect = new Effect<{
         }
     });
     g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
-      if (attacker.hasEffect(SanctuaryEffect))
+      if (attacker?.hasEffect(SanctuaryEffect))
         interrupt.add(getRemover(attacker));
     });
   },

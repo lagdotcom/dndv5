@@ -17,7 +17,7 @@ const darkSun: Enchantment<"weapon"> = {
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, critical, weapon, map, interrupt } }) => {
-        if (weapon === item && attacker.attunements.has(weapon))
+        if (weapon === item && attacker?.attunements.has(weapon))
           interrupt.add(
             new EvaluateLater(attacker, this, async () => {
               const damageType = "radiant"; // TODO [TERRAIN] daylight check

@@ -41,7 +41,7 @@ const FiendishMantle = new SimpleFeature(
       ({ detail: { attacker, attack, critical, interrupt, map } }) => {
         if (
           !me.conditions.has("Unconscious") &&
-          attacker.side === me.side &&
+          attacker?.side === me.side &&
           attacker !== me &&
           attack?.pre.tags.has("weapon") &&
           distance(me, attacker) <= FiendishMantleRange

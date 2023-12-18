@@ -31,7 +31,7 @@ const EnlargeEffect = new Effect(
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-        if (attacker.hasEffect(EnlargeEffect) && weapon)
+        if (attacker?.hasEffect(EnlargeEffect) && weapon)
           interrupt.add(
             new EvaluateLater(attacker, EnlargeEffect, async () => {
               const amount = await g.rollDamage(
@@ -72,7 +72,7 @@ const ReduceEffect = new Effect(
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, weapon, interrupt, critical, bonus } }) => {
-        if (attacker.hasEffect(ReduceEffect) && weapon)
+        if (attacker?.hasEffect(ReduceEffect) && weapon)
           interrupt.add(
             new EvaluateLater(attacker, ReduceEffect, async () => {
               const amount = await g.rollDamage(
