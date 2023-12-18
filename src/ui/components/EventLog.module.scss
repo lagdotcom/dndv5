@@ -20,11 +20,20 @@
 }
 
 .messageWrapper {
+  display: flex;
   list-style: none;
 }
 
 .message {
+  flex: 1 1;
   display: flex;
   align-items: center;
   padding: 2px;
+}
+
+.info {
+  flex: 0 0 20px;
+  text-align: center;
+  background: beige;
+  cursor: help;
 }

@@ -4,6 +4,7 @@ import useTimeout from "../hooks/useTimeout";
 import { useCallback, useEffect, useRef, useState, VNode } from "../lib";
 import {
   getAbilityCheckMessage,
+  getAttackInfo,
   getAttackMessage,
   getBuilderMessage,
   getCastMessage,
@@ -13,14 +14,22 @@ import {
   getEffectRemovedMessage,
   getExhaustionMessage,
   getHealedMessage,
+  getInitiativeInfo,
   getInitiativeMessage,
+  getSaveInfo,
   getSaveMessage,
   MessagePart,
 } from "../utils/messages";
 import UIResponse from "../utils/UIResponse";
 import styles from "./EventLog.module.scss";
 
-function LogMessage({ message }: { message: MessagePart[] }) {
+function LogMessage({
+  message,
+  info,
+}: {
+  message: MessagePart[];
+  info?: string;
+}) {
   const text = message
     .filter(isDefined)
     .map((x) => (typeof x === "string" ? x : x.text))
@@ -34,6 +43,11 @@ function LogMessage({ message }: { message: MessagePart[] }) {
       <div aria-hidden="true" className={styles.message}>
         {children}
       </div>
+      {info && (
+        <div className={styles.info} title={info}>
+          ...
+        </div>
+      )}
     </li>
   );
 }
@@ -56,7 +70,12 @@ export default function EventLog({ g }: { g: Engine }) {
     g.events.on("Attack", ({ detail }) =>
       detail.interrupt.add(
         new UIResponse(detail.pre.who, async () =>
-          addMessage(<LogMessage message={getAttackMessage(detail)} />),
+          addMessage(
+            <LogMessage
+              message={getAttackMessage(detail)}
+              info={getAttackInfo(detail)}
+            />,
+          ),
         ),
       ),
     );
@@ -81,13 +100,23 @@ export default function EventLog({ g }: { g: Engine }) {
       addMessage(<LogMessage message={getCastMessage(detail)} />),
     );
     g.events.on("CombatantInitiative", ({ detail }) => {
-      addMessage(<LogMessage message={getInitiativeMessage(detail)} />);
+      addMessage(
+        <LogMessage
+          message={getInitiativeMessage(detail)}
+          info={getInitiativeInfo(detail)}
+        />,
+      );
     });
     g.events.on("AbilityCheck", ({ detail }) =>
       addMessage(<LogMessage message={getAbilityCheckMessage(detail)} />),
     );
     g.events.on("Save", ({ detail }) =>
-      addMessage(<LogMessage message={getSaveMessage(detail)} />),
+      addMessage(
+        <LogMessage
+          message={getSaveMessage(detail)}
+          info={getSaveInfo(detail)}
+        />,
+      ),
     );
     g.events.on("Exhaustion", ({ detail }) =>
       addMessage(<LogMessage message={getExhaustionMessage(detail)} />),

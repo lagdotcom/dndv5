@@ -189,20 +189,24 @@ export default class Engine {
   }
 
   async rollInitiative(who: Combatant) {
-    const gi = await this.resolve(
-      new GetInitiativeEvent({
-        who,
-        bonus: new BonusCollector(),
-        diceType: new DiceTypeCollector(),
-        interrupt: new InterruptionCollector(),
-      }),
-    );
+    const pre = (
+      await this.resolve(
+        new GetInitiativeEvent({
+          who,
+          bonus: new BonusCollector(),
+          diceType: new DiceTypeCollector(),
+          interrupt: new InterruptionCollector(),
+        }),
+      )
+    ).detail;
 
-    const diceType = gi.detail.diceType.result;
+    const diceType = pre.diceType.result;
     const roll = await this.roll({ type: "initiative", who }, diceType);
-    const value = roll.values.final + gi.detail.bonus.result;
+    const value = roll.values.final + pre.bonus.result;
 
-    this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
+    this.fire(
+      new CombatantInitiativeEvent({ who, diceType, value, pre, roll }),
+    );
     return value;
   }
 

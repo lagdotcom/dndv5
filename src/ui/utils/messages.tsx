@@ -1,3 +1,7 @@
+import BonusCollector from "../../collectors/BonusCollector";
+import DiceTypeCollector from "../../collectors/DiceTypeCollector";
+import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
+import ValueCollector from "../../collectors/ValueCollector";
 import { AbilityCheckDetail } from "../../events/AbilityCheckEvent";
 import { AttackDetail } from "../../events/AttackEvent";
 import { CombatantDamagedDetail } from "../../events/CombatantDamagedEvent";
@@ -17,6 +21,7 @@ import DiceType from "../../types/DiceType";
 import { AmmoItem, WeaponItem } from "../../types/Item";
 import Spell from "../../types/Spell";
 import { describeAbility, describeSave } from "../../utils/text";
+import { isDefined } from "../../utils/types";
 import CombatantRef from "../components/CombatantRef";
 import common from "../components/common.module.scss";
 import { VNode } from "../lib";
@@ -213,3 +218,65 @@ export const getBuilderMessage = ({ data }: MessageBuilder) =>
         return part.value;
     }
   });
+
+const modAmount = (n: number) => (n < 0 ? `${n}` : `+${n}`);
+
+const getTextLines = (co: DiceTypeCollector | SuccessResponseCollector) => {
+  const lines = co
+    .getTaggedEntries()
+    .map(
+      ({ entry, ignored }) =>
+        `${entry.source.name}: ${entry.value}${ignored ? " XXX" : ""}`,
+    );
+
+  return lines.length ? lines.join("\n") : undefined;
+};
+
+const getBonusLines = (co: BonusCollector) => {
+  const lines = co
+    .getTaggedEntries()
+    .map(
+      ({ entry, ignored }) =>
+        `${entry.source.name}: ${modAmount(entry.value)}${
+          ignored ? " XXX" : ""
+        }`,
+    );
+
+  return lines.length ? lines.join("\n") : undefined;
+};
+
+const getRollLine = (co: ValueCollector) =>
+  isNaN(co.final)
+    ? undefined
+    : `Roll: ${co.final}${
+        co.others.length ? ` (${co.others.map(String).join(" ")})` : ""
+      }`;
+
+export const getInitiativeInfo = ({ pre, roll }: CombatantInitiativeDetail) =>
+  [
+    getTextLines(pre.diceType),
+    getBonusLines(pre.bonus),
+    getRollLine(roll.values),
+  ]
+    .filter(isDefined)
+    .join("\n");
+
+export const getAttackInfo = ({ pre, roll }: AttackDetail) =>
+  [
+    getTextLines(pre.success),
+    getTextLines(pre.diceType),
+    getBonusLines(pre.bonus),
+    getRollLine(roll.values),
+  ]
+    .filter(isDefined)
+    .join("\n");
+
+export const getSaveInfo = ({ pre, roll }: SaveEventDetail) =>
+  [
+    getTextLines(pre.successResponse),
+    getTextLines(pre.diceType),
+    getBonusLines(pre.bonus),
+    getRollLine(roll.values),
+  ]
+    .filter(isDefined)
+    .join("\n");

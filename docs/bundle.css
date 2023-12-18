@@ -2,11 +2,11 @@
 :root {
   --scale: 100px;
 }
-._modeSwitch_1ojjx_5 {
+._modeSwitch_1o9av_5 {
   z-index: 50;
   position: absolute;
-  right: 20px;
-  bottom: 20px;
+  left: 20px;
+  top: 20px;
   background: white;
 }
 
@@ -323,7 +323,7 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/EventLog.module.scss */
-._container_fnmiq_1 {
+._container_1qiuq_1 {
   position: absolute;
   bottom: 8px;
   left: 8px;
@@ -335,20 +335,28 @@
   overflow-y: scroll;
   z-index: 29;
 }
-._main_fnmiq_14 {
+._main_1qiuq_14 {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   margin: 0;
   padding: 0;
 }
-._messageWrapper_fnmiq_22 {
+._messageWrapper_1qiuq_22 {
+  display: flex;
   list-style: none;
 }
-._message_fnmiq_22 {
+._message_1qiuq_22 {
+  flex: 1 1;
   display: flex;
   align-items: center;
   padding: 2px;
+}
+._info_1qiuq_34 {
+  flex: 0 0 20px;
+  text-align: center;
+  background: beige;
+  cursor: help;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/Dialog.module.scss */

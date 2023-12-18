@@ -49,16 +49,23 @@ class CollectorBase<T> {
     return false;
   }
 
-  getEntries() {
-    if (this.completelyIgnored) return [];
-
-    return Array.from(this.entries).filter(
-      (entry) =>
-        !(
-          this.ignoredSources.has(entry.source) ||
-          this.ignoredValues.has(entry.value)
-        ),
+  isIgnored(entry: CollectorEntry<T>) {
+    return (
+      this.completelyIgnored ||
+      this.ignoredSources.has(entry.source) ||
+      this.ignoredValues.has(entry.value)
     );
+  }
+
+  getTaggedEntries() {
+    return Array.from(this.entries).map((entry) => ({
+      entry,
+      ignored: this.isIgnored(entry),
+    }));
+  }
+
+  getEntries() {
+    return Array.from(this.entries).filter((entry) => !this.isIgnored(entry));
   }
 
   getValues() {

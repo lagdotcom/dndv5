@@ -121,12 +121,17 @@
           return true;
       return false;
     }
+    isIgnored(entry) {
+      return this.completelyIgnored || this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value);
+    }
+    getTaggedEntries() {
+      return Array.from(this.entries).map((entry) => ({
+        entry,
+        ignored: this.isIgnored(entry)
+      }));
+    }
     getEntries() {
-      if (this.completelyIgnored)
-        return [];
-      return Array.from(this.entries).filter(
-        (entry) => !(this.ignoredSources.has(entry.source) || this.ignoredValues.has(entry.value))
-      );
+      return Array.from(this.entries).filter((entry) => !this.isIgnored(entry));
     }
     getValues() {
       return this.getEntries().map((entry) => entry.value);
@@ -4572,18 +4577,20 @@
       return this.rollMany(count, { ...e2, type: "heal" }, critical);
     }
     async rollInitiative(who) {
-      const gi = await this.resolve(
+      const pre = (await this.resolve(
         new GetInitiativeEvent({
           who,
           bonus: new BonusCollector(),
           diceType: new DiceTypeCollector(),
           interrupt: new InterruptionCollector()
         })
-      );
-      const diceType = gi.detail.diceType.result;
+      )).detail;
+      const diceType = pre.diceType.result;
       const roll = await this.roll({ type: "initiative", who }, diceType);
-      const value = roll.values.final + gi.detail.bonus.result;
-      this.fire(new CombatantInitiativeEvent({ who, diceType, value }));
+      const value = roll.values.final + pre.bonus.result;
+      this.fire(
+        new CombatantInitiativeEvent({ who, diceType, value, pre, roll })
+      );
       return value;
     }
     addProficiencyBonus(who, proficiency, bonus, pb) {
@@ -5316,7 +5323,7 @@
 
   // src/ui/components/App.module.scss
   var App_module_default = {
-    "modeSwitch": "_modeSwitch_1ojjx_5"
+    "modeSwitch": "_modeSwitch_1o9av_5"
   };
 
   // src/img/act/eldritch-burst.svg
@@ -22195,20 +22202,58 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         return part.value;
     }
   });
+  var modAmount = (n) => n < 0 ? `${n}` : `+${n}`;
+  var getTextLines = (co) => {
+    const lines = co.getTaggedEntries().map(
+      ({ entry, ignored }) => `${entry.source.name}: ${entry.value}${ignored ? " XXX" : ""}`
+    );
+    return lines.length ? lines.join("\n") : void 0;
+  };
+  var getBonusLines = (co) => {
+    const lines = co.getTaggedEntries().map(
+      ({ entry, ignored }) => `${entry.source.name}: ${modAmount(entry.value)}${ignored ? " XXX" : ""}`
+    );
+    return lines.length ? lines.join("\n") : void 0;
+  };
+  var getRollLine = (co) => isNaN(co.final) ? void 0 : `Roll: ${co.final}${co.others.length ? ` (${co.others.map(String).join(" ")})` : ""}`;
+  var getInitiativeInfo = ({ pre, roll }) => [
+    getTextLines(pre.diceType),
+    getBonusLines(pre.bonus),
+    getRollLine(roll.values)
+  ].filter(isDefined).join("\n");
+  var getAttackInfo = ({ pre, roll }) => [
+    getTextLines(pre.success),
+    getTextLines(pre.diceType),
+    getBonusLines(pre.bonus),
+    getRollLine(roll.values)
+  ].filter(isDefined).join("\n");
+  var getSaveInfo = ({ pre, roll }) => [
+    getTextLines(pre.successResponse),
+    getTextLines(pre.diceType),
+    getBonusLines(pre.bonus),
+    getRollLine(roll.values)
+  ].filter(isDefined).join("\n");
 
   // src/ui/components/EventLog.module.scss
   var EventLog_module_default = {
-    "container": "_container_fnmiq_1",
-    "main": "_main_fnmiq_14",
-    "messageWrapper": "_messageWrapper_fnmiq_22",
-    "message": "_message_fnmiq_22"
+    "container": "_container_1qiuq_1",
+    "main": "_main_1qiuq_14",
+    "messageWrapper": "_messageWrapper_1qiuq_22",
+    "message": "_message_1qiuq_22",
+    "info": "_info_1qiuq_34"
   };
 
   // src/ui/components/EventLog.tsx
-  function LogMessage({ message }) {
+  function LogMessage({
+    message,
+    info
+  }) {
     const text = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.text).join("");
     const children = message.filter(isDefined).map((x) => typeof x === "string" ? x : x.element);
-    return /* @__PURE__ */ u("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: /* @__PURE__ */ u("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }) });
+    return /* @__PURE__ */ u("li", { "aria-label": text, className: EventLog_module_default.messageWrapper, children: [
+      /* @__PURE__ */ u("div", { "aria-hidden": "true", className: EventLog_module_default.message, children }),
+      info && /* @__PURE__ */ u("div", { className: EventLog_module_default.info, title: info, children: "..." })
+    ] });
   }
   function EventLog({ g }) {
     const ref = (0, import_hooks.useRef)(null);
@@ -22229,7 +22274,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         ({ detail }) => detail.interrupt.add(
           new UIResponse(
             detail.pre.who,
-            async () => addMessage(/* @__PURE__ */ u(LogMessage, { message: getAttackMessage(detail) }))
+            async () => addMessage(
+              /* @__PURE__ */ u(
+                LogMessage,
+                {
+                  message: getAttackMessage(detail),
+                  info: getAttackInfo(detail)
+                }
+              )
+            )
           )
         )
       );
@@ -22258,7 +22311,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getCastMessage(detail) }))
       );
       g.events.on("CombatantInitiative", ({ detail }) => {
-        addMessage(/* @__PURE__ */ u(LogMessage, { message: getInitiativeMessage(detail) }));
+        addMessage(
+          /* @__PURE__ */ u(
+            LogMessage,
+            {
+              message: getInitiativeMessage(detail),
+              info: getInitiativeInfo(detail)
+            }
+          )
+        );
       });
       g.events.on(
         "AbilityCheck",
@@ -22266,7 +22327,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       );
       g.events.on(
         "Save",
-        ({ detail }) => addMessage(/* @__PURE__ */ u(LogMessage, { message: getSaveMessage(detail) }))
+        ({ detail }) => addMessage(
+          /* @__PURE__ */ u(
+            LogMessage,
+            {
+              message: getSaveMessage(detail),
+              info: getSaveInfo(detail)
+            }
+          )
+        )
       );
       g.events.on(
         "Exhaustion",
