@@ -1,4 +1,5 @@
 import { MarkOptional } from "ts-essentials";
+
 import Effect from "./Effect";
 import Engine from "./Engine";
 import Action from "./types/Action";
@@ -18,7 +19,11 @@ const makeFilter = <T>({
   name,
   message = name,
   check,
-}: MarkOptional<ErrorFilter<T>, 'message'>): ErrorFilter<T> => ({ name, message, check });
+}: MarkOptional<ErrorFilter<T>, "message">): ErrorFilter<T> => ({
+  name,
+  message,
+  check,
+});
 
 export const canSee = makeFilter<Combatant>({
   name: "can see",

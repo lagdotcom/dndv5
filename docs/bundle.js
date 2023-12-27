@@ -1138,7 +1138,11 @@
     name,
     message = name,
     check
-  }) => ({ name, message, check });
+  }) => ({
+    name,
+    message,
+    check
+  });
   var canSee = makeFilter({
     name: "can see",
     message: "not visible",
