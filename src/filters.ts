@@ -3,6 +3,7 @@ import { MarkOptional } from "ts-essentials";
 import Effect from "./Effect";
 import Engine from "./Engine";
 import Action from "./types/Action";
+import ActionTime from "./types/ActionTime";
 import Combatant from "./types/Combatant";
 import CreatureType from "./types/CreatureType";
 import SizeCategory from "./types/SizeCategory";
@@ -75,6 +76,13 @@ export const hasEffect = (
     name,
     message,
     check: (g, action, value) => value.hasEffect(effect),
+  });
+
+export const hasTime = (time: ActionTime) =>
+  makeFilter<Combatant>({
+    name: `has ${time}`,
+    message: "no time",
+    check: (g, action, value) => value.hasTime(time),
   });
 
 export const ofCreatureType = (...types: CreatureType[]) =>
