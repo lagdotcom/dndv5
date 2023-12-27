@@ -5,7 +5,6 @@ import Engine from "../Engine";
 import SlotResolver from "../resolvers/SlotResolver";
 import { ActionConfig, ConfigWithPositioning } from "../types/Action";
 import Combatant from "../types/Combatant";
-import Source from "../types/Source";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { implementationWarning } from "../utils/env";
@@ -218,7 +217,10 @@ export const scalingSpell = <T extends object>({
   getTargets,
 });
 
-export function spellImplementationWarning(spell: Spell, who: Source) {
+export function spellImplementationWarning(
+  spell: Spell,
+  who: { name: string },
+) {
   const status =
     spell.status === "incomplete"
       ? "Not Complete"

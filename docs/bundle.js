@@ -2065,6 +2065,7 @@
         }
       }
       this.equipment.add(item);
+      this.removeFromInventory(item);
       if (attune)
         this.attunements.add(item);
       return true;
@@ -3019,6 +3020,7 @@
     },
     { tags: ["fire"] }
   );
+  var Surprised = new Effect("Surprised", "turnStart");
 
   // src/actions/AbstractAttackAction.ts
   var AbstractAttackAction = class extends AbstractAction {
@@ -3172,7 +3174,7 @@
         const baseDamage = [];
         if (damage.type === "dice") {
           let { size } = damage.amount;
-          if (e2.attack.pre.tags.has("versatile"))
+          if (e2.attack.roll.type.tags.has("versatile"))
             size += 2;
           const amount = await g.rollDamage(
             damage.amount.count,
@@ -3184,7 +3186,7 @@
               target,
               ability,
               weapon,
-              tags: e2.attack.pre.tags
+              tags: e2.attack.roll.type.tags
             },
             e2.critical
           );
@@ -3717,7 +3719,11 @@
         uses.add(shield);
       const name = armor ? `${armor.category} armor` : "unarmored";
       const dexMod = (armor == null ? void 0 : armor.category) === "medium" ? Math.min(dex.modifier, 2) : (armor == null ? void 0 : armor.category) === "heavy" ? 0 : dex.modifier;
-      methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
+      methods.push({
+        name,
+        ac: armorAC + dexMod + shieldAC,
+        uses
+      });
     });
   });
   var ArmorProficiencyRule = new DndRule("Armor Proficiency", (g) => {
@@ -4829,31 +4835,19 @@
         return { type: "unbind" };
       return { type: "ok" };
     }
-    async applyDamage(damage, {
-      source,
-      attack,
-      attacker,
-      multiplier: baseMultiplier = 1,
-      target
-    }) {
-      const { total, healAmount, breakdown } = this.calculateDamage(
-        source,
-        damage,
-        target,
-        baseMultiplier,
-        attack
-      );
+    async applyDamage(damage, data) {
+      const { total, healAmount, breakdown } = this.calculateDamage(damage, data);
       if (healAmount > 0) {
-        await this.applyHeal(target, healAmount, target);
+        await this.applyHeal(data.who, healAmount, data.who);
       }
       if (total < 1)
         return;
-      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(target, total);
+      const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } = this.applyTemporaryHP(data.who, total);
       await this.resolve(
         new CombatantDamagedEvent({
-          who: target,
-          attack,
-          attacker,
+          who: data.who,
+          attack: data.attack,
+          attacker: data.attacker,
           total,
           takenByTemporaryHP,
           afterTemporaryHP,
@@ -4862,24 +4856,21 @@
           interrupt: new InterruptionCollector()
         })
       );
-      if (target.hp <= 0) {
-        await this.handleCombatantDeath(target, attacker);
-      } else if (target.concentratingOn.size) {
-        await this.handleConcentrationCheck(target, total);
+      if (data.who.hp <= 0) {
+        await this.handleCombatantDeath(data.who, data.attacker);
+      } else if (data.who.concentratingOn.size) {
+        await this.handleConcentrationCheck(data.who, total);
       }
     }
-    calculateDamage(source, damage, target, baseMultiplier, attack) {
+    calculateDamage(damage, data) {
       let total = 0;
       let healAmount = 0;
       const breakdown = /* @__PURE__ */ new Map();
       for (const [damageType, raw] of damage) {
         const { response, amount } = this.calculateDamageResponse(
-          source,
           damageType,
           raw,
-          target,
-          baseMultiplier,
-          attack
+          data
         );
         if (response === "absorb") {
           healAmount += raw;
@@ -4890,17 +4881,19 @@
       }
       return { total, healAmount, breakdown };
     }
-    calculateDamageResponse(source, damageType, raw, target, baseMultiplier, attack) {
+    calculateDamageResponse(damageType, raw, data) {
       const collector = new DamageResponseCollector();
-      const innateResponse = target.damageResponses.get(damageType);
+      const innateResponse = data.who.damageResponses.get(damageType);
       if (innateResponse) {
-        collector.add(innateResponse, target);
+        collector.add(innateResponse, data.who);
       }
       this.fire(
         new GetDamageResponseEvent({
-          source,
-          attack,
-          who: target,
+          source: data.source,
+          spell: data.spell,
+          method: data.method,
+          attack: data.attack,
+          who: data.who,
           damageType,
           response: collector
         })
@@ -4908,7 +4901,7 @@
       const { response, amount } = this.calculateDamageAmount(
         raw,
         collector.result,
-        baseMultiplier
+        data.multiplier
       );
       return { response, amount };
     }
@@ -5043,7 +5036,8 @@
         outcome,
         attack: attack.detail,
         hit: outcome === "hit" || outcome === "critical",
-        critical: outcome === "critical"
+        critical: outcome === "critical",
+        victim: roll.type.target
       };
     }
     async damage(source, damageType, e2, damageInitialiser = [], startingMultiplier) {
@@ -5053,22 +5047,25 @@
       const multiplier = new MultiplierCollector();
       if (typeof startingMultiplier !== "undefined")
         multiplier.add(startingMultiplier, source);
-      const gather = await this.resolve(
+      const bonus = new BonusCollector();
+      await this.resolve(
         new GatherDamageEvent({
           critical: false,
           ...e2,
           map,
-          bonus: new BonusCollector(),
-          interrupt: new InterruptionCollector(),
-          multiplier
+          bonus,
+          multiplier,
+          interrupt: new InterruptionCollector()
         })
       );
-      map.add(damageType, gather.detail.bonus.result);
+      map.add(damageType, bonus.result);
       return this.applyDamage(map, {
         source,
+        spell: e2.spell,
+        method: e2.method,
         attack: e2.attack,
         attacker: e2.attacker,
-        target: e2.target,
+        who: e2.target,
         multiplier: multiplier.result
       });
     }
@@ -5475,11 +5472,16 @@
         this.addProficiency(item, "proficient");
       return super.don(item);
     }
+    give(item, giveProficiency = false) {
+      if (giveProficiency)
+        this.addProficiency(item, "proficient");
+      return this.addToInventory(item);
+    }
   };
 
   // src/spells/InnateSpellcasting.ts
   var InnateSpellcasting = class {
-    constructor(name, ability, getResourceForSpell, icon) {
+    constructor(name, ability, getResourceForSpell = () => void 0, icon) {
       this.name = name;
       this.ability = ability;
       this.getResourceForSpell = getResourceForSpell;
@@ -5513,23 +5515,33 @@
     "Armor of Agathys",
     "turnStart",
     (g) => {
-      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-        const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
-        if (config && pre.target.temporaryHPSource === ArmorOfAgathysEffect && pre.tags.has("melee"))
-          interrupt.add(
-            new EvaluateLater(
-              pre.who,
-              ArmorOfAgathysEffect,
-              Priority_default.Normal,
-              async () => g.damage(
+      g.events.on(
+        "Attack",
+        ({
+          detail: {
+            roll: {
+              type: { target, tags, who }
+            },
+            interrupt
+          }
+        }) => {
+          const config = target.getEffectConfig(ArmorOfAgathysEffect);
+          if (config && target.temporaryHPSource === ArmorOfAgathysEffect && tags.has("melee"))
+            interrupt.add(
+              new EvaluateLater(
+                who,
                 ArmorOfAgathysEffect,
-                "cold",
-                { attacker: pre.target, target: pre.who },
-                [["cold", config.count]]
+                Priority_default.Normal,
+                async () => g.damage(
+                  ArmorOfAgathysEffect,
+                  "cold",
+                  { attacker: target, target: who },
+                  [["cold", config.count]]
+                )
               )
-            )
-          );
-      });
+            );
+        }
+      );
       g.events.on(
         "CombatantDamaged",
         ({ detail: { who, temporaryHPSource, interrupt } }) => {
@@ -5623,7 +5635,7 @@
                 target,
                 spell,
                 method,
-                tags: attack.pre.tags
+                tags: attack.roll.type.tags
               },
               critical
             );
@@ -5707,7 +5719,9 @@
         1,
         {
           size: 10,
-          source: this,
+          source: EldritchBurstSpell,
+          spell: EldritchBurstSpell,
+          method,
           attacker: caster,
           damageType: "force",
           tags: atSet("magical", "ranged", "spell")
@@ -5729,7 +5743,7 @@
           tags: ["magic"]
         });
         await g.damage(
-          this,
+          EldritchBurstSpell,
           "force",
           { attacker: caster, target: other, spell: EldritchBurstSpell, method },
           [["force", damage]],
@@ -5738,11 +5752,7 @@
       }
     }
   });
-  var BirnotecSpellcasting = new InnateSpellcasting(
-    "Spellcasting",
-    "cha",
-    () => void 0
-  );
+  var BirnotecSpellcasting = new InnateSpellcasting("Spellcasting", "cha");
   var EldritchBurst = new SimpleFeature(
     "Eldritch Burst",
     `Ranged Spell Attack: +8 to hit, range 120 ft., one target. Hit: 11 (2d10) force damage. All other creatures within 5 ft. must make a DC 15 Dexterity save or take 5 (1d10) force damage.`,
@@ -6006,6 +6016,7 @@
     addEnchantment(e2) {
       this.enchantments.add(e2);
       e2.setup(this.g, this);
+      return this;
     }
   };
 
@@ -6773,6 +6784,16 @@
       });
     }
   );
+  var MagicResistance = new SimpleFeature(
+    "Magic Resistance",
+    `You have advantage on saving throws against spells and other magical effects.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("magic"))
+          diceType.add("advantage", MagicResistance);
+      });
+    }
+  );
   var MundaneDamageResistance = new SimpleFeature(
     "Mundane Damage Resistance",
     "You resist bludgeoning, piercing, and slashing damage from nonmagical attacks.",
@@ -6780,7 +6801,7 @@
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, attack, response } }) => {
-          if (who === me && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
+          if (who === me && !(attack == null ? void 0 : attack.roll.type.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
             response.add("resist", MundaneDamageResistance);
         }
       );
@@ -6793,6 +6814,16 @@
       g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
         if (who === me && getFlanker(g, me, target))
           diceType.add("advantage", PackTactics);
+      });
+    }
+  );
+  var SpellDamageResistance = new SimpleFeature(
+    "Spell Damage Resistance",
+    `You resist damage from spells.`,
+    (g, me) => {
+      g.events.on("GetDamageResponse", ({ detail: { who, spell, response } }) => {
+        if (who === me && spell)
+          response.add("resist", SpellDamageResistance);
       });
     }
   );
@@ -6822,7 +6853,7 @@
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
-          if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("weapon")))
+          if (attacker === me && (attack == null ? void 0 : attack.roll.type.tags.has("weapon")))
             interrupt.add(
               new EvaluateLater(
                 me,
@@ -6903,7 +6934,7 @@
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, damageType, attack, response } }) => {
-          if (who === me && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
+          if (who === me && !(attack == null ? void 0 : attack.roll.type.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
             response.add("resist", SmoulderingRage);
         }
       );
@@ -7390,15 +7421,11 @@
         slot,
         target
       });
-      const { hit, attack } = await rsa.attack(target);
+      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(attack.pre.target);
-        await rsa.damage(attack.pre.target, damage);
-        await attack.pre.target.addEffect(
-          GuidingBoltEffect,
-          { duration: 2 },
-          attacker
-        );
+        const damage = await rsa.getDamage(victim);
+        await rsa.damage(victim, damage);
+        await victim.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
       }
     }
   });
@@ -7524,7 +7551,7 @@
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
-          if (!me.conditions.has("Unconscious") && (attacker == null ? void 0 : attacker.side) === me.side && attacker !== me && (attack == null ? void 0 : attack.pre.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
+          if (!me.conditions.has("Unconscious") && (attacker == null ? void 0 : attacker.side) === me.side && attacker !== me && (attack == null ? void 0 : attack.roll.type.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
             interrupt.add(
               new EvaluateLater(
                 attacker,
@@ -7607,11 +7634,7 @@
       });
     }
   );
-  var SpellcastingMethod = new InnateSpellcasting(
-    "Spellcasting",
-    "wis",
-    () => void 0
-  );
+  var SpellcastingMethod = new InnateSpellcasting("Spellcasting", "wis");
   var Spellcasting = bonusSpellsFeature(
     "Spellcasting",
     "O Gonrit can cast guiding bolt and mass healing word at will.",
@@ -7939,11 +7962,7 @@
       });
     }
   );
-  var SpellcastingMethod2 = new InnateSpellcasting(
-    "Spellcasting",
-    "cha",
-    () => void 0
-  );
+  var SpellcastingMethod2 = new InnateSpellcasting("Spellcasting", "cha");
   var Spellcasting2 = bonusSpellsFeature(
     "Spellcasting",
     "Yulash can cast healing word at will.",
@@ -8045,7 +8064,7 @@
       g.events.on(
         "CombatantDamaged",
         ({ detail: { attack, attacker, interrupt } }) => {
-          if (attacker === me && (attack == null ? void 0 : attack.pre.weapon) === weapon)
+          if (attacker === me && (attack == null ? void 0 : attack.roll.type.weapon) === weapon)
             interrupt.add(
               new EvaluateLater(me, LustForBattle, Priority_default.Normal, async () => {
                 if (await g.giveTemporaryHP(me, 5, LustForBattle))
@@ -8258,10 +8277,10 @@
         g.events.on(
           "CombatantDamaged",
           ({ detail: { attack, interrupt, who } }) => {
-            if ((attack == null ? void 0 : attack.pre.weapon) === this)
+            if ((attack == null ? void 0 : attack.roll.type.weapon) === this)
               interrupt.add(
                 new EvaluateLater(
-                  attack.pre.who,
+                  attack.roll.type.who,
                   this,
                   Priority_default.Normal,
                   async () => onHit(who)
@@ -8585,15 +8604,26 @@ If the saving throw is successful, the target takes half the bludgeoning damage 
           ["fire", damage]
         ]);
       };
-      g.events.on("Attack", ({ detail: { pre, outcome, interrupt } }) => {
-        if (pre.target === me && outcome.hits && pre.tags.has("melee") && distance(pre.who, me) <= 5)
-          interrupt.add(
-            new EvaluateLater(me, FireForm, Priority_default.Late, async () => {
-              if (outcome.hits)
-                await applyFireDamage(pre.target);
-            })
-          );
-      });
+      g.events.on(
+        "Attack",
+        ({
+          detail: {
+            roll: {
+              type: { target, tags, who: attacker }
+            },
+            outcome,
+            interrupt
+          }
+        }) => {
+          if (target === me && outcome.hits && tags.has("melee") && distance(attacker, me) <= 5)
+            interrupt.add(
+              new EvaluateLater(me, FireForm, Priority_default.Late, async () => {
+                if (outcome.hits)
+                  await applyFireDamage(attacker);
+              })
+            );
+        }
+      );
       const area = { type: "within", who: me, radius: 0 };
       const thisTurn = /* @__PURE__ */ new Set();
       g.events.on("TurnStarted", () => thisTurn.clear());
@@ -8699,26 +8729,1699 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       const shield = new Shield(g);
       const scimitar = new Scimitar(g);
       const bow = new Shortbow(g);
+      this.give(shield, true);
+      this.give(scimitar, true);
+      this.give(bow, true);
       if (wieldingBow) {
-        this.don(bow, true);
-        this.addToInventory(scimitar);
-        this.weaponProficiencies.add("scimitar");
-        this.addToInventory(shield);
-        this.armorProficiencies.add("shield");
+        this.don(bow);
       } else {
-        this.don(scimitar, true);
-        this.don(shield, true);
-        this.addToInventory(bow);
-        this.weaponProficiencies.add("shortbow");
+        this.don(scimitar);
+        this.don(shield);
       }
-      this.addToInventory(new Arrow(g), 10);
+      this.addToInventory(new Arrow(g), Infinity);
     }
   };
+
+  // src/img/tok/acolyte.png
+  var acolyte_default = "./acolyte-NHEPO7JS.png";
+
+  // src/img/tok/archmage.png
+  var archmage_default = "./archmage-GY7LGUEC.png";
+
+  // src/img/tok/assassin.png
+  var assassin_default = "./assassin-VUIPCSEA.png";
 
   // src/img/tok/thug.png
   var thug_default = "./thug-IXRM6PKF.png";
 
+  // src/spells/NormalSpellcasting.ts
+  var SpellSlots = {
+    full: [
+      [2],
+      [3],
+      [4, 2],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 2, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 1, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 1, 1, 1],
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]
+    ],
+    half: [
+      [],
+      [2],
+      [3],
+      [4],
+      [4, 2],
+      [4, 2],
+      [4, 3],
+      [4, 3],
+      [4, 3, 2],
+      [4, 3, 2],
+      [4, 3, 3],
+      [4, 3, 3],
+      [4, 3, 3, 1],
+      [4, 3, 3, 1],
+      [4, 3, 3, 2],
+      [4, 3, 3, 2],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 1],
+      [4, 3, 3, 3, 2],
+      [4, 3, 3, 3, 2]
+    ]
+  };
+  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var SpellSlotResources = enumerate(0, 9).map(
+    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
+  );
+  function getMaxSpellSlotAvailable(who) {
+    for (let level = 1; level <= 9; level++) {
+      const name = getSpellSlotResourceName(level);
+      if (!who.resources.has(name))
+        return level - 1;
+    }
+    return 9;
+  }
+  var NormalSpellcasting = class {
+    constructor(name, text, ability, strength, className, spellList, icon) {
+      this.name = name;
+      this.text = text;
+      this.ability = ability;
+      this.strength = strength;
+      this.className = className;
+      this.spellList = spellList;
+      this.icon = icon;
+      this.entries = /* @__PURE__ */ new Map();
+      this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
+        var _a;
+        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        me.spellcastingMethods.add(this);
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me) {
+            for (const spell of me.preparedSpells) {
+              if (this.canCast(spell, who))
+                actions.push(new CastSpell(g, me, this, spell));
+            }
+          }
+        });
+      });
+    }
+    getEntry(who) {
+      const entry = this.entries.get(who);
+      if (!entry)
+        throw new Error(
+          `${who.name} has not initialised their ${this.name} spellcasting method.`
+        );
+      return entry;
+    }
+    canCast(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      return spell.lists.includes(this.spellList) || spells.has(spell);
+    }
+    addCastableSpell(spell, caster) {
+      const { spells } = this.getEntry(caster);
+      spells.add(spell);
+    }
+    initialise(who, casterLevel) {
+      const slots = SpellSlots[this.strength][casterLevel - 1];
+      const resources = [];
+      for (let i2 = 0; i2 < slots.length; i2++) {
+        const resource = SpellSlotResources[i2 + 1];
+        who.initResource(resource, slots[i2]);
+        resources.push(resource);
+      }
+      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
+    }
+    getMinSlot(spell) {
+      return spell.level;
+    }
+    getMaxSlot(spell, who) {
+      if (!spell.scaling)
+        return spell.level;
+      const { resources } = this.getEntry(who);
+      return resources.length;
+    }
+    getResourceForSpell(spell, level, who) {
+      const { resources } = this.getEntry(who);
+      return resources[level - 1];
+    }
+    getSaveType() {
+      return { type: "ability", ability: this.ability };
+    }
+  };
+
+  // src/utils/gain.ts
+  function gains(fixed, amount, set) {
+    const result = fixed.map((value) => ({ type: "static", value }));
+    if (amount && set)
+      result.push({ type: "choice", amount, set: new Set(set) });
+    return result;
+  }
+
+  // src/types/DifficultTerrainType.ts
+  var MundaneDifficultTerrainTypes = [
+    "ice",
+    "plants",
+    "rubble",
+    "snow",
+    "webs"
+  ];
+  var MagicalDifficultTerrainTypes = [
+    "magical ice",
+    "magical plants",
+    "magical rubble",
+    // ???
+    "magical snow",
+    "magical webs"
+  ];
+  var DifficultTerrainTypes = [
+    ...MundaneDifficultTerrainTypes,
+    ...MagicalDifficultTerrainTypes
+  ];
+
+  // src/classes/common.ts
+  function asiSetup(g, me, config) {
+    if (config.type === "ability")
+      for (const ability of config.abilities)
+        me[ability].score++;
+    else
+      me.addFeature(allFeatures_default[config.feat]);
+  }
+  function makeASI(className, level) {
+    return new ConfiguredFeature(
+      `Ability Score Improvement (${className} ${level})`,
+      `When you reach ${ordinal(
+        level
+      )} level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
+
+If your DM allows the use of feats, you may instead take a feat.`,
+      asiSetup
+    );
+  }
+  function makeExtraAttack(name, text, extra = 1) {
+    return new SimpleFeature(name, text, (g, me) => {
+      g.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action.tags.has("costs attack") && action.actor === me && action.actor.attacksSoFar.length <= extra)
+          error.ignore(OneAttackPerTurnRule);
+      });
+    });
+  }
+  function makeLandsStride(text) {
+    const feature = new SimpleFeature("Land's Stride", text, (g, me) => {
+      featureNotComplete(feature, me);
+      g.events.on("GetMoveCost", ({ detail: { who, difficult } }) => {
+        if (who === me) {
+          for (const type of MundaneDifficultTerrainTypes)
+            difficult.ignoreValue(type);
+        }
+      });
+      g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("impedes movement") && tags.has("plant"))
+          diceType.add("advantage", feature);
+      });
+    });
+    return feature;
+  }
+  var ChannelDivinityResource = new ShortRestResource(
+    "Channel Divinity",
+    1
+  );
+
+  // src/classes/cleric/ChannelDivinity.ts
+  function getChannelCount(level) {
+    if (level < 6)
+      return 1;
+    if (level < 18)
+      return 2;
+    return 3;
+  }
+  var ChannelDivinity = new SimpleFeature(
+    "Channel Divinity",
+    `Your oath allows you to channel divine energy to fuel magical effects. Each Channel Divinity option provided by your oath explains how to use it.
+When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
+Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
+    (g, me) => {
+      var _a;
+      me.initResource(
+        ChannelDivinityResource,
+        getChannelCount((_a = me.classLevels.get("Cleric")) != null ? _a : 1)
+      );
+    }
+  );
+  var ChannelDivinity_default = ChannelDivinity;
+
+  // src/classes/cleric/HarnessDivinePower.ts
+  var HarnessDivinePowerResource = new LongRestResource(
+    "Harness Divine Power",
+    1
+  );
+  var HarnessDivinePowerAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Harness Divine Power",
+        "implemented",
+        {
+          slot: new ChoiceResolver(
+            g,
+            enumerate(1, 9).filter(
+              (slot) => actor.resources.has(getSpellSlotResourceName(slot))
+            ).map((value) => {
+              const resource = SpellSlotResources[value];
+              return {
+                label: ordinal(value),
+                value,
+                disabled: actor.getResourceMax(resource) <= actor.getResource(resource)
+              };
+            })
+          )
+        },
+        {
+          time: "bonus action",
+          resources: [
+            [ChannelDivinityResource, 1],
+            [HarnessDivinePowerResource, 1]
+          ],
+          description: `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`
+        }
+      );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
+    check({ slot }, ec) {
+      if (slot) {
+        const resource = SpellSlotResources[slot];
+        if (this.actor.getResource(resource) >= this.actor.getResourceMax(resource))
+          ec.add(`full on ${resource.name}`, this);
+      }
+      return super.check({ slot }, ec);
+    }
+    async apply({ slot }) {
+      await super.apply({ slot });
+      this.actor.giveResource(SpellSlotResources[slot], 1);
+    }
+  };
+  function getHarnessCount(level) {
+    if (level < 6)
+      return 1;
+    if (level < 18)
+      return 2;
+    return 3;
+  }
+  var HarnessDivinePower = new SimpleFeature(
+    "Channel Divinity: Harness Divine Power",
+    `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`,
+    (g, me) => {
+      var _a;
+      me.initResource(
+        HarnessDivinePowerResource,
+        getHarnessCount((_a = me.classLevels.get("Cleric")) != null ? _a : 2)
+      );
+      g.events.on("GetActions", ({ detail: { actions, who } }) => {
+        if (who === me)
+          actions.push(new HarnessDivinePowerAction(g, me));
+      });
+    }
+  );
+  var HarnessDivinePower_default = HarnessDivinePower;
+
+  // src/classes/turned.ts
+  var TurnedEffect = new Effect(
+    "Turned",
+    "turnEnd",
+    (g) => {
+      g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
+        if (who.hasEffect(TurnedEffect))
+          interrupt.add(
+            new EvaluateLater(who, TurnedEffect, Priority_default.Normal, async () => {
+              await who.removeEffect(TurnedEffect);
+            })
+          );
+      });
+      g.events.on(
+        "BeforeMove",
+        ({ detail: { who, handler, from, to, error } }) => {
+          const config = who.getEffectConfig(TurnedEffect);
+          if (config && !handler.forced) {
+            const { oldDistance, newDistance } = compareDistances(
+              config.turner,
+              config.turner.position,
+              who,
+              from,
+              to
+            );
+            if (newDistance > oldDistance)
+              return;
+            if (newDistance <= 30)
+              error.add(
+                `cannot willingly move within 30' of ${config.turner.name}`,
+                TurnedEffect
+              );
+            else
+              error.add(
+                `must move away from ${config.turner.name}`,
+                TurnedEffect
+              );
+          }
+        }
+      );
+      g.events.on("CheckAction", ({ detail }) => {
+        if (!detail.action.actor.hasEffect(TurnedEffect))
+          return;
+        if (detail.action.getTime(detail.config) === "reaction")
+          detail.error.add("cannot take reactions", TurnedEffect);
+        else {
+          if (detail.action.tags.has("escape move prevention"))
+            return;
+          if (detail.action instanceof DashAction)
+            return;
+          if (detail.action instanceof DodgeAction)
+            return;
+          detail.error.add(
+            "must Dash or escape an effect that prevents movement",
+            TurnedEffect
+          );
+        }
+      });
+    }
+  );
+
+  // src/classes/cleric/TurnUndead.ts
+  function getDestroyUndeadCR(level) {
+    if (level < 5)
+      return -Infinity;
+    if (level < 8)
+      return 0.5;
+    if (level < 11)
+      return 1;
+    if (level < 14)
+      return 2;
+    if (level < 17)
+      return 3;
+    return 4;
+  }
+  var getTurnUndeadArea = (who) => ({
+    type: "within",
+    who,
+    radius: 30
+  });
+  var TurnUndeadAction = class extends AbstractAction {
+    constructor(g, actor, affectsTypes, method, destroyCR = -Infinity) {
+      super(
+        g,
+        actor,
+        "Turn Undead",
+        "incomplete",
+        {},
+        {
+          area: [getTurnUndeadArea(actor)],
+          resources: [[ChannelDivinityResource, 1]],
+          tags: ["harmful"],
+          time: "action",
+          description: `As an action, you present your holy symbol and speak a prayer censuring the undead. Each undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes any damage.
+
+        A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
+        }
+      );
+      this.affectsTypes = affectsTypes;
+      this.method = method;
+      this.destroyCR = destroyCR;
+    }
+    getAffected() {
+      return this.g.getInside(getTurnUndeadArea(this.actor)).filter((who) => this.affectsTypes.includes(who.type));
+    }
+    getTargets() {
+      return [];
+    }
+    async apply() {
+      await super.apply({});
+      const { g, actor: attacker, method, destroyCR } = this;
+      const type = method.getSaveType(attacker);
+      for (const who of this.getAffected()) {
+        const effect = TurnedEffect;
+        const config = {
+          turner: attacker,
+          duration: minutes(1)
+        };
+        const { outcome } = await g.save({
+          source: this,
+          type,
+          attacker,
+          who,
+          ability: "wis",
+          method,
+          effect,
+          config,
+          tags: ["frightened"]
+        });
+        if (outcome === "fail") {
+          if (who.cr < destroyCR && await g.kill(who, attacker))
+            return;
+          await who.addEffect(effect, config, attacker);
+        }
+      }
+    }
+  };
+  var TurnUndead = new SimpleFeature(
+    "Turn Undead",
+    `As an action, you present your holy symbol and speak a prayer censuring the undead. Each undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes any damage.
+
+A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
+    (g, me) => {
+      var _a;
+      const destroyCr = getDestroyUndeadCR((_a = me.classLevels.get("Cleric")) != null ? _a : 2);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new TurnUndeadAction(
+              g,
+              who,
+              ["undead"],
+              ClericSpellcasting,
+              destroyCr
+            )
+          );
+      });
+    }
+  );
+  var TurnUndead_default = TurnUndead;
+
+  // src/classes/cleric/index.ts
+  var ClericSpellcasting = new NormalSpellcasting(
+    "Cleric",
+    `As a conduit for divine power, you can cast cleric spells.`,
+    "wis",
+    "full",
+    "Cleric",
+    "Cleric"
+  );
+  var CantripVersatility = nonCombatFeature(
+    "Cantrip Versatility",
+    `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace one cantrip you learned from this class's Spellcasting feature with another cantrip from the cleric spell list.`
+  );
+  var DivineIntervention = notImplementedFeature(
+    "Divine Intervention",
+    `Beginning at 10th level, you can call on your deity to intervene on your behalf when your need is great.
+
+Imploring your deity's aid requires you to use your action. Describe the assistance you seek, and roll percentile dice. If you roll a number equal to or lower than your cleric level, your deity intervenes. The DM chooses the nature of the intervention; the effect of any cleric spell or cleric domain spell would be appropriate. If your deity intervenes, you can't use this feature again for 7 days. Otherwise, you can use it again after you finish a long rest.
+
+At 20th level, your call for intervention succeeds automatically, no roll required.`
+  );
+  var ASI4 = makeASI("Cleric", 4);
+  var ASI8 = makeASI("Cleric", 8);
+  var ASI12 = makeASI("Cleric", 12);
+  var ASI16 = makeASI("Cleric", 16);
+  var ASI19 = makeASI("Cleric", 19);
+  var Cleric = {
+    name: "Cleric",
+    hitDieSize: 8,
+    armor: acSet("light", "medium", "shield"),
+    weaponCategory: wcSet("simple"),
+    save: abSet("wis", "cha"),
+    skill: gains([], 2, [
+      "History",
+      "Insight",
+      "Medicine",
+      "Persuasion",
+      "Religion"
+    ]),
+    multi: {
+      requirements: /* @__PURE__ */ new Map([["wis", 13]]),
+      armor: acSet("light", "medium", "shield")
+    },
+    features: /* @__PURE__ */ new Map([
+      [1, [ClericSpellcasting.feature]],
+      [2, [ChannelDivinity_default, TurnUndead_default, HarnessDivinePower_default]],
+      [4, [ASI4, CantripVersatility]],
+      [8, [ASI8]],
+      [10, [DivineIntervention]],
+      [12, [ASI12]],
+      [16, [ASI16]],
+      [19, [ASI19]]
+    ])
+  };
+  var cleric_default = Cleric;
+
+  // src/classes/rogue/SneakAttack.ts
+  function getSneakAttackDice(level) {
+    return Math.ceil(level / 2);
+  }
+  var SneakAttackResource = new TurnResource("Sneak Attack", 1);
+  var SneakAttack = new SimpleFeature(
+    "Sneak Attack",
+    `Beginning at 1st level, you know how to strike subtly and exploit a foe's distraction. Once per turn, you can deal an extra 1d6 damage to one creature you hit with an attack if you have advantage on the attack roll. The attack must use a finesse or a ranged weapon.
+
+You don't need advantage on the attack roll if another enemy of the target is within 5 feet of it, that enemy isn't incapacitated, and you don't have disadvantage on the attack roll.
+
+The amount of the extra damage increases as you gain levels in this class, as shown in the Sneak Attack column of the Rogue table.`,
+    (g, me) => {
+      var _a;
+      const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
+      me.initResource(SneakAttackResource);
+      g.events.on(
+        "GatherDamage",
+        ({
+          detail: {
+            ability,
+            attack,
+            attacker,
+            critical,
+            interrupt,
+            map,
+            target,
+            weapon
+          }
+        }) => {
+          if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
+            const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
+            const advantage = attack.roll.diceType === "advantage";
+            const noDisadvantage = !attack.pre.diceType.getValues().includes("disadvantage");
+            if (isFinesseOrRangedWeapon && (advantage || getFlanker(g, me, target) && noDisadvantage)) {
+              interrupt.add(
+                new YesNoChoice(
+                  attacker,
+                  SneakAttack,
+                  "Sneak Attack",
+                  `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
+                  Priority_default.Normal,
+                  async () => {
+                    me.spendResource(SneakAttackResource);
+                    const damageType = weapon.damage.damageType;
+                    const damage = await g.rollDamage(
+                      count,
+                      {
+                        source: SneakAttack,
+                        attacker,
+                        target,
+                        size: 6,
+                        damageType,
+                        weapon,
+                        ability,
+                        tags: atSet()
+                      },
+                      critical
+                    );
+                    map.add(damageType, damage);
+                  }
+                )
+              );
+            }
+          }
+        }
+      );
+    }
+  );
+  var SneakAttack_default = SneakAttack;
+
+  // src/img/class/wizard.svg
+  var wizard_default = "./wizard-FEOOHPRA.svg";
+
+  // src/classes/wizard/common.ts
+  var WizardIcon = makeIcon(wizard_default, ClassColours.Wizard);
+
+  // src/classes/wizard/index.ts
+  var ArcaneRecovery = nonCombatFeature(
+    "Arcane Recovery",
+    `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
+
+For example, if you're a 4th-level wizard, you can recover up to two levels worth of spell slots.
+
+You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
+  );
+  var WizardSpellcasting = new NormalSpellcasting(
+    "Wizard",
+    `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power.`,
+    "int",
+    "full",
+    "Wizard",
+    "Wizard",
+    WizardIcon
+  );
+  var CantripFormulas = nonCombatFeature(
+    "Cantrip Formulas",
+    `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`
+  );
+  var SpellMastery = notImplementedFeature(
+    "Spell Mastery",
+    `At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.
+
+By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`
+  );
+  var SignatureSpells = notImplementedFeature(
+    "Signature Spells",
+    `When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.
+
+If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
+  );
+  var ASI42 = makeASI("Wizard", 4);
+  var ASI82 = makeASI("Wizard", 8);
+  var ASI122 = makeASI("Wizard", 12);
+  var ASI162 = makeASI("Wizard", 16);
+  var ASI192 = makeASI("Wizard", 19);
+  var Wizard = {
+    name: "Wizard",
+    hitDieSize: 6,
+    weapon: wtSet("dagger", "dart", "sling", "quarterstaff", "light crossbow"),
+    save: abSet("int", "wis"),
+    skill: gains([], 2, [
+      "Arcana",
+      "History",
+      "Insight",
+      "Investigation",
+      "Medicine",
+      "Religion"
+    ]),
+    multi: { requirements: /* @__PURE__ */ new Map([["int", 13]]) },
+    features: /* @__PURE__ */ new Map([
+      [1, [ArcaneRecovery, WizardSpellcasting.feature]],
+      [3, [CantripFormulas]],
+      [4, [ASI42]],
+      [8, [ASI82]],
+      [12, [ASI122]],
+      [16, [ASI162]],
+      [18, [SpellMastery]],
+      [19, [ASI192]],
+      [20, [SignatureSpells]]
+    ])
+  };
+  var wizard_default2 = Wizard;
+
+  // src/img/spl/fire-bolt.svg
+  var fire_bolt_default = "./fire-bolt-OQ6JULT4.svg";
+
+  // src/spells/cantrip/FireBolt.ts
+  var FireBolt = simpleSpell({
+    status: "implemented",
+    name: "Fire Bolt",
+    icon: makeIcon(fire_bolt_default, DamageColours.fire),
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
+
+  This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, attacker, method, { target }) {
+      const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
+        target
+      });
+      const { hit, victim } = await rsa.attack(target);
+      if (hit) {
+        const damage = await rsa.getDamage(victim);
+        await rsa.damage(victim, damage);
+      }
+    }
+  });
+  var FireBolt_default = FireBolt;
+
+  // src/spells/cantrip/SacredFlame.ts
+  var SacredFlame = simpleSpell({
+    status: "incomplete",
+    name: "Sacred Flame",
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Cleric"],
+    isHarmful: true,
+    description: `Flame-like radiance descends on a creature that you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw.
+
+  The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(60, target))
+    })),
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf, canSee]) }),
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, attacker, method, { target }) {
+      const damage = await g.rollDamage(getCantripDice(attacker), {
+        size: 8,
+        attacker,
+        damageType: "radiant",
+        spell: SacredFlame,
+        method,
+        source: SacredFlame,
+        target,
+        tags: atSet("magical", "spell")
+      });
+      const { damageResponse } = await g.save({
+        source: SacredFlame,
+        type: method.getSaveType(attacker, SacredFlame),
+        attacker,
+        who: target,
+        ability: "dex",
+        spell: SacredFlame,
+        method,
+        save: "zero",
+        tags: ["magic"]
+      });
+      await g.damage(
+        SacredFlame,
+        "radiant",
+        { attacker, target, spell: SacredFlame, method },
+        [["radiant", damage]],
+        damageResponse
+      );
+    }
+  });
+  var SacredFlame_default = SacredFlame;
+
+  // src/spells/cantrip/Thaumaturgy.ts
+  var Thaumaturgy = simpleSpell({
+    name: "Thaumaturgy",
+    level: 0,
+    school: "Transmutation",
+    v: true,
+    lists: ["Cleric"],
+    description: `You manifest a minor wonder, a sign of supernatural power, within range. You create one of the following magical effects within range:
+  - Your voice booms up to three times as loud as normal for 1 minute.
+  - You cause flames to flicker, brighten, dim, or change color for 1 minute.
+  - You cause harmless tremors in the ground for 1 minute.
+  - You create an instantaneous sound that originates from a point of your choice within range, such as a rumble of thunder, the cry of a raven, or ominous whispers.
+  - You instantaneously cause an unlocked door or window to fly open or slam shut.
+  - You alter the appearance of your eyes for 1 minute.
+
+  If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time, and you can dismiss such an effect as an action.`,
+    getConfig: () => ({}),
+    getTargets: () => [],
+    getAffected: () => [],
+    async apply() {
+    }
+  });
+  var Thaumaturgy_default = Thaumaturgy;
+
+  // src/img/spl/bless.svg
+  var bless_default = "./bless-VVWIP7W3.svg";
+
+  // src/spells/level1/Bless.ts
+  var BlessIcon = makeIcon(bless_default);
+  function applyBless(g, who, bonus) {
+    if (who.hasEffect(BlessEffect)) {
+      const { values } = g.dice.roll({ type: "bless", who });
+      bonus.add(values.final, BlessEffect);
+    }
+  }
+  var BlessEffect = new Effect(
+    "Bless",
+    "turnEnd",
+    (g) => {
+      g.events.on(
+        "BeforeAttack",
+        ({ detail: { bonus, who } }) => applyBless(g, who, bonus)
+      );
+      g.events.on(
+        "BeforeSave",
+        ({ detail: { bonus, who } }) => applyBless(g, who, bonus)
+      );
+    },
+    { icon: BlessIcon, tags: ["magic"] }
+  );
+  var Bless = scalingSpell({
+    status: "implemented",
+    name: "Bless",
+    icon: BlessIcon,
+    level: 1,
+    school: "Enchantment",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a sprinkling of holy water",
+    lists: ["Cleric", "Paladin"],
+    description: `You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
+    getConfig: (g, caster, method, { slot }) => ({
+      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, [])
+    }),
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets,
+    async apply(g, caster, method, { targets }) {
+      const duration = minutes(1);
+      for (const target of targets)
+        await target.addEffect(BlessEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: Bless,
+        duration,
+        onSpellEnd: async () => {
+          for (const target of targets)
+            await target.removeEffect(BlessEffect);
+        }
+      });
+    }
+  });
+  var Bless_default = Bless;
+
+  // src/spells/level1/CureWounds.ts
+  var cannotHeal3 = ctSet("undead", "construct");
+  var CureWounds = scalingSpell({
+    status: "incomplete",
+    name: "Cure Wounds",
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+    description: `A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [
+        notOfCreatureType("undead", "construct")
+      ])
+    }),
+    getHeal: (g, caster, method, { slot }) => {
+      const modifier = method.ability ? caster[method.ability].modifier : 0;
+      const count = slot != null ? slot : 1;
+      return [
+        { type: "dice", amount: { count, size: 8 } },
+        { type: "flat", amount: modifier }
+      ];
+    },
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, actor, method, { slot, target }) {
+      if (cannotHeal3.has(target.type))
+        return;
+      const modifier = method.ability ? actor[method.ability].modifier : 0;
+      const rolled = await g.rollHeal(slot, {
+        source: CureWounds,
+        actor,
+        target,
+        spell: CureWounds,
+        method,
+        size: 8
+      });
+      await g.heal(CureWounds, rolled + modifier, {
+        actor,
+        spell: CureWounds,
+        target
+      });
+    }
+  });
+  var CureWounds_default = CureWounds;
+
+  // src/spells/level1/MageArmor.ts
+  var MageArmorEffect = new Effect(
+    "Mage Armor",
+    "turnStart",
+    (g) => {
+      g.events.on("GetACMethods", ({ detail }) => {
+        if (detail.who.hasEffect(MageArmorEffect) && !detail.who.armor) {
+          const uses = /* @__PURE__ */ new Set();
+          let ac = 13 + detail.who.dex.modifier;
+          if (detail.who.shield) {
+            uses.add(detail.who.shield);
+            ac += detail.who.shield.ac;
+          }
+          detail.methods.push({
+            name: "Mage Armor",
+            ac,
+            uses
+          });
+        }
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var MageArmor = simpleSpell({
+    status: "implemented",
+    name: "Mage Armor",
+    level: 1,
+    school: "Abjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a piece of cured leather",
+    lists: ["Sorcerer", "Wizard"],
+    description: `You touch a willing creature who isn't wearing armor, and a protective magical force surrounds it until the spell ends. The target's base AC becomes 13 + its Dexterity modifier. The spell ends if the target dons armor or if you dismiss the spell as an action.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [
+        {
+          name: "no armor",
+          message: "wearing armor",
+          check: (g2, action, value) => !value.armor
+        }
+      ])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, caster, method, { target }) {
+      const duration = hours(8);
+      await target.addEffect(MageArmorEffect, { duration, caster, method });
+      caster.concentrateOn({
+        duration,
+        spell: MageArmor,
+        async onSpellEnd() {
+          await target.removeEffect(MageArmorEffect);
+        }
+      });
+    }
+  });
+  var MageArmor_default = MageArmor;
+
+  // src/img/spl/magic-missile.svg
+  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
+
+  // src/resolvers/AllocationResolver.ts
+  function isAllocation(value) {
+    return typeof value === "object" && typeof value.amount === "number" && typeof value.who === "object";
+  }
+  function isAllocationArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const entry of value) {
+      if (!isAllocation(entry))
+        return false;
+    }
+    return true;
+  }
+  var AllocationResolver = class {
+    constructor(g, rangeName, minimum, maximum, maxRange, filters) {
+      this.g = g;
+      this.rangeName = rangeName;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.maxRange = maxRange;
+      this.filters = filters;
+      this.type = "Allocations";
+    }
+    get name() {
+      let name = `${this.rangeName}: ${describeRange(
+        this.minimum,
+        this.maximum
+      )} allocations${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+      for (const filter of this.filters)
+        name += `, ${filter.name}`;
+      return name;
+    }
+    check(value, action, ec) {
+      if (!isAllocationArray(value))
+        ec.add("No targets", this);
+      else {
+        const total = value.reduce((p, entry) => p + entry.amount, 0);
+        if (total < this.minimum)
+          ec.add(`At least ${this.minimum} allocations`, this);
+        if (total > this.maximum)
+          ec.add(`At most ${this.maximum} allocations`, this);
+        for (const { who } of value) {
+          const isOutOfRange = distance(action.actor, who) > this.maxRange;
+          const errors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => `${who.name}: ${filter.message}`);
+          if (isOutOfRange)
+            ec.add(`${who.name}: Out of range`, this);
+          ec.addMany(errors, this);
+        }
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/level1/MagicMissile.ts
+  var getDamage = (slot) => [
+    _dd(slot + 2, 4, "force"),
+    _fd(slot + 2, "force")
+  ];
+  var MagicMissile = scalingSpell({
+    status: "implemented",
+    name: "Magic Missile",
+    icon: makeIcon(magic_missile_default, DamageColours.force),
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
+    // TODO: generateAttackConfigs
+    getConfig: (g, caster, method, { slot }) => ({
+      targets: new AllocationResolver(
+        g,
+        "Missiles",
+        (slot != null ? slot : 1) + 2,
+        (slot != null ? slot : 1) + 2,
+        120,
+        [canSee]
+      )
+    }),
+    getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
+    getTargets: (g, caster, { targets }) => {
+      var _a;
+      return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
+    },
+    getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
+    async apply(g, attacker, method, { targets }) {
+      const perBolt = await g.rollDamage(1, {
+        source: MagicMissile,
+        spell: MagicMissile,
+        method,
+        attacker,
+        damageType: "force",
+        size: 4,
+        tags: atSet("magical", "spell")
+      }) + 1;
+      for (const { amount, who } of targets) {
+        if (amount < 1)
+          continue;
+        await g.damage(
+          MagicMissile,
+          "force",
+          { spell: MagicMissile, method, target: who, attacker },
+          [["force", perBolt * amount]]
+        );
+      }
+    }
+  });
+  var MagicMissile_default = MagicMissile;
+
+  // src/spells/level1/Sanctuary.ts
+  var sanctuaryEffects = /* @__PURE__ */ new Map();
+  var getSanctuaryEffects = (attacker) => {
+    var _a;
+    const set = (_a = sanctuaryEffects.get(attacker.id)) != null ? _a : /* @__PURE__ */ new Set();
+    if (!sanctuaryEffects.has(attacker.id))
+      sanctuaryEffects.set(attacker.id, set);
+    return set;
+  };
+  var SanctuaryEffect = new Effect(
+    "Sanctuary",
+    "turnStart",
+    (g) => {
+      g.events.on("BattleStarted", () => {
+        sanctuaryEffects.clear();
+      });
+      g.events.on(
+        "TurnStarted",
+        ({ detail: { who } }) => getSanctuaryEffects(who).clear()
+      );
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        var _a, _b;
+        if (!action.tags.has("harmful"))
+          return;
+        const effects = getSanctuaryEffects(action.actor);
+        const targets = (_b = (_a = action.getTargets(config)) == null ? void 0 : _a.filter((who) => who.hasEffect(SanctuaryEffect))) != null ? _b : [];
+        for (const target of targets) {
+          if (effects.has(target.id))
+            error.add("in Sanctuary", SanctuaryEffect);
+        }
+      });
+      g.events.on("BeforeAttack", ({ detail: { target, interrupt, who } }) => {
+        const config = target.getEffectConfig(SanctuaryEffect);
+        if (config)
+          interrupt.add(
+            new EvaluateLater(
+              who,
+              SanctuaryEffect,
+              Priority_default.ChangesOutcome,
+              async () => {
+                const { outcome } = await g.save({
+                  source: SanctuaryEffect,
+                  type: config.method.getSaveType(config.caster, Sanctuary),
+                  who,
+                  ability: "wis",
+                  tags: ["charm", "magic"]
+                });
+                if (outcome === "fail") {
+                  g.text(
+                    new MessageBuilder().co(who).text(" fails to break ").co(target).nosp().text("'s Sanctuary.")
+                  );
+                  getSanctuaryEffects(who).add(target.id);
+                }
+              }
+            )
+          );
+      });
+      const getRemover = (who) => new EvaluateLater(
+        who,
+        SanctuaryEffect,
+        Priority_default.Normal,
+        () => who.removeEffect(SanctuaryEffect)
+      );
+      g.events.on("Attack", ({ detail: { roll, interrupt } }) => {
+        if (roll.type.who.hasEffect(SanctuaryEffect))
+          interrupt.add(getRemover(roll.type.who));
+      });
+      g.events.on("SpellCast", ({ detail: { who, affected, interrupt } }) => {
+        if (who.hasEffect(SanctuaryEffect))
+          for (const target of affected) {
+            if (target.side !== who.side) {
+              interrupt.add(getRemover(target));
+              return;
+            }
+          }
+      });
+      g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
+        if (attacker == null ? void 0 : attacker.hasEffect(SanctuaryEffect))
+          interrupt.add(getRemover(attacker));
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var Sanctuary = simpleSpell({
+    status: "incomplete",
+    name: "Sanctuary",
+    level: 1,
+    school: "Abjuration",
+    time: "bonus action",
+    v: true,
+    s: true,
+    m: "a small silver mirror",
+    lists: ["Artificer", "Cleric"],
+    description: `You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball.
+
+  If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
+    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, caster, method, { target }) {
+      await target.addEffect(
+        SanctuaryEffect,
+        { caster, method, duration: minutes(1) },
+        caster
+      );
+    }
+  });
+  var Sanctuary_default = Sanctuary;
+
+  // src/spells/level2/MirrorImage.ts
+  var MirrorImage = simpleSpell({
+    name: "Mirror Image",
+    level: 2,
+    school: "Illusion",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `Three illusory duplicates of yourself appear in your space. Until the spell ends, the duplicates move with you and mimic your actions, shifting position so it's impossible to track which image is real. You can use your action to dismiss the illusory duplicates.
+
+  Each time a creature targets you with an attack during the spell's duration, roll a d20 to determine whether the attack instead targets one of your duplicates.
+
+  If you have three duplicates, you must roll a 6 or higher to change the attack's target to a duplicate. With two duplicates, you must roll an 8 or higher. With one duplicate, you must roll an 11 or higher.
+
+  A duplicate's AC equals 10 + your Dexterity modifier. If an attack hits a duplicate, the duplicate is destroyed. A duplicate can be destroyed only by an attack that hits it. It ignores all other damage and effects. The spell ends when all three duplicates are destroyed.
+
+  A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
+    getConfig: () => ({}),
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
+    async apply() {
+    }
+  });
+  var MirrorImage_default = MirrorImage;
+
+  // src/resolvers/PointResolver.ts
+  var PointResolver = class {
+    constructor(g, maxRange) {
+      this.g = g;
+      this.maxRange = maxRange;
+      this.type = "Point";
+    }
+    get name() {
+      if (this.maxRange === Infinity)
+        return "any point";
+      return `point within ${this.maxRange}'`;
+    }
+    check(value, action, ec) {
+      if (!isPoint(value))
+        ec.add("No target", this);
+      else {
+        if (distanceTo(action.actor, value) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/spells/level2/MistyStep.ts
+  var MistyStep = simpleSpell({
+    status: "implemented",
+    name: "Misty Step",
+    level: 2,
+    school: "Conjuration",
+    time: "bonus action",
+    v: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
+    getConfig: (g) => ({ point: new PointResolver(g, 30) }),
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
+    async apply(g, caster, method, { point }) {
+      await g.move(caster, point, getTeleportation(30, "Misty Step"));
+    }
+  });
+  var MistyStep_default = MistyStep;
+
+  // src/img/spl/lightning-bolt.svg
+  var lightning_bolt_default = "./lightning-bolt-OXAGJ6WI.svg";
+
+  // src/aim.ts
+  var eighth = Math.PI / 4;
+  var eighthOffset = eighth / 2;
+  var octant1 = eighthOffset;
+  var octant2 = octant1 + eighth;
+  var octant3 = octant2 + eighth;
+  var octant4 = octant3 + eighth;
+  var octant5 = octant4 + eighth;
+  var octant6 = octant5 + eighth;
+  var octant7 = octant6 + eighth;
+  var octant8 = octant7 + eighth;
+  function getAimOffset(a, b) {
+    let angle = Math.atan2(b.y - a.y, b.x - a.x);
+    if (angle < 0)
+      angle += Math.PI * 2;
+    if (angle < octant1)
+      return { x: 1, y: 0.5 };
+    else if (angle < octant2)
+      return { x: 1, y: 1 };
+    else if (angle < octant3)
+      return { x: 0.5, y: 1 };
+    else if (angle < octant4)
+      return { x: 0, y: 1 };
+    else if (angle < octant5)
+      return { x: 0, y: 0.5 };
+    else if (angle < octant6)
+      return { x: 0, y: 0 };
+    else if (angle < octant7)
+      return { x: 0.5, y: 0 };
+    else if (angle < octant8)
+      return { x: 1, y: 0 };
+    return { x: 1, y: 0.5 };
+  }
+  function aimCone(position, size, aim, radius) {
+    const offset = getAimOffset(position, aim);
+    return {
+      type: "cone",
+      radius,
+      centre: addPoints(position, mulPoint(offset, size)),
+      target: addPoints(aim, mulPoint(offset, MapSquareSize))
+    };
+  }
+  function aimLine(position, size, aim, length, width) {
+    const offset = getAimOffset(position, aim);
+    return {
+      type: "line",
+      length,
+      width,
+      start: addPoints(position, mulPoint(offset, size)),
+      target: addPoints(aim, mulPoint(offset, MapSquareSize))
+    };
+  }
+
+  // src/spells/level3/LightningBolt.ts
+  var getLightningBoltArea = (actor, point) => aimLine(actor.position, actor.sizeInUnits, point, 100, 5);
+  var LightningBolt = scalingSpell({
+    status: "implemented",
+    name: "Lightning Bolt",
+    icon: makeIcon(lightning_bolt_default, DamageColours.lightning),
+    level: 3,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a bit of fur and a rod of amber, crystal, or glass",
+    lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a Dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much damage on a successful one.
+
+  The lightning ignites flammable objects in the area that aren't being worn or carried.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
+    // TODO: generateAttackConfigs
+    getConfig: (g) => ({ point: new PointResolver(g, 100) }),
+    getDamage: (g, caster, method, { slot }) => [
+      _dd((slot != null ? slot : 3) + 5, 6, "lightning")
+    ],
+    getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(caster, point)],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getLightningBoltArea(caster, point)),
+    async apply(g, attacker, method, { slot, point }) {
+      const damage = await g.rollDamage(5 + slot, {
+        source: LightningBolt,
+        size: 6,
+        spell: LightningBolt,
+        method,
+        damageType: "lightning",
+        attacker,
+        tags: atSet("magical", "spell")
+      });
+      for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
+        const save = await g.save({
+          source: LightningBolt,
+          type: method.getSaveType(attacker, LightningBolt, slot),
+          attacker,
+          ability: "dex",
+          spell: LightningBolt,
+          method,
+          who: target,
+          tags: ["magic"]
+        });
+        await g.damage(
+          LightningBolt,
+          "lightning",
+          { attacker, spell: LightningBolt, method, target },
+          [["lightning", damage]],
+          save.damageResponse
+        );
+      }
+    }
+  });
+  var LightningBolt_default = LightningBolt;
+
+  // src/spells/level4/Stoneskin.ts
+  var StoneskinEffect = new Effect(
+    "Stoneskin",
+    "turnStart",
+    (g) => {
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response, attack } }) => {
+          if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.roll.type.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
+            response.add("resist", StoneskinEffect);
+        }
+      );
+    },
+    { tags: ["magic"] }
+  );
+  var Stoneskin = simpleSpell({
+    status: "implemented",
+    name: "Stoneskin",
+    level: 4,
+    school: "Abjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "diamond dust worth 100gp, which the spell consumes",
+    lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
+    description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [isAlly])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, caster, method, { target }) {
+      const duration = hours(1);
+      await target.addEffect(StoneskinEffect, { duration }, caster);
+      await caster.concentrateOn({
+        spell: Stoneskin,
+        duration,
+        async onSpellEnd() {
+          await target.removeEffect(StoneskinEffect);
+        }
+      });
+    }
+  });
+  var Stoneskin_default = Stoneskin;
+
+  // src/spells/level5/ConeOfCold.ts
+  var getConeOfColdArea = (caster, target) => ({
+    type: "cone",
+    radius: 60,
+    centre: caster.position,
+    target
+  });
+  var ConeOfCold = scalingSpell({
+    status: "implemented",
+    name: "Cone of Cold",
+    level: 5,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a small crystal or glass cone",
+    lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `A blast of cold air erupts from your hands. Each creature in a 60-foot cone must make a Constitution saving throw. A creature takes 8d8 cold damage on a failed save, or half as much damage on a successful one.
+
+  A creature killed by this spell becomes a frozen statue until it thaws.
+
+  At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.`,
+    // TODO: generateAttackConfigs
+    getConfig: (g) => ({ point: new PointResolver(g, 60) }),
+    getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
+    getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(caster, point)],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getConeOfColdArea(caster, point)),
+    async apply(g, attacker, method, { slot, point }) {
+      const damage = await g.rollDamage(3 + slot, {
+        source: ConeOfCold,
+        size: 8,
+        spell: ConeOfCold,
+        method,
+        damageType: "cold",
+        attacker,
+        tags: atSet("magical", "spell")
+      });
+      for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
+        const save = await g.save({
+          source: ConeOfCold,
+          type: method.getSaveType(attacker, ConeOfCold, slot),
+          attacker,
+          ability: "con",
+          spell: ConeOfCold,
+          method,
+          who: target,
+          tags: ["magic"]
+        });
+        await g.damage(
+          ConeOfCold,
+          "cold",
+          { attacker, spell: ConeOfCold, method, target },
+          [["cold", damage]],
+          save.damageResponse
+        );
+      }
+    }
+  });
+  var ConeOfCold_default = ConeOfCold;
+
   // src/monsters/srd/humanoid.ts
+  var Acolyte = class extends Monster {
+    constructor(g) {
+      super(g, "acolyte", 0.25, "humanoid", SizeCategory_default.Medium, acolyte_default, 9);
+      this.don(new Club(g), true);
+      this.movement.set("speed", 30);
+      this.setAbilityScores(10, 10, 10, 10, 14, 11);
+      this.addProficiency("Medicine", "proficient");
+      this.addProficiency("Religion", "proficient");
+      this.languages.add("Common");
+      this.classLevels.set("Cleric", 1);
+      this.addFeature(ClericSpellcasting.feature);
+      this.addPreparedSpells(
+        // TODO Light,
+        SacredFlame_default,
+        Thaumaturgy_default,
+        Bless_default,
+        CureWounds_default,
+        Sanctuary_default
+      );
+    }
+  };
+  var ArchmageSpellcastingMethod = new InnateSpellcasting(
+    "Archmage Innate Spells",
+    "int"
+  );
+  var ArchmageSpellcasting = bonusSpellsFeature(
+    "Archmage Spellcasting",
+    `The archmage can cast disguise self and invisibility at will.`,
+    "Wizard",
+    ArchmageSpellcastingMethod,
+    [
+      // TODO { level: 0, spell: DisguiseSelf },
+      // TODO { level: 0, spell: Invisibility },
+    ]
+  );
+  var Archmage = class extends Monster {
+    constructor(g) {
+      super(g, "archmage", 12, "humanoid", SizeCategory_default.Medium, archmage_default, 99);
+      this.don(new Dagger(g), true);
+      this.movement.set("speed", 30);
+      this.setAbilityScores(10, 14, 12, 20, 15, 16);
+      this.addProficiency("int", "proficient");
+      this.addProficiency("wis", "proficient");
+      this.addProficiency("Arcana", "expertise");
+      this.addProficiency("History", "expertise");
+      this.languages.add("Common");
+      this.pb = 4;
+      this.addFeature(SpellDamageResistance);
+      this.addFeature(MagicResistance);
+      this.addFeature(ArchmageSpellcasting);
+      this.classLevels.set("Wizard", 18);
+      this.addFeature(WizardSpellcasting.feature);
+      this.addPreparedSpells(
+        FireBolt_default,
+        // TODO Light,
+        // TODO MageHand,
+        // TODO Prestidigitation,
+        // TODO ShockingGrasp,
+        // TODO DetectMagic,
+        // TODO Identify,
+        MageArmor_default,
+        MagicMissile_default,
+        // TODO DetectThoughts,
+        MirrorImage_default,
+        MistyStep_default,
+        // TODO Counterspell,
+        // TODO Fly,
+        LightningBolt_default,
+        // TODO Banishment,
+        // TODO FireShield,
+        Stoneskin_default,
+        ConeOfCold_default
+        // TODO Scrying,
+        // TODO WallOfForce,
+        // TODO GlobeOfInvulnerability,
+        // TODO Teleport,
+        // TODO MindBlank,
+        // TODO TimeStop,
+      );
+    }
+  };
+  var Assassinate = new SimpleFeature(
+    "Assassinate",
+    `During its first turn, the assassin has advantage on attack rolls against any creature that hasn't taken a turn. Any hit the assassin scores against a surprised creature is a critical hit.`,
+    (g, me) => {
+      const hasTakenTurn = /* @__PURE__ */ new Set();
+      let hasEndedTurn = false;
+      g.events.on("TurnStarted", ({ detail: { who } }) => hasTakenTurn.add(who));
+      g.events.on("TurnEnded", ({ detail: { who } }) => {
+        if (who === me)
+          hasEndedTurn = true;
+      });
+      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+        if (who === me && !hasEndedTurn && !hasTakenTurn.has(target))
+          diceType.add("advantage", Assassinate);
+      });
+      g.events.on(
+        "Attack",
+        ({
+          detail: {
+            roll: {
+              type: { who, target }
+            },
+            outcome
+          }
+        }) => {
+          if (who === me && target.hasEffect(Surprised) && outcome.hits)
+            outcome.add("critical", Assassinate);
+        }
+      );
+    }
+  );
+  var AssassinMultiattack = makeMultiattack(
+    `The assassin makes two shortsword attacks.`,
+    (me, action) => {
+      if (me.attacksSoFar.length < 1)
+        return true;
+      return isMeleeAttackAction(me.attacksSoFar[0]) && isMeleeAttackAction(action) && action.weapon.weaponType === "shortsword";
+    }
+  );
+  var assassinPoison = {
+    name: "poison",
+    setup(g, item) {
+      g.events.on(
+        "CombatantDamaged",
+        ({ detail: { attack, interrupt, who } }) => {
+          if ((attack == null ? void 0 : attack.roll.type.weapon) === item) {
+            const attacker = attack.roll.type.who;
+            const critical = attack.outcome.result === "critical";
+            interrupt.add(
+              new EvaluateLater(
+                who,
+                assassinPoison,
+                Priority_default.Normal,
+                async () => {
+                  const damage = await g.rollDamage(7, {
+                    size: 6,
+                    attacker,
+                    damageType: "poison",
+                    source: assassinPoison,
+                    tags: atSet(),
+                    target: who
+                  });
+                  const { damageResponse } = await g.save({
+                    source: assassinPoison,
+                    type: { type: "flat", dc: 15 },
+                    attacker,
+                    who,
+                    ability: "con",
+                    tags: ["poison"]
+                  });
+                  await g.damage(
+                    assassinPoison,
+                    "poison",
+                    { attacker, critical, target: who },
+                    [["poison", damage]],
+                    damageResponse
+                  );
+                }
+              )
+            );
+          }
+        }
+      );
+    }
+  };
+  var Assassin = class extends Monster {
+    constructor(g, wieldingCrossbow = false) {
+      super(g, "assassin", 8, "humanoid", SizeCategory_default.Medium, assassin_default, 78);
+      this.don(new StuddedLeatherArmor(g), true);
+      this.movement.set("speed", 30);
+      this.setAbilityScores(11, 16, 14, 13, 11, 10);
+      this.addProficiency("dex", "proficient");
+      this.addProficiency("int", "proficient");
+      this.addProficiency("Acrobatics", "proficient");
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Perception", "proficient");
+      this.addProficiency("Stealth", "expertise");
+      this.damageResponses.set("poison", "resist");
+      this.pb = 3;
+      this.addFeature(Assassinate);
+      this.addFeature(Evasion_default);
+      this.classLevels.set("Rogue", 8);
+      this.addFeature(SneakAttack_default);
+      this.addFeature(AssassinMultiattack);
+      const sword = new Shortsword(g).addEnchantment(assassinPoison);
+      const crossbow = new LightCrossbow(g).addEnchantment(assassinPoison);
+      this.give(sword, true);
+      this.give(crossbow, true);
+      this.don(wieldingCrossbow ? crossbow : sword);
+      this.addToInventory(new CrossbowBolt(g), Infinity);
+    }
+  };
+  var ThugMultiattack = makeMultiattack(
+    "The thug makes two melee attacks.",
+    (me, action) => {
+      if (me.attacksSoFar.length !== 1)
+        return false;
+      const [previous] = me.attacksSoFar;
+      return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
+    }
+  );
   var Thug = class extends Monster {
     constructor(g, wieldingCrossbow = false) {
       super(g, "thug", 0.5, "humanoid", SizeCategory_default.Medium, thug_default, 32);
@@ -8728,25 +10431,12 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       this.addProficiency("Intimidation", "proficient");
       this.languages.add("Common");
       this.addFeature(PackTactics);
-      this.addFeature(
-        makeMultiattack("The thug makes two melee attacks.", (me, action) => {
-          if (me.attacksSoFar.length !== 1)
-            return false;
-          const [previous] = me.attacksSoFar;
-          return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
-        })
-      );
+      this.addFeature(ThugMultiattack);
       const mace = new Mace(g);
       const crossbow = new HeavyCrossbow(g);
-      if (wieldingCrossbow) {
-        this.don(crossbow, true);
-        this.addToInventory(mace);
-        this.weaponProficiencies.add("mace");
-      } else {
-        this.don(mace, true);
-        this.addToInventory(crossbow);
-        this.weaponProficiencies.add("heavy crossbow");
-      }
+      this.give(mace, true);
+      this.give(crossbow, true);
+      this.don(wieldingCrossbow ? crossbow : mace);
       this.addToInventory(new CrossbowBolt(g), Infinity);
     }
   };
@@ -8763,6 +10453,10 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     "water elemental": (g) => new WaterElemental(g),
     goblin: (g) => new Goblin(g),
     "goblin [bow]": (g) => new Goblin(g, true),
+    acolyte: (g) => new Acolyte(g),
+    archmage: (g) => new Archmage(g),
+    assassin: (g) => new Assassin(g),
+    "assassin [crossbow]": (g) => new Assassin(g, true),
     thug: (g) => new Thug(g),
     "thug [crossbow]": (g) => new Thug(g, true),
     Birnotec: (g) => new Birnotec(g),
@@ -9415,16 +11109,8 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
   ];
   var laSet = (...items) => new Set(items);
 
-  // src/utils/gain.ts
-  function gains(fixed, amount, set) {
-    const result = fixed.map((value) => ({ type: "static", value }));
-    if (amount && set)
-      result.push({ type: "choice", amount, set: new Set(set) });
-    return result;
-  }
-
   // src/backgrounds/Acolyte.ts
-  var Acolyte = {
+  var Acolyte2 = {
     name: "Acolyte",
     description: `You have spent your life in the service of a temple to a specific god or pantheon of gods. You act as an intermediary between the realm of the holy and the mortal world, performing sacred rites and offering sacrifices in order to conduct worshipers into the presence of the divine. You are not necessarily a cleric\u2014performing sacred rites is not the same thing as channeling divine power. Choose a god, a pantheon of gods, or some other quasi-divine being from among those listed in "Fantasy-Historical Pantheons" or those specified by your GM, and work with your GM to detail the nature of your religious service. Were you a lesser functionary in a temple, raised from childhood to assist the priests in the sacred rites? Or were you a high priest who suddenly experienced a call to serve your god in a different way? Perhaps you were the leader of a small cult outside of any established temple structure, or even an occult group that served a fiendish master that you now deny.`,
     feature: {
@@ -9434,7 +11120,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     skills: gains(["Insight", "Religion"]),
     languages: gains([], 2, LanguageNames)
   };
-  var Acolyte_default = Acolyte;
+  var Acolyte_default = Acolyte2;
 
   // src/backgrounds/Criminal.ts
   var Criminal = {
@@ -9566,8 +11252,8 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     setup(g, item) {
       item.name = `adamantine ${item.name}`;
       item.rarity = "Uncommon";
-      g.events.on("Attack", ({ detail: { pre, outcome } }) => {
-        if (pre.target.armor === item)
+      g.events.on("Attack", ({ detail: { roll, outcome } }) => {
+        if (roll.type.target.armor === item)
           outcome.ignoreValue("critical");
       });
     }
@@ -9661,49 +11347,59 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       if (item.icon)
         item.icon.colour = ItemRarityColours.Rare;
       let charges = 1;
-      g.events.on("Attack", ({ detail: { interrupt, roll } }) => {
-        if (charges && roll.type.weapon === item)
-          interrupt.add(
-            new YesNoChoice(
-              roll.type.who,
-              ofTheDeep,
-              item.name,
-              "Speak the command word and emit a spray of acid?",
-              Priority_default.Late,
-              async () => {
-                charges--;
-                const damage = await g.rollDamage(4, {
-                  attacker: roll.type.who,
-                  damageType: "acid",
-                  size: 6,
-                  source: ofTheDeep,
-                  tags: atSet("magical")
-                });
-                const targets = g.getInside(
-                  { type: "within", radius: 10, who: roll.type.target },
-                  [roll.type.who]
-                );
-                for (const target of targets) {
-                  const { damageResponse } = await g.save({
+      g.events.on(
+        "Attack",
+        ({
+          detail: {
+            interrupt,
+            roll: {
+              type: { weapon, who: attacker, target }
+            }
+          }
+        }) => {
+          if (charges && weapon === item)
+            interrupt.add(
+              new YesNoChoice(
+                attacker,
+                ofTheDeep,
+                item.name,
+                "Speak the command word and emit a spray of acid?",
+                Priority_default.Late,
+                async () => {
+                  charges--;
+                  const damage = await g.rollDamage(4, {
+                    attacker,
+                    damageType: "acid",
+                    size: 6,
                     source: ofTheDeep,
-                    type: { type: "flat", dc: 13 },
-                    attacker: roll.type.who,
-                    who: target,
-                    ability: "dex",
-                    tags: ["magic"]
+                    tags: atSet("magical")
                   });
-                  await g.damage(
-                    ofTheDeep,
-                    "acid",
-                    { attacker: roll.type.who, target },
-                    [["acid", damage]],
-                    damageResponse
+                  const targets = g.getInside(
+                    { type: "within", radius: 10, who: target },
+                    [attacker]
                   );
+                  for (const target2 of targets) {
+                    const { damageResponse } = await g.save({
+                      source: ofTheDeep,
+                      type: { type: "flat", dc: 13 },
+                      attacker,
+                      who: target2,
+                      ability: "dex",
+                      tags: ["magic"]
+                    });
+                    await g.damage(
+                      ofTheDeep,
+                      "acid",
+                      { attacker, target: target2 },
+                      [["acid", damage]],
+                      damageResponse
+                    );
+                  }
                 }
-              }
-            )
-          );
-      });
+              )
+            );
+        }
+      );
     }
   };
   var ofTheDeep_default = ofTheDeep;
@@ -10143,121 +11839,6 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     }
   };
 
-  // src/img/spl/magic-missile.svg
-  var magic_missile_default = "./magic-missile-SXB2PGXZ.svg";
-
-  // src/resolvers/AllocationResolver.ts
-  function isAllocation(value) {
-    return typeof value === "object" && typeof value.amount === "number" && typeof value.who === "object";
-  }
-  function isAllocationArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const entry of value) {
-      if (!isAllocation(entry))
-        return false;
-    }
-    return true;
-  }
-  var AllocationResolver = class {
-    constructor(g, rangeName, minimum, maximum, maxRange, filters) {
-      this.g = g;
-      this.rangeName = rangeName;
-      this.minimum = minimum;
-      this.maximum = maximum;
-      this.maxRange = maxRange;
-      this.filters = filters;
-      this.type = "Allocations";
-    }
-    get name() {
-      let name = `${this.rangeName}: ${describeRange(
-        this.minimum,
-        this.maximum
-      )} allocations${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
-      for (const filter of this.filters)
-        name += `, ${filter.name}`;
-      return name;
-    }
-    check(value, action, ec) {
-      if (!isAllocationArray(value))
-        ec.add("No targets", this);
-      else {
-        const total = value.reduce((p, entry) => p + entry.amount, 0);
-        if (total < this.minimum)
-          ec.add(`At least ${this.minimum} allocations`, this);
-        if (total > this.maximum)
-          ec.add(`At most ${this.maximum} allocations`, this);
-        for (const { who } of value) {
-          const isOutOfRange = distance(action.actor, who) > this.maxRange;
-          const errors = this.filters.filter((filter) => !filter.check(this.g, action, who)).map((filter) => `${who.name}: ${filter.message}`);
-          if (isOutOfRange)
-            ec.add(`${who.name}: Out of range`, this);
-          ec.addMany(errors, this);
-        }
-      }
-      return ec;
-    }
-  };
-
-  // src/spells/level1/MagicMissile.ts
-  var getDamage = (slot) => [
-    _dd(slot + 2, 4, "force"),
-    _fd(slot + 2, "force")
-  ];
-  var MagicMissile = scalingSpell({
-    status: "implemented",
-    name: "Magic Missile",
-    icon: makeIcon(magic_missile_default, DamageColours.force),
-    level: 1,
-    school: "Evocation",
-    v: true,
-    s: true,
-    lists: ["Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
-
-  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.`,
-    // TODO: generateAttackConfigs
-    getConfig: (g, caster, method, { slot }) => ({
-      targets: new AllocationResolver(
-        g,
-        "Missiles",
-        (slot != null ? slot : 1) + 2,
-        (slot != null ? slot : 1) + 2,
-        120,
-        [canSee]
-      )
-    }),
-    getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
-    getTargets: (g, caster, { targets }) => {
-      var _a;
-      return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
-    },
-    getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
-    async apply(g, attacker, method, { targets }) {
-      const perBolt = await g.rollDamage(1, {
-        source: MagicMissile,
-        spell: MagicMissile,
-        method,
-        attacker,
-        damageType: "force",
-        size: 4,
-        tags: atSet("magical", "spell")
-      }) + 1;
-      for (const { amount, who } of targets) {
-        if (amount < 1)
-          continue;
-        await g.damage(
-          MagicMissile,
-          "force",
-          { spell: MagicMissile, method, target: who, attacker },
-          [["force", perBolt * amount]]
-        );
-      }
-    }
-  });
-  var MagicMissile_default = MagicMissile;
-
   // src/items/srd/wondrous/BroochOfShielding.ts
   var BroochOfShielding = class extends WondrousItemBase {
     constructor(g) {
@@ -10476,29 +12057,6 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       this.handler = handler;
       this.points = points;
       this.id = NaN;
-    }
-  };
-
-  // src/resolvers/PointResolver.ts
-  var PointResolver = class {
-    constructor(g, maxRange) {
-      this.g = g;
-      this.maxRange = maxRange;
-      this.type = "Point";
-    }
-    get name() {
-      if (this.maxRange === Infinity)
-        return "any point";
-      return `point within ${this.maxRange}'`;
-    }
-    check(value, action, ec) {
-      if (!isPoint(value))
-        ec.add("No target", this);
-      else {
-        if (distanceTo(action.actor, value) > this.maxRange)
-          ec.add("Out of range", this);
-      }
-      return ec;
     }
   };
 
@@ -10866,75 +12424,6 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     }
   };
 
-  // src/types/DifficultTerrainType.ts
-  var MundaneDifficultTerrainTypes = [
-    "ice",
-    "plants",
-    "rubble",
-    "snow",
-    "webs"
-  ];
-  var MagicalDifficultTerrainTypes = [
-    "magical ice",
-    "magical plants",
-    "magical rubble",
-    // ???
-    "magical snow",
-    "magical webs"
-  ];
-  var DifficultTerrainTypes = [
-    ...MundaneDifficultTerrainTypes,
-    ...MagicalDifficultTerrainTypes
-  ];
-
-  // src/classes/common.ts
-  function asiSetup(g, me, config) {
-    if (config.type === "ability")
-      for (const ability of config.abilities)
-        me[ability].score++;
-    else
-      me.addFeature(allFeatures_default[config.feat]);
-  }
-  function makeASI(className, level) {
-    return new ConfiguredFeature(
-      `Ability Score Improvement (${className} ${level})`,
-      `When you reach ${ordinal(
-        level
-      )} level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
-
-If your DM allows the use of feats, you may instead take a feat.`,
-      asiSetup
-    );
-  }
-  function makeExtraAttack(name, text, extra = 1) {
-    return new SimpleFeature(name, text, (g, me) => {
-      g.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.tags.has("costs attack") && action.actor === me && action.actor.attacksSoFar.length <= extra)
-          error.ignore(OneAttackPerTurnRule);
-      });
-    });
-  }
-  function makeLandsStride(text) {
-    const feature = new SimpleFeature("Land's Stride", text, (g, me) => {
-      featureNotComplete(feature, me);
-      g.events.on("GetMoveCost", ({ detail: { who, difficult } }) => {
-        if (who === me) {
-          for (const type of MundaneDifficultTerrainTypes)
-            difficult.ignoreValue(type);
-        }
-      });
-      g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && tags.has("impedes movement") && tags.has("plant"))
-          diceType.add("advantage", feature);
-      });
-    });
-    return feature;
-  }
-  var ChannelDivinityResource = new ShortRestResource(
-    "Channel Divinity",
-    1
-  );
-
   // src/items/wondrous/SilverShiningAmulet.ts
   var SilverShiningAmulet = class extends WondrousItemBase {
     constructor(g, charged = true) {
@@ -11091,133 +12580,6 @@ If your DM allows the use of feats, you may instead take a feat.`,
   };
   var allItems_default = allItems;
 
-  // src/spells/NormalSpellcasting.ts
-  var SpellSlots = {
-    full: [
-      [2],
-      [3],
-      [4, 2],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 2, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 1, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 1, 1, 1],
-      [4, 3, 3, 3, 3, 2, 2, 1, 1]
-    ],
-    half: [
-      [],
-      [2],
-      [3],
-      [4],
-      [4, 2],
-      [4, 2],
-      [4, 3],
-      [4, 3],
-      [4, 3, 2],
-      [4, 3, 2],
-      [4, 3, 3],
-      [4, 3, 3],
-      [4, 3, 3, 1],
-      [4, 3, 3, 1],
-      [4, 3, 3, 2],
-      [4, 3, 3, 2],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 1],
-      [4, 3, 3, 3, 2],
-      [4, 3, 3, 3, 2]
-    ]
-  };
-  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
-  var SpellSlotResources = enumerate(0, 9).map(
-    (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
-  );
-  function getMaxSpellSlotAvailable(who) {
-    for (let level = 1; level <= 9; level++) {
-      const name = getSpellSlotResourceName(level);
-      if (!who.resources.has(name))
-        return level - 1;
-    }
-    return 9;
-  }
-  var NormalSpellcasting = class {
-    constructor(name, text, ability, strength, className, spellList, icon) {
-      this.name = name;
-      this.text = text;
-      this.ability = ability;
-      this.strength = strength;
-      this.className = className;
-      this.spellList = spellList;
-      this.icon = icon;
-      this.entries = /* @__PURE__ */ new Map();
-      this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
-        var _a;
-        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
-        me.spellcastingMethods.add(this);
-        g.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me) {
-            for (const spell of me.preparedSpells) {
-              if (this.canCast(spell, who))
-                actions.push(new CastSpell(g, me, this, spell));
-            }
-          }
-        });
-      });
-    }
-    getEntry(who) {
-      const entry = this.entries.get(who);
-      if (!entry)
-        throw new Error(
-          `${who.name} has not initialised their ${this.name} spellcasting method.`
-        );
-      return entry;
-    }
-    canCast(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      return spell.lists.includes(this.spellList) || spells.has(spell);
-    }
-    addCastableSpell(spell, caster) {
-      const { spells } = this.getEntry(caster);
-      spells.add(spell);
-    }
-    initialise(who, casterLevel) {
-      const slots = SpellSlots[this.strength][casterLevel - 1];
-      const resources = [];
-      for (let i2 = 0; i2 < slots.length; i2++) {
-        const resource = SpellSlotResources[i2 + 1];
-        who.initResource(resource, slots[i2]);
-        resources.push(resource);
-      }
-      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
-    }
-    getMinSlot(spell) {
-      return spell.level;
-    }
-    getMaxSlot(spell, who) {
-      if (!spell.scaling)
-        return spell.level;
-      const { resources } = this.getEntry(who);
-      return resources.length;
-    }
-    getResourceForSpell(spell, level, who) {
-      const { resources } = this.getEntry(who);
-      return resources[level - 1];
-    }
-    getSaveType() {
-      return { type: "ability", ability: this.ability };
-    }
-  };
-
   // src/classes/artificer/FlashOfGenius.ts
   var FlashOfGeniusResource = new LongRestResource("Flash of Genius", 1);
   var FlashOfGeniusAction = class extends AbstractAction {
@@ -11358,11 +12720,11 @@ While holding the object, a creature can take an action to produce the spell's e
 - You gain a +1 bonus to all saving throws per magic item you are currently attuned to.
 - If you're reduced to 0 hit points but not killed outright, you can use your reaction to end one of your artificer infusions, causing you to drop to 1 hit point instead of 0.`
   );
-  var ASI4 = makeASI("Artificer", 4);
-  var ASI8 = makeASI("Artificer", 8);
-  var ASI12 = makeASI("Artificer", 12);
-  var ASI16 = makeASI("Artificer", 16);
-  var ASI19 = makeASI("Artificer", 19);
+  var ASI43 = makeASI("Artificer", 4);
+  var ASI83 = makeASI("Artificer", 8);
+  var ASI123 = makeASI("Artificer", 12);
+  var ASI163 = makeASI("Artificer", 16);
+  var ASI193 = makeASI("Artificer", 19);
   var Artificer = {
     name: "Artificer",
     hitDieSize: 8,
@@ -11388,17 +12750,17 @@ While holding the object, a creature can take an action to produce the spell's e
       [1, [MagicalTinkering, ArtificerSpellcasting.feature]],
       [2, [InfuseItem]],
       [3, [TheRightToolForTheJob]],
-      [4, [ASI4]],
+      [4, [ASI43]],
       [6, [ToolExpertise]],
       [7, [FlashOfGenius_default]],
-      [8, [ASI8]],
+      [8, [ASI83]],
       [10, [MagicItemAdept]],
       [11, [SpellStoringItem]],
-      [12, [ASI12]],
+      [12, [ASI123]],
       [14, [MagicItemSavant]],
-      [16, [ASI16]],
+      [16, [ASI163]],
       [18, [MagicItemMaster]],
-      [19, [ASI19]],
+      [19, [ASI193]],
       [20, [SoulOfArtifice]]
     ])
   };
@@ -11495,7 +12857,7 @@ While holding the object, a creature can take an action to produce the spell's e
         "GatherDamage",
         ({ detail: { attacker, attack, ability, bonus } }) => {
           var _a;
-          if (attacker && isRaging(attacker) && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]) && ability === "str")
+          if (attacker && isRaging(attacker) && hasAll(attack == null ? void 0 : attack.roll.type.tags, ["melee", "weapon"]) && ability === "str")
             bonus.add(
               getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
               RageEffect
@@ -11755,7 +13117,11 @@ Each time you use this feature after the first, the DC increases by 5. When you 
             ac += me.shield.ac;
             uses.add(me.shield);
           }
-          methods.push({ name: "Unarmored Defense", ac, uses });
+          methods.push({
+            name: "Unarmored Defense",
+            ac,
+            uses
+          });
         }
       });
     }
@@ -11857,7 +13223,7 @@ This increases to two additional dice at 13th level and three additional dice at
             bonus
           }
         }) => {
-          if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && critical) {
+          if (attacker === me && (attack == null ? void 0 : attack.roll.type.tags.has("melee")) && critical) {
             const base = weapon == null ? void 0 : weapon.damage;
             if ((base == null ? void 0 : base.type) === "dice") {
               interrupt.add(
@@ -11875,7 +13241,7 @@ This increases to two additional dice at 13th level and three additional dice at
                         size: base.amount.size,
                         target,
                         weapon,
-                        tags: attack.pre.tags
+                        tags: attack.roll.type.tags
                       },
                       false
                     );
@@ -11907,11 +13273,11 @@ This increases to two additional dice at 13th level and three additional dice at
       me.con.score += 4;
     }
   );
-  var ASI42 = makeASI("Barbarian", 4);
-  var ASI82 = makeASI("Barbarian", 8);
-  var ASI122 = makeASI("Barbarian", 12);
-  var ASI162 = makeASI("Barbarian", 16);
-  var ASI192 = makeASI("Barbarian", 19);
+  var ASI44 = makeASI("Barbarian", 4);
+  var ASI84 = makeASI("Barbarian", 8);
+  var ASI124 = makeASI("Barbarian", 12);
+  var ASI164 = makeASI("Barbarian", 16);
+  var ASI194 = makeASI("Barbarian", 19);
   var Barbarian = {
     name: "Barbarian",
     hitDieSize: 12,
@@ -11935,17 +13301,17 @@ This increases to two additional dice at 13th level and three additional dice at
       [1, [Rage_default, BarbarianUnarmoredDefense]],
       [2, [DangerSense, RecklessAttack]],
       [3, [PrimalKnowledge]],
-      [4, [ASI42]],
+      [4, [ASI44]],
       [5, [ExtraAttack, FastMovement]],
       [7, [FeralInstinct, InstinctivePounce]],
-      [8, [ASI82]],
+      [8, [ASI84]],
       [9, [BrutalCritical]],
       [11, [RelentlessRage_default]],
-      [12, [ASI122]],
+      [12, [ASI124]],
       [15, [PersistentRage]],
-      [16, [ASI162]],
+      [16, [ASI164]],
       [18, [IndomitableMight]],
-      [19, [ASI192]],
+      [19, [ASI194]],
       [20, [PrimalChampion]]
     ])
   };
@@ -12032,7 +13398,7 @@ This increases to two additional dice at 13th level and three additional dice at
       g.events.on(
         "GetDamageResponse",
         ({ detail: { who, attack, damageType, response } }) => {
-          if (who.hasEffect(BladeWardEffect) && (attack == null ? void 0 : attack.pre.weapon) && isA(damageType, MundaneDamageTypes))
+          if (who.hasEffect(BladeWardEffect) && (attack == null ? void 0 : attack.roll.type.weapon) && isA(damageType, MundaneDamageTypes))
             response.add("resist", BladeWardEffect);
         }
       );
@@ -12100,53 +13466,19 @@ This increases to two additional dice at 13th level and three additional dice at
       const rsa = new SpellAttack(g, caster, ChillTouch, method, "ranged", {
         target
       });
-      const { hit, attack } = await rsa.attack(target);
+      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(attack.pre.target);
-        await rsa.damage(attack.pre.target, damage);
-        await target.addEffect(ChillTouchEffect, { duration: 2, caster }, caster);
+        const damage = await rsa.getDamage(victim);
+        await rsa.damage(victim, damage);
+        await target.addEffect(
+          ChillTouchEffect,
+          { duration: 2, caster, method },
+          caster
+        );
       }
     }
   });
   var ChillTouch_default = ChillTouch;
-
-  // src/img/spl/fire-bolt.svg
-  var fire_bolt_default = "./fire-bolt-OQ6JULT4.svg";
-
-  // src/spells/cantrip/FireBolt.ts
-  var FireBolt = simpleSpell({
-    status: "implemented",
-    name: "Fire Bolt",
-    icon: makeIcon(fire_bolt_default, DamageColours.fire),
-    level: 0,
-    school: "Evocation",
-    v: true,
-    s: true,
-    lists: ["Artificer", "Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
-
-  This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
-        target
-      });
-      const { hit, attack } = await rsa.attack(target);
-      if (hit) {
-        const damage = await rsa.getDamage(attack.pre.target);
-        await rsa.damage(attack.pre.target, damage);
-      }
-    }
-  });
-  var FireBolt_default = FireBolt;
 
   // src/spells/cantrip/Gust.ts
   var Gust = simpleSpell({
@@ -12240,11 +13572,11 @@ This increases to two additional dice at 13th level and three additional dice at
             size: 6,
             damageType: "bludgeoning",
             attacker: actor,
-            target: attack.pre.target,
-            ability: attack.pre.ability,
+            target: attack.roll.type.target,
+            ability: attack.roll.type.ability,
             spell: MagicStone,
-            method: attack.pre.method,
-            tags: attack.pre.tags
+            method: attack.roll.type.method,
+            tags: attack.roll.type.tags
           },
           critical
         );
@@ -12254,11 +13586,11 @@ This increases to two additional dice at 13th level and three additional dice at
           {
             attack,
             attacker: actor,
-            target: attack.pre.target,
-            ability: attack.pre.ability,
+            target: attack.roll.type.target,
+            ability: attack.roll.type.ability,
             critical,
             spell: MagicStone,
-            method: attack.pre.method
+            method: attack.roll.type.method
           },
           [["bludgeoning", amount]]
         );
@@ -12469,10 +13801,10 @@ This increases to two additional dice at 13th level and three additional dice at
       const rsa = new SpellAttack(g, attacker, PrimalSavagery, method, "melee", {
         target
       });
-      const { hit, attack } = await rsa.attack(target);
+      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(attack.pre.target);
-        await rsa.damage(attack.pre.target, damage);
+        const damage = await rsa.getDamage(victim);
+        await rsa.damage(victim, damage);
       }
     }
   });
@@ -12505,10 +13837,10 @@ This increases to two additional dice at 13th level and three additional dice at
       const rsa = new SpellAttack(g, caster, ProduceFlame, method, "ranged", {
         target
       });
-      const { hit, attack } = await rsa.attack(target);
+      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(attack.pre.target);
-        await rsa.damage(attack.pre.target, damage);
+        const damage = await rsa.getDamage(victim);
+        await rsa.damage(victim, damage);
       }
     }
   });
@@ -12554,97 +13886,15 @@ This increases to two additional dice at 13th level and three additional dice at
       const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
         target
       });
-      const { hit, attack } = await rsa.attack(target);
+      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(attack.pre.target);
-        await rsa.damage(attack.pre.target, damage);
-        await attack.pre.target.addEffect(
-          RayOfFrostEffect,
-          { duration: 2 },
-          attacker
-        );
+        const damage = await rsa.getDamage(victim);
+        await rsa.damage(victim, damage);
+        await victim.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
       }
     }
   });
   var RayOfFrost_default = RayOfFrost;
-
-  // src/spells/cantrip/SacredFlame.ts
-  var SacredFlame = simpleSpell({
-    status: "incomplete",
-    name: "Sacred Flame",
-    level: 0,
-    school: "Evocation",
-    v: true,
-    s: true,
-    lists: ["Cleric"],
-    isHarmful: true,
-    description: `Flame-like radiance descends on a creature that you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw.
-
-  The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf, canSee]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const damage = await g.rollDamage(getCantripDice(attacker), {
-        size: 8,
-        attacker,
-        damageType: "radiant",
-        spell: SacredFlame,
-        method,
-        source: SacredFlame,
-        target,
-        tags: atSet("magical", "spell")
-      });
-      const { damageResponse } = await g.save({
-        source: SacredFlame,
-        type: method.getSaveType(attacker, SacredFlame),
-        attacker,
-        who: target,
-        ability: "dex",
-        spell: SacredFlame,
-        method,
-        save: "zero",
-        tags: ["magic"]
-      });
-      await g.damage(
-        SacredFlame,
-        "radiant",
-        { attacker, target, spell: SacredFlame, method },
-        [["radiant", damage]],
-        damageResponse
-      );
-    }
-  });
-  var SacredFlame_default = SacredFlame;
-
-  // src/spells/cantrip/Thaumaturgy.ts
-  var Thaumaturgy = simpleSpell({
-    name: "Thaumaturgy",
-    level: 0,
-    school: "Transmutation",
-    v: true,
-    lists: ["Cleric"],
-    description: `You manifest a minor wonder, a sign of supernatural power, within range. You create one of the following magical effects within range:
-  - Your voice booms up to three times as loud as normal for 1 minute.
-  - You cause flames to flicker, brighten, dim, or change color for 1 minute.
-  - You cause harmless tremors in the ground for 1 minute.
-  - You create an instantaneous sound that originates from a point of your choice within range, such as a rumble of thunder, the cry of a raven, or ominous whispers.
-  - You instantaneously cause an unlocked door or window to fly open or slam shut.
-  - You alter the appearance of your eyes for 1 minute.
-
-  If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time, and you can dismiss such an effect as an action.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    getAffected: () => [],
-    async apply() {
-    }
-  });
-  var Thaumaturgy_default = Thaumaturgy;
 
   // src/spells/cantrip/Thunderclap.ts
   var getThunderclapArea = (who) => ({
@@ -12704,67 +13954,6 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     }
   });
   var Thunderclap_default = Thunderclap;
-
-  // src/img/spl/bless.svg
-  var bless_default = "./bless-VVWIP7W3.svg";
-
-  // src/spells/level1/Bless.ts
-  var BlessIcon = makeIcon(bless_default);
-  function applyBless(g, who, bonus) {
-    if (who.hasEffect(BlessEffect)) {
-      const { values } = g.dice.roll({ type: "bless", who });
-      bonus.add(values.final, BlessEffect);
-    }
-  }
-  var BlessEffect = new Effect(
-    "Bless",
-    "turnEnd",
-    (g) => {
-      g.events.on(
-        "BeforeAttack",
-        ({ detail: { bonus, who } }) => applyBless(g, who, bonus)
-      );
-      g.events.on(
-        "BeforeSave",
-        ({ detail: { bonus, who } }) => applyBless(g, who, bonus)
-      );
-    },
-    { icon: BlessIcon, tags: ["magic"] }
-  );
-  var Bless = scalingSpell({
-    status: "implemented",
-    name: "Bless",
-    icon: BlessIcon,
-    level: 1,
-    school: "Enchantment",
-    concentration: true,
-    v: true,
-    s: true,
-    m: "a sprinkling of holy water",
-    lists: ["Cleric", "Paladin"],
-    description: `You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.
-
-  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
-    getConfig: (g, caster, method, { slot }) => ({
-      targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, [])
-    }),
-    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
-    getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { targets }) {
-      const duration = minutes(1);
-      for (const target of targets)
-        await target.addEffect(BlessEffect, { duration }, caster);
-      await caster.concentrateOn({
-        spell: Bless,
-        duration,
-        onSpellEnd: async () => {
-          for (const target of targets)
-            await target.removeEffect(BlessEffect);
-        }
-      });
-    }
-  });
-  var Bless_default = Bless;
 
   // src/spells/level1/BurningHands.ts
   var getBurningHandsArea = (centre, target) => ({
@@ -12893,55 +14082,6 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     }
   });
   var Command_default = Command;
-
-  // src/spells/level1/CureWounds.ts
-  var cannotHeal3 = ctSet("undead", "construct");
-  var CureWounds = scalingSpell({
-    status: "incomplete",
-    name: "Cure Wounds",
-    level: 1,
-    school: "Evocation",
-    v: true,
-    s: true,
-    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
-    description: `A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
-
-  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [
-        notOfCreatureType("undead", "construct")
-      ])
-    }),
-    getHeal: (g, caster, method, { slot }) => {
-      const modifier = method.ability ? caster[method.ability].modifier : 0;
-      const count = slot != null ? slot : 1;
-      return [
-        { type: "dice", amount: { count, size: 8 } },
-        { type: "flat", amount: modifier }
-      ];
-    },
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    async apply(g, actor, method, { slot, target }) {
-      if (cannotHeal3.has(target.type))
-        return;
-      const modifier = method.ability ? actor[method.ability].modifier : 0;
-      const rolled = await g.rollHeal(slot, {
-        source: CureWounds,
-        actor,
-        target,
-        spell: CureWounds,
-        method,
-        size: 8
-      });
-      await g.heal(CureWounds, rolled + modifier, {
-        actor,
-        spell: CureWounds,
-        target
-      });
-    }
-  });
-  var CureWounds_default = CureWounds;
 
   // src/spells/level1/DivineFavor.ts
   var DivineFavorEffect = new Effect(
@@ -13419,11 +14559,11 @@ At the end of each of its turns, and each time it takes damage, the target can m
             source: IceKnife,
             size: 10,
             attacker,
-            target: attack.pre.target,
+            target: attack.roll.type.target,
             spell: IceKnife,
-            method: attack.pre.method,
+            method: attack.roll.type.method,
             damageType: "piercing",
-            tags: attack.pre.tags
+            tags: attack.roll.type.tags
           },
           critical
         );
@@ -13433,9 +14573,9 @@ At the end of each of its turns, and each time it takes damage, the target can m
           {
             attack,
             attacker,
-            target: attack.pre.target,
+            target: attack.roll.type.target,
             spell: IceKnife,
-            method: attack.pre.method,
+            method: attack.roll.type.method,
             critical
           },
           [["piercing", damage2]]
@@ -13549,115 +14689,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
   });
   var ProtectionFromEvilAndGood_default = ProtectionFromEvilAndGood;
-
-  // src/spells/level1/Sanctuary.ts
-  var sanctuaryEffects = /* @__PURE__ */ new Map();
-  var getSanctuaryEffects = (attacker) => {
-    var _a;
-    const set = (_a = sanctuaryEffects.get(attacker.id)) != null ? _a : /* @__PURE__ */ new Set();
-    if (!sanctuaryEffects.has(attacker.id))
-      sanctuaryEffects.set(attacker.id, set);
-    return set;
-  };
-  var SanctuaryEffect = new Effect(
-    "Sanctuary",
-    "turnStart",
-    (g) => {
-      g.events.on("BattleStarted", () => {
-        sanctuaryEffects.clear();
-      });
-      g.events.on(
-        "TurnStarted",
-        ({ detail: { who } }) => getSanctuaryEffects(who).clear()
-      );
-      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
-        var _a, _b;
-        if (!action.tags.has("harmful"))
-          return;
-        const effects = getSanctuaryEffects(action.actor);
-        const targets = (_b = (_a = action.getTargets(config)) == null ? void 0 : _a.filter((who) => who.hasEffect(SanctuaryEffect))) != null ? _b : [];
-        for (const target of targets) {
-          if (effects.has(target.id))
-            error.add("in Sanctuary", SanctuaryEffect);
-        }
-      });
-      g.events.on("BeforeAttack", ({ detail: { target, interrupt, who } }) => {
-        const config = target.getEffectConfig(SanctuaryEffect);
-        if (config)
-          interrupt.add(
-            new EvaluateLater(
-              who,
-              SanctuaryEffect,
-              Priority_default.ChangesOutcome,
-              async () => {
-                const { outcome } = await g.save({
-                  source: SanctuaryEffect,
-                  type: config.method.getSaveType(config.caster, Sanctuary),
-                  who,
-                  ability: "wis",
-                  tags: ["charm", "magic"]
-                });
-                if (outcome === "fail") {
-                  g.text(
-                    new MessageBuilder().co(who).text(" fails to break ").co(target).nosp().text("'s Sanctuary.")
-                  );
-                  getSanctuaryEffects(who).add(target.id);
-                }
-              }
-            )
-          );
-      });
-      const getRemover = (who) => new EvaluateLater(
-        who,
-        SanctuaryEffect,
-        Priority_default.Normal,
-        () => who.removeEffect(SanctuaryEffect)
-      );
-      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-        if (pre.who.hasEffect(SanctuaryEffect))
-          interrupt.add(getRemover(pre.who));
-      });
-      g.events.on("SpellCast", ({ detail: { who, affected, interrupt } }) => {
-        if (who.hasEffect(SanctuaryEffect))
-          for (const target of affected) {
-            if (target.side !== who.side) {
-              interrupt.add(getRemover(target));
-              return;
-            }
-          }
-      });
-      g.events.on("CombatantDamaged", ({ detail: { attacker, interrupt } }) => {
-        if (attacker == null ? void 0 : attacker.hasEffect(SanctuaryEffect))
-          interrupt.add(getRemover(attacker));
-      });
-    },
-    { tags: ["magic"] }
-  );
-  var Sanctuary = simpleSpell({
-    status: "incomplete",
-    name: "Sanctuary",
-    level: 1,
-    school: "Abjuration",
-    time: "bonus action",
-    v: true,
-    s: true,
-    m: "a small silver mirror",
-    lists: ["Artificer", "Cleric"],
-    description: `You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball.
-
-  If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
-      await target.addEffect(
-        SanctuaryEffect,
-        { caster, method, duration: minutes(1) },
-        caster
-      );
-    }
-  });
-  var Sanctuary_default = Sanctuary;
 
   // src/img/spl/shield.svg
   var shield_default = "./shield-6WKZRKVU.svg";
@@ -14474,50 +15505,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var MagicWeapon_default = MagicWeapon;
 
-  // src/spells/level2/MirrorImage.ts
-  var MirrorImage = simpleSpell({
-    name: "Mirror Image",
-    level: 2,
-    school: "Illusion",
-    v: true,
-    s: true,
-    lists: ["Sorcerer", "Warlock", "Wizard"],
-    description: `Three illusory duplicates of yourself appear in your space. Until the spell ends, the duplicates move with you and mimic your actions, shifting position so it's impossible to track which image is real. You can use your action to dismiss the illusory duplicates.
-
-  Each time a creature targets you with an attack during the spell's duration, roll a d20 to determine whether the attack instead targets one of your duplicates.
-
-  If you have three duplicates, you must roll a 6 or higher to change the attack's target to a duplicate. With two duplicates, you must roll an 8 or higher. With one duplicate, you must roll an 11 or higher.
-
-  A duplicate's AC equals 10 + your Dexterity modifier. If an attack hits a duplicate, the duplicate is destroyed. A duplicate can be destroyed only by an attack that hits it. It ignores all other damage and effects. The spell ends when all three duplicates are destroyed.
-
-  A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    getAffected: (g, caster) => [caster],
-    async apply() {
-    }
-  });
-  var MirrorImage_default = MirrorImage;
-
-  // src/spells/level2/MistyStep.ts
-  var MistyStep = simpleSpell({
-    status: "implemented",
-    name: "Misty Step",
-    level: 2,
-    school: "Conjuration",
-    time: "bonus action",
-    v: true,
-    lists: ["Sorcerer", "Warlock", "Wizard"],
-    description: `Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.`,
-    getConfig: (g) => ({ point: new PointResolver(g, 30) }),
-    getTargets: () => [],
-    getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, { point }) {
-      await g.move(caster, point, getTeleportation(30, "Misty Step"));
-    }
-  });
-  var MistyStep_default = MistyStep;
-
   // src/img/spl/moonbeam.svg
   var moonbeam_default = "./moonbeam-6R5LN2M5.svg";
 
@@ -15087,121 +16074,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var IntellectFortress_default = IntellectFortress;
 
-  // src/img/spl/lightning-bolt.svg
-  var lightning_bolt_default = "./lightning-bolt-OXAGJ6WI.svg";
-
-  // src/aim.ts
-  var eighth = Math.PI / 4;
-  var eighthOffset = eighth / 2;
-  var octant1 = eighthOffset;
-  var octant2 = octant1 + eighth;
-  var octant3 = octant2 + eighth;
-  var octant4 = octant3 + eighth;
-  var octant5 = octant4 + eighth;
-  var octant6 = octant5 + eighth;
-  var octant7 = octant6 + eighth;
-  var octant8 = octant7 + eighth;
-  function getAimOffset(a, b) {
-    let angle = Math.atan2(b.y - a.y, b.x - a.x);
-    if (angle < 0)
-      angle += Math.PI * 2;
-    if (angle < octant1)
-      return { x: 1, y: 0.5 };
-    else if (angle < octant2)
-      return { x: 1, y: 1 };
-    else if (angle < octant3)
-      return { x: 0.5, y: 1 };
-    else if (angle < octant4)
-      return { x: 0, y: 1 };
-    else if (angle < octant5)
-      return { x: 0, y: 0.5 };
-    else if (angle < octant6)
-      return { x: 0, y: 0 };
-    else if (angle < octant7)
-      return { x: 0.5, y: 0 };
-    else if (angle < octant8)
-      return { x: 1, y: 0 };
-    return { x: 1, y: 0.5 };
-  }
-  function aimCone(position, size, aim, radius) {
-    const offset = getAimOffset(position, aim);
-    return {
-      type: "cone",
-      radius,
-      centre: addPoints(position, mulPoint(offset, size)),
-      target: addPoints(aim, mulPoint(offset, MapSquareSize))
-    };
-  }
-  function aimLine(position, size, aim, length, width) {
-    const offset = getAimOffset(position, aim);
-    return {
-      type: "line",
-      length,
-      width,
-      start: addPoints(position, mulPoint(offset, size)),
-      target: addPoints(aim, mulPoint(offset, MapSquareSize))
-    };
-  }
-
-  // src/spells/level3/LightningBolt.ts
-  var getLightningBoltArea = (actor, point) => aimLine(actor.position, actor.sizeInUnits, point, 100, 5);
-  var LightningBolt = scalingSpell({
-    status: "implemented",
-    name: "Lightning Bolt",
-    icon: makeIcon(lightning_bolt_default, DamageColours.lightning),
-    level: 3,
-    school: "Evocation",
-    v: true,
-    s: true,
-    m: "a bit of fur and a rod of amber, crystal, or glass",
-    lists: ["Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a Dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much damage on a successful one.
-
-  The lightning ignites flammable objects in the area that aren't being worn or carried.
-
-  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
-    // TODO: generateAttackConfigs
-    getConfig: (g) => ({ point: new PointResolver(g, 100) }),
-    getDamage: (g, caster, method, { slot }) => [
-      _dd((slot != null ? slot : 3) + 5, 6, "lightning")
-    ],
-    getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(caster, point)],
-    getTargets: () => [],
-    getAffected: (g, caster, { point }) => g.getInside(getLightningBoltArea(caster, point)),
-    async apply(g, attacker, method, { slot, point }) {
-      const damage = await g.rollDamage(5 + slot, {
-        source: LightningBolt,
-        size: 6,
-        spell: LightningBolt,
-        method,
-        damageType: "lightning",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
-        const save = await g.save({
-          source: LightningBolt,
-          type: method.getSaveType(attacker, LightningBolt, slot),
-          attacker,
-          ability: "dex",
-          spell: LightningBolt,
-          method,
-          who: target,
-          tags: ["magic"]
-        });
-        await g.damage(
-          LightningBolt,
-          "lightning",
-          { attacker, spell: LightningBolt, method, target },
-          [["lightning", damage]],
-          save.damageResponse
-        );
-      }
-    }
-  });
-  var LightningBolt_default = LightningBolt;
-
   // src/spells/level3/MeldIntoStone.ts
   var MeldIntoStone = simpleSpell({
     name: "Meld into Stone",
@@ -15670,7 +16542,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
-          if ((attacker == null ? void 0 : attacker.hasEffect(PrimalBeastEffect)) && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
+          if ((attacker == null ? void 0 : attacker.hasEffect(PrimalBeastEffect)) && (attack == null ? void 0 : attack.roll.type.tags.has("melee")) && attack.roll.type.tags.has("weapon"))
             interrupt.add(
               new EvaluateLater(
                 attacker,
@@ -15801,51 +16673,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var IceStorm_default = IceStorm;
 
-  // src/spells/level4/Stoneskin.ts
-  var StoneskinEffect = new Effect(
-    "Stoneskin",
-    "turnStart",
-    (g) => {
-      g.events.on(
-        "GetDamageResponse",
-        ({ detail: { who, damageType, response, attack } }) => {
-          if (who.hasEffect(StoneskinEffect) && !(attack == null ? void 0 : attack.pre.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
-            response.add("resist", StoneskinEffect);
-        }
-      );
-    },
-    { tags: ["magic"] }
-  );
-  var Stoneskin = simpleSpell({
-    status: "implemented",
-    name: "Stoneskin",
-    level: 4,
-    school: "Abjuration",
-    concentration: true,
-    v: true,
-    s: true,
-    m: "diamond dust worth 100gp, which the spell consumes",
-    lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
-    description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [isAlly])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
-      const duration = hours(1);
-      await target.addEffect(StoneskinEffect, { duration }, caster);
-      await caster.concentrateOn({
-        spell: Stoneskin,
-        duration,
-        async onSpellEnd() {
-          await target.removeEffect(StoneskinEffect);
-        }
-      });
-    }
-  });
-  var Stoneskin_default = Stoneskin;
-
   // src/img/spl/fire-wall.svg
   var fire_wall_default = "./fire-wall-4N3WP5XV.svg";
 
@@ -15885,67 +16712,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var WallOfFire_default = WallOfFire;
 
-  // src/spells/level5/ConeOfCold.ts
-  var getConeOfColdArea = (caster, target) => ({
-    type: "cone",
-    radius: 60,
-    centre: caster.position,
-    target
-  });
-  var ConeOfCold = scalingSpell({
-    status: "implemented",
-    name: "Cone of Cold",
-    level: 5,
-    school: "Evocation",
-    v: true,
-    s: true,
-    m: "a small crystal or glass cone",
-    lists: ["Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `A blast of cold air erupts from your hands. Each creature in a 60-foot cone must make a Constitution saving throw. A creature takes 8d8 cold damage on a failed save, or half as much damage on a successful one.
-
-  A creature killed by this spell becomes a frozen statue until it thaws.
-
-  At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.`,
-    // TODO: generateAttackConfigs
-    getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-    getDamage: (g, caster, method, { slot }) => [_dd(3 + (slot != null ? slot : 5), 8, "cold")],
-    getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(caster, point)],
-    getTargets: () => [],
-    getAffected: (g, caster, { point }) => g.getInside(getConeOfColdArea(caster, point)),
-    async apply(g, attacker, method, { slot, point }) {
-      const damage = await g.rollDamage(3 + slot, {
-        source: ConeOfCold,
-        size: 8,
-        spell: ConeOfCold,
-        method,
-        damageType: "cold",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
-        const save = await g.save({
-          source: ConeOfCold,
-          type: method.getSaveType(attacker, ConeOfCold, slot),
-          attacker,
-          ability: "con",
-          spell: ConeOfCold,
-          method,
-          who: target,
-          tags: ["magic"]
-        });
-        await g.damage(
-          ConeOfCold,
-          "cold",
-          { attacker, spell: ConeOfCold, method, target },
-          [["cold", damage]],
-          save.damageResponse
-        );
-      }
-    }
-  });
-  var ConeOfCold_default = ConeOfCold;
-
   // src/data/allSpells.ts
   var allSpells = {
     "acid splash": AcidSplash_default,
@@ -15977,6 +16743,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "hellish rebuke": HellishRebuke_default,
     "hideous laughter": HideousLaughter_default,
     "ice knife": IceKnife_default,
+    "mage armor": MageArmor_default,
     "magic missile": MagicMissile_default,
     "protection from evil and good": ProtectionFromEvilAndGood_default,
     sanctuary: Sanctuary_default,
@@ -16123,11 +16890,11 @@ You learn two additional spells from any classes at 14th level and again at 18th
       });
     }
   );
-  var ASI43 = makeASI("Bard", 4);
-  var ASI83 = makeASI("Bard", 8);
-  var ASI123 = makeASI("Bard", 12);
-  var ASI163 = makeASI("Bard", 16);
-  var ASI193 = makeASI("Bard", 19);
+  var ASI45 = makeASI("Bard", 4);
+  var ASI85 = makeASI("Bard", 8);
+  var ASI125 = makeASI("Bard", 12);
+  var ASI165 = makeASI("Bard", 16);
+  var ASI195 = makeASI("Bard", 19);
   var Bard = {
     name: "Bard",
     hitDieSize: 8,
@@ -16147,338 +16914,18 @@ You learn two additional spells from any classes at 14th level and again at 18th
       [1, [BardicInspiration_default, BardSpellcasting.feature]],
       [2, [JackOfAllTrades, SongOfRest, MagicalInspiration]],
       [3, [Expertise]],
-      [4, [ASI43, BardicVersatility]],
+      [4, [ASI45, BardicVersatility]],
       [5, [FontOfInspiration]],
       [6, [Countercharm]],
-      [8, [ASI83]],
+      [8, [ASI85]],
       [10, [MagicalSecrets]],
-      [12, [ASI123]],
-      [16, [ASI163]],
-      [19, [ASI193]],
+      [12, [ASI125]],
+      [16, [ASI165]],
+      [19, [ASI195]],
       [20, [SuperiorInspiration]]
     ])
   };
   var bard_default = Bard;
-
-  // src/classes/cleric/ChannelDivinity.ts
-  function getChannelCount(level) {
-    if (level < 6)
-      return 1;
-    if (level < 18)
-      return 2;
-    return 3;
-  }
-  var ChannelDivinity = new SimpleFeature(
-    "Channel Divinity",
-    `Your oath allows you to channel divine energy to fuel magical effects. Each Channel Divinity option provided by your oath explains how to use it.
-When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
-Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
-    (g, me) => {
-      var _a;
-      me.initResource(
-        ChannelDivinityResource,
-        getChannelCount((_a = me.classLevels.get("Cleric")) != null ? _a : 1)
-      );
-    }
-  );
-  var ChannelDivinity_default = ChannelDivinity;
-
-  // src/classes/cleric/HarnessDivinePower.ts
-  var HarnessDivinePowerResource = new LongRestResource(
-    "Harness Divine Power",
-    1
-  );
-  var HarnessDivinePowerAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Harness Divine Power",
-        "implemented",
-        {
-          slot: new ChoiceResolver(
-            g,
-            enumerate(1, 9).filter(
-              (slot) => actor.resources.has(getSpellSlotResourceName(slot))
-            ).map((value) => {
-              const resource = SpellSlotResources[value];
-              return {
-                label: ordinal(value),
-                value,
-                disabled: actor.getResourceMax(resource) <= actor.getResource(resource)
-              };
-            })
-          )
-        },
-        {
-          time: "bonus action",
-          resources: [
-            [ChannelDivinityResource, 1],
-            [HarnessDivinePowerResource, 1]
-          ],
-          description: `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`
-        }
-      );
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    check({ slot }, ec) {
-      if (slot) {
-        const resource = SpellSlotResources[slot];
-        if (this.actor.getResource(resource) >= this.actor.getResourceMax(resource))
-          ec.add(`full on ${resource.name}`, this);
-      }
-      return super.check({ slot }, ec);
-    }
-    async apply({ slot }) {
-      await super.apply({ slot });
-      this.actor.giveResource(SpellSlotResources[slot], 1);
-    }
-  };
-  function getHarnessCount(level) {
-    if (level < 6)
-      return 1;
-    if (level < 18)
-      return 2;
-    return 3;
-  }
-  var HarnessDivinePower = new SimpleFeature(
-    "Channel Divinity: Harness Divine Power",
-    `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`,
-    (g, me) => {
-      var _a;
-      me.initResource(
-        HarnessDivinePowerResource,
-        getHarnessCount((_a = me.classLevels.get("Cleric")) != null ? _a : 2)
-      );
-      g.events.on("GetActions", ({ detail: { actions, who } }) => {
-        if (who === me)
-          actions.push(new HarnessDivinePowerAction(g, me));
-      });
-    }
-  );
-  var HarnessDivinePower_default = HarnessDivinePower;
-
-  // src/classes/turned.ts
-  var TurnedEffect = new Effect(
-    "Turned",
-    "turnEnd",
-    (g) => {
-      g.events.on("CombatantDamaged", ({ detail: { who, interrupt } }) => {
-        if (who.hasEffect(TurnedEffect))
-          interrupt.add(
-            new EvaluateLater(who, TurnedEffect, Priority_default.Normal, async () => {
-              await who.removeEffect(TurnedEffect);
-            })
-          );
-      });
-      g.events.on(
-        "BeforeMove",
-        ({ detail: { who, handler, from, to, error } }) => {
-          const config = who.getEffectConfig(TurnedEffect);
-          if (config && !handler.forced) {
-            const { oldDistance, newDistance } = compareDistances(
-              config.turner,
-              config.turner.position,
-              who,
-              from,
-              to
-            );
-            if (newDistance > oldDistance)
-              return;
-            if (newDistance <= 30)
-              error.add(
-                `cannot willingly move within 30' of ${config.turner.name}`,
-                TurnedEffect
-              );
-            else
-              error.add(
-                `must move away from ${config.turner.name}`,
-                TurnedEffect
-              );
-          }
-        }
-      );
-      g.events.on("CheckAction", ({ detail }) => {
-        if (!detail.action.actor.hasEffect(TurnedEffect))
-          return;
-        if (detail.action.getTime(detail.config) === "reaction")
-          detail.error.add("cannot take reactions", TurnedEffect);
-        else {
-          if (detail.action.tags.has("escape move prevention"))
-            return;
-          if (detail.action instanceof DashAction)
-            return;
-          if (detail.action instanceof DodgeAction)
-            return;
-          detail.error.add(
-            "must Dash or escape an effect that prevents movement",
-            TurnedEffect
-          );
-        }
-      });
-    }
-  );
-
-  // src/classes/cleric/TurnUndead.ts
-  function getDestroyUndeadCR(level) {
-    if (level < 5)
-      return -Infinity;
-    if (level < 8)
-      return 0.5;
-    if (level < 11)
-      return 1;
-    if (level < 14)
-      return 2;
-    if (level < 17)
-      return 3;
-    return 4;
-  }
-  var getTurnUndeadArea = (who) => ({
-    type: "within",
-    who,
-    radius: 30
-  });
-  var TurnUndeadAction = class extends AbstractAction {
-    constructor(g, actor, affectsTypes, method, destroyCR = -Infinity) {
-      super(
-        g,
-        actor,
-        "Turn Undead",
-        "incomplete",
-        {},
-        {
-          area: [getTurnUndeadArea(actor)],
-          resources: [[ChannelDivinityResource, 1]],
-          tags: ["harmful"],
-          time: "action",
-          description: `As an action, you present your holy symbol and speak a prayer censuring the undead. Each undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes any damage.
-
-        A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`
-        }
-      );
-      this.affectsTypes = affectsTypes;
-      this.method = method;
-      this.destroyCR = destroyCR;
-    }
-    getAffected() {
-      return this.g.getInside(getTurnUndeadArea(this.actor)).filter((who) => this.affectsTypes.includes(who.type));
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
-      const { g, actor: attacker, method, destroyCR } = this;
-      const type = method.getSaveType(attacker);
-      for (const who of this.getAffected()) {
-        const effect = TurnedEffect;
-        const config = {
-          turner: attacker,
-          duration: minutes(1)
-        };
-        const { outcome } = await g.save({
-          source: this,
-          type,
-          attacker,
-          who,
-          ability: "wis",
-          method,
-          effect,
-          config,
-          tags: ["frightened"]
-        });
-        if (outcome === "fail") {
-          if (who.cr < destroyCR && await g.kill(who, attacker))
-            return;
-          await who.addEffect(effect, config, attacker);
-        }
-      }
-    }
-  };
-  var TurnUndead = new SimpleFeature(
-    "Turn Undead",
-    `As an action, you present your holy symbol and speak a prayer censuring the undead. Each undead that can see or hear you within 30 feet of you must make a Wisdom saving throw. If the creature fails its saving throw, it is turned for 1 minute or until it takes any damage.
-
-A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
-    (g, me) => {
-      var _a;
-      const destroyCr = getDestroyUndeadCR((_a = me.classLevels.get("Cleric")) != null ? _a : 2);
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me)
-          actions.push(
-            new TurnUndeadAction(
-              g,
-              who,
-              ["undead"],
-              ClericSpellcasting,
-              destroyCr
-            )
-          );
-      });
-    }
-  );
-  var TurnUndead_default = TurnUndead;
-
-  // src/classes/cleric/index.ts
-  var ClericSpellcasting = new NormalSpellcasting(
-    "Cleric",
-    `As a conduit for divine power, you can cast cleric spells.`,
-    "wis",
-    "full",
-    "Cleric",
-    "Cleric"
-  );
-  var CantripVersatility = nonCombatFeature(
-    "Cantrip Versatility",
-    `Whenever you reach a level in this class that grants the Ability Score Improvement feature, you can replace one cantrip you learned from this class's Spellcasting feature with another cantrip from the cleric spell list.`
-  );
-  var DivineIntervention = notImplementedFeature(
-    "Divine Intervention",
-    `Beginning at 10th level, you can call on your deity to intervene on your behalf when your need is great.
-
-Imploring your deity's aid requires you to use your action. Describe the assistance you seek, and roll percentile dice. If you roll a number equal to or lower than your cleric level, your deity intervenes. The DM chooses the nature of the intervention; the effect of any cleric spell or cleric domain spell would be appropriate. If your deity intervenes, you can't use this feature again for 7 days. Otherwise, you can use it again after you finish a long rest.
-
-At 20th level, your call for intervention succeeds automatically, no roll required.`
-  );
-  var ASI44 = makeASI("Cleric", 4);
-  var ASI84 = makeASI("Cleric", 8);
-  var ASI124 = makeASI("Cleric", 12);
-  var ASI164 = makeASI("Cleric", 16);
-  var ASI194 = makeASI("Cleric", 19);
-  var Cleric = {
-    name: "Cleric",
-    hitDieSize: 8,
-    armor: acSet("light", "medium", "shield"),
-    weaponCategory: wcSet("simple"),
-    save: abSet("wis", "cha"),
-    skill: gains([], 2, [
-      "History",
-      "Insight",
-      "Medicine",
-      "Persuasion",
-      "Religion"
-    ]),
-    multi: {
-      requirements: /* @__PURE__ */ new Map([["wis", 13]]),
-      armor: acSet("light", "medium", "shield")
-    },
-    features: /* @__PURE__ */ new Map([
-      [1, [ClericSpellcasting.feature]],
-      [2, [ChannelDivinity_default, TurnUndead_default, HarnessDivinePower_default]],
-      [4, [ASI44, CantripVersatility]],
-      [8, [ASI84]],
-      [10, [DivineIntervention]],
-      [12, [ASI124]],
-      [16, [ASI164]],
-      [19, [ASI194]]
-    ])
-  };
-  var cleric_default = Cleric;
 
   // src/img/class/druid.svg
   var druid_default = "./druid-V7AHPEVM.svg";
@@ -16678,11 +17125,11 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
 
 Additionally, you can ignore the verbal and somatic components of your druid spells, as well as any material components that lack a cost and aren't consumed by a spell. You gain this benefit in both your normal shape and your beast shape from Wild Shape.`
   );
-  var ASI45 = makeASI("Druid", 4);
-  var ASI85 = makeASI("Druid", 8);
-  var ASI125 = makeASI("Druid", 12);
-  var ASI165 = makeASI("Druid", 16);
-  var ASI195 = makeASI("Druid", 19);
+  var ASI46 = makeASI("Druid", 4);
+  var ASI86 = makeASI("Druid", 8);
+  var ASI126 = makeASI("Druid", 12);
+  var ASI166 = makeASI("Druid", 16);
+  var ASI196 = makeASI("Druid", 19);
   var Druid = {
     name: "Druid",
     hitDieSize: 8,
@@ -16720,12 +17167,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
     features: /* @__PURE__ */ new Map([
       [1, [Druidic, DruidSpellcasting.feature]],
       [2, [WildShape_default, WildCompanion]],
-      [4, [ASI45, CantripVersatility2]],
-      [8, [ASI85]],
-      [12, [ASI125]],
-      [16, [ASI165]],
+      [4, [ASI46, CantripVersatility2]],
+      [8, [ASI86]],
+      [12, [ASI126]],
+      [16, [ASI166]],
       [18, [TimelessBody, BeastSpells]],
-      [19, [ASI195]],
+      [19, [ASI196]],
       [20, [Archdruid]]
     ])
   };
@@ -16881,13 +17328,13 @@ Once you use this feature, you must finish a short or long rest before you can u
 - Replace a fighting style you know with another fighting style available to fighters.
 - If you know any maneuvers from the Battle Master archetype, you can replace one maneuver you know with a different maneuver.`
   );
-  var ASI46 = makeASI("Fighter", 4);
+  var ASI47 = makeASI("Fighter", 4);
   var ASI6 = makeASI("Fighter", 6);
-  var ASI86 = makeASI("Fighter", 8);
-  var ASI126 = makeASI("Fighter", 12);
+  var ASI87 = makeASI("Fighter", 8);
+  var ASI127 = makeASI("Fighter", 12);
   var ASI14 = makeASI("Fighter", 14);
-  var ASI166 = makeASI("Fighter", 16);
-  var ASI196 = makeASI("Fighter", 19);
+  var ASI167 = makeASI("Fighter", 16);
+  var ASI197 = makeASI("Fighter", 19);
   var Fighter = {
     name: "Fighter",
     hitDieSize: 10,
@@ -16913,16 +17360,16 @@ Once you use this feature, you must finish a short or long rest before you can u
     features: /* @__PURE__ */ new Map([
       [1, [FighterFightingStyle, SecondWind_default]],
       [2, [ActionSurge_default]],
-      [4, [ASI46, MartialVersatility]],
+      [4, [ASI47, MartialVersatility]],
       [5, [ExtraAttack2]],
       [6, [ASI6]],
-      [8, [ASI86]],
+      [8, [ASI87]],
       [9, [Indomitable_default]],
       [11, [ExtraAttack22]],
-      [12, [ASI126]],
+      [12, [ASI127]],
       [14, [ASI14]],
-      [16, [ASI166]],
-      [19, [ASI196]],
+      [16, [ASI167]],
+      [19, [ASI197]],
       [20, [ExtraAttack3]]
     ])
   };
@@ -17368,11 +17815,11 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       });
     }
   );
-  var ASI47 = makeASI("Monk", 4);
-  var ASI87 = makeASI("Monk", 8);
-  var ASI127 = makeASI("Monk", 12);
-  var ASI167 = makeASI("Monk", 16);
-  var ASI197 = makeASI("Monk", 19);
+  var ASI48 = makeASI("Monk", 4);
+  var ASI88 = makeASI("Monk", 8);
+  var ASI128 = makeASI("Monk", 12);
+  var ASI168 = makeASI("Monk", 16);
+  var ASI198 = makeASI("Monk", 19);
   var Monk = {
     name: "Monk",
     hitDieSize: 8,
@@ -17399,19 +17846,19 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       [1, [MonkUnarmoredDefense, MartialArts_default]],
       [2, [Ki_default, DedicatedWeapon, UnarmoredMovement_default]],
       [3, [DeflectMissiles, KiFueledAttack]],
-      [4, [ASI47, SlowFall, QuickenedHealing_default]],
+      [4, [ASI48, SlowFall, QuickenedHealing_default]],
       [5, [ExtraAttack4, StunningStrike, FocusedAim]],
       [6, [KiEmpoweredStrikes]],
       [7, [Evasion_default, StillnessOfMind]],
-      [8, [ASI87]],
+      [8, [ASI88]],
       [10, [PurityOfBody]],
-      [12, [ASI127]],
+      [12, [ASI128]],
       [13, [TongueOfTheSunAndMoon]],
       [14, [DiamondSoul]],
       [15, [TimelessBody2]],
-      [16, [ASI167]],
+      [16, [ASI168]],
       [18, [EmptyBody]],
-      [19, [ASI197]],
+      [19, [ASI198]],
       [20, [PerfectSelf]]
     ])
   };
@@ -17790,7 +18237,7 @@ You can use this feature a number of times equal to 1 + your Charisma modifier. 
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
-          if (attacker === me && hasAll(attack == null ? void 0 : attack.pre.tags, ["melee", "weapon"]))
+          if (attacker === me && hasAll(attack == null ? void 0 : attack.roll.type.tags, ["melee", "weapon"]))
             interrupt.add(
               new PickFromListChoice(
                 attacker,
@@ -17879,7 +18326,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       g.events.on(
         "GatherDamage",
         ({ detail: { attack, attacker, critical, target, interrupt, map } }) => {
-          if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && attack.pre.tags.has("weapon"))
+          if (attacker === me && hasAll(attack == null ? void 0 : attack.roll.type.tags, ["melee", "weapon"]))
             interrupt.add(
               new EvaluateLater(
                 attacker,
@@ -17912,11 +18359,11 @@ At 18th level, the range of this aura increases to 30 feet.`,
 
 You can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain expended uses when you finish a long rest.`
   );
-  var ASI48 = makeASI("Paladin", 4);
-  var ASI88 = makeASI("Paladin", 8);
-  var ASI128 = makeASI("Paladin", 12);
-  var ASI168 = makeASI("Paladin", 16);
-  var ASI198 = makeASI("Paladin", 19);
+  var ASI49 = makeASI("Paladin", 4);
+  var ASI89 = makeASI("Paladin", 8);
+  var ASI129 = makeASI("Paladin", 12);
+  var ASI169 = makeASI("Paladin", 16);
+  var ASI199 = makeASI("Paladin", 19);
   var Paladin = {
     name: "Paladin",
     hitDieSize: 10,
@@ -17943,16 +18390,16 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       [1, [DivineSense, LayOnHands_default]],
       [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],
       [3, [DivineHealth, ChannelDivinity2, HarnessDivinePower_default2]],
-      [4, [ASI48, MartialVersatility2]],
+      [4, [ASI49, MartialVersatility2]],
       [5, [ExtraAttack5]],
       [6, [AuraOfProtection_default]],
-      [8, [ASI88]],
+      [8, [ASI89]],
       [10, [AuraOfCourage]],
       [11, [ImprovedDivineSmite]],
-      [12, [ASI128]],
+      [12, [ASI129]],
       [14, [CleansingTouch]],
-      [16, [ASI168]],
-      [19, [ASI198]]
+      [16, [ASI169]],
+      [19, [ASI199]]
     ])
   };
   var paladin_default2 = Paladin;
@@ -18109,11 +18556,11 @@ In addition, whenever you finish a short rest, your exhaustion level, if any, is
     "Foe Slayer",
     `At 20th level, you become an unparalleled hunter of your enemies. Once on each of your turns, you can add your Wisdom modifier to the attack roll or the damage roll of an attack you make against one of your favored enemies. You can choose to use this feature before or after the roll, but before any effects of the roll are applied.`
   );
-  var ASI49 = makeASI("Ranger", 4);
-  var ASI89 = makeASI("Ranger", 8);
-  var ASI129 = makeASI("Ranger", 12);
-  var ASI169 = makeASI("Ranger", 16);
-  var ASI199 = makeASI("Ranger", 19);
+  var ASI410 = makeASI("Ranger", 4);
+  var ASI810 = makeASI("Ranger", 8);
+  var ASI1210 = makeASI("Ranger", 12);
+  var ASI1610 = makeASI("Ranger", 16);
+  var ASI1910 = makeASI("Ranger", 19);
   var Ranger = {
     name: "Ranger",
     hitDieSize: 10,
@@ -18152,15 +18599,15 @@ In addition, whenever you finish a short rest, your exhaustion level, if any, is
       [1, [Favored, Explorer]],
       [2, [RangerFightingStyle, RangerSpellcasting.feature, SpellcastingFocus]],
       [3, [Awareness]],
-      [4, [ASI49, MartialVersatility3]],
+      [4, [ASI410, MartialVersatility3]],
       [5, [ExtraAttack6]],
-      [8, [ASI89, RangerLandsStride]],
+      [8, [ASI810, RangerLandsStride]],
       [10, [HideVeil]],
-      [12, [ASI129]],
+      [12, [ASI1210]],
       [14, [Vanish]],
-      [16, [ASI169]],
+      [16, [ASI1610]],
       [18, [FeralSenses]],
-      [19, [ASI199]],
+      [19, [ASI1910]],
       [20, [FoeSlayer]]
     ])
   };
@@ -18171,77 +18618,6 @@ In addition, whenever you finish a short rest, your exhaustion level, if any, is
 
   // src/classes/rogue/common.ts
   var RogueIcon = makeIcon(rogue_default, ClassColours.Rogue);
-
-  // src/classes/rogue/SneakAttack.ts
-  function getSneakAttackDice(level) {
-    return Math.ceil(level / 2);
-  }
-  var SneakAttackResource = new TurnResource("Sneak Attack", 1);
-  var SneakAttack = new SimpleFeature(
-    "Sneak Attack",
-    `Beginning at 1st level, you know how to strike subtly and exploit a foe's distraction. Once per turn, you can deal an extra 1d6 damage to one creature you hit with an attack if you have advantage on the attack roll. The attack must use a finesse or a ranged weapon.
-
-You don't need advantage on the attack roll if another enemy of the target is within 5 feet of it, that enemy isn't incapacitated, and you don't have disadvantage on the attack roll.
-
-The amount of the extra damage increases as you gain levels in this class, as shown in the Sneak Attack column of the Rogue table.`,
-    (g, me) => {
-      var _a;
-      const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
-      me.initResource(SneakAttackResource);
-      g.events.on(
-        "GatherDamage",
-        ({
-          detail: {
-            ability,
-            attack,
-            attacker,
-            critical,
-            interrupt,
-            map,
-            target,
-            weapon
-          }
-        }) => {
-          if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
-            const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
-            const advantage = attack.roll.diceType === "advantage";
-            const noDisadvantage = !attack.pre.diceType.getValues().includes("disadvantage");
-            if (isFinesseOrRangedWeapon && (advantage || getFlanker(g, me, target) && noDisadvantage)) {
-              interrupt.add(
-                new YesNoChoice(
-                  attacker,
-                  SneakAttack,
-                  "Sneak Attack",
-                  `Do ${count * (critical ? 2 : 1)}d6 bonus damage on this hit?`,
-                  Priority_default.Normal,
-                  async () => {
-                    me.spendResource(SneakAttackResource);
-                    const damageType = weapon.damage.damageType;
-                    const damage = await g.rollDamage(
-                      count,
-                      {
-                        source: SneakAttack,
-                        attacker,
-                        target,
-                        size: 6,
-                        damageType,
-                        weapon,
-                        ability,
-                        tags: atSet()
-                      },
-                      critical
-                    );
-                    map.add(damageType, damage);
-                  }
-                )
-              );
-            }
-          }
-        }
-      );
-    }
-  );
-  var SneakAttack_default = SneakAttack;
 
   // src/img/act/steady-aim.svg
   var steady_aim_default = "./steady-aim-INID7FA2.svg";
@@ -18440,12 +18816,12 @@ In addition, you understand a set of secret signs and symbols used to convey sho
 
 Once you use this feature, you can't use it again until you finish a short or long rest.`
   );
-  var ASI410 = makeASI("Rogue", 4);
-  var ASI810 = makeASI("Rogue", 8);
+  var ASI411 = makeASI("Rogue", 4);
+  var ASI811 = makeASI("Rogue", 8);
   var ASI10 = makeASI("Rogue", 10);
-  var ASI1210 = makeASI("Rogue", 12);
-  var ASI1610 = makeASI("Rogue", 16);
-  var ASI1910 = makeASI("Rogue", 19);
+  var ASI1211 = makeASI("Rogue", 12);
+  var ASI1611 = makeASI("Rogue", 16);
+  var ASI1911 = makeASI("Rogue", 19);
   var Rogue = {
     name: "Rogue",
     hitDieSize: 8,
@@ -18489,29 +18865,29 @@ Once you use this feature, you can't use it again until you finish a short or lo
       [1, [Expertise2, SneakAttack_default, ThievesCant]],
       [2, [CunningAction]],
       [3, [SteadyAim_default]],
-      [4, [ASI410]],
+      [4, [ASI411]],
       [5, [UncannyDodge]],
       [7, [Evasion_default]],
-      [8, [ASI810]],
+      [8, [ASI811]],
       [10, [ASI10]],
       [11, [ReliableTalent]],
-      [12, [ASI1210]],
+      [12, [ASI1211]],
       [14, [Blindsense]],
       [15, [SlipperyMind]],
-      [16, [ASI1610]],
+      [16, [ASI1611]],
       [18, [Elusive]],
-      [19, [ASI1910]],
+      [19, [ASI1911]],
       [20, [StrokeOfLuck]]
     ])
   };
   var rogue_default2 = Rogue;
 
   // src/classes/sorcerer/index.ts
-  var ASI411 = makeASI("Sorcerer", 4);
-  var ASI811 = makeASI("Sorcerer", 8);
-  var ASI1211 = makeASI("Sorcerer", 12);
-  var ASI1611 = makeASI("Sorcerer", 16);
-  var ASI1911 = makeASI("Sorcerer", 19);
+  var ASI412 = makeASI("Sorcerer", 4);
+  var ASI812 = makeASI("Sorcerer", 8);
+  var ASI1212 = makeASI("Sorcerer", 12);
+  var ASI1612 = makeASI("Sorcerer", 16);
+  var ASI1912 = makeASI("Sorcerer", 19);
   var SorcererSpellcasting = new NormalSpellcasting(
     "Sorcerer",
     `An event in your past, or in the life of a parent or ancestor, left an indelible mark on you, infusing you with arcane magic. This font of magic, whatever its origin, fuels your spells.`,
@@ -18576,12 +18952,12 @@ You can use only one Metamagic option on a spell when you cast it, unless otherw
       [1, [SorcererSpellcasting.feature]],
       [2, [FontOfMagic]],
       [3, [Metamagic]],
-      [4, [ASI411, SorcerousVersatility]],
+      [4, [ASI412, SorcerousVersatility]],
       [5, [MagicalGuidance]],
-      [8, [ASI811]],
-      [12, [ASI1211]],
-      [16, [ASI1611]],
-      [19, [ASI1911]],
+      [8, [ASI812]],
+      [12, [ASI1212]],
+      [16, [ASI1612]],
+      [19, [ASI1912]],
       [20, [SorcerousRestoration]]
     ])
   };
@@ -18742,11 +19118,11 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
     "Eldritch Master",
     `At 20th level, you can draw on your inner reserve of mystical power while entreating your patron to regain expended spell slots. You can spend 1 minute entreating your patron for aid to regain all your expended spell slots from your Pact Magic feature. Once you regain spell slots with this feature, you must finish a long rest before you can do so again.`
   );
-  var ASI412 = makeASI("Warlock", 4);
-  var ASI812 = makeASI("Warlock", 8);
-  var ASI1212 = makeASI("Warlock", 12);
-  var ASI1612 = makeASI("Warlock", 16);
-  var ASI1912 = makeASI("Warlock", 19);
+  var ASI413 = makeASI("Warlock", 4);
+  var ASI813 = makeASI("Warlock", 8);
+  var ASI1213 = makeASI("Warlock", 12);
+  var ASI1613 = makeASI("Warlock", 16);
+  var ASI1913 = makeASI("Warlock", 19);
   var Warlock = {
     name: "Warlock",
     hitDieSize: 8,
@@ -18771,89 +19147,16 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
       [1, [WarlockPactMagic.feature]],
       [2, [EldritchInvocations]],
       [3, [PactBoon]],
-      [4, [ASI412, EldritchVersatility]],
-      [8, [ASI812]],
+      [4, [ASI413, EldritchVersatility]],
+      [8, [ASI813]],
       [11, [MysticArcanum]],
-      [12, [ASI1212]],
-      [16, [ASI1612]],
-      [19, [ASI1912]],
+      [12, [ASI1213]],
+      [16, [ASI1613]],
+      [19, [ASI1913]],
       [20, [EldritchMaster]]
     ])
   };
   var warlock_default = Warlock;
-
-  // src/img/class/wizard.svg
-  var wizard_default = "./wizard-FEOOHPRA.svg";
-
-  // src/classes/wizard/common.ts
-  var WizardIcon = makeIcon(wizard_default, ClassColours.Wizard);
-
-  // src/classes/wizard/index.ts
-  var ArcaneRecovery = nonCombatFeature(
-    "Arcane Recovery",
-    `You have learned to regain some of your magical energy by studying your spellbook. Once per day when you finish a short rest, you can choose expended spell slots to recover. The spell slots can have a combined level that is equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.
-
-For example, if you're a 4th-level wizard, you can recover up to two levels worth of spell slots.
-
-You can recover either a 2nd-level spell slot or two 1st-level spell slots.`
-  );
-  var WizardSpellcasting = new NormalSpellcasting(
-    "Wizard",
-    `As a student of arcane magic, you have a spellbook containing spells that show the first glimmerings of your true power.`,
-    "int",
-    "full",
-    "Wizard",
-    "Wizard",
-    WizardIcon
-  );
-  var CantripFormulas = nonCombatFeature(
-    "Cantrip Formulas",
-    `You have scribed a set of arcane formulas in your spellbook that you can use to formulate a cantrip in your mind. Whenever you finish a long rest and consult those formulas in your spellbook, you can replace one wizard cantrip you know with another cantrip from the wizard spell list.`
-  );
-  var SpellMastery = notImplementedFeature(
-    "Spell Mastery",
-    `At 18th level, you have achieved such mastery over certain spells that you can cast them at will. Choose a 1st-level wizard spell and a 2nd-level wizard spell that are in your spellbook. You can cast those spells at their lowest level without expending a spell slot when you have them prepared. If you want to cast either spell at a higher level, you must expend a spell slot as normal.
-
-By spending 8 hours in study, you can exchange one or both of the spells you chose for different spells of the same levels.`
-  );
-  var SignatureSpells = notImplementedFeature(
-    "Signature Spells",
-    `When you reach 20th level, you gain mastery over two powerful spells and can cast them with little effort. Choose two 3rd-level wizard spells in your spellbook as your signature spells. You always have these spells prepared, they don't count against the number of spells you have prepared, and you can cast each of them once at 3rd level without expending a spell slot. When you do so, you can't do so again until you finish a short or long rest.
-
-If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
-  );
-  var ASI413 = makeASI("Wizard", 4);
-  var ASI813 = makeASI("Wizard", 8);
-  var ASI1213 = makeASI("Wizard", 12);
-  var ASI1613 = makeASI("Wizard", 16);
-  var ASI1913 = makeASI("Wizard", 19);
-  var Wizard = {
-    name: "Wizard",
-    hitDieSize: 6,
-    weapon: wtSet("dagger", "dart", "sling", "quarterstaff", "light crossbow"),
-    save: abSet("int", "wis"),
-    skill: gains([], 2, [
-      "Arcana",
-      "History",
-      "Insight",
-      "Investigation",
-      "Medicine",
-      "Religion"
-    ]),
-    multi: { requirements: /* @__PURE__ */ new Map([["int", 13]]) },
-    features: /* @__PURE__ */ new Map([
-      [1, [ArcaneRecovery, WizardSpellcasting.feature]],
-      [3, [CantripFormulas]],
-      [4, [ASI413]],
-      [8, [ASI813]],
-      [12, [ASI1213]],
-      [16, [ASI1613]],
-      [18, [SpellMastery]],
-      [19, [ASI1913]],
-      [20, [SignatureSpells]]
-    ])
-  };
-  var wizard_default2 = Wizard;
 
   // src/data/allPCClasses.ts
   var allPCClasses = {
@@ -19271,7 +19574,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         me.addProficiency(weapon, "proficient");
     }
   );
-  var CantripMethod = new InnateSpellcasting("Cantrip", "int", () => void 0);
+  var CantripMethod = new InnateSpellcasting("Cantrip", "int");
   var Cantrip = new ConfiguredFeature(
     "Cantrip",
     `You know one cantrip of your choice from the wizard spell list. Intelligence is your spellcasting ability for it.`,
@@ -19544,7 +19847,7 @@ When you create a device, choose one of the following options:
             bonus
           }
         }) => {
-          if (attacker === me && (attack == null ? void 0 : attack.pre.tags.has("melee")) && critical) {
+          if (attacker === me && (attack == null ? void 0 : attack.roll.type.tags.has("melee")) && critical) {
             const base = weapon == null ? void 0 : weapon.damage;
             if ((base == null ? void 0 : base.type) === "dice") {
               interrupt.add(
@@ -19562,7 +19865,7 @@ When you create a device, choose one of the following options:
                         size: base.amount.size,
                         target,
                         weapon,
-                        tags: attack.pre.tags
+                        tags: attack.roll.type.tags
                       },
                       false
                     );
@@ -20546,10 +20849,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         const enchantment = allEnchantments_default[name2];
         item.addEnchantment(enchantment);
       }
+      pc.addToInventory(item, quantity);
       if (equip)
         pc.don(item);
-      else
-        pc.addToInventory(item, quantity);
     }
     for (const spell of (_c = t.known) != null ? _c : [])
       pc.knownSpells.add(allSpells_default[spell]);
@@ -22277,7 +22579,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "Attack",
         ({ detail }) => detail.interrupt.add(
           new UIResponse(
-            detail.pre.who,
+            detail.roll.type.who,
             async () => addMessage(
               /* @__PURE__ */ u(
                 LogMessage,

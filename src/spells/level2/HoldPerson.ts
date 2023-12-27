@@ -1,4 +1,4 @@
-import { HasTargets } from "../../configs";
+import { HasCaster, HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import { EngineSaveConfig } from "../../Engine";
 import { canSee, ofCreatureType, withinRangeOfEachOther } from "../../filters";
@@ -8,15 +8,10 @@ import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
-import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
 
-interface Config {
-  affected: Set<Combatant>;
-  caster: Combatant;
-  method: SpellcastingMethod;
-}
+type Config = HasCaster & { affected: Set<Combatant> };
 
 const getHoldPersonSave = (
   who: Combatant,

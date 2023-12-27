@@ -104,7 +104,7 @@ export const RageEffect = new Effect(
         if (
           attacker &&
           isRaging(attacker) &&
-          hasAll(attack?.pre.tags, ["melee", "weapon"]) &&
+          hasAll(attack?.roll.type.tags, ["melee", "weapon"]) &&
           ability === "str"
         )
           bonus.add(

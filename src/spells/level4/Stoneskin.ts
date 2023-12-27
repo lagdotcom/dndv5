@@ -17,7 +17,7 @@ const StoneskinEffect = new Effect(
       ({ detail: { who, damageType, response, attack } }) => {
         if (
           who.hasEffect(StoneskinEffect) &&
-          !attack?.pre.tags.has("magical") &&
+          !attack?.roll.type.tags.has("magical") &&
           isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", StoneskinEffect);

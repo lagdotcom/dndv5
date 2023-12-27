@@ -63,16 +63,11 @@ const GuidingBolt = scalingSpell<HasTarget>({
       target,
     });
 
-    const { hit, attack } = await rsa.attack(target);
+    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(attack.pre.target);
-      await rsa.damage(attack.pre.target, damage);
-
-      await attack.pre.target.addEffect(
-        GuidingBoltEffect,
-        { duration: 2 },
-        attacker,
-      );
+      const damage = await rsa.getDamage(victim);
+      await rsa.damage(victim, damage);
+      await victim.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
     }
   },
 });

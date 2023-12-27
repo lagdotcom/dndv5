@@ -192,7 +192,7 @@ async function getAttackResult(
 
       if (damage.type === "dice") {
         let { size } = damage.amount;
-        if (e.attack.pre.tags.has("versatile")) size += 2;
+        if (e.attack.roll.type.tags.has("versatile")) size += 2;
 
         const amount = await g.rollDamage(
           damage.amount.count,
@@ -204,7 +204,7 @@ async function getAttackResult(
             target,
             ability,
             weapon,
-            tags: e.attack.pre.tags,
+            tags: e.attack.roll.type.tags,
           },
           e.critical,
         );

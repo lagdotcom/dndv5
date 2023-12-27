@@ -509,42 +509,32 @@ export default class Engine {
 
   private async applyDamage(
     damage: DamageMap,
-    {
-      source,
-      attack,
-      attacker,
-      multiplier: baseMultiplier = 1,
-      target,
-    }: {
+    data: {
       source: Source;
+      spell?: Spell;
+      method?: SpellcastingMethod;
       attack?: AttackDetail;
       attacker?: Combatant;
-      target: Combatant;
-      multiplier?: number;
+      who: Combatant;
+      multiplier: number;
     },
   ) {
-    const { total, healAmount, breakdown } = this.calculateDamage(
-      source,
-      damage,
-      target,
-      baseMultiplier,
-      attack,
-    );
+    const { total, healAmount, breakdown } = this.calculateDamage(damage, data);
 
     if (healAmount > 0) {
-      await this.applyHeal(target, healAmount, target);
+      await this.applyHeal(data.who, healAmount, data.who);
     }
 
     if (total < 1) return;
 
     const { takenByTemporaryHP, afterTemporaryHP, temporaryHPSource } =
-      this.applyTemporaryHP(target, total);
+      this.applyTemporaryHP(data.who, total);
 
     await this.resolve(
       new CombatantDamagedEvent({
-        who: target,
-        attack,
-        attacker,
+        who: data.who,
+        attack: data.attack,
+        attacker: data.attacker,
         total,
         takenByTemporaryHP,
         afterTemporaryHP,
@@ -554,19 +544,23 @@ export default class Engine {
       }),
     );
 
-    if (target.hp <= 0) {
-      await this.handleCombatantDeath(target, attacker);
-    } else if (target.concentratingOn.size) {
-      await this.handleConcentrationCheck(target, total);
+    if (data.who.hp <= 0) {
+      await this.handleCombatantDeath(data.who, data.attacker);
+    } else if (data.who.concentratingOn.size) {
+      await this.handleConcentrationCheck(data.who, total);
     }
   }
 
   private calculateDamage(
-    source: Source,
     damage: DamageMap,
-    target: Combatant,
-    baseMultiplier: number,
-    attack?: AttackDetail,
+    data: {
+      source: Source;
+      spell?: Spell;
+      method?: SpellcastingMethod;
+      who: Combatant;
+      multiplier: number;
+      attack?: AttackDetail;
+    },
   ) {
     let total = 0;
     let healAmount = 0;
@@ -574,12 +568,9 @@ export default class Engine {
 
     for (const [damageType, raw] of damage) {
       const { response, amount } = this.calculateDamageResponse(
-        source,
         damageType,
         raw,
-        target,
-        baseMultiplier,
-        attack,
+        data,
       );
 
       if (response === "absorb") {
@@ -595,25 +586,31 @@ export default class Engine {
   }
 
   private calculateDamageResponse(
-    source: Source,
     damageType: DamageType,
     raw: number,
-    target: Combatant,
-    baseMultiplier: number,
-    attack?: AttackDetail,
+    data: {
+      source: Source;
+      spell?: Spell;
+      method?: SpellcastingMethod;
+      who: Combatant;
+      multiplier: number;
+      attack?: AttackDetail;
+    },
   ) {
     const collector = new DamageResponseCollector();
-    const innateResponse = target.damageResponses.get(damageType);
+    const innateResponse = data.who.damageResponses.get(damageType);
 
     if (innateResponse) {
-      collector.add(innateResponse, target);
+      collector.add(innateResponse, data.who);
     }
 
     this.fire(
       new GetDamageResponseEvent({
-        source,
-        attack,
-        who: target,
+        source: data.source,
+        spell: data.spell,
+        method: data.method,
+        attack: data.attack,
+        who: data.who,
         damageType,
         response: collector,
       }),
@@ -622,7 +619,7 @@ export default class Engine {
     const { response, amount } = this.calculateDamageAmount(
       raw,
       collector.result,
-      baseMultiplier,
+      data.multiplier,
     );
 
     return { response, amount };
@@ -800,6 +797,7 @@ export default class Engine {
       attack: attack.detail,
       hit: outcome === "hit" || outcome === "critical",
       critical: outcome === "critical",
+      victim: roll.type.target,
     } as const;
   }
 
@@ -821,23 +819,26 @@ export default class Engine {
     if (typeof startingMultiplier !== "undefined")
       multiplier.add(startingMultiplier, source);
 
-    const gather = await this.resolve(
+    const bonus = new BonusCollector();
+    await this.resolve(
       new GatherDamageEvent({
         critical: false,
         ...e,
         map,
-        bonus: new BonusCollector(),
-        interrupt: new InterruptionCollector(),
+        bonus,
         multiplier,
+        interrupt: new InterruptionCollector(),
       }),
     );
 
-    map.add(damageType, gather.detail.bonus.result);
+    map.add(damageType, bonus.result);
     return this.applyDamage(map, {
       source,
+      spell: e.spell,
+      method: e.method,
       attack: e.attack,
       attacker: e.attacker,
-      target: e.target,
+      who: e.target,
       multiplier: multiplier.result,
     });
   }

@@ -2,9 +2,15 @@ import { Allocation } from "./resolvers/AllocationResolver";
 import Combatant from "./types/Combatant";
 import Item, { WeaponItem } from "./types/Item";
 import Point from "./types/Point";
+import SpellcastingMethod from "./types/SpellcastingMethod";
 
 export interface HasAllocations {
   targets: Allocation[];
+}
+
+export interface HasCaster {
+  caster: Combatant;
+  method: SpellcastingMethod;
 }
 
 export interface HasTarget {

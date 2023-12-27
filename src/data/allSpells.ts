@@ -27,6 +27,7 @@ import HealingWord from "../spells/level1/HealingWord";
 import HellishRebuke from "../spells/level1/HellishRebuke";
 import HideousLaughter from "../spells/level1/HideousLaughter";
 import IceKnife from "../spells/level1/IceKnife";
+import MageArmor from "../spells/level1/MageArmor";
 import MagicMissile from "../spells/level1/MagicMissile";
 import ProtectionFromEvilAndGood from "../spells/level1/ProtectionFromEvilAndGood";
 import Sanctuary from "../spells/level1/Sanctuary";
@@ -101,6 +102,7 @@ const allSpells = {
   "hellish rebuke": HellishRebuke,
   "hideous laughter": HideousLaughter,
   "ice knife": IceKnife,
+  "mage armor": MageArmor,
   "magic missile": MagicMissile,
   "protection from evil and good": ProtectionFromEvilAndGood,
   sanctuary: Sanctuary,

@@ -4,8 +4,9 @@ import Combatant from "../types/Combatant";
 import Enchantment from "../types/Enchantment";
 import Icon from "../types/Icon";
 import { ItemByTypeKey, ItemRarity, ItemType } from "../types/Item";
+import Source from "../types/Source";
 
-export default class ItemBase<T extends ItemType> {
+export default class ItemBase<T extends ItemType> implements Source {
   attunement?: boolean;
   magic?: boolean;
   enchantments: Set<Enchantment<T>>;
@@ -32,5 +33,7 @@ export default class ItemBase<T extends ItemType> {
   addEnchantment(e: Enchantment<T>) {
     this.enchantments.add(e);
     e.setup(this.g, this as unknown as ItemByTypeKey[T]);
+
+    return this;
   }
 }

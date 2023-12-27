@@ -25,10 +25,10 @@ export default class NaturalWeapon extends WeaponBase {
       g.events.on(
         "CombatantDamaged",
         ({ detail: { attack, interrupt, who } }) => {
-          if (attack?.pre.weapon === this)
+          if (attack?.roll.type.weapon === this)
             interrupt.add(
               new EvaluateLater(
-                attack.pre.who,
+                attack.roll.type.who,
                 this,
                 Priority.Normal,
                 async () => onHit(who),

@@ -80,7 +80,9 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
       1,
       {
         size: 10,
-        source: this,
+        source: EldritchBurstSpell,
+        spell: EldritchBurstSpell,
+        method,
         attacker: caster,
         damageType: "force",
         tags: atSet("magical", "ranged", "spell"),
@@ -103,7 +105,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
         tags: ["magic"],
       });
       await g.damage(
-        this,
+        EldritchBurstSpell,
         "force",
         { attacker: caster, target: other, spell: EldritchBurstSpell, method },
         [["force", damage]],
@@ -113,11 +115,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   },
 });
 
-const BirnotecSpellcasting = new InnateSpellcasting(
-  "Spellcasting",
-  "cha",
-  () => undefined,
-);
+const BirnotecSpellcasting = new InnateSpellcasting("Spellcasting", "cha");
 
 const EldritchBurst = new SimpleFeature(
   "Eldritch Burst",
@@ -231,6 +229,7 @@ const AntimagicProdigy = new SimpleFeature(
 
 const RebukeIcon = makeIcon(rebukeUrl, DamageColours.fire);
 
+// TODO just turn this into the actual spell
 class HellishRebukeAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,

@@ -42,7 +42,10 @@ export const DivineSmite = new SimpleFeature(
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, critical, interrupt, map, target } }) => {
-        if (attacker === me && hasAll(attack?.pre.tags, ["melee", "weapon"]))
+        if (
+          attacker === me &&
+          hasAll(attack?.roll.type.tags, ["melee", "weapon"])
+        )
           interrupt.add(
             new PickFromListChoice(
               attacker,
@@ -146,8 +149,7 @@ const ImprovedDivineSmite = new SimpleFeature(
       ({ detail: { attack, attacker, critical, target, interrupt, map } }) => {
         if (
           attacker === me &&
-          attack?.pre.tags.has("melee") &&
-          attack.pre.tags.has("weapon")
+          hasAll(attack?.roll.type.tags, ["melee", "weapon"])
         )
           interrupt.add(
             new EvaluateLater(

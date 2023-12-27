@@ -28,7 +28,7 @@ const ScreamingInside = new SimpleFeature(
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
-        if (attacker === me && attack?.pre.tags.has("weapon"))
+        if (attacker === me && attack?.roll.type.tags.has("weapon"))
           interrupt.add(
             new EvaluateLater(
               me,
@@ -118,7 +118,7 @@ const SmoulderingRage = new SimpleFeature(
       ({ detail: { who, damageType, attack, response } }) => {
         if (
           who === me &&
-          !attack?.pre.tags.has("magical") &&
+          !attack?.roll.type.tags.has("magical") &&
           isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", SmoulderingRage);

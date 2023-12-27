@@ -12,7 +12,7 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     public getResourceForSpell: (
       spell: Spell,
       level: number,
-    ) => Resource | undefined,
+    ) => Resource | undefined = () => undefined,
     public icon?: Icon,
   ) {}
 

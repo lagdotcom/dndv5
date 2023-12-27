@@ -1,11 +1,10 @@
-import { HasTarget } from "../../configs";
+import { HasCaster, HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant, { CombatantID } from "../../types/Combatant";
 import Priority from "../../types/Priority";
-import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -19,10 +18,7 @@ const getSanctuaryEffects = (attacker: Combatant) => {
   return set;
 };
 
-const SanctuaryEffect = new Effect<{
-  caster: Combatant;
-  method: SpellcastingMethod;
-}>(
+const SanctuaryEffect = new Effect<HasCaster>(
   "Sanctuary",
   "turnStart",
   (g) => {
@@ -91,9 +87,9 @@ const SanctuaryEffect = new Effect<{
       new EvaluateLater(who, SanctuaryEffect, Priority.Normal, () =>
         who.removeEffect(SanctuaryEffect),
       );
-    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-      if (pre.who.hasEffect(SanctuaryEffect))
-        interrupt.add(getRemover(pre.who));
+    g.events.on("Attack", ({ detail: { roll, interrupt } }) => {
+      if (roll.type.who.hasEffect(SanctuaryEffect))
+        interrupt.add(getRemover(roll.type.who));
     });
     g.events.on("SpellCast", ({ detail: { who, affected, interrupt } }) => {
       if (who.hasEffect(SanctuaryEffect))

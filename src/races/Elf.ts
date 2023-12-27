@@ -45,7 +45,7 @@ const ElfWeaponTraining = new SimpleFeature(
   },
 );
 
-const CantripMethod = new InnateSpellcasting("Cantrip", "int", () => undefined);
+const CantripMethod = new InnateSpellcasting("Cantrip", "int");
 const Cantrip = new ConfiguredFeature<Spell>(
   "Cantrip",
   `You know one cantrip of your choice from the wizard spell list. Intelligence is your spellcasting ability for it.`,

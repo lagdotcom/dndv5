@@ -69,7 +69,7 @@ export default function EventLog({ g }: { g: Engine }) {
   useEffect(() => {
     g.events.on("Attack", ({ detail }) =>
       detail.interrupt.add(
-        new UIResponse(detail.pre.who, async () =>
+        new UIResponse(detail.roll.type.who, async () =>
           addMessage(
             <LogMessage
               message={getAttackMessage(detail)}

@@ -6,8 +6,8 @@ const adamantine: Enchantment<"armor"> = {
     item.name = `adamantine ${item.name}`;
     item.rarity = "Uncommon";
 
-    g.events.on("Attack", ({ detail: { pre, outcome } }) => {
-      if (pre.target.armor === item) outcome.ignoreValue("critical");
+    g.events.on("Attack", ({ detail: { roll, outcome } }) => {
+      if (roll.type.target.armor === item) outcome.ignoreValue("critical");
     });
   },
 };

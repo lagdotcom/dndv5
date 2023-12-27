@@ -41,8 +41,8 @@ const PrimalBeastEffect = new Effect(
       ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
         if (
           attacker?.hasEffect(PrimalBeastEffect) &&
-          attack?.pre.tags.has("melee") &&
-          attack.pre.tags.has("weapon")
+          attack?.roll.type.tags.has("melee") &&
+          attack.roll.type.tags.has("weapon")
         )
           interrupt.add(
             new EvaluateLater(

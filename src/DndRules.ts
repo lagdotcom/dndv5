@@ -23,6 +23,7 @@ import ConditionName from "./types/ConditionName";
 import Item from "./types/Item";
 import Point from "./types/Point";
 import Priority from "./types/Priority";
+import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
 import { checkConfig } from "./utils/config";
 import { getValidAmmunition } from "./utils/items";
@@ -77,7 +78,11 @@ export const ArmorCalculationRule = new DndRule("Armor Calculation", (g) => {
         : armor?.category === "heavy"
           ? 0
           : dex.modifier;
-    methods.push({ name, ac: armorAC + dexMod + shieldAC, uses });
+    methods.push({
+      name,
+      ac: armorAC + dexMod + shieldAC,
+      uses,
+    });
   });
 });
 
@@ -171,7 +176,7 @@ export const DeafenedRule = new DndRule("Deafened", (g) => {
   });
 });
 
-export const DifficultTerrainRule = { name: "Difficult Terrain" };
+export const DifficultTerrainRule: Source = { name: "Difficult Terrain" };
 
 export const EffectsRule = new DndRule("Effects", (g) => {
   g.events.on("TurnStarted", ({ detail: { who } }) =>

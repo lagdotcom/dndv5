@@ -47,23 +47,17 @@ export class Goblin extends Monster {
     const shield = new Shield(g);
     const scimitar = new Scimitar(g);
     const bow = new Shortbow(g);
+    this.give(shield, true);
+    this.give(scimitar, true);
+    this.give(bow, true);
 
     if (wieldingBow) {
-      this.don(bow, true);
-
-      this.addToInventory(scimitar);
-      this.weaponProficiencies.add("scimitar");
-
-      this.addToInventory(shield);
-      this.armorProficiencies.add("shield");
+      this.don(bow);
     } else {
-      this.don(scimitar, true);
-      this.don(shield, true);
-
-      this.addToInventory(bow);
-      this.weaponProficiencies.add("shortbow");
+      this.don(scimitar);
+      this.don(shield);
     }
 
-    this.addToInventory(new Arrow(g), 10);
+    this.addToInventory(new Arrow(g), Infinity);
   }
 }

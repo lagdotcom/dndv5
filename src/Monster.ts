@@ -32,4 +32,9 @@ export default class Monster extends CombatantBase {
     if (giveProficiency) this.addProficiency(item, "proficient");
     return super.don(item);
   }
+
+  give(item: Item, giveProficiency = false) {
+    if (giveProficiency) this.addProficiency(item, "proficient");
+    return this.addToInventory(item);
+  }
 }

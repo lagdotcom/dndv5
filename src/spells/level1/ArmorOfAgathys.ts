@@ -13,29 +13,39 @@ const ArmorOfAgathysEffect = new Effect<{ count: number }>(
   "Armor of Agathys",
   "turnStart",
   (g) => {
-    g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-      const config = pre.target.getEffectConfig(ArmorOfAgathysEffect);
+    g.events.on(
+      "Attack",
+      ({
+        detail: {
+          roll: {
+            type: { target, tags, who },
+          },
+          interrupt,
+        },
+      }) => {
+        const config = target.getEffectConfig(ArmorOfAgathysEffect);
 
-      if (
-        config &&
-        pre.target.temporaryHPSource === ArmorOfAgathysEffect &&
-        pre.tags.has("melee")
-      )
-        interrupt.add(
-          new EvaluateLater(
-            pre.who,
-            ArmorOfAgathysEffect,
-            Priority.Normal,
-            async () =>
-              g.damage(
-                ArmorOfAgathysEffect,
-                "cold",
-                { attacker: pre.target, target: pre.who },
-                [["cold", config.count]],
-              ),
-          ),
-        );
-    });
+        if (
+          config &&
+          target.temporaryHPSource === ArmorOfAgathysEffect &&
+          tags.has("melee")
+        )
+          interrupt.add(
+            new EvaluateLater(
+              who,
+              ArmorOfAgathysEffect,
+              Priority.Normal,
+              async () =>
+                g.damage(
+                  ArmorOfAgathysEffect,
+                  "cold",
+                  { attacker: target, target: who },
+                  [["cold", config.count]],
+                ),
+            ),
+          );
+      },
+    );
 
     g.events.on(
       "CombatantDamaged",

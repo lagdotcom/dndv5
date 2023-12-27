@@ -1,14 +1,13 @@
-import { HasTarget } from "../../configs";
+import { HasCaster, HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import TargetResolver from "../../resolvers/TargetResolver";
-import Combatant from "../../types/Combatant";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
-const ChillTouchEffect = new Effect<{ caster: Combatant }>(
+const ChillTouchEffect = new Effect<HasCaster>(
   "Chill Touch",
   "turnStart",
   (g) => {
@@ -59,12 +58,15 @@ const ChillTouch = simpleSpell<HasTarget>({
       target,
     });
 
-    const { hit, attack } = await rsa.attack(target);
+    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(attack.pre.target);
-      await rsa.damage(attack.pre.target, damage);
-
-      await target.addEffect(ChillTouchEffect, { duration: 2, caster }, caster);
+      const damage = await rsa.getDamage(victim);
+      await rsa.damage(victim, damage);
+      await target.addEffect(
+        ChillTouchEffect,
+        { duration: 2, caster, method },
+        caster,
+      );
     }
   },
 });

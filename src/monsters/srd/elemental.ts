@@ -136,19 +136,30 @@ const FireForm = new SimpleFeature(
     // TODO A creature that touches the elemental
 
     // ...or hits it with a melee attack while within 5 feet of it takes 5 (1d10) fire damage.
-    g.events.on("Attack", ({ detail: { pre, outcome, interrupt } }) => {
-      if (
-        pre.target === me &&
-        outcome.hits &&
-        pre.tags.has("melee") &&
-        distance(pre.who, me) <= 5
-      )
-        interrupt.add(
-          new EvaluateLater(me, FireForm, Priority.Late, async () => {
-            if (outcome.hits) await applyFireDamage(pre.target);
-          }),
-        );
-    });
+    g.events.on(
+      "Attack",
+      ({
+        detail: {
+          roll: {
+            type: { target, tags, who: attacker },
+          },
+          outcome,
+          interrupt,
+        },
+      }) => {
+        if (
+          target === me &&
+          outcome.hits &&
+          tags.has("melee") &&
+          distance(attacker, me) <= 5
+        )
+          interrupt.add(
+            new EvaluateLater(me, FireForm, Priority.Late, async () => {
+              if (outcome.hits) await applyFireDamage(attacker);
+            }),
+          );
+      },
+    );
 
     // TODO In addition, the elemental can enter a hostile creature's space and stop there.
 

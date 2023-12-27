@@ -1,6 +1,6 @@
 import StandUpAction from "../../actions/StandUpAction";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
-import { HasTarget } from "../../configs";
+import { HasCaster, HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
 import { EngineSaveConfig } from "../../Engine";
@@ -13,15 +13,11 @@ import { coSet } from "../../types/ConditionName";
 import DiceType from "../../types/DiceType";
 import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
-import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-interface Config {
-  caster: Combatant;
-  method: SpellcastingMethod;
-}
+type Config = HasCaster;
 
 const getHideousLaughterSave = (
   who: Combatant,

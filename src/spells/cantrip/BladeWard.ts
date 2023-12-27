@@ -12,7 +12,7 @@ const BladeWardEffect = new Effect(
       ({ detail: { who, attack, damageType, response } }) => {
         if (
           who.hasEffect(BladeWardEffect) &&
-          attack?.pre.weapon &&
+          attack?.roll.type.weapon &&
           isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", BladeWardEffect);

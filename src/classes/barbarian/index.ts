@@ -32,7 +32,11 @@ const BarbarianUnarmoredDefense = new SimpleFeature(
           uses.add(me.shield);
         }
 
-        methods.push({ name: "Unarmored Defense", ac, uses });
+        methods.push({
+          name: "Unarmored Defense",
+          ac,
+          uses,
+        });
       }
     });
   },
@@ -141,7 +145,11 @@ This increases to two additional dice at 13th level and three additional dice at
           bonus,
         },
       }) => {
-        if (attacker === me && attack?.pre.tags.has("melee") && critical) {
+        if (
+          attacker === me &&
+          attack?.roll.type.tags.has("melee") &&
+          critical
+        ) {
           const base = weapon?.damage;
 
           if (base?.type === "dice") {
@@ -160,7 +168,7 @@ This increases to two additional dice at 13th level and three additional dice at
                       size: base.amount.size,
                       target,
                       weapon,
-                      tags: attack.pre.tags,
+                      tags: attack.roll.type.tags,
                     },
                     false,
                   );

@@ -36,7 +36,7 @@ const LustForBattle = new ConfiguredFeature<WeaponItem>(
     g.events.on(
       "CombatantDamaged",
       ({ detail: { attack, attacker, interrupt } }) => {
-        if (attacker === me && attack?.pre.weapon === weapon)
+        if (attacker === me && attack?.roll.type.weapon === weapon)
           interrupt.add(
             new EvaluateLater(me, LustForBattle, Priority.Normal, async () => {
               if (await g.giveTemporaryHP(me, 5, LustForBattle))

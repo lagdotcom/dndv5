@@ -38,6 +38,17 @@ export const KeenSmell = new SimpleFeature(
   },
 );
 
+export const MagicResistance = new SimpleFeature(
+  "Magic Resistance",
+  `You have advantage on saving throws against spells and other magical effects.`,
+  (g, me) => {
+    g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
+      if (who === me && tags.has("magic"))
+        diceType.add("advantage", MagicResistance);
+    });
+  },
+);
+
 export const MundaneDamageResistance = new SimpleFeature(
   "Mundane Damage Resistance",
   "You resist bludgeoning, piercing, and slashing damage from nonmagical attacks.",
@@ -47,7 +58,7 @@ export const MundaneDamageResistance = new SimpleFeature(
       ({ detail: { who, damageType, attack, response } }) => {
         if (
           who === me &&
-          !attack?.pre.tags.has("magical") &&
+          !attack?.roll.type.tags.has("magical") &&
           isA(damageType, MundaneDamageTypes)
         )
           response.add("resist", MundaneDamageResistance);
@@ -63,6 +74,16 @@ export const PackTactics = new SimpleFeature(
     g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
       if (who === me && getFlanker(g, me, target))
         diceType.add("advantage", PackTactics);
+    });
+  },
+);
+
+export const SpellDamageResistance = new SimpleFeature(
+  "Spell Damage Resistance",
+  `You resist damage from spells.`,
+  (g, me) => {
+    g.events.on("GetDamageResponse", ({ detail: { who, spell, response } }) => {
+      if (who === me && spell) response.add("resist", SpellDamageResistance);
     });
   },
 );

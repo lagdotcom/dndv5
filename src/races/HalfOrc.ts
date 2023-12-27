@@ -37,7 +37,11 @@ const SavageAttacks = new SimpleFeature(
           bonus,
         },
       }) => {
-        if (attacker === me && attack?.pre.tags.has("melee") && critical) {
+        if (
+          attacker === me &&
+          attack?.roll.type.tags.has("melee") &&
+          critical
+        ) {
           const base = weapon?.damage;
 
           if (base?.type === "dice") {
@@ -56,7 +60,7 @@ const SavageAttacks = new SimpleFeature(
                       size: base.amount.size,
                       target,
                       weapon,
-                      tags: attack.pre.tags,
+                      tags: attack.roll.type.tags,
                     },
                     false,
                   );

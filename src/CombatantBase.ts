@@ -436,6 +436,7 @@ export default class CombatantBase implements Combatant {
 
     // TODO error conditions, hands, time to equip, etc.
     this.equipment.add(item);
+    this.removeFromInventory(item);
 
     // TODO max attunements
     if (attune) this.attunements.add(item);

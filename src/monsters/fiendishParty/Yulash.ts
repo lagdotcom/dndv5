@@ -275,11 +275,7 @@ const Irritation = new SimpleFeature(
   },
 );
 
-const SpellcastingMethod = new InnateSpellcasting(
-  "Spellcasting",
-  "cha",
-  () => undefined,
-);
+const SpellcastingMethod = new InnateSpellcasting("Spellcasting", "cha");
 const Spellcasting = bonusSpellsFeature(
   "Spellcasting",
   "Yulash can cast healing word at will.",

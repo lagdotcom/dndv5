@@ -65,8 +65,8 @@ export default function initialisePC(g: Engine, t: PCTemplate) {
       item.addEnchantment(enchantment as Enchantment<ItemType>);
     }
 
+    pc.addToInventory(item, quantity);
     if (equip) pc.don(item);
-    else pc.addToInventory(item, quantity);
   }
 
   for (const spell of t.known ?? []) pc.knownSpells.add(allSpells[spell]);

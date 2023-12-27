@@ -12,7 +12,7 @@ import {
   WaterElemental,
 } from "../monsters/srd/elemental";
 import { Goblin } from "../monsters/srd/goblinoid";
-import { Thug } from "../monsters/srd/humanoid";
+import { Acolyte, Archmage, Assassin, Thug } from "../monsters/srd/humanoid";
 import { CombatantCreator } from "./BattleTemplate";
 
 const allMonsters = {
@@ -30,6 +30,10 @@ const allMonsters = {
   goblin: (g) => new Goblin(g),
   "goblin [bow]": (g) => new Goblin(g, true),
 
+  acolyte: (g) => new Acolyte(g),
+  archmage: (g) => new Archmage(g),
+  assassin: (g) => new Assassin(g),
+  "assassin [crossbow]": (g) => new Assassin(g, true),
   thug: (g) => new Thug(g),
   "thug [crossbow]": (g) => new Thug(g, true),
 

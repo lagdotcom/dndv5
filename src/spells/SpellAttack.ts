@@ -66,7 +66,7 @@ export default class SpellAttack<T extends object> {
               target,
               spell,
               method,
-              tags: attack.pre.tags,
+              tags: attack.roll.type.tags,
             },
             critical,
           );

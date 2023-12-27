@@ -40,10 +40,10 @@ const FireBolt = simpleSpell<HasTarget>({
       target,
     });
 
-    const { hit, attack } = await rsa.attack(target);
+    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(attack.pre.target);
-      await rsa.damage(attack.pre.target, damage);
+      const damage = await rsa.getDamage(victim);
+      await rsa.damage(victim, damage);
     }
   },
 });

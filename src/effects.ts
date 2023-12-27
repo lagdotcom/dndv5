@@ -357,3 +357,5 @@ export const OnFire = new Effect(
   },
   { tags: ["fire"] },
 );
+
+export const Surprised = new Effect("Surprised", "turnStart");

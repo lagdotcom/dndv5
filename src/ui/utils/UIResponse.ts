@@ -3,7 +3,7 @@ import Interruption from "../../types/Interruption";
 import Priority from "../../types/Priority";
 import Source from "../../types/Source";
 
-const UISource = { name: "UI" };
+const UISource: Source = { name: "UI" };
 
 export default class UIResponse implements Interruption {
   priority: number;

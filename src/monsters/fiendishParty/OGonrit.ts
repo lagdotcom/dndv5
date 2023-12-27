@@ -44,7 +44,7 @@ const FiendishMantle = new SimpleFeature(
           !me.conditions.has("Unconscious") &&
           attacker?.side === me.side &&
           attacker !== me &&
-          attack?.pre.tags.has("weapon") &&
+          attack?.roll.type.tags.has("weapon") &&
           distance(me, attacker) <= FiendishMantleRange
         )
           interrupt.add(
@@ -139,11 +139,7 @@ const ShieldBash = new SimpleFeature(
   },
 );
 
-const SpellcastingMethod = new InnateSpellcasting(
-  "Spellcasting",
-  "wis",
-  () => undefined,
-);
+const SpellcastingMethod = new InnateSpellcasting("Spellcasting", "wis");
 const Spellcasting = bonusSpellsFeature(
   "Spellcasting",
   "O Gonrit can cast guiding bolt and mass healing word at will.",
