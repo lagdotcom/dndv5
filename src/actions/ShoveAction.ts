@@ -30,6 +30,8 @@ export default class ShoveAction extends AbstractAttackAction<Config> {
       actor,
       "Shove",
       "implemented",
+      "shove",
+      "melee",
       {
         target: new TargetResolver(g, actor.reach, [
           sizeOrLess(actor.size + 1),

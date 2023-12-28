@@ -15,7 +15,7 @@ describe("OpportunityAttack", () => {
 
     const ec = oa.check({ target }, new ErrorCollector());
     expect(ec.messages).toContain(
-      "can only make opportunity attacks with melee weapons (Attack (shortbow))",
+      "can only make opportunity attacks with melee weapons (Opportunity Attack (shortbow))",
     );
   });
 });

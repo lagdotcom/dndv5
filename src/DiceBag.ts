@@ -3,19 +3,12 @@ import { MarkRequired } from "ts-essentials";
 import ValueCollector from "./collectors/ValueCollector";
 import DiceType from "./types/DiceType";
 import RollType from "./types/RollType";
+import { matches } from "./utils/objects";
 
 type MatchRollType = MarkRequired<Partial<RollType>, "type">;
 interface ForcedRoll {
   value: number;
   matcher: MatchRollType;
-}
-
-function matches(rt: RollType, m: MatchRollType) {
-  for (const [field, value] of Object.entries(m)) {
-    if (rt[field as keyof MatchRollType] !== value) return false;
-  }
-
-  return true;
 }
 
 function sizeOfDice(rt: RollType) {

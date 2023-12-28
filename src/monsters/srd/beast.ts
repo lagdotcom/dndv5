@@ -2,12 +2,12 @@ import badgerUrl from "@img/tok/badger.png";
 import batUrl from "@img/tok/bat.png";
 import giantBadgerUrl from "@img/tok/giant-badger.png";
 
-import WeaponAttack from "../../actions/WeaponAttack";
 import Engine from "../../Engine";
 import Monster from "../../Monster";
 import SizeCategory from "../../types/SizeCategory";
 import { _dd, _fd } from "../../utils/dice";
-import { KeenHearing, KeenSmell, makeMultiattack } from "../common";
+import { KeenHearing, KeenSmell } from "../common";
+import { makeBagMultiattack } from "../multiattack";
 import NaturalWeapon from "../NaturalWeapon";
 
 export class Badger extends Monster {
@@ -63,16 +63,9 @@ export class GiantBadger extends Monster {
 
     this.addFeature(KeenSmell);
     this.addFeature(
-      makeMultiattack(
+      makeBagMultiattack(
         "The badger makes two attacks: one with its bite and one with its claws.",
-        (me, action) => {
-          if (me.attacksSoFar.length >= 2) return false;
-
-          const weaponName = (action as WeaponAttack).weapon.name;
-          return !me.attacksSoFar.find(
-            (a) => (a as WeaponAttack).weapon.name === weaponName,
-          );
-        },
+        [{ weapon: "bite" }, { weapon: "claw" }],
       ),
     );
 

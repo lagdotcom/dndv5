@@ -1,6 +1,8 @@
 import acolyteUrl from "@img/tok/acolyte.png";
 import archmageUrl from "@img/tok/archmage.png";
 import assassinUrl from "@img/tok/assassin.png";
+import banditUrl from "@img/tok/bandit.png";
+import banditCaptainUrl from "@img/tok/bandit-captain.png";
 import thugUrl from "@img/tok/thug.png";
 
 import { ClericSpellcasting } from "../../classes/cleric";
@@ -20,6 +22,7 @@ import {
   HeavyCrossbow,
   LightCrossbow,
   Mace,
+  Scimitar,
   Shortsword,
 } from "../../items/weapons";
 import Monster from "../../Monster";
@@ -42,13 +45,9 @@ import Combatant from "../../types/Combatant";
 import Enchantment from "../../types/Enchantment";
 import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
-import {
-  isMeleeAttackAction,
-  MagicResistance,
-  makeMultiattack,
-  PackTactics,
-  SpellDamageResistance,
-} from "../common";
+import { MagicResistance, PackTactics, SpellDamageResistance } from "../common";
+import { makeBagMultiattack } from "../multiattack";
+import Parry from "../Parry";
 
 export class Acolyte extends Monster {
   constructor(g: Engine) {
@@ -172,16 +171,9 @@ const Assassinate = new SimpleFeature(
   },
 );
 
-const AssassinMultiattack = makeMultiattack(
+const AssassinMultiattack = makeBagMultiattack(
   `The assassin makes two shortsword attacks.`,
-  (me, action) => {
-    if (me.attacksSoFar.length < 1) return true;
-    return (
-      isMeleeAttackAction(me.attacksSoFar[0]) &&
-      isMeleeAttackAction(action) &&
-      action.weapon.weaponType === "shortsword"
-    );
-  },
+  [{ weapon: "shortsword" }, { weapon: "shortsword" }],
 );
 
 const assassinPoison: Enchantment<"weapon"> = {
@@ -262,17 +254,75 @@ export class Assassin extends Monster {
     this.give(sword, true);
     this.give(crossbow, true);
     this.don(wieldingCrossbow ? crossbow : sword);
-    this.addToInventory(new CrossbowBolt(g), Infinity);
+    this.addToInventory(new CrossbowBolt(g), 20);
   }
 }
 
-const ThugMultiattack = makeMultiattack(
+export class Bandit extends Monster {
+  constructor(g: Engine, wieldingCrossbow = false) {
+    super(g, "bandit", 0.125, "humanoid", SizeCategory.Medium, banditUrl, 11);
+    this.don(new LeatherArmor(g), true);
+    this.movement.set("speed", 30);
+    this.setAbilityScores(11, 12, 12, 10, 10, 10);
+    this.languages.add("Common"); // any one language (usually Common)
+
+    const scimitar = new Scimitar(g);
+    const crossbow = new LightCrossbow(g);
+    this.give(scimitar, true);
+    this.give(crossbow, true);
+    this.don(wieldingCrossbow ? crossbow : scimitar);
+    this.addToInventory(new CrossbowBolt(g), 20);
+  }
+}
+
+const BanditCaptainMultiattack = makeBagMultiattack(
+  `The captain makes three melee attacks: two with its scimitar and one with its dagger. Or the captain makes two ranged attacks with its daggers.`,
+  [
+    { weapon: "scimitar", range: "melee" },
+    { weapon: "scimitar", range: "melee" },
+    { weapon: "dagger", range: "melee" },
+  ],
+  [
+    { weapon: "dagger", range: "ranged" },
+    { weapon: "dagger", range: "ranged" },
+  ],
+);
+
+export class BanditCaptain extends Monster {
+  constructor(g: Engine) {
+    super(
+      g,
+      "bandit captain",
+      2,
+      "humanoid",
+      SizeCategory.Medium,
+      banditCaptainUrl,
+      65,
+    );
+    this.don(new StuddedLeatherArmor(g), true);
+    this.movement.set("speed", 30);
+    this.setAbilityScores(15, 16, 14, 14, 11, 14);
+    this.addProficiency("str", "proficient");
+    this.addProficiency("dex", "proficient");
+    this.addProficiency("wis", "proficient");
+    this.addProficiency("Athletics", "proficient");
+    this.addProficiency("Deception", "proficient");
+    this.languages.add("Common"); // any two languages
+
+    this.addFeature(BanditCaptainMultiattack);
+    this.don(new Scimitar(g), true);
+
+    const dagger = new Dagger(g);
+    this.don(dagger, true);
+    this.addToInventory(dagger, 9); // TODO ???
+
+    this.addFeature(Parry);
+  }
+}
+
+const ThugMultiattack = makeBagMultiattack(
   "The thug makes two melee attacks.",
-  (me, action) => {
-    if (me.attacksSoFar.length !== 1) return false;
-    const [previous] = me.attacksSoFar;
-    return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
-  },
+  [{ range: "melee" }, { range: "melee" }],
 );
 
 export class Thug extends Monster {
@@ -292,6 +342,6 @@ export class Thug extends Monster {
     this.give(mace, true);
     this.give(crossbow, true);
     this.don(wieldingCrossbow ? crossbow : mace);
-    this.addToInventory(new CrossbowBolt(g), Infinity);
+    this.addToInventory(new CrossbowBolt(g), 20);
   }
 }

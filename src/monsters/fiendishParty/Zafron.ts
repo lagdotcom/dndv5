@@ -27,7 +27,7 @@ import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { round } from "../../utils/numbers";
 import { isA } from "../../utils/types";
-import { makeMultiattack } from "../common";
+import { makeBagMultiattack } from "../multiattack";
 
 const LustForBattle = new ConfiguredFeature<WeaponItem>(
   "Lust for Battle",
@@ -224,6 +224,11 @@ const SurvivalReflex = new SimpleFeature(
   },
 );
 
+const ZafronMultiattack = makeBagMultiattack(
+  "Zafron attacks twice with his Greataxe.",
+  [{ weapon: "greataxe" }, { weapon: "greataxe" }],
+);
+
 export default class Zafron extends Monster {
   constructor(g: Engine) {
     super(g, "Zafron Halehart", 5, "fiend", SizeCategory.Medium, tokenUrl, 105);
@@ -245,12 +250,7 @@ export default class Zafron extends Monster {
     this.addFeature(LustForBattle);
     this.setConfig(LustForBattle, axe);
 
-    this.addFeature(
-      makeMultiattack(
-        "Zafron attacks twice with his Greataxe.",
-        (me) => me.attacksSoFar.length < 2,
-      ),
-    );
+    this.addFeature(ZafronMultiattack);
     this.addFeature(BullRush);
     this.addFeature(SurvivalReflex);
 

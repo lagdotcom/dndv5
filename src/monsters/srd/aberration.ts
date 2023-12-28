@@ -17,7 +17,7 @@ import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
-import { isMeleeAttackAction, makeMultiattack } from "../common";
+import { makeBagMultiattack } from "../multiattack";
 import NaturalWeapon from "../NaturalWeapon";
 import { CanRecover, ParalyzingPoisonEffect } from "../poisons";
 
@@ -32,6 +32,8 @@ class TentaclesAction extends AbstractAttackAction<HasTarget> {
       actor,
       "Tentacles",
       "implemented",
+      "tentacles",
+      "melee",
       { target: new TargetResolver(g, actor.reach, [isGrappledBy(actor)]) },
       {
         description: `One creature grappled by the chuul must succeed on a DC ${dc} Constitution saving throw or be poisoned for 1 minute. Until this poison ends, the target is paralyzed. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.`,
@@ -83,7 +85,7 @@ const TentaclesFeature = new SimpleFeature("Tentacles", "", (g, me) => {
 
 export class Chuul extends Monster {
   constructor(g: Engine) {
-    super(g, "Chuul", 4, "aberration", SizeCategory.Large, chuulUrl, 93);
+    super(g, "chuul", 4, "aberration", SizeCategory.Large, chuulUrl, 93);
     this.naturalAC = 16;
     this.movement.set("speed", 30);
     this.movement.set("swim", 30);
@@ -97,26 +99,12 @@ export class Chuul extends Monster {
     this.addFeature(Amphibious);
     // TODO Sense Magic. The chuul senses magic within 120 feet of it at will. This trait otherwise works like the detect magic spell but isn't itself magical.
 
-    const pincer = "Pincer";
-    const tentacles = TentaclesFeature.name;
+    const pincer = "pincer";
 
     this.addFeature(
-      makeMultiattack(
+      makeBagMultiattack(
         `The chuul makes two pincer attacks. If the chuul is grappling a creature, the chuul can also use its tentacles once.`,
-        (me, action) => {
-          if (isMeleeAttackAction(action) && action.weapon.name === pincer)
-            return (
-              me.attacksSoFar.filter(
-                (attack) =>
-                  isMeleeAttackAction(attack) && attack.weapon.name === pincer,
-              ).length < 2
-            );
-
-          if (action.name === tentacles)
-            return !me.attacksSoFar.find((attack) => attack.name === tentacles);
-
-          return false;
-        },
+        [{ weapon: pincer }, { weapon: pincer }, { weapon: "tentacles" }],
       ),
     );
 

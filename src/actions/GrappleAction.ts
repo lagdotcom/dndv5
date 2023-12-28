@@ -25,6 +25,8 @@ export default class GrappleAction extends AbstractAttackAction<HasTarget> {
       actor,
       "Grapple",
       "implemented",
+      "grapple",
+      "melee",
       {
         target: new TargetResolver(g, actor.reach, [
           sizeOrLess(actor.size + 1),

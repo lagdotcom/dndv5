@@ -16,7 +16,7 @@ import { MundaneDamageTypes } from "../../types/DamageType";
 import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { isA } from "../../utils/types";
-import { makeMultiattack } from "../common";
+import { makeBagMultiattack } from "../multiattack";
 
 const hiddenName = "Shrouded Figure";
 const realName = "Kay of the Abyss";
@@ -127,6 +127,12 @@ const SmoulderingRage = new SimpleFeature(
   },
 );
 
+const KayMultiattack = makeBagMultiattack(
+  "Kay attacks twice with his Spear or Longbow.",
+  [{ weapon: "spear" }, { weapon: "spear" }],
+  [{ weapon: "longbow" }, { weapon: "longbow" }],
+);
+
 export default class Kay extends Monster {
   constructor(g: Engine) {
     super(g, hiddenName, 6, "humanoid", SizeCategory.Medium, tokenUrl, 75);
@@ -146,18 +152,13 @@ export default class Kay extends Monster {
 
     this.addFeature(ScreamingInside);
     this.addFeature(WreathedInShadow);
-    this.addFeature(
-      makeMultiattack(
-        "Kay attacks twice with his Spear or Longbow.",
-        (me) => me.attacksSoFar.length < 2,
-      ),
-    );
+    this.addFeature(KayMultiattack);
     this.addFeature(Evasion);
     this.addFeature(SmoulderingRage);
 
     this.don(new StuddedLeatherArmor(g), true);
     this.don(new Longbow(g), true);
     this.don(new Spear(g), true);
-    this.addToInventory(new Arrow(g), Infinity);
+    this.addToInventory(new Arrow(g), 20);
   }
 }

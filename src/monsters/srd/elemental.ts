@@ -16,11 +16,8 @@ import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { _dd } from "../../utils/dice";
 import { distance } from "../../utils/units";
-import {
-  ExhaustionImmunity,
-  makeMultiattack,
-  MundaneDamageResistance,
-} from "../common";
+import { ExhaustionImmunity, MundaneDamageResistance } from "../common";
+import { makeMultiattack } from "../multiattack";
 import NaturalWeapon from "../NaturalWeapon";
 
 const DoubleAttack = makeMultiattack(

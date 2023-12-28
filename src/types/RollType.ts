@@ -5,7 +5,7 @@ import { CheckTag } from "./CheckTag";
 import Combatant from "./Combatant";
 import DamageType from "./DamageType";
 import { EffectConfig } from "./EffectType";
-import { WeaponItem } from "./Item";
+import { AmmoItem, WeaponItem } from "./Item";
 import SaveTag from "./SaveTag";
 import SkillName from "./SkillName";
 import Source from "./Source";
@@ -25,6 +25,7 @@ export interface AttackRoll {
   who: Combatant;
   target: Combatant;
   weapon?: WeaponItem;
+  ammo?: AmmoItem;
   ability?: AbilityName;
   spell?: Spell;
   method?: SpellcastingMethod;

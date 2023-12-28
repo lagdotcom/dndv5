@@ -7,7 +7,7 @@ import {
 } from "@testing-library/preact";
 
 import { DivineSmite } from "../classes/paladin";
-import setupBattleTest from "./setupBattleTest";
+import { setupBattleTestWithReact } from "./setupBattleTest";
 
 const dialog = (name?: string) => screen.getByRole("dialog", { name });
 const main = () => screen.getByRole("main");
@@ -27,7 +27,7 @@ it("can run a simple battle", async () => {
     g,
     user,
     combatants: [me],
-  } = await setupBattleTest(["thug", 0, 0, 12], ["badger", 10, 0, 4]);
+  } = await setupBattleTestWithReact(["thug", 0, 0, 12], ["badger", 10, 0, 4]);
 
   await user.click(btn("Move East"));
   await user.click(token("badger"));
@@ -44,7 +44,7 @@ it("supports Fog Cloud", async () => {
     g,
     user,
     combatants: [pc, enemy],
-  } = await setupBattleTest(
+  } = await setupBattleTestWithReact(
     ["Tethilssethanar", 0, 0, 20],
     ["thug [crossbow]", 30, 0, 10],
   );
@@ -74,7 +74,7 @@ it("supports Fog Cloud", async () => {
   // attacking into a heavily obscured area also counts as being blinded, so they cancel out
   await user.click(token("thug"));
   g.dice.force(5, { type: "attack", who: pc });
-  await user.click(menuitem("Attack (dart)"));
+  await user.click(menuitem("Attack (dart, thrown)"));
   expect(
     logMsg("Tethilssethanar misses thug with dart (9). (AC 11)"),
   ).toBeVisible();
@@ -85,7 +85,7 @@ it("supports a typical Aura attack", async () => {
     g,
     user,
     combatants: [aura],
-  } = await setupBattleTest(
+  } = await setupBattleTestWithReact(
     ["Aura", 10, 10, 20],
     ["Tethilssethanar", 5, 0, 2],
     ["thug", 0, 0, 1],
@@ -115,7 +115,7 @@ it("supports a typical Beldalynn attack", async () => {
     g,
     user,
     combatants: [beldalynn, thug],
-  } = await setupBattleTest(
+  } = await setupBattleTestWithReact(
     ["Beldalynn", 0, 0, 20],
     ["thug", 25, 0, 1],
     ["Tethilssethanar", 20, 0, 2],
@@ -145,7 +145,7 @@ it("supports a typical Galilea attack", async () => {
     g,
     user,
     combatants: [galilea],
-  } = await setupBattleTest(["Galilea", 0, 0, 20], ["thug", 5, 0, 10]);
+  } = await setupBattleTestWithReact(["Galilea", 0, 0, 20], ["thug", 5, 0, 10]);
 
   await user.click(token("thug"));
 

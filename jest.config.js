@@ -14,7 +14,7 @@ module.exports = {
   },
   transform: {
     ".+\\.(png|svg)$": "jest-transform-stub",
-    "^.+\\.tsx?$": "ts-jest",
+    "^.+\\.tsx?$": ["ts-jest", { isolatedModules: true }],
   },
   transformIgnorePatterns: [
     "[/\\\\]node_modules[/\\\\].+\\.(mjs|js|jsx|ts|tsx)$",

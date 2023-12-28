@@ -1,6 +1,7 @@
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import Item, { ArmorItem, WeaponItem } from "../types/Item";
+import RangeCategory from "../types/RangeCategory";
 import { isDefined } from "./types";
 
 export const isSuitOfArmor = (item: Item): item is ArmorItem =>
@@ -25,8 +26,13 @@ export function getWeaponAbility(
   return "str";
 }
 
-export function getWeaponRange(who: Combatant, weapon: WeaponItem) {
-  if (isDefined(weapon.longRange)) return weapon.longRange;
+export function getWeaponRange(
+  who: Combatant,
+  weapon: WeaponItem,
+  rangeCategory: RangeCategory,
+) {
+  if (isDefined(weapon.longRange) && rangeCategory === "ranged")
+    return weapon.longRange;
   return who.reach + weapon.reach;
 }
 

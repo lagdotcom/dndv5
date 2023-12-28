@@ -1,69 +1,35 @@
 import frenzyUrl from "@img/act/frenzy.svg";
 
-import AbstractAction from "../../../actions/AbstractAction";
-import { doStandardAttack } from "../../../actions/WeaponAttack";
+import WeaponAttack from "../../../actions/WeaponAttack";
 import { makeIcon } from "../../../colours";
-import { HasTarget } from "../../../configs";
 import Effect from "../../../Effect";
 import Engine from "../../../Engine";
 import SimpleFeature from "../../../features/SimpleFeature";
-import { notSelf } from "../../../filters";
 import EvaluateLater from "../../../interruptions/EvaluateLater";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
-import TargetResolver from "../../../resolvers/TargetResolver";
-import AbilityName from "../../../types/AbilityName";
+import ActionTime from "../../../types/ActionTime";
 import Combatant from "../../../types/Combatant";
 import { WeaponItem } from "../../../types/Item";
 import Priority from "../../../types/Priority";
-import { sieve } from "../../../utils/array";
-import { getWeaponAbility } from "../../../utils/items";
 import { minutes } from "../../../utils/time";
 import { RageAction, RageEffect } from "../Rage";
 
 const FrenzyIcon = makeIcon(frenzyUrl);
 
-class FrenzyAttack extends AbstractAction<HasTarget> {
-  ability: AbilityName;
-
+class FrenzyAttack extends WeaponAttack {
   constructor(
     g: Engine,
     actor: Combatant,
     public weapon: WeaponItem,
   ) {
-    super(
-      g,
-      actor,
-      `${weapon.name} (Frenzy)`,
-      "implemented",
-      { target: new TargetResolver(g, actor.reach + weapon.reach, [notSelf]) },
-      {
-        icon: weapon.icon,
-        subIcon: FrenzyIcon,
-        damage: [weapon.damage],
-        time: "bonus action",
-        tags: ["attack", "harmful"],
-      },
-    );
+    super(g, "Frenzy", actor, "melee", weapon);
 
-    this.ability = getWeaponAbility(actor, weapon);
+    this.subIcon = FrenzyIcon;
+    this.tags.delete("costs attack");
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-    await doStandardAttack(this.g, {
-      ability: this.ability,
-      attacker: this.actor,
-      source: this,
-      target,
-      weapon: this.weapon,
-    });
+  getTime(): ActionTime {
+    return "bonus action";
   }
 }
 

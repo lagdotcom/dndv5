@@ -66,14 +66,12 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
       { target },
     );
 
-    const { outcome, attack, hit, critical } = await rsa.attack(target);
+    const { outcome, hit, critical, victim } = await rsa.attack(target);
     if (outcome === "cancelled") return;
 
-    const { target: finalTarget } = attack.pre;
-
     if (hit) {
-      const hitDamage = await rsa.getDamage(finalTarget);
-      await rsa.damage(finalTarget, hitDamage);
+      const hitDamage = await rsa.getDamage(victim);
+      await rsa.damage(victim, hitDamage);
     }
 
     const damage = await g.rollDamage(
@@ -90,9 +88,7 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
       critical,
     );
 
-    for (const other of g.getInside(getEldritchBurstArea(finalTarget))) {
-      if (other === finalTarget) continue;
-
+    for (const other of g.getInside(getEldritchBurstArea(victim), [victim])) {
       const { damageResponse } = await g.save({
         source: EldritchBurstSpell,
         type: { type: "flat", dc: 15 },

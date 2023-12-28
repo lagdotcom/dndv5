@@ -31,7 +31,7 @@ import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
-import { getWeaponAbility } from "../../utils/items";
+import { getWeaponAbility, getWeaponRange } from "../../utils/items";
 import { distance } from "../../utils/units";
 
 function getMeleeAttackOptions(
@@ -47,7 +47,7 @@ function getMeleeAttackOptions(
     for (const target of g.combatants) {
       if (target === attacker || !filter(target, weapon)) continue;
 
-      const reach = attacker.reach + weapon.reach;
+      const reach = getWeaponRange(attacker, weapon, "melee");
       if (reach >= distance(attacker, target)) options.push({ target, weapon });
     }
   }
@@ -117,6 +117,7 @@ class CheerAction extends AbstractAction<HasTarget> {
           source: this,
           ability: getWeaponAbility(attacker, weapon),
           attacker,
+          rangeCategory: "melee",
           target,
           weapon,
         });
@@ -208,6 +209,7 @@ class DiscordAction extends AbstractAction<HasTarget> {
           source: this,
           ability: getWeaponAbility(attacker, weapon),
           attacker,
+          rangeCategory: "melee",
           target,
           weapon,
         });

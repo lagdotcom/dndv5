@@ -86,9 +86,7 @@ const HasBonusAttackThisTurn = new Effect(
 
 class MartialArtsBonusAttack extends WeaponAttack {
   constructor(g: Engine, actor: Combatant, weapon: WeaponItem) {
-    super(g, actor, weapon);
-
-    this.name = `Martial Arts (${weapon.name})`;
+    super(g, "Martial Arts", actor, "melee", weapon);
     this.tags.delete("costs attack");
   }
 

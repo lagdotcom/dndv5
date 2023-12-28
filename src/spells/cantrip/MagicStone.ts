@@ -33,6 +33,8 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
       actor,
       "Throw Magic Stone",
       "incomplete",
+      "magic stone",
+      "ranged",
       { target: new TargetResolver(g, 60, [notSelf]) },
       {
         icon: MagicStoneIcon,

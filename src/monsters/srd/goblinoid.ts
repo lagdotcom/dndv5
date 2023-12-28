@@ -58,6 +58,6 @@ export class Goblin extends Monster {
       this.don(shield);
     }
 
-    this.addToInventory(new Arrow(g), Infinity);
+    this.addToInventory(new Arrow(g), 20);
   }
 }

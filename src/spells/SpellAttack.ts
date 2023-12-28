@@ -4,6 +4,7 @@ import Engine from "../Engine";
 import { atSet } from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import DamageType from "../types/DamageType";
+import RangeCategory from "../types/RangeCategory";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
@@ -16,7 +17,7 @@ export default class SpellAttack<T extends object> {
     public caster: Combatant,
     public spell: Spell<T>,
     public method: SpellcastingMethod,
-    public type: "melee" | "ranged",
+    public type: RangeCategory,
     public config: T,
   ) {}
 

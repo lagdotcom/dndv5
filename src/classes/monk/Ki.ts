@@ -15,7 +15,7 @@ import { WeaponItem } from "../../types/Item";
 import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
-import { getWeaponAbility } from "../../utils/items";
+import { getWeaponAbility, getWeaponRange } from "../../utils/items";
 import { getMonkUnarmedWeapon } from "./MartialArts";
 
 export const KiResource = new ShortRestResource("Ki", 2);
@@ -33,7 +33,13 @@ class FlurryOfBlows extends AbstractAction<HasTarget> {
       actor,
       "Flurry of Blows",
       "implemented",
-      { target: new TargetResolver(g, actor.reach + weapon.reach, []) },
+      {
+        target: new TargetResolver(
+          g,
+          getWeaponRange(actor, weapon, "melee"),
+          [],
+        ),
+      },
       {
         resources: [[KiResource, 1]],
         time: "bonus action",
@@ -64,6 +70,7 @@ class FlurryOfBlows extends AbstractAction<HasTarget> {
       ability,
       attacker,
       source: this,
+      rangeCategory: "melee",
       target,
       weapon,
     });
@@ -71,6 +78,7 @@ class FlurryOfBlows extends AbstractAction<HasTarget> {
       ability,
       attacker,
       source: this,
+      rangeCategory: "melee",
       target,
       weapon,
     });

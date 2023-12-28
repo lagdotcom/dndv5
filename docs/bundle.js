@@ -362,14 +362,16 @@
     }
   };
 
-  // src/DiceBag.ts
-  function matches(rt, m) {
-    for (const [field, value] of Object.entries(m)) {
-      if (rt[field] !== value)
+  // src/utils/objects.ts
+  function matches(object, match) {
+    for (const [field, value] of Object.entries(match)) {
+      if (object[field] !== value)
         return false;
     }
     return true;
   }
+
+  // src/DiceBag.ts
   function sizeOfDice(rt) {
     switch (rt.type) {
       case "damage":
@@ -1182,6 +1184,11 @@
     message,
     check: (g, action, value) => value.hasEffect(effect)
   });
+  var hasTime = (time) => makeFilter({
+    name: `has ${time}`,
+    message: "no time",
+    check: (g, action, value) => value.hasTime(time)
+  });
   var ofCreatureType = (...types) => makeFilter({
     name: types.join("/"),
     message: "wrong creature type",
@@ -1810,8 +1817,8 @@
       return "dex";
     return "str";
   }
-  function getWeaponRange(who, weapon) {
-    if (isDefined(weapon.longRange))
+  function getWeaponRange(who, weapon, rangeCategory) {
+    if (isDefined(weapon.longRange) && rangeCategory === "ranged")
       return weapon.longRange;
     return who.reach + weapon.reach;
   }
@@ -3024,8 +3031,10 @@
 
   // src/actions/AbstractAttackAction.ts
   var AbstractAttackAction = class extends AbstractAction {
-    constructor(g, actor, name, status, config, options = {}) {
+    constructor(g, actor, name, status, weaponName, rangeCategory, config, options = {}) {
       super(g, actor, name, status, config, options);
+      this.weaponName = weaponName;
+      this.rangeCategory = rangeCategory;
       this.tags.add("attack");
       this.tags.add("costs attack");
       this.tags.add("harmful");
@@ -3048,15 +3057,27 @@
   };
 
   // src/actions/WeaponAttack.ts
+  function getWeaponAttackName(name, rangeCategory, weapon, ammo) {
+    const ammoName = ammo ? ammo.name : weapon.properties.has("thrown") && rangeCategory === "ranged" ? "thrown" : void 0;
+    if (ammoName)
+      return `${name} (${weapon.name}, ${ammoName})`;
+    return `${name} (${weapon.name})`;
+  }
   var WeaponAttack = class extends AbstractAttackAction {
-    constructor(g, actor, weapon, ammo, attackTags) {
+    constructor(g, nameBasis, actor, rangeCategory, weapon, ammo, attackTags) {
       super(
         g,
         actor,
-        ammo ? `Attack (${weapon.name}, ${ammo.name})` : `Attack (${weapon.name})`,
-        weapon.properties.has("thrown") ? "incomplete" : "implemented",
+        getWeaponAttackName(nameBasis, rangeCategory, weapon, ammo),
+        rangeCategory === "ranged" && weapon.properties.has("thrown") ? "incomplete" : "implemented",
+        weapon.name,
+        rangeCategory,
         {
-          target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf])
+          target: new TargetResolver(
+            g,
+            getWeaponRange(actor, weapon, rangeCategory),
+            [notSelf]
+          )
         },
         { icon: weapon.icon, subIcon: ammo == null ? void 0 : ammo.icon }
       );
@@ -3080,14 +3101,14 @@
       return [this.weapon.damage];
     }
     getDescription() {
-      const { actor, weapon } = this;
+      const { actor, weapon, rangeCategory } = this;
       const rangeCategories = [];
       const ranges = [];
-      if (weapon.rangeCategory === "melee") {
+      if (rangeCategory === "melee") {
         rangeCategories.push("Melee");
-        ranges.push(`reach ${actor.reach + weapon.reach} ft.`);
+        ranges.push(`reach ${getWeaponRange(actor, weapon, "melee")} ft.`);
       }
-      if (weapon.rangeCategory === "ranged" || weapon.properties.has("thrown")) {
+      if (rangeCategory === "ranged") {
         rangeCategories.push("Ranged");
         ranges.push(`range ${weapon.shortRange}/${weapon.longRange} ft.`);
       }
@@ -3120,6 +3141,7 @@
         source: this,
         target,
         weapon: this.weapon,
+        rangeCategory: this.rangeCategory,
         tags: this.attackTags
       });
     }
@@ -3132,13 +3154,13 @@
     source,
     target,
     weapon,
+    rangeCategory,
     tags: startTags
   }) {
     const tags = new Set(startTags);
-    const isRanged = distance(attacker, target) > attacker.reach + weapon.reach;
-    if (isRanged) {
+    if (rangeCategory === "ranged") {
       tags.add("ranged");
-      if (weapon.rangeCategory === "melee")
+      if (weapon.properties.has("thrown"))
         tags.add("thrown");
     } else {
       tags.add("melee");
@@ -3165,10 +3187,22 @@
     );
   }
   async function getAttackResult(g, source, e2) {
+    if (e2.outcome === "cancelled")
+      return { type: "cancelled" };
+    const {
+      who: attacker,
+      target,
+      ability,
+      weapon,
+      ammo,
+      tags
+    } = e2.attack.roll.type;
+    if (ammo)
+      attacker.removeFromInventory(ammo, 1);
+    if (tags.has("thrown") && weapon) {
+      attacker.equipment.delete(weapon);
+    }
     if (e2.hit) {
-      const { who: attacker, target, ability, weapon, ammo } = e2.attack.pre;
-      if (ammo)
-        attacker.removeFromInventory(ammo, 1);
       if (weapon) {
         const { damage } = weapon;
         const baseDamage = [];
@@ -3186,7 +3220,7 @@
               target,
               ability,
               weapon,
-              tags: e2.attack.roll.type.tags
+              tags
             },
             e2.critical
           );
@@ -3213,11 +3247,34 @@
     }
     return { type: "miss", attack: e2 };
   }
+  function meleeWeaponAttack(g, actor, weapon, tags) {
+    if (weapon.rangeCategory === "ranged")
+      throw new Error(`meleeWeaponAttack(${weapon.name})`);
+    return new WeaponAttack(g, "Attack", actor, "melee", weapon, void 0, tags);
+  }
+  function thrownWeaponAttack(g, actor, weapon, tags) {
+    if (!weapon.properties.has("thrown"))
+      throw new Error(`thrownWeaponAttack(${weapon.name})`);
+    return new WeaponAttack(
+      g,
+      "Attack",
+      actor,
+      "ranged",
+      weapon,
+      void 0,
+      tags
+    );
+  }
+  function rangedWeaponAttack(g, actor, weapon, ammo, tags) {
+    if (weapon.rangeCategory !== "ranged")
+      throw new Error(`rangedWeaponAttack(${weapon.name})`);
+    return new WeaponAttack(g, "Attack", actor, "ranged", weapon, ammo, tags);
+  }
 
   // src/actions/OpportunityAttack.ts
   var OpportunityAttack = class extends WeaponAttack {
     constructor(g, actor, weapon) {
-      super(g, actor, weapon);
+      super(g, "Opportunity Attack", actor, "melee", weapon);
       this.tags.delete("costs attack");
     }
     getTime() {
@@ -3452,6 +3509,8 @@
         actor,
         "Grapple",
         "implemented",
+        "grapple",
+        "melee",
         {
           target: new TargetResolver(g, actor.reach, [
             sizeOrLess(actor.size + 1),
@@ -3561,6 +3620,8 @@
         actor,
         "Shove",
         "implemented",
+        "shove",
+        "melee",
         {
           target: new TargetResolver(g, actor.reach, [
             sizeOrLess(actor.size + 1)
@@ -3625,10 +3686,11 @@
 
   // src/actions/TwoWeaponAttack.ts
   var TwoWeaponAttack = class extends WeaponAttack {
-    constructor(g, actor, weapon) {
-      super(g, actor, weapon, void 0, ["two-weapon"]);
+    constructor(g, actor, rangeCategory, weapon) {
+      super(g, "Two-Weapon Attack", actor, rangeCategory, weapon, void 0, [
+        "two-weapon"
+      ]);
       this.tags.delete("costs attack");
-      this.name = `Two-Weapon ${this.name}`;
     }
     getTime() {
       return "bonus action";
@@ -3954,7 +4016,7 @@
       to
     );
     return attacker.weapons.filter((weapon) => weapon.rangeCategory === "melee").filter((weapon) => {
-      const range = attacker.reach + weapon.reach;
+      const range = getWeaponRange(attacker, weapon, "melee");
       return oldDistance <= range && newDistance > range;
     }).map((weapon) => new OpportunityAttack(g, attacker, weapon)).filter((opportunity) => checkConfig(g, opportunity, { target }));
   }
@@ -4018,7 +4080,9 @@
   };
   var autoCrit = (g, condition, rule, maxRange = 5) => ({
     detail: {
-      pre: { who, target },
+      roll: {
+        type: { who, target }
+      },
       outcome
     }
   }) => {
@@ -4137,8 +4201,11 @@
       const otherLightWeapon = lightMeleeAttack && who.weapons.find(
         (w) => w.properties.has("light") && w !== lightMeleeAttack.weapon
       );
-      if (otherLightWeapon)
-        actions.push(new TwoWeaponAttack(g, who, otherLightWeapon));
+      if (otherLightWeapon) {
+        actions.push(new TwoWeaponAttack(g, who, "melee", otherLightWeapon));
+        if (otherLightWeapon.properties.has("thrown"))
+          actions.push(new TwoWeaponAttack(g, who, "ranged", otherLightWeapon));
+      }
     });
   });
   var UnconsciousRule = new DndRule("Unconscious", (g) => {
@@ -4156,12 +4223,14 @@
     g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
       if (who !== target) {
         for (const weapon of who.weapons) {
-          if (weapon.ammunitionTag) {
-            for (const ammo of getValidAmmunition(who, weapon)) {
-              actions.push(new WeaponAttack(g, who, weapon, ammo));
-            }
-          } else
-            actions.push(new WeaponAttack(g, who, weapon));
+          if (weapon.rangeCategory === "melee") {
+            actions.push(meleeWeaponAttack(g, who, weapon));
+          } else {
+            for (const ammo of getValidAmmunition(who, weapon))
+              actions.push(rangedWeaponAttack(g, who, weapon, ammo));
+          }
+          if (weapon.properties.has("thrown"))
+            actions.push(thrownWeaponAttack(g, who, weapon));
         }
       }
     });
@@ -4627,7 +4696,7 @@
       const failDamageResponse = new SaveDamageResponseCollector(fail);
       if (baseDiceType)
         diceType.add(baseDiceType, { name: "Base" });
-      const pre = await this.resolve(
+      const pre = (await this.resolve(
         new BeforeSaveEvent({
           ...e2,
           dc,
@@ -4640,7 +4709,7 @@
           failDamageResponse,
           interrupt: new InterruptionCollector()
         })
-      );
+      )).detail;
       this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
       let roll = {
         type: { type: "save", ...e2 },
@@ -4663,7 +4732,7 @@
       const outcome = success ? "success" : "fail";
       this.fire(
         new SaveEvent({
-          pre: pre.detail,
+          pre,
           diceType: diceType.result,
           roll,
           dc,
@@ -4685,7 +4754,7 @@
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
-      const pre = await this.resolve(
+      const pre = (await this.resolve(
         new BeforeCheckEvent({
           ...e2,
           dc,
@@ -4696,7 +4765,7 @@
           successResponse,
           interrupt: new InterruptionCollector()
         })
-      );
+      )).detail;
       this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
       let forced = false;
       let success = false;
@@ -4711,7 +4780,7 @@
       const outcome = success ? "success" : "fail";
       this.fire(
         new AbilityCheckEvent({
-          pre: pre.detail,
+          pre,
           diceType: diceType.result,
           roll,
           dc,
@@ -4808,13 +4877,17 @@
         })
       );
       (_a = handler.check) == null ? void 0 : _a.call(handler, pre);
-      return pre;
+      return pre.detail;
     }
     async move(who, position, handler, type = "speed", direction) {
       const old = who.position;
-      const {
-        detail: { success, error, cost }
-      } = await this.beforeMove(who, position, handler, type, direction);
+      const { success, error, cost } = await this.beforeMove(
+        who,
+        position,
+        handler,
+        type,
+        direction
+      );
       if (success.result === "fail")
         return { type: "prevented" };
       if (!error.result)
@@ -4993,7 +5066,7 @@
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const success = new SuccessResponseCollector();
-      const pre = await this.resolve(
+      const pre = (await this.resolve(
         new BeforeAttackEvent({
           ...e2,
           pb,
@@ -5003,20 +5076,16 @@
           success,
           interrupt: new InterruptionCollector()
         })
-      );
+      )).detail;
       if (success.result === "fail")
         return { outcome: "cancelled", hit: false };
       this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
-      const { target, who, ability } = pre.detail;
-      const ac = await this.getAC(target, pre.detail);
-      const roll = await this.roll(
-        { type: "attack", who, target, ac, ability, tags: pre.detail.tags },
-        diceType.result
-      );
+      const ac = await this.getAC(pre.target, pre);
+      const roll = await this.roll({ type: "attack", ...pre }, diceType.result);
       const total = roll.values.final + bonus.result;
       const outcomeCollector = new AttackOutcomeCollector();
       const event = new AttackEvent({
-        pre: pre.detail,
+        pre,
         roll,
         total,
         ac,
@@ -5288,9 +5357,7 @@
       for (const direction of MoveDirections) {
         const old = who.position;
         const position = movePoint(old, direction);
-        const {
-          detail: { success, error }
-        } = await this.beforeMove(
+        const { success, error } = await this.beforeMove(
           who,
           position,
           handler,
@@ -5707,13 +5774,12 @@
         "ranged",
         { target }
       );
-      const { outcome, attack, hit, critical } = await rsa.attack(target);
+      const { outcome, hit, critical, victim } = await rsa.attack(target);
       if (outcome === "cancelled")
         return;
-      const { target: finalTarget } = attack.pre;
       if (hit) {
-        const hitDamage = await rsa.getDamage(finalTarget);
-        await rsa.damage(finalTarget, hitDamage);
+        const hitDamage = await rsa.getDamage(victim);
+        await rsa.damage(victim, hitDamage);
       }
       const damage = await g.rollDamage(
         1,
@@ -5728,9 +5794,7 @@
         },
         critical
       );
-      for (const other of g.getInside(getEldritchBurstArea(finalTarget))) {
-        if (other === finalTarget)
-          continue;
+      for (const other of g.getInside(getEldritchBurstArea(victim), [victim])) {
         const { damageResponse } = await g.save({
           source: EldritchBurstSpell,
           type: { type: "flat", dc: 15 },
@@ -6753,94 +6817,40 @@
     ...MagicDamageTypes
   ];
 
-  // src/monsters/common.ts
-  var ExhaustionImmunity = new SimpleFeature(
-    "Exhaustion Immunity",
-    `You are immune to exhaustion.`,
-    (g, me) => {
-      g.events.on("Exhaustion", ({ detail: { who, delta, success } }) => {
-        if (who === me && delta > 0)
-          success.add("fail", ExhaustionImmunity);
-      });
+  // src/monsters/multiattack.ts
+  function getAttackSpec(action) {
+    if (!(action instanceof AbstractAttackAction))
+      throw new Error(`getAttackSpec(${action.name})`);
+    return { weapon: action.weaponName, range: action.rangeCategory };
+  }
+  function containsAllSpecs(matchers, specs) {
+    const bag = matchers.slice();
+    for (const spec of specs) {
+      const index = bag.findIndex((match) => matches(spec, match));
+      if (index < 0)
+        return false;
+      bag.splice(index, 1);
     }
-  );
-  var KeenHearing = new SimpleFeature(
-    "Keen Hearing",
-    `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
-    (g, me) => {
-      g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && tags.has("hearing"))
-          diceType.add("advantage", KeenHearing);
-      });
-    }
-  );
-  var KeenSmell = new SimpleFeature(
-    "Keen Smell",
-    `This has advantage on Wisdom (Perception) checks that rely on smell.`,
-    (g, me) => {
-      g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && tags.has("smell"))
-          diceType.add("advantage", KeenSmell);
-      });
-    }
-  );
-  var MagicResistance = new SimpleFeature(
-    "Magic Resistance",
-    `You have advantage on saving throws against spells and other magical effects.`,
-    (g, me) => {
-      g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && tags.has("magic"))
-          diceType.add("advantage", MagicResistance);
-      });
-    }
-  );
-  var MundaneDamageResistance = new SimpleFeature(
-    "Mundane Damage Resistance",
-    "You resist bludgeoning, piercing, and slashing damage from nonmagical attacks.",
-    (g, me) => {
-      g.events.on(
-        "GetDamageResponse",
-        ({ detail: { who, damageType, attack, response } }) => {
-          if (who === me && !(attack == null ? void 0 : attack.roll.type.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
-            response.add("resist", MundaneDamageResistance);
-        }
-      );
-    }
-  );
-  var PackTactics = new SimpleFeature(
-    "Pack Tactics",
-    `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`,
-    (g, me) => {
-      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
-        if (who === me && getFlanker(g, me, target))
-          diceType.add("advantage", PackTactics);
-      });
-    }
-  );
-  var SpellDamageResistance = new SimpleFeature(
-    "Spell Damage Resistance",
-    `You resist damage from spells.`,
-    (g, me) => {
-      g.events.on("GetDamageResponse", ({ detail: { who, spell, response } }) => {
-        if (who === me && spell)
-          response.add("resist", SpellDamageResistance);
-      });
-    }
-  );
-  function makeMultiattack(text, canStillAttack) {
-    return new SimpleFeature("Multiattack", text, (g, me) => {
-      g.events.on("CheckAction", ({ detail: { action, error } }) => {
-        if (action.actor === me && action.tags.has("costs attack") && canStillAttack(me, action))
-          error.ignore(OneAttackPerTurnRule);
-      });
+    return true;
+  }
+  function makeBagMultiattack(text, ...matchersList) {
+    return makeMultiattack(text, (me, action) => {
+      const specs = me.attacksSoFar.concat(action).map(getAttackSpec);
+      return !!matchersList.find((matchers) => containsAllSpecs(matchers, specs));
     });
   }
-  function isMeleeAttackAction(action) {
-    if (!action.tags.has("attack"))
-      return false;
-    if (!(action instanceof WeaponAttack))
-      return false;
-    return action.weapon.rangeCategory === "melee";
+  function makeMultiattack(text, canStillAttack) {
+    const feature = new SimpleFeature("Multiattack", text, (g, me) => {
+      g.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action.actor === me) {
+          if (action.tags.has("costs attack") && canStillAttack(me, action))
+            error.ignore(OneAttackPerTurnRule);
+          if (action instanceof TwoWeaponAttack)
+            error.add("use Multiattack", feature);
+        }
+      });
+    });
+    return feature;
   }
 
   // src/monsters/fiendishParty/Kay.ts
@@ -6940,6 +6950,11 @@
       );
     }
   );
+  var KayMultiattack = makeBagMultiattack(
+    "Kay attacks twice with his Spear or Longbow.",
+    [{ weapon: "spear" }, { weapon: "spear" }],
+    [{ weapon: "longbow" }, { weapon: "longbow" }]
+  );
   var Kay = class extends Monster {
     constructor(g) {
       super(g, hiddenName, 6, "humanoid", SizeCategory_default.Medium, kay_default, 75);
@@ -6957,18 +6972,13 @@
       this.languages.add("Orc");
       this.addFeature(ScreamingInside);
       this.addFeature(WreathedInShadow);
-      this.addFeature(
-        makeMultiattack(
-          "Kay attacks twice with his Spear or Longbow.",
-          (me) => me.attacksSoFar.length < 2
-        )
-      );
+      this.addFeature(KayMultiattack);
       this.addFeature(Evasion_default);
       this.addFeature(SmoulderingRage);
       this.don(new StuddedLeatherArmor(g), true);
       this.don(new Longbow(g), true);
       this.don(new Spear(g), true);
-      this.addToInventory(new Arrow(g), Infinity);
+      this.addToInventory(new Arrow(g), 20);
     }
   };
 
@@ -7084,7 +7094,7 @@
         actor,
         "Hiss (Boon of Vassetri)",
         "implemented",
-        { target: new TargetResolver(g, 5, [isEnemy]) },
+        { target: new TargetResolver(g, 5, [isEnemy, hasTime("reaction")]) },
         {
           icon: makeIcon(hiss_default),
           time: "bonus action",
@@ -7751,7 +7761,7 @@
       for (const target of g.combatants) {
         if (target === attacker || !filter(target, weapon))
           continue;
-        const reach = attacker.reach + weapon.reach;
+        const reach = getWeaponRange(attacker, weapon, "melee");
         if (reach >= distance(attacker, target))
           options.push({ target, weapon });
       }
@@ -7813,6 +7823,7 @@
             source: this,
             ability: getWeaponAbility(attacker, weapon),
             attacker,
+            rangeCategory: "melee",
             target,
             weapon
           });
@@ -7898,6 +7909,7 @@
             source: this,
             ability: getWeaponAbility(attacker, weapon),
             attacker,
+            rangeCategory: "melee",
             target,
             weapon
           });
@@ -8231,6 +8243,10 @@
       });
     }
   );
+  var ZafronMultiattack = makeBagMultiattack(
+    "Zafron attacks twice with his Greataxe.",
+    [{ weapon: "greataxe" }, { weapon: "greataxe" }]
+  );
   var Zafron = class extends Monster {
     constructor(g) {
       super(g, "Zafron Halehart", 5, "fiend", SizeCategory_default.Medium, zafron_default, 105);
@@ -8249,12 +8265,7 @@
       const axe = new Greataxe(g);
       this.addFeature(LustForBattle);
       this.setConfig(LustForBattle, axe);
-      this.addFeature(
-        makeMultiattack(
-          "Zafron attacks twice with his Greataxe.",
-          (me) => me.attacksSoFar.length < 2
-        )
-      );
+      this.addFeature(ZafronMultiattack);
       this.addFeature(BullRush);
       this.addFeature(SurvivalReflex);
       this.don(new ScaleMailArmor(g), true);
@@ -8338,6 +8349,8 @@
         actor,
         "Tentacles",
         "implemented",
+        "tentacles",
+        "melee",
         { target: new TargetResolver(g, actor.reach, [isGrappledBy(actor)]) },
         {
           description: `One creature grappled by the chuul must succeed on a DC ${dc} Constitution saving throw or be poisoned for 1 minute. Until this poison ends, the target is paralyzed. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.`
@@ -8385,7 +8398,7 @@
   });
   var Chuul = class extends Monster {
     constructor(g) {
-      super(g, "Chuul", 4, "aberration", SizeCategory_default.Large, chuul_default, 93);
+      super(g, "chuul", 4, "aberration", SizeCategory_default.Large, chuul_default, 93);
       this.naturalAC = 16;
       this.movement.set("speed", 30);
       this.movement.set("swim", 30);
@@ -8396,20 +8409,11 @@
       this.senses.set("darkvision", 60);
       this.languages.add("Deep Speech");
       this.addFeature(Amphibious);
-      const pincer = "Pincer";
-      const tentacles = TentaclesFeature.name;
+      const pincer = "pincer";
       this.addFeature(
-        makeMultiattack(
+        makeBagMultiattack(
           `The chuul makes two pincer attacks. If the chuul is grappling a creature, the chuul can also use its tentacles once.`,
-          (me, action) => {
-            if (isMeleeAttackAction(action) && action.weapon.name === pincer)
-              return me.attacksSoFar.filter(
-                (attack) => isMeleeAttackAction(attack) && attack.weapon.name === pincer
-              ).length < 2;
-            if (action.name === tentacles)
-              return !me.attacksSoFar.find((attack) => attack.name === tentacles);
-            return false;
-          }
+          [{ weapon: pincer }, { weapon: pincer }, { weapon: "tentacles" }]
         )
       );
       this.reach = 10;
@@ -8436,6 +8440,81 @@
 
   // src/img/tok/giant-badger.png
   var giant_badger_default = "./giant-badger-R3QZK5QP.png";
+
+  // src/monsters/common.ts
+  var ExhaustionImmunity = new SimpleFeature(
+    "Exhaustion Immunity",
+    `You are immune to exhaustion.`,
+    (g, me) => {
+      g.events.on("Exhaustion", ({ detail: { who, delta, success } }) => {
+        if (who === me && delta > 0)
+          success.add("fail", ExhaustionImmunity);
+      });
+    }
+  );
+  var KeenHearing = new SimpleFeature(
+    "Keen Hearing",
+    `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
+    (g, me) => {
+      g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("hearing"))
+          diceType.add("advantage", KeenHearing);
+      });
+    }
+  );
+  var KeenSmell = new SimpleFeature(
+    "Keen Smell",
+    `This has advantage on Wisdom (Perception) checks that rely on smell.`,
+    (g, me) => {
+      g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("smell"))
+          diceType.add("advantage", KeenSmell);
+      });
+    }
+  );
+  var MagicResistance = new SimpleFeature(
+    "Magic Resistance",
+    `You have advantage on saving throws against spells and other magical effects.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && tags.has("magic"))
+          diceType.add("advantage", MagicResistance);
+      });
+    }
+  );
+  var MundaneDamageResistance = new SimpleFeature(
+    "Mundane Damage Resistance",
+    "You resist bludgeoning, piercing, and slashing damage from nonmagical attacks.",
+    (g, me) => {
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, attack, response } }) => {
+          if (who === me && !(attack == null ? void 0 : attack.roll.type.tags.has("magical")) && isA(damageType, MundaneDamageTypes))
+            response.add("resist", MundaneDamageResistance);
+        }
+      );
+    }
+  );
+  var PackTactics = new SimpleFeature(
+    "Pack Tactics",
+    `This has advantage on an attack roll against a creature if at least one of its allies is within 5 feet of the creature and the ally isn't incapacitated.`,
+    (g, me) => {
+      g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+        if (who === me && getFlanker(g, me, target))
+          diceType.add("advantage", PackTactics);
+      });
+    }
+  );
+  var SpellDamageResistance = new SimpleFeature(
+    "Spell Damage Resistance",
+    `You resist damage from spells.`,
+    (g, me) => {
+      g.events.on("GetDamageResponse", ({ detail: { who, spell, response } }) => {
+        if (who === me && spell)
+          response.add("resist", SpellDamageResistance);
+      });
+    }
+  );
 
   // src/monsters/srd/beast.ts
   var Badger = class extends Monster {
@@ -8481,16 +8560,9 @@
       this.senses.set("darkvision", 30);
       this.addFeature(KeenSmell);
       this.addFeature(
-        makeMultiattack(
+        makeBagMultiattack(
           "The badger makes two attacks: one with its bite and one with its claws.",
-          (me, action) => {
-            if (me.attacksSoFar.length >= 2)
-              return false;
-            const weaponName = action.weapon.name;
-            return !me.attacksSoFar.find(
-              (a) => a.weapon.name === weaponName
-            );
-          }
+          [{ weapon: "bite" }, { weapon: "claw" }]
         )
       );
       this.naturalWeapons.add(
@@ -8738,7 +8810,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
         this.don(scimitar);
         this.don(shield);
       }
-      this.addToInventory(new Arrow(g), Infinity);
+      this.addToInventory(new Arrow(g), 20);
     }
   };
 
@@ -8750,6 +8822,12 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
 
   // src/img/tok/assassin.png
   var assassin_default = "./assassin-VUIPCSEA.png";
+
+  // src/img/tok/bandit.png
+  var bandit_default = "./bandit-K6YACKTJ.png";
+
+  // src/img/tok/bandit-captain.png
+  var bandit_captain_default = "./bandit-captain-QYE5N5W6.png";
 
   // src/img/tok/thug.png
   var thug_default = "./thug-IXRM6PKF.png";
@@ -10219,6 +10297,71 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   });
   var ConeOfCold_default = ConeOfCold;
 
+  // src/monsters/Parry.ts
+  var ParryAction = class extends AbstractAction {
+    constructor(g, actor, detail) {
+      super(
+        g,
+        actor,
+        "Parry",
+        "implemented",
+        { target: new TargetResolver(g, Infinity, [canSee]) },
+        {
+          description: `You add 2 to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
+          time: "reaction"
+        }
+      );
+      this.detail = detail;
+    }
+    check(config, ec) {
+      const melee = this.actor.weapons.find((w) => w.rangeCategory === "melee");
+      if (!melee)
+        ec.add("not wielding a melee weapon", this);
+      return super.check(config, ec);
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    async apply(config) {
+      await super.apply(config);
+      if (!this.detail)
+        throw new Error(`Parry.apply() without AttackDetail`);
+      this.detail.ac += 2;
+    }
+  };
+  var Parry = new SimpleFeature(
+    "Parry",
+    `Reaction: You add 2 to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new ParryAction(g, me));
+      });
+      g.events.on("Attack", ({ detail }) => {
+        const { target, who } = detail.pre;
+        const parry = new ParryAction(g, me, detail);
+        const config = { target: who };
+        if (target === me && detail.roll.type.tags.has("melee") && detail.outcome.hits && checkConfig(g, parry, config))
+          detail.interrupt.add(
+            new YesNoChoice(
+              me,
+              Parry,
+              "Parry",
+              `${who.name} is about to hit ${target.name} in melee (${detail.total} vs. AC ${detail.ac}). Should they use Parry to add 2 AC for this attack?`,
+              Priority_default.ChangesOutcome,
+              async () => {
+                await g.act(parry, config);
+              }
+            )
+          );
+      });
+    }
+  );
+  var Parry_default = Parry;
+
   // src/monsters/srd/humanoid.ts
   var Acolyte = class extends Monster {
     constructor(g) {
@@ -10332,13 +10475,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       );
     }
   );
-  var AssassinMultiattack = makeMultiattack(
+  var AssassinMultiattack = makeBagMultiattack(
     `The assassin makes two shortsword attacks.`,
-    (me, action) => {
-      if (me.attacksSoFar.length < 1)
-        return true;
-      return isMeleeAttackAction(me.attacksSoFar[0]) && isMeleeAttackAction(action) && action.weapon.weaponType === "shortsword";
-    }
+    [{ weapon: "shortsword" }, { weapon: "shortsword" }]
   );
   var assassinPoison = {
     name: "poison",
@@ -10410,17 +10549,67 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.give(sword, true);
       this.give(crossbow, true);
       this.don(wieldingCrossbow ? crossbow : sword);
-      this.addToInventory(new CrossbowBolt(g), Infinity);
+      this.addToInventory(new CrossbowBolt(g), 20);
     }
   };
-  var ThugMultiattack = makeMultiattack(
-    "The thug makes two melee attacks.",
-    (me, action) => {
-      if (me.attacksSoFar.length !== 1)
-        return false;
-      const [previous] = me.attacksSoFar;
-      return isMeleeAttackAction(previous) && isMeleeAttackAction(action);
+  var Bandit = class extends Monster {
+    constructor(g, wieldingCrossbow = false) {
+      super(g, "bandit", 0.125, "humanoid", SizeCategory_default.Medium, bandit_default, 11);
+      this.don(new LeatherArmor(g), true);
+      this.movement.set("speed", 30);
+      this.setAbilityScores(11, 12, 12, 10, 10, 10);
+      this.languages.add("Common");
+      const scimitar = new Scimitar(g);
+      const crossbow = new LightCrossbow(g);
+      this.give(scimitar, true);
+      this.give(crossbow, true);
+      this.don(wieldingCrossbow ? crossbow : scimitar);
+      this.addToInventory(new CrossbowBolt(g), 20);
     }
+  };
+  var BanditCaptainMultiattack = makeBagMultiattack(
+    `The captain makes three melee attacks: two with its scimitar and one with its dagger. Or the captain makes two ranged attacks with its daggers.`,
+    [
+      { weapon: "scimitar", range: "melee" },
+      { weapon: "scimitar", range: "melee" },
+      { weapon: "dagger", range: "melee" }
+    ],
+    [
+      { weapon: "dagger", range: "ranged" },
+      { weapon: "dagger", range: "ranged" }
+    ]
+  );
+  var BanditCaptain = class extends Monster {
+    constructor(g) {
+      super(
+        g,
+        "bandit captain",
+        2,
+        "humanoid",
+        SizeCategory_default.Medium,
+        bandit_captain_default,
+        65
+      );
+      this.don(new StuddedLeatherArmor(g), true);
+      this.movement.set("speed", 30);
+      this.setAbilityScores(15, 16, 14, 14, 11, 14);
+      this.addProficiency("str", "proficient");
+      this.addProficiency("dex", "proficient");
+      this.addProficiency("wis", "proficient");
+      this.addProficiency("Athletics", "proficient");
+      this.addProficiency("Deception", "proficient");
+      this.languages.add("Common");
+      this.addFeature(BanditCaptainMultiattack);
+      this.don(new Scimitar(g), true);
+      const dagger = new Dagger(g);
+      this.don(dagger, true);
+      this.addToInventory(dagger, 9);
+      this.addFeature(Parry_default);
+    }
+  };
+  var ThugMultiattack = makeBagMultiattack(
+    "The thug makes two melee attacks.",
+    [{ range: "melee" }, { range: "melee" }]
   );
   var Thug = class extends Monster {
     constructor(g, wieldingCrossbow = false) {
@@ -10437,7 +10626,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.give(mace, true);
       this.give(crossbow, true);
       this.don(wieldingCrossbow ? crossbow : mace);
-      this.addToInventory(new CrossbowBolt(g), Infinity);
+      this.addToInventory(new CrossbowBolt(g), 20);
     }
   };
 
@@ -10457,6 +10646,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     archmage: (g) => new Archmage(g),
     assassin: (g) => new Assassin(g),
     "assassin [crossbow]": (g) => new Assassin(g, true),
+    bandit: (g) => new Bandit(g),
+    "bandit [crossbow]": (g) => new Bandit(g, true),
+    "bandit captain": (g) => new BanditCaptain(g),
     thug: (g) => new Thug(g),
     "thug [crossbow]": (g) => new Thug(g, true),
     Birnotec: (g) => new Birnotec(g),
@@ -13529,6 +13721,8 @@ This increases to two additional dice at 13th level and three additional dice at
         actor,
         "Throw Magic Stone",
         "incomplete",
+        "magic stone",
+        "ranged",
         { target: new TargetResolver(g, 60, [notSelf]) },
         {
           icon: MagicStoneIcon,
@@ -17437,8 +17631,7 @@ Once you use this feature, you must finish a short or long rest before you can u
   );
   var MartialArtsBonusAttack = class extends WeaponAttack {
     constructor(g, actor, weapon) {
-      super(g, actor, weapon);
-      this.name = `Martial Arts (${weapon.name})`;
+      super(g, "Martial Arts", actor, "melee", weapon);
       this.tags.delete("costs attack");
     }
     getTime() {
@@ -17508,7 +17701,13 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         actor,
         "Flurry of Blows",
         "implemented",
-        { target: new TargetResolver(g, actor.reach + weapon.reach, []) },
+        {
+          target: new TargetResolver(
+            g,
+            getWeaponRange(actor, weapon, "melee"),
+            []
+          )
+        },
         {
           resources: [[KiResource, 1]],
           time: "bonus action",
@@ -17538,6 +17737,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         ability,
         attacker,
         source: this,
+        rangeCategory: "melee",
         target,
         weapon
       });
@@ -17545,6 +17745,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         ability,
         attacker,
         source: this,
+        rangeCategory: "melee",
         target,
         weapon
       });
@@ -19257,6 +19458,8 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
         actor,
         "Breath Weapon",
         "implemented",
+        "breath weapon",
+        "ranged",
         { point: new PointResolver(g, 15) },
         {
           icon: makeIcon(breath_default, DamageColours[damageType]),
@@ -19323,6 +19526,8 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
         actor,
         name,
         status,
+        "metallic breath weapon",
+        "ranged",
         { point: new PointResolver(g, 15) },
         {
           resources: [[MetallicBreathWeaponResource, 1]],
@@ -20057,40 +20262,15 @@ When you create a device, choose one of the following options:
 
   // src/classes/barbarian/Berserker/Frenzy.ts
   var FrenzyIcon = makeIcon(frenzy_default);
-  var FrenzyAttack = class extends AbstractAction {
+  var FrenzyAttack = class extends WeaponAttack {
     constructor(g, actor, weapon) {
-      super(
-        g,
-        actor,
-        `${weapon.name} (Frenzy)`,
-        "implemented",
-        { target: new TargetResolver(g, actor.reach + weapon.reach, [notSelf]) },
-        {
-          icon: weapon.icon,
-          subIcon: FrenzyIcon,
-          damage: [weapon.damage],
-          time: "bonus action",
-          tags: ["attack", "harmful"]
-        }
-      );
+      super(g, "Frenzy", actor, "melee", weapon);
       this.weapon = weapon;
-      this.ability = getWeaponAbility(actor, weapon);
+      this.subIcon = FrenzyIcon;
+      this.tags.delete("costs attack");
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
-      await doStandardAttack(this.g, {
-        ability: this.ability,
-        attacker: this.actor,
-        source: this,
-        target,
-        weapon: this.weapon
-      });
+    getTime() {
+      return "bonus action";
     }
   };
   var FrenzyEffect = new Effect(

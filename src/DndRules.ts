@@ -9,7 +9,11 @@ import OpportunityAttack from "./actions/OpportunityAttack";
 import ReleaseGrappleAction from "./actions/ReleaseGrappleAction";
 import ShoveAction from "./actions/ShoveAction";
 import { TwoWeaponAttack } from "./actions/TwoWeaponAttack";
-import WeaponAttack from "./actions/WeaponAttack";
+import WeaponAttack, {
+  meleeWeaponAttack,
+  rangedWeaponAttack,
+  thrownWeaponAttack,
+} from "./actions/WeaponAttack";
 import DndRule, { RuleRepository } from "./DndRule";
 import Engine from "./Engine";
 import { Listener } from "./events/Dispatcher";
@@ -26,7 +30,7 @@ import Priority from "./types/Priority";
 import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
 import { checkConfig } from "./utils/config";
-import { getValidAmmunition } from "./utils/items";
+import { getValidAmmunition, getWeaponRange } from "./utils/items";
 import { compareDistances, distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
@@ -385,7 +389,7 @@ function getValidOpportunityAttacks(
   return attacker.weapons
     .filter((weapon) => weapon.rangeCategory === "melee")
     .filter((weapon) => {
-      const range = attacker.reach + weapon.reach;
+      const range = getWeaponRange(attacker, weapon, "melee");
       return oldDistance <= range && newDistance > range;
     })
     .map((weapon) => new OpportunityAttack(g, attacker, weapon))
@@ -466,7 +470,9 @@ const autoCrit =
   ): Listener<"Attack"> =>
   ({
     detail: {
-      pre: { who, target },
+      roll: {
+        type: { who, target },
+      },
       outcome,
     },
   }) => {
@@ -628,8 +634,11 @@ export const TwoWeaponFightingRule = new DndRule("Two-Weapon Fighting", (g) => {
       who.weapons.find(
         (w) => w.properties.has("light") && w !== lightMeleeAttack.weapon,
       );
-    if (otherLightWeapon)
-      actions.push(new TwoWeaponAttack(g, who, otherLightWeapon));
+    if (otherLightWeapon) {
+      actions.push(new TwoWeaponAttack(g, who, "melee", otherLightWeapon));
+      if (otherLightWeapon.properties.has("thrown"))
+        actions.push(new TwoWeaponAttack(g, who, "ranged", otherLightWeapon));
+    }
   });
 });
 
@@ -654,11 +663,15 @@ export const WeaponAttackRule = new DndRule("Weapon Attacks", (g) => {
   g.events.on("GetActions", ({ detail: { who, target, actions } }) => {
     if (who !== target) {
       for (const weapon of who.weapons) {
-        if (weapon.ammunitionTag) {
-          for (const ammo of getValidAmmunition(who, weapon)) {
-            actions.push(new WeaponAttack(g, who, weapon, ammo));
-          }
-        } else actions.push(new WeaponAttack(g, who, weapon));
+        if (weapon.rangeCategory === "melee") {
+          actions.push(meleeWeaponAttack(g, who, weapon));
+        } else {
+          for (const ammo of getValidAmmunition(who, weapon))
+            actions.push(rangedWeaponAttack(g, who, weapon, ammo));
+        }
+
+        if (weapon.properties.has("thrown"))
+          actions.push(thrownWeaponAttack(g, who, weapon));
       }
     }
   });

@@ -56,6 +56,8 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
       actor,
       "Breath Weapon",
       "implemented",
+      "breath weapon",
+      "ranged",
       { point: new PointResolver(g, 15) },
       {
         icon: makeIcon(breathUrl, DamageColours[damageType]),
@@ -130,6 +132,8 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
       actor,
       name,
       status,
+      "metallic breath weapon",
+      "ranged",
       { point: new PointResolver(g, 15) },
       {
         resources: [[MetallicBreathWeaponResource, 1]],

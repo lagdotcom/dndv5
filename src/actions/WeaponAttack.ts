@@ -10,6 +10,7 @@ import AttackTag from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { AmmoItem, WeaponItem } from "../types/Item";
 import Priority from "../types/Priority";
+import RangeCategory from "../types/RangeCategory";
 import Source from "../types/Source";
 import { poSet, poWithin } from "../utils/ai";
 import { sieve } from "../utils/array";
@@ -17,15 +18,32 @@ import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { SetInitialiser } from "../utils/set";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
-import { distance } from "../utils/units";
 import AbstractAttackAction from "./AbstractAttackAction";
+
+export function getWeaponAttackName(
+  name: string,
+  rangeCategory: RangeCategory,
+  weapon: WeaponItem,
+  ammo?: AmmoItem,
+) {
+  const ammoName = ammo
+    ? ammo.name
+    : weapon.properties.has("thrown") && rangeCategory === "ranged"
+      ? "thrown"
+      : undefined;
+
+  if (ammoName) return `${name} (${weapon.name}, ${ammoName})`;
+  return `${name} (${weapon.name})`;
+}
 
 export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   ability: AbilityName;
 
   constructor(
     g: Engine,
+    nameBasis: string,
     actor: Combatant,
+    rangeCategory: RangeCategory,
     public weapon: WeaponItem,
     public ammo?: AmmoItem,
     public attackTags?: SetInitialiser<AttackTag>,
@@ -33,12 +51,18 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     super(
       g,
       actor,
-      ammo
-        ? `Attack (${weapon.name}, ${ammo.name})`
-        : `Attack (${weapon.name})`,
-      weapon.properties.has("thrown") ? "incomplete" : "implemented",
+      getWeaponAttackName(nameBasis, rangeCategory, weapon, ammo),
+      rangeCategory === "ranged" && weapon.properties.has("thrown")
+        ? "incomplete"
+        : "implemented",
+      weapon.name,
+      rangeCategory,
       {
-        target: new TargetResolver(g, getWeaponRange(actor, weapon), [notSelf]),
+        target: new TargetResolver(
+          g,
+          getWeaponRange(actor, weapon, rangeCategory),
+          [notSelf],
+        ),
       },
       { icon: weapon.icon, subIcon: ammo?.icon },
     );
@@ -63,16 +87,16 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
   }
 
   getDescription() {
-    const { actor, weapon } = this;
+    const { actor, weapon, rangeCategory } = this;
 
     const rangeCategories: string[] = [];
     const ranges: string[] = [];
 
-    if (weapon.rangeCategory === "melee") {
+    if (rangeCategory === "melee") {
       rangeCategories.push("Melee");
-      ranges.push(`reach ${actor.reach + weapon.reach} ft.`);
+      ranges.push(`reach ${getWeaponRange(actor, weapon, "melee")} ft.`);
     }
-    if (weapon.rangeCategory === "ranged" || weapon.properties.has("thrown")) {
+    if (rangeCategory === "ranged") {
       rangeCategories.push("Ranged");
       ranges.push(`range ${weapon.shortRange}/${weapon.longRange} ft.`);
     }
@@ -113,6 +137,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       source: this,
       target,
       weapon: this.weapon,
+      rangeCategory: this.rangeCategory,
       tags: this.attackTags,
     });
   }
@@ -129,6 +154,7 @@ export async function doStandardAttack(
     source,
     target,
     weapon,
+    rangeCategory,
     tags: startTags,
   }: {
     ability: AbilityName;
@@ -137,17 +163,15 @@ export async function doStandardAttack(
     source: Source;
     target: Combatant;
     weapon: WeaponItem;
+    rangeCategory: RangeCategory;
     tags?: SetInitialiser<AttackTag>;
   },
 ) {
   const tags = new Set<AttackTag>(startTags);
 
-  const isRanged = distance(attacker, target) > attacker.reach + weapon.reach;
-  if (isRanged) {
+  if (rangeCategory === "ranged") {
     tags.add("ranged");
-
-    // TODO this should probably be a choice?
-    if (weapon.rangeCategory === "melee") tags.add("thrown");
+    if (weapon.properties.has("thrown")) tags.add("thrown");
   } else {
     tags.add("melee");
   }
@@ -179,12 +203,25 @@ async function getAttackResult(
   source: Source,
   e: Awaited<EngineAttackResult>,
 ) {
-  if (e.hit) {
+  if (e.outcome === "cancelled") return { type: "cancelled" } as const;
+
+  const {
+    who: attacker,
+    target,
+    ability,
+    weapon,
+    ammo,
+    tags,
+  } = e.attack.roll.type;
+
+  if (ammo) attacker.removeFromInventory(ammo, 1);
+
+  if (tags.has("thrown") && weapon) {
+    attacker.equipment.delete(weapon);
     // TODO [SPAWNITEMS] throwing
+  }
 
-    const { who: attacker, target, ability, weapon, ammo } = e.attack.pre;
-    if (ammo) attacker.removeFromInventory(ammo, 1);
-
+  if (e.hit) {
     if (weapon) {
       const { damage } = weapon;
 
@@ -204,7 +241,7 @@ async function getAttackResult(
             target,
             ability,
             weapon,
-            tags: e.attack.roll.type.tags,
+            tags,
           },
           e.critical,
         );
@@ -233,4 +270,46 @@ async function getAttackResult(
   }
 
   return { type: "miss", attack: e } as const;
+}
+
+export function meleeWeaponAttack(
+  g: Engine,
+  actor: Combatant,
+  weapon: WeaponItem,
+  tags?: SetInitialiser<AttackTag>,
+) {
+  if (weapon.rangeCategory === "ranged")
+    throw new Error(`meleeWeaponAttack(${weapon.name})`);
+  return new WeaponAttack(g, "Attack", actor, "melee", weapon, undefined, tags);
+}
+
+export function thrownWeaponAttack(
+  g: Engine,
+  actor: Combatant,
+  weapon: WeaponItem,
+  tags?: SetInitialiser<AttackTag>,
+) {
+  if (!weapon.properties.has("thrown"))
+    throw new Error(`thrownWeaponAttack(${weapon.name})`);
+  return new WeaponAttack(
+    g,
+    "Attack",
+    actor,
+    "ranged",
+    weapon,
+    undefined,
+    tags,
+  );
+}
+
+export function rangedWeaponAttack(
+  g: Engine,
+  actor: Combatant,
+  weapon: WeaponItem,
+  ammo: AmmoItem,
+  tags?: SetInitialiser<AttackTag>,
+) {
+  if (weapon.rangeCategory !== "ranged")
+    throw new Error(`rangedWeaponAttack(${weapon.name})`);
+  return new WeaponAttack(g, "Attack", actor, "ranged", weapon, ammo, tags);
 }

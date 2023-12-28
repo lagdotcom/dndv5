@@ -249,20 +249,22 @@ export default class Engine {
 
     if (baseDiceType) diceType.add(baseDiceType, { name: "Base" });
 
-    const pre = await this.resolve(
-      new BeforeSaveEvent({
-        ...e,
-        dc,
-        pb,
-        proficiency,
-        bonus,
-        diceType,
-        successResponse,
-        saveDamageResponse,
-        failDamageResponse,
-        interrupt: new InterruptionCollector(),
-      }),
-    );
+    const pre = (
+      await this.resolve(
+        new BeforeSaveEvent({
+          ...e,
+          dc,
+          pb,
+          proficiency,
+          bonus,
+          diceType,
+          successResponse,
+          saveDamageResponse,
+          failDamageResponse,
+          interrupt: new InterruptionCollector(),
+        }),
+      )
+    ).detail;
 
     this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 
@@ -288,7 +290,7 @@ export default class Engine {
     const outcome = success ? ("success" as const) : ("fail" as const);
     this.fire(
       new SaveEvent({
-        pre: pre.detail,
+        pre,
         diceType: diceType.result,
         roll,
         dc,
@@ -315,18 +317,20 @@ export default class Engine {
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
 
-    const pre = await this.resolve(
-      new BeforeCheckEvent({
-        ...e,
-        dc,
-        pb,
-        proficiency,
-        bonus,
-        diceType,
-        successResponse,
-        interrupt: new InterruptionCollector(),
-      }),
-    );
+    const pre = (
+      await this.resolve(
+        new BeforeCheckEvent({
+          ...e,
+          dc,
+          pb,
+          proficiency,
+          bonus,
+          diceType,
+          successResponse,
+          interrupt: new InterruptionCollector(),
+        }),
+      )
+    ).detail;
 
     this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 
@@ -344,7 +348,7 @@ export default class Engine {
     const outcome = success ? ("success" as const) : ("fail" as const);
     this.fire(
       new AbilityCheckEvent({
-        pre: pre.detail,
+        pre,
         diceType: diceType.result,
         roll,
         dc,
@@ -470,7 +474,7 @@ export default class Engine {
     );
     handler.check?.(pre);
 
-    return pre;
+    return pre.detail;
   }
 
   async move(
@@ -482,9 +486,13 @@ export default class Engine {
   ) {
     const old = who.position;
 
-    const {
-      detail: { success, error, cost },
-    } = await this.beforeMove(who, position, handler, type, direction);
+    const { success, error, cost } = await this.beforeMove(
+      who,
+      position,
+      handler,
+      type,
+      direction,
+    );
 
     if (success.result === "fail") return { type: "prevented" as const };
     if (!error.result) return { type: "error" as const, error };
@@ -747,34 +755,31 @@ export default class Engine {
     const diceType = new DiceTypeCollector();
     const success = new SuccessResponseCollector();
 
-    const pre = await this.resolve(
-      new BeforeAttackEvent({
-        ...e,
-        pb,
-        proficiency,
-        bonus,
-        diceType,
-        success,
-        interrupt: new InterruptionCollector(),
-      }),
-    );
+    const pre = (
+      await this.resolve(
+        new BeforeAttackEvent({
+          ...e,
+          pb,
+          proficiency,
+          bonus,
+          diceType,
+          success,
+          interrupt: new InterruptionCollector(),
+        }),
+      )
+    ).detail;
     if (success.result === "fail")
       return { outcome: "cancelled", hit: false } as const;
 
     this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 
-    // these COULD be changed during the event
-    const { target, who, ability } = pre.detail;
-    const ac = await this.getAC(target, pre.detail);
-    const roll = await this.roll(
-      { type: "attack", who, target, ac, ability, tags: pre.detail.tags },
-      diceType.result,
-    );
+    const ac = await this.getAC(pre.target, pre);
+    const roll = await this.roll({ type: "attack", ...pre }, diceType.result);
 
     const total = roll.values.final + bonus.result;
     const outcomeCollector = new AttackOutcomeCollector();
     const event = new AttackEvent({
-      pre: pre.detail,
+      pre,
       roll,
       total,
       ac,
@@ -1112,9 +1117,7 @@ export default class Engine {
       const old = who.position;
       const position = movePoint(old, direction);
 
-      const {
-        detail: { success, error },
-      } = await this.beforeMove(
+      const { success, error } = await this.beforeMove(
         who,
         position,
         handler,

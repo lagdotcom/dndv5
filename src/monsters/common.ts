@@ -1,8 +1,4 @@
-import WeaponAttack from "../actions/WeaponAttack";
-import { OneAttackPerTurnRule } from "../DndRules";
 import SimpleFeature from "../features/SimpleFeature";
-import Action from "../types/Action";
-import Combatant from "../types/Combatant";
 import { MundaneDamageTypes } from "../types/DamageType";
 import { getFlanker } from "../utils/dnd";
 import { isA } from "../utils/types";
@@ -87,27 +83,3 @@ export const SpellDamageResistance = new SimpleFeature(
     });
   },
 );
-
-export function makeMultiattack(
-  text: string,
-  canStillAttack: (me: Combatant, action: Action) => boolean,
-) {
-  return new SimpleFeature("Multiattack", text, (g, me) => {
-    g.events.on("CheckAction", ({ detail: { action, error } }) => {
-      if (
-        action.actor === me &&
-        action.tags.has("costs attack") &&
-        canStillAttack(me, action)
-      )
-        error.ignore(OneAttackPerTurnRule);
-    });
-  });
-}
-
-export function isMeleeAttackAction(action: Action): action is WeaponAttack {
-  if (!action.tags.has("attack")) return false;
-  if (!(action instanceof WeaponAttack)) return false;
-
-  // TODO this isn't right for throwing...
-  return action.weapon.rangeCategory === "melee";
-}

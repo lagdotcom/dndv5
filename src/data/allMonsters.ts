@@ -12,7 +12,14 @@ import {
   WaterElemental,
 } from "../monsters/srd/elemental";
 import { Goblin } from "../monsters/srd/goblinoid";
-import { Acolyte, Archmage, Assassin, Thug } from "../monsters/srd/humanoid";
+import {
+  Acolyte,
+  Archmage,
+  Assassin,
+  Bandit,
+  BanditCaptain,
+  Thug,
+} from "../monsters/srd/humanoid";
 import { CombatantCreator } from "./BattleTemplate";
 
 const allMonsters = {
@@ -34,6 +41,9 @@ const allMonsters = {
   archmage: (g) => new Archmage(g),
   assassin: (g) => new Assassin(g),
   "assassin [crossbow]": (g) => new Assassin(g, true),
+  bandit: (g) => new Bandit(g),
+  "bandit [crossbow]": (g) => new Bandit(g, true),
+  "bandit captain": (g) => new BanditCaptain(g),
   thug: (g) => new Thug(g),
   "thug [crossbow]": (g) => new Thug(g, true),
 
