@@ -56,7 +56,6 @@ export class GiantBadger extends Monster {
       giantBadgerUrl,
       13,
     );
-    this.movement.set("speed", 30);
     this.movement.set("burrow", 10);
     this.setAbilityScores(13, 10, 15, 2, 12, 5);
     this.senses.set("darkvision", 30);

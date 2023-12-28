@@ -3,9 +3,16 @@ import archmageUrl from "@img/tok/archmage.png";
 import assassinUrl from "@img/tok/assassin.png";
 import banditUrl from "@img/tok/bandit.png";
 import banditCaptainUrl from "@img/tok/bandit-captain.png";
+import berserkerUrl from "@img/tok/berserker.png";
+import commonerUrl from "@img/tok/commoner.png";
+import cultFanaticUrl from "@img/tok/cult-fanatic.png";
+import cultistUrl from "@img/tok/cultist.png";
+import druidUrl from "@img/tok/druid.png";
 import thugUrl from "@img/tok/thug.png";
 
+import { RecklessAttack } from "../../classes/barbarian/RecklessAttack";
 import { ClericSpellcasting } from "../../classes/cleric";
+import { DruidSpellcasting } from "../../classes/druid";
 import SneakAttack from "../../classes/rogue/SneakAttack";
 import { WizardSpellcasting } from "../../classes/wizard";
 import { Surprised } from "../../effects";
@@ -15,26 +22,41 @@ import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { CrossbowBolt } from "../../items/ammunition";
-import { LeatherArmor, StuddedLeatherArmor } from "../../items/armor";
+import {
+  HideArmor,
+  LeatherArmor,
+  StuddedLeatherArmor,
+} from "../../items/armor";
 import {
   Club,
   Dagger,
+  Greataxe,
   HeavyCrossbow,
   LightCrossbow,
   Mace,
+  Quarterstaff,
   Scimitar,
   Shortsword,
 } from "../../items/weapons";
 import Monster from "../../Monster";
 import FireBolt from "../../spells/cantrip/FireBolt";
+import ProduceFlame from "../../spells/cantrip/ProduceFlame";
 import SacredFlame from "../../spells/cantrip/SacredFlame";
+import Shillelagh from "../../spells/cantrip/Shillelagh";
 import Thaumaturgy from "../../spells/cantrip/Thaumaturgy";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import Bless from "../../spells/level1/Bless";
+import Command from "../../spells/level1/Command";
 import CureWounds from "../../spells/level1/CureWounds";
+import Entangle from "../../spells/level1/Entangle";
+import InflictWounds from "../../spells/level1/InflictWounds";
+import Longstrider from "../../spells/level1/Longstrider";
 import MageArmor from "../../spells/level1/MageArmor";
 import MagicMissile from "../../spells/level1/MagicMissile";
 import Sanctuary from "../../spells/level1/Sanctuary";
+import ShieldOfFaith from "../../spells/level1/ShieldOfFaith";
+import Thunderwave from "../../spells/level1/Thunderwave";
+import HoldPerson from "../../spells/level2/HoldPerson";
 import MirrorImage from "../../spells/level2/MirrorImage";
 import MistyStep from "../../spells/level2/MistyStep";
 import LightningBolt from "../../spells/level3/LightningBolt";
@@ -53,12 +75,12 @@ export class Acolyte extends Monster {
   constructor(g: Engine) {
     super(g, "acolyte", 0.25, "humanoid", SizeCategory.Medium, acolyteUrl, 9);
     this.don(new Club(g), true);
-    this.movement.set("speed", 30);
     this.setAbilityScores(10, 10, 10, 10, 14, 11);
     this.addProficiency("Medicine", "proficient");
     this.addProficiency("Religion", "proficient");
     this.languages.add("Common"); // TODO any one language (usually Common)
 
+    this.level = 1;
     this.classLevels.set("Cleric", 1);
     this.addFeature(ClericSpellcasting.feature);
     this.addPreparedSpells(
@@ -91,7 +113,6 @@ export class Archmage extends Monster {
   constructor(g: Engine) {
     super(g, "archmage", 12, "humanoid", SizeCategory.Medium, archmageUrl, 99);
     this.don(new Dagger(g), true);
-    this.movement.set("speed", 30);
     this.setAbilityScores(10, 14, 12, 20, 15, 16);
     this.addProficiency("int", "proficient");
     this.addProficiency("wis", "proficient");
@@ -104,6 +125,7 @@ export class Archmage extends Monster {
 
     this.addFeature(MagicResistance);
     this.addFeature(ArchmageSpellcasting);
+    this.level = 18;
     this.classLevels.set("Wizard", 18);
     this.addFeature(WizardSpellcasting.feature);
     this.addPreparedSpells(
@@ -230,7 +252,6 @@ export class Assassin extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
     super(g, "assassin", 8, "humanoid", SizeCategory.Medium, assassinUrl, 78);
     this.don(new StuddedLeatherArmor(g), true);
-    this.movement.set("speed", 30);
     this.setAbilityScores(11, 16, 14, 13, 11, 10);
     this.addProficiency("dex", "proficient");
     this.addProficiency("int", "proficient");
@@ -239,11 +260,12 @@ export class Assassin extends Monster {
     this.addProficiency("Perception", "proficient");
     this.addProficiency("Stealth", "expertise");
     this.damageResponses.set("poison", "resist");
-    // TODO Thieves' cant plus any two languages
+    this.languages.add("Thieves' Cant"); // TODO Thieves' cant plus any two languages
     this.pb = 3;
 
     this.addFeature(Assassinate);
     this.addFeature(Evasion);
+    this.level = 8;
     this.classLevels.set("Rogue", 8);
     this.addFeature(SneakAttack);
 
@@ -262,7 +284,6 @@ export class Bandit extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
     super(g, "bandit", 0.125, "humanoid", SizeCategory.Medium, banditUrl, 11);
     this.don(new LeatherArmor(g), true);
-    this.movement.set("speed", 30);
     this.setAbilityScores(11, 12, 12, 10, 10, 10);
     this.languages.add("Common"); // any one language (usually Common)
 
@@ -300,7 +321,6 @@ export class BanditCaptain extends Monster {
       65,
     );
     this.don(new StuddedLeatherArmor(g), true);
-    this.movement.set("speed", 30);
     this.setAbilityScores(15, 16, 14, 14, 11, 14);
     this.addProficiency("str", "proficient");
     this.addProficiency("dex", "proficient");
@@ -320,6 +340,128 @@ export class BanditCaptain extends Monster {
   }
 }
 
+export class Berserker extends Monster {
+  constructor(g: Engine) {
+    super(g, "berserker", 2, "humanoid", SizeCategory.Medium, berserkerUrl, 67);
+    this.don(new HideArmor(g), true);
+    this.setAbilityScores(16, 12, 17, 9, 11, 9);
+    this.languages.add("Common"); // any one language (usually Common)
+
+    this.addFeature(RecklessAttack);
+    this.don(new Greataxe(g), true);
+  }
+}
+
+export class Commoner extends Monster {
+  constructor(g: Engine) {
+    super(g, "commoner", 0, "humanoid", SizeCategory.Medium, commonerUrl, 4);
+    this.languages.add("Common"); // any one language (usually Common)
+
+    this.don(new Club(g), true);
+  }
+}
+
+const DarkDevotion = new SimpleFeature(
+  "Dark Devotion",
+  `The cultist has advantage on saving throws against being charmed or frightened.`,
+  (g, me) => {
+    g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
+      if (
+        who === me &&
+        (config?.conditions?.has("Charmed") ||
+          config?.conditions?.has("Frightened"))
+      )
+        diceType.add("advantage", DarkDevotion);
+    });
+  },
+);
+
+export class Cultist extends Monster {
+  constructor(g: Engine) {
+    super(g, "cultist", 0.125, "humanoid", SizeCategory.Medium, cultistUrl, 9);
+    this.don(new LeatherArmor(g), true);
+    this.setAbilityScores(11, 12, 10, 10, 11, 10);
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Religion", "proficient");
+    this.languages.add("Common"); // any one language (usually Common)
+
+    this.addFeature(DarkDevotion);
+    this.don(new Scimitar(g), true);
+  }
+}
+
+const CultFanaticMultiattack = makeBagMultiattack(
+  `The fanatic makes two melee attacks.`,
+  [{ range: "melee" }, { range: "melee" }],
+);
+
+export class CultFanatic extends Monster {
+  constructor(g: Engine) {
+    super(
+      g,
+      "cult fanatic",
+      2,
+      "humanoid",
+      SizeCategory.Medium,
+      cultFanaticUrl,
+      33,
+    );
+    this.don(new LeatherArmor(g), true);
+    this.setAbilityScores(11, 14, 12, 10, 13, 14);
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Persuasion", "proficient");
+    this.addProficiency("Religion", "proficient");
+    this.languages.add("Common"); // any one language (usually Common)
+
+    this.addFeature(DarkDevotion);
+
+    this.level = 4;
+    this.classLevels.set("Cleric", 4);
+    this.addFeature(ClericSpellcasting.feature);
+    this.addPreparedSpells(
+      // TODO Light,
+      SacredFlame,
+      Thaumaturgy,
+      Command,
+      InflictWounds,
+      ShieldOfFaith,
+      HoldPerson,
+      // TODO SpiritualWeapon,
+    );
+
+    this.addFeature(CultFanaticMultiattack);
+    this.don(new Dagger(g), true);
+  }
+}
+
+export class Druid extends Monster {
+  constructor(g: Engine) {
+    super(g, "druid", 2, "humanoid", SizeCategory.Medium, druidUrl, 27);
+    this.setAbilityScores(10, 12, 13, 12, 15, 11);
+    this.addProficiency("Medicine", "proficient");
+    this.addProficiency("Nature", "proficient");
+    this.addProficiency("Perception", "proficient");
+    this.languages.add("Druidic"); // TODO Druidic plus any two languages
+
+    this.level = 4;
+    this.classLevels.set("Druid", 4);
+    this.addFeature(DruidSpellcasting.feature);
+    this.addPreparedSpells(
+      // TODO Druidcraft,
+      ProduceFlame,
+      Shillelagh,
+      Entangle,
+      Longstrider,
+      // TODO SpeakWithAnimals,
+      Thunderwave,
+      // TODO AnimalMessenger,
+      // TODO Barkskin,
+    );
+
+    this.don(new Quarterstaff(g), true);
+  }
+}
+
 const ThugMultiattack = makeBagMultiattack(
   "The thug makes two melee attacks.",
   [{ range: "melee" }, { range: "melee" }],
@@ -329,7 +471,6 @@ export class Thug extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
     super(g, "thug", 0.5, "humanoid", SizeCategory.Medium, thugUrl, 32);
     this.don(new LeatherArmor(g), true);
-    this.movement.set("speed", 30);
     this.setAbilityScores(15, 11, 14, 10, 10, 11);
     this.addProficiency("Intimidation", "proficient");
     this.languages.add("Common");

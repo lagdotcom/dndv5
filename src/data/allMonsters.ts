@@ -18,6 +18,11 @@ import {
   Assassin,
   Bandit,
   BanditCaptain,
+  Berserker,
+  Commoner,
+  CultFanatic,
+  Cultist,
+  Druid,
   Thug,
 } from "../monsters/srd/humanoid";
 import { CombatantCreator } from "./BattleTemplate";
@@ -44,6 +49,11 @@ const allMonsters = {
   bandit: (g) => new Bandit(g),
   "bandit [crossbow]": (g) => new Bandit(g, true),
   "bandit captain": (g) => new BanditCaptain(g),
+  berserker: (g) => new Berserker(g),
+  commoner: (g) => new Commoner(g),
+  cultist: (g) => new Cultist(g),
+  "cult fanatic": (g) => new CultFanatic(g),
+  druid: (g) => new Druid(g),
   thug: (g) => new Thug(g),
   "thug [crossbow]": (g) => new Thug(g, true),
 

@@ -65,7 +65,8 @@ const LaughterEffect = new Effect<Config>(
             getHideousLaughterSave(who, config, diceType),
           );
 
-          if (outcome === "success") await config.caster.endConcentration();
+          if (outcome === "success")
+            await config.caster.endConcentration(HideousLaughter);
         }),
       );
 

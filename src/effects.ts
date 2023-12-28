@@ -247,11 +247,11 @@ export const Grappled = new Effect<{ by: Combatant }>(
     });
 
     // The condition ends if the grappler is incapacitated.
-    g.events.on("AfterAction", ({ detail }) => {
+    g.events.on("AfterAction", ({ detail: { interrupt } }) => {
       for (const who of g.combatants) {
         const config = who.getEffectConfig(Grappled);
         if (config?.by.conditions.has("Incapacitated"))
-          detail.interrupt.add(grappleRemover(who));
+          interrupt.add(grappleRemover(who));
       }
     });
 

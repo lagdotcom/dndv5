@@ -5,11 +5,11 @@ import { canSee, ofCreatureType, withinRangeOfEachOther } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
-import { coSet } from "../../types/ConditionName";
 import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
+import MultiSaveEffect from "../MultiSaveEffect";
 
 type Config = HasCaster & { affected: Set<Combatant> };
 
@@ -25,7 +25,7 @@ const getHoldPersonSave = (
   spell: HoldPerson,
   effect: HoldPersonEffect,
   config,
-  tags: ["magic"],
+  tags: ["magic", "impedes movement"],
 });
 
 const HoldPersonEffect = new Effect<Config>(
@@ -48,18 +48,29 @@ const HoldPersonEffect = new Effect<Config>(
             async () => {
               const { outcome } = await g.save(getHoldPersonSave(who, config));
 
-              if (outcome === "success") {
+              if (outcome === "success")
                 await who.removeEffect(HoldPersonEffect);
-
-                config.affected.delete(who);
-                if (config.affected.size < 1)
-                  await config.caster.endConcentration();
-              }
             },
           ),
         );
       }
     });
+
+    g.events.on(
+      "EffectRemoved",
+      ({ detail: { effect, config, who, interrupt } }) => {
+        if (effect === HoldPersonEffect) {
+          const { affected, caster } = config as EffectConfig<Config>;
+          affected.delete(who);
+          if (affected.size < 1)
+            interrupt.add(
+              new EvaluateLater(caster, HoldPerson, Priority.Normal, () =>
+                caster.endConcentration(HoldPerson),
+              ),
+            );
+        }
+      },
+    );
   },
   { tags: ["magic"] },
 );
@@ -91,38 +102,20 @@ const HoldPerson = scalingSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, caster, method, { targets }) {
-    const affected = new Set<Combatant>();
-    const duration = minutes(1);
-    const conditions = coSet("Paralyzed");
+  async apply(g, caster, method, config) {
+    const mse = new MultiSaveEffect(
+      g,
+      caster,
+      HoldPerson,
+      config,
+      method,
+      HoldPersonEffect,
+      minutes(1),
+      ["Paralyzed"],
+      getHoldPersonSave,
+    );
 
-    for (const target of targets) {
-      const config = {
-        affected,
-        caster,
-        method,
-        duration,
-        conditions,
-      };
-
-      const { outcome } = await g.save(getHoldPersonSave(target, config));
-
-      if (
-        outcome === "fail" &&
-        (await target.addEffect(HoldPersonEffect, config))
-      )
-        affected.add(target);
-    }
-
-    if (affected.size > 0)
-      await caster.concentrateOn({
-        spell: HoldPerson,
-        duration,
-        async onSpellEnd() {
-          for (const target of affected)
-            await target.removeEffect(HoldPersonEffect);
-        },
-      });
+    if (await mse.apply({})) await mse.concentrate();
   },
 });
 export default HoldPerson;

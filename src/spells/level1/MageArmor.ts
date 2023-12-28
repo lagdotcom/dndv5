@@ -10,20 +10,16 @@ const MageArmorEffect = new Effect<HasCaster>(
   "Mage Armor",
   "turnStart",
   (g) => {
-    g.events.on("GetACMethods", ({ detail }) => {
-      if (detail.who.hasEffect(MageArmorEffect) && !detail.who.armor) {
+    g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
+      if (who.hasEffect(MageArmorEffect) && !who.armor) {
         const uses = new Set<Item>();
-        let ac = 13 + detail.who.dex.modifier;
-        if (detail.who.shield) {
-          uses.add(detail.who.shield);
-          ac += detail.who.shield.ac;
+        let ac = 13 + who.dex.modifier;
+        if (who.shield) {
+          uses.add(who.shield);
+          ac += who.shield.ac;
         }
 
-        detail.methods.push({
-          name: "Mage Armor",
-          ac,
-          uses,
-        });
+        methods.push({ name: "Mage Armor", ac, uses });
       }
     });
   },

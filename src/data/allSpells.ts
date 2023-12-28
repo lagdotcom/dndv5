@@ -10,6 +10,7 @@ import PrimalSavagery from "../spells/cantrip/PrimalSavagery";
 import ProduceFlame from "../spells/cantrip/ProduceFlame";
 import RayOfFrost from "../spells/cantrip/RayOfFrost";
 import SacredFlame from "../spells/cantrip/SacredFlame";
+import Shillelagh from "../spells/cantrip/Shillelagh";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import Thunderclap from "../spells/cantrip/Thunderclap";
 import ArmorOfAgathys from "../spells/level1/ArmorOfAgathys";
@@ -20,6 +21,7 @@ import Command from "../spells/level1/Command";
 import CureWounds from "../spells/level1/CureWounds";
 import DivineFavor from "../spells/level1/DivineFavor";
 import EarthTremor from "../spells/level1/EarthTremor";
+import Entangle from "../spells/level1/Entangle";
 import FaerieFire from "../spells/level1/FaerieFire";
 import FogCloud from "../spells/level1/FogCloud";
 import GuidingBolt from "../spells/level1/GuidingBolt";
@@ -27,6 +29,8 @@ import HealingWord from "../spells/level1/HealingWord";
 import HellishRebuke from "../spells/level1/HellishRebuke";
 import HideousLaughter from "../spells/level1/HideousLaughter";
 import IceKnife from "../spells/level1/IceKnife";
+import InflictWounds from "../spells/level1/InflictWounds";
+import Longstrider from "../spells/level1/Longstrider";
 import MageArmor from "../spells/level1/MageArmor";
 import MagicMissile from "../spells/level1/MagicMissile";
 import ProtectionFromEvilAndGood from "../spells/level1/ProtectionFromEvilAndGood";
@@ -34,6 +38,7 @@ import Sanctuary from "../spells/level1/Sanctuary";
 import Shield from "../spells/level1/Shield";
 import ShieldOfFaith from "../spells/level1/ShieldOfFaith";
 import Sleep from "../spells/level1/Sleep";
+import Thunderwave from "../spells/level1/Thunderwave";
 import Aid from "../spells/level2/Aid";
 import Blur from "../spells/level2/Blur";
 import Darkness from "../spells/level2/Darkness";
@@ -84,6 +89,7 @@ const allSpells = {
   "produce flame": ProduceFlame,
   "ray of frost": RayOfFrost,
   "sacred flame": SacredFlame,
+  shillelagh: Shillelagh,
   thaumaturgy: Thaumaturgy,
   thunderclap: Thunderclap,
 
@@ -95,6 +101,7 @@ const allSpells = {
   "cure wounds": CureWounds,
   "divine favor": DivineFavor,
   "earth tremor": EarthTremor,
+  entangle: Entangle,
   "faerie fire": FaerieFire,
   "fog cloud": FogCloud,
   "guiding bolt": GuidingBolt,
@@ -102,6 +109,8 @@ const allSpells = {
   "hellish rebuke": HellishRebuke,
   "hideous laughter": HideousLaughter,
   "ice knife": IceKnife,
+  "inflict wounds": InflictWounds,
+  longstrider: Longstrider,
   "mage armor": MageArmor,
   "magic missile": MagicMissile,
   "protection from evil and good": ProtectionFromEvilAndGood,
@@ -109,6 +118,7 @@ const allSpells = {
   shield: Shield,
   "shield of faith": ShieldOfFaith,
   sleep: Sleep,
+  thunderwave: Thunderwave,
 
   aid: Aid,
   blur: Blur,

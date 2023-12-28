@@ -137,7 +137,6 @@ export default class Kay extends Monster {
   constructor(g: Engine) {
     super(g, hiddenName, 6, "humanoid", SizeCategory.Medium, tokenUrl, 75);
     this.diesAtZero = false;
-    this.movement.set("speed", 30);
     this.setAbilityScores(14, 18, 16, 10, 8, 14);
     this.pb = 3;
 

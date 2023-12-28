@@ -64,7 +64,7 @@ async function fireMeteors(
   }
 
   if (spendMeteors && attacker.getResource(MMMResource) <= 0)
-    await attacker.endConcentration();
+    await attacker.endConcentration(MelfsMinuteMeteors);
 }
 
 class FireMeteorsAction extends AbstractAction<HasPoints> {

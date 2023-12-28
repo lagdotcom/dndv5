@@ -10,6 +10,7 @@ import { MundaneDifficultTerrainTypes } from "../types/DifficultTerrainType";
 import PCClassName from "../types/PCClassName";
 import { featureNotComplete } from "../utils/env";
 import { ordinal } from "../utils/numbers";
+import { hasAll } from "../utils/set";
 
 type ASIConfig =
   | { type: "ability"; abilities: AbilityName[] }
@@ -62,7 +63,7 @@ export function makeLandsStride(text: string) {
 
     // In addition, you have advantage on saving throws against plants that are magically created or manipulated to impede movement, such as those created by the entangle spell.
     g.events.on("BeforeSave", ({ detail: { who, tags, diceType } }) => {
-      if (who === me && tags.has("impedes movement") && tags.has("plant"))
+      if (who === me && hasAll(tags, ["plant", "magic", "impedes movement"]))
         diceType.add("advantage", feature);
     });
   });

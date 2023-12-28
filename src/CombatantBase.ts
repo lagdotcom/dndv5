@@ -15,6 +15,7 @@ import GetMaxHPEvent from "./events/GetMaxHPEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
 import { MapSquareSize } from "./MapSquare";
+import MessageBuilder from "./MessageBuilder";
 import { spellImplementationWarning } from "./spells/common";
 import AbilityName from "./types/AbilityName";
 import ACMethod from "./types/ACMethod";
@@ -132,7 +133,8 @@ export default class CombatantBase implements Combatant {
   attunements: Set<Item>;
   movedSoFar: number;
   attacksSoFar: Action[];
-  effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  effects: Map<EffectType<any>, EffectConfig<any>>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, ProficiencyType>;
@@ -162,7 +164,7 @@ export default class CombatantBase implements Combatant {
       hands = defaultHandsAmount[type],
       hpMax = 0,
       hp = hpMax,
-      level = NaN,
+      level = 0,
       pb = 2,
       cr = NaN,
       reach = MapSquareSize,
@@ -224,7 +226,7 @@ export default class CombatantBase implements Combatant {
     this.wis = new AbilityScore(wisScore);
     this.cha = new AbilityScore(chaScore);
 
-    this.movement = new Map();
+    this.movement = new Map([["speed", 30]]);
     this.skills = new Map();
     this.languages = new Set();
     this.equipment = new Set();
@@ -571,9 +573,22 @@ export default class CombatantBase implements Combatant {
     this.configs.set(feature.name, config);
   }
 
-  async endConcentration() {
-    for (const other of this.concentratingOn) await other.onSpellEnd();
-    this.concentratingOn.clear();
+  async endConcentration(spell?: Spell) {
+    const removed = new Set<Concentration>();
+    for (const other of this.concentratingOn) {
+      if (spell && other.spell !== spell) continue;
+
+      this.g.text(
+        new MessageBuilder()
+          .co(this)
+          .text(` stops concentrating on ${other.spell.name}.`),
+      );
+      await other.onSpellEnd();
+
+      removed.add(other);
+    }
+
+    for (const other of removed) this.concentratingOn.delete(other);
   }
 
   async concentrateOn(entry: Concentration) {

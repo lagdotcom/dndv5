@@ -36,8 +36,8 @@ describe("Relentless Rage", () => {
     await me.addEffect(RageEffect, { duration: Infinity });
 
     // always say Yes to Relentless Rage
-    g.events.on("YesNoChoice", ({ detail }) => {
-      if (detail.interruption.title === "Relentless Rage") detail.resolve(true);
+    g.events.on("YesNoChoice", ({ detail: { interruption, resolve } }) => {
+      if (interruption.title === "Relentless Rage") resolve(true);
     });
 
     g.dice.force(19, { type: "attack", who: enemy });

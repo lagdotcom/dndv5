@@ -56,19 +56,19 @@ export const TurnedEffect = new Effect<TurnedConfig>(
     );
 
     // It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.
-    g.events.on("CheckAction", ({ detail }) => {
-      if (!detail.action.actor.hasEffect(TurnedEffect)) return;
+    g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+      if (!action.actor.hasEffect(TurnedEffect)) return;
 
-      if (detail.action.getTime(detail.config) === "reaction")
-        detail.error.add("cannot take reactions", TurnedEffect);
+      if (action.getTime(config) === "reaction")
+        error.add("cannot take reactions", TurnedEffect);
       else {
-        if (detail.action.tags.has("escape move prevention")) return;
-        if (detail.action instanceof DashAction) return;
+        if (action.tags.has("escape move prevention")) return;
+        if (action instanceof DashAction) return;
 
         // TODO should only allow this if there is nowhere to move
-        if (detail.action instanceof DodgeAction) return;
+        if (action instanceof DodgeAction) return;
 
-        detail.error.add(
+        error.add(
           "must Dash or escape an effect that prevents movement",
           TurnedEffect,
         );

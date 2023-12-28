@@ -9,13 +9,9 @@ export default class BracersOfDefense extends WondrousItemBase {
     this.rarity = "Rare";
 
     // While wearing these bracers, you gain a +2 bonus to AC if you are wearing no armor and using no shield.
-    g.events.on("GetAC", ({ detail }) => {
-      if (
-        isEquipmentAttuned(this, detail.who) &&
-        !detail.who.armor &&
-        !detail.who.shield
-      )
-        detail.bonus.add(2, this);
+    g.events.on("GetAC", ({ detail: { who, bonus } }) => {
+      if (isEquipmentAttuned(this, who) && !who.armor && !who.shield)
+        bonus.add(2, this);
     });
   }
 }

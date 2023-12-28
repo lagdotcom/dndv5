@@ -31,6 +31,8 @@ export const LanguageNames = [
   ...StandardLanguages,
   ...ExoticLanguages,
   ...PrimordialDialects,
+  "Druidic",
+  "Thieves' Cant",
 ] as const;
 type LanguageName = (typeof LanguageNames)[number];
 export default LanguageName;

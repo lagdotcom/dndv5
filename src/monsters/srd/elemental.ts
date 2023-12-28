@@ -94,7 +94,6 @@ export class EarthElemental extends Elemental {
   constructor(g: Engine) {
     super(g, "earth elemental", earthUrl, 126);
     this.naturalAC = 18;
-    this.movement.set("speed", 30);
     this.movement.set("burrow", 30);
     this.setAbilityScores(20, 8, 20, 5, 10, 5);
     this.damageResponses.set("thunder", "vulnerable");
@@ -229,7 +228,6 @@ export class WaterElemental extends Elemental {
   constructor(g: Engine) {
     super(g, "water elemental", waterUrl, 114);
     this.naturalAC = 12;
-    this.movement.set("speed", 30);
     this.movement.set("swim", 90);
     this.setAbilityScores(18, 14, 18, 5, 10, 8);
     this.damageResponses.set("acid", "resist");

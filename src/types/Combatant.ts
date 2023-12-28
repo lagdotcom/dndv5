@@ -122,7 +122,7 @@ export default interface Combatant extends Source {
   getResource(resource: Resource): number;
   getResourceMax(resource: Resource): number;
   removeResource(resource: Resource): void;
-  endConcentration(): Promise<void>;
+  endConcentration(spell?: Spell): Promise<void>;
   concentrateOn(entry: Concentration): Promise<void>;
   finalise(): void;
   addEffect<T>(

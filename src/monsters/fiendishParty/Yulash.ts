@@ -352,7 +352,6 @@ export default class Yulash extends Monster {
   constructor(g: Engine) {
     super(g, "Yulash", 5, "monstrosity", SizeCategory.Medium, tokenUrl, 65);
     this.diesAtZero = false;
-    this.movement.set("speed", 30);
     this.setAbilityScores(8, 16, 14, 12, 13, 18);
     this.pb = 3;
     this.level = 5; // for spellcasting
