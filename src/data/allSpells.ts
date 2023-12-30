@@ -11,6 +11,7 @@ import ProduceFlame from "../spells/cantrip/ProduceFlame";
 import RayOfFrost from "../spells/cantrip/RayOfFrost";
 import SacredFlame from "../spells/cantrip/SacredFlame";
 import Shillelagh from "../spells/cantrip/Shillelagh";
+import ShockingGrasp from "../spells/cantrip/ShockingGrasp";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import Thunderclap from "../spells/cantrip/Thunderclap";
 import ArmorOfAgathys from "../spells/level1/ArmorOfAgathys";
@@ -55,6 +56,7 @@ import Silence from "../spells/level2/Silence";
 import SpiderClimb from "../spells/level2/SpiderClimb";
 import SpikeGrowth from "../spells/level2/SpikeGrowth";
 import Web from "../spells/level2/Web";
+import Counterspell from "../spells/level3/Counterspell";
 import EruptingEarth from "../spells/level3/EruptingEarth";
 import Fireball from "../spells/level3/Fireball";
 import IntellectFortress from "../spells/level3/IntellectFortress";
@@ -75,6 +77,7 @@ import IceStorm from "../spells/level4/IceStorm";
 import Stoneskin from "../spells/level4/Stoneskin";
 import WallOfFire from "../spells/level4/WallOfFire";
 import ConeOfCold from "../spells/level5/ConeOfCold";
+import MeteorSwarm from "../spells/level9/MeteorSwarm";
 
 const allSpells = {
   "acid splash": AcidSplash,
@@ -90,6 +93,7 @@ const allSpells = {
   "ray of frost": RayOfFrost,
   "sacred flame": SacredFlame,
   shillelagh: Shillelagh,
+  "shocking grasp": ShockingGrasp,
   thaumaturgy: Thaumaturgy,
   thunderclap: Thunderclap,
 
@@ -137,6 +141,7 @@ const allSpells = {
   "spike growth": SpikeGrowth,
   web: Web,
 
+  counterspell: Counterspell,
   "erupting earth": EruptingEarth,
   fireball: Fireball,
   "intellect fortress": IntellectFortress,
@@ -159,6 +164,8 @@ const allSpells = {
   "wall of fire": WallOfFire,
 
   "cone of cold": ConeOfCold,
+
+  "meteor swarm": MeteorSwarm,
 } as const;
 export default allSpells;
 

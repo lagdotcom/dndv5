@@ -14,3 +14,5 @@ export const exceptFor = <T>(items: T[], index: number) =>
 
 export const sieve = <T>(...items: (T | undefined)[]) =>
   items.filter(isDefined);
+
+export const uniq = <T>(items: T[]) => Array.from(new Set(items));

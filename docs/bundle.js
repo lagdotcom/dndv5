@@ -2394,6 +2394,7 @@
   var patchAt = (items, index, transformer) => items.slice(0, index).concat(transformer(items[index]), ...items.slice(index + 1));
   var exceptFor = (items, index) => items.slice(0, index).concat(...items.slice(index + 1));
   var sieve = (...items) => items.filter(isDefined);
+  var uniq = (items) => Array.from(new Set(items));
 
   // src/utils/text.ts
   var niceAbilityName = {
@@ -17825,6 +17826,81 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var WallOfFire_default = WallOfFire;
 
+  // src/img/spl/meteor-swarm.svg
+  var meteor_swarm_default = "./meteor-swarm-XN7NNB53.svg";
+
+  // src/utils/distance.ts
+  var FEET_PER_MILE = 5280;
+  var miles = (n) => n * FEET_PER_MILE;
+
+  // src/spells/level9/MeteorSwarm.ts
+  var getMeteorSwarmArea = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 40
+  });
+  var MeteorSwarm = simpleSpell({
+    status: "implemented",
+    name: "Meteor Swarm",
+    icon: makeIcon(meteor_swarm_default, DamageColours.fire),
+    level: 9,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    description: `Blazing orbs of fire plummet to the ground at four different points you can see within range. Each creature in a 40-foot-radius sphere centered on each point you choose must make a Dexterity saving throw. The sphere spreads around corners. A creature takes 20d6 fire damage and 20d6 bludgeoning damage on a failed save, or half as much damage on a successful one. A creature in the area of more than one fiery burst is affected only once.
+
+  The spell damages objects in the area and ignites flammable objects that aren't being worn or carried.`,
+    isHarmful: true,
+    getConfig: (g) => ({ points: new MultiPointResolver(g, 4, 4, miles(1)) }),
+    getTargets: () => [],
+    getAffected: (g, caster, { points }) => uniq(points.flatMap((point) => g.getInside(getMeteorSwarmArea(point)))),
+    getDamage: () => [_dd(20, 6, "fire"), _dd(20, 6, "bludgeoning")],
+    async apply(g, attacker, method, config) {
+      const affected = MeteorSwarm.getAffected(g, attacker, config);
+      const type = method.getSaveType(attacker, MeteorSwarm);
+      const fire = await g.rollDamage(20, {
+        size: 6,
+        damageType: "fire",
+        source: MeteorSwarm,
+        spell: MeteorSwarm,
+        method,
+        tags: atSet("magical", "spell")
+      });
+      const bludgeoning = await g.rollDamage(20, {
+        size: 6,
+        damageType: "bludgeoning",
+        source: MeteorSwarm,
+        spell: MeteorSwarm,
+        method,
+        tags: atSet("magical", "spell")
+      });
+      for (const who of affected) {
+        const { damageResponse } = await g.save({
+          source: MeteorSwarm,
+          type,
+          attacker,
+          who,
+          ability: "dex",
+          spell: MeteorSwarm,
+          method,
+          tags: ["magic"]
+        });
+        await g.damage(
+          MeteorSwarm,
+          "fire",
+          { spell: MeteorSwarm, method, target: who },
+          [
+            ["fire", fire],
+            ["bludgeoning", bludgeoning]
+          ],
+          damageResponse
+        );
+      }
+    }
+  });
+  var MeteorSwarm_default = MeteorSwarm;
+
   // src/data/allSpells.ts
   var allSpells = {
     "acid splash": AcidSplash_default,
@@ -17840,6 +17916,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "ray of frost": RayOfFrost_default,
     "sacred flame": SacredFlame_default,
     shillelagh: Shillelagh_default,
+    "shocking grasp": ShockingGrasp_default,
     thaumaturgy: Thaumaturgy_default,
     thunderclap: Thunderclap_default,
     "armor of Agathys": ArmorOfAgathys_default,
@@ -17884,6 +17961,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "spider climb": SpiderClimb_default,
     "spike growth": SpikeGrowth_default,
     web: Web_default,
+    counterspell: Counterspell_default,
     "erupting earth": EruptingEarth_default,
     fireball: Fireball_default,
     "intellect fortress": IntellectFortress_default,
@@ -17903,7 +17981,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "ice storm": IceStorm_default,
     stoneskin: Stoneskin_default,
     "wall of fire": WallOfFire_default,
-    "cone of cold": ConeOfCold_default
+    "cone of cold": ConeOfCold_default,
+    "meteor swarm": MeteorSwarm_default
   };
   var allSpells_default = allSpells;
 
