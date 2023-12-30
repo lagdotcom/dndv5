@@ -11,6 +11,7 @@ import spearUrl from "@img/eq/spear.svg";
 import tridentUrl from "@img/eq/trident.svg";
 
 import Engine from "../Engine";
+import Item from "../types/Item";
 import { _dd, _fd } from "../utils/dice";
 import { distance } from "../utils/units";
 import WeaponBase from "./WeaponBase";
@@ -578,5 +579,23 @@ export class Net extends WeaponBase {
     );
 
     // TODO A Large or smaller creature hit by a net is restrained until it is freed. A net has no effect on creatures that are formless, or creatures that are Huge or larger. A creature can use its action to make a DC 10 Strength check, freeing itself or another creature within its reach on a success. Dealing 5 slashing damage to the net (AC 10) also frees the creature without harming it, ending the effect and destroying the net. When you use an action, bonus action, or reaction to attack with a net, you can make only one attack regardless of the number of attacks you can normally make.
+  }
+}
+
+export class ImprovisedWeapon extends WeaponBase {
+  constructor(
+    g: Engine,
+    public item: Item,
+    damageDice = 4,
+  ) {
+    super(
+      g,
+      item.name,
+      "improvised",
+      "melee",
+      _dd(1, damageDice, "bludgeoning"),
+      undefined,
+      item.icon?.url,
+    );
   }
 }

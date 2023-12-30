@@ -23,6 +23,7 @@ import {
   CultFanatic,
   Cultist,
   Druid,
+  Gladiator,
   Thug,
 } from "../monsters/srd/humanoid";
 import { CombatantCreator } from "./BattleTemplate";
@@ -54,6 +55,7 @@ const allMonsters = {
   cultist: (g) => new Cultist(g),
   "cult fanatic": (g) => new CultFanatic(g),
   druid: (g) => new Druid(g),
+  gladiator: (g) => new Gladiator(g),
   thug: (g) => new Thug(g),
   "thug [crossbow]": (g) => new Thug(g, true),
 

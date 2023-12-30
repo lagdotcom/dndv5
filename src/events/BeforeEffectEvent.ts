@@ -2,6 +2,7 @@ import InterruptionCollector from "../collectors/InterruptionCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import Combatant from "../types/Combatant";
 import EffectType, { EffectConfig } from "../types/EffectType";
+import Empty from "../types/Empty";
 
 export interface BeforeEffectDetail<T = unknown> {
   who: Combatant;
@@ -12,7 +13,7 @@ export interface BeforeEffectDetail<T = unknown> {
   success: SuccessResponseCollector;
 }
 
-export default class BeforeEffectEvent<T = object> extends CustomEvent<
+export default class BeforeEffectEvent<T = Empty> extends CustomEvent<
   BeforeEffectDetail<T>
 > {
   constructor(detail: BeforeEffectDetail<T>) {

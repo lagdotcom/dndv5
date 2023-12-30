@@ -1,5 +1,6 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import Action from "../types/Action";
+import Empty from "../types/Empty";
 
 export interface AfterActionDetail<T extends object> {
   action: Action<T>;
@@ -8,7 +9,7 @@ export interface AfterActionDetail<T extends object> {
 }
 
 export default class AfterActionEvent<
-  T extends object = object,
+  T extends object = Empty,
 > extends CustomEvent<AfterActionDetail<T>> {
   constructor(detail: AfterActionDetail<T>) {
     super("AfterAction", { detail });

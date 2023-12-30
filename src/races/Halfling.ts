@@ -1,4 +1,4 @@
-import { notImplementedFeature } from "../features/common";
+import { Brave, notImplementedFeature } from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import { laSet } from "../types/LanguageName";
@@ -30,20 +30,6 @@ const Lucky = new SimpleFeature(
             },
           ),
         );
-    });
-  },
-);
-
-const Brave = new SimpleFeature(
-  "Brave",
-  `You have advantage on saving throws against being frightened.`,
-  (g, me) => {
-    g.events.on("BeforeSave", ({ detail: { who, tags, config, diceType } }) => {
-      if (
-        who === me &&
-        (tags.has("frightened") || config?.conditions?.has("Frightened"))
-      )
-        diceType.add("advantage", Brave);
     });
   },
 );

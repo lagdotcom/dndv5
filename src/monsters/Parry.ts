@@ -23,9 +23,19 @@ export class ParryAction extends AbstractAction<HasTarget> {
       actor,
       "Parry",
       "implemented",
-      { target: new TargetResolver(g, Infinity, [canSee]) },
       {
-        description: `You add 2 to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
+        target: new TargetResolver(g, Infinity, [
+          canSee,
+          {
+            name: "wielding a melee weapon",
+            message: "no melee weapon",
+            check: (g, action, value) =>
+              !!value.weapons.find((w) => w.rangeCategory === "melee"),
+          },
+        ]),
+      },
+      {
+        description: `You add ${actor.pb} to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
         time: "reaction",
       },
     );
@@ -50,13 +60,13 @@ export class ParryAction extends AbstractAction<HasTarget> {
 
     if (!this.detail) throw new Error(`Parry.apply() without AttackDetail`);
 
-    this.detail.ac += 2;
+    this.detail.ac += this.actor.pb;
   }
 }
 
 const Parry = new SimpleFeature(
   "Parry",
-  `Reaction: You add 2 to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
+  `Reaction: You add your proficiency bonus to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
   (g, me) => {
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) actions.push(new ParryAction(g, me));
@@ -79,7 +89,7 @@ const Parry = new SimpleFeature(
             me,
             Parry,
             "Parry",
-            `${who.name} is about to hit ${target.name} in melee (${detail.total} vs. AC ${detail.ac}). Should they use Parry to add 2 AC for this attack?`,
+            `${who.name} is about to hit ${target.name} in melee (${detail.total} vs. AC ${detail.ac}). Should they use Parry to add ${who.pb} AC for this attack?`,
             Priority.ChangesOutcome,
             async () => {
               await g.act(parry, config);

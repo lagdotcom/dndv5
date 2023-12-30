@@ -5,6 +5,7 @@ import Amount from "./Amount";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
+import Empty from "./Empty";
 import Icon from "./Icon";
 import ImplementationStatus from "./ImplementationStatus";
 import Resolver from "./Resolver";
@@ -28,7 +29,7 @@ export const ActionTags = [
 ] as const;
 export type ActionTag = (typeof ActionTags)[number];
 
-export default interface Action<T extends object = object> extends Source {
+export default interface Action<T extends object = Empty> extends Source {
   status: ImplementationStatus;
   actor: Combatant;
   subIcon?: Icon;

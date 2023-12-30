@@ -2,6 +2,7 @@ import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
 import Action from "./Action";
 import Combatant from "./Combatant";
+import Empty from "./Empty";
 import Point from "./Point";
 
 export interface PositionConstraint {
@@ -10,7 +11,7 @@ export interface PositionConstraint {
   of: Combatant;
 }
 
-export interface ActionEvaluation<T extends object = object> {
+export interface ActionEvaluation<T extends object = Empty> {
   action: Action<T>;
   config: T;
   score: EvaluationCollector;

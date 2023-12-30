@@ -1,6 +1,7 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import Combatant from "../types/Combatant";
 import EffectType, { EffectConfig } from "../types/EffectType";
+import Empty from "../types/Empty";
 
 export interface EffectRemovedDetail<T = unknown> {
   who: Combatant;
@@ -9,7 +10,7 @@ export interface EffectRemovedDetail<T = unknown> {
   interrupt: InterruptionCollector;
 }
 
-export default class EffectRemovedEvent<T = object> extends CustomEvent<
+export default class EffectRemovedEvent<T = Empty> extends CustomEvent<
   EffectRemovedDetail<T>
 > {
   constructor(detail: EffectRemovedDetail<T>) {

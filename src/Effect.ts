@@ -2,6 +2,7 @@ import DndRule from "./DndRule";
 import Engine from "./Engine";
 import { EffectTag } from "./types/EffectTag";
 import EffectType, { EffectDurationTimer } from "./types/EffectType";
+import Empty from "./types/Empty";
 import Icon from "./types/Icon";
 import { SetInitialiser } from "./utils/set";
 
@@ -11,7 +12,7 @@ interface EffectConfig {
   tags?: SetInitialiser<EffectTag>;
 }
 
-export default class Effect<T = object> implements EffectType<T> {
+export default class Effect<T = Empty> implements EffectType<T> {
   rule?: DndRule;
   example?: T;
   tags: Set<EffectTag>;

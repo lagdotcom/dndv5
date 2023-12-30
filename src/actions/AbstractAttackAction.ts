@@ -42,8 +42,8 @@ export default abstract class AbstractAttackAction<
     return "action";
   }
 
-  async apply(config: T) {
-    await super.apply(config);
+  async applyCosts(config: T) {
+    await super.applyCosts(config);
 
     // a subclass might override this (e.g. OpportunityAttack)
     if (this.tags.has("costs attack")) {

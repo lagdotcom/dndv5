@@ -716,13 +716,16 @@
           ec.add(`Not enough ${resource.name} left`, this);
       return ec;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async apply(config) {
+    async applyCosts(config) {
       const time = this.getTime(config);
       if (time)
         this.actor.useTime(time);
       for (const [resource, cost] of this.getResources(config))
         this.actor.spendResource(resource, cost);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async apply(config) {
+      await this.applyCosts(config);
     }
   };
 
@@ -1258,7 +1261,12 @@
   var abSet = (...items) => new Set(items);
 
   // src/types/Item.ts
-  var WeaponCategories = ["natural", "simple", "martial"];
+  var WeaponCategories = [
+    "natural",
+    "simple",
+    "martial",
+    "improvised"
+  ];
   var wcSet = (...items) => new Set(items);
   var ArmorCategories = ["light", "medium", "heavy", "shield"];
   var acSet = (...items) => new Set(items);
@@ -3061,8 +3069,8 @@
         return void 0;
       return "action";
     }
-    async apply(config) {
-      await super.apply(config);
+    async applyCosts(config) {
+      await super.applyCosts(config);
       if (this.tags.has("costs attack")) {
         this.actor.attacksSoFar.push(this);
         await this.actor.addEffect(UsedAttackAction, { duration: 1 });
@@ -6821,6 +6829,21 @@
       );
     }
   };
+  var ImprovisedWeapon = class extends WeaponBase {
+    constructor(g, item, damageDice = 4) {
+      var _a;
+      super(
+        g,
+        item.name,
+        "improvised",
+        "melee",
+        _dd(1, damageDice, "bludgeoning"),
+        void 0,
+        (_a = item.icon) == null ? void 0 : _a.url
+      );
+      this.item = item;
+    }
+  };
 
   // src/types/DamageType.ts
   var MundaneDamageTypes = [
@@ -7381,6 +7404,17 @@
       additionalSetup == null ? void 0 : additionalSetup(g, me);
     });
   }
+  var Brave = new SimpleFeature(
+    "Brave",
+    `You have advantage on saving throws against being frightened.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, tags, config, diceType } }) => {
+        var _a;
+        if (who === me && (tags.has("frightened") || ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Frightened"))))
+          diceType.add("advantage", Brave);
+      });
+    }
+  );
   function darkvisionFeature(range = 60) {
     return new SimpleFeature(
       "Darkvision",
@@ -8465,6 +8499,31 @@
   var giant_badger_default = "./giant-badger-R3QZK5QP.png";
 
   // src/monsters/common.ts
+  var Brute = new SimpleFeature(
+    "Brute",
+    `A melee weapon deals one extra die of its damage when you hit with it.`,
+    (g, me) => {
+      g.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, attack, weapon, interrupt, bonus } }) => {
+          if (attacker === me && (attack == null ? void 0 : attack.roll.type.tags.has("melee")) && (weapon == null ? void 0 : weapon.damage.type) === "dice") {
+            const { size } = weapon.damage.amount;
+            interrupt.add(
+              new EvaluateLater(me, Brute, Priority_default.Normal, async () => {
+                const extra = await g.rollDamage(1, {
+                  size,
+                  source: Brute,
+                  attacker: me,
+                  tags: attack.roll.type.tags
+                });
+                bonus.add(extra, Brute);
+              })
+            );
+          }
+        }
+      );
+    }
+  );
   var ExhaustionImmunity = new SimpleFeature(
     "Exhaustion Immunity",
     `You are immune to exhaustion.`,
@@ -8862,6 +8921,9 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
 
   // src/img/tok/druid.png
   var druid_default = "./druid-F7KWIUWQ.png";
+
+  // src/img/tok/gladiator.png
+  var gladiator_default = "./gladiator-EQ65KNFM.png";
 
   // src/img/tok/thug.png
   var thug_default = "./thug-IXRM6PKF.png";
@@ -11442,9 +11504,18 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
         actor,
         "Parry",
         "implemented",
-        { target: new TargetResolver(g, Infinity, [canSee]) },
         {
-          description: `You add 2 to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
+          target: new TargetResolver(g, Infinity, [
+            canSee,
+            {
+              name: "wielding a melee weapon",
+              message: "no melee weapon",
+              check: (g2, action, value) => !!value.weapons.find((w) => w.rangeCategory === "melee")
+            }
+          ])
+        },
+        {
+          description: `You add ${actor.pb} to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
           time: "reaction"
         }
       );
@@ -11466,12 +11537,12 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       await super.apply(config);
       if (!this.detail)
         throw new Error(`Parry.apply() without AttackDetail`);
-      this.detail.ac += 2;
+      this.detail.ac += this.actor.pb;
     }
   };
   var Parry = new SimpleFeature(
     "Parry",
-    `Reaction: You add 2 to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
+    `Reaction: You add your proficiency bonus to your AC against one melee attack that would hit you. To do so, you must see the attacker and be wielding a melee weapon.`,
     (g, me) => {
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -11487,7 +11558,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
               me,
               Parry,
               "Parry",
-              `${who.name} is about to hit ${target.name} in melee (${detail.total} vs. AC ${detail.ac}). Should they use Parry to add 2 AC for this attack?`,
+              `${who.name} is about to hit ${target.name} in melee (${detail.total} vs. AC ${detail.ac}). Should they use Parry to add ${who.pb} AC for this attack?`,
               Priority_default.ChangesOutcome,
               async () => {
                 await g.act(parry, config);
@@ -11847,6 +11918,87 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       this.don(new Quarterstaff(g), true);
     }
   };
+  var GladiatorMultiattack = makeBagMultiattack(
+    `The gladiator makes three melee attacks or two ranged attacks.`,
+    [{ range: "melee" }, { range: "melee" }, { range: "melee" }],
+    [{ range: "ranged" }, { range: "ranged" }]
+  );
+  var ShieldBashAction2 = class extends WeaponAttack {
+    constructor(g, actor, item) {
+      super(g, "Shield Bash", actor, "melee", new ImprovisedWeapon(g, item));
+      this.item = item;
+    }
+    async apply({ target }) {
+      await super.applyCosts({ target });
+      const { g, ability, actor, weapon } = this;
+      const { attack } = await doStandardAttack(g, {
+        ability,
+        attacker: actor,
+        source: this,
+        target,
+        weapon,
+        rangeCategory: "melee"
+      });
+      if ((attack == null ? void 0 : attack.hit) && target.size <= SizeCategory_default.Medium) {
+        const dc = 8 + attack.attack.pre.bonus.result;
+        const config = { duration: Infinity, conditions: coSet("Prone") };
+        const { outcome } = await g.save({
+          who: target,
+          source: this,
+          type: { type: "flat", dc },
+          ability: "str",
+          attacker: actor,
+          effect: Prone,
+          config
+        });
+        if (outcome === "fail")
+          await target.addEffect(Prone, config, actor);
+      }
+    }
+  };
+  var ShieldBash2 = new SimpleFeature(
+    "Shield Bash",
+    `You can use your shield as a melee weapon.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me && me.shield)
+          actions.push(new ShieldBashAction2(g, me, me.shield));
+      });
+    }
+  );
+  var Gladiator = class extends Monster {
+    constructor(g) {
+      super(
+        g,
+        "gladiator",
+        5,
+        "humanoid",
+        SizeCategory_default.Medium,
+        gladiator_default,
+        112
+      );
+      this.don(new StuddedLeatherArmor(g), true);
+      const shield = new Shield(g);
+      this.don(shield, true);
+      this.setAbilityScores(18, 15, 16, 10, 12, 15);
+      this.addProficiency("str", "proficient");
+      this.addProficiency("dex", "proficient");
+      this.addProficiency("con", "proficient");
+      this.addProficiency("Athletics", "expertise");
+      this.addProficiency("Intimidation", "proficient");
+      this.languages.add("Common");
+      this.pb = 3;
+      this.addFeature(Brave);
+      this.addFeature(Brute);
+      this.addFeature(GladiatorMultiattack);
+      const spear = new Spear(g);
+      this.don(spear, true);
+      this.addProficiency("improvised", "proficient");
+      this.addFeature(ShieldBash2);
+      this.addFeature(Parry_default);
+      this.addToInventory(spear, 9);
+    }
+  };
   var ThugMultiattack = makeBagMultiattack(
     "The thug makes two melee attacks.",
     [{ range: "melee" }, { range: "melee" }]
@@ -11893,6 +12045,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     cultist: (g) => new Cultist(g),
     "cult fanatic": (g) => new CultFanatic(g),
     druid: (g) => new Druid2(g),
+    gladiator: (g) => new Gladiator(g),
     thug: (g) => new Thug(g),
     "thug [crossbow]": (g) => new Thug(g, true),
     Birnotec: (g) => new Birnotec(g),
@@ -20729,17 +20882,6 @@ When you create a device, choose one of the following options:
               }
             )
           );
-      });
-    }
-  );
-  var Brave = new SimpleFeature(
-    "Brave",
-    `You have advantage on saving throws against being frightened.`,
-    (g, me) => {
-      g.events.on("BeforeSave", ({ detail: { who, tags, config, diceType } }) => {
-        var _a;
-        if (who === me && (tags.has("frightened") || ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Frightened"))))
-          diceType.add("advantage", Brave);
       });
     }
   );

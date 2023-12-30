@@ -223,7 +223,7 @@ export default class Engine {
     }
   }
 
-  private async savingThrow<T = object>(
+  private async savingThrow<T>(
     dc: number,
     e: Omit<SavingThrow<T>, "dc" | "type">,
     {

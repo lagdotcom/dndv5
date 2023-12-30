@@ -133,12 +133,16 @@ export default abstract class AbstractAction<T extends object = Empty>
     return ec;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async apply(config: T) {
+  async applyCosts(config: T) {
     const time = this.getTime(config);
     if (time) this.actor.useTime(time);
 
     for (const [resource, cost] of this.getResources(config))
       this.actor.spendResource(resource, cost);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async apply(config: T) {
+    await this.applyCosts(config);
   }
 }

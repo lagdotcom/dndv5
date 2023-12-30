@@ -8,16 +8,19 @@ import commonerUrl from "@img/tok/commoner.png";
 import cultFanaticUrl from "@img/tok/cult-fanatic.png";
 import cultistUrl from "@img/tok/cultist.png";
 import druidUrl from "@img/tok/druid.png";
+import gladiatorUrl from "@img/tok/gladiator.png";
 import thugUrl from "@img/tok/thug.png";
 
+import WeaponAttack, { doStandardAttack } from "../../actions/WeaponAttack";
 import { RecklessAttack } from "../../classes/barbarian/RecklessAttack";
 import { ClericSpellcasting } from "../../classes/cleric";
 import { DruidSpellcasting } from "../../classes/druid";
 import SneakAttack from "../../classes/rogue/SneakAttack";
 import { WizardSpellcasting } from "../../classes/wizard";
-import { Surprised } from "../../effects";
+import { HasTarget } from "../../configs";
+import { Prone, Surprised } from "../../effects";
 import Engine from "../../Engine";
-import { bonusSpellsFeature } from "../../features/common";
+import { bonusSpellsFeature, Brave } from "../../features/common";
 import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
@@ -25,6 +28,7 @@ import { CrossbowBolt } from "../../items/ammunition";
 import {
   HideArmor,
   LeatherArmor,
+  Shield,
   StuddedLeatherArmor,
 } from "../../items/armor";
 import {
@@ -32,11 +36,13 @@ import {
   Dagger,
   Greataxe,
   HeavyCrossbow,
+  ImprovisedWeapon,
   LightCrossbow,
   Mace,
   Quarterstaff,
   Scimitar,
   Shortsword,
+  Spear,
 } from "../../items/weapons";
 import Monster from "../../Monster";
 import FireBolt from "../../spells/cantrip/FireBolt";
@@ -66,10 +72,17 @@ import Stoneskin from "../../spells/level4/Stoneskin";
 import ConeOfCold from "../../spells/level5/ConeOfCold";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
+import { coSet } from "../../types/ConditionName";
 import Enchantment from "../../types/Enchantment";
+import Item from "../../types/Item";
 import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
-import { MagicResistance, PackTactics, SpellDamageResistance } from "../common";
+import {
+  Brute,
+  MagicResistance,
+  PackTactics,
+  SpellDamageResistance,
+} from "../common";
 import { makeBagMultiattack } from "../multiattack";
 import Parry from "../Parry";
 
@@ -336,7 +349,7 @@ export class BanditCaptain extends Monster {
 
     const dagger = new Dagger(g);
     this.don(dagger, true);
-    this.addToInventory(dagger, 9); // TODO ???
+    this.addToInventory(dagger, 9); // TODO how many
 
     this.addFeature(Parry);
   }
@@ -461,6 +474,98 @@ export class Druid extends Monster {
     );
 
     this.don(new Quarterstaff(g), true);
+  }
+}
+
+const GladiatorMultiattack = makeBagMultiattack(
+  `The gladiator makes three melee attacks or two ranged attacks.`,
+  [{ range: "melee" }, { range: "melee" }, { range: "melee" }],
+  [{ range: "ranged" }, { range: "ranged" }],
+);
+
+class ShieldBashAction extends WeaponAttack {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    public item: Item,
+  ) {
+    super(g, "Shield Bash", actor, "melee", new ImprovisedWeapon(g, item));
+  }
+
+  async apply({ target }: HasTarget): Promise<void> {
+    await super.applyCosts({ target });
+    const { g, ability, actor, weapon } = this;
+
+    const { attack } = await doStandardAttack(g, {
+      ability,
+      attacker: actor,
+      source: this,
+      target,
+      weapon,
+      rangeCategory: "melee",
+    });
+
+    if (attack?.hit && target.size <= SizeCategory.Medium) {
+      const dc = 8 + attack.attack.pre.bonus.result;
+      const config = { duration: Infinity, conditions: coSet("Prone") };
+      const { outcome } = await g.save({
+        who: target,
+        source: this,
+        type: { type: "flat", dc },
+        ability: "str",
+        attacker: actor,
+        effect: Prone,
+        config,
+      });
+      if (outcome === "fail") await target.addEffect(Prone, config, actor);
+    }
+  }
+}
+
+const ShieldBash = new SimpleFeature(
+  "Shield Bash",
+  `You can use your shield as a melee weapon.`,
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me && me.shield)
+        actions.push(new ShieldBashAction(g, me, me.shield));
+    });
+  },
+);
+
+export class Gladiator extends Monster {
+  constructor(g: Engine) {
+    super(
+      g,
+      "gladiator",
+      5,
+      "humanoid",
+      SizeCategory.Medium,
+      gladiatorUrl,
+      112,
+    );
+    this.don(new StuddedLeatherArmor(g), true);
+    const shield = new Shield(g);
+    this.don(shield, true);
+    this.setAbilityScores(18, 15, 16, 10, 12, 15);
+    this.addProficiency("str", "proficient");
+    this.addProficiency("dex", "proficient");
+    this.addProficiency("con", "proficient");
+    this.addProficiency("Athletics", "expertise");
+    this.addProficiency("Intimidation", "proficient");
+    this.languages.add("Common"); // any one language (usually Common)
+    this.pb = 3;
+
+    this.addFeature(Brave);
+    this.addFeature(Brute);
+
+    this.addFeature(GladiatorMultiattack);
+    const spear = new Spear(g);
+    this.don(spear, true);
+    this.addProficiency("improvised", "proficient");
+    this.addFeature(ShieldBash);
+    this.addFeature(Parry);
+    this.addToInventory(spear, 9); // TODO how many
   }
 }
 

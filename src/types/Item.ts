@@ -24,7 +24,12 @@ export interface BaseItem extends Source {
   magical?: boolean;
 }
 
-export const WeaponCategories = ["natural", "simple", "martial"] as const;
+export const WeaponCategories = [
+  "natural",
+  "simple",
+  "martial",
+  "improvised",
+] as const;
 export type WeaponCategory = (typeof WeaponCategories)[number];
 export const wcSet = (...items: WeaponCategory[]) => new Set(items);
 

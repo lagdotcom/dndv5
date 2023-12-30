@@ -58,6 +58,20 @@ export function bonusSpellsFeature(
   });
 }
 
+export const Brave = new SimpleFeature(
+  "Brave",
+  `You have advantage on saving throws against being frightened.`,
+  (g, me) => {
+    g.events.on("BeforeSave", ({ detail: { who, tags, config, diceType } }) => {
+      if (
+        who === me &&
+        (tags.has("frightened") || config?.conditions?.has("Frightened"))
+      )
+        diceType.add("advantage", Brave);
+    });
+  },
+);
+
 function darkvisionFeature(range = 60) {
   return new SimpleFeature(
     "Darkvision",

@@ -6,6 +6,7 @@ import Amount from "./Amount";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
 import { SpecifiedEffectShape } from "./EffectArea";
+import Empty from "./Empty";
 import Icon from "./Icon";
 import ImplementationStatus from "./ImplementationStatus";
 import Source from "./Source";
@@ -36,7 +37,7 @@ export const SpellLists = [
 ] as const;
 export type SpellList = (typeof SpellLists)[number];
 
-export default interface Spell<T extends object = object> extends Source {
+export default interface Spell<T extends object = Empty> extends Source {
   status: ImplementationStatus;
   level: number;
   ritual: boolean;

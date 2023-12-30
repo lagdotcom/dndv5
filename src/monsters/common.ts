@@ -1,7 +1,40 @@
 import SimpleFeature from "../features/SimpleFeature";
+import EvaluateLater from "../interruptions/EvaluateLater";
 import { MundaneDamageTypes } from "../types/DamageType";
+import Priority from "../types/Priority";
 import { getFlanker } from "../utils/dnd";
 import { isA } from "../utils/types";
+
+export const Brute = new SimpleFeature(
+  "Brute",
+  `A melee weapon deals one extra die of its damage when you hit with it.`,
+  (g, me) => {
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, attack, weapon, interrupt, bonus } }) => {
+        if (
+          attacker === me &&
+          attack?.roll.type.tags.has("melee") &&
+          weapon?.damage.type === "dice"
+        ) {
+          const { size } = weapon.damage.amount;
+
+          interrupt.add(
+            new EvaluateLater(me, Brute, Priority.Normal, async () => {
+              const extra = await g.rollDamage(1, {
+                size,
+                source: Brute,
+                attacker: me,
+                tags: attack.roll.type.tags,
+              });
+              bonus.add(extra, Brute);
+            }),
+          );
+        }
+      },
+    );
+  },
+);
 
 export const ExhaustionImmunity = new SimpleFeature(
   "Exhaustion Immunity",
