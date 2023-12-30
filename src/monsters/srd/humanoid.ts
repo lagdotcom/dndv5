@@ -9,37 +9,60 @@ import cultFanaticUrl from "@img/tok/cult-fanatic.png";
 import cultistUrl from "@img/tok/cultist.png";
 import druidUrl from "@img/tok/druid.png";
 import gladiatorUrl from "@img/tok/gladiator.png";
+import guardUrl from "@img/tok/guard.png";
+import knightUrl from "@img/tok/knight.png";
+import mageUrl from "@img/tok/mage.png";
+import nobleUrl from "@img/tok/noble.png";
+import priestUrl from "@img/tok/priest.png";
+import scoutUrl from "@img/tok/scout.png";
+import spyUrl from "@img/tok/spy.png";
 import thugUrl from "@img/tok/thug.png";
+import tribalWarriorUrl from "@img/tok/tribal-warrior.png";
+import veteranUrl from "@img/tok/veteran.png";
 
 import WeaponAttack, { doStandardAttack } from "../../actions/WeaponAttack";
 import { RecklessAttack } from "../../classes/barbarian/RecklessAttack";
 import { ClericSpellcasting } from "../../classes/cleric";
 import { DruidSpellcasting } from "../../classes/druid";
+import { CunningAction } from "../../classes/rogue";
 import SneakAttack from "../../classes/rogue/SneakAttack";
 import { WizardSpellcasting } from "../../classes/wizard";
 import { HasTarget } from "../../configs";
 import { Prone, Surprised } from "../../effects";
 import Engine from "../../Engine";
-import { bonusSpellsFeature, Brave } from "../../features/common";
+import {
+  bonusSpellsFeature,
+  Brave,
+  notImplementedFeature,
+} from "../../features/common";
 import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import { CrossbowBolt } from "../../items/ammunition";
+import { Arrow, CrossbowBolt } from "../../items/ammunition";
 import {
+  BreastplateArmor,
+  ChainShirtArmor,
   HideArmor,
   LeatherArmor,
+  PlateArmor,
   Shield,
+  SplintArmor,
   StuddedLeatherArmor,
 } from "../../items/armor";
 import {
   Club,
   Dagger,
   Greataxe,
+  Greatsword,
+  HandCrossbow,
   HeavyCrossbow,
   ImprovisedWeapon,
   LightCrossbow,
+  Longbow,
+  Longsword,
   Mace,
   Quarterstaff,
+  Rapier,
   Scimitar,
   Shortsword,
   Spear,
@@ -56,18 +79,23 @@ import Bless from "../../spells/level1/Bless";
 import Command from "../../spells/level1/Command";
 import CureWounds from "../../spells/level1/CureWounds";
 import Entangle from "../../spells/level1/Entangle";
+import GuidingBolt from "../../spells/level1/GuidingBolt";
 import InflictWounds from "../../spells/level1/InflictWounds";
 import Longstrider from "../../spells/level1/Longstrider";
 import MageArmor from "../../spells/level1/MageArmor";
 import MagicMissile from "../../spells/level1/MagicMissile";
 import Sanctuary from "../../spells/level1/Sanctuary";
+import ShieldSpell from "../../spells/level1/Shield";
 import ShieldOfFaith from "../../spells/level1/ShieldOfFaith";
 import Thunderwave from "../../spells/level1/Thunderwave";
 import HoldPerson from "../../spells/level2/HoldPerson";
+import LesserRestoration from "../../spells/level2/LesserRestoration";
 import MirrorImage from "../../spells/level2/MirrorImage";
 import MistyStep from "../../spells/level2/MistyStep";
 import Counterspell from "../../spells/level3/Counterspell";
+import Fireball from "../../spells/level3/Fireball";
 import LightningBolt from "../../spells/level3/LightningBolt";
+import IceStorm from "../../spells/level4/IceStorm";
 import Stoneskin from "../../spells/level4/Stoneskin";
 import ConeOfCold from "../../spells/level5/ConeOfCold";
 import { atSet } from "../../types/AttackTag";
@@ -79,6 +107,7 @@ import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import {
   Brute,
+  KeenHearingAndSight,
   MagicResistance,
   PackTactics,
   SpellDamageResistance,
@@ -569,6 +598,204 @@ export class Gladiator extends Monster {
   }
 }
 
+export class Guard extends Monster {
+  constructor(g: Engine) {
+    super(g, "guard", 0.125, "humanoid", SizeCategory.Medium, guardUrl, 11);
+    this.don(new ChainShirtArmor(g), true);
+    this.don(new Shield(g), true);
+    this.setAbilityScores(13, 12, 12, 10, 11, 10);
+    this.addProficiency("Perception", "proficient");
+    this.languages.add("Common"); // any one language (usually Common)
+
+    this.don(new Spear(g), true);
+  }
+}
+
+const KnightMultiattack = makeBagMultiattack(
+  `The knight makes two melee attacks.`,
+  [{ range: "melee" }, { range: "melee" }],
+);
+
+// TODO
+const Leadership = notImplementedFeature(
+  "Leadership",
+  `(Recharges after a Short or Long Rest). For 1 minute, the knight can utter a special command or warning whenever a nonhostile creature that it can see within 30 feet of it makes an attack roll or a saving throw. The creature can add a d4 to its roll provided it can hear and understand the knight. A creature can benefit from only one Leadership die at a time. This effect ends if the knight is incapacitated.`,
+);
+
+export class Knight extends Monster {
+  constructor(g: Engine, wieldingCrossbow = false) {
+    super(g, "knight", 3, "humanoid", SizeCategory.Medium, knightUrl, 52);
+    this.don(new PlateArmor(g), true);
+    this.setAbilityScores(16, 11, 14, 11, 11, 15);
+    this.addProficiency("con", "proficient");
+    this.addProficiency("wis", "proficient");
+    this.languages.add("Common"); // any one language (usually Common)
+    this.addFeature(Brave);
+
+    this.addFeature(KnightMultiattack);
+
+    const sword = new Greatsword(g);
+    const crossbow = new HeavyCrossbow(g);
+    this.give(sword, true);
+    this.give(crossbow, true);
+    this.don(wieldingCrossbow ? crossbow : sword);
+    this.addToInventory(new CrossbowBolt(g), 20);
+
+    this.addFeature(Leadership);
+    this.addFeature(Parry);
+  }
+}
+
+export class Mage extends Monster {
+  constructor(g: Engine) {
+    super(g, "mage", 6, "humanoid", SizeCategory.Medium, mageUrl, 40);
+    this.don(new Dagger(g), true);
+    this.setAbilityScores(9, 14, 11, 17, 12, 11);
+    this.addProficiency("int", "proficient");
+    this.addProficiency("wis", "proficient");
+    this.addProficiency("Arcana", "proficient");
+    this.addProficiency("History", "proficient");
+    this.languages.add("Common"); // TODO any four languages
+    this.pb = 3;
+
+    this.level = 9;
+    this.classLevels.set("Wizard", 9);
+    this.addFeature(WizardSpellcasting.feature);
+    this.addPreparedSpells(
+      FireBolt,
+      // TODO Light,
+      // TODO MageHand,
+      // TODO Prestidigitation,
+      // TODO DetectMagic,
+      MageArmor,
+      MagicMissile,
+      ShieldSpell,
+      MistyStep,
+      // TODO Suggestion,
+      Counterspell,
+      Fireball,
+      // TODO Fly,
+      // TODO GreaterInvisibility,
+      IceStorm,
+      ConeOfCold,
+    );
+  }
+}
+
+export class Noble extends Monster {
+  constructor(g: Engine) {
+    super(g, "noble", 0.125, "humanoid", SizeCategory.Medium, nobleUrl, 9);
+    this.don(new BreastplateArmor(g), true);
+    this.setAbilityScores(11, 12, 11, 12, 14, 16);
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Persuasion", "proficient");
+    this.languages.add("Common"); // TODO any two languages
+
+    this.don(new Rapier(g), true);
+    this.addFeature(Parry);
+  }
+}
+
+// TODO
+const DivineEminence = notImplementedFeature(
+  "Divine Eminence",
+  `As a bonus action, the priest can expend a spell slot to cause its melee weapon attacks to magically deal an extra 10 (3d6) radiant damage to a target on a hit. This benefit lasts until the end of the turn. If the priest expends a spell slot of 2nd level or higher, the extra damage increases by 1d6 for each level above 1st.`,
+);
+
+export class Priest extends Monster {
+  constructor(g: Engine) {
+    super(g, "priest", 2, "humanoid", SizeCategory.Medium, priestUrl, 27);
+    this.don(new ChainShirtArmor(g), true);
+    this.setAbilityScores(10, 10, 12, 13, 16, 13);
+    this.addProficiency("Medicine", "expertise");
+    this.addProficiency("Persuasion", "proficient");
+    this.addProficiency("Religion", "expertise");
+    this.languages.add("Common"); // TODO any two languages
+
+    this.addFeature(DivineEminence);
+    this.level = 5;
+    this.classLevels.set("Cleric", 5);
+    this.addFeature(ClericSpellcasting.feature);
+    this.addPreparedSpells(
+      // TODO Light,
+      SacredFlame,
+      Thaumaturgy,
+      CureWounds,
+      GuidingBolt,
+      Sanctuary,
+      LesserRestoration,
+      // TODO SpiritualWeapon,
+      // TODO DispelMagic,
+      // TODO SpiritGuardians,
+    );
+
+    this.don(new Mace(g), true);
+  }
+}
+
+const ScoutMultiattack = makeBagMultiattack(
+  `The scout makes two melee attacks or two ranged attacks.`,
+  [{ range: "melee" }, { range: "melee" }],
+  [{ range: "ranged" }, { range: "ranged" }],
+);
+
+export class Scout extends Monster {
+  constructor(g: Engine, wieldingBow = false) {
+    super(g, "scout", 0.5, "humanoid", SizeCategory.Medium, scoutUrl, 16);
+    this.don(new LeatherArmor(g), true);
+    this.setAbilityScores(11, 14, 12, 11, 13, 11);
+    this.addProficiency("Nature", "expertise");
+    this.addProficiency("Perception", "expertise");
+    this.addProficiency("Stealth", "expertise");
+    this.addProficiency("Survival", "expertise");
+    this.languages.add("Common"); // TODO any one language (usually Common)
+
+    this.addFeature(KeenHearingAndSight);
+    this.addFeature(ScoutMultiattack);
+
+    const sword = new Shortsword(g);
+    const bow = new Longbow(g);
+    this.give(sword, true);
+    this.give(bow, true);
+    this.don(wieldingBow ? bow : sword);
+    this.addToInventory(new Arrow(g), 20);
+  }
+}
+
+const SpyMultiattack = makeBagMultiattack("The spy makes two melee attacks.", [
+  { range: "melee" },
+  { range: "melee" },
+]);
+
+export class Spy extends Monster {
+  constructor(g: Engine, wieldingCrossbow = false) {
+    super(g, "spy", 1, "humanoid", SizeCategory.Medium, spyUrl, 27);
+    this.setAbilityScores(10, 15, 10, 12, 14, 16);
+    this.addProficiency("Deception", "proficient");
+    this.addProficiency("Insight", "proficient");
+    this.addProficiency("Perception", "expertise");
+    this.addProficiency("Persuasion", "proficient");
+    this.addProficiency("Sleight of Hand", "proficient");
+    this.addProficiency("Stealth", "proficient");
+    this.languages.add("Common"); // TODO any two languages
+
+    this.level = 3;
+    this.classLevels.set("Rogue", 3);
+    this.addFeature(CunningAction);
+    this.addFeature(SneakAttack);
+
+    this.addFeature(SpyMultiattack);
+
+    const sword = new Shortsword(g);
+    const crossbow = new HandCrossbow(g);
+    this.give(sword, true);
+    this.give(crossbow, true);
+    this.don(wieldingCrossbow ? crossbow : sword);
+    this.addToInventory(new CrossbowBolt(g), 20);
+  }
+}
+
 const ThugMultiattack = makeBagMultiattack(
   "The thug makes two melee attacks.",
   [{ range: "melee" }, { range: "melee" }],
@@ -580,7 +807,7 @@ export class Thug extends Monster {
     this.don(new LeatherArmor(g), true);
     this.setAbilityScores(15, 11, 14, 10, 10, 11);
     this.addProficiency("Intimidation", "proficient");
-    this.languages.add("Common");
+    this.languages.add("Common"); // TODO any one language (usually Common)
 
     this.addFeature(PackTactics);
     this.addFeature(ThugMultiattack);
@@ -591,5 +818,57 @@ export class Thug extends Monster {
     this.give(crossbow, true);
     this.don(wieldingCrossbow ? crossbow : mace);
     this.addToInventory(new CrossbowBolt(g), 20);
+  }
+}
+
+export class TribalWarrior extends Monster {
+  constructor(g: Engine) {
+    super(
+      g,
+      "tribal warrior",
+      0.125,
+      "humanoid",
+      SizeCategory.Medium,
+      tribalWarriorUrl,
+      11,
+    );
+    this.don(new HideArmor(g), true);
+    this.setAbilityScores(13, 11, 12, 8, 11, 8);
+    this.languages.add("Common"); // TODO any one language
+
+    this.addFeature(PackTactics);
+    this.don(new Spear(g), true);
+  }
+}
+
+const VeteranMultiattack = makeBagMultiattack(
+  `The veteran makes two longsword attacks. If it has a shortsword drawn, it can also make a shortsword attack.`,
+  [{ weapon: "longsword" }, { weapon: "longsword" }, { weapon: "shortsword" }],
+);
+
+export class Veteran extends Monster {
+  constructor(g: Engine, wieldingCrossbow = false) {
+    super(g, "veteran", 3, "humanoid", SizeCategory.Medium, veteranUrl, 58);
+    this.don(new SplintArmor(g), true);
+    this.setAbilityScores(16, 13, 14, 10, 11, 10);
+    this.addProficiency("Athletics", "proficient");
+    this.addProficiency("Perception", "proficient");
+    this.languages.add("Common"); // TODO any one language (usually Common)
+
+    this.addFeature(VeteranMultiattack);
+
+    const longsword = new Longsword(g);
+    const shortsword = new Shortsword(g);
+    const crossbow = new HeavyCrossbow(g);
+    this.give(longsword, true);
+    this.give(shortsword, true);
+    this.give(crossbow, true);
+    this.addToInventory(new CrossbowBolt(g), 20);
+
+    if (wieldingCrossbow) this.don(crossbow);
+    else {
+      this.don(longsword);
+      this.don(shortsword);
+    }
   }
 }

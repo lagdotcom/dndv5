@@ -8536,7 +8536,7 @@
   );
   var KeenHearing = new SimpleFeature(
     "Keen Hearing",
-    `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
+    `You have advantage on Wisdom (Perception) checks that rely on hearing.`,
     (g, me) => {
       g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
         if (who === me && tags.has("hearing"))
@@ -8544,9 +8544,19 @@
       });
     }
   );
+  var KeenHearingAndSight = new SimpleFeature(
+    "Keen Hearing and Sight",
+    `You have advantage on Wisdom (Perception) checks that rely on hearing or sight.`,
+    (g, me) => {
+      g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+        if (who === me && (tags.has("hearing") || tags.has("sight")))
+          diceType.add("advantage", KeenHearingAndSight);
+      });
+    }
+  );
   var KeenSmell = new SimpleFeature(
     "Keen Smell",
-    `This has advantage on Wisdom (Perception) checks that rely on smell.`,
+    `You have advantage on Wisdom (Perception) checks that rely on smell.`,
     (g, me) => {
       g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
         if (who === me && tags.has("smell"))
@@ -8925,8 +8935,35 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
   // src/img/tok/gladiator.png
   var gladiator_default = "./gladiator-EQ65KNFM.png";
 
+  // src/img/tok/guard.png
+  var guard_default = "./guard-BNOKTBDO.png";
+
+  // src/img/tok/knight.png
+  var knight_default = "./knight-Z7KHLCJG.png";
+
+  // src/img/tok/mage.png
+  var mage_default = "./mage-KCDH25D3.png";
+
+  // src/img/tok/noble.png
+  var noble_default = "./noble-STVR2UAW.png";
+
+  // src/img/tok/priest.png
+  var priest_default = "./priest-NOIMCM2G.png";
+
+  // src/img/tok/scout.png
+  var scout_default = "./scout-X3GWHQBK.png";
+
+  // src/img/tok/spy.png
+  var spy_default = "./spy-NXL4YX7V.png";
+
   // src/img/tok/thug.png
   var thug_default = "./thug-IXRM6PKF.png";
+
+  // src/img/tok/tribal-warrior.png
+  var tribal_warrior_default = "./tribal-warrior-4QD4L34K.png";
+
+  // src/img/tok/veteran.png
+  var veteran_default = "./veteran-LZVEQ5RC.png";
 
   // src/img/act/reckless-attack.svg
   var reckless_attack_default = "./reckless-attack-MI6SJ5UC.svg";
@@ -9797,6 +9834,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   };
   var druid_default3 = Druid;
 
+  // src/img/class/rogue.svg
+  var rogue_default = "./rogue-FWYYNDZ5.svg";
+
+  // src/classes/rogue/common.ts
+  var RogueIcon = makeIcon(rogue_default, ClassColours.Rogue);
+
   // src/classes/rogue/SneakAttack.ts
   function getSneakAttackDice(level) {
     return Math.ceil(level / 2);
@@ -9868,6 +9911,272 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   );
   var SneakAttack_default = SneakAttack;
 
+  // src/img/act/steady-aim.svg
+  var steady_aim_default = "./steady-aim-INID7FA2.svg";
+
+  // src/classes/rogue/SteadyAim.ts
+  var SteadyAimIcon = makeIcon(steady_aim_default);
+  var SteadyAimNoMoveEffect = new Effect(
+    "Steady Aim",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+        if (who.hasEffect(SteadyAimNoMoveEffect))
+          multiplier.add("zero", SteadyAimNoMoveEffect);
+      });
+    },
+    { quiet: true }
+  );
+  var SteadyAimAdvantageEffect = new Effect(
+    "Steady Aim",
+    "turnEnd",
+    (g) => {
+      g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
+        if (who.hasEffect(SteadyAimAdvantageEffect))
+          diceType.add("advantage", SteadyAimAdvantageEffect);
+      });
+      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
+        if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
+          interrupt.add(
+            new EvaluateLater(
+              pre.who,
+              SteadyAimAdvantageEffect,
+              Priority_default.Normal,
+              () => pre.who.removeEffect(SteadyAimAdvantageEffect)
+            )
+          );
+      });
+    },
+    { icon: SteadyAimIcon }
+  );
+  var SteadyAimAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Steady Aim",
+        "implemented",
+        {},
+        {
+          icon: SteadyAimIcon,
+          subIcon: RogueIcon,
+          time: "bonus action",
+          description: `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`
+        }
+      );
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
+    check(config, ec) {
+      if (this.actor.movedSoFar)
+        ec.add("Already moved this turn", this);
+      return super.check(config, ec);
+    }
+    async apply() {
+      await super.apply({});
+      await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
+      await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
+    }
+  };
+  var SteadyAim = new SimpleFeature(
+    "Steady Aim",
+    `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new SteadyAimAction(g, me));
+      });
+    }
+  );
+  var SteadyAim_default = SteadyAim;
+
+  // src/classes/rogue/index.ts
+  var Expertise = new ConfiguredFeature(
+    "Expertise",
+    `At 1st level, choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves\u2019 tools. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies.
+
+  At 6th level, you can choose two more of your proficiencies (in skills or with thieves\u2019 tools) to gain this benefit.`,
+    (g, me, config) => {
+      for (const entry of config)
+        me.addProficiency(entry, "expertise");
+    }
+  );
+  var ThievesCant = new SimpleFeature(
+    "Thieves' Cant",
+    `During your rogue training you learned thieves' cant, a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. Only another creature that knows thieves' cant understands such messages. It takes four times longer to convey such a message than it does to speak the same idea plainly.
+
+In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`,
+    (g, me) => {
+      me.languages.add("Thieves' Cant");
+    }
+  );
+  var CunningAction = new SimpleFeature(
+    "Cunning Action",
+    `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
+    (g, me) => {
+      featureNotComplete(CunningAction, me);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me) {
+          const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
+          for (const action of cunning) {
+            action.name += " (Cunning Action)";
+            action.time = "bonus action";
+            action.subIcon = RogueIcon;
+          }
+          actions.push(...cunning);
+        }
+      });
+    }
+  );
+  var UncannyDodgeAction = class extends AbstractAction {
+    constructor(g, actor, multiplier) {
+      super(
+        g,
+        actor,
+        "Uncanny Dodge",
+        "implemented",
+        { target: new TargetResolver(g, Infinity, [canSee]) },
+        {
+          description: `When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+          time: "reaction"
+        }
+      );
+      this.multiplier = multiplier;
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    getTargets() {
+      return [];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      this.multiplier.add("half", this);
+    }
+  };
+  var UncannyDodge = new SimpleFeature(
+    "Uncanny Dodge",
+    `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (me === who)
+          actions.push(new UncannyDodgeAction(g, me, new MultiplierCollector()));
+      });
+      g.events.on(
+        "GatherDamage",
+        ({ detail: { target, attack, interrupt, multiplier, attacker } }) => {
+          if (attacker && attack && target === me) {
+            const action = new UncannyDodgeAction(g, me, multiplier);
+            const config = { target: attacker };
+            if (checkConfig(g, action, config))
+              interrupt.add(
+                new YesNoChoice(
+                  me,
+                  UncannyDodge,
+                  "Uncanny Dodge",
+                  `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
+                  Priority_default.ChangesOutcome,
+                  () => g.act(action, config)
+                )
+              );
+          }
+        }
+      );
+    }
+  );
+  var ReliableTalent = notImplementedFeature(
+    "Reliable Talent",
+    `By 11th level, you have refined your chosen skills until they approach perfection. Whenever you make an ability check that lets you add your proficiency bonus, you can treat a d20 roll of 9 or lower as a 10.`
+  );
+  var Blindsense = notImplementedFeature(
+    "Blindsense",
+    `Starting at 14th level, if you are able to hear, you are aware of the location of any hidden or invisible creature within 10 feet of you.`
+  );
+  var SlipperyMind = new SimpleFeature(
+    "Slippery Mind",
+    `By 15th level, you have acquired greater mental strength. You gain proficiency in Wisdom saving throws.`,
+    (g, me) => me.saveProficiencies.add("wis")
+  );
+  var Elusive = notImplementedFeature(
+    "Elusive",
+    `Beginning at 18th level, you are so evasive that attackers rarely gain the upper hand against you. No attack roll has advantage against you while you aren't incapacitated.`
+  );
+  var StrokeOfLuck = notImplementedFeature(
+    "Stroke of Luck",
+    `At 20th level, you have an uncanny knack for succeeding when you need to. If your attack misses a target within range, you can turn the miss into a hit. Alternatively, if you fail an ability check, you can treat the d20 roll as a 20.
+
+Once you use this feature, you can't use it again until you finish a short or long rest.`
+  );
+  var ASI43 = makeASI("Rogue", 4);
+  var ASI83 = makeASI("Rogue", 8);
+  var ASI10 = makeASI("Rogue", 10);
+  var ASI123 = makeASI("Rogue", 12);
+  var ASI163 = makeASI("Rogue", 16);
+  var ASI193 = makeASI("Rogue", 19);
+  var Rogue = {
+    name: "Rogue",
+    hitDieSize: 8,
+    armor: acSet("light"),
+    weaponCategory: wcSet("simple"),
+    weapon: wtSet("hand crossbow", "longsword", "rapier", "shortsword"),
+    tool: gains(["thieves' tools"]),
+    save: abSet("dex", "int"),
+    skill: gains([], 4, [
+      "Acrobatics",
+      "Athletics",
+      "Deception",
+      "Insight",
+      "Intimidation",
+      "Investigation",
+      "Perception",
+      "Performance",
+      "Persuasion",
+      "Sleight of Hand",
+      "Stealth"
+    ]),
+    multi: {
+      requirements: /* @__PURE__ */ new Map([["dex", 13]]),
+      armor: acSet("light"),
+      tool: gains(["thieves' tools"]),
+      skill: gains([], 1, [
+        "Acrobatics",
+        "Athletics",
+        "Deception",
+        "Insight",
+        "Intimidation",
+        "Investigation",
+        "Perception",
+        "Performance",
+        "Persuasion",
+        "Sleight of Hand",
+        "Stealth"
+      ])
+    },
+    features: /* @__PURE__ */ new Map([
+      [1, [Expertise, SneakAttack_default, ThievesCant]],
+      [2, [CunningAction]],
+      [3, [SteadyAim_default]],
+      [4, [ASI43]],
+      [5, [UncannyDodge]],
+      [7, [Evasion_default]],
+      [8, [ASI83]],
+      [10, [ASI10]],
+      [11, [ReliableTalent]],
+      [12, [ASI123]],
+      [14, [Blindsense]],
+      [15, [SlipperyMind]],
+      [16, [ASI163]],
+      [18, [Elusive]],
+      [19, [ASI193]],
+      [20, [StrokeOfLuck]]
+    ])
+  };
+  var rogue_default2 = Rogue;
+
   // src/img/class/wizard.svg
   var wizard_default = "./wizard-FEOOHPRA.svg";
 
@@ -9908,11 +10217,11 @@ By spending 8 hours in study, you can exchange one or both of the spells you cho
 
 If you want to cast either spell at a higher level, you must expend a spell slot as normal.`
   );
-  var ASI43 = makeASI("Wizard", 4);
-  var ASI83 = makeASI("Wizard", 8);
-  var ASI123 = makeASI("Wizard", 12);
-  var ASI163 = makeASI("Wizard", 16);
-  var ASI193 = makeASI("Wizard", 19);
+  var ASI44 = makeASI("Wizard", 4);
+  var ASI84 = makeASI("Wizard", 8);
+  var ASI124 = makeASI("Wizard", 12);
+  var ASI164 = makeASI("Wizard", 16);
+  var ASI194 = makeASI("Wizard", 19);
   var Wizard = {
     name: "Wizard",
     hitDieSize: 6,
@@ -9930,12 +10239,12 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     features: /* @__PURE__ */ new Map([
       [1, [ArcaneRecovery, WizardSpellcasting.feature]],
       [3, [CantripFormulas]],
-      [4, [ASI43]],
-      [8, [ASI83]],
-      [12, [ASI123]],
-      [16, [ASI163]],
+      [4, [ASI44]],
+      [8, [ASI84]],
+      [12, [ASI124]],
+      [16, [ASI164]],
       [18, [SpellMastery]],
-      [19, [ASI193]],
+      [19, [ASI194]],
       [20, [SignatureSpells]]
     ])
   };
@@ -10934,6 +11243,95 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   });
   var Sanctuary_default = Sanctuary;
 
+  // src/img/spl/shield.svg
+  var shield_default = "./shield-6WKZRKVU.svg";
+
+  // src/spells/level1/Shield.ts
+  var ShieldIcon = makeIcon(shield_default);
+  var ShieldEffect = new Effect(
+    "Shield",
+    "turnStart",
+    (g) => {
+      const check = (message, who, interrupt, after) => {
+        const shield = g.getActions(who).filter((a) => isCastSpell(a, Shield2) && checkConfig(g, a, {}));
+        if (!shield.length)
+          return;
+        interrupt.add(
+          new PickFromListChoice(
+            who,
+            Shield2,
+            "Shield",
+            `${message} Cast Shield as a reaction?`,
+            Priority_default.Late,
+            shield.map((value) => ({ value, label: value.name })),
+            async (action) => {
+              await g.act(action, {});
+              if (after)
+                await after();
+            },
+            true
+          )
+        );
+      };
+      g.events.on("Attack", ({ detail }) => {
+        const { target, who } = detail.pre;
+        if (!target.hasEffect(ShieldEffect) && detail.outcome.hits)
+          check(
+            `${who.name} hit ${target.name} with an attack.`,
+            target,
+            detail.interrupt,
+            async () => {
+              const ac = await g.getAC(target, detail.pre);
+              detail.ac = ac;
+            }
+          );
+      });
+      g.events.on(
+        "SpellCast",
+        ({ detail: { who, spell, affected, interrupt } }) => {
+          if (spell !== MagicMissile_default)
+            return;
+          for (const target of affected) {
+            if (!target.hasEffect(ShieldEffect))
+              check(
+                `${who.name} is casting Magic Missile on ${target.name}.`,
+                target,
+                interrupt
+              );
+          }
+        }
+      );
+      g.events.on("GetAC", ({ detail: { who, bonus } }) => {
+        if (who.hasEffect(ShieldEffect))
+          bonus.add(5, ShieldEffect);
+      });
+      g.events.on("GatherDamage", ({ detail: { target, spell, multiplier } }) => {
+        if (target.hasEffect(ShieldEffect) && spell === MagicMissile_default)
+          multiplier.add("zero", ShieldEffect);
+      });
+    },
+    { icon: ShieldIcon, tags: ["magic"] }
+  );
+  var Shield2 = simpleSpell({
+    status: "implemented",
+    name: "Shield",
+    icon: ShieldIcon,
+    level: 1,
+    school: "Abjuration",
+    time: "reaction",
+    v: true,
+    s: true,
+    lists: ["Sorcerer", "Wizard"],
+    description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
+    getConfig: () => ({}),
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
+    async apply(g, caster) {
+      await caster.addEffect(ShieldEffect, { duration: 1 });
+    }
+  });
+  var Shield_default = Shield2;
+
   // src/img/spl/shield-of-faith.svg
   var shield_of_faith_default = "./shield-of-faith-6VIBSZE5.svg";
 
@@ -11143,6 +11541,48 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   });
   var HoldPerson_default = HoldPerson;
 
+  // src/spells/level2/LesserRestoration.ts
+  var validConditions = coSet("Blinded", "Deafened", "Paralyzed", "Poisoned");
+  var LesserRestoration = simpleSpell({
+    status: "implemented",
+    name: "Lesser Restoration",
+    level: 2,
+    school: "Abjuration",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+    description: `You touch a creature and can end either one disease or one condition afflicting it. The condition can be blinded, deafened, paralyzed, or poisoned.`,
+    getConfig: (g, caster, method, { target }) => {
+      const effectTypes = [];
+      if (target)
+        for (const [type, config] of target.effects) {
+          if (type.tags.has("disease") || config.conditions && intersects(config.conditions, validConditions))
+            effectTypes.push(type);
+        }
+      return {
+        target: new TargetResolver(g, caster.reach, []),
+        effect: new ChoiceResolver(
+          g,
+          effectTypes.map((value) => ({
+            label: value.name,
+            value
+          }))
+        )
+      };
+    },
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    check(g, { effect, target }, ec) {
+      if (target && effect && !target.hasEffect(effect))
+        ec.add("target does not have chosen effect", LesserRestoration);
+      return ec;
+    },
+    async apply(g, caster, method, { target, effect }) {
+      await target.removeEffect(effect);
+    }
+  });
+  var LesserRestoration_default = LesserRestoration;
+
   // src/spells/level2/MirrorImage.ts
   var MirrorImage = simpleSpell({
     name: "Mirror Image",
@@ -11275,6 +11715,70 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     );
   });
 
+  // src/img/spl/fireball.svg
+  var fireball_default = "./fireball-PYMKNPCJ.svg";
+
+  // src/spells/level3/Fireball.ts
+  var getFireballArea = (centre) => ({
+    type: "sphere",
+    centre,
+    radius: 20
+  });
+  var Fireball = scalingSpell({
+    status: "implemented",
+    name: "Fireball",
+    icon: makeIcon(fireball_default, DamageColours.fire),
+    level: 3,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a tiny ball of bat guano and sulfur",
+    lists: ["Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.
+
+  The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
+
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
+    // TODO: generateAttackConfigs
+    getConfig: (g) => ({ point: new PointResolver(g, 150) }),
+    getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
+    getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getFireballArea(point)),
+    async apply(g, attacker, method, { point, slot }) {
+      const damage = await g.rollDamage(5 + slot, {
+        source: Fireball,
+        size: 6,
+        spell: Fireball,
+        method,
+        damageType: "fire",
+        attacker,
+        tags: atSet("magical", "spell")
+      });
+      for (const target of g.getInside(getFireballArea(point))) {
+        const save = await g.save({
+          source: Fireball,
+          type: method.getSaveType(attacker, Fireball, slot),
+          attacker,
+          ability: "dex",
+          spell: Fireball,
+          method,
+          who: target,
+          tags: ["magic"]
+        });
+        await g.damage(
+          Fireball,
+          "fire",
+          { attacker, spell: Fireball, method, target },
+          [["fire", damage]],
+          save.damageResponse
+        );
+      }
+    }
+  });
+  var Fireball_default = Fireball;
+
   // src/img/spl/lightning-bolt.svg
   var lightning_bolt_default = "./lightning-bolt-OXAGJ6WI.svg";
 
@@ -11389,6 +11893,41 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     }
   });
   var LightningBolt_default = LightningBolt;
+
+  // src/spells/level4/IceStorm.ts
+  var getIceStormArea = (centre) => ({
+    type: "cylinder",
+    centre,
+    radius: 20,
+    height: 40
+  });
+  var IceStorm = scalingSpell({
+    name: "Ice Storm",
+    level: 4,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a pinch of dust and a few drops of water",
+    lists: ["Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
+    description: `A hail of rock-hard ice pounds to the ground in a 20-foot-radius, 40-foot-high cylinder centered on a point within range. Each creature in the cylinder must make a Dexterity saving throw. A creature takes 2d8 bludgeoning damage and 4d6 cold damage on a failed save, or half as much damage on a successful one.
+
+  Hailstones turn the storm's area of effect into difficult terrain until the end of your next turn.
+
+  At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
+    // TODO: generateAttackConfigs
+    getConfig: (g) => ({ point: new PointResolver(g, 300) }),
+    getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
+    getTargets: () => [],
+    getAffected: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
+    getDamage: (g, caster, method, { slot }) => [
+      _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
+      _dd(4, 6, "cold")
+    ],
+    async apply() {
+    }
+  });
+  var IceStorm_default = IceStorm;
 
   // src/spells/level4/Stoneskin.ts
   var StoneskinEffect = new Effect(
@@ -11999,6 +12538,177 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       this.addToInventory(spear, 9);
     }
   };
+  var Guard = class extends Monster {
+    constructor(g) {
+      super(g, "guard", 0.125, "humanoid", SizeCategory_default.Medium, guard_default, 11);
+      this.don(new ChainShirtArmor(g), true);
+      this.don(new Shield(g), true);
+      this.setAbilityScores(13, 12, 12, 10, 11, 10);
+      this.addProficiency("Perception", "proficient");
+      this.languages.add("Common");
+      this.don(new Spear(g), true);
+    }
+  };
+  var KnightMultiattack = makeBagMultiattack(
+    `The knight makes two melee attacks.`,
+    [{ range: "melee" }, { range: "melee" }]
+  );
+  var Leadership = notImplementedFeature(
+    "Leadership",
+    `(Recharges after a Short or Long Rest). For 1 minute, the knight can utter a special command or warning whenever a nonhostile creature that it can see within 30 feet of it makes an attack roll or a saving throw. The creature can add a d4 to its roll provided it can hear and understand the knight. A creature can benefit from only one Leadership die at a time. This effect ends if the knight is incapacitated.`
+  );
+  var Knight = class extends Monster {
+    constructor(g, wieldingCrossbow = false) {
+      super(g, "knight", 3, "humanoid", SizeCategory_default.Medium, knight_default, 52);
+      this.don(new PlateArmor(g), true);
+      this.setAbilityScores(16, 11, 14, 11, 11, 15);
+      this.addProficiency("con", "proficient");
+      this.addProficiency("wis", "proficient");
+      this.languages.add("Common");
+      this.addFeature(Brave);
+      this.addFeature(KnightMultiattack);
+      const sword = new Greatsword(g);
+      const crossbow = new HeavyCrossbow(g);
+      this.give(sword, true);
+      this.give(crossbow, true);
+      this.don(wieldingCrossbow ? crossbow : sword);
+      this.addToInventory(new CrossbowBolt(g), 20);
+      this.addFeature(Leadership);
+      this.addFeature(Parry_default);
+    }
+  };
+  var Mage = class extends Monster {
+    constructor(g) {
+      super(g, "mage", 6, "humanoid", SizeCategory_default.Medium, mage_default, 40);
+      this.don(new Dagger(g), true);
+      this.setAbilityScores(9, 14, 11, 17, 12, 11);
+      this.addProficiency("int", "proficient");
+      this.addProficiency("wis", "proficient");
+      this.addProficiency("Arcana", "proficient");
+      this.addProficiency("History", "proficient");
+      this.languages.add("Common");
+      this.pb = 3;
+      this.level = 9;
+      this.classLevels.set("Wizard", 9);
+      this.addFeature(WizardSpellcasting.feature);
+      this.addPreparedSpells(
+        FireBolt_default,
+        // TODO Light,
+        // TODO MageHand,
+        // TODO Prestidigitation,
+        // TODO DetectMagic,
+        MageArmor_default,
+        MagicMissile_default,
+        Shield_default,
+        MistyStep_default,
+        // TODO Suggestion,
+        Counterspell_default,
+        Fireball_default,
+        // TODO Fly,
+        // TODO GreaterInvisibility,
+        IceStorm_default,
+        ConeOfCold_default
+      );
+    }
+  };
+  var Noble = class extends Monster {
+    constructor(g) {
+      super(g, "noble", 0.125, "humanoid", SizeCategory_default.Medium, noble_default, 9);
+      this.don(new BreastplateArmor(g), true);
+      this.setAbilityScores(11, 12, 11, 12, 14, 16);
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Persuasion", "proficient");
+      this.languages.add("Common");
+      this.don(new Rapier(g), true);
+      this.addFeature(Parry_default);
+    }
+  };
+  var DivineEminence = notImplementedFeature(
+    "Divine Eminence",
+    `As a bonus action, the priest can expend a spell slot to cause its melee weapon attacks to magically deal an extra 10 (3d6) radiant damage to a target on a hit. This benefit lasts until the end of the turn. If the priest expends a spell slot of 2nd level or higher, the extra damage increases by 1d6 for each level above 1st.`
+  );
+  var Priest = class extends Monster {
+    constructor(g) {
+      super(g, "priest", 2, "humanoid", SizeCategory_default.Medium, priest_default, 27);
+      this.don(new ChainShirtArmor(g), true);
+      this.setAbilityScores(10, 10, 12, 13, 16, 13);
+      this.addProficiency("Medicine", "expertise");
+      this.addProficiency("Persuasion", "proficient");
+      this.addProficiency("Religion", "expertise");
+      this.languages.add("Common");
+      this.addFeature(DivineEminence);
+      this.level = 5;
+      this.classLevels.set("Cleric", 5);
+      this.addFeature(ClericSpellcasting.feature);
+      this.addPreparedSpells(
+        // TODO Light,
+        SacredFlame_default,
+        Thaumaturgy_default,
+        CureWounds_default,
+        GuidingBolt_default,
+        Sanctuary_default,
+        LesserRestoration_default
+        // TODO SpiritualWeapon,
+        // TODO DispelMagic,
+        // TODO SpiritGuardians,
+      );
+      this.don(new Mace(g), true);
+    }
+  };
+  var ScoutMultiattack = makeBagMultiattack(
+    `The scout makes two melee attacks or two ranged attacks.`,
+    [{ range: "melee" }, { range: "melee" }],
+    [{ range: "ranged" }, { range: "ranged" }]
+  );
+  var Scout = class extends Monster {
+    constructor(g, wieldingBow = false) {
+      super(g, "scout", 0.5, "humanoid", SizeCategory_default.Medium, scout_default, 16);
+      this.don(new LeatherArmor(g), true);
+      this.setAbilityScores(11, 14, 12, 11, 13, 11);
+      this.addProficiency("Nature", "expertise");
+      this.addProficiency("Perception", "expertise");
+      this.addProficiency("Stealth", "expertise");
+      this.addProficiency("Survival", "expertise");
+      this.languages.add("Common");
+      this.addFeature(KeenHearingAndSight);
+      this.addFeature(ScoutMultiattack);
+      const sword = new Shortsword(g);
+      const bow = new Longbow(g);
+      this.give(sword, true);
+      this.give(bow, true);
+      this.don(wieldingBow ? bow : sword);
+      this.addToInventory(new Arrow(g), 20);
+    }
+  };
+  var SpyMultiattack = makeBagMultiattack("The spy makes two melee attacks.", [
+    { range: "melee" },
+    { range: "melee" }
+  ]);
+  var Spy = class extends Monster {
+    constructor(g, wieldingCrossbow = false) {
+      super(g, "spy", 1, "humanoid", SizeCategory_default.Medium, spy_default, 27);
+      this.setAbilityScores(10, 15, 10, 12, 14, 16);
+      this.addProficiency("Deception", "proficient");
+      this.addProficiency("Insight", "proficient");
+      this.addProficiency("Perception", "expertise");
+      this.addProficiency("Persuasion", "proficient");
+      this.addProficiency("Sleight of Hand", "proficient");
+      this.addProficiency("Stealth", "proficient");
+      this.languages.add("Common");
+      this.level = 3;
+      this.classLevels.set("Rogue", 3);
+      this.addFeature(CunningAction);
+      this.addFeature(SneakAttack_default);
+      this.addFeature(SpyMultiattack);
+      const sword = new Shortsword(g);
+      const crossbow = new HandCrossbow(g);
+      this.give(sword, true);
+      this.give(crossbow, true);
+      this.don(wieldingCrossbow ? crossbow : sword);
+      this.addToInventory(new CrossbowBolt(g), 20);
+    }
+  };
   var ThugMultiattack = makeBagMultiattack(
     "The thug makes two melee attacks.",
     [{ range: "melee" }, { range: "melee" }]
@@ -12018,6 +12728,52 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       this.give(crossbow, true);
       this.don(wieldingCrossbow ? crossbow : mace);
       this.addToInventory(new CrossbowBolt(g), 20);
+    }
+  };
+  var TribalWarrior = class extends Monster {
+    constructor(g) {
+      super(
+        g,
+        "tribal warrior",
+        0.125,
+        "humanoid",
+        SizeCategory_default.Medium,
+        tribal_warrior_default,
+        11
+      );
+      this.don(new HideArmor(g), true);
+      this.setAbilityScores(13, 11, 12, 8, 11, 8);
+      this.languages.add("Common");
+      this.addFeature(PackTactics);
+      this.don(new Spear(g), true);
+    }
+  };
+  var VeteranMultiattack = makeBagMultiattack(
+    `The veteran makes two longsword attacks. If it has a shortsword drawn, it can also make a shortsword attack.`,
+    [{ weapon: "longsword" }, { weapon: "longsword" }, { weapon: "shortsword" }]
+  );
+  var Veteran = class extends Monster {
+    constructor(g, wieldingCrossbow = false) {
+      super(g, "veteran", 3, "humanoid", SizeCategory_default.Medium, veteran_default, 58);
+      this.don(new SplintArmor(g), true);
+      this.setAbilityScores(16, 13, 14, 10, 11, 10);
+      this.addProficiency("Athletics", "proficient");
+      this.addProficiency("Perception", "proficient");
+      this.languages.add("Common");
+      this.addFeature(VeteranMultiattack);
+      const longsword = new Longsword(g);
+      const shortsword = new Shortsword(g);
+      const crossbow = new HeavyCrossbow(g);
+      this.give(longsword, true);
+      this.give(shortsword, true);
+      this.give(crossbow, true);
+      this.addToInventory(new CrossbowBolt(g), 20);
+      if (wieldingCrossbow)
+        this.don(crossbow);
+      else {
+        this.don(longsword);
+        this.don(shortsword);
+      }
     }
   };
 
@@ -12046,8 +12802,20 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     "cult fanatic": (g) => new CultFanatic(g),
     druid: (g) => new Druid2(g),
     gladiator: (g) => new Gladiator(g),
+    guard: (g) => new Guard(g),
+    knight: (g) => new Knight(g),
+    "knight [crossbow]": (g) => new Knight(g, true),
+    mage: (g) => new Mage(g),
+    noble: (g) => new Noble(g),
+    priest: (g) => new Priest(g),
+    scout: (g) => new Scout(g),
+    spy: (g) => new Spy(g),
+    "spy [crossbow]": (g) => new Spy(g, true),
     thug: (g) => new Thug(g),
     "thug [crossbow]": (g) => new Thug(g, true),
+    "tribal warrior": (g) => new TribalWarrior(g),
+    veteran: (g) => new Veteran(g),
+    "veteran [crossbow]": (g) => new Veteran(g, true),
     Birnotec: (g) => new Birnotec(g),
     "Kay of the Abyss": (g) => new Kay(g),
     "O Gonrit": (g) => new OGonrit(g),
@@ -12719,7 +13487,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   var FolkHero_default = FolkHero;
 
   // src/backgrounds/Knight.ts
-  var Knight = {
+  var Knight2 = {
     name: "Knight",
     description: `
   A knighthood is among the lowest noble titles in most societies, but it can be a path to higher status. If you wish to be a knight, choose the Retainers feature (see the sidebar) instead of the Position of Privilege feature. One of your commoner retainers is replaced by a noble who serves as your squire, aiding you in exchange for training on his or her own path to knighthood. Your two remaining retainers might include a groom to care for your horse and a servant who polishes your armor (and even helps you put it on).
@@ -12735,10 +13503,10 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tools: gains([], 1, GamingSets),
     languages: gains([], 1, LanguageNames)
   };
-  var Knight_default = Knight;
+  var Knight_default = Knight2;
 
   // src/backgrounds/Noble.ts
-  var Noble = {
+  var Noble2 = {
     name: "Noble",
     description: `You understand wealth, power, and privilege. You carry a noble title, and your family owns land, collects taxes, and wields significant political influence. You might be a pampered aristocrat unfamiliar with work or discomfort, a former merchant just elevated to the nobility, or a disinherited scoundrel with a disproportionate sense of entitlement. Or you could be an honest, hard-working landowner who cares deeply about the people who live and work on your land, keenly aware of your responsibility to them.
 
@@ -12759,7 +13527,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tools: gains([], 1, GamingSets),
     languages: gains([], 1, LanguageNames)
   };
-  var Noble_default = Noble;
+  var Noble_default = Noble2;
 
   // src/backgrounds/Outlander.ts
   var Outlander = {
@@ -14256,11 +15024,11 @@ While holding the object, a creature can take an action to produce the spell's e
 - You gain a +1 bonus to all saving throws per magic item you are currently attuned to.
 - If you're reduced to 0 hit points but not killed outright, you can use your reaction to end one of your artificer infusions, causing you to drop to 1 hit point instead of 0.`
   );
-  var ASI44 = makeASI("Artificer", 4);
-  var ASI84 = makeASI("Artificer", 8);
-  var ASI124 = makeASI("Artificer", 12);
-  var ASI164 = makeASI("Artificer", 16);
-  var ASI194 = makeASI("Artificer", 19);
+  var ASI45 = makeASI("Artificer", 4);
+  var ASI85 = makeASI("Artificer", 8);
+  var ASI125 = makeASI("Artificer", 12);
+  var ASI165 = makeASI("Artificer", 16);
+  var ASI195 = makeASI("Artificer", 19);
   var Artificer = {
     name: "Artificer",
     hitDieSize: 8,
@@ -14286,17 +15054,17 @@ While holding the object, a creature can take an action to produce the spell's e
       [1, [MagicalTinkering, ArtificerSpellcasting.feature]],
       [2, [InfuseItem]],
       [3, [TheRightToolForTheJob]],
-      [4, [ASI44]],
+      [4, [ASI45]],
       [6, [ToolExpertise]],
       [7, [FlashOfGenius_default]],
-      [8, [ASI84]],
+      [8, [ASI85]],
       [10, [MagicItemAdept]],
       [11, [SpellStoringItem]],
-      [12, [ASI124]],
+      [12, [ASI125]],
       [14, [MagicItemSavant]],
-      [16, [ASI164]],
+      [16, [ASI165]],
       [18, [MagicItemMaster]],
-      [19, [ASI194]],
+      [19, [ASI195]],
       [20, [SoulOfArtifice]]
     ])
   };
@@ -14754,11 +15522,11 @@ This increases to two additional dice at 13th level and three additional dice at
       me.con.score += 4;
     }
   );
-  var ASI45 = makeASI("Barbarian", 4);
-  var ASI85 = makeASI("Barbarian", 8);
-  var ASI125 = makeASI("Barbarian", 12);
-  var ASI165 = makeASI("Barbarian", 16);
-  var ASI195 = makeASI("Barbarian", 19);
+  var ASI46 = makeASI("Barbarian", 4);
+  var ASI86 = makeASI("Barbarian", 8);
+  var ASI126 = makeASI("Barbarian", 12);
+  var ASI166 = makeASI("Barbarian", 16);
+  var ASI196 = makeASI("Barbarian", 19);
   var Barbarian = {
     name: "Barbarian",
     hitDieSize: 12,
@@ -14782,17 +15550,17 @@ This increases to two additional dice at 13th level and three additional dice at
       [1, [Rage_default, BarbarianUnarmoredDefense]],
       [2, [DangerSense, RecklessAttack]],
       [3, [PrimalKnowledge]],
-      [4, [ASI45]],
+      [4, [ASI46]],
       [5, [ExtraAttack, FastMovement]],
       [7, [FeralInstinct, InstinctivePounce]],
-      [8, [ASI85]],
+      [8, [ASI86]],
       [9, [BrutalCritical]],
       [11, [RelentlessRage_default]],
-      [12, [ASI125]],
+      [12, [ASI126]],
       [15, [PersistentRage]],
-      [16, [ASI165]],
+      [16, [ASI166]],
       [18, [IndomitableMight]],
-      [19, [ASI195]],
+      [19, [ASI196]],
       [20, [PrimalChampion]]
     ])
   };
@@ -16101,95 +16869,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var ProtectionFromEvilAndGood_default = ProtectionFromEvilAndGood;
 
-  // src/img/spl/shield.svg
-  var shield_default = "./shield-6WKZRKVU.svg";
-
-  // src/spells/level1/Shield.ts
-  var ShieldIcon = makeIcon(shield_default);
-  var ShieldEffect = new Effect(
-    "Shield",
-    "turnStart",
-    (g) => {
-      const check = (message, who, interrupt, after) => {
-        const shield = g.getActions(who).filter((a) => isCastSpell(a, Shield2) && checkConfig(g, a, {}));
-        if (!shield.length)
-          return;
-        interrupt.add(
-          new PickFromListChoice(
-            who,
-            Shield2,
-            "Shield",
-            `${message} Cast Shield as a reaction?`,
-            Priority_default.Late,
-            shield.map((value) => ({ value, label: value.name })),
-            async (action) => {
-              await g.act(action, {});
-              if (after)
-                await after();
-            },
-            true
-          )
-        );
-      };
-      g.events.on("Attack", ({ detail }) => {
-        const { target, who } = detail.pre;
-        if (!target.hasEffect(ShieldEffect) && detail.outcome.hits)
-          check(
-            `${who.name} hit ${target.name} with an attack.`,
-            target,
-            detail.interrupt,
-            async () => {
-              const ac = await g.getAC(target, detail.pre);
-              detail.ac = ac;
-            }
-          );
-      });
-      g.events.on(
-        "SpellCast",
-        ({ detail: { who, spell, affected, interrupt } }) => {
-          if (spell !== MagicMissile_default)
-            return;
-          for (const target of affected) {
-            if (!target.hasEffect(ShieldEffect))
-              check(
-                `${who.name} is casting Magic Missile on ${target.name}.`,
-                target,
-                interrupt
-              );
-          }
-        }
-      );
-      g.events.on("GetAC", ({ detail: { who, bonus } }) => {
-        if (who.hasEffect(ShieldEffect))
-          bonus.add(5, ShieldEffect);
-      });
-      g.events.on("GatherDamage", ({ detail: { target, spell, multiplier } }) => {
-        if (target.hasEffect(ShieldEffect) && spell === MagicMissile_default)
-          multiplier.add("zero", ShieldEffect);
-      });
-    },
-    { icon: ShieldIcon, tags: ["magic"] }
-  );
-  var Shield2 = simpleSpell({
-    status: "implemented",
-    name: "Shield",
-    icon: ShieldIcon,
-    level: 1,
-    school: "Abjuration",
-    time: "reaction",
-    v: true,
-    s: true,
-    lists: ["Sorcerer", "Wizard"],
-    description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    getAffected: (g, caster) => [caster],
-    async apply(g, caster) {
-      await caster.addEffect(ShieldEffect, { duration: 1 });
-    }
-  });
-  var Shield_default = Shield2;
-
   // src/spells/level1/Sleep.ts
   var SlapAction = class extends AbstractAction {
     constructor(g, actor) {
@@ -16622,48 +17301,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
   });
   var GustOfWind_default = GustOfWind;
-
-  // src/spells/level2/LesserRestoration.ts
-  var validConditions = coSet("Blinded", "Deafened", "Paralyzed", "Poisoned");
-  var LesserRestoration = simpleSpell({
-    status: "implemented",
-    name: "Lesser Restoration",
-    level: 2,
-    school: "Abjuration",
-    v: true,
-    s: true,
-    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
-    description: `You touch a creature and can end either one disease or one condition afflicting it. The condition can be blinded, deafened, paralyzed, or poisoned.`,
-    getConfig: (g, caster, method, { target }) => {
-      const effectTypes = [];
-      if (target)
-        for (const [type, config] of target.effects) {
-          if (type.tags.has("disease") || config.conditions && intersects(config.conditions, validConditions))
-            effectTypes.push(type);
-        }
-      return {
-        target: new TargetResolver(g, caster.reach, []),
-        effect: new ChoiceResolver(
-          g,
-          effectTypes.map((value) => ({
-            label: value.name,
-            value
-          }))
-        )
-      };
-    },
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    check(g, { effect, target }, ec) {
-      if (target && effect && !target.hasEffect(effect))
-        ec.add("target does not have chosen effect", LesserRestoration);
-      return ec;
-    },
-    async apply(g, caster, method, { target, effect }) {
-      await target.removeEffect(effect);
-    }
-  });
-  var LesserRestoration_default = LesserRestoration;
 
   // src/img/spl/levitate.svg
   var levitate_default = "./levitate-D7OCXBJW.svg";
@@ -17218,70 +17855,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
   });
   var EruptingEarth_default = EruptingEarth;
-
-  // src/img/spl/fireball.svg
-  var fireball_default = "./fireball-PYMKNPCJ.svg";
-
-  // src/spells/level3/Fireball.ts
-  var getFireballArea = (centre) => ({
-    type: "sphere",
-    centre,
-    radius: 20
-  });
-  var Fireball = scalingSpell({
-    status: "implemented",
-    name: "Fireball",
-    icon: makeIcon(fireball_default, DamageColours.fire),
-    level: 3,
-    school: "Evocation",
-    v: true,
-    s: true,
-    m: "a tiny ball of bat guano and sulfur",
-    lists: ["Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.
-
-  The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
-
-  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.`,
-    // TODO: generateAttackConfigs
-    getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-    getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
-    getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
-    getTargets: () => [],
-    getAffected: (g, caster, { point }) => g.getInside(getFireballArea(point)),
-    async apply(g, attacker, method, { point, slot }) {
-      const damage = await g.rollDamage(5 + slot, {
-        source: Fireball,
-        size: 6,
-        spell: Fireball,
-        method,
-        damageType: "fire",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of g.getInside(getFireballArea(point))) {
-        const save = await g.save({
-          source: Fireball,
-          type: method.getSaveType(attacker, Fireball, slot),
-          attacker,
-          ability: "dex",
-          spell: Fireball,
-          method,
-          who: target,
-          tags: ["magic"]
-        });
-        await g.damage(
-          Fireball,
-          "fire",
-          { attacker, spell: Fireball, method, target },
-          [["fire", damage]],
-          save.damageResponse
-        );
-      }
-    }
-  });
-  var Fireball_default = Fireball;
 
   // src/spells/level3/IntellectFortress.ts
   var IntellectFortressEffect = new Effect(
@@ -17905,41 +18478,6 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var GuardianOfNature_default = GuardianOfNature;
 
-  // src/spells/level4/IceStorm.ts
-  var getIceStormArea = (centre) => ({
-    type: "cylinder",
-    centre,
-    radius: 20,
-    height: 40
-  });
-  var IceStorm = scalingSpell({
-    name: "Ice Storm",
-    level: 4,
-    school: "Evocation",
-    v: true,
-    s: true,
-    m: "a pinch of dust and a few drops of water",
-    lists: ["Druid", "Sorcerer", "Wizard"],
-    isHarmful: true,
-    description: `A hail of rock-hard ice pounds to the ground in a 20-foot-radius, 40-foot-high cylinder centered on a point within range. Each creature in the cylinder must make a Dexterity saving throw. A creature takes 2d8 bludgeoning damage and 4d6 cold damage on a failed save, or half as much damage on a successful one.
-
-  Hailstones turn the storm's area of effect into difficult terrain until the end of your next turn.
-
-  At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.`,
-    // TODO: generateAttackConfigs
-    getConfig: (g) => ({ point: new PointResolver(g, 300) }),
-    getAffectedArea: (g, caster, { point }) => point && [getIceStormArea(point)],
-    getTargets: () => [],
-    getAffected: (g, caster, { point }) => g.getInside(getIceStormArea(point)),
-    getDamage: (g, caster, method, { slot }) => [
-      _dd((slot != null ? slot : 4) - 2, 8, "bludgeoning"),
-      _dd(4, 6, "cold")
-    ],
-    async apply() {
-    }
-  });
-  var IceStorm_default = IceStorm;
-
   // src/img/spl/fire-wall.svg
   var fire_wall_default = "./fire-wall-4N3WP5XV.svg";
 
@@ -18186,7 +18724,7 @@ The extra hit points increase when you reach certain levels in this class: to 1d
     "Magical Inspiration",
     `If a creature has a Bardic Inspiration die from you and casts a spell that restores hit points or deals damage, the creature can roll that die and choose a target affected by the spell. Add the number rolled as a bonus to the hit points regained or the damage dealt. The Bardic Inspiration die is then lost.`
   );
-  var Expertise = new ConfiguredFeature(
+  var Expertise2 = new ConfiguredFeature(
     "Expertise",
     `At 3rd level, choose two of your skill proficiencies. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies.
 
@@ -18240,11 +18778,11 @@ You learn two additional spells from any classes at 14th level and again at 18th
       });
     }
   );
-  var ASI46 = makeASI("Bard", 4);
-  var ASI86 = makeASI("Bard", 8);
-  var ASI126 = makeASI("Bard", 12);
-  var ASI166 = makeASI("Bard", 16);
-  var ASI196 = makeASI("Bard", 19);
+  var ASI47 = makeASI("Bard", 4);
+  var ASI87 = makeASI("Bard", 8);
+  var ASI127 = makeASI("Bard", 12);
+  var ASI167 = makeASI("Bard", 16);
+  var ASI197 = makeASI("Bard", 19);
   var Bard = {
     name: "Bard",
     hitDieSize: 8,
@@ -18263,15 +18801,15 @@ You learn two additional spells from any classes at 14th level and again at 18th
     features: /* @__PURE__ */ new Map([
       [1, [BardicInspiration_default, BardSpellcasting.feature]],
       [2, [JackOfAllTrades, SongOfRest, MagicalInspiration]],
-      [3, [Expertise]],
-      [4, [ASI46, BardicVersatility]],
+      [3, [Expertise2]],
+      [4, [ASI47, BardicVersatility]],
       [5, [FontOfInspiration]],
       [6, [Countercharm]],
-      [8, [ASI86]],
+      [8, [ASI87]],
       [10, [MagicalSecrets]],
-      [12, [ASI126]],
-      [16, [ASI166]],
-      [19, [ASI196]],
+      [12, [ASI127]],
+      [16, [ASI167]],
+      [19, [ASI197]],
       [20, [SuperiorInspiration]]
     ])
   };
@@ -18427,13 +18965,13 @@ Once you use this feature, you must finish a short or long rest before you can u
 - Replace a fighting style you know with another fighting style available to fighters.
 - If you know any maneuvers from the Battle Master archetype, you can replace one maneuver you know with a different maneuver.`
   );
-  var ASI47 = makeASI("Fighter", 4);
+  var ASI48 = makeASI("Fighter", 4);
   var ASI6 = makeASI("Fighter", 6);
-  var ASI87 = makeASI("Fighter", 8);
-  var ASI127 = makeASI("Fighter", 12);
+  var ASI88 = makeASI("Fighter", 8);
+  var ASI128 = makeASI("Fighter", 12);
   var ASI14 = makeASI("Fighter", 14);
-  var ASI167 = makeASI("Fighter", 16);
-  var ASI197 = makeASI("Fighter", 19);
+  var ASI168 = makeASI("Fighter", 16);
+  var ASI198 = makeASI("Fighter", 19);
   var Fighter = {
     name: "Fighter",
     hitDieSize: 10,
@@ -18459,16 +18997,16 @@ Once you use this feature, you must finish a short or long rest before you can u
     features: /* @__PURE__ */ new Map([
       [1, [FighterFightingStyle, SecondWind_default]],
       [2, [ActionSurge_default]],
-      [4, [ASI47, MartialVersatility]],
+      [4, [ASI48, MartialVersatility]],
       [5, [ExtraAttack2]],
       [6, [ASI6]],
-      [8, [ASI87]],
+      [8, [ASI88]],
       [9, [Indomitable_default]],
       [11, [ExtraAttack22]],
-      [12, [ASI127]],
+      [12, [ASI128]],
       [14, [ASI14]],
-      [16, [ASI167]],
-      [19, [ASI197]],
+      [16, [ASI168]],
+      [19, [ASI198]],
       [20, [ExtraAttack3]]
     ])
   };
@@ -18921,11 +19459,11 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       });
     }
   );
-  var ASI48 = makeASI("Monk", 4);
-  var ASI88 = makeASI("Monk", 8);
-  var ASI128 = makeASI("Monk", 12);
-  var ASI168 = makeASI("Monk", 16);
-  var ASI198 = makeASI("Monk", 19);
+  var ASI49 = makeASI("Monk", 4);
+  var ASI89 = makeASI("Monk", 8);
+  var ASI129 = makeASI("Monk", 12);
+  var ASI169 = makeASI("Monk", 16);
+  var ASI199 = makeASI("Monk", 19);
   var Monk = {
     name: "Monk",
     hitDieSize: 8,
@@ -18952,19 +19490,19 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
       [1, [MonkUnarmoredDefense, MartialArts_default]],
       [2, [Ki_default, DedicatedWeapon, UnarmoredMovement_default]],
       [3, [DeflectMissiles, KiFueledAttack]],
-      [4, [ASI48, SlowFall, QuickenedHealing_default]],
+      [4, [ASI49, SlowFall, QuickenedHealing_default]],
       [5, [ExtraAttack4, StunningStrike, FocusedAim]],
       [6, [KiEmpoweredStrikes]],
       [7, [Evasion_default, StillnessOfMind]],
-      [8, [ASI88]],
+      [8, [ASI89]],
       [10, [PurityOfBody]],
-      [12, [ASI128]],
+      [12, [ASI129]],
       [13, [TongueOfTheSunAndMoon]],
       [14, [DiamondSoul]],
       [15, [TimelessBody2]],
-      [16, [ASI168]],
+      [16, [ASI169]],
       [18, [EmptyBody]],
-      [19, [ASI198]],
+      [19, [ASI199]],
       [20, [PerfectSelf]]
     ])
   };
@@ -19465,11 +20003,11 @@ At 18th level, the range of this aura increases to 30 feet.`,
 
 You can use this feature a number of times equal to your Charisma modifier (a minimum of once). You regain expended uses when you finish a long rest.`
   );
-  var ASI49 = makeASI("Paladin", 4);
-  var ASI89 = makeASI("Paladin", 8);
-  var ASI129 = makeASI("Paladin", 12);
-  var ASI169 = makeASI("Paladin", 16);
-  var ASI199 = makeASI("Paladin", 19);
+  var ASI410 = makeASI("Paladin", 4);
+  var ASI810 = makeASI("Paladin", 8);
+  var ASI1210 = makeASI("Paladin", 12);
+  var ASI1610 = makeASI("Paladin", 16);
+  var ASI1910 = makeASI("Paladin", 19);
   var Paladin = {
     name: "Paladin",
     hitDieSize: 10,
@@ -19496,16 +20034,16 @@ You can use this feature a number of times equal to your Charisma modifier (a mi
       [1, [DivineSense, LayOnHands_default]],
       [2, [DivineSmite, PaladinFightingStyle, PaladinSpellcasting.feature]],
       [3, [DivineHealth, ChannelDivinity2, HarnessDivinePower_default2]],
-      [4, [ASI49, MartialVersatility2]],
+      [4, [ASI410, MartialVersatility2]],
       [5, [ExtraAttack5]],
       [6, [AuraOfProtection_default]],
-      [8, [ASI89]],
+      [8, [ASI810]],
       [10, [AuraOfCourage]],
       [11, [ImprovedDivineSmite]],
-      [12, [ASI129]],
+      [12, [ASI1210]],
       [14, [CleansingTouch]],
-      [16, [ASI169]],
-      [19, [ASI199]]
+      [16, [ASI1610]],
+      [19, [ASI1910]]
     ])
   };
   var paladin_default2 = Paladin;
@@ -19662,11 +20200,11 @@ In addition, whenever you finish a short rest, your exhaustion level, if any, is
     "Foe Slayer",
     `At 20th level, you become an unparalleled hunter of your enemies. Once on each of your turns, you can add your Wisdom modifier to the attack roll or the damage roll of an attack you make against one of your favored enemies. You can choose to use this feature before or after the roll, but before any effects of the roll are applied.`
   );
-  var ASI410 = makeASI("Ranger", 4);
-  var ASI810 = makeASI("Ranger", 8);
-  var ASI1210 = makeASI("Ranger", 12);
-  var ASI1610 = makeASI("Ranger", 16);
-  var ASI1910 = makeASI("Ranger", 19);
+  var ASI411 = makeASI("Ranger", 4);
+  var ASI811 = makeASI("Ranger", 8);
+  var ASI1211 = makeASI("Ranger", 12);
+  var ASI1611 = makeASI("Ranger", 16);
+  var ASI1911 = makeASI("Ranger", 19);
   var Ranger = {
     name: "Ranger",
     hitDieSize: 10,
@@ -19705,291 +20243,19 @@ In addition, whenever you finish a short rest, your exhaustion level, if any, is
       [1, [Favored, Explorer]],
       [2, [RangerFightingStyle, RangerSpellcasting.feature, SpellcastingFocus]],
       [3, [Awareness]],
-      [4, [ASI410, MartialVersatility3]],
+      [4, [ASI411, MartialVersatility3]],
       [5, [ExtraAttack6]],
-      [8, [ASI810, RangerLandsStride]],
+      [8, [ASI811, RangerLandsStride]],
       [10, [HideVeil]],
-      [12, [ASI1210]],
+      [12, [ASI1211]],
       [14, [Vanish]],
-      [16, [ASI1610]],
+      [16, [ASI1611]],
       [18, [FeralSenses]],
-      [19, [ASI1910]],
+      [19, [ASI1911]],
       [20, [FoeSlayer]]
     ])
   };
   var ranger_default = Ranger;
-
-  // src/img/class/rogue.svg
-  var rogue_default = "./rogue-FWYYNDZ5.svg";
-
-  // src/classes/rogue/common.ts
-  var RogueIcon = makeIcon(rogue_default, ClassColours.Rogue);
-
-  // src/img/act/steady-aim.svg
-  var steady_aim_default = "./steady-aim-INID7FA2.svg";
-
-  // src/classes/rogue/SteadyAim.ts
-  var SteadyAimIcon = makeIcon(steady_aim_default);
-  var SteadyAimNoMoveEffect = new Effect(
-    "Steady Aim",
-    "turnEnd",
-    (g) => {
-      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-        if (who.hasEffect(SteadyAimNoMoveEffect))
-          multiplier.add("zero", SteadyAimNoMoveEffect);
-      });
-    },
-    { quiet: true }
-  );
-  var SteadyAimAdvantageEffect = new Effect(
-    "Steady Aim",
-    "turnEnd",
-    (g) => {
-      g.events.on("BeforeAttack", ({ detail: { who, diceType } }) => {
-        if (who.hasEffect(SteadyAimAdvantageEffect))
-          diceType.add("advantage", SteadyAimAdvantageEffect);
-      });
-      g.events.on("Attack", ({ detail: { pre, interrupt } }) => {
-        if (pre.diceType.isInvolved(SteadyAimAdvantageEffect))
-          interrupt.add(
-            new EvaluateLater(
-              pre.who,
-              SteadyAimAdvantageEffect,
-              Priority_default.Normal,
-              () => pre.who.removeEffect(SteadyAimAdvantageEffect)
-            )
-          );
-      });
-    },
-    { icon: SteadyAimIcon }
-  );
-  var SteadyAimAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Steady Aim",
-        "implemented",
-        {},
-        {
-          icon: SteadyAimIcon,
-          subIcon: RogueIcon,
-          time: "bonus action",
-          description: `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`
-        }
-      );
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    check(config, ec) {
-      if (this.actor.movedSoFar)
-        ec.add("Already moved this turn", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
-      await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
-    }
-  };
-  var SteadyAim = new SimpleFeature(
-    "Steady Aim",
-    `As a bonus action, you give yourself advantage on your next attack roll on the current turn. You can use this bonus action only if you haven't moved during this turn, and after you use the bonus action, your speed is 0 until the end of the current turn.`,
-    (g, me) => {
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me)
-          actions.push(new SteadyAimAction(g, me));
-      });
-    }
-  );
-  var SteadyAim_default = SteadyAim;
-
-  // src/classes/rogue/index.ts
-  var Expertise2 = new ConfiguredFeature(
-    "Expertise",
-    `At 1st level, choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves\u2019 tools. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies.
-
-  At 6th level, you can choose two more of your proficiencies (in skills or with thieves\u2019 tools) to gain this benefit.`,
-    (g, me, config) => {
-      for (const entry of config)
-        me.addProficiency(entry, "expertise");
-    }
-  );
-  var ThievesCant = new SimpleFeature(
-    "Thieves' Cant",
-    `During your rogue training you learned thieves' cant, a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. Only another creature that knows thieves' cant understands such messages. It takes four times longer to convey such a message than it does to speak the same idea plainly.
-
-In addition, you understand a set of secret signs and symbols used to convey short, simple messages, such as whether an area is dangerous or the territory of a thieves' guild, whether loot is nearby, or whether the people in an area are easy marks or will provide a safe house for thieves on the run.`,
-    (g, me) => {
-      me.languages.add("Thieves' Cant");
-    }
-  );
-  var CunningAction = new SimpleFeature(
-    "Cunning Action",
-    `Starting at 2nd level, your quick thinking and agility allow you to move and act quickly. You can take a bonus action on each of your turns in combat. This action can be used only to take the Dash, Disengage, or Hide action.`,
-    (g, me) => {
-      featureNotComplete(CunningAction, me);
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me) {
-          const cunning = [new DashAction(g, who), new DisengageAction(g, who)];
-          for (const action of cunning) {
-            action.name += " (Cunning Action)";
-            action.time = "bonus action";
-            action.subIcon = RogueIcon;
-          }
-          actions.push(...cunning);
-        }
-      });
-    }
-  );
-  var UncannyDodgeAction = class extends AbstractAction {
-    constructor(g, actor, multiplier) {
-      super(
-        g,
-        actor,
-        "Uncanny Dodge",
-        "implemented",
-        { target: new TargetResolver(g, Infinity, [canSee]) },
-        {
-          description: `When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
-          time: "reaction"
-        }
-      );
-      this.multiplier = multiplier;
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
-      this.multiplier.add("half", this);
-    }
-  };
-  var UncannyDodge = new SimpleFeature(
-    "Uncanny Dodge",
-    `Starting at 5th level, when an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.`,
-    (g, me) => {
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (me === who)
-          actions.push(new UncannyDodgeAction(g, me, new MultiplierCollector()));
-      });
-      g.events.on(
-        "GatherDamage",
-        ({ detail: { target, attack, interrupt, multiplier, attacker } }) => {
-          if (attacker && attack && target === me) {
-            const action = new UncannyDodgeAction(g, me, multiplier);
-            const config = { target: attacker };
-            if (checkConfig(g, action, config))
-              interrupt.add(
-                new YesNoChoice(
-                  me,
-                  UncannyDodge,
-                  "Uncanny Dodge",
-                  `Use Uncanny Dodge to halve the incoming damage on ${me.name}?`,
-                  Priority_default.ChangesOutcome,
-                  () => g.act(action, config)
-                )
-              );
-          }
-        }
-      );
-    }
-  );
-  var ReliableTalent = notImplementedFeature(
-    "Reliable Talent",
-    `By 11th level, you have refined your chosen skills until they approach perfection. Whenever you make an ability check that lets you add your proficiency bonus, you can treat a d20 roll of 9 or lower as a 10.`
-  );
-  var Blindsense = notImplementedFeature(
-    "Blindsense",
-    `Starting at 14th level, if you are able to hear, you are aware of the location of any hidden or invisible creature within 10 feet of you.`
-  );
-  var SlipperyMind = new SimpleFeature(
-    "Slippery Mind",
-    `By 15th level, you have acquired greater mental strength. You gain proficiency in Wisdom saving throws.`,
-    (g, me) => me.saveProficiencies.add("wis")
-  );
-  var Elusive = notImplementedFeature(
-    "Elusive",
-    `Beginning at 18th level, you are so evasive that attackers rarely gain the upper hand against you. No attack roll has advantage against you while you aren't incapacitated.`
-  );
-  var StrokeOfLuck = notImplementedFeature(
-    "Stroke of Luck",
-    `At 20th level, you have an uncanny knack for succeeding when you need to. If your attack misses a target within range, you can turn the miss into a hit. Alternatively, if you fail an ability check, you can treat the d20 roll as a 20.
-
-Once you use this feature, you can't use it again until you finish a short or long rest.`
-  );
-  var ASI411 = makeASI("Rogue", 4);
-  var ASI811 = makeASI("Rogue", 8);
-  var ASI10 = makeASI("Rogue", 10);
-  var ASI1211 = makeASI("Rogue", 12);
-  var ASI1611 = makeASI("Rogue", 16);
-  var ASI1911 = makeASI("Rogue", 19);
-  var Rogue = {
-    name: "Rogue",
-    hitDieSize: 8,
-    armor: acSet("light"),
-    weaponCategory: wcSet("simple"),
-    weapon: wtSet("hand crossbow", "longsword", "rapier", "shortsword"),
-    tool: gains(["thieves' tools"]),
-    save: abSet("dex", "int"),
-    skill: gains([], 4, [
-      "Acrobatics",
-      "Athletics",
-      "Deception",
-      "Insight",
-      "Intimidation",
-      "Investigation",
-      "Perception",
-      "Performance",
-      "Persuasion",
-      "Sleight of Hand",
-      "Stealth"
-    ]),
-    multi: {
-      requirements: /* @__PURE__ */ new Map([["dex", 13]]),
-      armor: acSet("light"),
-      tool: gains(["thieves' tools"]),
-      skill: gains([], 1, [
-        "Acrobatics",
-        "Athletics",
-        "Deception",
-        "Insight",
-        "Intimidation",
-        "Investigation",
-        "Perception",
-        "Performance",
-        "Persuasion",
-        "Sleight of Hand",
-        "Stealth"
-      ])
-    },
-    features: /* @__PURE__ */ new Map([
-      [1, [Expertise2, SneakAttack_default, ThievesCant]],
-      [2, [CunningAction]],
-      [3, [SteadyAim_default]],
-      [4, [ASI411]],
-      [5, [UncannyDodge]],
-      [7, [Evasion_default]],
-      [8, [ASI811]],
-      [10, [ASI10]],
-      [11, [ReliableTalent]],
-      [12, [ASI1211]],
-      [14, [Blindsense]],
-      [15, [SlipperyMind]],
-      [16, [ASI1611]],
-      [18, [Elusive]],
-      [19, [ASI1911]],
-      [20, [StrokeOfLuck]]
-    ])
-  };
-  var rogue_default2 = Rogue;
 
   // src/classes/sorcerer/index.ts
   var ASI412 = makeASI("Sorcerer", 4);
@@ -21660,7 +21926,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     "Sudden Strike",
     `Starting at 17th level, you can strike with deadly speed. If you take the Attack action on your turn, you can make one additional attack as a bonus action. This attack can benefit from your Sneak Attack even if you have already used it this turn, but you can't use your Sneak Attack against the same target more than once in a turn.`
   );
-  var Scout = {
+  var Scout2 = {
     name: "Scout",
     className: "Rogue",
     features: /* @__PURE__ */ new Map([
@@ -21670,7 +21936,7 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
       [17, [SuddenStrike]]
     ])
   };
-  var Scout_default = Scout;
+  var Scout_default = Scout2;
 
   // src/classes/warlock/Fiend/index.ts
   var ExpandedSpellList = bonusSpellsFeature(

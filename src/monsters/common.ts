@@ -48,7 +48,7 @@ export const ExhaustionImmunity = new SimpleFeature(
 
 export const KeenHearing = new SimpleFeature(
   "Keen Hearing",
-  `This has advantage on Wisdom (Perception) checks that rely on hearing.`,
+  `You have advantage on Wisdom (Perception) checks that rely on hearing.`,
   (g, me) => {
     g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
       if (who === me && tags.has("hearing"))
@@ -57,9 +57,20 @@ export const KeenHearing = new SimpleFeature(
   },
 );
 
+export const KeenHearingAndSight = new SimpleFeature(
+  "Keen Hearing and Sight",
+  `You have advantage on Wisdom (Perception) checks that rely on hearing or sight.`,
+  (g, me) => {
+    g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
+      if (who === me && (tags.has("hearing") || tags.has("sight")))
+        diceType.add("advantage", KeenHearingAndSight);
+    });
+  },
+);
+
 export const KeenSmell = new SimpleFeature(
   "Keen Smell",
-  `This has advantage on Wisdom (Perception) checks that rely on smell.`,
+  `You have advantage on Wisdom (Perception) checks that rely on smell.`,
   (g, me) => {
     g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
       if (who === me && tags.has("smell")) diceType.add("advantage", KeenSmell);
