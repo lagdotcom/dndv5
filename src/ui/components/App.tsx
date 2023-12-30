@@ -10,10 +10,7 @@ import EditUI from "./EditUI";
 export default function App() {
   const g = useMemo(() => {
     const engine = new Engine();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).g = engine;
-
+    window.g = engine;
     return engine;
   }, []);
 

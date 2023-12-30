@@ -66,8 +66,7 @@ export const wantsCombatant = signal<Wants<Combatant> | undefined>(undefined);
 
 export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).state = {
+const uiState = {
   actionAreas,
   activeCombatantId,
   activeCombatant,
@@ -91,6 +90,8 @@ export const wantsPoint = signal<Wants<Point> | undefined>(undefined);
   wantsCombatant,
   wantsPoint,
 };
+export type UIState = typeof uiState;
+if (MODE !== "test") window.state = uiState;
 
 export const resetAllState = (continuation?: () => void) =>
   batch(() => {

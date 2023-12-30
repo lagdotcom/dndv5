@@ -21650,7 +21650,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   var teleportInfo = (0, import_signals.signal)(void 0);
   var wantsCombatant = (0, import_signals.signal)(void 0);
   var wantsPoint = (0, import_signals.signal)(void 0);
-  window.state = {
+  var uiState = {
     actionAreas,
     activeCombatantId,
     activeCombatant,
@@ -21674,6 +21674,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     wantsCombatant,
     wantsPoint
   };
+  if (true)
+    window.state = uiState;
   var resetAllState = (continuation) => (0, import_signals.batch)(() => {
     actionAreas.value = [];
     activeCombatantId.value = NaN;

@@ -1,8 +1,6 @@
 import Combatant from "../types/Combatant";
 import Feature from "../types/Feature";
 
-declare const MODE: "build" | "watch" | "test";
-
 export function implementationWarning(
   type: string,
   status: string,
