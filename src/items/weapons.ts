@@ -1,4 +1,5 @@
 import clubUrl from "@img/eq/club.svg";
+import daggerUrl from "@img/eq/dagger.svg";
 import greataxeUrl from "@img/eq/greataxe.svg";
 import lightCrossbowUrl from "@img/eq/light-crossbow.svg";
 import longbowUrl from "@img/eq/longbow.svg";
@@ -37,7 +38,7 @@ export class Dagger extends WeaponBase {
       "melee",
       _dd(1, 4, "piercing"),
       ["finesse", "light", "thrown"],
-      undefined, // TODO [ICON]
+      daggerUrl,
       20,
       60,
     );

@@ -156,3 +156,8 @@ export function isCastSpell<T extends object>(
 ): a is CastSpell<T> {
   return a instanceof CastSpell && (!sp || a.spell === sp);
 }
+
+export const getSpellChecker =
+  <T extends object>(sp: Spell<T>) =>
+  (a: Action): a is CastSpell<T> =>
+    isCastSpell(a, sp);

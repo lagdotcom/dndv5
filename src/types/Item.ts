@@ -80,6 +80,7 @@ export interface ArmorItem extends BaseItem {
   category: ArmorCategory;
   stealthDisadvantage: boolean;
   minimumStrength: number;
+  metal: boolean;
 
   addEnchantment(e: Enchantment<"armor">): void;
 }

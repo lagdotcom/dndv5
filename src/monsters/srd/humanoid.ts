@@ -43,6 +43,7 @@ import FireBolt from "../../spells/cantrip/FireBolt";
 import ProduceFlame from "../../spells/cantrip/ProduceFlame";
 import SacredFlame from "../../spells/cantrip/SacredFlame";
 import Shillelagh from "../../spells/cantrip/Shillelagh";
+import ShockingGrasp from "../../spells/cantrip/ShockingGrasp";
 import Thaumaturgy from "../../spells/cantrip/Thaumaturgy";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import Bless from "../../spells/level1/Bless";
@@ -59,6 +60,7 @@ import Thunderwave from "../../spells/level1/Thunderwave";
 import HoldPerson from "../../spells/level2/HoldPerson";
 import MirrorImage from "../../spells/level2/MirrorImage";
 import MistyStep from "../../spells/level2/MistyStep";
+import Counterspell from "../../spells/level3/Counterspell";
 import LightningBolt from "../../spells/level3/LightningBolt";
 import Stoneskin from "../../spells/level4/Stoneskin";
 import ConeOfCold from "../../spells/level5/ConeOfCold";
@@ -133,7 +135,7 @@ export class Archmage extends Monster {
       // TODO Light,
       // TODO MageHand,
       // TODO Prestidigitation,
-      // TODO ShockingGrasp,
+      ShockingGrasp,
       // TODO DetectMagic,
       // TODO Identify,
       MageArmor,
@@ -141,7 +143,7 @@ export class Archmage extends Monster {
       // TODO DetectThoughts,
       MirrorImage,
       MistyStep,
-      // TODO Counterspell,
+      Counterspell,
       // TODO Fly,
       LightningBolt,
       // TODO Banishment,

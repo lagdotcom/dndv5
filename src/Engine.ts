@@ -748,12 +748,18 @@ export default class Engine {
       BeforeAttackDetail,
       "pb" | "proficiency" | "bonus" | "diceType" | "interrupt" | "success"
     >,
+    config: { source?: Source; bonus?: number; diceType?: DiceType } = {},
   ) {
     const pb = new BonusCollector();
     const proficiency = new ProficiencyCollector();
     const bonus = new BonusCollector();
     const diceType = new DiceTypeCollector();
     const success = new SuccessResponseCollector();
+
+    if (config.source) {
+      if (config.bonus) bonus.add(config.bonus, config.source);
+      if (config.diceType) diceType.add(config.diceType, config.source);
+    }
 
     const pre = (
       await this.resolve(

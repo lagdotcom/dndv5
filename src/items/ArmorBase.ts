@@ -8,6 +8,7 @@ export default class ArmorBase extends ItemBase<"armor"> implements ArmorItem {
     name: string,
     public category: ArmorCategory,
     public ac: number,
+    public metal: boolean,
     public stealthDisadvantage = false,
     public minimumStrength = 0,
     iconUrl?: string,

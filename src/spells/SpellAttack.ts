@@ -4,6 +4,7 @@ import Engine from "../Engine";
 import { atSet } from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import DamageType from "../types/DamageType";
+import DiceType from "../types/DiceType";
 import RangeCategory from "../types/RangeCategory";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
@@ -21,17 +22,20 @@ export default class SpellAttack<T extends object> {
     public config: T,
   ) {}
 
-  async attack(target: Combatant) {
+  async attack(target: Combatant, diceType?: DiceType) {
     const { caster: who, method, spell, type } = this;
 
-    this.attackResult = await this.g.attack({
-      who,
-      target,
-      ability: method.ability,
-      tags: atSet(type, "spell", "magical"),
-      spell,
-      method,
-    });
+    this.attackResult = await this.g.attack(
+      {
+        who,
+        target,
+        ability: method.ability,
+        tags: atSet(type, "spell", "magical"),
+        spell,
+        method,
+      },
+      { source: spell, diceType },
+    );
 
     return this.attackResult;
   }

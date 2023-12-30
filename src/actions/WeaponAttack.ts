@@ -1,4 +1,7 @@
+import thrownUrl from "@img/act/thrown.svg";
+
 import ErrorCollector from "../collectors/ErrorCollector";
+import { makeIcon } from "../colours";
 import { HasTarget } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine, { EngineAttackResult } from "../Engine";
@@ -19,6 +22,8 @@ import { SetInitialiser } from "../utils/set";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
 import AbstractAttackAction from "./AbstractAttackAction";
+
+const thrownIcon = makeIcon(thrownUrl);
 
 export function getWeaponAttackName(
   name: string,
@@ -67,6 +72,8 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
       { icon: weapon.icon, subIcon: ammo?.icon },
     );
     this.ability = getWeaponAbility(actor, weapon);
+
+    if (rangeCategory === "ranged" && !ammo) this.subIcon = thrownIcon;
   }
 
   generateAttackConfigs(targets: Combatant[]) {

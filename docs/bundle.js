@@ -571,6 +571,7 @@
   function isCastSpell(a, sp) {
     return a instanceof CastSpell && (!sp || a.spell === sp);
   }
+  var getSpellChecker = (sp) => (a) => isCastSpell(a, sp);
 
   // src/img/act/dash.svg
   var dash_default = "./dash-CNRMKC55.svg";
@@ -774,6 +775,9 @@
 
   // src/img/act/disengage.svg
   var disengage_default = "./disengage-6XMY6V34.svg";
+
+  // src/img/act/thrown.svg
+  var thrown_default = "./thrown-ITAE47P5.svg";
 
   // src/types/SizeCategory.ts
   var SizeCategory = /* @__PURE__ */ ((SizeCategory2) => {
@@ -3066,6 +3070,7 @@
   };
 
   // src/actions/WeaponAttack.ts
+  var thrownIcon = makeIcon(thrown_default);
   function getWeaponAttackName(name, rangeCategory, weapon, ammo) {
     const ammoName = ammo ? ammo.name : weapon.properties.has("thrown") && rangeCategory === "ranged" ? "thrown" : void 0;
     if (ammoName)
@@ -3094,6 +3099,8 @@
       this.ammo = ammo;
       this.attackTags = attackTags;
       this.ability = getWeaponAbility(actor, weapon);
+      if (rangeCategory === "ranged" && !ammo)
+        this.subIcon = thrownIcon;
     }
     generateAttackConfigs(targets) {
       const ranges = [this.weapon.shortRange, this.weapon.longRange].filter(
@@ -5069,12 +5076,18 @@
         )
       );
     }
-    async attack(e2) {
+    async attack(e2, config = {}) {
       const pb = new BonusCollector();
       const proficiency = new ProficiencyCollector();
       const bonus = new BonusCollector();
       const diceType = new DiceTypeCollector();
       const success = new SuccessResponseCollector();
+      if (config.source) {
+        if (config.bonus)
+          bonus.add(config.bonus, config.source);
+        if (config.diceType)
+          diceType.add(config.diceType, config.source);
+      }
       const pre = (await this.resolve(
         new BeforeAttackEvent({
           ...e2,
@@ -5671,16 +5684,19 @@
       this.type = type;
       this.config = config;
     }
-    async attack(target) {
+    async attack(target, diceType) {
       const { caster: who, method, spell, type } = this;
-      this.attackResult = await this.g.attack({
-        who,
-        target,
-        ability: method.ability,
-        tags: atSet(type, "spell", "magical"),
-        spell,
-        method
-      });
+      this.attackResult = await this.g.attack(
+        {
+          who,
+          target,
+          ability: method.ability,
+          tags: atSet(type, "spell", "magical"),
+          spell,
+          method
+        },
+        { source: spell, diceType }
+      );
       return this.attackResult;
     }
     async getDamage(target) {
@@ -6124,10 +6140,11 @@
 
   // src/items/ArmorBase.ts
   var ArmorBase = class extends ItemBase {
-    constructor(g, name, category, ac, stealthDisadvantage = false, minimumStrength = 0, iconUrl) {
+    constructor(g, name, category, ac, metal, stealthDisadvantage = false, minimumStrength = 0, iconUrl) {
       super(g, "armor", name, 0, iconUrl);
       this.category = category;
       this.ac = ac;
+      this.metal = metal;
       this.stealthDisadvantage = stealthDisadvantage;
       this.minimumStrength = minimumStrength;
     }
@@ -6136,73 +6153,76 @@
   // src/items/armor.ts
   var PaddedArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "padded armor", "light", 11, true);
+      super(g, "padded armor", "light", 11, false, true);
     }
   };
   var LeatherArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "leather armor", "light", 11);
+      super(g, "leather armor", "light", 11, false);
     }
   };
   var StuddedLeatherArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "studded leather armor", "light", 12);
+      super(g, "studded leather armor", "light", 12, false);
     }
   };
   var HideArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "hide armor", "medium", 12);
+      super(g, "hide armor", "medium", 12, false);
     }
   };
   var ChainShirtArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "chain shirt armor", "medium", 13);
+      super(g, "chain shirt armor", "medium", 13, true);
     }
   };
   var ScaleMailArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "scale mail armor", "medium", 14, true);
+      super(g, "scale mail armor", "medium", 14, true, true);
     }
   };
   var BreastplateArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "breastplate armor", "medium", 14);
+      super(g, "breastplate armor", "medium", 14, true);
     }
   };
   var HalfPlateArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "half plate armor", "medium", 15, true);
+      super(g, "half plate armor", "medium", 15, true, true);
     }
   };
   var RingMailArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "ring mail armor", "heavy", 14, true);
+      super(g, "ring mail armor", "heavy", 14, true, true);
     }
   };
   var ChainMailArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "chain mail armor", "heavy", 16, true, 13);
+      super(g, "chain mail armor", "heavy", 16, true, true, 13);
     }
   };
   var SplintArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "splint armor", "heavy", 17, true, 15);
+      super(g, "splint armor", "heavy", 17, true, true, 15);
     }
   };
   var PlateArmor = class extends ArmorBase {
     constructor(g) {
-      super(g, "plate armor", "heavy", 18, true, 15);
+      super(g, "plate armor", "heavy", 18, true, true, 15);
     }
   };
   var Shield = class extends ArmorBase {
     constructor(g, iconUrl) {
-      super(g, "shield", "shield", 2, false, void 0, iconUrl);
+      super(g, "shield", "shield", 2, true, false, void 0, iconUrl);
       this.hands = 1;
     }
   };
 
   // src/img/eq/club.svg
   var club_default = "./club-RZOLCPSS.svg";
+
+  // src/img/eq/dagger.svg
+  var dagger_default = "./dagger-MXNNR43U.svg";
 
   // src/img/eq/greataxe.svg
   var greataxe_default = "./greataxe-D7DZHVBT.svg";
@@ -6272,8 +6292,7 @@
         "melee",
         _dd(1, 4, "piercing"),
         ["finesse", "light", "thrown"],
-        void 0,
-        // TODO [ICON]
+        dagger_default,
         20,
         60
       );
@@ -9933,10 +9952,14 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   });
   var ProduceFlame_default = ProduceFlame;
 
+  // src/img/spl/sacred-flame.svg
+  var sacred_flame_default = "./sacred-flame-NBJ5YTKD.svg";
+
   // src/spells/cantrip/SacredFlame.ts
   var SacredFlame = simpleSpell({
     status: "incomplete",
     name: "Sacred Flame",
+    icon: makeIcon(sacred_flame_default, DamageColours.fire),
     level: 0,
     school: "Evocation",
     v: true,
@@ -10051,6 +10074,59 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }
   });
   var Shillelagh_default = Shillelagh;
+
+  // src/img/spl/shocking-grasp.svg
+  var shocking_grasp_default = "./shocking-grasp-EP6ADEH3.svg";
+
+  // src/spells/cantrip/ShockingGrasp.ts
+  var ShockingGraspIcon = makeIcon(shocking_grasp_default, DamageColours.lightning);
+  var ShockingGraspEffect = new Effect(
+    "Shocking Grasp",
+    "turnStart",
+    (g) => {
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        if (action.actor.hasEffect(ShockingGraspEffect) && action.getTime(config) == "reaction")
+          error.add("can't take reactions", ShockingGraspEffect);
+      });
+    },
+    { icon: ShockingGraspIcon, tags: ["magic"] }
+  );
+  var ShockingGrasp = simpleSpell({
+    status: "implemented",
+    name: "Shocking Grasp",
+    icon: ShockingGraspIcon,
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Sorcerer", "Wizard"],
+    description: `Lightning springs from your hand to deliver a shock to a creature you try to touch. Make a melee spell attack against the target. You have advantage on the attack roll if the target is wearing armor made of metal. On a hit, the target takes 1d8 lightning damage, and it can't take reactions until the start of its next turn.
+
+  The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    isHarmful: true,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "lightning")],
+    async apply(g, caster, method, { target }) {
+      var _a;
+      const msa = new SpellAttack(g, caster, ShockingGrasp, method, "melee", {
+        target
+      });
+      const { hit, victim } = await msa.attack(
+        target,
+        ((_a = target.armor) == null ? void 0 : _a.metal) ? "advantage" : void 0
+      );
+      if (hit) {
+        const damage = await msa.getDamage(victim);
+        await msa.damage(victim, damage);
+        await victim.addEffect(ShockingGraspEffect, { duration: 1 }, caster);
+      }
+    }
+  });
+  var ShockingGrasp_default = ShockingGrasp;
 
   // src/spells/cantrip/Thaumaturgy.ts
   var Thaumaturgy = simpleSpell({
@@ -10439,10 +10515,14 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   });
   var Entangle_default = Entangle;
 
+  // src/img/spl/inflict-wounds.svg
+  var inflict_wounds_default = "./inflict-wounds-BSUJIYPK.svg";
+
   // src/spells/level1/InflictWounds.ts
   var InflictWounds = scalingSpell({
     status: "implemented",
     name: "Inflict Wounds",
+    icon: makeIcon(inflict_wounds_default, DamageColours.necrotic),
     level: 1,
     school: "Necromancy",
     v: true,
@@ -11044,6 +11124,94 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   });
   var MistyStep_default = MistyStep;
 
+  // src/resolvers/FakeResolver.ts
+  var FakeResolver = class {
+    constructor(name) {
+      this.name = name;
+      this.type = "FAKE";
+    }
+    check(value, action, ec) {
+      if (!value)
+        ec.add("blank", this);
+      return ec;
+    }
+  };
+
+  // src/spells/level3/Counterspell.ts
+  var CounterspellIcon = makeIcon(counterspell_default);
+  var Counterspell = scalingSpell({
+    status: "implemented",
+    name: "Counterspell",
+    icon: CounterspellIcon,
+    level: 3,
+    school: "Abjuration",
+    time: "reaction",
+    s: true,
+    lists: ["Sorcerer", "Warlock", "Wizard"],
+    description: `You attempt to interrupt a creature in the process of casting a spell. If the creature is casting a spell of 3rd level or lower, its spell fails and has no effect. If it is casting a spell of 4th level or higher, make an ability check using your spellcasting ability. The DC equals 10 + the spell's level. On a success, the creature's spell fails and has no effect.
+
+At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the interrupted spell has no effect if its level is less than or equal to the level of the spell slot you used.`,
+    getConfig: (g) => ({
+      target: new TargetResolver(g, 60, [canSee]),
+      spell: new FakeResolver("spell"),
+      success: new FakeResolver("success")
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(g, who, method, { slot, spell, success }) {
+      var _a;
+      if (spell.level > slot) {
+        const { outcome } = await g.abilityCheck(10 + spell.level, {
+          who,
+          ability: (_a = method.ability) != null ? _a : "int",
+          tags: chSet("counterspell")
+        });
+        if (outcome === "fail")
+          return;
+      }
+      success.add("fail", Counterspell);
+    }
+  });
+  var Counterspell_default = Counterspell;
+  var isCounterspell = getSpellChecker(Counterspell);
+  new DndRule("Counterspell", (g) => {
+    g.events.on(
+      "SpellCast",
+      ({ detail: { who: caster, success, interrupt, spell } }) => {
+        const others = Array.from(g.combatants).filter(
+          (other) => other !== caster && other.hasTime("reaction")
+        );
+        for (const who of others) {
+          const actions = g.getActions(who).filter(isCounterspell).flatMap(
+            (action) => {
+              var _a, _b, _c, _d, _e, _f;
+              return enumerate(
+                (_c = (_b = (_a = action.method).getMinSlot) == null ? void 0 : _b.call(_a, Counterspell, caster)) != null ? _c : 3,
+                (_f = (_e = (_d = action.method).getMaxSlot) == null ? void 0 : _e.call(_d, Counterspell, caster)) != null ? _f : 3
+              ).map((slot) => ({ slot, target: caster, success, spell })).filter((config) => checkConfig(g, action, config)).map((config) => ({
+                label: `cast Counterspell at level ${config.slot}`,
+                value: { action, config }
+              }));
+            }
+          );
+          if (actions.length)
+            interrupt.add(
+              new PickFromListChoice(
+                who,
+                Counterspell,
+                "Counterspell",
+                `${caster.name} is casting a spell. Should ${who.name} cast Counterspell as a reaction?`,
+                Priority_default.ChangesOutcome,
+                actions,
+                async ({ action, config }) => g.act(action, config),
+                true
+              )
+            );
+        }
+      }
+    );
+  });
+
   // src/img/spl/lightning-bolt.svg
   var lightning_bolt_default = "./lightning-bolt-OXAGJ6WI.svg";
 
@@ -11388,7 +11556,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         // TODO Light,
         // TODO MageHand,
         // TODO Prestidigitation,
-        // TODO ShockingGrasp,
+        ShockingGrasp_default,
         // TODO DetectMagic,
         // TODO Identify,
         MageArmor_default,
@@ -11396,7 +11564,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         // TODO DetectThoughts,
         MirrorImage_default,
         MistyStep_default,
-        // TODO Counterspell,
+        Counterspell_default,
         // TODO Fly,
         LightningBolt_default,
         // TODO Banishment,
@@ -14975,6 +15143,7 @@ This increases to two additional dice at 13th level and three additional dice at
   var ray_of_frost_default = "./ray-of-frost-5EAHUBPB.svg";
 
   // src/spells/cantrip/RayOfFrost.ts
+  var RayOfFrostIcon = makeIcon(ray_of_frost_default, DamageColours.cold);
   var RayOfFrostEffect = new Effect(
     "Ray of Frost",
     "turnStart",
@@ -14984,12 +15153,12 @@ This increases to two additional dice at 13th level and three additional dice at
           bonus.add(-10, RayOfFrostEffect);
       });
     },
-    { tags: ["magic"] }
+    { icon: RayOfFrostIcon, tags: ["magic"] }
   );
   var RayOfFrost = simpleSpell({
     status: "implemented",
     name: "Ray of Frost",
-    icon: makeIcon(ray_of_frost_default, DamageColours.cold),
+    icon: RayOfFrostIcon,
     level: 0,
     school: "Evocation",
     v: true,

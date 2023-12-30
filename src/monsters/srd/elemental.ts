@@ -43,13 +43,13 @@ class Elemental extends Monster {
   }
 }
 
-// TODO
+// TODO [CANSTOP] [SQUEEZING]
 const AirForm = notImplementedFeature(
   "Air Form",
   `The elemental can enter a hostile creature's space and stop there. It can move through a space as narrow as 1 inch wide without squeezing.`,
 );
 
-// TODO
+// TODO [PUSHINTO]
 const Whirlwind = notImplementedFeature(
   "Whirlwind",
   `Whirlwind (Recharge 4–6). Each creature in the elemental's space must make a DC 13 Strength saving throw. On a failure, a target takes 15 (3d8 + 2) bludgeoning damage and is flung up 20 feet away from the elemental in a random direction and knocked prone. If a thrown target strikes an object, such as a wall or floor, the target takes 3 (1d6) bludgeoning damage for every 10 feet it was thrown. If the target is thrown at another creature, that creature must succeed on a DC 13 Dexterity saving throw or take the same damage and be knocked prone.
@@ -78,13 +78,13 @@ export class AirElemental extends Elemental {
   }
 }
 
-// TODO
+// TODO [TERRAIN]
 const EarthGlide = notImplementedFeature(
   "Earth Glide",
   `The elemental can burrow through nonmagical, unworked earth and stone. While doing so, the elemental doesn't disturb the material it moves through.`,
 );
 
-// TODO
+// TODO [OBJECTDAMAGE]
 const SiegeMonster = notImplementedFeature(
   "Siege Monster",
   `The elemental deals double damage to objects and structures.`,
@@ -113,7 +113,7 @@ const FireForm = new SimpleFeature(
   "Fire Form",
   `The elemental can move through a space as narrow as 1 inch wide without squeezing. A creature that touches the elemental or hits it with a melee attack while within 5 feet of it takes 5 (1d10) fire damage. In addition, the elemental can enter a hostile creature's space and stop there. The first time it enters a creature's space on a turn, that creature takes 5 (1d10) fire damage and catches fire; until someone takes an action to douse the fire, the creature takes 5 (1d10) fire damage at the start of each of its turns.`,
   (g, me) => {
-    // TODO The elemental can move through a space as narrow as 1 inch wide without squeezing.
+    // TODO [SQUEEZING] The elemental can move through a space as narrow as 1 inch wide without squeezing.
 
     const applyFireDamage = async (target: Combatant) => {
       const damage = await g.rollDamage(1, {
@@ -129,7 +129,7 @@ const FireForm = new SimpleFeature(
       ]);
     };
 
-    // TODO A creature that touches the elemental
+    // TODO [ONTOUCH] A creature that touches the elemental
 
     // ...or hits it with a melee attack while within 5 feet of it takes 5 (1d10) fire damage.
     g.events.on(
@@ -157,7 +157,7 @@ const FireForm = new SimpleFeature(
       },
     );
 
-    // TODO In addition, the elemental can enter a hostile creature's space and stop there.
+    // TODO [CANSTOP] In addition, the elemental can enter a hostile creature's space and stop there.
 
     // The first time it enters a creature's space on a turn, that creature takes 5 (1d10) fire damage and catches fire; until someone takes an action to douse the fire, the creature takes 5 (1d10) fire damage at the start of each of its turns.
     const area: SpecifiedWithin = { type: "within", who: me, radius: 0 };
@@ -180,13 +180,13 @@ const FireForm = new SimpleFeature(
   },
 );
 
-// TODO
+// TODO [LIGHT]
 const Illumination = notImplementedFeature(
   "Illumination",
   `The elemental sheds bright light in a 30-foot radius and dim light in an additional 30 feet.`,
 );
 
-// TODO
+// TODO [TERRAIN]
 const WaterSusceptibility = notImplementedFeature(
   "Water Susceptibility",
   `For every 5 feet the elemental moves in water, or for every gallon of water splashed on it, it takes 1 cold damage.`,

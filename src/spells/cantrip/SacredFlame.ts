@@ -1,3 +1,6 @@
+import iconUrl from "@img/spl/sacred-flame.svg";
+
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { canSee, notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -10,6 +13,7 @@ import { getCantripDice, simpleSpell } from "../common";
 const SacredFlame = simpleSpell<HasTarget>({
   status: "incomplete",
   name: "Sacred Flame",
+  icon: makeIcon(iconUrl, DamageColours.fire),
   level: 0,
   school: "Evocation",
   v: true,

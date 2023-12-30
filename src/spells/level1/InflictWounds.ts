@@ -1,3 +1,6 @@
+import iconUrl from "@img/spl/inflict-wounds.svg";
+
+import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
@@ -9,6 +12,7 @@ import SpellAttack from "../SpellAttack";
 const InflictWounds = scalingSpell<HasTarget>({
   status: "implemented",
   name: "Inflict Wounds",
+  icon: makeIcon(iconUrl, DamageColours.necrotic),
   level: 1,
   school: "Necromancy",
   v: true,

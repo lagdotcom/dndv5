@@ -11,6 +11,8 @@ import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
 import SpellAttack from "../SpellAttack";
 
+const RayOfFrostIcon = makeIcon(iconUrl, DamageColours.cold);
+
 // TODO this is technically wrong, the effect should run out "at the start of your next turn."
 const RayOfFrostEffect = new Effect(
   "Ray of Frost",
@@ -20,13 +22,13 @@ const RayOfFrostEffect = new Effect(
       if (who.hasEffect(RayOfFrostEffect)) bonus.add(-10, RayOfFrostEffect);
     });
   },
-  { tags: ["magic"] },
+  { icon: RayOfFrostIcon, tags: ["magic"] },
 );
 
 const RayOfFrost = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Ray of Frost",
-  icon: makeIcon(iconUrl, DamageColours.cold),
+  icon: RayOfFrostIcon,
   level: 0,
   school: "Evocation",
   v: true,
