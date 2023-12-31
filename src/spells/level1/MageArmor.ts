@@ -51,16 +51,11 @@ const MageArmor = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
-    const duration = hours(8);
-    await target.addEffect(MageArmorEffect, { duration, caster, method });
-
-    caster.concentrateOn({
-      duration,
-      spell: MageArmor,
-      async onSpellEnd() {
-        await target.removeEffect(MageArmorEffect);
-      },
+  async apply({ caster, method }, { target }) {
+    await target.addEffect(MageArmorEffect, {
+      duration: hours(8),
+      caster,
+      method,
     });
   },
 });

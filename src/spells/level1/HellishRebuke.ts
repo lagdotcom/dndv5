@@ -6,10 +6,10 @@ import { HasTarget } from "../../configs";
 import DndRule from "../../DndRule";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { atSet } from "../../types/AttackTag";
 import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
+import { _dd } from "../../utils/dice";
 import { enumerate } from "../../utils/numbers";
 import { scalingSpell } from "../common";
 
@@ -72,33 +72,20 @@ const HellishRebuke = scalingSpell<HasTarget>({
   getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
+  getDamage: (g, caster, method, { slot }) => [
+    _dd(1 + (slot ?? 1), 10, "fire"),
+  ],
 
-  async apply(g, attacker, method, { slot, target }) {
-    const damage = await g.rollDamage(slot + 1, {
-      source: HellishRebuke,
-      size: 10,
-      attacker,
-      target,
-      damageType: "fire",
-      tags: atSet("magical", "spell"),
-    });
+  async apply(sh, { target }) {
+    const damageInitialiser = await sh.rollDamage({ target, tags: ["ranged"] });
+    const { damageResponse } = await sh.save({ who: target, ability: "dex" });
 
-    const { damageResponse } = await g.save({
-      source: HellishRebuke,
-      type: method.getSaveType(attacker, HellishRebuke, slot),
-      who: target,
-      attacker,
-      ability: "dex",
-      tags: ["magic"],
-    });
-
-    await g.damage(
-      HellishRebuke,
-      "fire",
-      { attacker, target },
-      [["fire", damage]],
+    await sh.damage({
+      damageInitialiser,
       damageResponse,
-    );
+      damageType: "fire",
+      target,
+    });
   },
 });
 export default HellishRebuke;

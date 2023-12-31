@@ -1,5 +1,8 @@
-import Amount from "./Amount";
+import { DiceAmount, FlatAmount } from "./Amount";
 import DamageType from "./DamageType";
 
-type DamageAmount = Amount & { damageType: DamageType };
+export type FlatDamage = FlatAmount & { damageType: DamageType };
+export type DiceDamage = DiceAmount & { damageType: DamageType };
+
+type DamageAmount = FlatDamage | DiceDamage;
 export default DamageAmount;

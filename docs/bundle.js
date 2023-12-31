@@ -346,9 +346,6 @@
 
   // src/DamageMap.ts
   var DamageMap = class extends Map {
-    constructor(items = []) {
-      super(items);
-    }
     get total() {
       let total = 0;
       for (const amount of this.values())
@@ -462,6 +459,259 @@
     }
   };
 
+  // src/types/AttackTag.ts
+  var atSet = (...items) => new Set(items);
+
+  // src/spells/MultiSaveEffect.ts
+  var MultiSaveEffect = class {
+    constructor(g, caster, spell, spellConfig, method, effect, duration, conditions, getSave) {
+      this.g = g;
+      this.caster = caster;
+      this.spell = spell;
+      this.spellConfig = spellConfig;
+      this.method = method;
+      this.effect = effect;
+      this.duration = duration;
+      this.getSave = getSave;
+      this.affected = /* @__PURE__ */ new Set();
+      this.conditions = new Set(conditions);
+    }
+    async apply(extraConfig) {
+      const {
+        g,
+        affected,
+        caster,
+        method,
+        duration,
+        conditions,
+        effect,
+        spell,
+        spellConfig,
+        getSave
+      } = this;
+      const targets = spell.getAffected(g, caster, spellConfig);
+      for (const target of targets) {
+        const config = {
+          affected,
+          caster,
+          method,
+          duration,
+          conditions,
+          ...extraConfig
+        };
+        const { outcome } = await g.save(getSave(target, config));
+        if (outcome === "fail" && await target.addEffect(effect, config))
+          affected.add(target);
+      }
+      return affected.size > 0;
+    }
+    async concentrate(callback) {
+      const { caster, spell, duration, effect, affected } = this;
+      await caster.concentrateOn({
+        spell,
+        duration,
+        async onSpellEnd() {
+          for (const target of affected)
+            await target.removeEffect(effect);
+          if (callback)
+            await callback(affected);
+        }
+      });
+    }
+  };
+
+  // src/spells/SpellHelper.ts
+  var SpellHelper = class {
+    constructor(g, action, spell, method, config, caster = action.actor) {
+      this.g = g;
+      this.action = action;
+      this.spell = spell;
+      this.method = method;
+      this.config = config;
+      this.caster = caster;
+    }
+    get affected() {
+      return this.spell.getAffected(this.g, this.caster, this.config);
+    }
+    get affectedArea() {
+      var _a;
+      return (_a = this.spell.getAffectedArea(this.g, this.caster, this.config)) != null ? _a : [];
+    }
+    attack({
+      target,
+      diceType,
+      type,
+      weapon,
+      ammo
+    }) {
+      const { g, caster: who, method, spell } = this;
+      return g.attack(
+        {
+          who,
+          target,
+          ability: method.ability,
+          tags: atSet(type, "spell", "magical"),
+          spell,
+          method,
+          weapon,
+          ammo
+        },
+        { source: spell, diceType }
+      );
+    }
+    getSaveConfig(e2) {
+      var _a;
+      const { caster: attacker, spell, method, config: spellConfig } = this;
+      const tags = (_a = e2.tags) != null ? _a : ["magic"];
+      return {
+        source: spell,
+        type: method.getSaveType(
+          attacker,
+          spell,
+          spellConfig.slot
+        ),
+        attacker,
+        spell,
+        method,
+        ...e2,
+        tags
+      };
+    }
+    save(e2) {
+      return this.g.save(this.getSaveConfig(e2));
+    }
+    async rollDamage({
+      critical,
+      damage = this.spell.getDamage(
+        this.g,
+        this.caster,
+        this.method,
+        this.config
+      ),
+      target,
+      tags: initialTags = []
+    } = {}) {
+      const { g, caster: attacker, method, spell } = this;
+      const tags = new Set(initialTags).add("magical").add("spell");
+      const amounts = [];
+      if (damage) {
+        for (const { type, amount, damageType } of damage)
+          if (type === "dice") {
+            const { count, size } = amount;
+            const roll = await g.rollDamage(
+              count,
+              {
+                source: spell,
+                size,
+                damageType,
+                attacker,
+                target,
+                spell,
+                method,
+                tags
+              },
+              critical
+            );
+            amounts.push([damageType, roll]);
+          } else
+            amounts.push([damageType, amount]);
+      }
+      return amounts;
+    }
+    damage({
+      ability,
+      ammo,
+      attack,
+      critical,
+      target,
+      weapon,
+      damageType,
+      damageInitialiser,
+      damageResponse
+    }) {
+      const { g, caster: attacker, method, spell } = this;
+      return g.damage(
+        spell,
+        damageType,
+        {
+          ability,
+          ammo,
+          attack,
+          attacker,
+          critical,
+          method,
+          spell,
+          target,
+          weapon
+        },
+        damageInitialiser,
+        damageResponse
+      );
+    }
+    async rollHeal({
+      critical,
+      target
+    } = {}) {
+      const { g, caster: actor, method, spell, config } = this;
+      let total = 0;
+      const heals = spell.getHeal(g, actor, method, config);
+      if (heals) {
+        for (const { type, amount } of heals)
+          if (type === "dice") {
+            const { count, size } = amount;
+            const roll = await g.rollHeal(
+              count,
+              {
+                source: spell,
+                size,
+                spell,
+                method,
+                actor,
+                target
+              },
+              critical
+            );
+            total += roll;
+          } else
+            total += amount;
+      }
+      return total;
+    }
+    heal({
+      amount,
+      startingMultiplier,
+      target
+    }) {
+      const { g, caster: actor, action, spell } = this;
+      return g.heal(
+        spell,
+        amount,
+        { action, actor, spell, target },
+        startingMultiplier
+      );
+    }
+    getMultiSave({
+      duration,
+      conditions = [],
+      tags = [],
+      ...e2
+    }) {
+      const { g, caster, method, spell, config: spellConfig } = this;
+      tags.push("magic");
+      return new MultiSaveEffect(
+        g,
+        caster,
+        spell,
+        spellConfig,
+        method,
+        e2.effect,
+        duration,
+        conditions,
+        (who, config) => this.getSaveConfig({ ...e2, tags, who, config })
+      );
+    }
+  };
+
   // src/actions/CastSpell.ts
   var CastSpell = class {
     constructor(g, actor, method, spell) {
@@ -565,7 +815,7 @@
       actor.spellsSoFar.push(spell);
       if (spell.concentration)
         await actor.endConcentration();
-      return spell.apply(g, actor, method, config);
+      return spell.apply(new SpellHelper(g, this, spell, method, config), config);
     }
   };
   function isCastSpell(a, sp) {
@@ -2699,9 +2949,6 @@
       this.apply = apply;
     }
   };
-
-  // src/types/AttackTag.ts
-  var atSet = (...items) => new Set(items);
 
   // src/utils/points.ts
   var _p = (x, y) => ({ x, y });
@@ -5137,7 +5384,7 @@
         attack: attack.detail,
         hit: outcome === "hit" || outcome === "critical",
         critical: outcome === "critical",
-        victim: roll.type.target
+        target: roll.type.target
       };
     }
     async damage(source, damageType, e2, damageInitialiser = [], startingMultiplier) {
@@ -5673,7 +5920,7 @@
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, { slot }) {
+    async apply({ g, caster }, { slot }) {
       const count = slot * 5;
       if (await g.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
         const duration = hours(1);
@@ -5682,89 +5929,6 @@
     }
   });
   var ArmorOfAgathys_default = ArmorOfAgathys;
-
-  // src/spells/SpellAttack.ts
-  var SpellAttack = class {
-    constructor(g, caster, spell, method, type, config) {
-      this.g = g;
-      this.caster = caster;
-      this.spell = spell;
-      this.method = method;
-      this.type = type;
-      this.config = config;
-    }
-    async attack(target, diceType) {
-      const { caster: who, method, spell, type } = this;
-      this.attackResult = await this.g.attack(
-        {
-          who,
-          target,
-          ability: method.ability,
-          tags: atSet(type, "spell", "magical"),
-          spell,
-          method
-        },
-        { source: spell, diceType }
-      );
-      return this.attackResult;
-    }
-    async getDamage(target) {
-      if (!this.attackResult)
-        throw new Error("Run .attack() first");
-      const { attack, critical, outcome } = this.attackResult;
-      if (outcome === "cancelled")
-        return;
-      const { g, caster: attacker, config, method, spell } = this;
-      const damage = spell.getDamage(g, attacker, method, config);
-      if (damage) {
-        const amounts = [];
-        let first = true;
-        for (const { type, amount, damageType } of damage) {
-          if (first) {
-            this.baseDamageType = damageType;
-            first = false;
-          }
-          if (type === "dice") {
-            const { count, size } = amount;
-            const roll = await g.rollDamage(
-              count,
-              {
-                source: spell,
-                size,
-                damageType,
-                attacker,
-                target,
-                spell,
-                method,
-                tags: attack.roll.type.tags
-              },
-              critical
-            );
-            amounts.push([damageType, roll]);
-          } else
-            amounts.push([damageType, amount]);
-        }
-        return amounts;
-      }
-    }
-    async damage(target, initialiser, startingMultiplier) {
-      if (!this.attackResult)
-        throw new Error("Run .attack() first");
-      const { attack, critical, hit } = this.attackResult;
-      if (!hit)
-        return;
-      const { g, baseDamageType, caster: attacker, method, spell } = this;
-      if (!baseDamageType)
-        throw new Error("Run .getDamage() first");
-      return g.damage(
-        spell,
-        baseDamageType,
-        { attack, attacker, target, critical, spell, method },
-        initialiser,
-        startingMultiplier
-      );
-    }
-  };
 
   // src/utils/dice.ts
   var _fd = (amount, damageType) => ({
@@ -5786,6 +5950,8 @@
     who
   });
   var BurstIcon = makeIcon(eldritch_burst_default, DamageColours.force);
+  var burstMainDamage = _dd(2, 10, "force");
+  var burstMinorDamage = _dd(1, 10, "force");
   var EldritchBurstSpell = simpleSpell({
     status: "implemented",
     name: "Eldritch Burst",
@@ -5796,57 +5962,44 @@
     description: `Make a ranged spell attack against the target. On a hit, the target takes 2d10 force damage. All other creatures within 5 ft. must make a Dexterity save or take 1d10 force damage.`,
     getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
     getAffectedArea: (g, caster, { target }) => target && [getEldritchBurstArea(target)],
-    getDamage: () => [_dd(2, 10, "force")],
+    getDamage: () => [burstMainDamage],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => g.getInside(getEldritchBurstArea(target)),
-    async apply(g, caster, method, { target }) {
-      const rsa = new SpellAttack(
-        g,
-        caster,
-        EldritchBurstSpell,
-        BirnotecSpellcasting,
-        "ranged",
-        { target }
-      );
-      const { outcome, hit, critical, victim } = await rsa.attack(target);
+    async apply(sh) {
+      const { outcome, attack, hit, critical, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
+      });
       if (outcome === "cancelled")
         return;
       if (hit) {
-        const hitDamage = await rsa.getDamage(victim);
-        await rsa.damage(victim, hitDamage);
-      }
-      const damage = await g.rollDamage(
-        1,
-        {
-          size: 10,
-          source: EldritchBurstSpell,
-          spell: EldritchBurstSpell,
-          method,
-          attacker: caster,
+        const hitDamage = await sh.rollDamage({ critical, target });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser: hitDamage,
           damageType: "force",
-          tags: atSet("magical", "ranged", "spell")
-        },
-        critical
-      );
-      for (const other of g.getInside(getEldritchBurstArea(victim), [victim])) {
-        const { damageResponse } = await g.save({
-          source: EldritchBurstSpell,
-          type: { type: "flat", dc: 15 },
-          attacker: caster,
-          who: other,
-          ability: "dex",
-          spell: EldritchBurstSpell,
-          method,
-          save: "zero",
-          tags: ["magic"]
+          target
         });
-        await g.damage(
-          EldritchBurstSpell,
-          "force",
-          { attacker: caster, target: other, spell: EldritchBurstSpell, method },
-          [["force", damage]],
-          damageResponse
-        );
+      }
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        damage: [burstMinorDamage]
+      });
+      for (const who of sh.affected.filter((other) => other !== target)) {
+        const { damageResponse } = await sh.save({
+          who,
+          ability: "dex",
+          save: "zero"
+        });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser,
+          damageResponse,
+          damageType: "force",
+          target: who
+        });
       }
     }
   });
@@ -5871,12 +6024,19 @@
     (g, me) => {
       g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
         interrupt.add(
-          new EvaluateLater(
-            me,
-            ArmorOfAgathys2,
-            Priority_default.Normal,
-            () => ArmorOfAgathys_default.apply(g, me, BirnotecSpellcasting, { slot: 3 })
-          )
+          new EvaluateLater(me, ArmorOfAgathys2, Priority_default.Normal, async () => {
+            const action = new CastSpell(
+              g,
+              me,
+              BirnotecSpellcasting,
+              ArmorOfAgathys_default
+            );
+            const config = { slot: 3 };
+            await action.spell.apply(
+              new SpellHelper(g, action, action.spell, action.method, config),
+              config
+            );
+          })
         );
       });
     }
@@ -7242,6 +7402,35 @@
   );
   var Dueling_default = FightingStyleDueling;
 
+  // src/utils/set.ts
+  function hasAll(set, query) {
+    if (!set)
+      return false;
+    for (const item of query)
+      if (!set.has(item))
+        return false;
+    return true;
+  }
+  function hasAny(set, query) {
+    if (!set)
+      return false;
+    for (const item of query)
+      if (set.has(item))
+        return true;
+    return false;
+  }
+  function intersects(a, b) {
+    for (const item of a)
+      if (b.has(item))
+        return true;
+    return false;
+  }
+  function mergeSets(destination, source) {
+    if (source)
+      for (const item of source)
+        destination.add(item);
+  }
+
   // src/features/fightingStyles/GreatWeaponFighting.ts
   var FightingStyleGreatWeaponFighting = new SimpleFeature(
     "Fighting Style: Great Weapon Fighting",
@@ -7250,7 +7439,7 @@
       g.events.on(
         "DiceRolled",
         ({ detail: { type, values, interrupt, size } }) => {
-          if (type.type === "damage" && type.attacker === me && type.tags.has("melee") && type.tags.has("weapon") && type.tags.has("two hands") && values.final <= 2)
+          if (type.type === "damage" && type.attacker === me && hasAll(type.tags, ["melee", "weapon", "two hands"]) && values.final <= 2)
             interrupt.add(
               new EvaluateLater(
                 me,
@@ -7487,16 +7676,25 @@
     ],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { slot, target }) {
-      const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {
-        slot,
-        target
+    async apply(sh) {
+      const { attack, critical, hit, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
       });
-      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(victim);
-        await rsa.damage(victim, damage);
-        await victim.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["ranged"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser,
+          damageType: "radiant",
+          target
+        });
+        await target.addEffect(GuidingBoltEffect, { duration: 2 }, sh.caster);
       }
     }
   });
@@ -7592,16 +7790,12 @@
       }
       return ec;
     },
-    async apply(g, actor, method, { slot, targets }) {
-      const amount = await g.rollHeal(slot - 2, {
-        source: MassHealingWord,
-        actor,
-        size: 4
-      }) + (method.ability ? actor[method.ability].modifier : 0);
+    async apply(sh, { targets }) {
+      const amount = await sh.rollHeal();
       for (const target of targets) {
         if (cannotHeal.has(target.type))
           continue;
-        await g.applyHeal(target, amount, actor);
+        await sh.heal({ amount, target });
       }
     }
   });
@@ -7791,23 +7985,11 @@
         ec.add(`Cannot heal a ${target.type}`, HealingWord);
       return ec;
     },
-    async apply(g, actor, method, { slot, target }) {
+    async apply(sh, { target }) {
       if (cannotHeal2.has(target.type))
         return;
-      const modifier = method.ability ? actor[method.ability].modifier : 0;
-      const rolled = await g.rollHeal(slot, {
-        source: HealingWord,
-        actor,
-        target,
-        spell: HealingWord,
-        method,
-        size: 4
-      });
-      await g.heal(HealingWord, rolled + modifier, {
-        actor,
-        spell: HealingWord,
-        target
-      });
+      const amount = await sh.rollHeal({ target });
+      await sh.heal({ amount, target });
     }
   });
   var HealingWord_default = HealingWord;
@@ -8549,7 +8731,7 @@
     `You have advantage on Wisdom (Perception) checks that rely on hearing or sight.`,
     (g, me) => {
       g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
-        if (who === me && (tags.has("hearing") || tags.has("sight")))
+        if (who === me && hasAny(tags, ["hearing", "sight"]))
           diceType.add("advantage", KeenHearingAndSight);
       });
     }
@@ -8967,27 +9149,6 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
 
   // src/img/act/reckless-attack.svg
   var reckless_attack_default = "./reckless-attack-MI6SJ5UC.svg";
-
-  // src/utils/set.ts
-  function hasAll(set, matches2) {
-    if (!set)
-      return false;
-    for (const item of matches2)
-      if (!set.has(item))
-        return false;
-    return true;
-  }
-  function intersects(a, b) {
-    for (const item of a)
-      if (b.has(item))
-        return true;
-    return false;
-  }
-  function mergeSets(destination, source) {
-    if (source)
-      for (const item of source)
-        destination.add(item);
-  }
 
   // src/classes/barbarian/RecklessAttack.ts
   var RecklessAttackIcon = makeIcon(reckless_attack_default);
@@ -10275,14 +10436,24 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const rsa = new SpellAttack(g, attacker, FireBolt, method, "ranged", {
-        target
+    async apply(sh) {
+      const { critical, hit, attack, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
       });
-      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(victim);
-        await rsa.damage(victim, damage);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["ranged"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser,
+          damageType: "fire",
+          target
+        });
       }
     }
   });
@@ -10311,14 +10482,24 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "fire")],
-    async apply(g, caster, method, { target }) {
-      const rsa = new SpellAttack(g, caster, ProduceFlame, method, "ranged", {
-        target
+    async apply(sh) {
+      const { attack, critical, hit, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
       });
-      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(victim);
-        await rsa.damage(victim, damage);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["ranged"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          target,
+          damageInitialiser,
+          damageType: "fire"
+        });
       }
     }
   });
@@ -10349,35 +10530,19 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const damage = await g.rollDamage(getCantripDice(attacker), {
-        size: 8,
-        attacker,
-        damageType: "radiant",
-        spell: SacredFlame,
-        method,
-        source: SacredFlame,
-        target,
-        tags: atSet("magical", "spell")
-      });
-      const { damageResponse } = await g.save({
-        source: SacredFlame,
-        type: method.getSaveType(attacker, SacredFlame),
-        attacker,
+    async apply(sh, { target }) {
+      const damageInitialiser = await sh.rollDamage({ target });
+      const { damageResponse } = await sh.save({
         who: target,
         ability: "dex",
-        spell: SacredFlame,
-        method,
-        save: "zero",
-        tags: ["magic"]
+        save: "zero"
       });
-      await g.damage(
-        SacredFlame,
-        "radiant",
-        { attacker, target, spell: SacredFlame, method },
-        [["radiant", damage]],
-        damageResponse
-      );
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "radiant",
+        target
+      });
     }
   });
   var SacredFlame_default = SacredFlame;
@@ -10423,7 +10588,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }),
     getTargets: () => [],
     getAffected: () => [],
-    async apply(g, caster, method, { item }) {
+    async apply({ g, caster, method }, { item }) {
       const { name, magical, damage, forceAbilityScore } = item;
       const versatile = item.properties.has("versatile");
       g.text(
@@ -10482,19 +10647,27 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "lightning")],
-    async apply(g, caster, method, { target }) {
+    async apply(sh, { target: originalTarget }) {
       var _a;
-      const msa = new SpellAttack(g, caster, ShockingGrasp, method, "melee", {
-        target
+      const { attack, critical, hit, target } = await sh.attack({
+        target: originalTarget,
+        diceType: ((_a = originalTarget.armor) == null ? void 0 : _a.metal) ? "advantage" : void 0,
+        type: "melee"
       });
-      const { hit, victim } = await msa.attack(
-        target,
-        ((_a = target.armor) == null ? void 0 : _a.metal) ? "advantage" : void 0
-      );
       if (hit) {
-        const damage = await msa.getDamage(victim);
-        await msa.damage(victim, damage);
-        await victim.addEffect(ShockingGraspEffect, { duration: 1 }, caster);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["melee"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser,
+          damageType: "lightning",
+          target
+        });
+        await target.addEffect(ShockingGraspEffect, { duration: 1 }, sh.caster);
       }
     }
   });
@@ -10569,7 +10742,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { targets }) {
+    async apply({ caster }, { targets }) {
       const duration = minutes(1);
       for (const target of targets)
         await target.addEffect(BlessEffect, { duration }, caster);
@@ -10650,23 +10823,11 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     },
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, actor, method, { slot, target }) {
+    async apply(sh, { target }) {
       if (cannotHeal3.has(target.type))
         return;
-      const modifier = method.ability ? actor[method.ability].modifier : 0;
-      const rolled = await g.rollHeal(slot, {
-        source: CureWounds,
-        actor,
-        target,
-        spell: CureWounds,
-        method,
-        size: 8
-      });
-      await g.heal(CureWounds, rolled + modifier, {
-        actor,
-        spell: CureWounds,
-        target
-      });
+      const amount = await sh.rollHeal({ target });
+      await sh.heal({ amount, target });
     }
   });
   var CureWounds_default = CureWounds;
@@ -10710,76 +10871,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   // src/types/EffectArea.ts
   var arSet = (...items) => new Set(items);
 
-  // src/spells/MultiSaveEffect.ts
-  var MultiSaveEffect = class {
-    constructor(g, caster, spell, spellConfig, method, effect, duration, conditions, getSave) {
-      this.g = g;
-      this.caster = caster;
-      this.spell = spell;
-      this.spellConfig = spellConfig;
-      this.method = method;
-      this.effect = effect;
-      this.duration = duration;
-      this.getSave = getSave;
-      this.affected = /* @__PURE__ */ new Set();
-      this.conditions = new Set(conditions);
-    }
-    async apply(extraConfig) {
-      const {
-        g,
-        affected,
-        caster,
-        method,
-        duration,
-        conditions,
-        effect,
-        spell,
-        spellConfig,
-        getSave
-      } = this;
-      const targets = spell.getAffected(g, caster, spellConfig);
-      for (const target of targets) {
-        const config = {
-          affected,
-          caster,
-          method,
-          duration,
-          conditions,
-          ...extraConfig
-        };
-        const { outcome } = await g.save(getSave(target, config));
-        if (outcome === "fail" && await target.addEffect(effect, config))
-          affected.add(target);
-      }
-      return affected.size > 0;
-    }
-    async concentrate(callback) {
-      const { caster, spell, duration, effect, affected } = this;
-      await caster.concentrateOn({
-        spell,
-        duration,
-        async onSpellEnd() {
-          for (const target of affected)
-            await target.removeEffect(effect);
-          if (callback)
-            await callback();
-        }
-      });
-    }
-  };
-
   // src/spells/level1/Entangle.ts
-  var getEntangleSave = (who, config) => ({
-    source: EntangleEffect,
-    type: config.method.getSaveType(config.caster, Entangle),
-    who,
-    attacker: config.caster,
-    ability: "wis",
-    spell: Entangle,
-    effect: EntangleEffect,
-    config,
-    tags: ["magic", "impedes movement", "plant"]
-  });
   var BreakFreeFromEntangleAction = class extends AbstractAction {
     constructor(g, actor, caster, method) {
       super(
@@ -10857,32 +10949,34 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getTargets: () => [],
     getAffectedArea: (g, caster, { point }) => point && [getEntangleArea(point)],
     getAffected: (g, caster, { point }) => g.getInside(getEntangleArea(point)),
-    async apply(g, caster, method, { point }) {
-      const shape = getEntangleArea(point);
-      const area = new ActiveEffectArea(
-        "Entangle",
-        shape,
-        arSet("difficult terrain", "plants"),
-        "green",
-        ({ detail: { where, difficult } }) => {
-          if (area.points.has(where))
-            difficult.add("magical plants", Entangle);
-        }
-      );
-      g.addEffectArea(area);
-      const mse = new MultiSaveEffect(
-        g,
-        caster,
-        Entangle,
-        { point },
-        method,
-        EntangleEffect,
-        minutes(1),
-        ["Restrained"],
-        getEntangleSave
-      );
+    async apply(sh) {
+      const areas = /* @__PURE__ */ new Set();
+      for (const shape of sh.affectedArea) {
+        const area = new ActiveEffectArea(
+          "Entangle",
+          shape,
+          arSet("difficult terrain", "plants"),
+          "green",
+          ({ detail: { where, difficult } }) => {
+            if (area.points.has(where))
+              difficult.add("magical plants", Entangle);
+          }
+        );
+        areas.add(area);
+        sh.g.addEffectArea(area);
+      }
+      const mse = sh.getMultiSave({
+        ability: "wis",
+        effect: EntangleEffect,
+        duration: minutes(1),
+        conditions: ["Restrained"],
+        tags: ["impedes movement", "plant"]
+      });
       if (await mse.apply({}))
-        await mse.concentrate(async () => g.removeEffectArea(area));
+        await mse.concentrate(async () => {
+          for (const area of areas)
+            sh.g.removeEffectArea(area);
+        });
     }
   });
   var Entangle_default = Entangle;
@@ -10914,15 +11008,24 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getDamage: (g, caster, method, { slot }) => [
       _dd(2 + (slot != null ? slot : 1), 10, "necrotic")
     ],
-    async apply(g, caster, method, { slot, target }) {
-      const msa = new SpellAttack(g, caster, InflictWounds, method, "melee", {
-        slot,
-        target
+    async apply(sh) {
+      const { attack, critical, hit, target } = await sh.attack({
+        target: sh.config.target,
+        type: "melee"
       });
-      const { hit, victim } = await msa.attack(target);
       if (hit) {
-        const damage = await msa.getDamage(victim);
-        await msa.damage(victim, damage);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["melee"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser,
+          damageType: "necrotic",
+          target
+        });
       }
     }
   });
@@ -10957,9 +11060,13 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { targets }) {
+    async apply(sh, { targets }) {
       for (const target of targets)
-        await target.addEffect(LongstriderEffect, { duration: hours(1) }, caster);
+        await target.addEffect(
+          LongstriderEffect,
+          { duration: hours(1) },
+          sh.caster
+        );
     }
   });
   var Longstrider_default = Longstrider;
@@ -11005,15 +11112,11 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
-      const duration = hours(8);
-      await target.addEffect(MageArmorEffect, { duration, caster, method });
-      caster.concentrateOn({
-        duration,
-        spell: MageArmor,
-        async onSpellEnd() {
-          await target.removeEffect(MageArmorEffect);
-        }
+    async apply({ caster, method }, { target }) {
+      await target.addEffect(MageArmorEffect, {
+        duration: hours(8),
+        caster,
+        method
       });
     }
   });
@@ -11110,7 +11213,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
     },
     getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
-    async apply(g, attacker, method, { targets }) {
+    async apply({ g, method, caster: attacker }, { targets }) {
       const perBolt = await g.rollDamage(1, {
         source: MagicMissile,
         spell: MagicMissile,
@@ -11233,7 +11336,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply({ caster, method }, { target }) {
       await target.addEffect(
         SanctuaryEffect,
         { caster, method, duration: minutes(1) },
@@ -11326,7 +11429,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster) {
+    async apply({ caster }) {
       await caster.addEffect(ShieldEffect, { duration: 1 });
     }
   });
@@ -11363,7 +11466,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply({ caster }, { target }) {
       await target.addEffect(
         ShieldOfFaithEffect,
         { duration: minutes(10) },
@@ -11401,40 +11504,26 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getTargets: () => [],
     getAffectedArea: (g, caster) => [getThunderwaveArea(caster)],
     getAffected: (g, caster) => g.getInside(getThunderwaveArea(caster), [caster]),
+    isHarmful: true,
     getDamage: (g, caster, method, { slot }) => [
       _dd(1 + (slot != null ? slot : 1), 8, "thunder")
     ],
-    async apply(g, attacker, method, { slot }) {
-      const damage = await g.rollDamage(1 + slot, {
-        size: 8,
-        attacker,
-        damageType: "thunder",
-        source: Thunderwave,
-        spell: Thunderwave,
-        method,
-        tags: atSet("magical", "spell")
-      });
-      const type = method.getSaveType(attacker, Thunderwave, slot);
-      for (const target of Thunderwave.getAffected(g, attacker, { slot })) {
-        const { outcome, damageResponse } = await g.save({
-          source: Thunderwave,
-          type,
-          attacker,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { outcome, damageResponse } = await sh.save({
           who: target,
           ability: "con",
-          spell: Thunderwave,
-          method,
           tags: ["forced movement", "magic"]
         });
-        await g.damage(
-          Thunderwave,
-          "thunder",
-          { attacker, spell: Thunderwave, method, target },
-          [["thunder", damage]],
-          damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "thunder",
+          target
+        });
         if (outcome === "fail")
-          await g.forcePush(target, attacker, 10, Thunderwave);
+          await sh.g.forcePush(target, sh.caster, 10, Thunderwave);
       }
     }
   });
@@ -11523,18 +11612,13 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, config) {
-      const mse = new MultiSaveEffect(
-        g,
-        caster,
-        HoldPerson,
-        config,
-        method,
-        HoldPersonEffect,
-        minutes(1),
-        ["Paralyzed"],
-        getHoldPersonSave
-      );
+    async apply(sh) {
+      const mse = sh.getMultiSave({
+        ability: "wis",
+        effect: HoldPersonEffect,
+        duration: minutes(1),
+        tags: ["impedes movement"]
+      });
       if (await mse.apply({}))
         await mse.concentrate();
     }
@@ -11577,7 +11661,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         ec.add("target does not have chosen effect", LesserRestoration);
       return ec;
     },
-    async apply(g, caster, method, { target, effect }) {
+    async apply(sh, { target, effect }) {
       await target.removeEffect(effect);
     }
   });
@@ -11621,7 +11705,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getConfig: (g) => ({ point: new PointResolver(g, 30) }),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, { point }) {
+    async apply({ g, caster }, { point }) {
       await g.move(caster, point, getTeleportation(30, "Misty Step"));
     }
   });
@@ -11661,7 +11745,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, who, method, { slot, spell, success }) {
+    async apply({ g, caster: who, method }, { slot, spell, success }) {
       var _a;
       if (spell.level > slot) {
         const { outcome } = await g.abilityCheck(10 + spell.level, {
@@ -11746,34 +11830,19 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot != null ? slot : 3), 6, "fire")],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getFireballArea(point)),
-    async apply(g, attacker, method, { point, slot }) {
-      const damage = await g.rollDamage(5 + slot, {
-        source: Fireball,
-        size: 6,
-        spell: Fireball,
-        method,
-        damageType: "fire",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of g.getInside(getFireballArea(point))) {
-        const save = await g.save({
-          source: Fireball,
-          type: method.getSaveType(attacker, Fireball, slot),
-          attacker,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { damageResponse } = await sh.save({
           ability: "dex",
-          spell: Fireball,
-          method,
-          who: target,
-          tags: ["magic"]
+          who: target
         });
-        await g.damage(
-          Fireball,
-          "fire",
-          { attacker, spell: Fireball, method, target },
-          [["fire", damage]],
-          save.damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "fire",
+          target
+        });
       }
     }
   });
@@ -11861,34 +11930,19 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     getAffectedArea: (g, caster, { point }) => point && [getLightningBoltArea(caster, point)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getLightningBoltArea(caster, point)),
-    async apply(g, attacker, method, { slot, point }) {
-      const damage = await g.rollDamage(5 + slot, {
-        source: LightningBolt,
-        size: 6,
-        spell: LightningBolt,
-        method,
-        damageType: "lightning",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
-        const save = await g.save({
-          source: LightningBolt,
-          type: method.getSaveType(attacker, LightningBolt, slot),
-          attacker,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { damageResponse } = await sh.save({
           ability: "dex",
-          spell: LightningBolt,
-          method,
-          who: target,
-          tags: ["magic"]
+          who: target
         });
-        await g.damage(
-          LightningBolt,
-          "lightning",
-          { attacker, spell: LightningBolt, method, target },
-          [["lightning", damage]],
-          save.damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "lightning",
+          target
+        });
       }
     }
   });
@@ -11960,7 +12014,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply({ caster }, { target }) {
       const duration = hours(1);
       await target.addEffect(StoneskinEffect, { duration }, caster);
       await caster.concentrateOn({
@@ -12002,34 +12056,19 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     getAffectedArea: (g, caster, { point }) => point && [getConeOfColdArea(caster, point)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getConeOfColdArea(caster, point)),
-    async apply(g, attacker, method, { slot, point }) {
-      const damage = await g.rollDamage(3 + slot, {
-        source: ConeOfCold,
-        size: 8,
-        spell: ConeOfCold,
-        method,
-        damageType: "cold",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
-        const save = await g.save({
-          source: ConeOfCold,
-          type: method.getSaveType(attacker, ConeOfCold, slot),
-          attacker,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { damageResponse } = await sh.save({
           ability: "con",
-          spell: ConeOfCold,
-          method,
-          who: target,
-          tags: ["magic"]
+          who: target
         });
-        await g.damage(
-          ConeOfCold,
-          "cold",
-          { attacker, spell: ConeOfCold, method, target },
-          [["cold", damage]],
-          save.damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "cold",
+          target
+        });
       }
     }
   });
@@ -14540,7 +14579,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     getTargets: () => [],
     getAffectedArea: (g, caster, { point }) => point && [getWebArea(point)],
     getAffected: (g, caster, { point }) => g.getInside(getWebArea(point)),
-    async apply(g, caster, method, { point }) {
+    async apply({ g, caster, method }, { point }) {
       const controller = new WebController(g, caster, method, point);
       caster.concentrateOn({
         spell: Web,
@@ -15604,36 +15643,20 @@ This increases to two additional dice at 13th level and three additional dice at
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, attacker, method, { targets }) {
-      const count = getCantripDice(attacker);
-      const damage = await g.rollDamage(count, {
-        source: AcidSplash,
-        size: 6,
-        attacker,
-        spell: AcidSplash,
-        method,
-        damageType: "acid",
-        tags: atSet("magical", "spell")
-      });
+    async apply(sh, { targets }) {
+      const damageInitialiser = await sh.rollDamage();
       for (const target of targets) {
-        const { damageResponse } = await g.save({
-          source: AcidSplash,
-          type: method.getSaveType(attacker, AcidSplash),
+        const { damageResponse } = await sh.save({
           who: target,
-          attacker,
           ability: "dex",
-          spell: AcidSplash,
-          method,
-          save: "zero",
-          tags: ["magic"]
+          save: "zero"
         });
-        await g.damage(
-          AcidSplash,
-          "acid",
-          { attacker, target, spell: AcidSplash, method },
-          [["acid", damage]],
+        await sh.damage({
+          target,
+          damageType: "acid",
+          damageInitialiser,
           damageResponse
-        );
+        });
       }
     }
   });
@@ -15666,7 +15689,7 @@ This increases to two additional dice at 13th level and three additional dice at
     getConfig: () => ({}),
     getAffected: (g, caster) => [caster],
     getTargets: () => [],
-    async apply(g, caster) {
+    async apply({ caster }) {
       await caster.addEffect(BladeWardEffect, { duration: 1 });
     }
   });
@@ -15711,14 +15734,24 @@ This increases to two additional dice at 13th level and three additional dice at
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
-      const rsa = new SpellAttack(g, caster, ChillTouch, method, "ranged", {
-        target
+    async apply(sh) {
+      const { caster, method } = sh;
+      const { attack, critical, hit, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
       });
-      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(victim);
-        await rsa.damage(victim, damage);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["ranged"]
+        });
+        await sh.damage({
+          attack,
+          target,
+          damageType: "necrotic",
+          damageInitialiser
+        });
         await target.addEffect(
           ChillTouchEffect,
           { duration: 2, caster, method },
@@ -15748,19 +15781,14 @@ This increases to two additional dice at 13th level and three additional dice at
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
-      const { outcome } = await g.save({
-        source: Gust,
-        type: method.getSaveType(caster, Gust),
-        attacker: caster,
+    async apply(sh, { target }) {
+      const { outcome } = await sh.save({
         who: target,
         ability: "str",
-        spell: Gust,
-        method,
         tags: ["forced movement"]
       });
       if (outcome === "fail")
-        await g.forcePush(target, caster, 5, Gust);
+        await sh.g.forcePush(target, sh.caster, 5, Gust);
     }
   });
   var Gust_default = Gust;
@@ -15864,7 +15892,7 @@ This increases to two additional dice at 13th level and three additional dice at
     getConfig: () => ({}),
     getTargets: (g, caster) => [caster],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method) {
+    async apply({ g, caster, method }) {
       caster.initResource(MagicStoneResource);
       g.text(
         new MessageBuilder().co(caster).text(` creates ${MagicStoneResource.maximum} magic stones.`)
@@ -15921,41 +15949,25 @@ This increases to two additional dice at 13th level and three additional dice at
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const damage = await g.rollDamage(getCantripDice(attacker), {
-        source: MindSliver,
-        attacker,
-        target,
-        spell: MindSliver,
-        method,
-        size: 6,
-        damageType: "psychic",
-        tags: atSet("magical", "spell")
-      });
-      const { damageResponse, outcome } = await g.save({
-        source: MindSliver,
-        type: method.getSaveType(attacker, MindSliver),
+    async apply(sh, { target }) {
+      const { damageResponse, outcome } = await sh.save({
         who: target,
-        attacker,
         ability: "int",
-        spell: MindSliver,
-        method,
-        save: "zero",
-        tags: ["magic"]
+        save: "zero"
       });
-      await g.damage(
-        MindSliver,
-        "psychic",
-        { attacker, target, spell: MindSliver, method },
-        [["psychic", damage]],
-        damageResponse
-      );
+      const damageInitialiser = await sh.rollDamage({ target });
+      await sh.damage({
+        damageInitialiser,
+        damageType: "psychic",
+        damageResponse,
+        target
+      });
       if (outcome === "fail") {
         let endCounter = 2;
-        const removeTurnTracker = g.events.on(
+        const removeTurnTracker = sh.g.events.on(
           "TurnEnded",
           ({ detail: { who, interrupt } }) => {
-            if (who === attacker && endCounter-- <= 0) {
+            if (who === sh.caster && endCounter-- <= 0) {
               removeTurnTracker();
               interrupt.add(
                 new EvaluateLater(
@@ -15968,7 +15980,7 @@ This increases to two additional dice at 13th level and three additional dice at
             }
           }
         );
-        await target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
+        await target.addEffect(MindSliverEffect, { duration: 2 }, sh.caster);
       }
     }
   });
@@ -15995,35 +16007,20 @@ This increases to two additional dice at 13th level and three additional dice at
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const { damageResponse } = await g.save({
-        source: PoisonSpray,
-        type: method.getSaveType(attacker, PoisonSpray),
+    async apply(sh, { target }) {
+      const { damageResponse } = await sh.save({
         who: target,
-        attacker,
         ability: "con",
-        spell: PoisonSpray,
-        method,
         save: "zero",
         tags: ["magic", "poison"]
       });
-      const damage = await g.rollDamage(getCantripDice(attacker), {
-        attacker,
-        damageType: "poison",
-        spell: PoisonSpray,
-        method,
-        size: 12,
-        source: PoisonSpray,
+      const damageInitialiser = await sh.rollDamage({ target });
+      await sh.damage({
         target,
-        tags: atSet("magical", "spell")
-      });
-      await g.damage(
-        PoisonSpray,
-        "poison",
-        { attacker, target, spell: PoisonSpray, method },
-        [["poison", damage]],
+        damageType: "poison",
+        damageInitialiser,
         damageResponse
-      );
+      });
     }
   });
   var PoisonSpray_default = PoisonSpray;
@@ -16048,14 +16045,24 @@ This increases to two additional dice at 13th level and three additional dice at
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "acid")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const rsa = new SpellAttack(g, attacker, PrimalSavagery, method, "melee", {
-        target
+    async apply(sh) {
+      const { attack, critical, hit, target } = await sh.attack({
+        target: sh.config.target,
+        type: "melee"
       });
-      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(victim);
-        await rsa.damage(victim, damage);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["melee"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser,
+          damageType: "acid",
+          target
+        });
       }
     }
   });
@@ -16098,15 +16105,25 @@ This increases to two additional dice at 13th level and three additional dice at
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "cold")],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { target }) {
-      const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
-        target
+    async apply(sh) {
+      const { attack, critical, hit, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
       });
-      const { hit, victim } = await rsa.attack(target);
       if (hit) {
-        const damage = await rsa.getDamage(victim);
-        await rsa.damage(victim, damage);
-        await victim.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
+        const damageInitialiser = await sh.rollDamage({
+          critical,
+          target,
+          tags: ["ranged"]
+        });
+        await sh.damage({
+          attack,
+          critical,
+          target,
+          damageInitialiser,
+          damageType: "cold"
+        });
+        await target.addEffect(RayOfFrostEffect, { duration: 2 }, sh.caster);
       }
     }
   });
@@ -16135,41 +16152,84 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     getTargets: () => [],
     getAffectedArea: (g, caster) => [getThunderclapArea(caster)],
     getAffected: (g, caster) => g.getInside(getThunderclapArea(caster), [caster]),
-    async apply(g, attacker, method) {
-      const affected = g.getInside(getThunderclapArea(attacker), [attacker]);
-      const amount = await g.rollDamage(getCantripDice(attacker), {
-        size: 6,
-        damageType: "thunder",
-        attacker,
-        source: Thunderclap,
-        spell: Thunderclap,
-        method,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of affected) {
-        const { outcome, damageResponse } = await g.save({
-          source: Thunderclap,
-          type: method.getSaveType(attacker, Thunderclap),
-          attacker,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { outcome, damageResponse } = await sh.save({
           who: target,
           ability: "con",
-          spell: Thunderclap,
-          method,
-          save: "zero",
-          tags: ["magic"]
+          save: "zero"
         });
         if (outcome === "fail")
-          await g.damage(
-            Thunderclap,
-            "thunder",
-            { attacker, target, spell: Thunderclap, method },
-            [["thunder", amount]],
-            damageResponse
-          );
+          await sh.damage({
+            damageInitialiser,
+            damageResponse,
+            damageType: "thunder",
+            target
+          });
       }
     }
   });
   var Thunderclap_default = Thunderclap;
+
+  // src/spells/cantrip/ViciousMockery.ts
+  var ViciousMockeryEffect = new Effect(
+    "Vicious Mockery",
+    "turnEnd",
+    (g) => {
+      g.events.on("BeforeAttack", ({ detail: { who, interrupt, diceType } }) => {
+        if (who.hasEffect(ViciousMockeryEffect))
+          interrupt.add(
+            new EvaluateLater(
+              who,
+              ViciousMockeryEffect,
+              Priority_default.ChangesOutcome,
+              async () => {
+                await who.removeEffect(ViciousMockeryEffect);
+                diceType.add("disadvantage", ViciousMockeryEffect);
+              }
+            )
+          );
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var ViciousMockery = simpleSpell({
+    status: "implemented",
+    name: "Vicious Mockery",
+    level: 0,
+    school: "Enchantment",
+    v: true,
+    lists: ["Bard"],
+    description: `You unleash a string of insults laced with subtle enchantments at a creature you can see within range. If the target can hear you (though it need not understand you), it must succeed on a Wisdom saving throw or take 1d4 psychic damage and have disadvantage on the next attack roll it makes before the end of its next turn.
+
+This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level (3d4), and 17th level (4d4).`,
+    isHarmful: true,
+    getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 4, "psychic")],
+    async apply(sh, { target }) {
+      const config = { duration: 1 };
+      const { outcome, damageResponse } = await sh.save({
+        who: target,
+        ability: "wis",
+        effect: ViciousMockeryEffect,
+        config,
+        save: "zero"
+      });
+      const damageInitialiser = await sh.rollDamage({ target });
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "psychic",
+        target
+      });
+      if (outcome === "fail")
+        await target.addEffect(ViciousMockeryEffect, config, sh.caster);
+    }
+  });
+  var ViciousMockery_default = ViciousMockery;
 
   // src/spells/level1/BurningHands.ts
   var getBurningHandsArea = (centre, target) => ({
@@ -16200,34 +16260,19 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     getAffected: (g, caster, { point }) => g.getInside(getBurningHandsArea(caster.position, point), [caster]),
     getTargets: () => [],
     getDamage: (g, caster, method, { slot }) => [_dd((slot != null ? slot : 1) + 2, 6, "fire")],
-    async apply(g, caster, method, { point, slot }) {
-      const damage = await g.rollDamage(slot + 2, {
-        attacker: caster,
-        damageType: "fire",
-        spell: BurningHands,
-        method,
-        size: 6,
-        source: BurningHands,
-        tags: atSet("magical", "spell")
-      });
-      for (const target of this.getAffected(g, caster, { point, slot })) {
-        const { damageResponse } = await g.save({
-          source: BurningHands,
-          type: method.getSaveType(caster, BurningHands, slot),
-          attacker: caster,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { damageResponse } = await sh.save({
           who: target,
-          ability: "dex",
-          spell: BurningHands,
-          method,
-          tags: ["magic"]
+          ability: "dex"
         });
-        await g.damage(
-          BurningHands,
-          "fire",
-          { attacker: caster, spell: BurningHands, method, target },
-          [["fire", damage]],
-          damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "fire",
+          target
+        });
       }
     }
   });
@@ -16313,7 +16358,7 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster) {
+    async apply({ caster }) {
       const duration = minutes(1);
       await caster.addEffect(DivineFavorEffect, { duration }, caster);
       await caster.concentrateOn({
@@ -16357,47 +16402,35 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     ],
     getTargets: () => [],
     getAffected: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
-    async apply(g, attacker, method, { slot }) {
-      const damage = await g.rollDamage(slot, {
-        source: EarthTremor,
-        size: 6,
-        spell: EarthTremor,
-        method,
-        damageType: "bludgeoning",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      const shape = getEarthTremorArea(attacker);
-      for (const target of g.getInside(shape, [attacker])) {
-        const save = await g.save({
-          source: EarthTremor,
-          type: method.getSaveType(attacker, EarthTremor, slot),
-          attacker,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const config = { duration: Infinity };
+        const { damageResponse, outcome } = await sh.save({
           ability: "dex",
-          spell: EarthTremor,
-          method,
           who: target,
           save: "zero",
-          tags: ["magic"]
+          effect: Prone,
+          config
         });
-        if (save.damageResponse !== "zero") {
-          await g.damage(
-            EarthTremor,
-            "bludgeoning",
-            { attacker, spell: EarthTremor, method, target },
-            [["bludgeoning", damage]],
-            save.damageResponse
-          );
-          await target.addEffect(Prone, { duration: Infinity }, attacker);
-        }
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "bludgeoning",
+          target
+        });
+        if (outcome === "fail")
+          await target.addEffect(Prone, config, sh.caster);
       }
-      const area = new ActiveEffectArea(
-        "Earth Tremor",
-        shape,
-        arSet("difficult terrain"),
-        "brown"
-      );
-      g.addEffectArea(area);
+      for (const shape of sh.affectedArea) {
+        const area = new ActiveEffectArea(
+          "Earth Tremor",
+          shape,
+          arSet("difficult terrain"),
+          "brown"
+        );
+        sh.g.addEffectArea(area);
+      }
     }
   });
   var EarthTremor_default = EarthTremor;
@@ -16439,38 +16472,14 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     getAffectedArea: (g, caster, { point }) => point && [getFaerieFireArea(point)],
     getAffected: (g, caster, { point }) => g.getInside(getFaerieFireArea(point)),
     getTargets: () => [],
-    async apply(g, caster, method, { point }) {
-      const affected = /* @__PURE__ */ new Set();
-      for (const target of this.getAffected(g, caster, { point })) {
-        const effect = FaerieFireEffect;
-        const config = { duration: minutes(1) };
-        const { outcome } = await g.save({
-          source: FaerieFire,
-          type: method.getSaveType(caster, FaerieFire),
-          attacker: caster,
-          who: target,
-          ability: "dex",
-          spell: FaerieFire,
-          method,
-          effect,
-          config,
-          tags: ["magic"],
-          save: "zero"
-        });
-        if (outcome === "fail") {
-          const result = await target.addEffect(effect, config, caster);
-          if (result)
-            affected.add(target);
-        }
-      }
-      await caster.concentrateOn({
-        spell: FaerieFire,
-        duration: minutes(1),
-        async onSpellEnd() {
-          for (const target of affected)
-            await target.removeEffect(FaerieFireEffect);
-        }
+    async apply(sh) {
+      const mse = sh.getMultiSave({
+        ability: "wis",
+        effect: FaerieFireEffect,
+        duration: minutes(1)
       });
+      if (await mse.apply({}))
+        await mse.concentrate();
     }
   });
   var FaerieFire_default = FaerieFire;
@@ -16492,19 +16501,25 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getTargets: () => [],
     getAffected: () => [],
-    async apply(g, caster, _method, { point, slot }) {
-      const radius = 20 * slot;
-      const area = new ActiveEffectArea(
-        "Fog Cloud",
-        { type: "sphere", centre: point, radius },
-        arSet("heavily obscured"),
-        "grey"
-      );
-      g.addEffectArea(area);
+    async apply({ g, affectedArea, caster }) {
+      const areas = /* @__PURE__ */ new Set();
+      for (const shape of affectedArea) {
+        const area = new ActiveEffectArea(
+          "Fog Cloud",
+          shape,
+          arSet("heavily obscured"),
+          "grey"
+        );
+        areas.add(area);
+        g.addEffectArea(area);
+      }
       await caster.concentrateOn({
         spell: FogCloud,
         duration: hours(1),
-        onSpellEnd: async () => g.removeEffectArea(area)
+        onSpellEnd: async () => {
+          for (const area of areas)
+            g.removeEffectArea(area);
+        }
       });
     }
   });
@@ -16564,30 +16579,18 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, attacker, method, { slot, target }) {
-      const damage = await g.rollDamage(slot + 1, {
-        source: HellishRebuke2,
-        size: 10,
-        attacker,
-        target,
+    getDamage: (g, caster, method, { slot }) => [
+      _dd(1 + (slot != null ? slot : 1), 10, "fire")
+    ],
+    async apply(sh, { target }) {
+      const damageInitialiser = await sh.rollDamage({ target, tags: ["ranged"] });
+      const { damageResponse } = await sh.save({ who: target, ability: "dex" });
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
         damageType: "fire",
-        tags: atSet("magical", "spell")
+        target
       });
-      const { damageResponse } = await g.save({
-        source: HellishRebuke2,
-        type: method.getSaveType(attacker, HellishRebuke2, slot),
-        who: target,
-        attacker,
-        ability: "dex",
-        tags: ["magic"]
-      });
-      await g.damage(
-        HellishRebuke2,
-        "fire",
-        { attacker, target },
-        [["fire", damage]],
-        damageResponse
-      );
     }
   });
   var HellishRebuke_default = HellishRebuke2;
@@ -16656,7 +16659,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getConfig: (g) => ({ target: new TargetResolver(g, 30, [canSee]) }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply({ g, caster, method }, { target }) {
       if (target.int.score <= 4) {
         g.text(
           new MessageBuilder().co(target).text(" is too dumb for the joke.")
@@ -16697,6 +16700,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
     who,
     radius: 5
   });
+  var piercingRoll = _dd(1, 10, "piercing");
+  var getColdRoll = (slot) => _dd(1 + slot, 6, "cold");
   var IceKnife = scalingSpell({
     status: "implemented",
     name: "Ice Knife",
@@ -16717,77 +16722,45 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(target)],
     getDamage: (g, caster, method, { slot }) => [
-      _dd(1, 10, "piercing"),
-      _dd(1 + (slot != null ? slot : 1), 6, "cold")
+      piercingRoll,
+      getColdRoll(slot != null ? slot : 1)
     ],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
-    async apply(g, attacker, method, { slot, target }) {
-      const { attack, hit, critical } = await g.attack({
-        who: attacker,
-        tags: atSet("ranged", "spell", "magical"),
-        target,
-        ability: method.ability,
-        spell: IceKnife,
-        method
+    async apply(sh, { slot }) {
+      const { attack, hit, critical, target } = await sh.attack({
+        target: sh.config.target,
+        type: "ranged"
       });
       if (hit) {
-        const damage2 = await g.rollDamage(
-          1,
-          {
-            source: IceKnife,
-            size: 10,
-            attacker,
-            target: attack.roll.type.target,
-            spell: IceKnife,
-            method: attack.roll.type.method,
-            damageType: "piercing",
-            tags: attack.roll.type.tags
-          },
-          critical
-        );
-        await g.damage(
-          IceKnife,
-          "piercing",
-          {
-            attack,
-            attacker,
-            target: attack.roll.type.target,
-            spell: IceKnife,
-            method: attack.roll.type.method,
-            critical
-          },
-          [["piercing", damage2]]
-        );
-      }
-      const damage = await g.rollDamage(1 + slot, {
-        source: IceKnife,
-        size: 6,
-        attacker,
-        spell: IceKnife,
-        method,
-        damageType: "cold",
-        tags: atSet("magical", "spell")
-      });
-      for (const victim of g.getInside(getIceKnifeArea(target))) {
-        const { damageResponse } = await g.save({
-          source: IceKnife,
-          type: method.getSaveType(attacker, IceKnife, slot),
-          attacker,
-          ability: "dex",
-          spell: IceKnife,
-          method,
-          who: victim,
-          save: "zero",
-          tags: ["magic"]
+        const damageInitialiser2 = await sh.rollDamage({
+          critical,
+          damage: [piercingRoll],
+          target,
+          tags: ["ranged"]
         });
-        await g.damage(
-          IceKnife,
-          "cold",
-          { attacker, target: victim, spell: IceKnife, method },
-          [["cold", damage]],
-          damageResponse
-        );
+        await sh.damage({
+          attack,
+          critical,
+          damageInitialiser: damageInitialiser2,
+          damageType: piercingRoll.damageType,
+          target
+        });
+      }
+      const coldDamage = getColdRoll(slot);
+      const damageInitialiser = await sh.rollDamage({ damage: [coldDamage] });
+      for (const who of sh.affected) {
+        const { damageResponse } = await sh.save({
+          ability: "dex",
+          who,
+          save: "zero"
+        });
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: coldDamage.damageType,
+          target: who
+        });
       }
     }
   });
@@ -16807,10 +16780,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "undead"
   );
   var isAffected = (attacker) => attacker && evilAndGoodCreatureTypes.has(attacker.type);
-  var isValidEffect = (effect, config) => {
-    var _a, _b;
-    return (effect == null ? void 0 : effect.tags.has("possession")) || ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")) || ((_b = config == null ? void 0 : config.conditions) == null ? void 0 : _b.has("Frightened"));
-  };
+  var isValidEffect = (effect, config) => (effect == null ? void 0 : effect.tags.has("possession")) || hasAny(config == null ? void 0 : config.conditions, ["Charmed", "Frightened"]);
   var ProtectionEffect = new Effect(
     "Protection from Evil and Good",
     "turnStart",
@@ -16855,7 +16825,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { target }) {
+    async apply({ caster }, { target }) {
       const duration = minutes(10);
       await target.addEffect(ProtectionEffect, { duration }, caster);
       await caster.concentrateOn({
@@ -16957,7 +16927,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getAffectedArea: (g, caster, { point }) => point && [getSleepArea(point)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getSleepArea(point)).filter((co) => !co.conditions.has("Unconscious")),
-    async apply(g, caster, method, { slot, point }) {
+    async apply({ g, caster }, { slot, point }) {
       const dice = 3 + slot * 2;
       let affectedHp = await g.rollMany(dice, {
         type: "other",
@@ -17021,7 +16991,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, []) }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, actor, method, { slot, targets }) {
+    async apply({ g, caster: actor }, { slot, targets }) {
       const amount = (slot - 1) * 5;
       const duration = hours(8);
       for (const target of targets) {
@@ -17056,7 +17026,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getConfig: () => ({}),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster) {
+    async apply({ caster }) {
       const duration = minutes(1);
       await caster.addEffect(BlurEffect, { duration }, caster);
       await caster.concentrateOn({
@@ -17188,22 +17158,22 @@ At the end of each of its turns, and each time it takes damage, the target can m
     return void 0;
   }
   var EnlargeReduceController = class {
-    constructor(caster, effect, config, victim, sizeChange = effect === EnlargeEffect ? 1 : -1) {
+    constructor(caster, effect, config, target, sizeChange = effect === EnlargeEffect ? 1 : -1) {
       this.caster = caster;
       this.effect = effect;
       this.config = config;
-      this.victim = victim;
+      this.target = target;
       this.sizeChange = sizeChange;
       this.applied = false;
     }
     async apply() {
-      const { effect, config, victim, sizeChange } = this;
-      if (!await victim.addEffect(effect, config))
+      const { effect, config, target, sizeChange } = this;
+      if (!await target.addEffect(effect, config))
         return;
-      const newSize = applySizeChange(victim.size, sizeChange);
+      const newSize = applySizeChange(target.size, sizeChange);
       if (newSize) {
         this.applied = true;
-        victim.size = newSize;
+        target.size = newSize;
       }
       this.caster.concentrateOn({
         duration: config.duration,
@@ -17213,11 +17183,11 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
     async remove() {
       if (this.applied) {
-        const oldSize = applySizeChange(this.victim.size, -this.sizeChange);
+        const oldSize = applySizeChange(this.target.size, -this.sizeChange);
         if (oldSize)
-          this.victim.size = oldSize;
+          this.target.size = oldSize;
       }
-      await this.victim.removeEffect(this.effect);
+      await this.target.removeEffect(this.effect);
     }
   };
   var EnlargeReduce = simpleSpell({
@@ -17247,7 +17217,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }),
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
-    async apply(g, caster, method, { mode, target }) {
+    async apply({ g, caster, method }, { mode, target }) {
       const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;
       const config = { duration: minutes(1) };
       if (target.side !== caster.side) {
@@ -17398,7 +17368,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }),
     getTargets: (g, caster) => [caster],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, { slot, item }) {
+    async apply({ g, caster }, { slot, item }) {
       const controller = new MagicWeaponController(g, caster, slot, item);
       caster.concentrateOn({
         duration: hours(1),
@@ -17591,7 +17561,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getDamage: (g, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
-    async apply(g, caster, method, { point, slot }) {
+    async apply({ g, caster, method }, { point, slot }) {
       const controller = new MoonbeamController(g, caster, method, point, slot);
       caster.concentrateOn({
         duration: minutes(1),
@@ -17669,7 +17639,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getAffectedArea: (g, caster, { point }) => point && [getSilenceArea(point)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getSilenceArea(point)),
-    async apply(g, caster, method, { point }) {
+    async apply({ g, caster }, { point }) {
       const controller = new SilenceController(g, point);
       await caster.concentrateOn({
         spell: Silence,
@@ -17729,7 +17699,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getAffectedArea: (g, caster, { point }) => point && [getSpikeGrowthArea(point)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getSpikeGrowthArea(point)),
-    async apply(g, attacker, method, { point }) {
+    async apply({ g, caster: attacker, method }, { point }) {
       const area = new ActiveEffectArea(
         "Spike Growth",
         getSpikeGrowthArea(point),
@@ -17811,39 +17781,23 @@ At the end of each of its turns, and each time it takes damage, the target can m
     ],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getEruptingEarthArea(point)),
-    async apply(g, attacker, method, { point, slot }) {
-      const damage = await g.rollDamage(slot, {
-        source: EruptingEarth,
-        size: 12,
-        spell: EruptingEarth,
-        method,
-        damageType: "bludgeoning",
-        attacker,
-        tags: atSet("magical", "spell")
-      });
-      const shape = getEruptingEarthArea(point);
-      for (const target of g.getInside(shape)) {
-        const save = await g.save({
-          source: EruptingEarth,
-          type: method.getSaveType(attacker, EruptingEarth, slot),
-          attacker,
+    async apply(sh, { point }) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { damageResponse } = await sh.save({
           ability: "dex",
-          spell: EruptingEarth,
-          method,
-          who: target,
-          tags: ["magic"]
+          who: target
         });
-        await g.damage(
-          EruptingEarth,
-          "bludgeoning",
-          { attacker, spell: EruptingEarth, method, target },
-          [["bludgeoning", damage]],
-          save.damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "bludgeoning",
+          target
+        });
       }
       const area = new ActiveEffectArea(
         "Erupting Earth",
-        shape,
+        getEruptingEarthArea(point),
         arSet("difficult terrain"),
         "brown",
         ({ detail: { where, difficult } }) => {
@@ -17851,7 +17805,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
             difficult.add("rubble", EruptingEarth);
         }
       );
-      g.addEffectArea(area);
+      sh.g.addEffectArea(area);
     }
   });
   var EruptingEarth_default = EruptingEarth;
@@ -17898,7 +17852,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }),
     getTargets: (g, caster, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { targets }) {
+    async apply({ caster }, { targets }) {
       const duration = hours(1);
       for (const target of targets)
         await target.addEffect(IntellectFortressEffect, { duration }, caster);
@@ -18088,37 +18042,37 @@ At the end of each of its turns, and each time it takes damage, the target can m
       (centre) => g.getInside({ type: "sphere", centre, radius: 5 })
     ),
     getDamage: () => [_dd(2, 6, "fire")],
-    async apply(g, attacker, method, { points, slot }) {
+    async apply({ g, caster, method }, { points, slot }) {
       const meteors = slot * 2;
-      attacker.initResource(MMMResource, meteors);
+      caster.initResource(MMMResource, meteors);
       g.text(
-        new MessageBuilder().co(attacker).text(` summons ${meteors} tiny meteors.`)
+        new MessageBuilder().co(caster).text(` summons ${meteors} tiny meteors.`)
       );
-      await fireMeteors(g, attacker, method, { points });
+      await fireMeteors(g, caster, method, { points });
       let meteorActionEnabled = false;
       const removeMeteorAction = g.events.on(
         "GetActions",
         ({ detail: { who, actions } }) => {
-          if (who === attacker && meteorActionEnabled)
-            actions.push(new FireMeteorsAction(g, attacker, method));
+          if (who === caster && meteorActionEnabled)
+            actions.push(new FireMeteorsAction(g, caster, method));
         }
       );
       const removeTurnListener = g.events.on(
         "TurnEnded",
         ({ detail: { who } }) => {
-          if (who === attacker) {
+          if (who === caster) {
             meteorActionEnabled = true;
             removeTurnListener();
           }
         }
       );
-      await attacker.concentrateOn({
+      await caster.concentrateOn({
         spell: MelfsMinuteMeteors,
         duration: minutes(10),
         async onSpellEnd() {
           removeMeteorAction();
           removeTurnListener();
-          attacker.removeResource(MMMResource);
+          caster.removeResource(MMMResource);
         }
       });
     }
@@ -18284,7 +18238,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }),
     getTargets: (g, actor, { targets }) => targets != null ? targets : [],
     getAffected: (g, caster, { targets }) => targets,
-    async apply(g, caster, method, { slot, targets }) {
+    async apply({ g, caster, method }, { slot, targets }) {
       for (const target of targets) {
         const config = {
           conditions: coSet("Charmed"),
@@ -18382,7 +18336,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
-          if ((attacker == null ? void 0 : attacker.hasEffect(PrimalBeastEffect)) && (attack == null ? void 0 : attack.roll.type.tags.has("melee")) && attack.roll.type.tags.has("weapon"))
+          if ((attacker == null ? void 0 : attacker.hasEffect(PrimalBeastEffect)) && hasAll(attack == null ? void 0 : attack.roll.type.tags, ["melee", "weapon"]))
             interrupt.add(
               new EvaluateLater(
                 attacker,
@@ -18459,7 +18413,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getConfig: (g) => ({ form: new ChoiceResolver(g, FormChoices) }),
     getTargets: () => [],
     getAffected: (g, caster) => [caster],
-    async apply(g, caster, method, { form }) {
+    async apply({ g, caster }, { form }) {
       const duration = minutes(1);
       let effect = PrimalBeastEffect;
       if (form === GreatTree) {
@@ -18496,6 +18450,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     s: true,
     m: "a small piece of phosphorus",
     lists: ["Druid", "Sorcerer", "Wizard"],
+    isHarmful: true,
     description: `You create a wall of fire on a solid surface within range. You can make the wall up to 60 feet long, 20 feet high, and 1 foot thick, or a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall is opaque and lasts for the duration.
 
   When the wall appears, each creature within its area must make a Dexterity saving throw. On a failed save, a creature takes 5d8 fire damage, or half as much damage on a successful save.
@@ -18548,46 +18503,19 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getAffectedArea: (g, caster, { points }) => points && points.map(getMeteorSwarmArea),
     getAffected: (g, caster, { points }) => uniq(points.flatMap((point) => g.getInside(getMeteorSwarmArea(point)))),
     getDamage: () => [_dd(20, 6, "fire"), _dd(20, 6, "bludgeoning")],
-    async apply(g, attacker, method, config) {
-      const affected = MeteorSwarm.getAffected(g, attacker, config);
-      const type = method.getSaveType(attacker, MeteorSwarm);
-      const fire = await g.rollDamage(20, {
-        size: 6,
-        damageType: "fire",
-        source: MeteorSwarm,
-        spell: MeteorSwarm,
-        method,
-        tags: atSet("magical", "spell")
-      });
-      const bludgeoning = await g.rollDamage(20, {
-        size: 6,
-        damageType: "bludgeoning",
-        source: MeteorSwarm,
-        spell: MeteorSwarm,
-        method,
-        tags: atSet("magical", "spell")
-      });
-      for (const who of affected) {
-        const { damageResponse } = await g.save({
-          source: MeteorSwarm,
-          type,
-          attacker,
-          who,
+    async apply(sh) {
+      const damageInitialiser = await sh.rollDamage();
+      for (const target of sh.affected) {
+        const { damageResponse } = await sh.save({
           ability: "dex",
-          spell: MeteorSwarm,
-          method,
-          tags: ["magic"]
+          who: target
         });
-        await g.damage(
-          MeteorSwarm,
-          "fire",
-          { spell: MeteorSwarm, method, target: who },
-          [
-            ["fire", fire],
-            ["bludgeoning", bludgeoning]
-          ],
-          damageResponse
-        );
+        await sh.damage({
+          damageInitialiser,
+          damageResponse,
+          damageType: "fire",
+          target
+        });
       }
     }
   });
@@ -18611,6 +18539,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "shocking grasp": ShockingGrasp_default,
     thaumaturgy: Thaumaturgy_default,
     thunderclap: Thunderclap_default,
+    "vicious mockery": ViciousMockery_default,
     "armor of Agathys": ArmorOfAgathys_default,
     bless: Bless_default,
     "burning hands": BurningHands_default,
@@ -19780,7 +19709,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
     }
   };
   function isCurable(e2) {
-    return e2.tags.has("disease") || e2.tags.has("poison");
+    return hasAny(e2.tags, ["disease", "poison"]);
   }
   function getCurableEffects(who) {
     const effects = [];
@@ -21655,9 +21584,12 @@ In addition, you have advantage on saving throws against plants that are magical
       g.events.on(
         "BeforeEffect",
         ({ detail: { config, effect, attacker, who, success } }) => {
-          var _a, _b, _c;
-          const isPoisonOrDisease = ((_a = config.conditions) == null ? void 0 : _a.has("Poisoned")) || effect.tags.has("poison") || effect.tags.has("disease");
-          const isCharmOrFrighten = ((_b = config.conditions) == null ? void 0 : _b.has("Charmed")) || ((_c = config.conditions) == null ? void 0 : _c.has("Frightened"));
+          var _a;
+          const isPoisonOrDisease = ((_a = config.conditions) == null ? void 0 : _a.has("Poisoned")) || hasAny(effect.tags, ["poison", "disease"]);
+          const isCharmOrFrighten = hasAny(config.conditions, [
+            "Charmed",
+            "Frightened"
+          ]);
           const isElementalOrFey = attacker && wardTypes.has(attacker.type);
           if (who === me && (isElementalOrFey && isCharmOrFrighten || isPoisonOrDisease))
             success.add("fail", NaturesWard);

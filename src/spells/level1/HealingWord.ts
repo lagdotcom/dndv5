@@ -48,24 +48,11 @@ const HealingWord = scalingSpell<HasTarget>({
     return ec;
   },
 
-  async apply(g, actor, method, { slot, target }) {
+  async apply(sh, { target }) {
     if (cannotHeal.has(target.type)) return;
 
-    const modifier = method.ability ? actor[method.ability].modifier : 0;
-    const rolled = await g.rollHeal(slot, {
-      source: HealingWord,
-      actor,
-      target,
-      spell: HealingWord,
-      method,
-      size: 4,
-    });
-
-    await g.heal(HealingWord, rolled + modifier, {
-      actor,
-      spell: HealingWord,
-      target,
-    });
+    const amount = await sh.rollHeal({ target });
+    await sh.heal({ amount, target });
   },
 });
 export default HealingWord;

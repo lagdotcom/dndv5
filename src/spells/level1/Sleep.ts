@@ -113,7 +113,7 @@ const Sleep = scalingSpell<HasPoint>({
       .getInside(getSleepArea(point))
       .filter((co) => !co.conditions.has("Unconscious")),
 
-  async apply(g, caster, method, { slot, point }) {
+  async apply({ g, caster }, { slot, point }) {
     const dice = 3 + slot * 2;
     let affectedHp = await g.rollMany(dice, {
       type: "other",

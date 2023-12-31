@@ -3,7 +3,6 @@ import iconUrl from "@img/spl/meteor-swarm.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoints } from "../../configs";
 import MultiPointResolver from "../../resolvers/MultiPointResolver";
-import { atSet } from "../../types/AttackTag";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { uniq } from "../../utils/array";
@@ -39,48 +38,19 @@ const MeteorSwarm = simpleSpell<HasPoints>({
     uniq(points.flatMap((point) => g.getInside(getMeteorSwarmArea(point)))),
   getDamage: () => [_dd(20, 6, "fire"), _dd(20, 6, "bludgeoning")],
 
-  async apply(g, attacker, method, config) {
-    const affected = MeteorSwarm.getAffected(g, attacker, config);
-    const type = method.getSaveType(attacker, MeteorSwarm);
-
-    const fire = await g.rollDamage(20, {
-      size: 6,
-      damageType: "fire",
-      source: MeteorSwarm,
-      spell: MeteorSwarm,
-      method,
-      tags: atSet("magical", "spell"),
-    });
-    const bludgeoning = await g.rollDamage(20, {
-      size: 6,
-      damageType: "bludgeoning",
-      source: MeteorSwarm,
-      spell: MeteorSwarm,
-      method,
-      tags: atSet("magical", "spell"),
-    });
-
-    for (const who of affected) {
-      const { damageResponse } = await g.save({
-        source: MeteorSwarm,
-        type,
-        attacker,
-        who,
+  async apply(sh) {
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { damageResponse } = await sh.save({
         ability: "dex",
-        spell: MeteorSwarm,
-        method,
-        tags: ["magic"],
+        who: target,
       });
-      await g.damage(
-        MeteorSwarm,
-        "fire",
-        { spell: MeteorSwarm, method, target: who },
-        [
-          ["fire", fire],
-          ["bludgeoning", bludgeoning],
-        ],
+      await sh.damage({
+        damageInitialiser,
         damageResponse,
-      );
+        damageType: "fire",
+        target,
+      });
     }
   },
 });

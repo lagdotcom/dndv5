@@ -101,7 +101,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
+  async apply({ g, caster, method }, { target }) {
     if (target.int.score <= 4) {
       g.text(
         new MessageBuilder().co(target).text(" is too dumb for the joke."),

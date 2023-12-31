@@ -66,7 +66,7 @@ const Shillelagh = simpleSpell<{ item: WeaponItem }>({
   getTargets: () => [],
   getAffected: () => [],
 
-  async apply(g, caster, method, { item }) {
+  async apply({ g, caster, method }, { item }) {
     const { name, magical, damage, forceAbilityScore } = item;
     const versatile = item.properties.has("versatile");
 

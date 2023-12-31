@@ -39,7 +39,7 @@ const Aid = scalingSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, actor, method, { slot, targets }) {
+  async apply({ g, caster: actor }, { slot, targets }) {
     const amount = (slot - 1) * 5;
     const duration = hours(8);
 

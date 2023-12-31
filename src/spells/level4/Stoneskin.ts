@@ -45,7 +45,7 @@ const Stoneskin = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
+  async apply({ caster }, { target }) {
     const duration = hours(1);
     await target.addEffect(StoneskinEffect, { duration }, caster);
 

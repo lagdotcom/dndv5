@@ -7,7 +7,6 @@ import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 const InflictWounds = scalingSpell<HasTarget>({
   status: "implemented",
@@ -38,16 +37,24 @@ const InflictWounds = scalingSpell<HasTarget>({
     _dd(2 + (slot ?? 1), 10, "necrotic"),
   ],
 
-  async apply(g, caster, method, { slot, target }) {
-    const msa = new SpellAttack(g, caster, InflictWounds, method, "melee", {
-      slot,
-      target,
+  async apply(sh) {
+    const { attack, critical, hit, target } = await sh.attack({
+      target: sh.config.target,
+      type: "melee",
     });
-
-    const { hit, victim } = await msa.attack(target);
     if (hit) {
-      const damage = await msa.getDamage(victim);
-      await msa.damage(victim, damage);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["melee"],
+      });
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser,
+        damageType: "necrotic",
+        target,
+      });
     }
   },
 });

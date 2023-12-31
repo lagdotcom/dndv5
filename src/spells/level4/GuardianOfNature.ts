@@ -4,6 +4,7 @@ import { PickChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { atSet } from "../../types/AttackTag";
 import Priority from "../../types/Priority";
+import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
 import { distanceTo } from "../../utils/units";
 import { simpleSpell } from "../common";
@@ -41,8 +42,7 @@ const PrimalBeastEffect = new Effect(
       ({ detail: { attacker, attack, interrupt, target, critical, map } }) => {
         if (
           attacker?.hasEffect(PrimalBeastEffect) &&
-          attack?.roll.type.tags.has("melee") &&
-          attack.roll.type.tags.has("weapon")
+          hasAll(attack?.roll.type.tags, ["melee", "weapon"])
         )
           interrupt.add(
             new EvaluateLater(
@@ -134,7 +134,7 @@ const GuardianOfNature = simpleSpell<{ form: Form }>({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster, method, { form }) {
+  async apply({ g, caster }, { form }) {
     const duration = minutes(1);
     let effect = PrimalBeastEffect;
 

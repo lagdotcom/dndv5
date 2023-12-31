@@ -5,7 +5,6 @@ import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 const ChillTouchEffect = new Effect<HasCaster>(
   "Chill Touch",
@@ -53,15 +52,24 @@ const ChillTouch = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
-    const rsa = new SpellAttack(g, caster, ChillTouch, method, "ranged", {
-      target,
+  async apply(sh) {
+    const { caster, method } = sh;
+    const { attack, critical, hit, target } = await sh.attack({
+      target: sh.config.target,
+      type: "ranged",
     });
-
-    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(victim);
-      await rsa.damage(victim, damage);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["ranged"],
+      });
+      await sh.damage({
+        attack,
+        target,
+        damageType: "necrotic",
+        damageInitialiser,
+      });
       await target.addEffect(
         ChillTouchEffect,
         { duration: 2, caster, method },

@@ -1,6 +1,5 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedCone } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -43,36 +42,19 @@ const ConeOfCold = scalingSpell<HasPoint>({
   getAffected: (g, caster, { point }) =>
     g.getInside(getConeOfColdArea(caster, point)),
 
-  async apply(g, attacker, method, { slot, point }) {
-    const damage = await g.rollDamage(3 + slot, {
-      source: ConeOfCold,
-      size: 8,
-      spell: ConeOfCold,
-      method,
-      damageType: "cold",
-      attacker,
-      tags: atSet("magical", "spell"),
-    });
-
-    for (const target of g.getInside(getConeOfColdArea(attacker, point))) {
-      const save = await g.save({
-        source: ConeOfCold,
-        type: method.getSaveType(attacker, ConeOfCold, slot),
-        attacker,
+  async apply(sh) {
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { damageResponse } = await sh.save({
         ability: "con",
-        spell: ConeOfCold,
-        method,
         who: target,
-        tags: ["magic"],
       });
-
-      await g.damage(
-        ConeOfCold,
-        "cold",
-        { attacker, spell: ConeOfCold, method, target },
-        [["cold", damage]],
-        save.damageResponse,
-      );
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "cold",
+        target,
+      });
 
       // TODO A creature killed by this spell becomes a frozen statue until it thaws.
     }

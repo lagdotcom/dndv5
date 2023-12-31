@@ -44,7 +44,7 @@ const MagicMissile = scalingSpell<HasAllocations>({
   getTargets: (g, caster, { targets }) => targets?.map((e) => e.who) ?? [],
   getAffected: (g, caster, { targets }) => targets.map((e) => e.who),
 
-  async apply(g, attacker, method, { targets }) {
+  async apply({ g, method, caster: attacker }, { targets }) {
     const perBolt =
       (await g.rollDamage(1, {
         source: MagicMissile,

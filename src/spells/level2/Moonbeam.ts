@@ -206,7 +206,7 @@ const Moonbeam = scalingSpell<HasPoint>({
   getTargets: () => [],
   getAffected: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
 
-  async apply(g, caster, method, { point, slot }) {
+  async apply({ g, caster, method }, { point, slot }) {
     const controller = new MoonbeamController(g, caster, method, point, slot);
     caster.concentrateOn({
       duration: minutes(1),

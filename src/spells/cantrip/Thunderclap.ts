@@ -1,4 +1,3 @@
-import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { _dd } from "../../utils/dice";
@@ -30,39 +29,22 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
   getAffectedArea: (g, caster) => [getThunderclapArea(caster)],
   getAffected: (g, caster) => g.getInside(getThunderclapArea(caster), [caster]),
 
-  async apply(g, attacker, method) {
-    const affected = g.getInside(getThunderclapArea(attacker), [attacker]);
-    const amount = await g.rollDamage(getCantripDice(attacker), {
-      size: 6,
-      damageType: "thunder",
-      attacker,
-      source: Thunderclap,
-      spell: Thunderclap,
-      method,
-      tags: atSet("magical", "spell"),
-    });
-
-    for (const target of affected) {
-      const { outcome, damageResponse } = await g.save({
-        source: Thunderclap,
-        type: method.getSaveType(attacker, Thunderclap),
-        attacker,
+  async apply(sh) {
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { outcome, damageResponse } = await sh.save({
         who: target,
         ability: "con",
-        spell: Thunderclap,
-        method,
         save: "zero",
-        tags: ["magic"],
       });
 
       if (outcome === "fail")
-        await g.damage(
-          Thunderclap,
-          "thunder",
-          { attacker, target, spell: Thunderclap, method },
-          [["thunder", amount]],
+        await sh.damage({
+          damageInitialiser,
           damageResponse,
-        );
+          damageType: "thunder",
+          target,
+        });
     }
   },
 });

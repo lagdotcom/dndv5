@@ -1,6 +1,5 @@
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import { atSet } from "../../types/AttackTag";
 import { SpecifiedCone } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -41,36 +40,19 @@ const BurningHands = scalingSpell<HasPoint>({
   getTargets: () => [],
   getDamage: (g, caster, method, { slot }) => [_dd((slot ?? 1) + 2, 6, "fire")],
 
-  async apply(g, caster, method, { point, slot }) {
-    const damage = await g.rollDamage(slot + 2, {
-      attacker: caster,
-      damageType: "fire",
-      spell: BurningHands,
-      method,
-      size: 6,
-      source: BurningHands,
-      tags: atSet("magical", "spell"),
-    });
-
-    for (const target of this.getAffected(g, caster, { point, slot })) {
-      const { damageResponse } = await g.save({
-        source: BurningHands,
-        type: method.getSaveType(caster, BurningHands, slot),
-        attacker: caster,
+  async apply(sh) {
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { damageResponse } = await sh.save({
         who: target,
         ability: "dex",
-        spell: BurningHands,
-        method,
-        tags: ["magic"],
       });
-
-      await g.damage(
-        BurningHands,
-        "fire",
-        { attacker: caster, spell: BurningHands, method, target },
-        [["fire", damage]],
+      await sh.damage({
+        damageInitialiser,
         damageResponse,
-      );
+        damageType: "fire",
+        target,
+      });
     }
 
     // TODO The fire ignites any flammable objects in the area that aren't being worn or carried.

@@ -1,9 +1,7 @@
-import { HasPoint } from "../../configs";
+import { HasCaster, HasPoint } from "../../configs";
 import Effect from "../../Effect";
 import PointResolver from "../../resolvers/PointResolver";
-import Combatant from "../../types/Combatant";
 import { SpecifiedCube } from "../../types/EffectArea";
-import { EffectConfig } from "../../types/EffectType";
 import Point from "../../types/Point";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
@@ -14,7 +12,7 @@ const getFaerieFireArea = (centre: Point): SpecifiedCube => ({
   length: 20,
 });
 
-const FaerieFireEffect = new Effect(
+const FaerieFireEffect = new Effect<HasCaster>(
   "Faerie Fire",
   "turnEnd",
   (g) => {
@@ -50,41 +48,13 @@ const FaerieFire = simpleSpell<HasPoint>({
   getAffected: (g, caster, { point }) => g.getInside(getFaerieFireArea(point)),
   getTargets: () => [],
 
-  async apply(g, caster, method, { point }) {
-    const affected = new Set<Combatant>();
-
-    for (const target of this.getAffected(g, caster, { point })) {
-      const effect = FaerieFireEffect;
-      const config: EffectConfig = { duration: minutes(1) };
-
-      const { outcome } = await g.save({
-        source: FaerieFire,
-        type: method.getSaveType(caster, FaerieFire),
-        attacker: caster,
-        who: target,
-        ability: "dex",
-        spell: FaerieFire,
-        method,
-        effect,
-        config,
-        tags: ["magic"],
-        save: "zero",
-      });
-
-      if (outcome === "fail") {
-        const result = await target.addEffect(effect, config, caster);
-        if (result) affected.add(target);
-      }
-    }
-
-    await caster.concentrateOn({
-      spell: FaerieFire,
+  async apply(sh) {
+    const mse = sh.getMultiSave({
+      ability: "wis",
+      effect: FaerieFireEffect,
       duration: minutes(1),
-      async onSpellEnd() {
-        for (const target of affected)
-          await target.removeEffect(FaerieFireEffect);
-      },
     });
+    if (await mse.apply({})) await mse.concentrate();
   },
 });
 export default FaerieFire;

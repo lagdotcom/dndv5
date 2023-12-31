@@ -54,7 +54,7 @@ const Bless = scalingSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, caster, method, { targets }) {
+  async apply({ caster }, { targets }) {
     const duration = minutes(1);
     for (const target of targets)
       await target.addEffect(BlessEffect, { duration }, caster);

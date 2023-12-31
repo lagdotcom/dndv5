@@ -4,7 +4,6 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { canSee, notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { atSet } from "../../types/AttackTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -35,38 +34,21 @@ const SacredFlame = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, attacker, method, { target }) {
-    const damage = await g.rollDamage(getCantripDice(attacker), {
-      size: 8,
-      attacker,
-      damageType: "radiant",
-      spell: SacredFlame,
-      method,
-      source: SacredFlame,
-      target,
-      tags: atSet("magical", "spell"),
-    });
+  async apply(sh, { target }) {
+    const damageInitialiser = await sh.rollDamage({ target });
 
     // TODO The target gains no benefit from cover for this saving throw.
-    const { damageResponse } = await g.save({
-      source: SacredFlame,
-      type: method.getSaveType(attacker, SacredFlame),
-      attacker,
+    const { damageResponse } = await sh.save({
       who: target,
       ability: "dex",
-      spell: SacredFlame,
-      method,
       save: "zero",
-      tags: ["magic"],
     });
-
-    await g.damage(
-      SacredFlame,
-      "radiant",
-      { attacker, target, spell: SacredFlame, method },
-      [["radiant", damage]],
+    await sh.damage({
+      damageInitialiser,
       damageResponse,
-    );
+      damageType: "radiant",
+      target,
+    });
   },
 });
 export default SacredFlame;

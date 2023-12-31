@@ -1,7 +1,6 @@
 import { HasTarget } from "../../configs";
 import { canSee } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { atSet } from "../../types/AttackTag";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
@@ -31,37 +30,20 @@ const PoisonSpray = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, attacker, method, { target }) {
-    const { damageResponse } = await g.save({
-      source: PoisonSpray,
-      type: method.getSaveType(attacker, PoisonSpray),
+  async apply(sh, { target }) {
+    const { damageResponse } = await sh.save({
       who: target,
-      attacker,
       ability: "con",
-      spell: PoisonSpray,
-      method,
       save: "zero",
       tags: ["magic", "poison"],
     });
-
-    const damage = await g.rollDamage(getCantripDice(attacker), {
-      attacker,
-      damageType: "poison",
-      spell: PoisonSpray,
-      method,
-      size: 12,
-      source: PoisonSpray,
+    const damageInitialiser = await sh.rollDamage({ target });
+    await sh.damage({
       target,
-      tags: atSet("magical", "spell"),
-    });
-
-    await g.damage(
-      PoisonSpray,
-      "poison",
-      { attacker, target, spell: PoisonSpray, method },
-      [["poison", damage]],
+      damageType: "poison",
+      damageInitialiser,
       damageResponse,
-    );
+    });
   },
 });
 export default PoisonSpray;

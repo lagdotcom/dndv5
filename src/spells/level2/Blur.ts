@@ -28,7 +28,7 @@ const Blur = simpleSpell({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster) {
+  async apply({ caster }) {
     const duration = minutes(1);
     await caster.addEffect(BlurEffect, { duration }, caster);
 

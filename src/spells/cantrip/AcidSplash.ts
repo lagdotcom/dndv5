@@ -4,7 +4,6 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
-import { atSet } from "../../types/AttackTag";
 import { poWithin } from "../../utils/ai";
 import { combinationsMulti } from "../../utils/combinatorics";
 import { _dd } from "../../utils/dice";
@@ -48,39 +47,20 @@ const AcidSplash = simpleSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, attacker, method, { targets }) {
-    const count = getCantripDice(attacker);
-
-    const damage = await g.rollDamage(count, {
-      source: AcidSplash,
-      size: 6,
-      attacker,
-      spell: AcidSplash,
-      method,
-      damageType: "acid",
-      tags: atSet("magical", "spell"),
-    });
-
+  async apply(sh, { targets }) {
+    const damageInitialiser = await sh.rollDamage();
     for (const target of targets) {
-      const { damageResponse } = await g.save({
-        source: AcidSplash,
-        type: method.getSaveType(attacker, AcidSplash),
+      const { damageResponse } = await sh.save({
         who: target,
-        attacker,
         ability: "dex",
-        spell: AcidSplash,
-        method,
         save: "zero",
-        tags: ["magic"],
       });
-
-      await g.damage(
-        AcidSplash,
-        "acid",
-        { attacker, target, spell: AcidSplash, method },
-        [["acid", damage]],
+      await sh.damage({
+        target,
+        damageType: "acid",
+        damageInitialiser,
         damageResponse,
-      );
+      });
     }
   },
 });

@@ -83,7 +83,7 @@ const ArmorOfAgathys = scalingSpell({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster, method, { slot }) {
+  async apply({ g, caster }, { slot }) {
     const count = slot * 5;
     if (await g.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
       const duration = hours(1);

@@ -9,7 +9,6 @@ import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
-import MultiSaveEffect from "../MultiSaveEffect";
 
 type Config = HasCaster & { affected: Set<Combatant> };
 
@@ -102,19 +101,13 @@ const HoldPerson = scalingSpell<HasTargets>({
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,
 
-  async apply(g, caster, method, config) {
-    const mse = new MultiSaveEffect(
-      g,
-      caster,
-      HoldPerson,
-      config,
-      method,
-      HoldPersonEffect,
-      minutes(1),
-      ["Paralyzed"],
-      getHoldPersonSave,
-    );
-
+  async apply(sh) {
+    const mse = sh.getMultiSave({
+      ability: "wis",
+      effect: HoldPersonEffect,
+      duration: minutes(1),
+      tags: ["impedes movement"],
+    });
     if (await mse.apply({})) await mse.concentrate();
   },
 });

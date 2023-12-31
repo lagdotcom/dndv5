@@ -36,24 +36,11 @@ const CureWounds = scalingSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, actor, method, { slot, target }) {
+  async apply(sh, { target }) {
     if (cannotHeal.has(target.type)) return;
 
-    const modifier = method.ability ? actor[method.ability].modifier : 0;
-    const rolled = await g.rollHeal(slot, {
-      source: CureWounds,
-      actor,
-      target,
-      spell: CureWounds,
-      method,
-      size: 8,
-    });
-
-    await g.heal(CureWounds, rolled + modifier, {
-      actor,
-      spell: CureWounds,
-      target,
-    });
+    const amount = await sh.rollHeal({ target });
+    await sh.heal({ amount, target });
   },
 });
 export default CureWounds;

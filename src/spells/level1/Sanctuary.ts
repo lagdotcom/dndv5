@@ -126,7 +126,7 @@ const Sanctuary = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
+  async apply({ caster, method }, { target }) {
     await target.addEffect(
       SanctuaryEffect,
       { caster, method, duration: minutes(1) },

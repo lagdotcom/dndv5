@@ -4,7 +4,6 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { poSet, poWithin } from "../../utils/ai";
@@ -17,6 +16,9 @@ const getIceKnifeArea = (who: Combatant): SpecifiedWithin => ({
   who,
   radius: 5,
 });
+
+const piercingRoll = _dd(1, 10, "piercing");
+const getColdRoll = (slot: number) => _dd(1 + slot, 6, "cold");
 
 const IceKnife = scalingSpell<HasTarget>({
   status: "implemented",
@@ -44,81 +46,49 @@ const IceKnife = scalingSpell<HasTarget>({
     target && [getIceKnifeArea(target)],
 
   getDamage: (g, caster, method, { slot }) => [
-    _dd(1, 10, "piercing"),
-    _dd(1 + (slot ?? 1), 6, "cold"),
+    piercingRoll,
+    getColdRoll(slot ?? 1),
   ],
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
 
-  async apply(g, attacker, method, { slot, target }) {
-    const { attack, hit, critical } = await g.attack({
-      who: attacker,
-      tags: atSet("ranged", "spell", "magical"),
-      target,
-      ability: method.ability,
-      spell: IceKnife,
-      method,
+  async apply(sh, { slot }) {
+    const { attack, hit, critical, target } = await sh.attack({
+      target: sh.config.target,
+      type: "ranged",
     });
 
     if (hit) {
-      const damage = await g.rollDamage(
-        1,
-        {
-          source: IceKnife,
-          size: 10,
-          attacker,
-          target: attack.roll.type.target,
-          spell: IceKnife,
-          method: attack.roll.type.method,
-          damageType: "piercing",
-          tags: attack.roll.type.tags,
-        },
+      const damageInitialiser = await sh.rollDamage({
         critical,
-      );
+        damage: [piercingRoll],
+        target,
+        tags: ["ranged"],
+      });
 
-      await g.damage(
-        IceKnife,
-        "piercing",
-        {
-          attack,
-          attacker,
-          target: attack.roll.type.target,
-          spell: IceKnife,
-          method: attack.roll.type.method,
-          critical,
-        },
-        [["piercing", damage]],
-      );
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser,
+        damageType: piercingRoll.damageType,
+        target,
+      });
     }
 
-    const damage = await g.rollDamage(1 + slot, {
-      source: IceKnife,
-      size: 6,
-      attacker,
-      spell: IceKnife,
-      method,
-      damageType: "cold",
-      tags: atSet("magical", "spell"),
-    });
-    for (const victim of g.getInside(getIceKnifeArea(target))) {
-      const { damageResponse } = await g.save({
-        source: IceKnife,
-        type: method.getSaveType(attacker, IceKnife, slot),
-        attacker,
+    const coldDamage = getColdRoll(slot);
+    const damageInitialiser = await sh.rollDamage({ damage: [coldDamage] });
+    for (const who of sh.affected) {
+      const { damageResponse } = await sh.save({
         ability: "dex",
-        spell: IceKnife,
-        method,
-        who: victim,
+        who,
         save: "zero",
-        tags: ["magic"],
       });
-      await g.damage(
-        IceKnife,
-        "cold",
-        { attacker, target: victim, spell: IceKnife, method },
-        [["cold", damage]],
+      await sh.damage({
+        damageInitialiser,
         damageResponse,
-      );
+        damageType: coldDamage.damageType,
+        target: who,
+      });
     }
   },
 });

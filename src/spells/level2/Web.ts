@@ -202,7 +202,7 @@ const Web = simpleSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) => point && [getWebArea(point)],
   getAffected: (g, caster, { point }) => g.getInside(getWebArea(point)),
 
-  async apply(g, caster, method, { point }) {
+  async apply({ g, caster, method }, { point }) {
     // TODO [TERRAIN] If the webs aren't anchored between two solid masses (such as walls or trees) or layered across a floor, wall, or ceiling, the conjured web collapses on itself, and the spell ends at the start of your next turn. Webs layered over a flat surface have a depth of 5 feet.
     // TODO [TERRAIN] The webs are flammable. Any 5-foot cube of webs exposed to fire burns away in 1 round, dealing 2d4 fire damage to any creature that starts its turn in the fire.
 

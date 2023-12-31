@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import SpellHelper from "../spells/SpellHelper";
 import { ActionConfig, ConfigWithPositioning } from "./Action";
 import ActionTime from "./ActionTime";
 import Amount from "./Amount";
@@ -53,12 +54,7 @@ export default interface Spell<T extends object = Empty> extends Source {
   description?: string;
   isHarmful: boolean;
 
-  apply(
-    g: Engine,
-    caster: Combatant,
-    method: SpellcastingMethod,
-    config: T,
-  ): Promise<void>;
+  apply(sh: SpellHelper<T>, config: T): Promise<void>;
   check(
     g: Engine,
     config: Partial<T>,

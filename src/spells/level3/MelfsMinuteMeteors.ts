@@ -161,44 +161,42 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
 
   getDamage: () => [_dd(2, 6, "fire")],
 
-  async apply(g, attacker, method, { points, slot }) {
+  async apply({ g, caster, method }, { points, slot }) {
     const meteors = slot * 2;
-    attacker.initResource(MMMResource, meteors);
+    caster.initResource(MMMResource, meteors);
     g.text(
-      new MessageBuilder()
-        .co(attacker)
-        .text(` summons ${meteors} tiny meteors.`),
+      new MessageBuilder().co(caster).text(` summons ${meteors} tiny meteors.`),
     );
 
-    await fireMeteors(g, attacker, method, { points });
+    await fireMeteors(g, caster, method, { points });
 
     let meteorActionEnabled = false;
 
     const removeMeteorAction = g.events.on(
       "GetActions",
       ({ detail: { who, actions } }) => {
-        if (who === attacker && meteorActionEnabled)
-          actions.push(new FireMeteorsAction(g, attacker, method));
+        if (who === caster && meteorActionEnabled)
+          actions.push(new FireMeteorsAction(g, caster, method));
       },
     );
 
     const removeTurnListener = g.events.on(
       "TurnEnded",
       ({ detail: { who } }) => {
-        if (who === attacker) {
+        if (who === caster) {
           meteorActionEnabled = true;
           removeTurnListener();
         }
       },
     );
 
-    await attacker.concentrateOn({
+    await caster.concentrateOn({
       spell: MelfsMinuteMeteors,
       duration: minutes(10),
       async onSpellEnd() {
         removeMeteorAction();
         removeTurnListener();
-        attacker.removeResource(MMMResource);
+        caster.removeResource(MMMResource);
       },
     });
   },

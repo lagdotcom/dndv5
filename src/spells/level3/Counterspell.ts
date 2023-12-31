@@ -45,7 +45,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, who, method, { slot, spell, success }) {
+  async apply({ g, caster: who, method }, { slot, spell, success }) {
     if (spell.level > slot) {
       const { outcome } = await g.abilityCheck(10 + spell.level, {
         who,

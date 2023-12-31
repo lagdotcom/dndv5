@@ -4,7 +4,6 @@ import { aimLine } from "../../aim";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -42,38 +41,21 @@ const LightningBolt = scalingSpell<HasPoint>({
   getAffected: (g, caster, { point }) =>
     g.getInside(getLightningBoltArea(caster, point)),
 
-  async apply(g, attacker, method, { slot, point }) {
-    const damage = await g.rollDamage(5 + slot, {
-      source: LightningBolt,
-      size: 6,
-      spell: LightningBolt,
-      method,
-      damageType: "lightning",
-      attacker,
-      tags: atSet("magical", "spell"),
-    });
-
+  async apply(sh) {
     // TODO [FLAMMABLE] The lightning ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside(getLightningBoltArea(attacker, point))) {
-      const save = await g.save({
-        source: LightningBolt,
-        type: method.getSaveType(attacker, LightningBolt, slot),
-        attacker,
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { damageResponse } = await sh.save({
         ability: "dex",
-        spell: LightningBolt,
-        method,
         who: target,
-        tags: ["magic"],
       });
-
-      await g.damage(
-        LightningBolt,
-        "lightning",
-        { attacker, spell: LightningBolt, method, target },
-        [["lightning", damage]],
-        save.damageResponse,
-      );
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "lightning",
+        target,
+      });
     }
   },
 });

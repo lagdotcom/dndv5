@@ -1,4 +1,13 @@
 import Dice from "./Dice";
 
-type Amount = { type: "flat"; amount: number } | { type: "dice"; amount: Dice };
+export interface FlatAmount {
+  type: "flat";
+  amount: number;
+}
+export interface DiceAmount {
+  type: "dice";
+  amount: Dice;
+}
+
+type Amount = FlatAmount | DiceAmount;
 export default Amount;

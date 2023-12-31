@@ -127,7 +127,7 @@ const MagicStone = simpleSpell({
   getTargets: (g, caster) => [caster],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster, method) {
+  async apply({ g, caster, method }) {
     caster.initResource(MagicStoneResource);
 
     g.text(

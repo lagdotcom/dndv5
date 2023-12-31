@@ -1,5 +1,6 @@
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Priority from "../../types/Priority";
+import { hasAll } from "../../utils/set";
 import SimpleFeature from "../SimpleFeature";
 
 const FightingStyleGreatWeaponFighting = new SimpleFeature(
@@ -12,9 +13,7 @@ const FightingStyleGreatWeaponFighting = new SimpleFeature(
         if (
           type.type === "damage" &&
           type.attacker === me &&
-          type.tags.has("melee") &&
-          type.tags.has("weapon") &&
-          type.tags.has("two hands") &&
+          hasAll(type.tags, ["melee", "weapon", "two hands"]) &&
           values.final <= 2
         )
           interrupt.add(

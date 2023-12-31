@@ -14,6 +14,7 @@ import Shillelagh from "../spells/cantrip/Shillelagh";
 import ShockingGrasp from "../spells/cantrip/ShockingGrasp";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import Thunderclap from "../spells/cantrip/Thunderclap";
+import ViciousMockery from "../spells/cantrip/ViciousMockery";
 import ArmorOfAgathys from "../spells/level1/ArmorOfAgathys";
 import Bless from "../spells/level1/Bless";
 import BurningHands from "../spells/level1/BurningHands";
@@ -96,6 +97,7 @@ const allSpells = {
   "shocking grasp": ShockingGrasp,
   thaumaturgy: Thaumaturgy,
   thunderclap: Thunderclap,
+  "vicious mockery": ViciousMockery,
 
   "armor of Agathys": ArmorOfAgathys,
   bless: Bless,

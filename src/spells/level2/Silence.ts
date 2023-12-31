@@ -87,7 +87,7 @@ const Silence = simpleSpell<HasPoint>({
   getTargets: () => [],
   getAffected: (g, caster, { point }) => g.getInside(getSilenceArea(point)),
 
-  async apply(g, caster, method, { point }) {
+  async apply({ g, caster }, { point }) {
     const controller = new SilenceController(g, point);
     await caster.concentrateOn({
       spell: Silence,

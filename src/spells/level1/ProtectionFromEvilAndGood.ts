@@ -8,6 +8,7 @@ import Combatant from "../../types/Combatant";
 import { ctSet } from "../../types/CreatureType";
 import { EffectConfig } from "../../types/EffectType";
 import { sieve } from "../../utils/array";
+import { hasAny } from "../../utils/set";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
@@ -26,8 +27,7 @@ const isAffected = (attacker?: Combatant) =>
 
 const isValidEffect = (effect?: Effect, config?: EffectConfig) =>
   effect?.tags.has("possession") ||
-  config?.conditions?.has("Charmed") ||
-  config?.conditions?.has("Frightened");
+  hasAny(config?.conditions, ["Charmed", "Frightened"]);
 
 const ProtectionEffect = new Effect(
   "Protection from Evil and Good",
@@ -86,7 +86,7 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
+  async apply({ caster }, { target }) {
     const duration = minutes(10);
     await target.addEffect(ProtectionEffect, { duration }, caster);
 

@@ -1,4 +1,3 @@
-import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { _dd } from "../../utils/dice";
@@ -31,43 +30,28 @@ const Thunderwave = scalingSpell({
   getAffectedArea: (g, caster) => [getThunderwaveArea(caster)],
   getAffected: (g, caster) => g.getInside(getThunderwaveArea(caster), [caster]),
 
+  isHarmful: true,
   getDamage: (g, caster, method, { slot }) => [
     _dd(1 + (slot ?? 1), 8, "thunder"),
   ],
 
-  async apply(g, attacker, method, { slot }) {
-    const damage = await g.rollDamage(1 + slot, {
-      size: 8,
-      attacker,
-      damageType: "thunder",
-      source: Thunderwave,
-      spell: Thunderwave,
-      method,
-      tags: atSet("magical", "spell"),
-    });
-    const type = method.getSaveType(attacker, Thunderwave, slot);
-
-    for (const target of Thunderwave.getAffected(g, attacker, { slot })) {
-      const { outcome, damageResponse } = await g.save({
-        source: Thunderwave,
-        type,
-        attacker,
+  async apply(sh) {
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { outcome, damageResponse } = await sh.save({
         who: target,
         ability: "con",
-        spell: Thunderwave,
-        method,
         tags: ["forced movement", "magic"],
       });
-      await g.damage(
-        Thunderwave,
-        "thunder",
-        { attacker, spell: Thunderwave, method, target },
-        [["thunder", damage]],
+      await sh.damage({
+        damageInitialiser,
         damageResponse,
-      );
+        damageType: "thunder",
+        target,
+      });
 
       if (outcome === "fail")
-        await g.forcePush(target, attacker, 10, Thunderwave);
+        await sh.g.forcePush(target, sh.caster, 10, Thunderwave);
     }
   },
 });

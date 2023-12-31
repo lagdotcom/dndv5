@@ -72,7 +72,7 @@ export default class MultiSaveEffect<
     return affected.size > 0;
   }
 
-  async concentrate(callback?: () => Promise<void>) {
+  async concentrate(callback?: (affected: Set<Combatant>) => Promise<void>) {
     const { caster, spell, duration, effect, affected } = this;
 
     await caster.concentrateOn({
@@ -80,7 +80,7 @@ export default class MultiSaveEffect<
       duration,
       async onSpellEnd() {
         for (const target of affected) await target.removeEffect(effect);
-        if (callback) await callback();
+        if (callback) await callback(affected);
       },
     });
   }

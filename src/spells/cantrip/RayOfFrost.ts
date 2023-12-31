@@ -9,7 +9,6 @@ import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 const RayOfFrostIcon = makeIcon(iconUrl, DamageColours.cold);
 
@@ -50,16 +49,25 @@ const RayOfFrost = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, attacker, method, { target }) {
-    const rsa = new SpellAttack(g, attacker, RayOfFrost, method, "ranged", {
-      target,
+  async apply(sh) {
+    const { attack, critical, hit, target } = await sh.attack({
+      target: sh.config.target,
+      type: "ranged",
     });
-
-    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(victim);
-      await rsa.damage(victim, damage);
-      await victim.addEffect(RayOfFrostEffect, { duration: 2 }, attacker);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["ranged"],
+      });
+      await sh.damage({
+        attack,
+        critical,
+        target,
+        damageInitialiser,
+        damageType: "cold",
+      });
+      await target.addEffect(RayOfFrostEffect, { duration: 2 }, sh.caster);
     }
   },
 });

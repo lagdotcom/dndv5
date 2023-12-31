@@ -4,7 +4,6 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import { atSet } from "../../types/AttackTag";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -43,50 +42,33 @@ const EruptingEarth = scalingSpell<HasPoint>({
   getAffected: (g, caster, { point }) =>
     g.getInside(getEruptingEarthArea(point)),
 
-  async apply(g, attacker, method, { point, slot }) {
-    const damage = await g.rollDamage(slot, {
-      source: EruptingEarth,
-      size: 12,
-      spell: EruptingEarth,
-      method,
-      damageType: "bludgeoning",
-      attacker,
-      tags: atSet("magical", "spell"),
-    });
+  async apply(sh, { point }) {
+    const damageInitialiser = await sh.rollDamage();
 
-    const shape = getEruptingEarthArea(point);
-    for (const target of g.getInside(shape)) {
-      const save = await g.save({
-        source: EruptingEarth,
-        type: method.getSaveType(attacker, EruptingEarth, slot),
-        attacker,
+    for (const target of sh.affected) {
+      const { damageResponse } = await sh.save({
         ability: "dex",
-        spell: EruptingEarth,
-        method,
         who: target,
-        tags: ["magic"],
       });
-
-      await g.damage(
-        EruptingEarth,
-        "bludgeoning",
-        { attacker, spell: EruptingEarth, method, target },
-        [["bludgeoning", damage]],
-        save.damageResponse,
-      );
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "bludgeoning",
+        target,
+      });
     }
 
     // TODO [TERRAIN] Additionally, the ground in that area becomes difficult terrain until cleared. Each 5-foot-square portion of the area requires at least 1 minute to clear by hand.
     const area = new ActiveEffectArea(
       "Erupting Earth",
-      shape,
+      getEruptingEarthArea(point),
       arSet("difficult terrain"),
       "brown",
       ({ detail: { where, difficult } }) => {
         if (area.points.has(where)) difficult.add("rubble", EruptingEarth);
       },
     );
-    g.addEffectArea(area);
+    sh.g.addEffectArea(area);
   },
 });
 export default EruptingEarth;

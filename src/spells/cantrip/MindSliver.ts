@@ -3,7 +3,6 @@ import Effect from "../../Effect";
 import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { atSet } from "../../types/AttackTag";
 import Priority from "../../types/Priority";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
@@ -53,43 +52,26 @@ const MindSliver = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, attacker, method, { target }) {
-    const damage = await g.rollDamage(getCantripDice(attacker), {
-      source: MindSliver,
-      attacker,
-      target,
-      spell: MindSliver,
-      method,
-      size: 6,
-      damageType: "psychic",
-      tags: atSet("magical", "spell"),
-    });
-
-    const { damageResponse, outcome } = await g.save({
-      source: MindSliver,
-      type: method.getSaveType(attacker, MindSliver),
+  async apply(sh, { target }) {
+    const { damageResponse, outcome } = await sh.save({
       who: target,
-      attacker,
       ability: "int",
-      spell: MindSliver,
-      method,
       save: "zero",
-      tags: ["magic"],
     });
-    await g.damage(
-      MindSliver,
-      "psychic",
-      { attacker, target, spell: MindSliver, method },
-      [["psychic", damage]],
+    const damageInitialiser = await sh.rollDamage({ target });
+    await sh.damage({
+      damageInitialiser,
+      damageType: "psychic",
       damageResponse,
-    );
+      target,
+    });
 
     if (outcome === "fail") {
       let endCounter = 2;
-      const removeTurnTracker = g.events.on(
+      const removeTurnTracker = sh.g.events.on(
         "TurnEnded",
         ({ detail: { who, interrupt } }) => {
-          if (who === attacker && endCounter-- <= 0) {
+          if (who === sh.caster && endCounter-- <= 0) {
             removeTurnTracker();
             interrupt.add(
               new EvaluateLater(who, MindSliver, Priority.Normal, () =>
@@ -99,7 +81,7 @@ const MindSliver = simpleSpell<HasTarget>({
           }
         },
       );
-      await target.addEffect(MindSliverEffect, { duration: 2 }, attacker);
+      await target.addEffect(MindSliverEffect, { duration: 2 }, sh.caster);
     }
   },
 });

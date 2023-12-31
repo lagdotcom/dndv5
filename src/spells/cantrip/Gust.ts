@@ -28,19 +28,13 @@ const Gust = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { target }) {
-    const { outcome } = await g.save({
-      source: Gust,
-      type: method.getSaveType(caster, Gust),
-      attacker: caster,
+  async apply(sh, { target }) {
+    const { outcome } = await sh.save({
       who: target,
       ability: "str",
-      spell: Gust,
-      method,
       tags: ["forced movement"],
     });
-
-    if (outcome === "fail") await g.forcePush(target, caster, 5, Gust);
+    if (outcome === "fail") await sh.g.forcePush(target, sh.caster, 5, Gust);
   },
 });
 export default Gust;

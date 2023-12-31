@@ -17,7 +17,7 @@ const MistyStep = simpleSpell<HasPoint>({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster, method, { point }) {
+  async apply({ g, caster }, { point }) {
     await g.move(caster, point, getTeleportation(30, "Misty Step"));
   },
 });

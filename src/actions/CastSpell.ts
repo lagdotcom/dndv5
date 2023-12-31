@@ -5,6 +5,7 @@ import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
 import MessageBuilder from "../MessageBuilder";
+import SpellHelper from "../spells/SpellHelper";
 import Action, { ActionTag } from "../types/Action";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
@@ -113,7 +114,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.check(this.g, config, ec);
   }
 
-  async apply(config: T) {
+  async apply(config: T): Promise<void> {
     const { actor, g, method, spell } = this;
     actor.useTime(spell.time);
 
@@ -146,7 +147,7 @@ export default class CastSpell<T extends object> implements Action<T> {
     if (spell.concentration) await actor.endConcentration();
 
     // TODO use sc.detail.targets ?
-    return spell.apply(g, actor, method, config);
+    return spell.apply(new SpellHelper(g, this, spell, method, config), config);
   }
 }
 

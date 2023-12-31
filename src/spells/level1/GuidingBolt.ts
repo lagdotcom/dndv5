@@ -8,7 +8,6 @@ import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 const GuidingBoltEffect = new Effect(
   "Guiding Bolt",
@@ -57,17 +56,25 @@ const GuidingBolt = scalingSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, attacker, method, { slot, target }) {
-    const rsa = new SpellAttack(g, attacker, GuidingBolt, method, "ranged", {
-      slot,
-      target,
+  async apply(sh) {
+    const { attack, critical, hit, target } = await sh.attack({
+      target: sh.config.target,
+      type: "ranged",
     });
-
-    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(victim);
-      await rsa.damage(victim, damage);
-      await victim.addEffect(GuidingBoltEffect, { duration: 2 }, attacker);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["ranged"],
+      });
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser,
+        damageType: "radiant",
+        target,
+      });
+      await target.addEffect(GuidingBoltEffect, { duration: 2 }, sh.caster);
     }
   },
 });

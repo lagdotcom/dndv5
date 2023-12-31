@@ -55,7 +55,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
     return ec;
   },
 
-  async apply(g, caster, method, { target, effect }) {
+  async apply(sh, { target, effect }) {
     await target.removeEffect(effect);
   },
 });

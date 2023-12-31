@@ -93,7 +93,6 @@ import SpellcastingMethod from "./types/SpellcastingMethod";
 import { resolveArea } from "./utils/areas";
 import { modulo } from "./utils/numbers";
 import { getPathAwayFrom, movePoint } from "./utils/points";
-import { SetInitialiser } from "./utils/set";
 import { getSquares } from "./utils/units";
 
 export default class Engine {
@@ -808,7 +807,7 @@ export default class Engine {
       attack: attack.detail,
       hit: outcome === "hit" || outcome === "critical",
       critical: outcome === "critical",
-      victim: roll.type.target,
+      target: roll.type.target,
     } as const;
   }
 
@@ -1163,7 +1162,7 @@ export interface EngineSaveConfig<E extends object> {
   method?: SpellcastingMethod;
   effect?: Effect<E>;
   config?: EffectConfig<E>;
-  tags?: SetInitialiser<SaveTag>;
+  tags?: SaveTag[];
   save?: SaveDamageResponse;
   fail?: SaveDamageResponse;
   diceType?: DiceType;

@@ -3,7 +3,6 @@ import iconUrl from "@img/spl/fireball.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import PointResolver from "../../resolvers/PointResolver";
-import { atSet } from "../../types/AttackTag";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import { _dd } from "../../utils/dice";
@@ -40,38 +39,21 @@ const Fireball = scalingSpell<HasPoint>({
   getTargets: () => [],
   getAffected: (g, caster, { point }) => g.getInside(getFireballArea(point)),
 
-  async apply(g, attacker, method, { point, slot }) {
-    const damage = await g.rollDamage(5 + slot, {
-      source: Fireball,
-      size: 6,
-      spell: Fireball,
-      method,
-      damageType: "fire",
-      attacker,
-      tags: atSet("magical", "spell"),
-    });
-
+  async apply(sh) {
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
 
-    for (const target of g.getInside(getFireballArea(point))) {
-      const save = await g.save({
-        source: Fireball,
-        type: method.getSaveType(attacker, Fireball, slot),
-        attacker,
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const { damageResponse } = await sh.save({
         ability: "dex",
-        spell: Fireball,
-        method,
         who: target,
-        tags: ["magic"],
       });
-
-      await g.damage(
-        Fireball,
-        "fire",
-        { attacker, spell: Fireball, method, target },
-        [["fire", damage]],
-        save.damageResponse,
-      );
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "fire",
+        target,
+      });
     }
   },
 });

@@ -4,7 +4,6 @@ import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 // TODO this isn't just a normal attack spell, though it can be used as one
 
@@ -35,16 +34,26 @@ const ProduceFlame = simpleSpell<HasTarget>({
   getAffected: (g, caster, { target }) => [target],
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "fire")],
 
-  async apply(g, caster, method, { target }) {
+  async apply(sh) {
     // TODO
-    const rsa = new SpellAttack(g, caster, ProduceFlame, method, "ranged", {
-      target,
-    });
 
-    const { hit, victim } = await rsa.attack(target);
+    const { attack, critical, hit, target } = await sh.attack({
+      target: sh.config.target,
+      type: "ranged",
+    });
     if (hit) {
-      const damage = await rsa.getDamage(victim);
-      await rsa.damage(victim, damage);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["ranged"],
+      });
+      await sh.damage({
+        attack,
+        critical,
+        target,
+        damageInitialiser,
+        damageType: "fire",
+      });
     }
   },
 });

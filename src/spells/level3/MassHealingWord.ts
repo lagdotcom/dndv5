@@ -57,18 +57,11 @@ const MassHealingWord = scalingSpell<HasTargets>({
     return ec;
   },
 
-  async apply(g, actor, method, { slot, targets }) {
-    const amount =
-      (await g.rollHeal(slot - 2, {
-        source: MassHealingWord,
-        actor,
-        size: 4,
-      })) + (method.ability ? actor[method.ability].modifier : 0);
-
+  async apply(sh, { targets }) {
+    const amount = await sh.rollHeal();
     for (const target of targets) {
       if (cannotHeal.has(target.type)) continue;
-
-      await g.applyHeal(target, amount, actor);
+      await sh.heal({ amount, target });
     }
   },
 });

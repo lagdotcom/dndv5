@@ -18,6 +18,7 @@ import Resource from "../../types/Resource";
 import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { enumerate } from "../../utils/numbers";
+import { hasAny } from "../../utils/set";
 import { PaladinIcon } from "./common";
 
 const LayOnHandsCureIcon = makeIcon(iconUrl);
@@ -99,7 +100,7 @@ class LayOnHandsHealAction extends AbstractAction<HealConfig> {
 type CureConfig = HasTarget & { effects: EffectType<unknown>[] };
 
 function isCurable(e: EffectType<unknown>) {
-  return e.tags.has("disease") || e.tags.has("poison");
+  return hasAny(e.tags, ["disease", "poison"]);
 }
 
 function getCurableEffects(who: Combatant) {

@@ -58,7 +58,7 @@ const DivineFavor = simpleSpell({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster) {
+  async apply({ caster }) {
     const duration = minutes(1);
     await caster.addEffect(DivineFavorEffect, { duration }, caster);
 

@@ -2,34 +2,17 @@ import AbstractAction from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasCaster, HasPoint } from "../../configs";
 import Effect from "../../Effect";
-import Engine, { EngineSaveConfig } from "../../Engine";
+import Engine from "../../Engine";
 import PointResolver from "../../resolvers/PointResolver";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
-import { EffectConfig } from "../../types/EffectType";
 import Point from "../../types/Point";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import MultiSaveEffect from "../MultiSaveEffect";
 
 type Config = HasCaster & { affected: Set<Combatant> };
-
-const getEntangleSave = (
-  who: Combatant,
-  config: EffectConfig<Config>,
-): EngineSaveConfig<Config> => ({
-  source: EntangleEffect,
-  type: config.method.getSaveType(config.caster, Entangle),
-  who,
-  attacker: config.caster,
-  ability: "wis",
-  spell: Entangle,
-  effect: EntangleEffect,
-  config,
-  tags: ["magic", "impedes movement", "plant"],
-});
 
 class BreakFreeFromEntangleAction extends AbstractAction {
   constructor(
@@ -123,33 +106,33 @@ const Entangle = simpleSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) => point && [getEntangleArea(point)],
   getAffected: (g, caster, { point }) => g.getInside(getEntangleArea(point)),
 
-  async apply(g, caster, method, { point }) {
-    const shape = getEntangleArea(point);
-    const area = new ActiveEffectArea(
-      "Entangle",
-      shape,
-      arSet("difficult terrain", "plants"),
-      "green",
-      ({ detail: { where, difficult } }) => {
-        if (area.points.has(where)) difficult.add("magical plants", Entangle);
-      },
-    );
-    g.addEffectArea(area);
+  async apply(sh) {
+    const areas = new Set<ActiveEffectArea>();
+    for (const shape of sh.affectedArea) {
+      const area = new ActiveEffectArea(
+        "Entangle",
+        shape,
+        arSet("difficult terrain", "plants"),
+        "green",
+        ({ detail: { where, difficult } }) => {
+          if (area.points.has(where)) difficult.add("magical plants", Entangle);
+        },
+      );
+      areas.add(area);
+      sh.g.addEffectArea(area);
+    }
 
-    const mse = new MultiSaveEffect(
-      g,
-      caster,
-      Entangle,
-      { point },
-      method,
-      EntangleEffect,
-      minutes(1),
-      ["Restrained"],
-      getEntangleSave,
-    );
-
+    const mse = sh.getMultiSave({
+      ability: "wis",
+      effect: EntangleEffect,
+      duration: minutes(1),
+      conditions: ["Restrained"],
+      tags: ["impedes movement", "plant"],
+    });
     if (await mse.apply({}))
-      await mse.concentrate(async () => g.removeEffectArea(area));
+      await mse.concentrate(async () => {
+        for (const area of areas) sh.g.removeEffectArea(area);
+      });
   },
 });
 export default Entangle;

@@ -5,6 +5,7 @@ import Engine from "../Engine";
 import SlotResolver from "../resolvers/SlotResolver";
 import { ActionConfig, ConfigWithPositioning } from "../types/Action";
 import Combatant from "../types/Combatant";
+import Empty from "../types/Empty";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { implementationWarning } from "../utils/env";
@@ -17,7 +18,7 @@ export function getCantripDice(who: Combatant) {
   return 4;
 }
 
-export const simpleSpell = <T extends object>({
+export const simpleSpell = <T extends object = Empty>({
   name,
   level,
   ritual = false,
@@ -100,7 +101,7 @@ type ConfigGenerator<T> = (
   method: SpellcastingMethod,
 ) => ConfigWithPositioning<T>[];
 
-export const scalingSpell = <T extends object>({
+export const scalingSpell = <T extends object = Empty>({
   name,
   level,
   ritual = false,

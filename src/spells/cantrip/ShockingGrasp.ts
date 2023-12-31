@@ -7,7 +7,6 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 const ShockingGraspIcon = makeIcon(iconUrl, DamageColours.lightning);
 
@@ -48,19 +47,26 @@ const ShockingGrasp = simpleSpell<HasTarget>({
 
   getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "lightning")],
 
-  async apply(g, caster, method, { target }) {
-    const msa = new SpellAttack(g, caster, ShockingGrasp, method, "melee", {
-      target,
+  async apply(sh, { target: originalTarget }) {
+    const { attack, critical, hit, target } = await sh.attack({
+      target: originalTarget,
+      diceType: originalTarget.armor?.metal ? "advantage" : undefined,
+      type: "melee",
     });
-
-    const { hit, victim } = await msa.attack(
-      target,
-      target.armor?.metal ? "advantage" : undefined,
-    );
     if (hit) {
-      const damage = await msa.getDamage(victim);
-      await msa.damage(victim, damage);
-      await victim.addEffect(ShockingGraspEffect, { duration: 1 }, caster);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["melee"],
+      });
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser,
+        damageType: "lightning",
+        target,
+      });
+      await target.addEffect(ShockingGraspEffect, { duration: 1 }, sh.caster);
     }
   },
 });

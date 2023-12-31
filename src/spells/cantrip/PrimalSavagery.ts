@@ -5,7 +5,6 @@ import { poSet, poWithin } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
-import SpellAttack from "../SpellAttack";
 
 const PrimalSavagery = simpleSpell<HasTarget>({
   status: "implemented",
@@ -30,15 +29,24 @@ const PrimalSavagery = simpleSpell<HasTarget>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, attacker, method, { target }) {
-    const rsa = new SpellAttack(g, attacker, PrimalSavagery, method, "melee", {
-      target,
+  async apply(sh) {
+    const { attack, critical, hit, target } = await sh.attack({
+      target: sh.config.target,
+      type: "melee",
     });
-
-    const { hit, victim } = await rsa.attack(target);
     if (hit) {
-      const damage = await rsa.getDamage(victim);
-      await rsa.damage(victim, damage);
+      const damageInitialiser = await sh.rollDamage({
+        critical,
+        target,
+        tags: ["melee"],
+      });
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser,
+        damageType: "acid",
+        target,
+      });
     }
   },
 });

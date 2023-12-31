@@ -19,7 +19,7 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../../spells/common";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import ArmorOfAgathysSpell from "../../spells/level1/ArmorOfAgathys";
-import SpellAttack from "../../spells/SpellAttack";
+import SpellHelper from "../../spells/SpellHelper";
 import { atSet } from "../../types/AttackTag";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
@@ -39,6 +39,9 @@ const getEldritchBurstArea = (who: Combatant): SpecifiedWithin => ({
 
 const BurstIcon = makeIcon(burstUrl, DamageColours.force);
 
+const burstMainDamage = _dd(2, 10, "force");
+const burstMinorDamage = _dd(1, 10, "force");
+
 const EldritchBurstSpell = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Eldritch Burst",
@@ -51,62 +54,47 @@ const EldritchBurstSpell = simpleSpell<HasTarget>({
   getConfig: (g) => ({ target: new TargetResolver(g, 120, [isEnemy]) }),
   getAffectedArea: (g, caster, { target }) =>
     target && [getEldritchBurstArea(target)],
-  getDamage: () => [_dd(2, 10, "force")],
+  getDamage: () => [burstMainDamage],
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) =>
     g.getInside(getEldritchBurstArea(target)),
 
-  async apply(g, caster, method, { target }) {
-    const rsa = new SpellAttack(
-      g,
-      caster,
-      EldritchBurstSpell,
-      BirnotecSpellcasting,
-      "ranged",
-      { target },
-    );
-
-    const { outcome, hit, critical, victim } = await rsa.attack(target);
+  async apply(sh) {
+    const { outcome, attack, hit, critical, target } = await sh.attack({
+      target: sh.config.target,
+      type: "ranged",
+    });
     if (outcome === "cancelled") return;
 
     if (hit) {
-      const hitDamage = await rsa.getDamage(victim);
-      await rsa.damage(victim, hitDamage);
+      const hitDamage = await sh.rollDamage({ critical, target });
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser: hitDamage,
+        damageType: "force",
+        target,
+      });
     }
 
-    const damage = await g.rollDamage(
-      1,
-      {
-        size: 10,
-        source: EldritchBurstSpell,
-        spell: EldritchBurstSpell,
-        method,
-        attacker: caster,
-        damageType: "force",
-        tags: atSet("magical", "ranged", "spell"),
-      },
+    const damageInitialiser = await sh.rollDamage({
       critical,
-    );
-
-    for (const other of g.getInside(getEldritchBurstArea(victim), [victim])) {
-      const { damageResponse } = await g.save({
-        source: EldritchBurstSpell,
-        type: { type: "flat", dc: 15 },
-        attacker: caster,
-        who: other,
+      damage: [burstMinorDamage],
+    });
+    for (const who of sh.affected.filter((other) => other !== target)) {
+      const { damageResponse } = await sh.save({
+        who,
         ability: "dex",
-        spell: EldritchBurstSpell,
-        method,
         save: "zero",
-        tags: ["magic"],
       });
-      await g.damage(
-        EldritchBurstSpell,
-        "force",
-        { attacker: caster, target: other, spell: EldritchBurstSpell, method },
-        [["force", damage]],
+      await sh.damage({
+        attack,
+        critical,
+        damageInitialiser,
         damageResponse,
-      );
+        damageType: "force",
+        target: who,
+      });
     }
   },
 });
@@ -135,9 +123,19 @@ const ArmorOfAgathys = new SimpleFeature(
   (g, me) => {
     g.events.on("BattleStarted", ({ detail: { interrupt } }) => {
       interrupt.add(
-        new EvaluateLater(me, ArmorOfAgathys, Priority.Normal, () =>
-          ArmorOfAgathysSpell.apply(g, me, BirnotecSpellcasting, { slot: 3 }),
-        ),
+        new EvaluateLater(me, ArmorOfAgathys, Priority.Normal, async () => {
+          const action = new CastSpell(
+            g,
+            me,
+            BirnotecSpellcasting,
+            ArmorOfAgathysSpell,
+          );
+          const config = { slot: 3 };
+          await action.spell.apply(
+            new SpellHelper(g, action, action.spell, action.method, config),
+            config,
+          );
+        }),
       );
     });
   },

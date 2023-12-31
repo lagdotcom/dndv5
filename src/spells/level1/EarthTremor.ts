@@ -3,7 +3,6 @@ import iconUrl from "@img/spl/earth-tremor.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
-import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { poSet } from "../../utils/ai";
@@ -40,51 +39,36 @@ const EarthTremor = scalingSpell({
   getTargets: () => [],
   getAffected: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
 
-  async apply(g, attacker, method, { slot }) {
-    const damage = await g.rollDamage(slot, {
-      source: EarthTremor,
-      size: 6,
-      spell: EarthTremor,
-      method,
-      damageType: "bludgeoning",
-      attacker,
-      tags: atSet("magical", "spell"),
-    });
-
-    const shape = getEarthTremorArea(attacker);
-    for (const target of g.getInside(shape, [attacker])) {
-      const save = await g.save({
-        source: EarthTremor,
-        type: method.getSaveType(attacker, EarthTremor, slot),
-        attacker,
+  async apply(sh) {
+    const damageInitialiser = await sh.rollDamage();
+    for (const target of sh.affected) {
+      const config = { duration: Infinity };
+      const { damageResponse, outcome } = await sh.save({
         ability: "dex",
-        spell: EarthTremor,
-        method,
         who: target,
         save: "zero",
-        tags: ["magic"],
+        effect: Prone,
+        config,
       });
-
-      if (save.damageResponse !== "zero") {
-        await g.damage(
-          EarthTremor,
-          "bludgeoning",
-          { attacker, spell: EarthTremor, method, target },
-          [["bludgeoning", damage]],
-          save.damageResponse,
-        );
-        await target.addEffect(Prone, { duration: Infinity }, attacker);
-      }
+      await sh.damage({
+        damageInitialiser,
+        damageResponse,
+        damageType: "bludgeoning",
+        target,
+      });
+      if (outcome === "fail") await target.addEffect(Prone, config, sh.caster);
     }
 
     // TODO [TERRAIN] If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
-    const area = new ActiveEffectArea(
-      "Earth Tremor",
-      shape,
-      arSet("difficult terrain"),
-      "brown",
-    );
-    g.addEffectArea(area);
+    for (const shape of sh.affectedArea) {
+      const area = new ActiveEffectArea(
+        "Earth Tremor",
+        shape,
+        arSet("difficult terrain"),
+        "brown",
+      );
+      sh.g.addEffectArea(area);
+    }
   },
 });
 export default EarthTremor;

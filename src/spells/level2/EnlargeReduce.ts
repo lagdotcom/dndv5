@@ -119,20 +119,20 @@ class EnlargeReduceController {
     public caster: Combatant,
     public effect: Effect,
     public config: EffectConfig,
-    public victim: Combatant,
+    public target: Combatant,
     public sizeChange = effect === EnlargeEffect ? 1 : -1,
   ) {
     this.applied = false;
   }
 
   async apply() {
-    const { effect, config, victim, sizeChange } = this;
-    if (!(await victim.addEffect(effect, config))) return;
+    const { effect, config, target, sizeChange } = this;
+    if (!(await target.addEffect(effect, config))) return;
 
-    const newSize = applySizeChange(victim.size, sizeChange);
+    const newSize = applySizeChange(target.size, sizeChange);
     if (newSize) {
       this.applied = true;
-      victim.size = newSize;
+      target.size = newSize;
     }
 
     this.caster.concentrateOn({
@@ -144,11 +144,11 @@ class EnlargeReduceController {
 
   async remove() {
     if (this.applied) {
-      const oldSize = applySizeChange(this.victim.size, -this.sizeChange);
-      if (oldSize) this.victim.size = oldSize;
+      const oldSize = applySizeChange(this.target.size, -this.sizeChange);
+      if (oldSize) this.target.size = oldSize;
     }
 
-    await this.victim.removeEffect(this.effect);
+    await this.target.removeEffect(this.effect);
   }
 }
 
@@ -182,7 +182,7 @@ const EnlargeReduce = simpleSpell<Config>({
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 
-  async apply(g, caster, method, { mode, target }) {
+  async apply({ g, caster, method }, { mode, target }) {
     const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;
     const config = { duration: minutes(1) };
 

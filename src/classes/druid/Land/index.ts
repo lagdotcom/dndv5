@@ -29,6 +29,7 @@ import Stoneskin from "../../../spells/level4/Stoneskin";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
 import { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
+import { hasAny } from "../../../utils/set";
 import { makeLandsStride } from "../../common";
 import { DruidSpellcasting } from "..";
 
@@ -181,11 +182,11 @@ const NaturesWard = new SimpleFeature(
       ({ detail: { config, effect, attacker, who, success } }) => {
         const isPoisonOrDisease =
           config.conditions?.has("Poisoned") ||
-          effect.tags.has("poison") ||
-          effect.tags.has("disease");
-        const isCharmOrFrighten =
-          config.conditions?.has("Charmed") ||
-          config.conditions?.has("Frightened");
+          hasAny(effect.tags, ["poison", "disease"]);
+        const isCharmOrFrighten = hasAny(config.conditions, [
+          "Charmed",
+          "Frightened",
+        ]);
         const isElementalOrFey = attacker && wardTypes.has(attacker.type);
 
         if (

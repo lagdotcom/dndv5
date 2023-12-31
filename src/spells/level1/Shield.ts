@@ -106,7 +106,7 @@ const Shield = simpleSpell({
   getTargets: () => [],
   getAffected: (g, caster) => [caster],
 
-  async apply(g, caster) {
+  async apply({ caster }) {
     await caster.addEffect(ShieldEffect, { duration: 1 });
   },
 });

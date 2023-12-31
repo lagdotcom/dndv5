@@ -36,7 +36,7 @@ const BladeWard = simpleSpell({
   getAffected: (g, caster) => [caster],
   getTargets: () => [],
 
-  async apply(g, caster) {
+  async apply({ caster }) {
     await caster.addEffect(BladeWardEffect, { duration: 1 });
   },
 });

@@ -3,6 +3,7 @@ import EvaluateLater from "../interruptions/EvaluateLater";
 import { MundaneDamageTypes } from "../types/DamageType";
 import Priority from "../types/Priority";
 import { getFlanker } from "../utils/dnd";
+import { hasAny } from "../utils/set";
 import { isA } from "../utils/types";
 
 export const Brute = new SimpleFeature(
@@ -62,7 +63,7 @@ export const KeenHearingAndSight = new SimpleFeature(
   `You have advantage on Wisdom (Perception) checks that rely on hearing or sight.`,
   (g, me) => {
     g.events.on("BeforeCheck", ({ detail: { who, tags, diceType } }) => {
-      if (who === me && (tags.has("hearing") || tags.has("sight")))
+      if (who === me && hasAny(tags, ["hearing", "sight"]))
         diceType.add("advantage", KeenHearingAndSight);
     });
   },
