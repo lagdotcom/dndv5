@@ -18545,6 +18545,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     isHarmful: true,
     getConfig: (g) => ({ points: new MultiPointResolver(g, 4, 4, miles(1)) }),
     getTargets: () => [],
+    getAffectedArea: (g, caster, { points }) => points && points.map(getMeteorSwarmArea),
     getAffected: (g, caster, { points }) => uniq(points.flatMap((point) => g.getInside(getMeteorSwarmArea(point)))),
     getDamage: () => [_dd(20, 6, "fire"), _dd(20, 6, "bludgeoning")],
     async apply(g, attacker, method, config) {
