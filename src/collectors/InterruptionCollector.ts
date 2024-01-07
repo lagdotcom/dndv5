@@ -14,6 +14,6 @@ export default class InterruptionCollector {
   *[Symbol.iterator]() {
     const interruptions = [...this.set];
     interruptions.sort((a, b) => b.priority - a.priority);
-    for (const i of interruptions) yield i;
+    for (const interruption of interruptions) yield interruption;
   }
 }

@@ -322,6 +322,7 @@ export default function CombatUI({ g, template }: Props) {
               <ChooseActionConfigPanel
                 g={g}
                 action={action}
+                active={activeCombatant.value}
                 onCancel={onCancelAction}
                 onExecute={onExecuteAction}
               />

@@ -1,32 +1,33 @@
+import { MapSquareSize } from "../../MapSquare";
 import { BattleTemplateImage } from "../../data/BattleTemplate";
 import { CSSProperties, useMemo } from "../lib";
-import { scale } from "../utils/state";
 import styles from "./BackgroundImage.module.scss";
 
+interface Props {
+  image: BattleTemplateImage;
+  scaleValue: number;
+}
+
 export default function BackgroundImage({
-  url,
-  x,
-  y,
-  width,
-  height,
-  zIndex,
-}: BattleTemplateImage) {
+  image: { src, x, y, width, height, zIndex },
+  scaleValue,
+}: Props) {
   const style = useMemo<CSSProperties>(
     () => ({
-      left: x * scale.value,
-      top: y * scale.value,
-      width: width ? width * 5 * scale.value : undefined,
-      height: height ? height * 5 * scale.value : undefined,
+      left: x * scaleValue,
+      top: y * scaleValue,
+      width: width ? width * MapSquareSize * scaleValue : undefined,
+      height: height ? height * MapSquareSize * scaleValue : undefined,
       zIndex,
     }),
-    [x, y, width, height, zIndex, scale.value],
+    [height, scaleValue, width, x, y, zIndex],
   );
 
   return (
     <img
       alt=""
       role="presentation"
-      src={url}
+      src={src}
       className={styles.image}
       style={style}
     />

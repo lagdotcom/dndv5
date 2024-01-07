@@ -50,7 +50,7 @@ export const daviesVsFiends: BattleTemplate = {
   ],
   images: [
     {
-      url: "https://lagdotcom.github.io/dndavies-assets/fp/ahnbiral-temple-space.png",
+      src: "https://lagdotcom.github.io/dndavies-assets/fp/ahnbiral-temple-space.png",
       x: 0,
       y: 0,
       width: 10,

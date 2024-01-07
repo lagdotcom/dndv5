@@ -89,7 +89,7 @@
     ],
     images: [
       {
-        url: "https://lagdotcom.github.io/dndavies-assets/fp/ahnbiral-temple-space.png",
+        src: "https://lagdotcom.github.io/dndavies-assets/fp/ahnbiral-temple-space.png",
         x: 0,
         y: 0,
         width: 10,
@@ -272,8 +272,8 @@
     *[Symbol.iterator]() {
       const interruptions = [...this.set];
       interruptions.sort((a, b) => b.priority - a.priority);
-      for (const i2 of interruptions)
-        yield i2;
+      for (const interruption of interruptions)
+        yield interruption;
     }
   };
 
@@ -1282,8 +1282,8 @@
   }
   function enumerate(min, max) {
     const values = [];
-    for (let i2 = min; i2 <= max; i2++)
-      values.push(i2);
+    for (let value = min; value <= max; value++)
+      values.push(value);
     return values;
   }
   function ordinal(n) {
@@ -10593,7 +10593,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       item: new ChoiceResolver(
         g,
         Array.from(caster.equipment).filter(
-          (i2) => i2.itemType === "weapon" && shillelaghWeapons.has(i2.weaponType)
+          (it) => it.itemType === "weapon" && shillelaghWeapons.has(it.weaponType)
         ).map((value) => ({ label: value.name, value }))
       )
     }),
@@ -22642,29 +22642,25 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/BackgroundImage.tsx
   function BackgroundImage({
-    url,
-    x,
-    y,
-    width,
-    height,
-    zIndex
+    image: { src, x, y, width, height, zIndex },
+    scaleValue
   }) {
     const style = (0, import_hooks.useMemo)(
       () => ({
-        left: x * scale.value,
-        top: y * scale.value,
-        width: width ? width * 5 * scale.value : void 0,
-        height: height ? height * 5 * scale.value : void 0,
+        left: x * scaleValue,
+        top: y * scaleValue,
+        width: width ? width * MapSquareSize * scaleValue : void 0,
+        height: height ? height * MapSquareSize * scaleValue : void 0,
         zIndex
       }),
-      [x, y, width, height, zIndex, scale.value]
+      [height, scaleValue, width, x, y, zIndex]
     );
     return /* @__PURE__ */ u(
       "img",
       {
         alt: "",
         role: "presentation",
-        src: url,
+        src,
         className: BackgroundImage_module_default.image,
         style
       }
@@ -22697,18 +22693,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
   function AffectedSquare({
     point,
+    scaleValue,
     tint,
     top = false
   }) {
     const style = (0, import_hooks.useMemo)(
       () => ({
-        left: point.x * scale.value,
-        top: point.y * scale.value,
-        width: scale.value * MapSquareSize,
-        height: scale.value * MapSquareSize,
+        left: point.x * scaleValue,
+        top: point.y * scaleValue,
+        width: scaleValue * MapSquareSize,
+        height: scaleValue * MapSquareSize,
         backgroundColor: tint
       }),
-      [point.x, point.y, tint]
+      [point.x, point.y, scaleValue, tint]
     );
     return /* @__PURE__ */ u(
       "div",
@@ -22720,6 +22717,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
   function BattlefieldEffect({
     name = "Pending",
+    scaleValue,
     shape,
     tags = /* @__PURE__ */ new Set(),
     top: onTop = false,
@@ -22727,10 +22725,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }) {
     const { points, left, top } = (0, import_hooks.useMemo)(() => {
       const points2 = resolveArea(shape);
-      const { x: left2, y: top2 } = points2.average(scale.value);
+      const { x: left2, y: top2 } = points2.average(scaleValue);
       return { points: points2, left: left2, top: top2 };
-    }, [shape]);
-    const squares = Array.from(points, (p, key) => /* @__PURE__ */ u(AffectedSquare, { point: p, tint: tint != null ? tint : "silver", top: onTop }, key));
+    }, [scaleValue, shape]);
+    const squares = Array.from(points, (p, key) => /* @__PURE__ */ u(
+      AffectedSquare,
+      {
+        point: p,
+        tint: tint != null ? tint : "silver",
+        top: onTop,
+        scaleValue
+      },
+      key
+    ));
     return /* @__PURE__ */ u(import_preact3.Fragment, { children: [
       /* @__PURE__ */ u(
         "div",
@@ -22970,7 +22977,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               /* @__PURE__ */ u(UnitMoveButton, { onClick: moved, type: "northeast" })
             ] }),
             showSideHP.value.includes(u2.side) ? /* @__PURE__ */ u(UnitDetailedHP, { u: u2 }) : /* @__PURE__ */ u(UnitBriefHP, { u: u2 }),
-            /* @__PURE__ */ u("div", { className: Unit_module_default.icons, children: u2.effects.map((effect, i2) => /* @__PURE__ */ u(UnitEffectIcon, { effect }, i2)) })
+            /* @__PURE__ */ u("div", { className: Unit_module_default.icons, children: u2.effects.map((effect, key) => /* @__PURE__ */ u(UnitEffectIcon, { effect }, key)) })
           ]
         }
       )
@@ -23028,6 +23035,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       },
       [convertCoordinate, onDragCombatant]
     );
+    const onWheel = (0, import_hooks.useCallback)((e2) => {
+      const change = e2.deltaY < 0 ? 2 : -2;
+      scale.value = clamp(scale.value + change, 4, 30);
+    }, []);
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
       /* @__PURE__ */ u(
@@ -23041,6 +23052,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           onMouseMove,
           onMouseUp,
           onMouseLeave: onMouseOut,
+          onWheel,
           onContextMenu: (e2) => {
             e2.preventDefault();
             return false;
@@ -23058,19 +23070,49 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               },
               unit.id
             )),
-            allEffects.value.map((effect) => /* @__PURE__ */ u(BattlefieldEffect, { ...effect }, effect.id)),
-            ((_a = actionAreas.value) != null ? _a : []).map((shape, i2) => /* @__PURE__ */ u(BattlefieldEffect, { shape, top: true }, `temp${i2}`)),
+            allEffects.value.map((effect) => /* @__PURE__ */ u(
+              BattlefieldEffect,
+              {
+                scaleValue: scale.value,
+                ...effect
+              },
+              effect.id
+            )),
+            ((_a = actionAreas.value) != null ? _a : []).map((shape, key) => /* @__PURE__ */ u(
+              BattlefieldEffect,
+              {
+                scaleValue: scale.value,
+                shape,
+                top: true
+              },
+              `temp${key}`
+            )),
             teleportInfo.value && /* @__PURE__ */ u(
               BattlefieldEffect,
               {
+                scaleValue: scale.value,
                 shape: teleportInfo.value,
                 top: true,
                 name: "Teleport"
               },
               "teleport"
             ),
-            showHoveredTile && hover && /* @__PURE__ */ u(AffectedSquare, { point: hover, tint: "silver" }),
-            images.map((img, i2) => /* @__PURE__ */ u(BackgroundImage, { ...img }, i2))
+            showHoveredTile && hover && /* @__PURE__ */ u(
+              AffectedSquare,
+              {
+                scaleValue: scale.value,
+                point: hover,
+                tint: "silver"
+              }
+            ),
+            images.map((image, key) => /* @__PURE__ */ u(
+              BackgroundImage,
+              {
+                image,
+                scaleValue: scale.value
+              },
+              `bg${key}`
+            ))
           ] })
         }
       )
@@ -23307,13 +23349,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "Points (",
         describeRange(resolver.minimum, resolver.maximum),
         "):",
-        (value != null ? value : []).length ? /* @__PURE__ */ u("ul", { children: (value != null ? value : []).map((p, i2) => /* @__PURE__ */ u("li", { children: [
+        (value != null ? value : []).length ? /* @__PURE__ */ u("ul", { children: (value != null ? value : []).map((p, key) => /* @__PURE__ */ u("li", { children: [
           describePoint(p),
           /* @__PURE__ */ u("button", { onClick: () => remove(p), children: [
             "remove ",
             describePoint(p)
           ] })
-        ] }, i2)) }) : ` NONE`
+        ] }, key)) }) : ` NONE`
       ] }),
       /* @__PURE__ */ u(
         "button",
@@ -23546,6 +23588,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   function ChooseActionConfigPanel({
     g,
     action,
+    active,
     initialConfig = {},
     onCancel,
     onExecute
@@ -23557,7 +23600,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
     (0, import_hooks.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
-    }, [action, activeCombatant.value, config]);
+    }, [action, active, config]);
     const errors = (0, import_hooks.useMemo)(
       () => getConfigErrors(g, action, config).messages,
       [g, action, config]
@@ -23621,12 +23664,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.time, children: action.tags.has("costs attack") ? "attack" : time != null ? time : "no cost" })
       ] }),
       statusWarning,
-      description && /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, i2) => /* @__PURE__ */ u("p", { children: p }, i2)) }),
+      description && /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, key) => /* @__PURE__ */ u("p", { children: p }, key)) }),
       damage && /* @__PURE__ */ u("div", { children: [
         "Damage:",
         " ",
         /* @__PURE__ */ u("div", { className: common_module_default.damageList, children: [
-          damage.map((a, i2) => /* @__PURE__ */ u(AmountElement, { a, type: a.damageType }, i2)),
+          damage.map((a, key) => /* @__PURE__ */ u(AmountElement, { a, type: a.damageType }, key)),
           " ",
           "(",
           Math.ceil(damage.reduce(amountReducer, 0)),
@@ -23637,7 +23680,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "Heal:",
         " ",
         /* @__PURE__ */ u("div", { className: common_module_default.healList, children: [
-          heal.map((a, i2) => /* @__PURE__ */ u(AmountElement, { a }, i2)),
+          heal.map((a, key) => /* @__PURE__ */ u(AmountElement, { a }, key)),
           " ",
           "(",
           Math.ceil(heal.reduce(amountReducer, 0)),
@@ -23648,7 +23691,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         /* @__PURE__ */ u("button", { disabled, onClick: execute, children: "Execute" }),
         /* @__PURE__ */ u("button", { onClick: onCancel, children: "Cancel" }),
         /* @__PURE__ */ u("div", { children: elements }),
-        errors.length > 0 && /* @__PURE__ */ u(Labelled, { label: "Errors", children: errors.map((msg, i2) => /* @__PURE__ */ u("div", { children: msg }, i2)) })
+        errors.length > 0 && /* @__PURE__ */ u(Labelled, { label: "Errors", children: errors.map((msg, key) => /* @__PURE__ */ u("div", { children: msg }, key)) })
       ] })
     ] });
   }
@@ -24360,6 +24403,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           {
             g,
             action,
+            active: activeCombatant.value,
             onCancel: onCancelAction,
             onExecute: onExecuteAction
           }

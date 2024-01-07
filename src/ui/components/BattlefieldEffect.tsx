@@ -4,7 +4,6 @@ import Point from "../../types/Point";
 import { resolveArea } from "../../utils/areas";
 import { CSSProperties, useMemo } from "../lib";
 import classnames from "../utils/classnames";
-import { scale } from "../utils/state";
 import styles from "./BattlefieldEffect.module.scss";
 
 function getAuraColour(tags: Set<AreaTag>) {
@@ -16,23 +15,25 @@ function getAuraColour(tags: Set<AreaTag>) {
 
 interface AffectedSquareProps {
   point: Point;
+  scaleValue: number;
   tint: string;
   top?: boolean;
 }
 export function AffectedSquare({
   point,
+  scaleValue,
   tint,
   top = false,
 }: AffectedSquareProps) {
   const style = useMemo<CSSProperties>(
     () => ({
-      left: point.x * scale.value,
-      top: point.y * scale.value,
-      width: scale.value * MapSquareSize,
-      height: scale.value * MapSquareSize,
+      left: point.x * scaleValue,
+      top: point.y * scaleValue,
+      width: scaleValue * MapSquareSize,
+      height: scaleValue * MapSquareSize,
       backgroundColor: tint,
     }),
-    [point.x, point.y, tint],
+    [point.x, point.y, scaleValue, tint],
   );
 
   return (
@@ -45,14 +46,15 @@ export function AffectedSquare({
 
 interface Props {
   name?: string;
+  scaleValue: number;
   shape: SpecifiedEffectShape;
   tags?: Set<AreaTag>;
   tint?: string;
   top?: boolean;
 }
-
 export default function BattlefieldEffect({
   name = "Pending",
+  scaleValue,
   shape,
   tags = new Set(),
   top: onTop = false,
@@ -60,12 +62,18 @@ export default function BattlefieldEffect({
 }: Props) {
   const { points, left, top } = useMemo(() => {
     const points = resolveArea(shape);
-    const { x: left, y: top } = points.average(scale.value);
+    const { x: left, y: top } = points.average(scaleValue);
     return { points, left, top };
-  }, [shape]);
+  }, [scaleValue, shape]);
 
   const squares = Array.from(points, (p, key) => (
-    <AffectedSquare key={key} point={p} tint={tint ?? "silver"} top={onTop} />
+    <AffectedSquare
+      key={key}
+      point={p}
+      tint={tint ?? "silver"}
+      top={onTop}
+      scaleValue={scaleValue}
+    />
   ));
 
   return (

@@ -3,7 +3,7 @@ import { MapSquareSize } from "../../MapSquare";
 import Combatant from "../../types/Combatant";
 import MoveDirection from "../../types/MoveDirection";
 import Point from "../../types/Point";
-import { round } from "../../utils/numbers";
+import { clamp, round } from "../../utils/numbers";
 import usePanning from "../hooks/usePanning";
 import { useCallback, useState } from "../lib";
 import classnames from "../utils/classnames";
@@ -82,6 +82,11 @@ export default function Battlefield({
     [convertCoordinate, onDragCombatant],
   );
 
+  const onWheel = useCallback((e: WheelEvent) => {
+    const change = e.deltaY < 0 ? 2 : -2;
+    scale.value = clamp(scale.value + change, 4, 30);
+  }, []);
+
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <main
@@ -93,6 +98,7 @@ export default function Battlefield({
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseOut}
+      onWheel={onWheel}
       onContextMenu={(e) => {
         e.preventDefault();
         return false;
@@ -111,24 +117,42 @@ export default function Battlefield({
           />
         ))}
         {allEffects.value.map((effect) => (
-          <BattlefieldEffect key={effect.id} {...effect} />
+          <BattlefieldEffect
+            key={effect.id}
+            scaleValue={scale.value}
+            {...effect}
+          />
         ))}
-        {(actionAreas.value ?? []).map((shape, i) => (
-          <BattlefieldEffect key={`temp${i}`} shape={shape} top={true} />
+        {(actionAreas.value ?? []).map((shape, key) => (
+          <BattlefieldEffect
+            key={`temp${key}`}
+            scaleValue={scale.value}
+            shape={shape}
+            top={true}
+          />
         ))}
         {teleportInfo.value && (
           <BattlefieldEffect
             key="teleport"
+            scaleValue={scale.value}
             shape={teleportInfo.value}
             top={true}
             name="Teleport"
           />
         )}
         {showHoveredTile && hover && (
-          <AffectedSquare point={hover} tint="silver" />
+          <AffectedSquare
+            scaleValue={scale.value}
+            point={hover}
+            tint="silver"
+          />
         )}
-        {images.map((img, i) => (
-          <BackgroundImage key={i} {...img} />
+        {images.map((image, key) => (
+          <BackgroundImage
+            key={`bg${key}`}
+            image={image}
+            scaleValue={scale.value}
+          />
         ))}
       </div>
     </main>

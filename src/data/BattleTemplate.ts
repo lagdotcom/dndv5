@@ -26,7 +26,7 @@ export type BattleTemplateEntry = (PCEntry | MonsterEntry) & {
 };
 
 export interface BattleTemplateImage extends Point {
-  url: string;
+  src: string;
   zIndex?: number;
   width?: number;
   height?: number;

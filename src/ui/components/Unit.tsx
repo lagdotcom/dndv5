@@ -95,8 +95,8 @@ export default function Unit({ isMoving, onClick, onMove, u }: Props) {
         <UnitBriefHP u={u} />
       )}
       <div className={styles.icons}>
-        {u.effects.map((effect, i) => (
-          <UnitEffectIcon key={i} effect={effect} />
+        {u.effects.map((effect, key) => (
+          <UnitEffectIcon key={key} effect={effect} />
         ))}
       </div>
     </div>

@@ -57,7 +57,8 @@ const Shillelagh = simpleSpell<{ item: WeaponItem }>({
       g,
       Array.from(caster.equipment)
         .filter(
-          (i) => i.itemType === "weapon" && shillelaghWeapons.has(i.weaponType),
+          (it) =>
+            it.itemType === "weapon" && shillelaghWeapons.has(it.weaponType),
         )
         .map((value) => ({ label: value.name, value })),
     ),

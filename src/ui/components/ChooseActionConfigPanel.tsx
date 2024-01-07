@@ -24,12 +24,8 @@ import { enumerate } from "../../utils/numbers";
 import { describePoint, describeRange } from "../../utils/text";
 import { useCallback, useEffect, useMemo, useState } from "../lib";
 import classnames from "../utils/classnames";
-import {
-  actionAreas,
-  activeCombatant,
-  wantsCombatant,
-  wantsPoint,
-} from "../utils/state";
+import { actionAreas, wantsCombatant, wantsPoint } from "../utils/state";
+import { UnitData } from "../utils/types";
 import buttonStyles from "./button.module.scss";
 import styles from "./ChooseActionConfigPanel.module.scss";
 import CombatantRef from "./CombatantRef";
@@ -196,8 +192,8 @@ function ChoosePoints({
         ):
         {(value ?? []).length ? (
           <ul>
-            {(value ?? []).map((p, i) => (
-              <li key={i}>
+            {(value ?? []).map((p, key) => (
+              <li key={key}>
                 {describePoint(p)}
                 <button onClick={() => remove(p)}>
                   remove {describePoint(p)}
@@ -472,6 +468,7 @@ function amountReducer(total: number, a: Amount) {
 interface Props<T extends object> {
   g: Engine;
   action: Action<T>;
+  active?: UnitData;
   initialConfig?: Partial<T>;
   onCancel(): void;
   onExecute(action: Action<T>, config: T): void;
@@ -479,6 +476,7 @@ interface Props<T extends object> {
 export default function ChooseActionConfigPanel<T extends object>({
   g,
   action,
+  active,
   initialConfig = {},
   onCancel,
   onExecute,
@@ -492,8 +490,7 @@ export default function ChooseActionConfigPanel<T extends object>({
 
   useEffect(() => {
     actionAreas.value = action.getAffectedArea(config);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action, activeCombatant.value, config]);
+  }, [action, active, config]);
 
   const errors = useMemo(
     () => getConfigErrors(g, action, config).messages,
@@ -576,8 +573,8 @@ export default function ChooseActionConfigPanel<T extends object>({
       {statusWarning}
       {description && (
         <div className={styles.description}>
-          {description.split("\n").map((p, i) => (
-            <p key={i}>{p}</p>
+          {description.split("\n").map((p, key) => (
+            <p key={key}>{p}</p>
           ))}
         </div>
       )}
@@ -585,8 +582,8 @@ export default function ChooseActionConfigPanel<T extends object>({
         <div>
           Damage:{" "}
           <div className={commonStyles.damageList}>
-            {damage.map((a, i) => (
-              <AmountElement key={i} a={a} type={a.damageType} />
+            {damage.map((a, key) => (
+              <AmountElement key={key} a={a} type={a.damageType} />
             ))}{" "}
             ({Math.ceil(damage.reduce(amountReducer, 0))})
           </div>
@@ -596,8 +593,8 @@ export default function ChooseActionConfigPanel<T extends object>({
         <div>
           Heal:{" "}
           <div className={commonStyles.healList}>
-            {heal.map((a, i) => (
-              <AmountElement key={i} a={a} />
+            {heal.map((a, key) => (
+              <AmountElement key={key} a={a} />
             ))}{" "}
             ({Math.ceil(heal.reduce(amountReducer, 0))})
           </div>
@@ -612,8 +609,8 @@ export default function ChooseActionConfigPanel<T extends object>({
           <div>{elements}</div>
           {errors.length > 0 && (
             <Labelled label="Errors">
-              {errors.map((msg, i) => (
-                <div key={i}>{msg}</div>
+              {errors.map((msg, key) => (
+                <div key={key}>{msg}</div>
               ))}
             </Labelled>
           )}
