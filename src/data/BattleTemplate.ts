@@ -1,4 +1,5 @@
 import Engine from "../Engine";
+import { AlignmentPair } from "../types/Alignment";
 import Combatant from "../types/Combatant";
 import Item from "../types/Item";
 import Point from "../types/Point";
@@ -23,6 +24,7 @@ export type BattleTemplateEntry = (PCEntry | MonsterEntry) & {
   x: number;
   y: number;
   initiative?: number;
+  alignment?: AlignmentPair;
 };
 
 export interface BattleTemplateImage extends Point {
@@ -42,7 +44,7 @@ export function initialiseFromTemplate(
   g: Engine,
   { combatants }: BattleTemplate,
 ) {
-  for (const { type, name, side, x, y, initiative } of combatants) {
+  for (const { type, name, side, x, y, initiative, alignment } of combatants) {
     const who =
       type === "pc" ? initialisePC(g, allPCs[name]) : allMonsters[name](g);
     if (typeof side === "number") who.side = side;
@@ -51,6 +53,12 @@ export function initialiseFromTemplate(
     if (typeof initiative === "number") {
       g.dice.force(initiative, { type: "initiative", who });
       g.dice.force(initiative, { type: "initiative", who });
+    }
+
+    if (alignment) {
+      const [lc, ge] = alignment;
+      who.alignLC = lc;
+      who.alignGE = ge;
     }
   }
   return g.start();

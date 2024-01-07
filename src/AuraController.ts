@@ -3,6 +3,7 @@ import Engine from "./Engine";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
+import SubscriptionBag from "./SubscriptionBag";
 import Combatant from "./types/Combatant";
 import { AreaTag } from "./types/EffectArea";
 import { SetInitialiser } from "./utils/set";
@@ -12,6 +13,7 @@ export type AuraActiveChecker = (who: Combatant) => boolean;
 
 export default class AuraController {
   area?: ActiveEffectArea;
+  bag: SubscriptionBag;
   tags: Set<AreaTag>;
 
   constructor(
@@ -28,9 +30,11 @@ export default class AuraController {
     this.update();
 
     const onEvent = this.onEvent.bind(this);
-    g.events.on("CombatantMoved", onEvent);
-    g.events.on("EffectAdded", onEvent);
-    g.events.on("EffectRemoved", onEvent);
+    this.bag = new SubscriptionBag(
+      g.events.on("CombatantMoved", onEvent),
+      g.events.on("EffectAdded", onEvent),
+      g.events.on("EffectRemoved", onEvent),
+    );
   }
 
   get active() {
@@ -74,5 +78,10 @@ export default class AuraController {
 
   isAffecting(other: Combatant) {
     return this.active && distance(this.who, other) <= this.radius;
+  }
+
+  destroy() {
+    this.remove();
+    this.bag.cleanup();
   }
 }

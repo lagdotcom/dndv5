@@ -14,6 +14,7 @@ const Marvoril: PCTemplate = {
       "Extra Language": "Dwarvish",
     },
   },
+  alignment: ["Lawful", "Neutral"],
   background: {
     name: "Acolyte",
     proficiencies: ["Survival", "Investigation"],

@@ -6,6 +6,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import OncePerTurnController from "../../OncePerTurnController";
 import PointResolver from "../../resolvers/PointResolver";
 import PointToPointResolver from "../../resolvers/PointToPointResolver";
 import SubscriptionBag from "../../SubscriptionBag";
@@ -75,9 +76,9 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
 class MoonbeamController {
   area: ActiveEffectArea;
   hasBeenATurn: boolean;
-  hurtThisTurn: Set<Combatant>;
   shape: SpecifiedCylinder;
   bag: SubscriptionBag;
+  opt: OncePerTurnController;
 
   constructor(
     public g: Engine,
@@ -96,11 +97,11 @@ class MoonbeamController {
     g.addEffectArea(this.area);
 
     this.hasBeenATurn = false;
-    this.hurtThisTurn = new Set();
+    this.opt = new OncePerTurnController(g);
 
+    /* When a creature enters the spell's area for the first time on a turn or starts its turn there... */
     this.bag = new SubscriptionBag(
       g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
-        this.hurtThisTurn.clear();
         if (who === this.caster) this.hasBeenATurn = true;
 
         if (g.getInside(this.shape).includes(who))
@@ -122,11 +123,11 @@ class MoonbeamController {
   }
 
   getDamager(target: Combatant) {
-    const { hurtThisTurn, g, slot, caster: attacker, method } = this;
+    const { opt, g, slot, caster: attacker, method } = this;
 
     return new EvaluateLater(target, Moonbeam, Priority.Normal, async () => {
-      if (hurtThisTurn.has(target)) return;
-      hurtThisTurn.add(target);
+      if (!opt.canBeAffected(target)) return;
+      opt.affect(target);
 
       const damage = await g.rollDamage(slot, {
         attacker,

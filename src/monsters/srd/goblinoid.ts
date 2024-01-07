@@ -34,6 +34,8 @@ const NimbleEscape = new SimpleFeature(
 export class Goblin extends Monster {
   constructor(g: Engine, wieldingBow = false) {
     super(g, "goblin", 0.25, "humanoid", SizeCategory.Small, goblinUrl, 7);
+    this.alignLC = "Neutral";
+    this.alignGE = "Evil";
     this.addProficiency("Stealth", "expertise");
     this.senses.set("darkvision", 60);
     this.languages.add("Common");

@@ -7,6 +7,7 @@ const Hagrond: PCTemplate = {
   tokenUrl,
   abilities: [15, 15, 13, 10, 8, 10],
   race: { name: "Stout Halfling" },
+  alignment: ["Chaotic", "Good"],
   background: {
     name: "Folk Hero",
     proficiencies: ["Sleight of Hand", "woodcarver's tools"],

@@ -7,6 +7,7 @@ const Faerfarn: PCTemplate = {
   tokenUrl,
   abilities: [15, 14, 12, 10, 13, 8],
   race: { name: "Gold Dragonborn" },
+  alignment: ["Neutral", "Neutral"],
   background: { name: "Soldier", proficiencies: ["dragonchess set"] },
   levels: [
     {

@@ -7,6 +7,7 @@ const Aura: PCTemplate = {
   tokenUrl,
   abilities: [8, 15, 11, 14, 9, 14],
   race: { name: "Air Genasi" },
+  alignment: ["Chaotic", "Neutral"],
   background: {
     name: "Criminal",
     proficiencies: ["Medicine", "Athletics", "dice set", "horn"],

@@ -1,4 +1,5 @@
 import AbilityName from "../types/AbilityName";
+import { AlignmentPair } from "../types/Alignment";
 import HasProficiency from "../types/HasProficiency";
 import LanguageName from "../types/LanguageName";
 import PCClassName from "../types/PCClassName";
@@ -29,6 +30,7 @@ export default interface PCTemplate {
     configs?: FeatureConfigs;
     languages?: LanguageName[];
   };
+  alignment: AlignmentPair;
   background: {
     name: BackgroundName;
     languages?: LanguageName[];

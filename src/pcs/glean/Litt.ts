@@ -7,10 +7,11 @@ const Litt: PCTemplate = {
   tokenUrl,
   abilities: [8, 10, 14, 12, 15, 13],
   race: { name: "Fire Genasi" },
+  alignment: ["Chaotic", "Good"],
   background: {
     name: "Outlander",
     proficiencies: ["pan flute"],
-    languages: [], // TODO
+    languages: ["Infernal"],
   },
   levels: [{ class: "Druid", proficiencies: ["Animal Handling", "Insight"] }],
   items: [

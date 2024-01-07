@@ -67,6 +67,7 @@ import MeldIntoStone from "../spells/level3/MeldIntoStone";
 import MelfsMinuteMeteors from "../spells/level3/MelfsMinuteMeteors";
 import SleetStorm from "../spells/level3/SleetStorm";
 import Slow from "../spells/level3/Slow";
+import SpiritGuardians from "../spells/level3/SpiritGuardians";
 import WallOfWater from "../spells/level3/WallOfWater";
 import WaterBreathing from "../spells/level3/WaterBreathing";
 import WaterWalk from "../spells/level3/WaterWalk";
@@ -153,6 +154,7 @@ const allSpells = {
   "Melf's minute meteors": MelfsMinuteMeteors,
   "sleet storm": SleetStorm,
   slow: Slow,
+  "spirit guardians": SpiritGuardians,
   "wall of water": WallOfWater,
   "water breathing": WaterBreathing,
   "water walk": WaterWalk,

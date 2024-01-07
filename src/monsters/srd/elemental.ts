@@ -9,6 +9,7 @@ import { notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Monster from "../../Monster";
+import OncePerTurnController from "../../OncePerTurnController";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
@@ -28,6 +29,8 @@ const DoubleAttack = makeMultiattack(
 class Elemental extends Monster {
   constructor(g: Engine, name: string, tokenUrl: string, hpMax: number) {
     super(g, name, 5, "elemental", SizeCategory.Large, tokenUrl, hpMax);
+    this.alignLC = "Neutral";
+    this.alignGE = "Neutral";
 
     this.addFeature(MundaneDamageResistance);
     this.damageResponses.set("poison", "immune");
@@ -161,14 +164,13 @@ const FireForm = new SimpleFeature(
 
     // The first time it enters a creature's space on a turn, that creature takes 5 (1d10) fire damage and catches fire; until someone takes an action to douse the fire, the creature takes 5 (1d10) fire damage at the start of each of its turns.
     const area: SpecifiedWithin = { type: "within", who: me, radius: 0 };
-    const thisTurn = new Set<Combatant>();
-    g.events.on("TurnStarted", () => thisTurn.clear());
+    const opt = new OncePerTurnController(g);
     g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
       if (who === me)
         for (const target of g
           .getInside(area, [me])
-          .filter((other) => !thisTurn.has(other))) {
-          thisTurn.add(target);
+          .filter(opt.canBeAffected)) {
+          opt.affect(target);
           interrupt.add(
             new EvaluateLater(me, FireForm, Priority.Normal, async () => {
               await applyFireDamage(target);

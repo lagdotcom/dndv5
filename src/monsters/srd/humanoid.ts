@@ -95,6 +95,7 @@ import MistyStep from "../../spells/level2/MistyStep";
 import Counterspell from "../../spells/level3/Counterspell";
 import Fireball from "../../spells/level3/Fireball";
 import LightningBolt from "../../spells/level3/LightningBolt";
+import SpiritGuardians from "../../spells/level3/SpiritGuardians";
 import IceStorm from "../../spells/level4/IceStorm";
 import Stoneskin from "../../spells/level4/Stoneskin";
 import ConeOfCold from "../../spells/level5/ConeOfCold";
@@ -295,6 +296,7 @@ const assassinPoison: Enchantment<"weapon"> = {
 export class Assassin extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
     super(g, "assassin", 8, "humanoid", SizeCategory.Medium, assassinUrl, 78);
+    // TODO any non-good alignment
     this.don(new StuddedLeatherArmor(g), true);
     this.setAbilityScores(11, 16, 14, 13, 11, 10);
     this.addProficiency("dex", "proficient");
@@ -327,6 +329,7 @@ export class Assassin extends Monster {
 export class Bandit extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
     super(g, "bandit", 0.125, "humanoid", SizeCategory.Medium, banditUrl, 11);
+    // TODO any non-lawful alignment
     this.don(new LeatherArmor(g), true);
     this.setAbilityScores(11, 12, 12, 10, 10, 10);
     this.languages.add("Common"); // any one language (usually Common)
@@ -364,6 +367,7 @@ export class BanditCaptain extends Monster {
       banditCaptainUrl,
       65,
     );
+    // TODO any non-lawful alignment
     this.don(new StuddedLeatherArmor(g), true);
     this.setAbilityScores(15, 16, 14, 14, 11, 14);
     this.addProficiency("str", "proficient");
@@ -387,6 +391,7 @@ export class BanditCaptain extends Monster {
 export class Berserker extends Monster {
   constructor(g: Engine) {
     super(g, "berserker", 2, "humanoid", SizeCategory.Medium, berserkerUrl, 67);
+    this.alignLC = "Chaotic";
     this.don(new HideArmor(g), true);
     this.setAbilityScores(16, 12, 17, 9, 11, 9);
     this.languages.add("Common"); // any one language (usually Common)
@@ -423,6 +428,7 @@ const DarkDevotion = new SimpleFeature(
 export class Cultist extends Monster {
   constructor(g: Engine) {
     super(g, "cultist", 0.125, "humanoid", SizeCategory.Medium, cultistUrl, 9);
+    // TODO any non-good alignment
     this.don(new LeatherArmor(g), true);
     this.setAbilityScores(11, 12, 10, 10, 11, 10);
     this.addProficiency("Deception", "proficient");
@@ -450,6 +456,7 @@ export class CultFanatic extends Monster {
       cultFanaticUrl,
       33,
     );
+    // TODO any non-good alignment
     this.don(new LeatherArmor(g), true);
     this.setAbilityScores(11, 14, 12, 10, 13, 14);
     this.addProficiency("Deception", "proficient");
@@ -727,7 +734,7 @@ export class Priest extends Monster {
       LesserRestoration,
       // TODO SpiritualWeapon,
       // TODO DispelMagic,
-      // TODO SpiritGuardians,
+      SpiritGuardians,
     );
 
     this.don(new Mace(g), true);
@@ -804,6 +811,7 @@ const ThugMultiattack = makeBagMultiattack(
 export class Thug extends Monster {
   constructor(g: Engine, wieldingCrossbow = false) {
     super(g, "thug", 0.5, "humanoid", SizeCategory.Medium, thugUrl, 32);
+    // TODO any non-good alignment
     this.don(new LeatherArmor(g), true);
     this.setAbilityScores(15, 11, 14, 10, 10, 11);
     this.addProficiency("Intimidation", "proficient");

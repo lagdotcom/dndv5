@@ -86,6 +86,8 @@ const TentaclesFeature = new SimpleFeature("Tentacles", "", (g, me) => {
 export class Chuul extends Monster {
   constructor(g: Engine) {
     super(g, "chuul", 4, "aberration", SizeCategory.Large, chuulUrl, 93);
+    this.alignLC = "Chaotic";
+    this.alignGE = "Evil";
     this.naturalAC = 16;
     this.movement.set("swim", 30);
     this.setAbilityScores(19, 10, 16, 5, 11, 5);

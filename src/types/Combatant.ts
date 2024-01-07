@@ -4,6 +4,7 @@ import Action from "./Action";
 import ActionTime from "./ActionTime";
 import AICoefficient from "./AICoefficient";
 import AIRule from "./AIRule";
+import { GEAlignment, LCAlignment } from "./Alignment";
 import CombatantGroup from "./CombatantGroup";
 import CombatantScore from "./CombatantScore";
 import Concentration from "./Concentration";
@@ -41,6 +42,8 @@ export default interface Combatant extends Source {
   id: CombatantID;
   img: string;
   type: CreatureType;
+  alignGE?: GEAlignment;
+  alignLC?: LCAlignment;
   size: SizeCategory;
   sizeInUnits: number;
   side: number;
@@ -122,8 +125,11 @@ export default interface Combatant extends Source {
   getResource(resource: Resource): number;
   getResourceMax(resource: Resource): number;
   removeResource(resource: Resource): void;
+
   endConcentration(spell?: Spell): Promise<void>;
   concentrateOn(entry: Concentration): Promise<void>;
+  isConcentratingOn(spell: Spell): boolean;
+
   finalise(): void;
   addEffect<T>(
     effect: EffectType<T>,
@@ -140,9 +146,9 @@ export default interface Combatant extends Source {
   regainTime(time: ActionTime): void;
   resetTime(): void;
   getCoefficient(co: AICoefficient): number;
+
   don(item: Item): boolean;
   doff(item: Item): boolean;
-
   addToInventory(item: Item, quantity?: number): void;
   removeFromInventory(item: Item, quantity?: number): boolean;
 }

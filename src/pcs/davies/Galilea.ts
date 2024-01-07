@@ -10,6 +10,7 @@ const Galilea: PCTemplate = {
     name: "Human",
     configs: { "Extra Language": "Sylvan" },
   },
+  alignment: ["Lawful", "Neutral"],
   background: {
     name: "Noble",
     proficiencies: ["playing card set"],

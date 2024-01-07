@@ -14,6 +14,7 @@ const Shaira: PCTemplate = {
       "Extra Language": ["Dwarvish"],
     },
   },
+  alignment: ["Chaotic", "Good"],
   background: { name: "Criminal", proficiencies: ["playing card set"] },
   levels: [
     {

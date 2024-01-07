@@ -166,6 +166,8 @@ export default class OGonrit extends Monster {
       new DamageRule(),
       new StayNearAlliesRule(FiendishMantleRange),
     ]);
+    this.alignLC = "Neutral";
+    this.alignGE = "Evil";
     this.coefficients.set(HealAllies, 1.2);
     this.groups.add(FiendishParty);
     this.diesAtZero = false;

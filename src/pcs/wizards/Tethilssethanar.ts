@@ -7,6 +7,7 @@ const Tethilssethanar: PCTemplate = {
   tokenUrl,
   abilities: [9, 14, 13, 8, 15, 13],
   race: { name: "Triton" },
+  alignment: ["Lawful", "Neutral"],
   background: {
     name: "Knight",
     proficiencies: ["playing card set"],

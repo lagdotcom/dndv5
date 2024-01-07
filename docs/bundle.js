@@ -2144,7 +2144,9 @@
       naturalAC = 10,
       rules,
       coefficients,
-      groups
+      groups,
+      alignGE,
+      alignLC
     }) {
       this.g = g;
       this.name = name;
@@ -2206,6 +2208,8 @@
       this.coefficients = new Map(coefficients);
       this.groups = new Set(groups);
       this.spellsSoFar = [];
+      this.alignGE = alignGE;
+      this.alignLC = alignLC;
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -2595,6 +2599,13 @@
       else
         this.inventory.set(item, count - quantity);
       return true;
+    }
+    isConcentratingOn(spell) {
+      for (const entry of this.concentratingOn) {
+        if (entry.spell === spell)
+          return true;
+      }
+      return false;
     }
   };
 
@@ -6216,6 +6227,8 @@
   var Birnotec = class extends Monster {
     constructor(g) {
       super(g, "Birnotec", 5, "humanoid", SizeCategory_default.Medium, birnotec_default, 35);
+      this.alignLC = "Lawful";
+      this.alignGE = "Evil";
       this.diesAtZero = false;
       this.setAbilityScores(6, 15, 8, 12, 13, 20);
       this.pb = 3;
@@ -7180,6 +7193,8 @@
   var Kay = class extends Monster {
     constructor(g) {
       super(g, hiddenName, 6, "humanoid", SizeCategory_default.Medium, kay_default, 75);
+      this.alignLC = "Chaotic";
+      this.alignGE = "Neutral";
       this.diesAtZero = false;
       this.setAbilityScores(14, 18, 16, 10, 8, 14);
       this.pb = 3;
@@ -7240,6 +7255,24 @@
     }
   };
 
+  // src/SubscriptionBag.ts
+  var SubscriptionBag = class {
+    constructor(...items) {
+      this.set = new Set(items);
+    }
+    add(...items) {
+      for (const item of items)
+        this.set.add(item);
+      return this;
+    }
+    cleanup() {
+      for (const cleanup of this.set)
+        cleanup();
+      this.set.clear();
+      return this;
+    }
+  };
+
   // src/AuraController.ts
   var AuraController = class {
     constructor(g, name, who, radius, tags = [], tint, handler, shouldBeActive = () => true) {
@@ -7253,9 +7286,11 @@
       this.tags = new Set(tags);
       this.update();
       const onEvent = this.onEvent.bind(this);
-      g.events.on("CombatantMoved", onEvent);
-      g.events.on("EffectAdded", onEvent);
-      g.events.on("EffectRemoved", onEvent);
+      this.bag = new SubscriptionBag(
+        g.events.on("CombatantMoved", onEvent),
+        g.events.on("EffectAdded", onEvent),
+        g.events.on("EffectRemoved", onEvent)
+      );
     }
     get active() {
       return typeof this.area !== "undefined";
@@ -7294,6 +7329,10 @@
     }
     isAffecting(other) {
       return this.active && distance(this.who, other) <= this.radius;
+    }
+    destroy() {
+      this.remove();
+      this.bag.cleanup();
     }
   };
 
@@ -7798,26 +7837,23 @@
         name += `, ${filter.name}`;
       return name;
     }
-    check(value, action, ec) {
+    check(rawValue, action, ec) {
       const getErrors = (filters, v) => filters.filter((filter) => !filter.check(this.g, action, v)).map((filter) => filter.message);
-      if (!isCombatantArray(value)) {
-        ec.add("No target", this);
-      } else {
-        if (value.length < this.minimum)
-          ec.add(`At least ${this.minimum} targets`, this);
-        if (value.length > this.maximum)
-          ec.add(`At most ${this.maximum} targets`, this);
-        for (const who of value) {
-          const isOutOfRange = distance(action.actor, who) > this.maxRange;
-          const errors = getErrors(this.filters, who).map(
-            (error) => `${who.name}: ${error}`
-          );
-          if (isOutOfRange)
-            ec.add(`${who.name}: Out of range`, this);
-          ec.addMany(errors, this);
-        }
-        ec.addMany(getErrors(this.allFilters, value), this);
+      const value = isCombatantArray(rawValue) ? rawValue : [];
+      if (value.length < this.minimum)
+        ec.add(`At least ${this.minimum} targets`, this);
+      if (value.length > this.maximum)
+        ec.add(`At most ${this.maximum} targets`, this);
+      for (const who of value) {
+        const isOutOfRange = distance(action.actor, who) > this.maxRange;
+        const errors = getErrors(this.filters, who).map(
+          (error) => `${who.name}: ${error}`
+        );
+        if (isOutOfRange)
+          ec.add(`${who.name}: Out of range`, this);
+        ec.addMany(errors, this);
       }
+      ec.addMany(getErrors(this.allFilters, value), this);
       return ec;
     }
   };
@@ -8006,6 +8042,8 @@
         new DamageRule(),
         new StayNearAlliesRule(FiendishMantleRange)
       ]);
+      this.alignLC = "Neutral";
+      this.alignGE = "Evil";
       this.coefficients.set(HealAllies, 1.2);
       this.groups.add(FiendishParty);
       this.diesAtZero = false;
@@ -8370,6 +8408,8 @@
   var Yulash = class extends Monster {
     constructor(g) {
       super(g, "Yulash", 5, "monstrosity", SizeCategory_default.Medium, yulash_default, 65);
+      this.alignLC = "Chaotic";
+      this.alignGE = "Evil";
       this.diesAtZero = false;
       this.setAbilityScores(8, 16, 14, 12, 13, 18);
       this.pb = 3;
@@ -8580,6 +8620,8 @@
   var Zafron = class extends Monster {
     constructor(g) {
       super(g, "Zafron Halehart", 5, "fiend", SizeCategory_default.Medium, zafron_default, 105);
+      this.alignLC = "Chaotic";
+      this.alignGE = "Evil";
       this.diesAtZero = false;
       this.setAbilityScores(18, 14, 20, 7, 10, 13);
       this.pb = 3;
@@ -8728,6 +8770,8 @@
   var Chuul = class extends Monster {
     constructor(g) {
       super(g, "chuul", 4, "aberration", SizeCategory_default.Large, chuul_default, 93);
+      this.alignLC = "Chaotic";
+      this.alignGE = "Evil";
       this.naturalAC = 16;
       this.movement.set("swim", 30);
       this.setAbilityScores(19, 10, 16, 5, 11, 5);
@@ -8948,6 +8992,21 @@
   // src/img/tok/water-elemental.png
   var water_elemental_default = "./water-elemental-6HXVIUWU.png";
 
+  // src/OncePerTurnController.ts
+  var OncePerTurnController = class {
+    constructor(g) {
+      this.g = g;
+      this.affected = /* @__PURE__ */ new Set();
+      g.events.on("TurnStarted", () => this.affected.clear());
+    }
+    canBeAffected(who) {
+      return !this.affected.has(who);
+    }
+    affect(who) {
+      this.affected.add(who);
+    }
+  };
+
   // src/monsters/srd/elemental.ts
   var DoubleAttack = makeMultiattack(
     `The elemental makes two attacks.`,
@@ -8956,6 +9015,8 @@
   var Elemental = class extends Monster {
     constructor(g, name, tokenUrl, hpMax) {
       super(g, name, 5, "elemental", SizeCategory_default.Large, tokenUrl, hpMax);
+      this.alignLC = "Neutral";
+      this.alignGE = "Neutral";
       this.addFeature(MundaneDamageResistance);
       this.damageResponses.set("poison", "immune");
       this.addFeature(ExhaustionImmunity);
@@ -9058,12 +9119,11 @@ If the saving throw is successful, the target takes half the bludgeoning damage 
         }
       );
       const area = { type: "within", who: me, radius: 0 };
-      const thisTurn = /* @__PURE__ */ new Set();
-      g.events.on("TurnStarted", () => thisTurn.clear());
+      const opt = new OncePerTurnController(g);
       g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
         if (who === me)
-          for (const target of g.getInside(area, [me]).filter((other) => !thisTurn.has(other))) {
-            thisTurn.add(target);
+          for (const target of g.getInside(area, [me]).filter(opt.canBeAffected)) {
+            opt.affect(target);
             interrupt.add(
               new EvaluateLater(me, FireForm, Priority_default.Normal, async () => {
                 await applyFireDamage(target);
@@ -9151,6 +9211,8 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
   var Goblin = class extends Monster {
     constructor(g, wieldingBow = false) {
       super(g, "goblin", 0.25, "humanoid", SizeCategory_default.Small, goblin_default, 7);
+      this.alignLC = "Neutral";
+      this.alignGE = "Evil";
       this.addProficiency("Stealth", "expertise");
       this.senses.set("darkvision", 60);
       this.languages.add("Common");
@@ -9820,24 +9882,6 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
 
   // src/classes/druid/common.ts
   var DruidIcon = makeIcon(druid_default2, ClassColours.Druid);
-
-  // src/SubscriptionBag.ts
-  var SubscriptionBag = class {
-    constructor(...items) {
-      this.set = new Set(items);
-    }
-    add(...items) {
-      for (const item of items)
-        this.set.add(item);
-      return this;
-    }
-    cleanup() {
-      for (const cleanup of this.set)
-        cleanup();
-      this.set.clear();
-      return this;
-    }
-  };
 
   // src/classes/druid/WildShape.ts
   var WildShapeResource = new ShortRestResource("Wild Shape", 2);
@@ -12024,6 +12068,141 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   });
   var LightningBolt_default = LightningBolt;
 
+  // src/spells/level3/SpiritGuardians.ts
+  var getSpiritGuardiansArea = (who) => ({
+    type: "within",
+    who,
+    radius: 15
+  });
+  var isEvil = (who) => who.alignGE === "Evil";
+  var getSpiritGuardiansDamage = (caster, slot) => _dd(slot, 8, isEvil(caster) ? "necrotic" : "radiant");
+  function* getSpiritGuardianAuras(g, who) {
+    for (const other of g.combatants) {
+      const config = other.getEffectConfig(SpiritGuardiansEffect);
+      if (config && !config.immune.has(who) && other !== who && // not strictly true, but...
+      config.aura.isAffecting(who) && config.opt.canBeAffected(who))
+        yield config;
+    }
+  }
+  var SpiritGuardiansEffect = new Effect(
+    "Spirit Guardians",
+    "turnStart",
+    (g) => {
+      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+        for (const _ of getSpiritGuardianAuras(g, who))
+          multiplier.add("half", SpiritGuardiansEffect);
+      });
+      g.events.on("CombatantMoved", ({ detail: { who, interrupt } }) => {
+        for (const config of getSpiritGuardianAuras(g, who)) {
+          interrupt.add(getAuraDamager(who, config));
+        }
+      });
+      g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
+        for (const config of getSpiritGuardianAuras(g, who)) {
+          interrupt.add(getAuraDamager(who, config));
+        }
+      });
+      const getAuraDamager = (target, { opt, slot, caster: attacker, method }) => new EvaluateLater(
+        target,
+        SpiritGuardiansEffect,
+        Priority_default.Normal,
+        async () => {
+          opt.affect(target);
+          const {
+            amount: { count, size },
+            damageType
+          } = getSpiritGuardiansDamage(attacker, slot);
+          const damage = await g.rollDamage(count, {
+            attacker,
+            damageType,
+            method,
+            size,
+            source: SpiritGuardiansEffect,
+            spell: SpiritGuardians,
+            tags: atSet("magical", "spell"),
+            target
+          });
+          const { damageResponse } = await g.save({
+            source: SpiritGuardiansEffect,
+            type: method.getSaveType(attacker, SpiritGuardians, slot),
+            attacker,
+            who: target,
+            ability: "con",
+            spell: SpiritGuardians,
+            method,
+            tags: ["magic"]
+          });
+          await g.damage(
+            SpiritGuardiansEffect,
+            damageType,
+            { attacker, spell: SpiritGuardians, method, target },
+            [[damageType, damage]],
+            damageResponse
+          );
+        }
+      );
+    },
+    { tags: ["magic"] }
+  );
+  var SpiritGuardians = scalingSpell({
+    status: "implemented",
+    name: "Spirit Guardians",
+    level: 3,
+    school: "Conjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a holy symbol",
+    lists: ["Cleric"],
+    description: `You call forth spirits to protect you. They flit around you to a distance of 15 feet for the duration. If you are good or neutral, their spectral form appears angelic or fey (your choice). If you are evil, they appear fiendish.
+
+  When you cast this spell, you can designate any number of creatures you can see to be unaffected by it. An affected creature's speed is halved in the area, and when the creature enters the area for the first time on a turn or starts its turn there, it must make a Wisdom saving throw. On a failed save, the creature takes 3d8 radiant damage (if you are good or neutral) or 3d8 necrotic damage (if you are evil). On a successful save, the creature takes half as much damage.
+  
+  At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d8 for each slot level above 3rd.`,
+    isHarmful: true,
+    getConfig: (g) => ({
+      targets: new MultiTargetResolver(g, 0, Infinity, Infinity, [canSee])
+    }),
+    getTargets: () => [],
+    getAffectedArea: (_g, caster) => [getSpiritGuardiansArea(caster)],
+    getAffected: (g, caster, { targets }) => g.getInside(getSpiritGuardiansArea(caster), targets),
+    getDamage: (_g, caster, _method, { slot }) => [
+      getSpiritGuardiansDamage(caster, slot != null ? slot : 3)
+    ],
+    async apply({ g, caster, method }, { slot, targets }) {
+      const aura = new AuraController(
+        g,
+        "Spirit Guardians",
+        caster,
+        15,
+        [isEvil(caster) ? "profane" : "holy"],
+        isEvil(caster) ? "purple" : "yellow"
+      ).setActiveChecker(
+        (who) => who.hasEffect(SpiritGuardiansEffect) && who.isConcentratingOn(SpiritGuardians)
+      );
+      const duration = minutes(10);
+      await caster.addEffect(SpiritGuardiansEffect, {
+        aura,
+        opt: new OncePerTurnController(g),
+        duration,
+        slot,
+        caster,
+        method,
+        immune: new Set(targets)
+      });
+      await caster.concentrateOn({
+        spell: SpiritGuardians,
+        duration,
+        async onSpellEnd() {
+          await caster.removeEffect(SpiritGuardiansEffect);
+          aura.destroy();
+        }
+      });
+      aura.update();
+    }
+  });
+  var SpiritGuardians_default = SpiritGuardians;
+
   // src/spells/level4/IceStorm.ts
   var getIceStormArea = (centre) => ({
     type: "cylinder",
@@ -12471,6 +12650,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   var Berserker = class extends Monster {
     constructor(g) {
       super(g, "berserker", 2, "humanoid", SizeCategory_default.Medium, berserker_default, 67);
+      this.alignLC = "Chaotic";
       this.don(new HideArmor(g), true);
       this.setAbilityScores(16, 12, 17, 9, 11, 9);
       this.languages.add("Common");
@@ -12763,10 +12943,10 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
         CureWounds_default,
         GuidingBolt_default,
         Sanctuary_default,
-        LesserRestoration_default
+        LesserRestoration_default,
         // TODO SpiritualWeapon,
         // TODO DispelMagic,
-        // TODO SpiritGuardians,
+        SpiritGuardians_default
       );
       this.don(new Mace(g), true);
     }
@@ -12948,6 +13128,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tokenUrl: aura_default,
     abilities: [8, 15, 11, 14, 9, 14],
     race: { name: "Air Genasi" },
+    alignment: ["Chaotic", "Neutral"],
     background: {
       name: "Criminal",
       proficiencies: ["Medicine", "Athletics", "dice set", "horn"]
@@ -13000,6 +13181,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       abilities: ["dex", "con", "str"],
       languages: ["Draconic"]
     },
+    alignment: ["Lawful", "Neutral"],
     background: {
       name: "Sage",
       proficiencies: ["Perception"],
@@ -13064,6 +13246,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       name: "Human",
       configs: { "Extra Language": "Sylvan" }
     },
+    alignment: ["Lawful", "Neutral"],
     background: {
       name: "Noble",
       proficiencies: ["playing card set"],
@@ -13116,6 +13299,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tokenUrl: hagrond_default,
     abilities: [15, 15, 13, 10, 8, 10],
     race: { name: "Stout Halfling" },
+    alignment: ["Chaotic", "Good"],
     background: {
       name: "Folk Hero",
       proficiencies: ["Sleight of Hand", "woodcarver's tools"]
@@ -13173,6 +13357,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       name: "Mountain Dwarf",
       configs: { "Tool Proficiency": "mason's tools" }
     },
+    alignment: ["Neutral", "Good"],
     background: { name: "Sage", languages: ["Elvish", "Giant"] },
     levels: [
       { class: "Druid", proficiencies: ["Insight", "Survival"] },
@@ -13239,6 +13424,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tokenUrl: esles_default,
     abilities: [8, 13, 14, 10, 12, 15],
     race: { name: "Tiefling (Asmodeus)" },
+    alignment: ["Lawful", "Evil"],
     background: { name: "Sage", languages: ["Abyssal", "Celestial"] },
     levels: [
       {
@@ -13271,6 +13457,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tokenUrl: faerfarn_default,
     abilities: [15, 14, 12, 10, 13, 8],
     race: { name: "Gold Dragonborn" },
+    alignment: ["Neutral", "Neutral"],
     background: { name: "Soldier", proficiencies: ["dragonchess set"] },
     levels: [
       {
@@ -13301,11 +13488,11 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tokenUrl: litt_default,
     abilities: [8, 10, 14, 12, 15, 13],
     race: { name: "Fire Genasi" },
+    alignment: ["Chaotic", "Good"],
     background: {
       name: "Outlander",
       proficiencies: ["pan flute"],
-      languages: []
-      // TODO
+      languages: ["Infernal"]
     },
     levels: [{ class: "Druid", proficiencies: ["Animal Handling", "Insight"] }],
     items: [
@@ -13339,6 +13526,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
         "Extra Language": "Dwarvish"
       }
     },
+    alignment: ["Lawful", "Neutral"],
     background: {
       name: "Acolyte",
       proficiencies: ["Survival", "Investigation"],
@@ -13369,6 +13557,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
         "Extra Language": ["Dwarvish"]
       }
     },
+    alignment: ["Chaotic", "Good"],
     background: { name: "Criminal", proficiencies: ["playing card set"] },
     levels: [
       {
@@ -13408,6 +13597,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     tokenUrl: tethilssethanar_default,
     abilities: [9, 14, 13, 8, 15, 13],
     race: { name: "Triton" },
+    alignment: ["Lawful", "Neutral"],
     background: {
       name: "Knight",
       proficiencies: ["playing card set"],
@@ -17547,10 +17737,9 @@ At the end of each of its turns, and each time it takes damage, the target can m
       );
       g.addEffectArea(this.area);
       this.hasBeenATurn = false;
-      this.hurtThisTurn = /* @__PURE__ */ new Set();
+      this.opt = new OncePerTurnController(g);
       this.bag = new SubscriptionBag(
         g.events.on("TurnStarted", ({ detail: { who, interrupt } }) => {
-          this.hurtThisTurn.clear();
           if (who === this.caster)
             this.hasBeenATurn = true;
           if (g.getInside(this.shape).includes(who))
@@ -17569,11 +17758,11 @@ At the end of each of its turns, and each time it takes damage, the target can m
       );
     }
     getDamager(target) {
-      const { hurtThisTurn, g, slot, caster: attacker, method } = this;
+      const { opt, g, slot, caster: attacker, method } = this;
       return new EvaluateLater(target, Moonbeam, Priority_default.Normal, async () => {
-        if (hurtThisTurn.has(target))
+        if (!opt.canBeAffected(target))
           return;
-        hurtThisTurn.add(target);
+        opt.affect(target);
         const damage = await g.rollDamage(slot, {
           attacker,
           damageType: "radiant",
@@ -18668,6 +18857,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "Melf's minute meteors": MelfsMinuteMeteors_default,
     "sleet storm": SleetStorm_default,
     slow: Slow_default,
+    "spirit guardians": SpiritGuardians_default,
     "wall of water": WallOfWater_default,
     "water breathing": WaterBreathing_default,
     "water walk": WaterWalk_default,
@@ -22205,7 +22395,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/data/BattleTemplate.ts
   function initialiseFromTemplate(g, { combatants }) {
-    for (const { type, name, side, x, y, initiative } of combatants) {
+    for (const { type, name, side, x, y, initiative, alignment } of combatants) {
       const who = type === "pc" ? initialisePC(g, allPCs_default[name]) : allMonsters_default[name](g);
       if (typeof side === "number")
         who.side = side;
@@ -22213,6 +22403,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (typeof initiative === "number") {
         g.dice.force(initiative, { type: "initiative", who });
         g.dice.force(initiative, { type: "initiative", who });
+      }
+      if (alignment) {
+        const [lc, ge] = alignment;
+        who.alignLC = lc;
+        who.alignGE = ge;
       }
     }
     return g.start();

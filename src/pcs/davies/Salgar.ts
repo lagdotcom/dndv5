@@ -10,6 +10,7 @@ const Salgar: PCTemplate = {
     name: "Mountain Dwarf",
     configs: { "Tool Proficiency": "mason's tools" },
   },
+  alignment: ["Neutral", "Good"],
   background: { name: "Sage", languages: ["Elvish", "Giant"] },
   levels: [
     { class: "Druid", proficiencies: ["Insight", "Survival"] },

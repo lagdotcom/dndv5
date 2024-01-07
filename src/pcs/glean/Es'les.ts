@@ -7,6 +7,7 @@ const Esles: PCTemplate = {
   tokenUrl,
   abilities: [8, 13, 14, 10, 12, 15],
   race: { name: "Tiefling (Asmodeus)" },
+  alignment: ["Lawful", "Evil"],
   background: { name: "Sage", languages: ["Abyssal", "Celestial"] },
   levels: [
     {

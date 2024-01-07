@@ -11,6 +11,7 @@ const Beldalynn: PCTemplate = {
     abilities: ["dex", "con", "str"],
     languages: ["Draconic"],
   },
+  alignment: ["Lawful", "Neutral"],
   background: {
     name: "Sage",
     proficiencies: ["Perception"],

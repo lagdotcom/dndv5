@@ -232,6 +232,8 @@ const ZafronMultiattack = makeBagMultiattack(
 export default class Zafron extends Monster {
   constructor(g: Engine) {
     super(g, "Zafron Halehart", 5, "fiend", SizeCategory.Medium, tokenUrl, 105);
+    this.alignLC = "Chaotic";
+    this.alignGE = "Evil";
     this.diesAtZero = false;
     this.setAbilityScores(18, 14, 20, 7, 10, 13);
     this.pb = 3;

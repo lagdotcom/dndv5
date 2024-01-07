@@ -30,32 +30,29 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
     return name;
   }
 
-  check(value: unknown, action: Action, ec: ErrorCollector) {
+  check(rawValue: unknown, action: Action, ec: ErrorCollector) {
     const getErrors = <T>(filters: ErrorFilter<T>[], v: T) =>
       filters
         .filter((filter) => !filter.check(this.g, action, v))
         .map((filter) => filter.message);
 
-    if (!isCombatantArray(value)) {
-      ec.add("No target", this);
-    } else {
-      if (value.length < this.minimum)
-        ec.add(`At least ${this.minimum} targets`, this);
-      if (value.length > this.maximum)
-        ec.add(`At most ${this.maximum} targets`, this);
+    const value = isCombatantArray(rawValue) ? rawValue : [];
+    if (value.length < this.minimum)
+      ec.add(`At least ${this.minimum} targets`, this);
+    if (value.length > this.maximum)
+      ec.add(`At most ${this.maximum} targets`, this);
 
-      for (const who of value) {
-        const isOutOfRange = distance(action.actor, who) > this.maxRange;
-        const errors = getErrors(this.filters, who).map(
-          (error) => `${who.name}: ${error}`,
-        );
+    for (const who of value) {
+      const isOutOfRange = distance(action.actor, who) > this.maxRange;
+      const errors = getErrors(this.filters, who).map(
+        (error) => `${who.name}: ${error}`,
+      );
 
-        if (isOutOfRange) ec.add(`${who.name}: Out of range`, this);
-        ec.addMany(errors, this);
-      }
-
-      ec.addMany(getErrors(this.allFilters, value), this);
+      if (isOutOfRange) ec.add(`${who.name}: Out of range`, this);
+      ec.addMany(errors, this);
     }
+
+    ec.addMany(getErrors(this.allFilters, value), this);
 
     return ec;
   }

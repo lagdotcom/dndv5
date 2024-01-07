@@ -23,6 +23,7 @@ import Action from "./types/Action";
 import ActionTime from "./types/ActionTime";
 import AICoefficient from "./types/AICoefficient";
 import AIRule from "./types/AIRule";
+import { GEAlignment, LCAlignment } from "./types/Alignment";
 import Combatant from "./types/Combatant";
 import CombatantGroup from "./types/CombatantGroup";
 import CombatantScore from "./types/CombatantScore";
@@ -90,6 +91,8 @@ export default class CombatantBase implements Combatant {
   id: number;
   img: string;
   type: CreatureType;
+  alignGE?: GEAlignment;
+  alignLC?: LCAlignment;
   size: SizeCategory;
   side: number;
   hands: number;
@@ -178,6 +181,8 @@ export default class CombatantBase implements Combatant {
       rules,
       coefficients,
       groups,
+      alignGE,
+      alignLC,
     }: {
       diesAtZero?: boolean;
       hands?: number;
@@ -201,6 +206,8 @@ export default class CombatantBase implements Combatant {
       rules?: SetInitialiser<AIRule>;
       coefficients?: MapInitialiser<AICoefficient, number>;
       groups?: SetInitialiser<CombatantGroup>;
+      alignGE?: GEAlignment;
+      alignLC?: LCAlignment;
     },
   ) {
     this.id = g.nextId();
@@ -263,6 +270,8 @@ export default class CombatantBase implements Combatant {
     this.coefficients = new Map(coefficients);
     this.groups = new Set(groups);
     this.spellsSoFar = [];
+    this.alignGE = alignGE;
+    this.alignLC = alignLC;
   }
 
   get baseACMethod(): ACMethod {
@@ -744,5 +753,13 @@ export default class CombatantBase implements Combatant {
     if (count === quantity) this.inventory.delete(item);
     else this.inventory.set(item, count - quantity);
     return true;
+  }
+
+  isConcentratingOn(spell: Spell) {
+    for (const entry of this.concentratingOn) {
+      if (entry.spell === spell) return true;
+    }
+
+    return false;
   }
 }
