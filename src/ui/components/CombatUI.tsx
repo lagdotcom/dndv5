@@ -300,6 +300,7 @@ export default function CombatUI({ g, template }: Props) {
         onClickBattlefield={onClickBattlefield}
         onClickCombatant={onClickCombatant}
         onMoveCombatant={onMoveCombatant}
+        images={template?.images}
       />
       {menu.isShown && <Menu {...menu.props} />}
       <div className={styles.sidePanel}>

@@ -57,6 +57,12 @@
   font-variant: small-caps;
 }
 
+/* esbuild-sass-plugin:css-chunk:src/ui/components/BackgroundImage.module.scss */
+._image_kmb56_1 {
+  position: absolute;
+  z-index: -10;
+}
+
 /* esbuild-sass-plugin:css-chunk:src/ui/components/Battlefield.module.scss */
 ._main_1bit5_1 {
   position: absolute;

@@ -171,6 +171,7 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
         onClickBattlefield={onClickBattlefield}
         onClickCombatant={onClickCombatant}
         onDragCombatant={onDragCombatant}
+        images={template.images}
       />
       {menu.isShown && <Menu {...menu.props} />}
       {add === "monster" && (

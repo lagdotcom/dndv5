@@ -1,3 +1,4 @@
+import { BattleTemplateImage } from "../../data/BattleTemplate";
 import { MapSquareSize } from "../../MapSquare";
 import Combatant from "../../types/Combatant";
 import MoveDirection from "../../types/MoveDirection";
@@ -15,6 +16,7 @@ import {
   scale,
   teleportInfo,
 } from "../utils/state";
+import BackgroundImage from "./BackgroundImage";
 import styles from "./Battlefield.module.scss";
 import BattlefieldEffect, { AffectedSquare } from "./BattlefieldEffect";
 import Unit from "./Unit";
@@ -25,6 +27,7 @@ interface Props {
   onDragCombatant?: (who: Combatant, p: Point) => void;
   onMoveCombatant?: (who: Combatant, dir: MoveDirection) => void;
   showHoveredTile?: boolean;
+  images?: BattleTemplateImage[];
 }
 
 export default function Battlefield({
@@ -33,6 +36,7 @@ export default function Battlefield({
   onDragCombatant,
   onMoveCombatant,
   showHoveredTile,
+  images = [],
 }: Props) {
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
   const [hover, setHover] = useState<Point>();
@@ -123,6 +127,9 @@ export default function Battlefield({
         {showHoveredTile && hover && (
           <AffectedSquare point={hover} tint="silver" />
         )}
+        {images.map((img, i) => (
+          <BackgroundImage key={i} {...img} />
+        ))}
       </div>
     </main>
   );

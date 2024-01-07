@@ -18,6 +18,7 @@
 | 10  | hp bar (back)           |
 | 5   | effect label            |
 | 3   | effect square           |
+| -10 | battle image (default)  |
 
 ## icon resources
 

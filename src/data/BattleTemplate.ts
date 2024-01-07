@@ -1,6 +1,7 @@
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import Item from "../types/Item";
+import Point from "../types/Point";
 import allMonsters, { MonsterName } from "./allMonsters";
 import allPCs, { PCName } from "./allPCs";
 import initialisePC from "./initialisePC";
@@ -24,8 +25,16 @@ export type BattleTemplateEntry = (PCEntry | MonsterEntry) & {
   initiative?: number;
 };
 
+export interface BattleTemplateImage extends Point {
+  url: string;
+  zIndex?: number;
+  width?: number;
+  height?: number;
+}
+
 interface BattleTemplate {
   combatants: BattleTemplateEntry[];
+  images: BattleTemplateImage[];
 }
 export default BattleTemplate;
 

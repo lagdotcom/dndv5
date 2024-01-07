@@ -7,7 +7,6 @@ This program attempts to simulate D&D 5e combat.
 Features:
 
 - PC creator
-- Battle map image
 - Save/load battle plans
 - Import/export battle plans
 - Play against AI

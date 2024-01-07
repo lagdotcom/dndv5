@@ -32,23 +32,34 @@ export const gleanVsGoblins: BattleTemplate = {
     addMonster("goblin", 20, 5),
     addMonster("goblin", 25, 5),
   ],
+  images: [],
 };
 
 export const daviesVsFiends: BattleTemplate = {
   combatants: [
-    addPC("Aura", 20, 20),
-    addPC("Beldalynn", 10, 30),
-    addPC("Galilea", 5, 0),
-    addPC("Salgar", 15, 30),
-    addPC("Hagrond", 0, 5),
-    addMonster("Birnotec", 15, 0),
-    addMonster("Kay of the Abyss", 20, 0),
-    addMonster("O Gonrit", 10, 15),
-    addMonster("Yulash", 25, 10),
-    addMonster("Zafron Halehart", 10, 5),
+    addPC("Aura", 30, 45),
+    addPC("Beldalynn", 10, 45),
+    addPC("Galilea", 25, 40),
+    addPC("Salgar", 20, 45),
+    addPC("Hagrond", 15, 40),
+    addMonster("Birnotec", 25, 0),
+    addMonster("Kay of the Abyss", 35, 0),
+    addMonster("O Gonrit", 20, 15),
+    addMonster("Yulash", 15, 0),
+    addMonster("Zafron Halehart", 25, 15),
+  ],
+  images: [
+    {
+      url: "https://lagdotcom.github.io/dndavies-assets/fp/ahnbiral-temple-space.png",
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    },
   ],
 };
 
 export const tethVsGoblin: BattleTemplate = {
   combatants: [addPC("Tethilssethanar", 5, 5), addMonster("goblin", 15, 5)],
+  images: [],
 };
