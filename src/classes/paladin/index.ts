@@ -19,10 +19,9 @@ import Priority from "../../types/Priority";
 import { gains } from "../../utils/gain";
 import { enumerate, ordinal } from "../../utils/numbers";
 import { hasAll } from "../../utils/set";
-import { distance } from "../../utils/units";
 import { ChannelDivinityResource, makeASI, makeExtraAttack } from "../common";
-import AuraOfProtection from "./AuraOfProtection";
-import { getPaladinAuraRadius, PaladinSpellcasting } from "./common";
+import AuraOfProtection, { getAuraOfProtection } from "./AuraOfProtection";
+import { PaladinSpellcasting } from "./common";
 import HarnessDivinePower from "./HarnessDivinePower";
 import LayOnHands from "./LayOnHands";
 
@@ -126,14 +125,14 @@ const AuraOfCourage = new SimpleFeature(
 
 At 18th level, the range of this aura increases to 30 feet.`,
   (g, me) => {
-    const radius = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 10);
+    const aura = getAuraOfProtection(me);
+    if (!aura) return;
 
     g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
       if (
-        !me.conditions.has("Unconscious") &&
         config.conditions?.has("Frightened") &&
         who.side === me.side &&
-        distance(who, me) <= radius
+        aura.isAffecting(who)
       )
         success.add("fail", AuraOfCourage);
     });

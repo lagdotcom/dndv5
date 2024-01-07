@@ -9,13 +9,9 @@ import Sanctuary from "../../../spells/level1/Sanctuary";
 import LesserRestoration from "../../../spells/level2/LesserRestoration";
 import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
-import { distance } from "../../../utils/units";
 import { TurnUndeadAction } from "../../cleric/TurnUndead";
-import {
-  getPaladinAuraRadius,
-  PaladinIcon,
-  PaladinSpellcasting,
-} from "../common";
+import { getAuraOfProtection } from "../AuraOfProtection";
+import { PaladinIcon, PaladinSpellcasting } from "../common";
 import SacredWeapon from "./SacredWeapon";
 
 class TurnTheUnholyAction extends TurnUndeadAction {
@@ -47,14 +43,14 @@ const AuraOfDevotion = new SimpleFeature(
 
 At 18th level, the range of this aura increases to 30 feet.`,
   (g, me) => {
-    const range = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 7);
+    const aura = getAuraOfProtection(me);
+    if (!aura) return;
 
     g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
       if (
         who.side === me.side &&
-        distance(me, who) <= range &&
         config?.conditions?.has("Charmed") &&
-        !me.conditions.has("Unconscious")
+        aura.isAffecting(who)
       )
         success.add("fail", AuraOfDevotion);
     });

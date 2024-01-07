@@ -10,6 +10,7 @@ function getAuraColour(tags: Set<AreaTag>) {
   if (tags.has("heavily obscured")) return "silver";
   if (tags.has("holy")) return "yellow";
   if (tags.has("plants")) return "green";
+  if (tags.has("profane")) return "purple";
   if (tags.has("dim light")) return "skyblue";
 }
 

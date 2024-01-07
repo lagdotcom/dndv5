@@ -14,8 +14,3 @@ export const PaladinSpellcasting = new NormalSpellcasting(
   "Paladin",
   PaladinIcon,
 );
-
-export function getPaladinAuraRadius(level: number) {
-  if (level < 18) return 10;
-  return 30;
-}

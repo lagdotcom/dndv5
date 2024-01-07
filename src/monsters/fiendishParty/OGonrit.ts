@@ -6,6 +6,7 @@ import { HealAllies } from "../../ai/coefficients";
 import DamageRule from "../../ai/DamageRule";
 import HealingRule from "../../ai/HealingRule";
 import StayNearAlliesRule from "../../ai/StayNearAlliesRule";
+import AuraController from "../../AuraController";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
@@ -29,23 +30,30 @@ import { coSet } from "../../types/ConditionName";
 import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
-import { distance } from "../../utils/units";
 import { FiendishParty } from "./common";
 
 const FiendishMantleRange = 30;
 const FiendishMantle = new SimpleFeature(
   "Fiendish Mantle",
-  "As long as he is conscious, whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
+  `As long as he is conscious, whenever any ally within ${FiendishMantleRange} ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.`,
   (g, me) => {
+    const aura = new AuraController(
+      g,
+      "Fiendish Mantle",
+      me,
+      FiendishMantleRange,
+      ["profane"],
+      "purple",
+    ).setActiveChecker((who) => !who.conditions.has("Unconscious"));
+
     g.events.on(
       "GatherDamage",
       ({ detail: { attacker, attack, critical, interrupt, map } }) => {
         if (
-          !me.conditions.has("Unconscious") &&
           attacker?.side === me.side &&
           attacker !== me &&
           attack?.roll.type.tags.has("weapon") &&
-          distance(me, attacker) <= FiendishMantleRange
+          aura.isAffecting(attacker)
         )
           interrupt.add(
             new EvaluateLater(

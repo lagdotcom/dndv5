@@ -1,8 +1,19 @@
-import ActiveEffectArea from "../../ActiveEffectArea";
+import AuraController from "../../AuraController";
+import DndRule from "../../DndRule";
 import SimpleFeature from "../../features/SimpleFeature";
-import { arSet } from "../../types/EffectArea";
-import { distance } from "../../utils/units";
-import { getPaladinAuraRadius } from "./common";
+import Combatant from "../../types/Combatant";
+
+const aurasOfProtection = new Map<Combatant, AuraController>();
+new DndRule("Paladin Auras", () => aurasOfProtection.clear());
+
+export function getAuraOfProtection(who: Combatant) {
+  return aurasOfProtection.get(who);
+}
+
+function getPaladinAuraRadius(level: number) {
+  if (level < 18) return 10;
+  return 30;
+}
 
 const AuraOfProtection = new SimpleFeature(
   "Aura of Protection",
@@ -11,45 +22,20 @@ const AuraOfProtection = new SimpleFeature(
 At 18th level, the range of this aura increases to 30 feet.`,
   (g, me) => {
     const radius = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 6);
-
-    // TODO this is stupid
-    let area: ActiveEffectArea | undefined;
-    const updateAura = () => {
-      if (area) g.removeEffectArea(area);
-
-      area = new ActiveEffectArea(
-        `Paladin Aura (${me.name})`,
-        { type: "within", radius, who: me },
-        arSet("holy"),
-        "yellow",
-      );
-      g.addEffectArea(area);
-    };
+    const aura = new AuraController(
+      g,
+      `Paladin Aura (${me.name})`,
+      me,
+      radius,
+      ["holy"],
+      "yellow",
+    ).setActiveChecker((who) => !who.conditions.has("Unconscious"));
+    aurasOfProtection.set(me, aura);
 
     g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-      if (
-        who.side === me.side &&
-        !me.conditions.has("Unconscious") &&
-        distance(me, who) <= radius
-      )
+      if (who.side === me.side && aura.isAffecting(who))
         bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
     });
-
-    g.events.on("CombatantMoved", ({ detail: { who } }) => {
-      if (who === me && !me.conditions.has("Unconscious")) updateAura();
-    });
-
-    g.events.on("EffectAdded", ({ detail: { who } }) => {
-      if (who === me && me.conditions.has("Unconscious") && area) {
-        g.removeEffectArea(area);
-        area = undefined;
-      }
-    });
-    g.events.on("EffectRemoved", ({ detail: { who } }) => {
-      if (who === me && !me.conditions.has("Unconscious")) updateAura();
-    });
-
-    updateAura();
   },
 );
 export default AuraOfProtection;

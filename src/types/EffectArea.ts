@@ -19,6 +19,7 @@ export const AreaTags = [
   "holy",
   "lightly obscured",
   "plants",
+  "profane",
   "silenced",
 ] as const;
 export type AreaTag = (typeof AreaTags)[number];

@@ -157,7 +157,7 @@ export default class Kay extends Monster {
 
     this.don(new StuddedLeatherArmor(g), true);
     this.don(new Longbow(g), true);
-    this.don(new Spear(g), true);
+    this.give(new Spear(g), true);
     this.addToInventory(new Arrow(g), 20);
   }
 }

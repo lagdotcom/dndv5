@@ -7198,7 +7198,7 @@
       this.addFeature(SmoulderingRage);
       this.don(new StuddedLeatherArmor(g), true);
       this.don(new Longbow(g), true);
-      this.don(new Spear(g), true);
+      this.give(new Spear(g), true);
       this.addToInventory(new Arrow(g), 20);
     }
   };
@@ -7224,6 +7224,76 @@
         ) <= this.range
       );
       score.addEval(me, near.length, StayNearAllies);
+    }
+  };
+
+  // src/ActiveEffectArea.ts
+  var ActiveEffectArea = class {
+    constructor(name, shape, tags, tint, handler) {
+      this.name = name;
+      this.shape = shape;
+      this.tags = tags;
+      this.tint = tint;
+      this.handler = handler;
+      this.id = NaN;
+      this.points = resolveArea(shape);
+    }
+  };
+
+  // src/AuraController.ts
+  var AuraController = class {
+    constructor(g, name, who, radius, tags = [], tint, handler, shouldBeActive = () => true) {
+      this.g = g;
+      this.name = name;
+      this.who = who;
+      this.radius = radius;
+      this.tint = tint;
+      this.handler = handler;
+      this.shouldBeActive = shouldBeActive;
+      this.tags = new Set(tags);
+      this.update();
+      const onEvent = this.onEvent.bind(this);
+      g.events.on("CombatantMoved", onEvent);
+      g.events.on("EffectAdded", onEvent);
+      g.events.on("EffectRemoved", onEvent);
+    }
+    get active() {
+      return typeof this.area !== "undefined";
+    }
+    setActiveChecker(shouldBeActive) {
+      this.shouldBeActive = shouldBeActive;
+      return this;
+    }
+    onEvent({
+      detail: { who }
+    }) {
+      if (who === this.who) {
+        if (this.shouldBeActive(who))
+          this.update();
+        else
+          this.remove();
+      }
+    }
+    update() {
+      this.remove();
+      const { g, name, radius, who, tags, tint, handler } = this;
+      this.area = new ActiveEffectArea(
+        name,
+        { type: "within", radius, who },
+        tags,
+        tint,
+        handler
+      );
+      g.addEffectArea(this.area);
+    }
+    remove() {
+      if (this.area) {
+        this.g.removeEffectArea(this.area);
+        this.area = void 0;
+      }
+    }
+    isAffecting(other) {
+      return this.active && distance(this.who, other) <= this.radius;
     }
   };
 
@@ -7822,12 +7892,20 @@
   var FiendishMantleRange = 30;
   var FiendishMantle = new SimpleFeature(
     "Fiendish Mantle",
-    "As long as he is conscious, whenever any ally within 30 ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.",
+    `As long as he is conscious, whenever any ally within ${FiendishMantleRange} ft. of O Gonrit deals damage with a weapon attack, they deal an extra 2 (1d4) necrotic damage.`,
     (g, me) => {
+      const aura = new AuraController(
+        g,
+        "Fiendish Mantle",
+        me,
+        FiendishMantleRange,
+        ["profane"],
+        "purple"
+      ).setActiveChecker((who) => !who.conditions.has("Unconscious"));
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, critical, interrupt, map } }) => {
-          if (!me.conditions.has("Unconscious") && (attacker == null ? void 0 : attacker.side) === me.side && attacker !== me && (attack == null ? void 0 : attack.roll.type.tags.has("weapon")) && distance(me, attacker) <= FiendishMantleRange)
+          if ((attacker == null ? void 0 : attacker.side) === me.side && attacker !== me && (attack == null ? void 0 : attack.roll.type.tags.has("weapon")) && aura.isAffecting(attacker))
             interrupt.add(
               new EvaluateLater(
                 attacker,
@@ -10842,19 +10920,6 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     }
   });
   var CureWounds_default = CureWounds;
-
-  // src/ActiveEffectArea.ts
-  var ActiveEffectArea = class {
-    constructor(name, shape, tags, tint, handler, points = resolveArea(shape)) {
-      this.name = name;
-      this.shape = shape;
-      this.tags = tags;
-      this.tint = tint;
-      this.handler = handler;
-      this.points = points;
-      this.id = NaN;
-    }
-  };
 
   // src/resolvers/PointResolver.ts
   var PointResolver = class {
@@ -19449,6 +19514,42 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
   };
   var monk_default = Monk;
 
+  // src/classes/paladin/AuraOfProtection.ts
+  var aurasOfProtection = /* @__PURE__ */ new Map();
+  new DndRule("Paladin Auras", () => aurasOfProtection.clear());
+  function getAuraOfProtection(who) {
+    return aurasOfProtection.get(who);
+  }
+  function getPaladinAuraRadius(level) {
+    if (level < 18)
+      return 10;
+    return 30;
+  }
+  var AuraOfProtection = new SimpleFeature(
+    "Aura of Protection",
+    `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
+
+At 18th level, the range of this aura increases to 30 feet.`,
+    (g, me) => {
+      var _a;
+      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 6);
+      const aura = new AuraController(
+        g,
+        `Paladin Aura (${me.name})`,
+        me,
+        radius,
+        ["holy"],
+        "yellow"
+      ).setActiveChecker((who) => !who.conditions.has("Unconscious"));
+      aurasOfProtection.set(me, aura);
+      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
+        if (who.side === me.side && aura.isAffecting(who))
+          bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
+      });
+    }
+  );
+  var AuraOfProtection_default = AuraOfProtection;
+
   // src/img/class/paladin.svg
   var paladin_default = "./paladin-QFY4DOD4.svg";
 
@@ -19463,55 +19564,6 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
     "Paladin",
     PaladinIcon
   );
-  function getPaladinAuraRadius(level) {
-    if (level < 18)
-      return 10;
-    return 30;
-  }
-
-  // src/classes/paladin/AuraOfProtection.ts
-  var AuraOfProtection = new SimpleFeature(
-    "Aura of Protection",
-    `Starting at 6th level, whenever you or a friendly creature within 10 feet of you must make a saving throw, the creature gains a bonus to the saving throw equal to your Charisma modifier (with a minimum bonus of +1). You must be conscious to grant this bonus.
-
-At 18th level, the range of this aura increases to 30 feet.`,
-    (g, me) => {
-      var _a;
-      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 6);
-      let area;
-      const updateAura = () => {
-        if (area)
-          g.removeEffectArea(area);
-        area = new ActiveEffectArea(
-          `Paladin Aura (${me.name})`,
-          { type: "within", radius, who: me },
-          arSet("holy"),
-          "yellow"
-        );
-        g.addEffectArea(area);
-      };
-      g.events.on("BeforeSave", ({ detail: { who, bonus } }) => {
-        if (who.side === me.side && !me.conditions.has("Unconscious") && distance(me, who) <= radius)
-          bonus.add(Math.max(1, me.cha.modifier), AuraOfProtection);
-      });
-      g.events.on("CombatantMoved", ({ detail: { who } }) => {
-        if (who === me && !me.conditions.has("Unconscious"))
-          updateAura();
-      });
-      g.events.on("EffectAdded", ({ detail: { who } }) => {
-        if (who === me && me.conditions.has("Unconscious") && area) {
-          g.removeEffectArea(area);
-          area = void 0;
-        }
-      });
-      g.events.on("EffectRemoved", ({ detail: { who } }) => {
-        if (who === me && !me.conditions.has("Unconscious"))
-          updateAura();
-      });
-      updateAura();
-    }
-  );
-  var AuraOfProtection_default = AuraOfProtection;
 
   // src/classes/paladin/HarnessDivinePower.ts
   var HarnessDivinePowerResource2 = new LongRestResource(
@@ -19895,11 +19947,12 @@ Some Channel Divinity effects require saving throws. When you use such an effect
 
 At 18th level, the range of this aura increases to 30 feet.`,
     (g, me) => {
-      var _a;
-      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 10);
+      const aura = getAuraOfProtection(me);
+      if (!aura)
+        return;
       g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
-        var _a2;
-        if (!me.conditions.has("Unconscious") && ((_a2 = config.conditions) == null ? void 0 : _a2.has("Frightened")) && who.side === me.side && distance(who, me) <= radius)
+        var _a;
+        if (((_a = config.conditions) == null ? void 0 : _a.has("Frightened")) && who.side === me.side && aura.isAffecting(who))
           success.add("fail", AuraOfCourage);
       });
     }
@@ -21733,11 +21786,12 @@ A turned creature must spend its turns trying to move as far away from you as it
 
 At 18th level, the range of this aura increases to 30 feet.`,
     (g, me) => {
-      var _a;
-      const range = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 7);
+      const aura = getAuraOfProtection(me);
+      if (!aura)
+        return;
       g.events.on("BeforeEffect", ({ detail: { who, config, success } }) => {
-        var _a2;
-        if (who.side === me.side && distance(me, who) <= range && ((_a2 = config == null ? void 0 : config.conditions) == null ? void 0 : _a2.has("Charmed")) && !me.conditions.has("Unconscious"))
+        var _a;
+        if (who.side === me.side && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")) && aura.isAffecting(who))
           success.add("fail", AuraOfDevotion);
       });
     }
@@ -22688,6 +22742,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return "yellow";
     if (tags.has("plants"))
       return "green";
+    if (tags.has("profane"))
+      return "purple";
     if (tags.has("dim light"))
       return "skyblue";
   }
