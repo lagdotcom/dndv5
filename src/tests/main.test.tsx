@@ -7,6 +7,8 @@ import {
 } from "@testing-library/preact";
 
 import { DivineSmite } from "../classes/paladin";
+import { addMonster, addPC } from "../data/templates";
+import { thug } from "./monsters";
 import { setupBattleTestWithReact } from "./setupBattleTest";
 
 const dialog = (name?: string) => screen.getByRole("dialog", { name });
@@ -27,7 +29,9 @@ it("can run a simple battle", async () => {
     g,
     user,
     combatants: [me],
-  } = await setupBattleTestWithReact(["thug", 0, 0, 12], ["badger", 10, 0, 4]);
+  } = await setupBattleTestWithReact({
+    combatants: [thug(0, 0, 12), addMonster("badger", 10, 0, undefined, 4)],
+  });
 
   await user.click(btn("Move East"));
   await user.click(token("badger"));
@@ -44,10 +48,12 @@ it("supports Fog Cloud", async () => {
     g,
     user,
     combatants: [pc, enemy],
-  } = await setupBattleTestWithReact(
-    ["Tethilssethanar", 0, 0, 20],
-    ["thug [crossbow]", 30, 0, 10],
-  );
+  } = await setupBattleTestWithReact({
+    combatants: [
+      addPC("Tethilssethanar", 0, 0, 20),
+      thug(30, 0, 10, "heavy crossbow"),
+    ],
+  });
 
   const getFogCloud = () => btn("Fog Cloud (Control Air and Water)");
 
@@ -85,11 +91,13 @@ it("supports a typical Aura attack", async () => {
     g,
     user,
     combatants: [aura],
-  } = await setupBattleTestWithReact(
-    ["Aura", 10, 10, 20],
-    ["Tethilssethanar", 5, 0, 2],
-    ["thug", 0, 0, 1],
-  );
+  } = await setupBattleTestWithReact({
+    combatants: [
+      addPC("Aura", 10, 10, 20),
+      addPC("Tethilssethanar", 5, 0, 2),
+      thug(0, 0, 1),
+    ],
+  });
 
   await user.click(token("thug"));
   g.dice.force(1, { type: "attack", who: aura });
@@ -114,12 +122,14 @@ it("supports a typical Beldalynn attack", async () => {
   const {
     g,
     user,
-    combatants: [beldalynn, thug],
-  } = await setupBattleTestWithReact(
-    ["Beldalynn", 0, 0, 20],
-    ["thug", 25, 0, 1],
-    ["Tethilssethanar", 20, 0, 2],
-  );
+    combatants: [beldalynn, enemy],
+  } = await setupBattleTestWithReact({
+    combatants: [
+      addPC("Beldalynn", 0, 0, 20),
+      thug(25, 0, 1),
+      addPC("Tethilssethanar", 20, 0, 2),
+    ],
+  });
 
   await user.click(btn("Melf's Minute Meteors (Wizard)"));
   await user.click(btn("Add Point"));
@@ -131,7 +141,7 @@ it("supports a typical Beldalynn attack", async () => {
 
   g.dice.force(6, { type: "damage", attacker: beldalynn });
   g.dice.force(6, { type: "damage", attacker: beldalynn });
-  g.dice.force(1, { type: "save", who: thug });
+  g.dice.force(1, { type: "save", who: enemy });
   await user.click(choice("OK"));
 
   expect(logMsg("thug takes 12 damage. (12 fire)")).toBeVisible();
@@ -145,7 +155,9 @@ it("supports a typical Galilea attack", async () => {
     g,
     user,
     combatants: [galilea],
-  } = await setupBattleTestWithReact(["Galilea", 0, 0, 20], ["thug", 5, 0, 10]);
+  } = await setupBattleTestWithReact({
+    combatants: [addPC("Galilea", 0, 0, 20), thug(5, 0, 10)],
+  });
 
   await user.click(token("thug"));
 

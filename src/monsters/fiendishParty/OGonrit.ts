@@ -9,6 +9,7 @@ import StayNearAlliesRule from "../../ai/StayNearAlliesRule";
 import AuraController from "../../AuraController";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
@@ -16,9 +17,6 @@ import FightingStyleProtection from "../../features/fightingStyles/Protection";
 import SimpleFeature from "../../features/SimpleFeature";
 import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import { Shield, SplintArmor } from "../../items/armor";
-import { Mace } from "../../items/weapons";
-import Monster from "../../Monster";
 import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import GuidingBolt from "../../spells/level1/GuidingBolt";
@@ -28,7 +26,6 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import Priority from "../../types/Priority";
-import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { FiendishParty } from "./common";
 
@@ -159,39 +156,38 @@ const Spellcasting = bonusSpellsFeature(
   ],
 );
 
-export default class OGonrit extends Monster {
-  constructor(g: Engine) {
-    super(g, "O Gonrit", 5, "fiend", SizeCategory.Medium, tokenUrl, 65, [
-      new HealingRule(),
-      new DamageRule(),
-      new StayNearAlliesRule(FiendishMantleRange),
-    ]);
-    this.alignLC = "Neutral";
-    this.alignGE = "Evil";
-    this.coefficients.set(HealAllies, 1.2);
-    this.groups.add(FiendishParty);
-    this.diesAtZero = false;
-    this.setAbilityScores(15, 8, 14, 10, 18, 13);
-    this.pb = 3;
-    this.level = 5; // for spellcasting
-
-    this.saveProficiencies.add("wis");
-    this.saveProficiencies.add("cha");
-    this.addProficiency("Insight", "proficient");
-    this.addProficiency("Persuasion", "proficient");
-    this.damageResponses.set("fire", "resist");
-    this.damageResponses.set("poison", "resist");
-    this.conditionImmunities.add("Poisoned");
-    this.languages.add("Abyssal");
-    this.languages.add("Common");
-
-    this.addFeature(FiendishMantle);
-    this.addFeature(ShieldBash);
-    this.addFeature(Spellcasting);
-    this.addFeature(FightingStyleProtection);
-
-    this.don(new SplintArmor(g), true);
-    this.don(new Shield(g), true);
-    this.don(new Mace(g), true);
-  }
-}
+const OGonrit: MonsterTemplate = {
+  name: "O Gonrit",
+  cr: 5,
+  type: "fiend",
+  tokenUrl,
+  hpMax: 65,
+  aiRules: [
+    new HealingRule(),
+    new DamageRule(),
+    new StayNearAlliesRule(FiendishMantleRange),
+  ],
+  aiCoefficients: new Map([[HealAllies, 1.2]]),
+  aiGroups: [FiendishParty],
+  align: ["Neutral", "Evil"],
+  makesDeathSaves: true,
+  abilities: [15, 8, 14, 10, 18, 13],
+  pb: 3,
+  levels: { Cleric: 5 },
+  proficiency: {
+    wis: "proficient",
+    cha: "proficient",
+    Insight: "proficient",
+    Persuasion: "proficient",
+  },
+  damage: { fire: "resist", poison: "resist" },
+  immunities: ["Poisoned"],
+  languages: ["Abyssal", "Common"],
+  features: [FiendishMantle, ShieldBash, Spellcasting, FightingStyleProtection],
+  items: [
+    { name: "splint armor", equip: true },
+    { name: "shield", equip: true },
+    { name: "mace", equip: true },
+  ],
+};
+export default OGonrit;

@@ -1,12 +1,9 @@
 import goblinUrl from "@img/tok/goblin.png";
 
 import DisengageAction from "../../actions/DisengageAction";
-import Engine from "../../Engine";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import SimpleFeature from "../../features/SimpleFeature";
-import { Arrow } from "../../items/ammunition";
-import { LeatherArmor, Shield } from "../../items/armor";
-import { Scimitar, Shortbow } from "../../items/weapons";
-import Monster from "../../Monster";
+import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import SizeCategory from "../../types/SizeCategory";
 import { featureNotComplete } from "../../utils/env";
 
@@ -31,34 +28,41 @@ const NimbleEscape = new SimpleFeature(
   },
 );
 
-export class Goblin extends Monster {
-  constructor(g: Engine, wieldingBow = false) {
-    super(g, "goblin", 0.25, "humanoid", SizeCategory.Small, goblinUrl, 7);
-    this.alignLC = "Neutral";
-    this.alignGE = "Evil";
-    this.addProficiency("Stealth", "expertise");
-    this.senses.set("darkvision", 60);
-    this.languages.add("Common");
-    this.languages.add("Goblin");
-
-    this.addFeature(NimbleEscape);
-
-    this.don(new LeatherArmor(g), true);
-
-    const shield = new Shield(g);
-    const scimitar = new Scimitar(g);
-    const bow = new Shortbow(g);
-    this.give(shield, true);
-    this.give(scimitar, true);
-    this.give(bow, true);
-
-    if (wieldingBow) {
-      this.don(bow);
-    } else {
-      this.don(scimitar);
-      this.don(shield);
-    }
-
-    this.addToInventory(new Arrow(g), 20);
-  }
+export interface GoblinConfig {
+  weapon: "scimitar" | "shortbow";
 }
+export const Goblin: MonsterTemplate<GoblinConfig> = {
+  name: "goblin",
+  cr: 0.25,
+  type: "humanoid",
+  size: SizeCategory.Small,
+  tokenUrl: goblinUrl,
+  hpMax: 7,
+  align: ["Neutral", "Evil"],
+  proficiency: { Stealth: "expertise" },
+  senses: { darkvision: 60 },
+  languages: ["Common", "Goblin"],
+  features: [NimbleEscape],
+  items: [
+    { name: "shield" },
+    { name: "scimitar" },
+    { name: "shortbow" },
+    { name: "arrow", quantity: 20 },
+  ],
+  config: {
+    initial: { weapon: "scimitar" },
+    get: (g) => ({
+      weapon: new ChoiceResolver(g, [
+        { label: "scimitar/shield", value: "scimitar" },
+        { label: "shortbow", value: "shortbow" },
+      ]),
+    }),
+    apply({ weapon }) {
+      if (weapon === "shortbow") this.don(this.getInventoryItem("shortbow"));
+      else {
+        this.don(this.getInventoryItem("scimitar"));
+        this.don(this.getInventoryItem("shield"));
+      }
+    },
+  },
+};

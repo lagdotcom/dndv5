@@ -6,13 +6,18 @@ import Combatant from "../types/Combatant";
 import DamageAmount from "../types/DamageAmount";
 import Priority from "../types/Priority";
 
+export type NaturalWeaponOnHit = (
+  target: Combatant,
+  attacker: Combatant,
+) => Promise<void>;
+
 export default class NaturalWeapon extends WeaponBase {
   constructor(
     g: Engine,
     name: string,
     toHit: number | AbilityName,
     damage: DamageAmount,
-    { onHit }: { onHit?: (target: Combatant) => Promise<void> } = {},
+    { onHit }: { onHit?: NaturalWeaponOnHit } = {},
   ) {
     super(g, name, "natural", "melee", damage);
 
@@ -31,7 +36,7 @@ export default class NaturalWeapon extends WeaponBase {
                 attack.roll.type.who,
                 this,
                 Priority.Normal,
-                async () => onHit(who),
+                async () => onHit(who, attack.roll.type.who),
               ),
             );
         },

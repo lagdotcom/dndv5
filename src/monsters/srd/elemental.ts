@@ -3,12 +3,11 @@ import earthUrl from "@img/tok/earth-elemental.png";
 import fireUrl from "@img/tok/fire-elemental.png";
 import waterUrl from "@img/tok/water-elemental.png";
 
+import MonsterTemplate from "../../data/MonsterTemplate";
 import { OnFire } from "../../effects";
-import Engine from "../../Engine";
 import { notImplementedFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import Monster from "../../Monster";
 import OncePerTurnController from "../../OncePerTurnController";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
@@ -19,32 +18,25 @@ import { _dd } from "../../utils/dice";
 import { distance } from "../../utils/units";
 import { ExhaustionImmunity, MundaneDamageResistance } from "../common";
 import { makeMultiattack } from "../multiattack";
-import NaturalWeapon from "../NaturalWeapon";
 
 const DoubleAttack = makeMultiattack(
   `The elemental makes two attacks.`,
   (me) => me.attacksSoFar.length < 2,
 );
 
-class Elemental extends Monster {
-  constructor(g: Engine, name: string, tokenUrl: string, hpMax: number) {
-    super(g, name, 5, "elemental", SizeCategory.Large, tokenUrl, hpMax);
-    this.alignLC = "Neutral";
-    this.alignGE = "Neutral";
-
-    this.addFeature(MundaneDamageResistance);
-    this.damageResponses.set("poison", "immune");
-    this.addFeature(ExhaustionImmunity);
-    this.conditionImmunities.add("Paralyzed");
-    this.conditionImmunities.add("Petrified");
-    this.conditionImmunities.add("Poisoned");
-    this.conditionImmunities.add("Unconscious");
-    this.senses.set("darkvision", 60);
-    this.pb = 3;
-
-    this.addFeature(DoubleAttack);
-  }
-}
+const elementalBase: Partial<MonsterTemplate> = {
+  name: "(elemental)",
+  tokenUrl: "",
+  cr: 5,
+  pb: 3,
+  type: "elemental",
+  size: SizeCategory.Large,
+  align: ["Neutral", "Neutral"],
+  features: [MundaneDamageResistance, ExhaustionImmunity, DoubleAttack],
+  damage: { poison: "immune" },
+  immunities: ["Paralyzed", "Petrified", "Poisoned", "Unconscious"],
+  senses: { darkvision: 60 },
+};
 
 // TODO [CANSTOP] [SQUEEZING]
 const AirForm = notImplementedFeature(
@@ -59,27 +51,21 @@ const Whirlwind = notImplementedFeature(
 If the saving throw is successful, the target takes half the bludgeoning damage and isn't flung away or knocked prone.`,
 );
 
-export class AirElemental extends Elemental {
-  constructor(g: Engine) {
-    super(g, "air elemental", airUrl, 90);
-    this.movement.set("speed", 0);
-    this.movement.set("fly", 90); // TODO hover
-    this.setAbilityScores(14, 20, 14, 6, 10, 6);
-    this.damageResponses.set("lightning", "resist");
-    this.damageResponses.set("thunder", "resist");
-    this.conditionImmunities.add("Grappled");
-    this.conditionImmunities.add("Prone");
-    this.conditionImmunities.add("Restrained");
-    this.languages.add("Auran");
-
-    this.addFeature(AirForm);
-
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Slam", "dex", _dd(2, 8, "bludgeoning")),
-    );
-    this.addFeature(Whirlwind);
-  }
-}
+export const AirElemental: MonsterTemplate = {
+  base: elementalBase,
+  name: "air elemental",
+  tokenUrl: airUrl,
+  hpMax: 90,
+  movement: { speed: 0, fly: 90 },
+  abilities: [14, 20, 14, 6, 10, 6],
+  damage: { lightning: "resist", thunder: "resist" },
+  immunities: ["Grappled", "Prone", "Restrained"],
+  languages: ["Auran"],
+  features: [AirForm, Whirlwind],
+  naturalWeapons: [
+    { name: "slam", toHit: "dex", damage: _dd(2, 8, "bludgeoning") },
+  ],
+};
 
 // TODO [TERRAIN]
 const EarthGlide = notImplementedFeature(
@@ -93,24 +79,22 @@ const SiegeMonster = notImplementedFeature(
   `The elemental deals double damage to objects and structures.`,
 );
 
-export class EarthElemental extends Elemental {
-  constructor(g: Engine) {
-    super(g, "earth elemental", earthUrl, 126);
-    this.naturalAC = 18;
-    this.movement.set("burrow", 30);
-    this.setAbilityScores(20, 8, 20, 5, 10, 5);
-    this.damageResponses.set("thunder", "vulnerable");
-    this.senses.set("tremorsense", 60);
-    this.languages.add("Terran");
-
-    this.addFeature(EarthGlide);
-    this.addFeature(SiegeMonster);
-
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Slam", "str", _dd(2, 8, "bludgeoning")),
-    );
-  }
-}
+export const EarthElemental: MonsterTemplate = {
+  base: elementalBase,
+  name: "earth elemental",
+  tokenUrl: earthUrl,
+  hpMax: 126,
+  naturalAC: 18,
+  movement: { burrow: 30 },
+  abilities: [20, 8, 20, 5, 10, 5],
+  damage: { thunder: "vulnerable" },
+  senses: { tremorsense: 60 },
+  languages: ["Terran"],
+  features: [EarthGlide, SiegeMonster],
+  naturalWeapons: [
+    { name: "slam", toHit: "str", damage: _dd(2, 8, "bludgeoning") },
+  ],
+};
 
 const FireForm = new SimpleFeature(
   "Fire Form",
@@ -194,30 +178,28 @@ const WaterSusceptibility = notImplementedFeature(
   `For every 5 feet the elemental moves in water, or for every gallon of water splashed on it, it takes 1 cold damage.`,
 );
 
-export class FireElemental extends Elemental {
-  constructor(g: Engine) {
-    super(g, "fire elemental", fireUrl, 102);
-    this.movement.set("speed", 50);
-    this.setAbilityScores(10, 17, 16, 6, 10, 7);
-    this.damageResponses.set("fire", "immune");
-    this.conditionImmunities.add("Grappled");
-    this.conditionImmunities.add("Prone");
-    this.conditionImmunities.add("Restrained");
-    this.languages.add("Ignan");
-
-    this.addFeature(FireForm);
-    this.addFeature(Illumination);
-    this.addFeature(WaterSusceptibility);
-
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Touch", "dex", _dd(2, 6, "fire"), {
-        onHit: async (target) => {
-          await target.addEffect(OnFire, { duration: Infinity }, this);
-        },
-      }),
-    );
-  }
-}
+export const FireElemental: MonsterTemplate = {
+  base: elementalBase,
+  name: "fire elemental",
+  tokenUrl: fireUrl,
+  hpMax: 102,
+  movement: { speed: 50 },
+  abilities: [10, 17, 16, 6, 10, 7],
+  damage: { fire: "immune" },
+  immunities: ["Grappled", "Prone", "Restrained"],
+  languages: ["Ignan"],
+  features: [FireForm, Illumination, WaterSusceptibility],
+  naturalWeapons: [
+    {
+      name: "touch",
+      toHit: "dex",
+      damage: _dd(2, 6, "fire"),
+      async onHit(target, me) {
+        await target.addEffect(OnFire, { duration: Infinity }, me);
+      },
+    },
+  ],
+};
 
 // TODO
 const Whelm = notImplementedFeature(
@@ -226,21 +208,19 @@ const Whelm = notImplementedFeature(
 The elemental can grapple one Large creature or up to two Medium or smaller creatures at one time. At the start of each of the elemental's turns, each target grappled by it takes 13 (2d8 + 4) bludgeoning damage. A creature within 5 feet of the elemental can pull a creature or object out of it by taking an action to make a DC 14 Strength check and succeeding.`,
 );
 
-export class WaterElemental extends Elemental {
-  constructor(g: Engine) {
-    super(g, "water elemental", waterUrl, 114);
-    this.naturalAC = 12;
-    this.movement.set("swim", 90);
-    this.setAbilityScores(18, 14, 18, 5, 10, 8);
-    this.damageResponses.set("acid", "resist");
-    this.conditionImmunities.add("Grappled");
-    this.conditionImmunities.add("Prone");
-    this.conditionImmunities.add("Restrained");
-    this.languages.add("Aquan");
-
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Slam", "str", _dd(2, 8, "bludgeoning")),
-    );
-    this.addFeature(Whelm);
-  }
-}
+export const WaterElemental: MonsterTemplate = {
+  base: elementalBase,
+  name: "water elemental",
+  tokenUrl: waterUrl,
+  hpMax: 114,
+  naturalAC: 12,
+  movement: { swim: 90 },
+  abilities: [18, 14, 18, 5, 10, 8],
+  damage: { acid: "resist" },
+  immunities: ["Grappled", "Prone", "Restrained"],
+  languages: ["Aquan"],
+  features: [Whelm],
+  naturalWeapons: [
+    { name: "slam", toHit: "str", damage: _dd(2, 8, "bludgeoning") },
+  ],
+};

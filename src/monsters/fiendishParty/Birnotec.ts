@@ -8,13 +8,13 @@ import CastSpell from "../../actions/CastSpell";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import MessageBuilder from "../../MessageBuilder";
-import Monster from "../../Monster";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { simpleSpell } from "../../spells/common";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
@@ -25,7 +25,6 @@ import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import Priority from "../../types/Priority";
-import SizeCategory from "../../types/SizeCategory";
 import { poSet } from "../../utils/ai";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
@@ -326,27 +325,25 @@ const HellishRebuke = new SimpleFeature(
   },
 );
 
-export default class Birnotec extends Monster {
-  constructor(g: Engine) {
-    super(g, "Birnotec", 5, "humanoid", SizeCategory.Medium, tokenUrl, 35);
-    this.alignLC = "Lawful";
-    this.alignGE = "Evil";
-    this.diesAtZero = false;
-    this.setAbilityScores(6, 15, 8, 12, 13, 20);
-    this.pb = 3;
-
-    this.saveProficiencies.add("wis");
-    this.saveProficiencies.add("cha");
-    this.addProficiency("Arcana", "proficient");
-    this.addProficiency("Nature", "proficient");
-    this.damageResponses.set("poison", "immune");
-    this.conditionImmunities.add("Poisoned");
-    this.languages.add("Abyssal");
-    this.languages.add("Common");
-
-    this.addFeature(ArmorOfAgathys);
-    this.addFeature(EldritchBurst);
-    this.addFeature(AntimagicProdigy);
-    this.addFeature(HellishRebuke);
-  }
-}
+const Birnotec: MonsterTemplate = {
+  name: "Birnotec",
+  cr: 5,
+  type: "humanoid",
+  tokenUrl,
+  hpMax: 35,
+  align: ["Lawful", "Evil"],
+  makesDeathSaves: true,
+  abilities: [6, 15, 8, 12, 13, 20],
+  pb: 3,
+  proficiency: {
+    wis: "proficient",
+    cha: "proficient",
+    Arcana: "proficient",
+    Nature: "proficient",
+  },
+  damage: { poison: "immune" },
+  immunities: ["Poisoned"],
+  languages: ["Common", "Abyssal"],
+  features: [ArmorOfAgathys, EldritchBurst, AntimagicProdigy, HellishRebuke],
+};
+export default Birnotec;

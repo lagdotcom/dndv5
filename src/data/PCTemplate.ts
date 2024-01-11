@@ -4,12 +4,11 @@ import HasProficiency from "../types/HasProficiency";
 import LanguageName from "../types/LanguageName";
 import PCClassName from "../types/PCClassName";
 import { BackgroundName } from "./allBackgrounds";
-import { EnchantmentName } from "./allEnchantments";
 import { FeatureName } from "./allFeatures";
-import { ItemName } from "./allItems";
 import { PCRaceName } from "./allPCRaces";
 import { PCSubclassName } from "./allPCSubclasses";
 import { SpellName } from "./allSpells";
+import InventoryItem from "./InventoryItem";
 
 type FeatureConfigs = Record<string, unknown>;
 
@@ -47,13 +46,7 @@ export default interface PCTemplate {
   feats?: FeatureName[];
   configs?: FeatureConfigs;
   languages?: LanguageName[];
-  items: {
-    name: ItemName;
-    equip?: boolean;
-    attune?: boolean;
-    quantity?: number;
-    enchantments?: EnchantmentName[];
-  }[];
+  items: InventoryItem[];
   known?: SpellName[];
   prepared?: SpellName[];
 }

@@ -4,12 +4,13 @@ import SkillName from "./SkillName";
 import ToolName from "./ToolName";
 import WeaponType from "./WeaponType";
 
-type HasProficiency =
-  | Item
+export type StringProficiency =
   | AbilityName
   | SkillName
   | ToolName
   | WeaponCategory
   | WeaponType
   | ArmorCategory;
+
+type HasProficiency = StringProficiency | Item;
 export default HasProficiency;

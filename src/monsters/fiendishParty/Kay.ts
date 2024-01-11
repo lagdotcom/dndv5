@@ -2,19 +2,14 @@ import wreathedInShadowUrl from "@img/act/wreathed-in-shadow.svg";
 import tokenUrl from "@img/tok/boss/kay.png";
 
 import { makeIcon } from "../../colours";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import Effect from "../../Effect";
-import Engine from "../../Engine";
 import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import { Arrow } from "../../items/ammunition";
-import { StuddedLeatherArmor } from "../../items/armor";
-import { Longbow, Spear } from "../../items/weapons";
-import Monster from "../../Monster";
 import { atSet } from "../../types/AttackTag";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import Priority from "../../types/Priority";
-import SizeCategory from "../../types/SizeCategory";
 import { isA } from "../../utils/types";
 import { makeBagMultiattack } from "../multiattack";
 
@@ -133,33 +128,36 @@ const KayMultiattack = makeBagMultiattack(
   [{ weapon: "longbow" }, { weapon: "longbow" }],
 );
 
-export default class Kay extends Monster {
-  constructor(g: Engine) {
-    super(g, hiddenName, 6, "humanoid", SizeCategory.Medium, tokenUrl, 75);
-    this.alignLC = "Chaotic";
-    this.alignGE = "Neutral";
-    this.diesAtZero = false;
-    this.setAbilityScores(14, 18, 16, 10, 8, 14);
-    this.pb = 3;
-
-    this.saveProficiencies.add("str");
-    this.saveProficiencies.add("dex");
-    this.addProficiency("Athletics", "proficient");
-    this.addProficiency("Stealth", "expertise");
-    this.conditionImmunities.add("Frightened");
-    this.languages.add("Abyssal");
-    this.languages.add("Common");
-    this.languages.add("Orc");
-
-    this.addFeature(ScreamingInside);
-    this.addFeature(WreathedInShadow);
-    this.addFeature(KayMultiattack);
-    this.addFeature(Evasion);
-    this.addFeature(SmoulderingRage);
-
-    this.don(new StuddedLeatherArmor(g), true);
-    this.don(new Longbow(g), true);
-    this.give(new Spear(g), true);
-    this.addToInventory(new Arrow(g), 20);
-  }
-}
+const Kay: MonsterTemplate = {
+  name: realName,
+  cr: 6,
+  type: "humanoid",
+  tokenUrl,
+  hpMax: 75,
+  align: ["Chaotic", "Neutral"],
+  makesDeathSaves: true,
+  abilities: [14, 18, 16, 10, 8, 14],
+  pb: 3,
+  proficiency: {
+    str: "proficient",
+    dex: "proficient",
+    Athletics: "proficient",
+    Stealth: "expertise",
+  },
+  immunities: ["Frightened"],
+  languages: ["Common", "Orc", "Abyssal"],
+  features: [
+    ScreamingInside,
+    WreathedInShadow,
+    KayMultiattack,
+    Evasion,
+    SmoulderingRage,
+  ],
+  items: [
+    { name: "studded leather armor", equip: true },
+    { name: "longbow", equip: true },
+    { name: "spear" },
+    { name: "arrow", quantity: 20 },
+  ],
+};
+export default Kay;

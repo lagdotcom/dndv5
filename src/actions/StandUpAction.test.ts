@@ -1,6 +1,8 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import BattleTemplate from "../data/BattleTemplate";
 import Effect from "../Effect";
 import { Prone } from "../effects";
+import { thug } from "../tests/monsters";
 import setupBattleTest from "../tests/setupBattleTest";
 import { coSet } from "../types/ConditionName";
 import StandUpAction from "./StandUpAction";
@@ -12,11 +14,15 @@ const stun = new Effect("Stunned", "turnStart", (g) => {
 });
 
 describe("StandUpAction", () => {
+  const plan: BattleTemplate = {
+    combatants: [thug(0, 0, 10)],
+  };
+
   it("should calculate the correct cost based on actor's speed", async () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["thug", 0, 0, 10]);
+    } = await setupBattleTest(plan);
     const action = new StandUpAction(g, me);
 
     expect(action.cost).toBe(15);
@@ -26,7 +32,7 @@ describe("StandUpAction", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["thug", 0, 0, 10]);
+    } = await setupBattleTest(plan);
     const action = new StandUpAction(g, me);
 
     // not prone
@@ -57,7 +63,7 @@ describe("StandUpAction", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["thug", 0, 0, 10]);
+    } = await setupBattleTest(plan);
     await me.addEffect(Prone, { duration: Infinity });
 
     const action = new StandUpAction(g, me);

@@ -6,6 +6,7 @@ import { doStandardAttack } from "../../actions/WeaponAttack";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
 import { bonusSpellsFeature } from "../../features/common";
 import SimpleFeature from "../../features/SimpleFeature";
@@ -18,9 +19,6 @@ import {
 } from "../../filters";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import YesNoChoice from "../../interruptions/YesNoChoice";
-import { LeatherArmor } from "../../items/armor";
-import { Rapier } from "../../items/weapons";
-import Monster from "../../Monster";
 import { getTeleportation } from "../../movement";
 import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
@@ -28,7 +26,6 @@ import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import Priority from "../../types/Priority";
-import SizeCategory from "../../types/SizeCategory";
 import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility, getWeaponRange } from "../../utils/items";
@@ -277,12 +274,12 @@ const Irritation = new SimpleFeature(
   },
 );
 
-const SpellcastingMethod = new InnateSpellcasting("Spellcasting", "cha");
-const Spellcasting = bonusSpellsFeature(
+const YulashSpellcastingMethod = new InnateSpellcasting("Spellcasting", "cha");
+const YulashSpellcasting = bonusSpellsFeature(
   "Spellcasting",
   "Yulash can cast healing word at will.",
   "level",
-  SpellcastingMethod,
+  YulashSpellcastingMethod,
   [{ level: 1, spell: HealingWord }],
 );
 
@@ -348,32 +345,30 @@ const DancingStep = new SimpleFeature(
   },
 );
 
-export default class Yulash extends Monster {
-  constructor(g: Engine) {
-    super(g, "Yulash", 5, "monstrosity", SizeCategory.Medium, tokenUrl, 65);
-    this.alignLC = "Chaotic";
-    this.alignGE = "Evil";
-    this.diesAtZero = false;
-    this.setAbilityScores(8, 16, 14, 12, 13, 18);
-    this.pb = 3;
-    this.level = 5; // for spellcasting
-
-    this.saveProficiencies.add("dex");
-    this.saveProficiencies.add("cha");
-    this.addProficiency("Deception", "proficient");
-    this.addProficiency("Perception", "proficient");
-    this.damageResponses.set("poison", "immune");
-    this.conditionImmunities.add("Poisoned");
-    this.languages.add("Abyssal");
-    this.languages.add("Common");
-
-    this.addFeature(Cheer);
-    this.addFeature(Discord);
-    this.addFeature(Irritation);
-    this.addFeature(Spellcasting);
-    this.addFeature(DancingStep);
-
-    this.don(new LeatherArmor(g), true);
-    this.don(new Rapier(g), true);
-  }
-}
+const Yulash: MonsterTemplate = {
+  name: "Yulash",
+  cr: 5,
+  type: "monstrosity",
+  tokenUrl,
+  hpMax: 65,
+  align: ["Chaotic", "Evil"],
+  makesDeathSaves: true,
+  abilities: [8, 16, 14, 12, 13, 18],
+  pb: 3,
+  levels: { Bard: 5 },
+  proficiency: {
+    dex: "proficient",
+    cha: "proficient",
+    Deception: "proficient",
+    Perception: "proficient",
+  },
+  damage: { poison: "immune" },
+  immunities: ["Poisoned"],
+  languages: ["Common", "Abyssal"],
+  features: [Cheer, Discord, Irritation, YulashSpellcasting, DancingStep],
+  items: [
+    { name: "leather armor", equip: true },
+    { name: "rapier", equip: true },
+  ],
+};
+export default Yulash;

@@ -2,6 +2,7 @@ import WeaponAttack from "../actions/WeaponAttack";
 import DamageRule from "../ai/DamageRule";
 import HealingRule from "../ai/HealingRule";
 import { HasTarget, HasTargets } from "../configs";
+import { addMonster, addPC } from "../data/templates";
 import Engine from "../Engine";
 import AIRule, { ActionEvaluation } from "../types/AIRule";
 import Combatant from "../types/Combatant";
@@ -44,7 +45,9 @@ describe("HealingRule", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["O Gonrit", 0, 0, 10]);
+    } = await setupBattleTest({
+      combatants: [addMonster("O Gonrit", 0, 0, undefined, 10)],
+    });
 
     const v = getRuleActions(g, R, me);
     expect(v).toHaveLength(0);
@@ -54,10 +57,12 @@ describe("HealingRule", () => {
     const {
       g,
       combatants: [me, ally],
-    } = await setupBattleTest(
-      ["O Gonrit", 0, 0, 10],
-      ["Zafron Halehart", 5, 0, 1],
-    );
+    } = await setupBattleTest({
+      combatants: [
+        addMonster("O Gonrit", 0, 0, undefined, 10),
+        addMonster("Zafron Halehart", 5, 0, undefined, 1),
+      ],
+    });
     me.hp -= 20;
     ally.hp -= 30;
 
@@ -78,11 +83,13 @@ describe("HealingRule", () => {
     const {
       g,
       combatants: [me, ally, hurt],
-    } = await setupBattleTest(
-      ["O Gonrit", 0, 0, 10],
-      ["Zafron Halehart", 5, 0, 1],
-      ["Yulash", 10, 0, 1],
-    );
+    } = await setupBattleTest({
+      combatants: [
+        addMonster("O Gonrit", 0, 0, undefined, 10),
+        addMonster("Zafron Halehart", 5, 0, undefined, 1),
+        addMonster("Yulash", 10, 0, undefined, 1),
+      ],
+    });
     ally.hp -= 2;
     hurt.hp -= 20;
 
@@ -107,11 +114,13 @@ describe("DamageRule", () => {
     const {
       g,
       combatants: [me, far, close],
-    } = await setupBattleTest(
-      ["O Gonrit", 0, 0, 10],
-      ["Aura", 140, 0, 1],
-      ["Hagrond", 10, 10, 1],
-    );
+    } = await setupBattleTest({
+      combatants: [
+        addMonster("O Gonrit", 0, 0, undefined, 10),
+        addPC("Aura", 140, 0, 1),
+        addPC("Hagrond", 10, 10, 1),
+      ],
+    });
 
     const v = getRuleActions(g, R, me);
 
@@ -125,11 +134,13 @@ describe("DamageRule", () => {
     const {
       g,
       combatants: [me, badger, oGonrit],
-    } = await setupBattleTest(
-      ["Hagrond", 0, 0, 10],
-      ["badger", 5, 0, 1],
-      ["O Gonrit", 0, 5, 1],
-    );
+    } = await setupBattleTest({
+      combatants: [
+        addPC("Hagrond", 0, 0, 10),
+        addMonster("badger", 5, 0, undefined, 1),
+        addMonster("O Gonrit", 0, 5, undefined, 1),
+      ],
+    });
     me.movedSoFar = me.speed;
 
     const v = getRuleActions(g, R, me);
@@ -157,13 +168,15 @@ describe("getAllEvaluations", () => {
     const {
       g,
       combatants: [me, zafron, kay],
-    } = await setupBattleTest(
-      ["O Gonrit", 0, 0, 10],
-      ["Zafron Halehart", 35, 0, 1],
-      ["Kay of the Abyss", 60, 0, 1],
-      ["Hagrond", 10, 0, 1],
-      ["Beldalynn", 0, 10, 1],
-    );
+    } = await setupBattleTest({
+      combatants: [
+        addMonster("O Gonrit", 0, 0, undefined, 10),
+        addMonster("Zafron Halehart", 35, 0, undefined, 1),
+        addMonster("Kay of the Abyss", 60, 0, undefined, 1),
+        addPC("Hagrond", 10, 0, 1),
+        addPC("Beldalynn", 0, 10, 1),
+      ],
+    });
 
     const { bestPositions } = Array.from(getAllEvaluations(g, me)).sort(
       (a, b) => b.best - a.best,

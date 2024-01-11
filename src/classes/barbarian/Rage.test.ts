@@ -4,6 +4,8 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
 import ProficiencyCollector from "../../collectors/ProficiencyCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
+import BattleTemplate from "../../data/BattleTemplate";
+import { addPC } from "../../data/templates";
 import BeforeCheckEvent from "../../events/BeforeCheckEvent";
 import CheckActionEvent from "../../events/CheckActionEvent";
 import TurnEndedEvent from "../../events/TurnEndedEvent";
@@ -13,11 +15,13 @@ import { chSet } from "../../types/CheckTag";
 import { EndRageAction, RageAction, RageEffect } from "./Rage";
 
 describe("Rage Feature", () => {
+  const plan: BattleTemplate = { combatants: [addPC("Hagrond", 0, 0, 10)] };
+
   it("should enter rage when RageAction is applied", async () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
+    } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();
@@ -29,7 +33,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
+    } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
     const endRageAction = new EndRageAction(g, me);
@@ -44,7 +48,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
+    } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();
@@ -72,7 +76,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
+    } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();
@@ -100,7 +104,7 @@ describe("Rage Feature", () => {
     const {
       g,
       combatants: [me],
-    } = await setupBattleTest(["Hagrond", 0, 0, 10]);
+    } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
     await rageAction.apply();

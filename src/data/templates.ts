@@ -1,23 +1,33 @@
 import { MonsterName } from "./allMonsters";
 import { PCName } from "./allPCs";
-import BattleTemplate, { BattleTemplateEntry } from "./BattleTemplate";
+import BattleTemplate, { MonsterEntry, PCEntry } from "./BattleTemplate";
 
-const addPC = (name: PCName, x: number, y: number): BattleTemplateEntry => ({
+export const addPC = (
+  name: PCName,
+  x: number,
+  y: number,
+  initiative?: number,
+): PCEntry => ({
   type: "pc",
   name,
   x,
   y,
+  initiative,
 });
 
-const addMonster = (
+export const addMonster = <T>(
   name: MonsterName,
   x: number,
   y: number,
-): BattleTemplateEntry => ({
+  config?: T,
+  initiative?: number,
+): MonsterEntry<T> => ({
   type: "monster",
   name,
   x,
   y,
+  config,
+  initiative,
 });
 
 export const gleanVsGoblins: BattleTemplate = {
@@ -27,8 +37,8 @@ export const gleanVsGoblins: BattleTemplate = {
     addPC("Es'les", 10, 5),
     addPC("Faerfarn", 10, 20),
     addPC("Litt", 5, 15),
-    addMonster("goblin [bow]", 15, 0),
-    addMonster("goblin [bow]", 25, 0),
+    addMonster("goblin", 15, 0, { weapon: "shortbow" }),
+    addMonster("goblin", 25, 0, { weapon: "shortbow" }),
     addMonster("goblin", 20, 5),
     addMonster("goblin", 25, 5),
   ],

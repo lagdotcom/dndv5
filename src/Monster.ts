@@ -1,5 +1,6 @@
 import { defaultAIRules } from "./ai/data";
 import CombatantBase from "./CombatantBase";
+import { ItemName } from "./data/allItems";
 import Engine from "./Engine";
 import AIRule from "./types/AIRule";
 import CreatureType from "./types/CreatureType";
@@ -33,8 +34,16 @@ export default class Monster extends CombatantBase {
     return super.don(item);
   }
 
-  give(item: Item, giveProficiency = false) {
+  give(item: Item, quantity = 1, giveProficiency = false) {
     if (giveProficiency) this.addProficiency(item, "proficient");
-    return this.addToInventory(item);
+    return this.addToInventory(item, quantity);
+  }
+
+  getInventoryItem(name: ItemName) {
+    for (const [item] of this.inventory) {
+      if (item.name === name) return item;
+    }
+
+    throw new Error(`${this.name} does not have ${name} in inventory`);
   }
 }

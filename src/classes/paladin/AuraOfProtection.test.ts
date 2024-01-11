@@ -4,6 +4,7 @@ import InterruptionCollector from "../../collectors/InterruptionCollector";
 import ProficiencyCollector from "../../collectors/ProficiencyCollector";
 import SaveDamageResponseCollector from "../../collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
+import { addPC } from "../../data/templates";
 import { Dying } from "../../effects";
 import BeforeSaveEvent from "../../events/BeforeSaveEvent";
 import setupBattleTest from "../../tests/setupBattleTest";
@@ -15,7 +16,9 @@ describe("Aura of Protection", () => {
     const {
       g,
       combatants: [who, paladin],
-    } = await setupBattleTest(["Aura", 35, 0, 10], ["Galilea", 0, 0, 1]);
+    } = await setupBattleTest({
+      combatants: [addPC("Aura", 35, 0, 10), addPC("Galilea", 0, 0, 1)],
+    });
 
     const outOfRange = await g.resolve(
       new BeforeSaveEvent({
@@ -58,7 +61,7 @@ describe("Aura of Protection", () => {
       inRange.detail.bonus.result,
     );
 
-    paladin.effects.set(Dying, { duration: Infinity });
+    await paladin.addEffect(Dying, { duration: Infinity });
 
     const unconscious = await g.resolve(
       new BeforeSaveEvent({

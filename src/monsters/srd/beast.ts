@@ -2,80 +2,64 @@ import badgerUrl from "@img/tok/badger.png";
 import batUrl from "@img/tok/bat.png";
 import giantBadgerUrl from "@img/tok/giant-badger.png";
 
-import Engine from "../../Engine";
-import Monster from "../../Monster";
+import MonsterTemplate from "../../data/MonsterTemplate";
+import { notImplementedFeature } from "../../features/common";
 import SizeCategory from "../../types/SizeCategory";
 import { _dd, _fd } from "../../utils/dice";
 import { KeenHearing, KeenSmell } from "../common";
 import { makeBagMultiattack } from "../multiattack";
-import NaturalWeapon from "../NaturalWeapon";
 
-export class Badger extends Monster {
-  constructor(g: Engine) {
-    super(g, "badger", 0, "beast", SizeCategory.Tiny, badgerUrl, 3);
-    this.movement.set("speed", 20);
-    this.movement.set("burrow", 5);
-    this.setAbilityScores(4, 11, 12, 2, 12, 5);
-    this.senses.set("darkvision", 30);
+export const Badger: MonsterTemplate = {
+  name: "badger",
+  tokenUrl: badgerUrl,
+  cr: 0,
+  type: "beast",
+  size: SizeCategory.Tiny,
+  hpMax: 3,
+  abilities: [4, 11, 12, 2, 12, 5],
+  movement: { speed: 20, burrow: 5 },
+  senses: { darkvision: 30 },
+  features: [KeenSmell],
+  naturalWeapons: [{ name: "bite", toHit: "dex", damage: _fd(1, "piercing") }],
+};
 
-    this.addFeature(KeenSmell);
+// TODO
+const Echolocation = notImplementedFeature(
+  "Echolocation",
+  `The bat can't use its blindsight while deafened.`,
+);
 
-    // Bite. Melee Weapon Attack: +2 to hit, reach 5 ft., one target. Hit: 1 piercing damage.
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Bite", "dex", _fd(1, "piercing")),
-    );
-  }
-}
+export const Bat: MonsterTemplate = {
+  name: "bat",
+  tokenUrl: batUrl,
+  cr: 0,
+  type: "beast",
+  size: SizeCategory.Tiny,
+  hpMax: 1,
+  abilities: [2, 15, 8, 2, 12, 4],
+  movement: { speed: 5, fly: 30 },
+  senses: { blindsight: 60 },
+  features: [Echolocation, KeenHearing],
+  naturalWeapons: [{ name: "bite", toHit: 0, damage: _fd(1, "piercing") }],
+};
 
-export class Bat extends Monster {
-  constructor(g: Engine) {
-    super(g, "bat", 0, "beast", SizeCategory.Tiny, batUrl, 1);
-    this.movement.set("speed", 5);
-    this.movement.set("fly", 30);
-    this.setAbilityScores(2, 15, 8, 2, 12, 4);
-    this.senses.set("blindsight", 60);
+const GiantBadgerMultiattack = makeBagMultiattack(
+  "The badger makes two attacks: one with its bite and one with its claws.",
+  [{ weapon: "bite" }, { weapon: "claws" }],
+);
 
-    // TODO Echolocation. The bat can't use its blindsight while deafened.
-    this.addFeature(KeenHearing);
-
-    // Bite. Melee Weapon Attack: +0 to hit, reach 5 ft., one creature. Hit: 1 piercing damage.
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Bite", 0, _fd(1, "piercing")),
-    );
-  }
-}
-
-export class GiantBadger extends Monster {
-  constructor(g: Engine) {
-    super(
-      g,
-      "giant badger",
-      0.25,
-      "beast",
-      SizeCategory.Medium,
-      giantBadgerUrl,
-      13,
-    );
-    this.movement.set("burrow", 10);
-    this.setAbilityScores(13, 10, 15, 2, 12, 5);
-    this.senses.set("darkvision", 30);
-
-    this.addFeature(KeenSmell);
-    this.addFeature(
-      makeBagMultiattack(
-        "The badger makes two attacks: one with its bite and one with its claws.",
-        [{ weapon: "bite" }, { weapon: "claw" }],
-      ),
-    );
-
-    // Bite. Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) piercing damage.
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Bite", "str", _dd(1, 6, "piercing")),
-    );
-
-    // Claws. Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 6 (2d4 + 1) slashing damage.
-    this.naturalWeapons.add(
-      new NaturalWeapon(g, "Claws", "str", _dd(2, 4, "slashing")),
-    );
-  }
-}
+export const GiantBadger: MonsterTemplate = {
+  name: "giant badger",
+  tokenUrl: giantBadgerUrl,
+  cr: 0.25,
+  type: "beast",
+  hpMax: 13,
+  abilities: [13, 10, 15, 2, 12, 5],
+  movement: { burrow: 10 },
+  senses: { darkvision: 30 },
+  features: [KeenSmell, GiantBadgerMultiattack],
+  naturalWeapons: [
+    { name: "bite", toHit: "str", damage: _dd(1, 6, "piercing") },
+    { name: "claws", toHit: "str", damage: _dd(2, 4, "slashing") },
+  ],
+};

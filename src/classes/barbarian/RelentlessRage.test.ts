@@ -1,5 +1,7 @@
 import { injectTestPC } from "../../data/allPCs";
+import { addPC } from "../../data/templates";
 import { SaveEventDetail } from "../../events/SaveEvent";
+import { thug } from "../../tests/monsters";
 import setupBattleTest from "../../tests/setupBattleTest";
 import { enumerate } from "../../utils/numbers";
 import { RageEffect } from "./Rage";
@@ -7,6 +9,7 @@ import { RageEffect } from "./Rage";
 const Conan = injectTestPC({
   name: "Conan",
   tokenUrl: "",
+  alignment: ["Chaotic", "Neutral"],
   abilities: [10, 10, 10, 10, 10, 10],
   race: { name: "Human", configs: { "Extra Language": "Orc" } },
   background: { name: "Folk Hero" },
@@ -30,7 +33,9 @@ describe("Relentless Rage", () => {
     const {
       g,
       combatants: [me, enemy],
-    } = await setupBattleTest([Conan, 0, 0, 10], ["thug", 5, 0, 20]);
+    } = await setupBattleTest({
+      combatants: [addPC(Conan, 0, 0, 10), thug(5, 0, 20)],
+    });
 
     me.hp = 2;
     await me.addEffect(RageEffect, { duration: Infinity });

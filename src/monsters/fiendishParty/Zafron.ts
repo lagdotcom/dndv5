@@ -4,6 +4,7 @@ import tokenUrl from "@img/tok/boss/zafron.png";
 import AbstractAction from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
 import Engine from "../../Engine";
@@ -12,11 +13,8 @@ import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
-import { ScaleMailArmor } from "../../items/armor";
-import { Greataxe } from "../../items/weapons";
 import { MapSquareSize } from "../../MapSquare";
 import MessageBuilder from "../../MessageBuilder";
-import Monster from "../../Monster";
 import { BoundedMove } from "../../movement";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
@@ -24,7 +22,6 @@ import { MundaneDamageTypes } from "../../types/DamageType";
 import { WeaponItem } from "../../types/Item";
 import MoveDirection from "../../types/MoveDirection";
 import Priority from "../../types/Priority";
-import SizeCategory from "../../types/SizeCategory";
 import { round } from "../../utils/numbers";
 import { isA } from "../../utils/types";
 import { makeBagMultiattack } from "../multiattack";
@@ -229,33 +226,31 @@ const ZafronMultiattack = makeBagMultiattack(
   [{ weapon: "greataxe" }, { weapon: "greataxe" }],
 );
 
-export default class Zafron extends Monster {
-  constructor(g: Engine) {
-    super(g, "Zafron Halehart", 5, "fiend", SizeCategory.Medium, tokenUrl, 105);
-    this.alignLC = "Chaotic";
-    this.alignGE = "Evil";
-    this.diesAtZero = false;
-    this.setAbilityScores(18, 14, 20, 7, 10, 13);
-    this.pb = 3;
-
-    this.saveProficiencies.add("str");
-    this.saveProficiencies.add("con");
-    this.addProficiency("Acrobatics", "proficient");
-    this.addProficiency("Intimidation", "proficient");
-    this.damageResponses.set("fire", "resist");
-    this.damageResponses.set("poison", "resist");
-    this.conditionImmunities.add("Poisoned");
-    this.languages.add("Abyssal");
-
-    const axe = new Greataxe(g);
-    this.addFeature(LustForBattle);
-    this.setConfig(LustForBattle, axe);
-
-    this.addFeature(ZafronMultiattack);
-    this.addFeature(BullRush);
-    this.addFeature(SurvivalReflex);
-
-    this.don(new ScaleMailArmor(g), true);
-    this.don(axe, true);
-  }
-}
+const Zafron: MonsterTemplate = {
+  name: "Zafron Halehart",
+  cr: 5,
+  type: "fiend",
+  tokenUrl,
+  hpMax: 105,
+  align: ["Chaotic", "Evil"],
+  makesDeathSaves: true,
+  abilities: [18, 14, 20, 7, 10, 13],
+  pb: 3,
+  proficiency: {
+    str: "proficient",
+    con: "proficient",
+    Acrobatics: "proficient",
+    Intimidation: "proficient",
+  },
+  damage: { fire: "resist", poison: "resist" },
+  immunities: ["Poisoned"],
+  languages: ["Abyssal"],
+  features: [LustForBattle, ZafronMultiattack, BullRush, SurvivalReflex],
+  items: [{ name: "scale mail", equip: true }, { name: "greataxe" }],
+  setup() {
+    const axe = this.getInventoryItem("greataxe");
+    this.don(axe);
+    this.setConfig(LustForBattle, axe as WeaponItem);
+  },
+};
+export default Zafron;

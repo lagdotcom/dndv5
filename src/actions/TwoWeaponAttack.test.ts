@@ -1,10 +1,13 @@
 import { injectTestPC } from "../data/allPCs";
+import { addPC } from "../data/templates";
 import { AttackDetail } from "../events/AttackEvent";
+import { thug } from "../tests/monsters";
 import setupBattleTest from "../tests/setupBattleTest";
 
 const Stabby = injectTestPC({
   name: "Stabby",
   tokenUrl: "",
+  alignment: ["Chaotic", "Neutral"],
   abilities: [10, 11, 10, 10, 10, 10],
   background: { name: "Criminal" },
   race: { name: "Human", configs: { "Extra Language": "Gnomish" } },
@@ -21,7 +24,9 @@ describe("TwoWeaponAttack", () => {
     const {
       g,
       combatants: [me, target],
-    } = await setupBattleTest([Stabby, 0, 5, 20], ["thug", 0, 0, 10]);
+    } = await setupBattleTest({
+      combatants: [addPC(Stabby, 0, 5, 20), thug(0, 0, 10)],
+    });
 
     let detail: AttackDetail | undefined;
     g.events.on("Attack", (event) => (detail = event.detail));

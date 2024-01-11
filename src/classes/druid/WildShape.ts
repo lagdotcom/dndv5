@@ -1,5 +1,7 @@
 import AbstractAction from "../../actions/AbstractAction";
 import allMonsters, { MonsterName } from "../../data/allMonsters";
+import initialiseMonster from "../../data/initialiseMonster";
+import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import MessageBuilder from "../../MessageBuilder";
@@ -47,7 +49,12 @@ class WildShapeController {
     public g: Engine,
     public me: Combatant,
     public formName: MonsterName,
-    public form = allMonsters[formName](g),
+    // TODO fix this so it doesn't need to actually make one
+    public form = initialiseMonster(
+      g,
+      allMonsters[formName] as MonsterTemplate<unknown>,
+      {},
+    ),
   ) {
     this.backup = {
       name: me.name,
