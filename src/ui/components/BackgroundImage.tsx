@@ -1,5 +1,5 @@
-import { MapSquareSize } from "../../MapSquare";
 import { BattleTemplateImage } from "../../data/BattleTemplate";
+import { MapSquareSize } from "../../MapSquare";
 import { CSSProperties, useMemo } from "../lib";
 import styles from "./BackgroundImage.module.scss";
 
