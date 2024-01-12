@@ -24886,16 +24886,35 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
+  // src/ui/components/CombatantTile.module.scss
+  var CombatantTile_module_default = {
+    "tile": "_tile_1cv1b_1",
+    "caption": "_caption_1cv1b_8"
+  };
+
+  // src/ui/components/CombatantTile.tsx
+  function CombatantTile({ name, tokenUrl }) {
+    return /* @__PURE__ */ u("figure", { className: CombatantTile_module_default.tile, children: [
+      /* @__PURE__ */ u("img", { className: CombatantTile_module_default.image, src: tokenUrl, alt: name }),
+      /* @__PURE__ */ u("figcaption", { className: CombatantTile_module_default.caption, children: name })
+    ] });
+  }
+
+  // src/ui/components/SearchableList.module.scss
+  var SearchableList_module_default = {
+    "list": "_list_1f595_1"
+  };
+
   // src/ui/components/SearchableList.tsx
   function SearchableList({
     items,
     value,
     setValue,
-    maxResults = 10
+    maxResults = 40
   }) {
     const [search, setSearch] = (0, import_hooks.useState)("");
     const { matches: matches2, message } = (0, import_hooks.useMemo)(() => {
-      const found = search ? items.filter((x) => x.includes(search)) : items;
+      const found = search ? items.filter((x) => x.value.includes(search)) : items;
       const matches3 = found.slice(0, maxResults);
       const message2 = matches3.length < found.length ? `...and ${found.length - matches3.length} more...` : void 0;
       return { matches: matches3, message: message2 };
@@ -24909,22 +24928,27 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           onInput: (e2) => setSearch(e2.currentTarget.value)
         }
       ),
-      /* @__PURE__ */ u("ul", { children: [
-        matches2.map((item) => /* @__PURE__ */ u("li", { children: /* @__PURE__ */ u(
-          "button",
-          {
-            className: classnames({ [button_module_default.active]: item === value }),
-            onClick: () => setValue(item),
-            children: item
-          }
-        ) }, item)),
-        message && /* @__PURE__ */ u("li", { children: message })
-      ] })
+      /* @__PURE__ */ u("ul", { className: SearchableList_module_default.list, children: matches2.map((item) => /* @__PURE__ */ u("li", { children: /* @__PURE__ */ u(
+        "button",
+        {
+          className: classnames({
+            [button_module_default.active]: item.value === value
+          }),
+          onClick: () => setValue(item.value),
+          children: item.component
+        }
+      ) }, item.value)) }),
+      message && /* @__PURE__ */ u("div", { children: message })
     ] });
   }
 
   // src/ui/components/AddMonsterDialog.tsx
-  var monsterNames = Object.keys(allMonsters_default);
+  var monsterNames = Object.entries(allMonsters_default).map(
+    ([key, t]) => ({
+      value: key,
+      component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
+    })
+  );
   function AddMonsterDialog({ onCancel, onChoose }) {
     return /* @__PURE__ */ u(Dialog, { title: "Add Monster", children: [
       /* @__PURE__ */ u(SearchableList, { items: monsterNames, setValue: onChoose }),
@@ -24933,10 +24957,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/AddPCDialog.tsx
-  var pcNames = Object.keys(allPCs_default);
+  var pcItems = Object.entries(allPCs_default).map(([key, t]) => ({
+    value: key,
+    component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
+  }));
   function AddPCDialog({ onCancel, onChoose }) {
     return /* @__PURE__ */ u(Dialog, { title: "Add Monster", children: [
-      /* @__PURE__ */ u(SearchableList, { items: pcNames, setValue: onChoose }),
+      /* @__PURE__ */ u(SearchableList, { items: pcItems, setValue: onChoose }),
       /* @__PURE__ */ u("button", { onClick: onCancel, children: "Cancel" })
     ] });
   }

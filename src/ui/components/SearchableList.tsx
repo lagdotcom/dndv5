@@ -1,9 +1,17 @@
+import { JSXInternal } from "preact/src/jsx";
+
 import { useMemo, useState } from "../lib";
 import classnames from "../utils/classnames";
 import buttonStyles from "./button.module.scss";
+import styles from "./SearchableList.module.scss";
+
+export interface ListItem<T extends string> {
+  component: JSXInternal.Element;
+  value: T;
+}
 
 interface Props<T extends string> {
-  items: T[];
+  items: ListItem<T>[];
   value?: T;
   setValue(value: T): void;
   maxResults?: number;
@@ -13,12 +21,14 @@ export default function SearchableList<T extends string>({
   items,
   value,
   setValue,
-  maxResults = 10,
+  maxResults = 40,
 }: Props<T>) {
   const [search, setSearch] = useState("");
 
   const { matches, message } = useMemo(() => {
-    const found = search ? items.filter((x) => x.includes(search)) : items;
+    const found = search
+      ? items.filter((x) => x.value.includes(search))
+      : items;
     const matches = found.slice(0, maxResults);
     const message =
       matches.length < found.length
@@ -34,19 +44,21 @@ export default function SearchableList<T extends string>({
         value={search}
         onInput={(e) => setSearch(e.currentTarget.value)}
       />
-      <ul>
+      <ul className={styles.list}>
         {matches.map((item) => (
-          <li key={item}>
+          <li key={item.value}>
             <button
-              className={classnames({ [buttonStyles.active]: item === value })}
-              onClick={() => setValue(item)}
+              className={classnames({
+                [buttonStyles.active]: item.value === value,
+              })}
+              onClick={() => setValue(item.value)}
             >
-              {item}
+              {item.component}
             </button>
           </li>
         ))}
-        {message && <li>{message}</li>}
       </ul>
+      {message && <div>{message}</div>}
     </div>
   );
 }

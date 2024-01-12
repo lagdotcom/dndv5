@@ -407,3 +407,27 @@
   display: flex;
   flex-direction: column;
 }
+
+/* esbuild-sass-plugin:css-chunk:src/ui/components/CombatantTile.module.scss */
+._tile_1cv1b_1 {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  width: 96px;
+}
+._caption_1cv1b_8 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/components/SearchableList.module.scss */
+._list_1f595_1 {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+}
+._list_1f595_1 li {
+  display: block;
+}

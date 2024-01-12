@@ -1,0 +1,15 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  width: 96px;
+}
+
+.image {
+}
+
+.caption {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

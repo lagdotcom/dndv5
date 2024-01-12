@@ -1,13 +1,19 @@
 import allMonsters, { MonsterName } from "../../data/allMonsters";
+import CombatantTile from "./CombatantTile";
 import Dialog from "./Dialog";
-import SearchableList from "./SearchableList";
+import SearchableList, { ListItem } from "./SearchableList";
+
+const monsterNames = Object.entries(allMonsters).map<ListItem<MonsterName>>(
+  ([key, t]) => ({
+    value: key as MonsterName,
+    component: <CombatantTile name={t.name} tokenUrl={t.tokenUrl} />,
+  }),
+);
 
 interface Props {
   onCancel(): void;
   onChoose(name: MonsterName): void;
 }
-
-const monsterNames = Object.keys(allMonsters) as MonsterName[];
 
 export default function AddMonsterDialog({ onCancel, onChoose }: Props) {
   return (
