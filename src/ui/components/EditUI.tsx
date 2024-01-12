@@ -1,6 +1,7 @@
-import { MonsterName } from "../../data/allMonsters";
+import allMonsters, { MonsterName } from "../../data/allMonsters";
 import { PCName } from "../../data/allPCs";
 import BattleTemplate, {
+  BattleTemplateEntry,
   initialiseFromTemplate,
 } from "../../data/BattleTemplate";
 import Engine from "../../Engine";
@@ -8,8 +9,15 @@ import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import { exceptFor, patchAt } from "../../utils/array";
 import { enumerate } from "../../utils/numbers";
+import { isDefined } from "../../utils/types";
 import useMenu from "../hooks/useMenu";
-import { StateUpdater, useCallback, useEffect, useState } from "../lib";
+import {
+  StateUpdater,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "../lib";
 import {
   allCombatants,
   canDragUnits,
@@ -22,6 +30,7 @@ import AddMonsterDialog from "./AddMonsterDialog";
 import AddPCDialog from "./AddPCDialog";
 import Battlefield from "./Battlefield";
 import buttonStyles from "./button.module.scss";
+import ConfigureMonsterDialog from "./ConfigureMonsterDialog";
 import Menu, { MenuItem } from "./Menu";
 
 interface EditUIProps {
@@ -33,6 +42,7 @@ interface EditUIProps {
 type UnitAction =
   | { type: "side"; side: number }
   | { type: "remove" }
+  | { type: "configure" }
   | { type: "pc"; pos: Point }
   | { type: "monster"; pos: Point };
 
@@ -41,6 +51,44 @@ const sideItem = (side: number, current: number): MenuItem<UnitAction> => ({
   value: { type: "side", side },
   disabled: side === current,
 });
+
+const isConfigurable = (entry: BattleTemplateEntry) =>
+  entry.type === "monster" && isDefined(allMonsters[entry.name].config);
+
+function useConfiguring(
+  template: BattleTemplate,
+  onUpdate: StateUpdater<BattleTemplate>,
+) {
+  const [index, select] = useState<number>();
+  const finish = () => select(undefined);
+
+  const entry = useMemo(() => {
+    if (index) {
+      const e = template.combatants[index];
+      if (e.type === "monster") return e;
+    }
+  }, [index, template.combatants]);
+
+  const patch = useCallback(
+    (key: string, value: unknown) => {
+      if (isDefined(index))
+        onUpdate((old) => ({
+          ...old,
+          combatants: patchAt(old.combatants, index, (entry) =>
+            entry.type === "monster"
+              ? {
+                  ...entry,
+                  config: { ...(entry.config ?? {}), [key]: value },
+                }
+              : entry,
+          ),
+        }));
+    },
+    [index, onUpdate],
+  );
+
+  return { entry, select, patch, finish };
+}
 
 export default function EditUI({ g, template, onUpdate }: EditUIProps) {
   useEffect(() => {
@@ -70,6 +118,7 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
         name,
         x: destination.x,
         y: destination.y,
+        config: allMonsters[name].config?.initial,
       }),
     }));
   };
@@ -85,6 +134,13 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
       }),
     }));
   };
+
+  const {
+    select: configure,
+    entry: configuring,
+    finish: onFinishConfig,
+    patch: onPatchConfig,
+  } = useConfiguring(template, onUpdate);
 
   const menu = useMenu<UnitAction, number>(
     "Unit Actions",
@@ -111,15 +167,20 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
             setDestination(action.pos);
             setAdd(action.type);
             return;
+
+          case "configure":
+            configure(index);
+            return;
         }
       },
-      [onUpdate],
+      [onUpdate, configure],
     ),
   );
 
   const onClickCombatant = useCallback(
     (who: Combatant, e: MouseEvent) => {
       e.stopPropagation();
+      const index = who.id - 1;
       menu.show(
         e,
         [
@@ -127,15 +188,20 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
           sideItem(1, who.side),
           sideItem(2, who.side),
           {
+            label: "Configure...",
+            value: { type: "configure" },
+            disabled: !isConfigurable(template.combatants[index]),
+          },
+          {
             label: "Remove",
             value: { type: "remove" },
             className: buttonStyles.danger,
           },
         ],
-        who.id - 1,
+        index,
       );
     },
-    [menu],
+    [menu, template.combatants],
   );
 
   const onDragCombatant = useCallback(
@@ -179,6 +245,15 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
       )}
       {add === "pc" && (
         <AddPCDialog onChoose={onAddPC} onCancel={onCancelAdd} />
+      )}
+      {configuring && (
+        <ConfigureMonsterDialog
+          g={g}
+          name={configuring.name}
+          config={configuring.config ?? {}}
+          onFinished={onFinishConfig}
+          patchConfig={onPatchConfig}
+        />
       )}
     </>
   );

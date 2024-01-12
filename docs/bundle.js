@@ -23858,7 +23858,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     value,
     onChange
   }) {
-    const [label, setLabel] = (0, import_hooks.useState)("NONE");
+    var _a, _b;
+    const [label, setLabel] = (0, import_hooks.useState)(
+      (_b = (_a = resolver.entries.find((e2) => e2.value === value)) == null ? void 0 : _a.label) != null ? _b : "NONE"
+    );
     const choose = (e2) => () => {
       if (e2.value === value) {
         onChange(field, void 0);
@@ -24888,8 +24891,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
 
   // src/ui/components/CombatantTile.module.scss
   var CombatantTile_module_default = {
-    "tile": "_tile_1cv1b_1",
-    "caption": "_caption_1cv1b_8"
+    "tile": "_tile_17318_1",
+    "image": "_image_17318_8",
+    "caption": "_caption_17318_12"
   };
 
   // src/ui/components/CombatantTile.tsx
@@ -24968,13 +24972,74 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
+  // src/ui/components/ConfigureMonsterDialog.tsx
+  function ConfigureMonsterDialog({
+    g,
+    name,
+    config,
+    onFinished,
+    patchConfig
+  }) {
+    const getConfig = (0, import_hooks.useMemo)(() => {
+      const t = allMonsters_default[name];
+      if (!t.config)
+        throw new Error(`Monster ${name} has no config`);
+      return t.config.get;
+    }, [name]);
+    return /* @__PURE__ */ u(Dialog, { title: "Configure Monster", children: [
+      /* @__PURE__ */ u(
+        ConfigComponents,
+        {
+          config,
+          getConfig: (partial) => getConfig(g, partial),
+          patchConfig
+        }
+      ),
+      /* @__PURE__ */ u("button", { onClick: onFinished, children: "OK" })
+    ] });
+  }
+
   // src/ui/components/EditUI.tsx
   var sideItem = (side, current) => ({
     label: side === 0 ? "Ally" : side === 1 ? "Enemy" : `Side #${side}`,
     value: { type: "side", side },
     disabled: side === current
   });
+  var isConfigurable = (entry) => entry.type === "monster" && isDefined(allMonsters_default[entry.name].config);
+  function useConfiguring(template, onUpdate) {
+    const [index, select] = (0, import_hooks.useState)();
+    const finish = () => select(void 0);
+    const entry = (0, import_hooks.useMemo)(() => {
+      if (index) {
+        const e2 = template.combatants[index];
+        if (e2.type === "monster")
+          return e2;
+      }
+    }, [index, template.combatants]);
+    const patch = (0, import_hooks.useCallback)(
+      (key, value) => {
+        if (isDefined(index))
+          onUpdate((old) => ({
+            ...old,
+            combatants: patchAt(
+              old.combatants,
+              index,
+              (entry2) => {
+                var _a;
+                return entry2.type === "monster" ? {
+                  ...entry2,
+                  config: { ...(_a = entry2.config) != null ? _a : {}, [key]: value }
+                } : entry2;
+              }
+            )
+          }));
+      },
+      [index, onUpdate]
+    );
+    return { entry, select, patch, finish };
+  }
   function EditUI({ g, template, onUpdate }) {
+    var _a;
     (0, import_hooks.useEffect)(() => {
       void initialiseFromTemplate(g, template).then((arg) => {
         resetAllState(() => {
@@ -24992,15 +25057,19 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const onCancelAdd = () => setAdd(void 0);
     const onAddMonster = (name) => {
       setAdd(void 0);
-      onUpdate((old) => ({
-        ...old,
-        combatants: old.combatants.concat({
-          type: "monster",
-          name,
-          x: destination.x,
-          y: destination.y
-        })
-      }));
+      onUpdate((old) => {
+        var _a2;
+        return {
+          ...old,
+          combatants: old.combatants.concat({
+            type: "monster",
+            name,
+            x: destination.x,
+            y: destination.y,
+            config: (_a2 = allMonsters_default[name].config) == null ? void 0 : _a2.initial
+          })
+        };
+      });
     };
     const onAddPC = (name) => {
       setAdd(void 0);
@@ -25014,6 +25083,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         })
       }));
     };
+    const {
+      select: configure,
+      entry: configuring,
+      finish: onFinishConfig,
+      patch: onPatchConfig
+    } = useConfiguring(template, onUpdate);
     const menu = useMenu(
       "Unit Actions",
       (0, import_hooks.useCallback)(
@@ -25037,14 +25112,18 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               setDestination(action.pos);
               setAdd(action.type);
               return;
+            case "configure":
+              configure(index);
+              return;
           }
         },
-        [onUpdate]
+        [onUpdate, configure]
       )
     );
     const onClickCombatant = (0, import_hooks.useCallback)(
       (who, e2) => {
         e2.stopPropagation();
+        const index = who.id - 1;
         menu.show(
           e2,
           [
@@ -25052,15 +25131,20 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             sideItem(1, who.side),
             sideItem(2, who.side),
             {
+              label: "Configure...",
+              value: { type: "configure" },
+              disabled: !isConfigurable(template.combatants[index])
+            },
+            {
               label: "Remove",
               value: { type: "remove" },
               className: button_module_default.danger
             }
           ],
-          who.id - 1
+          index
         );
       },
-      [menu]
+      [menu, template.combatants]
     );
     const onDragCombatant = (0, import_hooks.useCallback)(
       (who, { x, y }) => {
@@ -25100,7 +25184,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       ),
       menu.isShown && /* @__PURE__ */ u(Menu, { ...menu.props }),
       add === "monster" && /* @__PURE__ */ u(AddMonsterDialog, { onChoose: onAddMonster, onCancel: onCancelAdd }),
-      add === "pc" && /* @__PURE__ */ u(AddPCDialog, { onChoose: onAddPC, onCancel: onCancelAdd })
+      add === "pc" && /* @__PURE__ */ u(AddPCDialog, { onChoose: onAddPC, onCancel: onCancelAdd }),
+      configuring && /* @__PURE__ */ u(
+        ConfigureMonsterDialog,
+        {
+          g,
+          name: configuring.name,
+          config: (_a = configuring.config) != null ? _a : {},
+          onFinished: onFinishConfig,
+          patchConfig: onPatchConfig
+        }
+      )
     ] });
   }
 

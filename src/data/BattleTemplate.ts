@@ -1,5 +1,6 @@
 import Engine from "../Engine";
 import { AlignmentPair } from "../types/Alignment";
+import Empty from "../types/Empty";
 import Item from "../types/Item";
 import Point from "../types/Point";
 import allMonsters, { MonsterName } from "./allMonsters";
@@ -23,13 +24,13 @@ export interface PCEntry extends EntryBase {
   name: PCName;
   config?: never;
 }
-export interface MonsterEntry<T> extends EntryBase {
+export interface MonsterEntry<T extends object = Empty> extends EntryBase {
   type: "monster";
   name: MonsterName;
   config?: T;
 }
 
-export type BattleTemplateEntry = PCEntry | MonsterEntry<unknown>;
+export type BattleTemplateEntry = PCEntry | MonsterEntry;
 
 export interface BattleTemplateImage extends Point {
   src: string;

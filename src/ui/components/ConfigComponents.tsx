@@ -238,7 +238,9 @@ function ChooseText<T>({
   value,
   onChange,
 }: ChooserProps<T, ChoiceResolver<T>>) {
-  const [label, setLabel] = useState("NONE");
+  const [label, setLabel] = useState(
+    resolver.entries.find((e) => e.value === value)?.label ?? "NONE",
+  );
 
   const choose = (e: PickChoice<T>) => () => {
     if (e.value === value) {
@@ -416,7 +418,8 @@ function ChooseAllocations({
     </div>
   );
 }
-interface Props<T extends object> {
+
+export interface ConfigComponentsProps<T extends object> {
   config: T;
   getConfig(config: Partial<T>): ActionConfig<T>;
   patchConfig(key: string, value: unknown): void;
@@ -426,7 +429,7 @@ export default function ConfigComponents<T extends object>({
   config,
   getConfig,
   patchConfig,
-}: Props<T>) {
+}: ConfigComponentsProps<T>) {
   const elements = useMemo(
     () =>
       Object.entries(getConfig(config)).map(([key, resolver]) => {

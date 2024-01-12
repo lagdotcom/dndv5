@@ -409,13 +409,16 @@
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/CombatantTile.module.scss */
-._tile_1cv1b_1 {
+._tile_17318_1 {
   display: flex;
   flex-direction: column;
   margin: 0;
   width: 96px;
 }
-._caption_1cv1b_8 {
+._image_17318_8 {
+  min-height: 96px;
+}
+._caption_17318_12 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
