@@ -231,15 +231,6 @@
   top: 0;
 }
 
-/* esbuild-sass-plugin:css-chunk:src/ui/components/button.module.scss */
-._active_rcghq_1 {
-  background-color: yellow;
-}
-._danger_rcghq_5 {
-  background-color: red;
-  color: white;
-}
-
 /* esbuild-sass-plugin:css-chunk:src/ui/components/ChooseActionConfigPanel.module.scss */
 ._warning_15trd_1 {
   font-size: 0.8em;
@@ -272,6 +263,15 @@
 }
 ._namePanel_15trd_19 ._time_15trd_25:after {
   content: ")";
+}
+
+/* esbuild-sass-plugin:css-chunk:src/ui/components/button.module.scss */
+._active_rcghq_1 {
+  background-color: yellow;
+}
+._danger_rcghq_5 {
+  background-color: red;
+  color: white;
 }
 
 /* esbuild-sass-plugin:css-chunk:src/ui/components/CombatantRef.module.scss */

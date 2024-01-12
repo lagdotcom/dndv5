@@ -1883,29 +1883,28 @@
 
   // src/resolvers/SlotResolver.ts
   var SlotResolver = class {
-    constructor(spell, method) {
+    constructor(spell, actor, method) {
       this.spell = spell;
+      this.actor = actor;
       this.method = method;
       this.name = "spell slot";
       this.type = "SpellSlot";
     }
-    getMinimum(who) {
+    get min() {
       var _a, _b, _c;
-      return (_c = (_b = (_a = this.method).getMinSlot) == null ? void 0 : _b.call(_a, this.spell, who)) != null ? _c : this.spell.level;
+      return (_c = (_b = (_a = this.method).getMinSlot) == null ? void 0 : _b.call(_a, this.spell, this.actor)) != null ? _c : this.spell.level;
     }
-    getMaximum(who) {
+    get max() {
       var _a, _b, _c;
-      return (_c = (_b = (_a = this.method).getMaxSlot) == null ? void 0 : _b.call(_a, this.spell, who)) != null ? _c : this.spell.level;
+      return (_c = (_b = (_a = this.method).getMaxSlot) == null ? void 0 : _b.call(_a, this.spell, this.actor)) != null ? _c : this.spell.level;
     }
     check(value, action, ec) {
-      if (isCastSpell(action))
-        this.method = action.method;
       if (typeof value !== "number")
         ec.add("No spell level chosen", this);
       else {
-        if (value < this.getMinimum(action.actor))
+        if (value < this.min)
           ec.add("Too low", this);
-        if (value > this.getMaximum(action.actor))
+        if (value > this.max)
           ec.add("Too high", this);
       }
       return ec;
@@ -2064,7 +2063,7 @@
     getConfig(g, actor, method, config) {
       return {
         ...getConfig(g, actor, method, config),
-        slot: new SlotResolver(this, method)
+        slot: new SlotResolver(this, actor, method)
       };
     },
     getDamage: getDamage2,
@@ -23595,12 +23594,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/components/button.module.scss
-  var button_module_default = {
-    "active": "_active_rcghq_1",
-    "danger": "_danger_rcghq_5"
-  };
-
   // src/ui/components/ChooseActionConfigPanel.module.scss
   var ChooseActionConfigPanel_module_default = {
     "warning": "_warning_15trd_1",
@@ -23608,6 +23601,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     "namePanel": "_namePanel_15trd_19",
     "name": "_name_15trd_19",
     "time": "_time_15trd_25"
+  };
+
+  // src/ui/components/button.module.scss
+  var button_module_default = {
+    "active": "_active_rcghq_1",
+    "danger": "_danger_rcghq_5"
   };
 
   // src/ui/components/CombatantRef.module.scss
@@ -23672,7 +23671,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
 
-  // src/ui/components/ChooseActionConfigPanel.tsx
+  // src/ui/components/ConfigComponents.tsx
   function ChooseTarget({ field, value, onChange }) {
     const setTarget = (0, import_hooks.useCallback)(
       (who) => {
@@ -23831,7 +23830,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChooseSlot({
-    action,
     field,
     resolver,
     value,
@@ -23842,10 +23840,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         "Spell Slot: ",
         value != null ? value : "NONE"
       ] }),
-      /* @__PURE__ */ u("div", { children: enumerate(
-        resolver.getMinimum(action.actor),
-        resolver.getMaximum(action.actor)
-      ).map((slot) => /* @__PURE__ */ u(
+      /* @__PURE__ */ u("div", { children: enumerate(resolver.min, resolver.max).map((slot) => /* @__PURE__ */ u(
         "button",
         {
           className: classnames({ [button_module_default.active]: value === slot }),
@@ -24027,63 +24022,15 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       )
     ] });
   }
-  function getInitialConfig(action, initial) {
-    const config = { ...initial };
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-      if (resolver instanceof SlotResolver && !config[key])
-        config[key] = resolver.getMinimum(action.actor);
-      else if (resolver instanceof NumberRangeResolver && !config[key])
-        config[key] = resolver.min;
-    }
-    return config;
-  }
-  function AmountElement({ a, type }) {
-    return /* @__PURE__ */ u("span", { children: [
-      a.type === "flat" ? a.amount : `${a.amount.count}d${a.amount.size}`,
-      type && " " + type
-    ] });
-  }
-  function amountReducer(total, a) {
-    return total + (a.type === "flat" ? a.amount : getDiceAverage(a.amount.count, a.amount.size));
-  }
-  function ChooseActionConfigPanel({
-    g,
-    action,
-    active,
-    initialConfig = {},
-    onCancel,
-    onExecute
+  function ConfigComponents({
+    config,
+    getConfig,
+    patchConfig
   }) {
-    const [config, setConfig] = (0, import_hooks.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks.useCallback)(
-      (key, value) => setConfig((old) => ({ ...old, [key]: value })),
-      []
-    );
-    (0, import_hooks.useEffect)(() => {
-      actionAreas.value = action.getAffectedArea(config);
-    }, [action, active, config]);
-    const errors = (0, import_hooks.useMemo)(
-      () => getConfigErrors(g, action, config).messages,
-      [g, action, config]
-    );
-    const disabled = (0, import_hooks.useMemo)(() => errors.length > 0, [errors]);
-    const damage = (0, import_hooks.useMemo)(() => action.getDamage(config), [action, config]);
-    const description = (0, import_hooks.useMemo)(
-      () => action.getDescription(config),
-      [action, config]
-    );
-    const heal = (0, import_hooks.useMemo)(() => action.getHeal(config), [action, config]);
-    const time = (0, import_hooks.useMemo)(() => action.getTime(config), [action, config]);
-    const isReaction = time === "reaction";
-    const execute = (0, import_hooks.useCallback)(() => {
-      if (checkConfig(g, action, config))
-        onExecute(action, config);
-    }, [g, action, config, onExecute]);
     const elements = (0, import_hooks.useMemo)(
-      () => Object.entries(action.getConfig(config)).map(([key, resolver]) => {
+      () => Object.entries(getConfig(config)).map(([key, resolver]) => {
         const subProps = {
           key,
-          action,
           field: key,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           resolver,
@@ -24116,8 +24063,63 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
             "] yet)"
           ] });
       }),
-      [action, config, patchConfig]
+      [config, getConfig, patchConfig]
     );
+    return /* @__PURE__ */ u("div", { children: elements });
+  }
+
+  // src/ui/components/ChooseActionConfigPanel.tsx
+  function getInitialConfig(action, initial) {
+    const config = { ...initial };
+    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
+      if ((resolver instanceof SlotResolver || resolver instanceof NumberRangeResolver) && !config[key])
+        config[key] = resolver.min;
+    }
+    return config;
+  }
+  function AmountElement({ a, type }) {
+    return /* @__PURE__ */ u("span", { children: [
+      a.type === "flat" ? a.amount : `${a.amount.count}d${a.amount.size}`,
+      type && " " + type
+    ] });
+  }
+  function amountReducer(total, a) {
+    return total + (a.type === "flat" ? a.amount : getDiceAverage(a.amount.count, a.amount.size));
+  }
+  function ChooseActionConfigPanel({
+    g,
+    action,
+    active,
+    initialConfig = {},
+    onCancel,
+    onExecute
+  }) {
+    const [config, setConfig] = (0, import_hooks.useState)(getInitialConfig(action, initialConfig));
+    const patchConfig = (0, import_hooks.useCallback)(
+      (key, value) => setConfig((old) => ({ ...old, [key]: value })),
+      []
+    );
+    const getConfig = (0, import_hooks.useMemo)(() => action.getConfig.bind(action), [action]);
+    (0, import_hooks.useEffect)(() => {
+      actionAreas.value = action.getAffectedArea(config);
+    }, [action, active, config]);
+    const errors = (0, import_hooks.useMemo)(
+      () => getConfigErrors(g, action, config).messages,
+      [g, action, config]
+    );
+    const disabled = (0, import_hooks.useMemo)(() => errors.length > 0, [errors]);
+    const damage = (0, import_hooks.useMemo)(() => action.getDamage(config), [action, config]);
+    const description = (0, import_hooks.useMemo)(
+      () => action.getDescription(config),
+      [action, config]
+    );
+    const heal = (0, import_hooks.useMemo)(() => action.getHeal(config), [action, config]);
+    const time = (0, import_hooks.useMemo)(() => action.getTime(config), [action, config]);
+    const isReaction = time === "reaction";
+    const execute = (0, import_hooks.useCallback)(() => {
+      if (checkConfig(g, action, config))
+        onExecute(action, config);
+    }, [g, action, config, onExecute]);
     const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
     return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
       /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.namePanel, children: [
@@ -24151,7 +24153,14 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       !isReaction && /* @__PURE__ */ u(import_preact3.Fragment, { children: [
         /* @__PURE__ */ u("button", { disabled, onClick: execute, children: "Execute" }),
         /* @__PURE__ */ u("button", { onClick: onCancel, children: "Cancel" }),
-        /* @__PURE__ */ u("div", { children: elements }),
+        /* @__PURE__ */ u(
+          ConfigComponents,
+          {
+            config,
+            getConfig,
+            patchConfig
+          }
+        ),
         errors.length > 0 && /* @__PURE__ */ u(Labelled, { label: "Errors", children: errors.map((msg, key) => /* @__PURE__ */ u("div", { children: msg }, key)) })
       ] })
     ] });
