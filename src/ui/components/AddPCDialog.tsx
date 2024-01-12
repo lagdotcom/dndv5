@@ -3,10 +3,12 @@ import CombatantTile from "./CombatantTile";
 import Dialog from "./Dialog";
 import SearchableList, { ListItem } from "./SearchableList";
 
-const pcItems = Object.entries(allPCs).map<ListItem<PCName>>(([key, t]) => ({
-  value: key as PCName,
-  component: <CombatantTile name={t.name} tokenUrl={t.tokenUrl} />,
-}));
+const pcItems = Object.entries(allPCs)
+  .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+  .map<ListItem<PCName>>(([key, t]) => ({
+    value: key as PCName,
+    component: <CombatantTile name={t.name} tokenUrl={t.tokenUrl} />,
+  }));
 
 interface Props {
   onCancel(): void;

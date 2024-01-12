@@ -24947,12 +24947,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/AddMonsterDialog.tsx
-  var monsterNames = Object.entries(allMonsters_default).map(
-    ([key, t]) => ({
-      value: key,
-      component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
-    })
-  );
+  var monsterNames = Object.entries(allMonsters_default).sort(([, a], [, b]) => a.name.localeCompare(b.name)).map(([key, t]) => ({
+    value: key,
+    component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
+  }));
   function AddMonsterDialog({ onCancel, onChoose }) {
     return /* @__PURE__ */ u(Dialog, { title: "Add Monster", children: [
       /* @__PURE__ */ u(SearchableList, { items: monsterNames, setValue: onChoose }),
@@ -24961,7 +24959,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/AddPCDialog.tsx
-  var pcItems = Object.entries(allPCs_default).map(([key, t]) => ({
+  var pcItems = Object.entries(allPCs_default).sort(([, a], [, b]) => a.name.localeCompare(b.name)).map(([key, t]) => ({
     value: key,
     component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
   }));

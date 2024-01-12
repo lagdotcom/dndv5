@@ -3,12 +3,12 @@ import CombatantTile from "./CombatantTile";
 import Dialog from "./Dialog";
 import SearchableList, { ListItem } from "./SearchableList";
 
-const monsterNames = Object.entries(allMonsters).map<ListItem<MonsterName>>(
-  ([key, t]) => ({
+const monsterNames = Object.entries(allMonsters)
+  .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+  .map<ListItem<MonsterName>>(([key, t]) => ({
     value: key as MonsterName,
     component: <CombatantTile name={t.name} tokenUrl={t.tokenUrl} />,
-  }),
-);
+  }));
 
 interface Props {
   onCancel(): void;
