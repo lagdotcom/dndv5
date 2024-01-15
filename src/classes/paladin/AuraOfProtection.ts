@@ -1,6 +1,7 @@
 import AuraController from "../../AuraController";
 import DndRule from "../../DndRule";
 import SimpleFeature from "../../features/SimpleFeature";
+import { Feet, PCClassLevel } from "../../flavours";
 import Combatant from "../../types/Combatant";
 
 const aurasOfProtection = new Map<Combatant, AuraController>();
@@ -10,7 +11,7 @@ export function getAuraOfProtection(who: Combatant) {
   return aurasOfProtection.get(who);
 }
 
-function getPaladinAuraRadius(level: number) {
+function getPaladinAuraRadius(level: PCClassLevel): Feet {
   if (level < 18) return 10;
   return 30;
 }
@@ -21,7 +22,7 @@ const AuraOfProtection = new SimpleFeature(
 
 At 18th level, the range of this aura increases to 30 feet.`,
   (g, me) => {
-    const radius = getPaladinAuraRadius(me.classLevels.get("Paladin") ?? 6);
+    const radius = getPaladinAuraRadius(me.getClassLevel("Paladin", 6));
     const aura = new AuraController(
       g,
       `Paladin Aura (${me.name})`,

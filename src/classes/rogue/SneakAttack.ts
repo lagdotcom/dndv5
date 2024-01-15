@@ -1,11 +1,12 @@
 import SimpleFeature from "../../features/SimpleFeature";
+import { DiceCount, PCClassLevel } from "../../flavours";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { TurnResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
 import Priority from "../../types/Priority";
 import { getFlanker } from "../../utils/dnd";
 
-function getSneakAttackDice(level: number) {
+function getSneakAttackDice(level: PCClassLevel): DiceCount {
   return Math.ceil(level / 2);
 }
 
@@ -19,7 +20,7 @@ You don't need advantage on the attack roll if another enemy of the target is wi
 
 The amount of the extra damage increases as you gain levels in this class, as shown in the Sneak Attack column of the Rogue table.`,
   (g, me) => {
-    const count = getSneakAttackDice(me.classLevels.get("Rogue") ?? 1);
+    const count = getSneakAttackDice(me.getClassLevel("Rogue", 1));
     me.initResource(SneakAttackResource);
 
     g.events.on(

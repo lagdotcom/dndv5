@@ -1,7 +1,8 @@
 import SimpleFeature from "../../features/SimpleFeature";
+import { Feet, PCClassLevel } from "../../flavours";
 import { featureNotComplete } from "../../utils/env";
 
-function getUnarmoredMovementBonus(level: number) {
+function getUnarmoredMovementBonus(level: PCClassLevel): Feet {
   if (level < 6) return 10;
   if (level < 10) return 15;
   if (level < 14) return 20;
@@ -15,7 +16,7 @@ const UnarmoredMovement = new SimpleFeature(
 
 At 9th level, you gain the ability to move along vertical surfaces and across liquids on your turn without falling during the move.`,
   (g, me) => {
-    const level = me.classLevels.get("Monk") ?? 2;
+    const level = me.getClassLevel("Monk", 2);
     if (level >= 9) featureNotComplete(UnarmoredMovement, me);
 
     const speed = getUnarmoredMovementBonus(level);

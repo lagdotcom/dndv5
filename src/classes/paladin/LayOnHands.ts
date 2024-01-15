@@ -183,7 +183,7 @@ Alternatively, you can expend 5 hit points from your pool of healing to cure the
 
 This feature has no effect on undead and constructs.`,
   (g, me) => {
-    const max = (me.classLevels.get("Paladin") ?? 1) * 5;
+    const max = me.getClassLevel("Paladin", 1) * 5;
     me.initResource(LayOnHandsResource, max, max);
 
     g.events.on("GetActions", ({ detail: { actions, who } }) => {

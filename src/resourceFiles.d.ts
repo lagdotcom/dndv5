@@ -1,9 +1,9 @@
 declare module "*.png" {
-  const url: string;
+  const url: import("./flavours").Url;
   export default url;
 }
 
 declare module "*.svg" {
-  const url: string;
+  const url: import("./flavours").Url;
   export default url;
 }

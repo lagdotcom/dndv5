@@ -4,6 +4,7 @@ import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import { Scales } from "../configs";
 import Engine from "../Engine";
 import SpellCastEvent from "../events/SpellCastEvent";
+import { SpellSlot } from "../flavours";
 import MessageBuilder from "../MessageBuilder";
 import SpellHelper from "../spells/SpellHelper";
 import Action, { ActionTag } from "../types/Action";
@@ -79,12 +80,12 @@ export default class CastSpell<T extends object> implements Action<T> {
   }
 
   getResources(config: Partial<T>) {
-    const level = this.spell.scaling
-      ? (config as unknown as Scales).slot ?? this.spell.level
+    const slot = this.spell.scaling
+      ? (config as Partial<Scales>).slot ?? this.spell.level
       : this.spell.level;
     const resource = this.method.getResourceForSpell(
       this.spell,
-      level,
+      slot as SpellSlot,
       this.actor,
     );
 

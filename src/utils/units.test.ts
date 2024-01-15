@@ -1,8 +1,9 @@
+import { Feet } from "../flavours";
 import Point from "../types/Point";
 import SizeCategory from "../types/SizeCategory";
 import { convertSizeToUnit, getDistanceBetween } from "./units";
 
-const p = (x: number, y: number): Point => ({ x, y });
+const p = (x: Feet, y: Feet): Point => ({ x, y });
 
 const Medium = convertSizeToUnit(SizeCategory.Medium);
 const Large = convertSizeToUnit(SizeCategory.Large);

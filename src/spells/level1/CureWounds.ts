@@ -1,5 +1,6 @@
 import { HasTarget } from "../../configs";
 import { notOfCreatureType } from "../../filters";
+import { DiceCount } from "../../flavours";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { sieve } from "../../utils/array";
@@ -24,15 +25,13 @@ const CureWounds = scalingSpell<HasTarget>({
       notOfCreatureType("undead", "construct"),
     ]),
   }),
-  getHeal: (g, caster, method, { slot }) => {
-    const modifier = method.ability ? caster[method.ability].modifier : 0;
-    const count = slot ?? 1;
-
-    return [
-      { type: "dice", amount: { count, size: 8 } },
-      { type: "flat", amount: modifier },
-    ];
-  },
+  getHeal: (g, caster, method, { slot }) => [
+    { type: "dice", amount: { count: (slot as DiceCount) ?? 1, size: 8 } },
+    {
+      type: "flat",
+      amount: method.ability ? caster[method.ability].modifier : 0,
+    },
+  ],
   getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => [target],
 

@@ -1,4 +1,5 @@
 import Engine from "../../Engine";
+import { DiceCount, Modifier } from "../../flavours";
 import Action from "../../types/Action";
 import Combatant from "../../types/Combatant";
 import { ItemRarity } from "../../types/Item";
@@ -34,7 +35,7 @@ type HealingPotionStrength = (typeof HealingPotionStrengths)[number];
 
 const HealingPotionData: Record<
   HealingPotionStrength,
-  { name: string; rarity: ItemRarity; dice: number; bonus: number }
+  { name: string; rarity: ItemRarity; dice: DiceCount; bonus: Modifier }
 > = {
   standard: { name: "Potion of Healing", rarity: "Common", dice: 2, bonus: 2 },
   greater: {

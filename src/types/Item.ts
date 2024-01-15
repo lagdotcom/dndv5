@@ -1,3 +1,4 @@
+import { ArmorClass, Description, Feet, Hands, Score } from "../flavours";
 import AbilityName from "./AbilityName";
 import Combatant from "./Combatant";
 import DamageAmount from "./DamageAmount";
@@ -17,7 +18,7 @@ export type ItemRarity = (typeof ItemRarities)[number];
 export interface BaseItem extends Source {
   owner?: Combatant;
   possessor?: Combatant;
-  hands: number;
+  hands: Hands;
   rarity: ItemRarity;
   attunement?: boolean;
   cursed?: boolean;
@@ -59,11 +60,11 @@ export interface WeaponItem extends BaseItem {
   rangeCategory: WeaponRangeCategory;
   damage: DamageAmount;
   properties: Set<WeaponProperty>;
-  shortRange?: number;
-  longRange?: number;
+  shortRange?: Feet;
+  longRange?: Feet;
   ammunitionTag?: AmmunitionTag;
   forceAbilityScore?: AbilityName;
-  reach: number;
+  reach: Feet;
 
   addEnchantment(e: Enchantment<"weapon">): void;
 }
@@ -81,10 +82,10 @@ export const acSet = (...items: ArmorCategory[]) => new Set(items);
 
 export interface ArmorItem extends BaseItem {
   itemType: "armor";
-  ac: number;
+  ac: ArmorClass;
   category: ArmorCategory;
   stealthDisadvantage: boolean;
-  minimumStrength: number;
+  minimumStrength: Score;
   metal: boolean;
 
   addEnchantment(e: Enchantment<"armor">): void;
@@ -92,7 +93,7 @@ export interface ArmorItem extends BaseItem {
 
 export interface PotionItem extends BaseItem {
   itemType: "potion";
-  description?: string;
+  description?: Description;
 }
 
 export interface WondrousItem extends BaseItem {

@@ -1,17 +1,18 @@
 import { MarkRequired } from "ts-essentials";
 
 import ValueCollector from "./collectors/ValueCollector";
+import { DiceRoll, DiceSize } from "./flavours";
 import DiceType from "./types/DiceType";
 import RollType from "./types/RollType";
 import { matches } from "./utils/objects";
 
 type MatchRollType = MarkRequired<Partial<RollType>, "type">;
 interface ForcedRoll {
-  value: number;
+  value: DiceRoll;
   matcher: MatchRollType;
 }
 
-function sizeOfDice(rt: RollType) {
+function sizeOfDice(rt: RollType): DiceSize {
   switch (rt.type) {
     case "damage":
     case "heal":
@@ -37,7 +38,7 @@ export default class DiceBag {
     this.forcedRolls = new Set();
   }
 
-  force(value: number, matcher: MatchRollType) {
+  force(value: DiceRoll, matcher: MatchRollType) {
     this.forcedRolls.add({ value, matcher });
   }
 
@@ -53,7 +54,7 @@ export default class DiceBag {
   roll(rt: RollType, dt: DiceType = "normal") {
     const size = sizeOfDice(rt);
     const value = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);
-    const values = new ValueCollector(value);
+    const values = new ValueCollector<DiceRoll>(value);
 
     if (dt !== "normal") {
       const second = this.getForcedRoll(rt) ?? Math.ceil(Math.random() * size);

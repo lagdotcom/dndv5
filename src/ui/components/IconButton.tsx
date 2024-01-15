@@ -1,3 +1,4 @@
+import { Pixels } from "../../flavours";
 import Icon from "../../types/Icon";
 import styles from "./IconButton.module.scss";
 import SVGIcon from "./SVGIcon";
@@ -6,9 +7,9 @@ interface Props {
   alt: string;
   disabled?: boolean;
   icon: Icon;
-  size?: number;
+  size?: Pixels;
   sub?: Icon;
-  subSize?: number;
+  subSize?: Pixels;
 
   onClick(): void;
 }

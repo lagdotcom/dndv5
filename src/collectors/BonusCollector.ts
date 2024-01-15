@@ -1,7 +1,9 @@
 import { AbstractSumCollector } from "./CollectorBase";
 
-export default class BonusCollector extends AbstractSumCollector<number> {
-  getSum(values: number[]): number {
-    return values.reduce((total, value) => total + value, 0);
+export default class BonusCollector<
+  T extends number = number,
+> extends AbstractSumCollector<number, T> {
+  getSum(values: number[]) {
+    return values.reduce((total, value) => total + value, 0) as T;
   }
 }

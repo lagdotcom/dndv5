@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/ice-knife.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
+import { SpellSlot } from "../../flavours";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
@@ -18,7 +19,7 @@ const getIceKnifeArea = (who: Combatant): SpecifiedWithin => ({
 });
 
 const piercingRoll = _dd(1, 10, "piercing");
-const getColdRoll = (slot: number) => _dd(1 + slot, 6, "cold");
+const getColdRoll = (slot: SpellSlot) => _dd(1 + slot, 6, "cold");
 
 const IceKnife = scalingSpell<HasTarget>({
   status: "implemented",

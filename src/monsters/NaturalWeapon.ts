@@ -1,4 +1,5 @@
 import Engine from "../Engine";
+import { Modifier } from "../flavours";
 import EvaluateLater from "../interruptions/EvaluateLater";
 import WeaponBase from "../items/WeaponBase";
 import AbilityName from "../types/AbilityName";
@@ -15,7 +16,7 @@ export default class NaturalWeapon extends WeaponBase {
   constructor(
     g: Engine,
     name: string,
-    toHit: number | AbilityName,
+    toHit: Modifier | AbilityName,
     damage: DamageAmount,
     { onHit }: { onHit?: NaturalWeaponOnHit } = {},
   ) {
@@ -24,6 +25,7 @@ export default class NaturalWeapon extends WeaponBase {
     if (typeof toHit === "string") this.forceAbilityScore = toHit;
     else {
       // TODO
+      console.warn(`Natural Weapon "{name}" is modifier-based`);
     }
 
     if (onHit)

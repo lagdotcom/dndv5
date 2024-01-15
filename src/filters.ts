@@ -2,6 +2,7 @@ import { MarkOptional } from "ts-essentials";
 
 import Effect from "./Effect";
 import Engine from "./Engine";
+import { ErrorMessage, Feet } from "./flavours";
 import Action from "./types/Action";
 import ActionTime from "./types/ActionTime";
 import Combatant from "./types/Combatant";
@@ -12,7 +13,7 @@ import { distance } from "./utils/units";
 
 export interface ErrorFilter<T> {
   name: string;
-  message: string;
+  message: ErrorMessage;
   check(g: Engine, action: Action, value: T): boolean;
 }
 
@@ -113,7 +114,7 @@ export const isGrappledBy = (grappler: Combatant) =>
     check: (g, action, value) => grappler.grappling.has(value),
   });
 
-export const withinRangeOfEachOther = (range: number) =>
+export const withinRangeOfEachOther = (range: Feet) =>
   makeFilter<Combatant[]>({
     name: `within ${range}' of each other`,
     message: `within ${range}' of each other`,

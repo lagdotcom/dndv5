@@ -1,6 +1,7 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import Engine from "../Engine";
 import SimpleFeature from "../features/SimpleFeature";
+import { Description, DiceRoll } from "../flavours";
 import YesNoChoice from "../interruptions/YesNoChoice";
 import { LongRestResource } from "../resources";
 import Combatant from "../types/Combatant";
@@ -11,9 +12,9 @@ export const LuckPoint = new LongRestResource("Luck Point", 3);
 function addLuckyOpportunity(
   g: Engine,
   who: Combatant,
-  message: string,
+  message: Description,
   interrupt: InterruptionCollector,
-  callback: (roll: number) => void,
+  callback: (roll: DiceRoll) => void,
 ) {
   interrupt.add(
     new YesNoChoice(who, Lucky, "Lucky", message, Priority.Late, async () => {

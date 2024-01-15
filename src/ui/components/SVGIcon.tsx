@@ -1,11 +1,12 @@
+import { ClassName, Color, Pixels, Url } from "../../flavours";
 import { useContext, useEffect, useRef } from "../lib";
 import { SVGCacheContext } from "../utils/SVGCache";
 
 interface Props {
-  className?: string;
-  color?: string;
-  size: number;
-  src: string;
+  className?: ClassName;
+  color?: Color;
+  size: Pixels;
+  src: Url;
 }
 
 export default function SVGIcon({ className, color, size, src }: Props) {

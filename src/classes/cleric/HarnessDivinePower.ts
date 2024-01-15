@@ -3,6 +3,7 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import { Scales } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { PCClassLevel } from "../../flavours";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { LongRestResource } from "../../resources";
 import {
@@ -81,7 +82,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
   }
 }
 
-function getHarnessCount(level: number) {
+function getHarnessCount(level: PCClassLevel) {
   if (level < 6) return 1;
   if (level < 18) return 2;
   return 3;
@@ -93,7 +94,7 @@ const HarnessDivinePower = new SimpleFeature(
   (g, me) => {
     me.initResource(
       HarnessDivinePowerResource,
-      getHarnessCount(me.classLevels.get("Cleric") ?? 2),
+      getHarnessCount(me.getClassLevel("Cleric", 2)),
     );
 
     g.events.on("GetActions", ({ detail: { actions, who } }) => {

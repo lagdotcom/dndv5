@@ -1,12 +1,13 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
+import { Exhaustion } from "../flavours";
 import Combatant from "../types/Combatant";
 
 export interface ExhaustionDetail {
   who: Combatant;
-  old: number;
-  delta: number;
-  value: number;
+  old: Exhaustion;
+  delta: Exhaustion;
+  value: Exhaustion;
   interrupt: InterruptionCollector;
   success: SuccessResponseCollector;
 }

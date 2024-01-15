@@ -1,8 +1,11 @@
+import { Color, Url } from "./flavours";
 import DamageType from "./types/DamageType";
 import Icon from "./types/Icon";
 import { ItemRarity } from "./types/Item";
+import PCClassName from "./types/PCClassName";
 
-export const ClassColours = {
+export const ClassColours: Record<PCClassName, Color> = {
+  Artificer: "#a99c80",
   Barbarian: "#e7623e",
   Bard: "#ab6dac",
   Cleric: "#91a1b2",
@@ -17,7 +20,7 @@ export const ClassColours = {
   Wizard: "#2a50a1",
 };
 
-export const DamageColours: Record<DamageType, string> = {
+export const DamageColours: Record<DamageType, Color> = {
   bludgeoning: "#8b0000",
   piercing: "#4169e1",
   slashing: "#ff8c00",
@@ -33,9 +36,9 @@ export const DamageColours: Record<DamageType, string> = {
   thunder: "#1e90ff",
 };
 
-export const Heal = "#50c878";
+export const Heal: Color = "#50c878";
 
-export const ItemRarityColours: Record<ItemRarity, string> = {
+export const ItemRarityColours: Record<ItemRarity, Color> = {
   Common: "#242528",
   Uncommon: "#1FC219",
   Rare: "#4990E2",
@@ -44,10 +47,10 @@ export const ItemRarityColours: Record<ItemRarity, string> = {
   Artifact: "#BE8972",
 };
 
-export const makeIcon = (url: string, colour?: string): Icon => ({
+export const makeIcon = (url: Url, colour?: Color): Icon => ({
   url,
   colour,
 });
 
-export const makeItemIcon = (url: string, rarity: ItemRarity) =>
+export const makeItemIcon = (url: Url, rarity: ItemRarity) =>
   makeIcon(url, ItemRarityColours[rarity]);

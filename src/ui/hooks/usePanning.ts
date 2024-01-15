@@ -1,7 +1,8 @@
+import { Pixels } from "../../flavours";
 import { useCallback, useState } from "../lib";
 
 export default function usePanning(
-  onPan: (dx: number, dy: number) => void,
+  onPan: (dx: Pixels, dy: Pixels) => void,
   onHover?: (e: MouseEvent) => void,
 ) {
   const [isPanning, setIsPanning] = useState(false);

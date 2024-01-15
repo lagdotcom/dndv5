@@ -1,4 +1,5 @@
 import Engine from "../Engine";
+import { Feet, Url } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import DamageAmount from "../types/DamageAmount";
 import {
@@ -26,16 +27,16 @@ export default class WeaponBase
     public rangeCategory: WeaponRangeCategory,
     public damage: DamageAmount,
     properties?: SetInitialiser<WeaponProperty>,
-    iconUrl?: string,
-    public shortRange?: number,
-    public longRange?: number,
+    iconUrl?: Url,
+    public shortRange?: Feet,
+    public longRange?: Feet,
     public weaponType = name,
   ) {
     super(g, "weapon", name, 1, iconUrl);
     this.properties = new Set(properties);
   }
 
-  get reach() {
+  get reach(): Feet {
     return this.properties.has("reach") ? 5 : 0;
   }
 }

@@ -28,7 +28,7 @@ export function describeSave(tags: Set<SaveTag>, ability?: AbilityName) {
   if (ability) return describeAbility(ability);
 }
 
-export function describeRange(min: number, max: number) {
+export function describeRange<T extends number>(min: T, max: T) {
   if (min === 0) {
     if (max === Infinity) return "any number of";
     return `up to ${max}`;

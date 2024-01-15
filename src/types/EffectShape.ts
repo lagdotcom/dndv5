@@ -1,28 +1,30 @@
+import { Feet } from "../flavours";
+
 export interface ConeShape {
   type: "cone";
-  radius: number;
+  radius: Feet;
 }
 export interface CubeShape {
   type: "cube";
-  length: number;
+  length: Feet;
 }
 export interface CylinderShape {
   type: "cylinder";
-  radius: number;
-  height: number;
+  radius: Feet;
+  height: Feet;
 }
 export interface LineShape {
   type: "line";
-  length: number;
-  width: number;
+  length: Feet;
+  width: Feet;
 }
 export interface SphereShape {
   type: "sphere";
-  radius: number;
+  radius: Feet;
 }
 export interface WithinShape {
   type: "within";
-  radius: number;
+  radius: Feet;
 }
 
 type EffectShape =

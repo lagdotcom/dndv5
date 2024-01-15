@@ -7,6 +7,7 @@ import {
 } from "../../../features/common";
 import ConfiguredFeature from "../../../features/ConfiguredFeature";
 import SimpleFeature from "../../../features/SimpleFeature";
+import { PCClassLevel } from "../../../flavours";
 import Blur from "../../../spells/level2/Blur";
 import Darkness from "../../../spells/level2/Darkness";
 import HoldPerson from "../../../spells/level2/HoldPerson";
@@ -58,7 +59,7 @@ type LandType =
   | "swamp"
   | "Underdark";
 
-const bonusSpells: Record<LandType, BonusSpellEntry[]> = {
+const bonusSpells: Record<LandType, BonusSpellEntry<PCClassLevel>[]> = {
   arctic: [
     { level: 3, spell: HoldPerson },
     { level: 3, spell: SpikeGrowth },

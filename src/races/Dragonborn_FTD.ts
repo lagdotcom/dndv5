@@ -9,6 +9,7 @@ import Effect from "../Effect";
 import { Prone } from "../effects";
 import Engine from "../Engine";
 import SimpleFeature from "../features/SimpleFeature";
+import { Color, Description, DiceCount, PCLevel } from "../flavours";
 import PointResolver from "../resolvers/PointResolver";
 import { LongRestResource } from "../resources";
 import { atSet } from "../types/AttackTag";
@@ -49,7 +50,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     g: Engine,
     actor: Combatant,
     public damageType: DamageType,
-    public damageDice: number,
+    public damageDice: DiceCount,
   ) {
     super(
       g,
@@ -111,7 +112,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
   }
 }
 
-function getBreathWeaponDamageDice(level: number) {
+function getBreathWeaponDamageDice(level: PCLevel): DiceCount {
   if (level < 5) return 1;
   if (level < 11) return 2;
   if (level < 17) return 3;
@@ -124,8 +125,8 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
     actor: Combatant,
     name: string,
     status: ImplementationStatus = "missing",
-    description: string,
-    iconColour?: string,
+    description: Description,
+    iconColour?: Color,
   ) {
     super(
       g,

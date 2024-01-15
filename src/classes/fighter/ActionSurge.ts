@@ -3,12 +3,13 @@ import ErrorCollector from "../../collectors/ErrorCollector";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { PCClassLevel } from "../../flavours";
 import { ShortRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 
 const ActionSurgeResource = new ShortRestResource("Action Surge", 1);
 
-function getActionSurgeCount(level: number) {
+function getActionSurgeCount(level: PCClassLevel) {
   return level < 17 ? 1 : 2;
 }
 
@@ -65,7 +66,7 @@ const ActionSurge = new SimpleFeature(
 
 Once you use this feature, you must finish a short or long rest before you can use it again. Starting at 17th level, you can use it twice before a rest, but only once on the same turn.`,
   (g, me) => {
-    const charges = getActionSurgeCount(me.classLevels.get("Fighter") ?? 2);
+    const charges = getActionSurgeCount(me.getClassLevel("Fighter", 2));
     me.initResource(ActionSurgeResource, charges);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

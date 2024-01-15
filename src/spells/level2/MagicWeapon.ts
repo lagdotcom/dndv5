@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/magic-weapon.svg";
 import { makeIcon } from "../../colours";
 import { getWeaponPlusHandler } from "../../enchantments/plus";
 import Engine from "../../Engine";
+import { Color, SpellSlot } from "../../flavours";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import SubscriptionBag from "../../SubscriptionBag";
@@ -11,7 +12,7 @@ import { WeaponItem } from "../../types/Item";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
-function slotToBonus(slot: number) {
+function slotToBonus(slot: SpellSlot) {
   if (slot >= 6) return 3;
   if (slot >= 4) return 2;
   return 1;
@@ -19,13 +20,13 @@ function slotToBonus(slot: number) {
 
 class MagicWeaponController {
   oldName: string;
-  oldColour?: string;
+  oldColour?: Color;
   bag: SubscriptionBag;
 
   constructor(
     public g: Engine,
     public caster: Combatant,
-    public slot: number,
+    public slot: SpellSlot,
     public item: WeaponItem,
     public bonus = slotToBonus(slot),
   ) {

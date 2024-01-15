@@ -7,6 +7,7 @@ import Effect from "../../Effect";
 import Engine from "../../Engine";
 import { Listener } from "../../events/Dispatcher";
 import SimpleFeature from "../../features/SimpleFeature";
+import { Modifier, PCClassLevel } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
@@ -20,7 +21,7 @@ import { BarbarianIcon } from "./common";
 const RageIcon = makeIcon(rageIconUrl, "red");
 const EndRageIcon = makeIcon(rageIconUrl, "silver");
 
-function getRageCount(level: number) {
+function getRageCount(level: PCClassLevel) {
   if (level < 3) return 2;
   if (level < 6) return 3;
   if (level < 12) return 4;
@@ -29,7 +30,7 @@ function getRageCount(level: number) {
   return Infinity;
 }
 
-function getRageBonus(level: number) {
+function getRageBonus(level: PCClassLevel): Modifier {
   if (level < 9) return 2;
   if (level < 16) return 3;
   return 4;
@@ -108,7 +109,7 @@ export const RageEffect = new Effect(
           ability === "str"
         )
           bonus.add(
-            getRageBonus(attacker.classLevels.get("Barbarian") ?? 0),
+            getRageBonus(attacker.getClassLevel("Barbarian", 0)),
             RageEffect,
           );
       },
@@ -246,7 +247,7 @@ Once you have raged the maximum number of times for your barbarian level, you mu
   (g, me) => {
     me.initResource(
       RageResource,
-      getRageCount(me.classLevels.get("Barbarian") ?? 0),
+      getRageCount(me.getClassLevel("Barbarian", 0)),
     );
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

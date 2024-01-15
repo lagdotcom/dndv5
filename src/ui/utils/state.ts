@@ -2,6 +2,7 @@ import BoundedMoveEvent from "../../events/BoundedMoveEvent";
 import ListChoiceEvent from "../../events/ListChoiceEvent";
 import MultiListChoiceEvent from "../../events/MultiListChoiceEvent";
 import YesNoChoiceEvent from "../../events/YesNoChoiceEvent";
+import { CombatantID, SideID } from "../../flavours";
 import Action from "../../types/Action";
 import Combatant from "../../types/Combatant";
 import EffectArea, { SpecifiedEffectShape } from "../../types/EffectArea";
@@ -18,7 +19,7 @@ export const actionAreas = signal<SpecifiedEffectShape[] | undefined>(
   undefined,
 );
 
-export const activeCombatantId = signal<number>(NaN);
+export const activeCombatantId = signal<CombatantID>(NaN);
 
 export const activeCombatant = computed(() =>
   allCombatants.value.find((u) => u.id === activeCombatantId.value),
@@ -48,7 +49,7 @@ export const moveBounds = signal<BoundedMoveEvent | undefined>(undefined);
 
 export const moveHandler = signal<MoveHandler | undefined>(undefined);
 
-export const movingCombatantId = signal<number>(NaN);
+export const movingCombatantId = signal<CombatantID>(NaN);
 
 export const movingCombatant = computed(() =>
   allCombatants.value.find((u) => u.id === movingCombatantId.value),
@@ -56,7 +57,7 @@ export const movingCombatant = computed(() =>
 
 export const scale = signal(20);
 
-export const showSideHP = signal<number[]>([0]);
+export const showSideHP = signal<SideID[]>([0]);
 
 export const showSideUnderlay = signal<boolean>(false);
 

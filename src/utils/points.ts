@@ -1,8 +1,9 @@
+import { Feet } from "../flavours";
 import { MapSquareSize } from "../MapSquare";
 import MoveDirection from "../types/MoveDirection";
 import Point from "../types/Point";
 
-export const _p = (x: number, y: number): Point => ({ x, y });
+export const _p = (x: Feet, y: Feet): Point => ({ x, y });
 
 export function addPoints(a: Point, b: Point) {
   return _p(a.x + b.x, a.y + b.y);
@@ -64,7 +65,7 @@ function supercoverLine(a: Point, b: Point) {
   return points;
 }
 
-export function getPathAwayFrom(p: Point, away: Point, dist: number) {
+export function getPathAwayFrom(p: Point, away: Point, dist: Feet) {
   const dy = p.y - away.y;
   const dx = p.x - away.x;
   const angle = Math.atan2(dy, dx);

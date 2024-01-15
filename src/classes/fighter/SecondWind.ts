@@ -1,6 +1,7 @@
 import AbstractAction from "../../actions/AbstractAction";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { Modifier } from "../../flavours";
 import { ShortRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 
@@ -10,7 +11,7 @@ class SecondWindAction extends AbstractAction {
   constructor(
     g: Engine,
     actor: Combatant,
-    public bonus: number,
+    public bonus: Modifier,
   ) {
     super(
       g,
@@ -53,7 +54,7 @@ const SecondWind = new SimpleFeature(
 
 Once you use this feature, you must finish a short or long rest before you can use it again.`,
   (g, me) => {
-    const bonus = me.classLevels.get("Fighter") ?? 1;
+    const bonus = me.getClassLevel("Fighter", 1) as Modifier;
     me.initResource(SecondWindResource);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

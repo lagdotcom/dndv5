@@ -1,4 +1,6 @@
-const TURNS_PER_MINUTE = 10;
+import { Turns } from "../flavours";
 
-export const minutes = (n: number) => n * TURNS_PER_MINUTE;
+const TURNS_PER_MINUTE: Turns = 10;
+
+export const minutes = (n: number): Turns => n * TURNS_PER_MINUTE;
 export const hours = (n: number) => minutes(n * 60);

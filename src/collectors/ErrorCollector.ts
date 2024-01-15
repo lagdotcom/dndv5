@@ -1,7 +1,8 @@
+import { ErrorMessage } from "../flavours";
 import Source from "../types/Source";
 
 interface ErrorEntry {
-  value: string;
+  value: ErrorMessage;
   source: Source;
 }
 
@@ -14,11 +15,11 @@ export default class ErrorCollector {
     this.ignored = new Set();
   }
 
-  add(value: string, source: Source) {
+  add(value: ErrorMessage, source: Source) {
     this.errors.add({ value, source });
   }
 
-  addMany(messages: string[], source: Source) {
+  addMany(messages: ErrorMessage[], source: Source) {
     for (const message of messages) this.add(message, source);
   }
 

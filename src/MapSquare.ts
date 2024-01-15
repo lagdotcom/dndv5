@@ -1,15 +1,16 @@
+import { Feet } from "./flavours";
 import Polygon from "./Polygon";
 import Point from "./types/Point";
 import { getBoundingBox } from "./utils/areas";
 import { round, roundUp } from "./utils/numbers";
 
-export const MapSquareSize = 5;
+export const MapSquareSize: Feet = 5;
 export const HalfSquareSize = MapSquareSize / 2;
 
 export default class MapSquare extends Polygon {
   constructor(
-    public x: number,
-    public y: number,
+    public x: Feet,
+    public y: Feet,
   ) {
     super([
       { x, y },
@@ -29,10 +30,10 @@ export default class MapSquare extends Polygon {
 }
 
 export function* enumerateMapSquares(
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
+  minX: Feet,
+  minY: Feet,
+  maxX: Feet,
+  maxY: Feet,
 ) {
   for (let y = minY; y < maxY; y += MapSquareSize)
     for (let x = minX; x < maxX; x += MapSquareSize) yield new MapSquare(x, y);
@@ -48,10 +49,7 @@ export function getAllMapSquaresContainingPolygon(poly: Polygon) {
   return enumerateMapSquares(minX, minY, maxX, maxY);
 }
 
-export function getAllMapSquaresContainingCircle(
-  centre: Point,
-  radius: number,
-) {
+export function getAllMapSquaresContainingCircle(centre: Point, radius: Feet) {
   const minX = round(centre.x - radius, MapSquareSize);
   const minY = round(centre.y - radius, MapSquareSize);
   const maxX = roundUp(centre.x + radius, MapSquareSize);

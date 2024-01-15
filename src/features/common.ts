@@ -1,6 +1,7 @@
 import CastSpell from "../actions/CastSpell";
 import allFeatures, { FeatureName } from "../data/allFeatures";
 import Engine from "../Engine";
+import { Description, Feet, PCClassLevel, PCLevel } from "../flavours";
 import { spellImplementationWarning } from "../spells/common";
 import Combatant from "../types/Combatant";
 import PCClassName from "../types/PCClassName";
@@ -17,24 +18,42 @@ export const Amphibious = notImplementedFeature(
   `You can breathe air and water.`,
 );
 
-export interface BonusSpellEntry {
-  level: number;
+export interface BonusSpellEntry<T extends number> {
+  level: T;
   resource?: Resource;
   spell: Spell;
 }
 
 export function bonusSpellsFeature(
   name: string,
-  text: string,
+  text: Description,
+  levelType: "level",
+  method: SpellcastingMethod,
+  entries: BonusSpellEntry<PCLevel>[],
+  addAsList?: SpellList,
+  additionalSetup?: (g: Engine, me: Combatant) => void,
+): SimpleFeature;
+export function bonusSpellsFeature(
+  name: string,
+  text: Description,
+  levelType: PCClassName,
+  method: SpellcastingMethod,
+  entries: BonusSpellEntry<PCClassLevel>[],
+  addAsList?: SpellList,
+  additionalSetup?: (g: Engine, me: Combatant) => void,
+): SimpleFeature;
+export function bonusSpellsFeature<T extends PCClassLevel | PCLevel>(
+  name: string,
+  text: Description,
   levelType: PCClassName | "level",
   method: SpellcastingMethod,
-  entries: BonusSpellEntry[],
+  entries: BonusSpellEntry<T>[],
   addAsList?: SpellList,
   additionalSetup?: (g: Engine, me: Combatant) => void,
 ) {
   return new SimpleFeature(name, text, (g, me) => {
     const casterLevel =
-      levelType === "level" ? me.level : me.classLevels.get(levelType) ?? 1;
+      levelType === "level" ? me.level : me.getClassLevel(levelType, 1);
 
     const spells = entries.filter((entry) => entry.level <= casterLevel);
     for (const { resource, spell } of spells) {
@@ -72,7 +91,7 @@ export const Brave = new SimpleFeature(
   },
 );
 
-function darkvisionFeature(range = 60) {
+function darkvisionFeature(range: Feet = 60) {
   return new SimpleFeature(
     "Darkvision",
     `You can see in dim light within ${range} feet of you as if it were bright light and in darkness as if it were dim light. You can’t discern color in darkness, only shades of gray.`,
@@ -84,24 +103,24 @@ function darkvisionFeature(range = 60) {
 export const Darkvision60 = darkvisionFeature(60);
 export const Darkvision120 = darkvisionFeature(120);
 
-export function nonCombatFeature(name: string, text: string) {
+export function nonCombatFeature(name: string, text: Description) {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   return new SimpleFeature(name, text, () => {});
 }
 
-export function notImplementedFeat(name: string, text: string) {
+export function notImplementedFeat(name: string, text: Description) {
   return new SimpleFeature(name, text, (g, me) => {
     implementationWarning("Feat", "Missing", name, me.name);
   });
 }
 
-export function notImplementedFeature(name: string, text: string) {
+export function notImplementedFeature(name: string, text: Description) {
   return new SimpleFeature(name, text, (g, me) => {
     implementationWarning("Feature", "Missing", name, me.name);
   });
 }
 
-export function wrapperFeature(name: string, text: string) {
+export function wrapperFeature(name: string, text: Description) {
   return new ConfiguredFeature<FeatureName>(name, text, (g, me, feature) => {
     me.addFeature(allFeatures[feature]);
   });

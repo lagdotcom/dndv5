@@ -1,4 +1,5 @@
 import { Listener } from "../events/Dispatcher";
+import { Color, EffectID } from "../flavours";
 import PointSet from "../PointSet";
 import Combatant from "./Combatant";
 import {
@@ -40,10 +41,10 @@ export type SpecifiedEffectShape =
   | SpecifiedWithin;
 
 export default interface EffectArea extends Source {
-  id: number;
+  id: EffectID;
   tags: Set<AreaTag>;
   shape: SpecifiedEffectShape;
   points: PointSet;
-  tint: string;
+  tint: Color;
   handler?: Listener<"GetTerrain">;
 }

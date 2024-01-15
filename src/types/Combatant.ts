@@ -1,3 +1,19 @@
+import {
+  ArmorClass,
+  ChallengeRating,
+  CombatantID,
+  Exhaustion,
+  Feet,
+  Hands,
+  HitPoints,
+  ModifiedDiceRoll,
+  Modifier,
+  PCClassLevel,
+  PCLevel,
+  Quantity,
+  SideID,
+  Url,
+} from "../flavours";
 import AbilityName from "./AbilityName";
 import ACMethod from "./ACMethod";
 import Action from "./Action";
@@ -36,33 +52,31 @@ import Spell from "./Spell";
 import SpellcastingMethod from "./SpellcastingMethod";
 import ToolName from "./ToolName";
 
-export type CombatantID = number;
-
 export default interface Combatant extends Source {
   id: CombatantID;
-  img: string;
+  img: Url;
   type: CreatureType;
   alignGE?: GEAlignment;
   alignLC?: LCAlignment;
   size: SizeCategory;
-  sizeInUnits: number;
-  side: number;
-  hands: number;
-  freeHands: number;
-  reach: number;
+  sizeInUnits: Feet;
+  side: SideID;
+  hands: Hands;
+  freeHands: Hands;
+  reach: Feet;
 
-  initiative: number;
+  initiative: ModifiedDiceRoll;
   position: Point;
 
   diesAtZero: boolean;
-  level: number;
-  cr: number;
-  hp: number;
-  baseHpMax: number;
-  hpMax: number;
+  level: PCLevel;
+  cr: ChallengeRating;
+  hp: HitPoints;
+  baseHpMax: HitPoints;
+  hpMax: HitPoints;
   baseACMethod: ACMethod;
-  baseAC: number;
-  pb: number;
+  baseAC: ArmorClass;
+  pb: Modifier;
 
   str: CombatantScore;
   dex: CombatantScore;
@@ -71,33 +85,33 @@ export default interface Combatant extends Source {
   wis: CombatantScore;
   cha: CombatantScore;
 
-  movement: Map<MovementType, number>;
+  movement: Map<MovementType, Feet>;
   skills: Map<SkillName, ProficiencyType>;
   languages: Set<LanguageName>;
   equipment: Set<Item>;
-  inventory: Map<Item, number>;
-  senses: Map<SenseName, number>;
+  inventory: Map<Item, Quantity>;
+  senses: Map<SenseName, Feet>;
   weaponProficiencies: Set<string>;
   weaponCategoryProficiencies: Set<WeaponCategory>;
   armorProficiencies: Set<ArmorCategory>;
   naturalWeapons: Set<WeaponItem>;
   resources: Map<string, number>;
-  classLevels: Map<PCClassName, number>;
+  classLevels: Map<PCClassName, PCClassLevel>;
   concentratingOn: Set<Concentration>;
   conditions: Set<ConditionName>;
   attunements: Set<Item>;
-  movedSoFar: number;
+  movedSoFar: Feet;
   attacksSoFar: Action[];
   effects: Map<EffectType<unknown>, EffectConfig<unknown>>;
-  readonly speed: number;
+  readonly speed: Feet;
   saveProficiencies: Set<AbilityName>;
   knownSpells: Set<Spell>;
   preparedSpells: Set<Spell>;
   toolProficiencies: Map<ToolName, ProficiencyType>;
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
-  readonly exhaustion: number;
-  temporaryHP: number;
+  readonly exhaustion: Exhaustion;
+  temporaryHP: HitPoints;
   temporaryHPSource?: Source;
   deathSaveFailures: number;
   deathSaveSuccesses: number;
@@ -140,7 +154,7 @@ export default interface Combatant extends Source {
   hasEffect<T>(effect: EffectType<T>): boolean;
   removeEffect<T>(effect: EffectType<T>): Promise<boolean>;
   tickEffects(durationTimer: EffectDurationTimer): void;
-  changeExhaustion(delta: number): Promise<number>;
+  changeExhaustion(delta: number): Promise<Exhaustion>;
   hasTime(time: ActionTime): boolean;
   useTime(time: ActionTime): void;
   regainTime(time: ActionTime): void;
@@ -149,6 +163,8 @@ export default interface Combatant extends Source {
 
   don(item: Item): boolean;
   doff(item: Item): boolean;
-  addToInventory(item: Item, quantity?: number): void;
-  removeFromInventory(item: Item, quantity?: number): boolean;
+  addToInventory(item: Item, quantity?: Quantity): void;
+  removeFromInventory(item: Item, quantity?: Quantity): boolean;
+
+  getClassLevel(name: PCClassName, assume: PCClassLevel): PCClassLevel;
 }

@@ -1,3 +1,4 @@
+import { Feet } from "../flavours";
 import {
   getAllMapSquaresContainingCircle,
   getAllMapSquaresContainingPolygon,
@@ -34,7 +35,7 @@ export function getBoundingBox(points: Iterable<Point>) {
   return { x: left, y: top, w: right - left, h: bottom - top };
 }
 
-export function getTilesWithinCircle(centre: Point, radius: number) {
+export function getTilesWithinCircle(centre: Point, radius: Feet) {
   const set = new PointSet();
   for (const square of getAllMapSquaresContainingCircle(centre, radius)) {
     const midpoint = square.getMiddle();
@@ -49,8 +50,8 @@ export function getTilesWithinCircle(centre: Point, radius: number) {
 
 export function getRectangleAsPolygon(
   { x, y }: Point,
-  width: number,
-  height: number,
+  width: Feet,
+  height: Feet,
 ): Point[] {
   return [
     { x, y },
@@ -62,8 +63,8 @@ export function getRectangleAsPolygon(
 
 export function getTilesWithinRectangle(
   topLeft: Point,
-  width: number,
-  height: number,
+  width: Feet,
+  height: Feet,
 ) {
   return resolvePolygon(getRectangleAsPolygon(topLeft, width, height));
 }
@@ -71,8 +72,8 @@ export function getTilesWithinRectangle(
 export function getLineAsPolygon(
   { x: sx, y: sy }: Point,
   { x: tx, y: ty }: Point,
-  width: number,
-  length: number,
+  width: Feet,
+  length: Feet,
 ): Point[] {
   const dir = Math.atan2(ty - sy, tx - sx);
   const off = dir - Math.PI / 2;
@@ -103,8 +104,8 @@ export function getLineAsPolygon(
 export function getTilesWithinLine(
   start: Point,
   end: Point,
-  width: number,
-  length: number,
+  width: Feet,
+  length: Feet,
 ) {
   return resolvePolygon(getLineAsPolygon(start, end, width, length));
 }
@@ -112,7 +113,7 @@ export function getTilesWithinLine(
 export function getConeAsPolygon(
   { x: sx, y: sy }: Point,
   { x: tx, y: ty }: Point,
-  radius: number,
+  radius: Feet,
 ): Point[] {
   const dir = Math.atan2(ty - sy, tx - sx);
   const off = dir - Math.PI / 2;
@@ -135,7 +136,7 @@ export function getConeAsPolygon(
   ];
 }
 
-export function getTilesWithinCone(start: Point, end: Point, radius: number) {
+export function getTilesWithinCone(start: Point, end: Point, radius: Feet) {
   return resolvePolygon(getConeAsPolygon(start, end, radius));
 }
 

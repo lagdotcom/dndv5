@@ -1,18 +1,19 @@
+import { Score } from "./flavours";
 import CombatantScore from "./types/CombatantScore";
 import { getAbilityModifier } from "./utils/dnd";
 
 export default class AbilityScore implements CombatantScore {
   constructor(
-    private baseScore = 10,
-    private baseMaximum = 20,
-    private baseMinimum = 0,
+    private baseScore: Score = 10,
+    private baseMaximum: Score = 20,
+    private baseMinimum: Score = 0,
   ) {}
 
   get score() {
     return Math.max(this.baseMinimum, Math.min(this.baseScore, this.maximum));
   }
 
-  set score(value: number) {
+  set score(value: Score) {
     this.baseScore = value;
   }
 
@@ -20,7 +21,7 @@ export default class AbilityScore implements CombatantScore {
     return this.baseMaximum;
   }
 
-  set maximum(value: number) {
+  set maximum(value: Score) {
     this.baseMaximum = Math.max(this.baseMaximum, value);
   }
 
@@ -28,7 +29,7 @@ export default class AbilityScore implements CombatantScore {
     return this.baseMinimum;
   }
 
-  set minimum(value: number) {
+  set minimum(value: Score) {
     this.baseMinimum = Math.max(this.baseMinimum, value);
   }
 

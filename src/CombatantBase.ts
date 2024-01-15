@@ -14,6 +14,23 @@ import GetConditionsEvent from "./events/GetConditionsEvent";
 import GetMaxHPEvent from "./events/GetMaxHPEvent";
 import GetSpeedEvent from "./events/GetSpeedEvent";
 import ConfiguredFeature from "./features/ConfiguredFeature";
+import {
+  ArmorClass,
+  ChallengeRating,
+  CombatantID,
+  Exhaustion,
+  Feet,
+  Hands,
+  HitPoints,
+  ModifiedDiceRoll,
+  Modifier,
+  PCClassLevel,
+  PCLevel,
+  Quantity,
+  Score,
+  SideID,
+  Url,
+} from "./flavours";
 import { MapSquareSize } from "./MapSquare";
 import MessageBuilder from "./MessageBuilder";
 import { spellImplementationWarning } from "./spells/common";
@@ -70,7 +87,7 @@ import { SetInitialiser } from "./utils/set";
 import { isDefined } from "./utils/types";
 import { convertSizeToUnit } from "./utils/units";
 
-const defaultHandsAmount: Record<CreatureType, number> = {
+const defaultHandsAmount: Record<CreatureType, Hands> = {
   aberration: 0,
   beast: 0,
   celestial: 2,
@@ -88,26 +105,26 @@ const defaultHandsAmount: Record<CreatureType, number> = {
 };
 
 export default class CombatantBase implements Combatant {
-  id: number;
-  img: string;
+  id: CombatantID;
+  img: Url;
   type: CreatureType;
   alignGE?: GEAlignment;
   alignLC?: LCAlignment;
   size: SizeCategory;
-  side: number;
-  hands: number;
-  reach: number;
-  level: number;
-  cr: number;
+  side: SideID;
+  hands: Hands;
+  reach: Feet;
+  level: PCLevel;
+  cr: ChallengeRating;
 
   position: Point;
-  initiative: number;
+  initiative: ModifiedDiceRoll;
 
   diesAtZero: boolean;
-  hp: number;
-  baseHpMax: number;
-  pb: number;
-  naturalAC: number;
+  hp: HitPoints;
+  baseHpMax: HitPoints;
+  pb: Modifier;
+  naturalAC: ArmorClass;
 
   str: CombatantScore;
   dex: CombatantScore;
@@ -116,12 +133,12 @@ export default class CombatantBase implements Combatant {
   wis: CombatantScore;
   cha: CombatantScore;
 
-  movement: Map<MovementType, number>;
+  movement: Map<MovementType, Feet>;
   skills: Map<SkillName, ProficiencyType>;
   languages: Set<LanguageName>;
   equipment: Set<Item>;
-  inventory: Map<Item, number>;
-  senses: Map<SenseName, number>;
+  inventory: Map<Item, Quantity>;
+  senses: Map<SenseName, Feet>;
   weaponProficiencies: Set<WeaponType>;
   weaponCategoryProficiencies: Set<WeaponCategory>;
   armorProficiencies: Set<ArmorCategory>;
@@ -130,11 +147,11 @@ export default class CombatantBase implements Combatant {
   configs: Map<string, unknown>;
   saveProficiencies: Set<AbilityName>;
   features: Map<string, Feature>;
-  classLevels: Map<PCClassName, number>;
+  classLevels: Map<PCClassName, PCClassLevel>;
   concentratingOn: Set<Concentration>;
   time: Set<ActionTime>;
   attunements: Set<Item>;
-  movedSoFar: number;
+  movedSoFar: Feet;
   attacksSoFar: Action[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   effects: Map<EffectType<any>, EffectConfig<any>>;
@@ -144,8 +161,8 @@ export default class CombatantBase implements Combatant {
   resourcesMax: Map<string, number>;
   spellcastingMethods: Set<SpellcastingMethod>;
   damageResponses: Map<DamageType, DamageResponse>;
-  exhaustion: number;
-  temporaryHP: number;
+  exhaustion: Exhaustion;
+  temporaryHP: HitPoints;
   temporaryHPSource?: Source;
   conditionImmunities: Set<ConditionName>;
   deathSaveFailures: number;
@@ -185,24 +202,24 @@ export default class CombatantBase implements Combatant {
       alignLC,
     }: {
       diesAtZero?: boolean;
-      hands?: number;
-      hp?: number;
-      hpMax?: number;
-      img: string;
-      level?: number;
-      cr?: number;
-      pb?: number;
-      reach?: number;
-      side: number;
+      hands?: Hands;
+      hp?: HitPoints;
+      hpMax?: HitPoints;
+      img: Url;
+      level?: PCLevel;
+      cr?: ChallengeRating;
+      pb?: Modifier;
+      reach?: Feet;
+      side: SideID;
       size: SizeCategory;
       type: CreatureType;
-      chaScore?: number;
-      conScore?: number;
-      dexScore?: number;
-      intScore?: number;
-      strScore?: number;
-      wisScore?: number;
-      naturalAC?: number;
+      chaScore?: Score;
+      conScore?: Score;
+      dexScore?: Score;
+      intScore?: Score;
+      strScore?: Score;
+      wisScore?: Score;
+      naturalAC?: ArmorClass;
       rules?: SetInitialiser<AIRule>;
       coefficients?: MapInitialiser<AICoefficient, number>;
       groups?: SetInitialiser<CombatantGroup>;
@@ -282,7 +299,7 @@ export default class CombatantBase implements Combatant {
     return this.g.getBestACMethod(this);
   }
 
-  get baseAC(): number {
+  get baseAC() {
     return this.acMethod.ac;
   }
 
@@ -333,8 +350,8 @@ export default class CombatantBase implements Combatant {
     return this.getConditions().grappling;
   }
 
-  get speed(): number {
-    const bonus = new BonusCollector();
+  get speed(): Feet {
+    const bonus = new BonusCollector<Feet>();
     bonus.add(this.movement.get("speed") ?? 0, this);
 
     const e = this.g.fire(
@@ -348,8 +365,8 @@ export default class CombatantBase implements Combatant {
     return bonus.result * e.detail.multiplier.result;
   }
 
-  get hpMax(): number {
-    const bonus = new BonusCollector();
+  get hpMax(): HitPoints {
+    const bonus = new BonusCollector<HitPoints>();
     bonus.add(this.baseHpMax, this);
 
     const e = this.g.fire(
@@ -421,12 +438,12 @@ export default class CombatantBase implements Combatant {
   }
 
   setAbilityScores(
-    str: number,
-    dex: number,
-    con: number,
-    int: number,
-    wis: number,
-    cha: number,
+    str: Score,
+    dex: Score,
+    con: Score,
+    int: Score,
+    wis: Score,
+    cha: Score,
   ) {
     this.str.score = str;
     this.dex.score = dex;
@@ -693,9 +710,9 @@ export default class CombatantBase implements Combatant {
     }
   }
 
-  async changeExhaustion(delta: number): Promise<number> {
+  async changeExhaustion(delta: number) {
     const old = this.exhaustion;
-    const value = clamp(this.exhaustion + delta, 0, 6);
+    const value = clamp<Exhaustion>(this.exhaustion + delta, 0, 6);
 
     const e = new ExhaustionEvent({
       who: this,
@@ -761,5 +778,9 @@ export default class CombatantBase implements Combatant {
     }
 
     return false;
+  }
+
+  getClassLevel(name: PCClassName, assume: PCClassLevel) {
+    return this.classLevels.get(name) ?? assume;
   }
 }

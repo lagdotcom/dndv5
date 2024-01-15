@@ -1,6 +1,7 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import { ErrorFilter } from "../filters";
+import { Feet } from "../flavours";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
@@ -15,7 +16,7 @@ export default class MultiTargetResolver implements Resolver<Combatant[]> {
     public g: Engine,
     public minimum: number,
     public maximum: number,
-    public maxRange: number,
+    public maxRange: Feet,
     public filters: ErrorFilter<Combatant>[],
     public allFilters: ErrorFilter<Combatant[]>[] = [],
   ) {

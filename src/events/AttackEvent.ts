@@ -1,5 +1,6 @@
 import AttackOutcomeCollector from "../collectors/AttackOutcomeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import { ArmorClass, ModifiedDiceRoll } from "../flavours";
 import { AttackRoll } from "../types/RollType";
 import { BeforeAttackDetail } from "./BeforeAttackEvent";
 import { DiceRolledDetail } from "./DiceRolledEvent";
@@ -7,8 +8,8 @@ import { DiceRolledDetail } from "./DiceRolledEvent";
 export interface AttackDetail {
   pre: BeforeAttackDetail;
   roll: DiceRolledDetail<AttackRoll>;
-  total: number;
-  ac: number;
+  total: ModifiedDiceRoll;
+  ac: ArmorClass;
   outcome: AttackOutcomeCollector;
   interrupt: InterruptionCollector;
 }

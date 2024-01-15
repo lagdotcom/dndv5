@@ -1,10 +1,11 @@
 import { aimCone, aimLine } from "../aim";
+import { Feet } from "../flavours";
 import PointSet from "../PointSet";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
 import { getBoundingBox, resolveArea } from "./areas";
 
-const p = (x: number, y: number): Point => ({ x, y });
+const p = (x: Feet, y: Feet): Point => ({ x, y });
 
 const sh = (raw: string) => raw.slice(1);
 

@@ -12,6 +12,7 @@ import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { isEnemy } from "../../filters";
+import { DifficultyClass } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import MessageBuilder from "../../MessageBuilder";
@@ -146,7 +147,7 @@ class AntimagicProdigyAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
-    private dc: number,
+    private dc: DifficultyClass,
     private success: SuccessResponseCollector,
   ) {
     super(
@@ -227,7 +228,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
-    private dc: number,
+    private dc: DifficultyClass,
   ) {
     super(
       g,

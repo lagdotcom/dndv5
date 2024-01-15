@@ -1,5 +1,6 @@
 import { HasTarget } from "../../configs";
 import { canSee, notOfCreatureType } from "../../filters";
+import { DiceCount } from "../../flavours";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { poSet, poWithin } from "../../utils/ai";
@@ -33,7 +34,7 @@ const HealingWord = scalingSpell<HasTarget>({
     ]),
   }),
   getHeal: (g, caster, method, { slot }) => [
-    { type: "dice", amount: { count: slot ?? 1, size: 4 } },
+    { type: "dice", amount: { count: (slot as DiceCount) ?? 1, size: 4 } },
     {
       type: "flat",
       amount: method.ability ? caster[method.ability].modifier : 0,

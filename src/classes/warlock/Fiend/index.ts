@@ -45,7 +45,7 @@ const DarkOnesBlessing = new SimpleFeature(
               if (who.hp < 1) {
                 const amount = Math.max(
                   1,
-                  me.cha.modifier + (me.classLevels.get("Warlock") ?? 1),
+                  me.cha.modifier + me.getClassLevel("Warlock", 1),
                 );
                 await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
               }

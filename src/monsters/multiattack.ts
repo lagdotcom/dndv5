@@ -2,6 +2,7 @@ import AbstractAttackAction from "../actions/AbstractAttackAction";
 import { TwoWeaponAttack } from "../actions/TwoWeaponAttack";
 import { OneAttackPerTurnRule } from "../DndRules";
 import SimpleFeature from "../features/SimpleFeature";
+import { Description } from "../flavours";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import RangeCategory from "../types/RangeCategory";
@@ -37,7 +38,7 @@ function containsAllSpecs(
 }
 
 export function makeBagMultiattack(
-  text: string,
+  text: Description,
   ...matchersList: AttackMatcher[][]
 ) {
   return makeMultiattack(text, (me, action) => {
@@ -47,7 +48,7 @@ export function makeBagMultiattack(
 }
 
 export function makeMultiattack(
-  text: string,
+  text: Description,
   canStillAttack: (me: Combatant, action: Action) => boolean,
 ) {
   const feature = new SimpleFeature("Multiattack", text, (g, me) => {

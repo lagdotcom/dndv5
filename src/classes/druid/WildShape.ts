@@ -4,6 +4,7 @@ import initialiseMonster from "../../data/initialiseMonster";
 import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
+import { Score } from "../../flavours";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { ShortRestResource } from "../../resources";
@@ -39,9 +40,9 @@ type DruidBackup = Pick<
 
 class WildShapeController {
   backup: DruidBackup;
-  str: number;
-  dex: number;
-  con: number;
+  str: Score;
+  dex: Score;
+  con: Score;
   removeFeatures: Set<Feature>;
   bag: SubscriptionBag;
 

@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/erupting-earth.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
+import { DiceCount } from "../../flavours";
 import PointResolver from "../../resolvers/PointResolver";
 import { arSet, SpecifiedCube } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -36,7 +37,7 @@ const EruptingEarth = scalingSpell<HasPoint>({
   getAffectedArea: (g, caster, { point }) =>
     point && [getEruptingEarthArea(point)],
   getDamage: (g, caster, method, { slot }) => [
-    _dd(slot ?? 3, 12, "bludgeoning"),
+    _dd((slot as DiceCount) ?? 3, 12, "bludgeoning"),
   ],
   getTargets: () => [],
   getAffected: (g, caster, { point }) =>

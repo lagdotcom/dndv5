@@ -1,5 +1,6 @@
 import BonusCollector from "../collectors/BonusCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import { DifficultyClass } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import SaveType from "../types/SaveType";
@@ -13,7 +14,7 @@ export interface GetSaveDCDetail {
   target?: Combatant;
   type: SaveType;
   ability?: AbilityName;
-  bonus: BonusCollector;
+  bonus: BonusCollector<DifficultyClass>;
   interrupt: InterruptionCollector;
   spell?: Spell;
   method?: SpellcastingMethod;

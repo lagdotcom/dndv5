@@ -3,6 +3,7 @@ import DiceTypeCollector from "../collectors/DiceTypeCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import ProficiencyCollector from "../collectors/ProficiencyCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
+import { DifficultyClass } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import { CheckTag } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
@@ -11,7 +12,7 @@ import ToolName from "../types/ToolName";
 
 export interface BeforeCheckDetail {
   who: Combatant;
-  dc: number;
+  dc: DifficultyClass;
   target?: Combatant;
   ability: AbilityName;
   skill?: SkillName;

@@ -1,4 +1,6 @@
+import { Color, Url } from "../flavours";
+
 export default interface Icon {
-  url: string;
-  colour?: string;
+  url: Url;
+  colour?: Color;
 }

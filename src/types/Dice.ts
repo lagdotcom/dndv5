@@ -1,4 +1,6 @@
+import { DiceCount, DiceSize } from "../flavours";
+
 export default interface Dice {
-  count: number;
-  size: number;
+  count: DiceCount;
+  size: DiceSize;
 }

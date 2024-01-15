@@ -3,6 +3,7 @@ import { OneAttackPerTurnRule } from "../DndRules";
 import Engine from "../Engine";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
+import { Description, PCClassLevel } from "../flavours";
 import { ShortRestResource } from "../resources";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
@@ -22,7 +23,7 @@ function asiSetup(g: Engine, me: Combatant, config: ASIConfig) {
   else me.addFeature(allFeatures[config.feat]);
 }
 
-export function makeASI(className: PCClassName, level: number) {
+export function makeASI(className: PCClassName, level: PCClassLevel) {
   return new ConfiguredFeature<ASIConfig>(
     `Ability Score Improvement (${className} ${level})`,
     `When you reach ${ordinal(
@@ -34,7 +35,7 @@ If your DM allows the use of feats, you may instead take a feat.`,
   );
 }
 
-export function makeExtraAttack(name: string, text: string, extra = 1) {
+export function makeExtraAttack(name: string, text: Description, extra = 1) {
   return new SimpleFeature(name, text, (g, me) => {
     g.events.on("CheckAction", ({ detail: { action, error } }) => {
       if (
@@ -47,7 +48,7 @@ export function makeExtraAttack(name: string, text: string, extra = 1) {
   });
 }
 
-export function makeLandsStride(text: string) {
+export function makeLandsStride(text: Description) {
   const feature = new SimpleFeature("Land's Stride", text, (g, me) => {
     featureNotComplete(feature, me);
 

@@ -1,3 +1,4 @@
+import { Feet } from "./flavours";
 import { MapSquareSize } from "./MapSquare";
 import { SpecifiedEffectShape } from "./types/EffectArea";
 import Point from "./types/Point";
@@ -32,9 +33,9 @@ export function getAimOffset(a: Point, b: Point): Point {
 
 export function aimCone(
   position: Point,
-  size: number,
+  size: Feet,
   aim: Point,
-  radius: number,
+  radius: Feet,
 ): SpecifiedEffectShape {
   const offset = getAimOffset(position, aim);
 
@@ -48,10 +49,10 @@ export function aimCone(
 
 export function aimLine(
   position: Point,
-  size: number,
+  size: Feet,
   aim: Point,
-  length: number,
-  width: number,
+  length: Feet,
+  width: Feet,
 ): SpecifiedEffectShape {
   const offset = getAimOffset(position, aim);
 

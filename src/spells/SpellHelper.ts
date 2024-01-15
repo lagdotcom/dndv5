@@ -5,6 +5,7 @@ import { HasCaster } from "../configs";
 import { DamageInitialiser } from "../DamageMap";
 import Engine, { EngineSaveConfig } from "../Engine";
 import { AttackDetail } from "../events/AttackEvent";
+import { SpellSlot, Turns } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import Action from "../types/Action";
 import AttackTag, { atSet } from "../types/AttackTag";
@@ -80,7 +81,7 @@ export default class SpellHelper<T extends object> {
       type: method.getSaveType(
         attacker,
         spell,
-        (spellConfig as { slot?: number }).slot,
+        (spellConfig as { slot?: SpellSlot }).slot,
       ),
       attacker,
       spell,
@@ -249,7 +250,7 @@ export default class SpellHelper<T extends object> {
     >,
     "effect"
   > & {
-    duration: number;
+    duration: Turns;
     conditions?: SetInitialiser<ConditionName>;
   }) {
     const { g, caster, method, spell, config: spellConfig } = this;

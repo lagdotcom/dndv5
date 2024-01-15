@@ -1,9 +1,10 @@
 import { HasCaster, HasTarget } from "../../configs";
 import Effect from "../../Effect";
+import { CombatantID } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
-import Combatant, { CombatantID } from "../../types/Combatant";
+import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
 import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";

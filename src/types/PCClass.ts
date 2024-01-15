@@ -1,3 +1,4 @@
+import { DiceSize, PCClassLevel, Score } from "../flavours";
 import AbilityName from "./AbilityName";
 import Feature from "./Feature";
 import Gain from "./Gain";
@@ -19,7 +20,7 @@ export interface ProficiencyGains {
 
 export default interface PCClass extends ProficiencyGains {
   name: PCClassName;
-  hitDieSize: number;
-  multi: { requirements: Map<AbilityName, number> } & ProficiencyGains;
-  features: Map<number, Feature[]>;
+  hitDieSize: DiceSize;
+  multi: { requirements: Map<AbilityName, Score> } & ProficiencyGains;
+  features: Map<PCClassLevel, Feature[]>;
 }

@@ -1,6 +1,8 @@
+import { Modifier, Score } from "../flavours";
+
 export default interface CombatantScore {
-  score: number;
-  maximum: number;
-  minimum: number;
-  modifier: number;
+  score: Score;
+  maximum: Score;
+  minimum: Score;
+  modifier: Modifier;
 }

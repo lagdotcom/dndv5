@@ -7,6 +7,7 @@ import iconSEUrl from "@img/ui/se.svg";
 import iconSWUrl from "@img/ui/sw.svg";
 import iconWUrl from "@img/ui/w.svg";
 
+import { ClassName, Url } from "../../flavours";
 import MoveDirection from "../../types/MoveDirection";
 import { useCallback, useMemo } from "../lib";
 import classnames from "../utils/classnames";
@@ -14,7 +15,7 @@ import { canMoveDirections } from "../utils/state";
 import SVGIcon from "./SVGIcon";
 import styles from "./UnitMoveButton.module.scss";
 
-const makeButtonType = (className: string, iconUrl: string, label: string) => ({
+const makeButtonType = (className: ClassName, iconUrl: Url, label: string) => ({
   className: styles[className],
   iconUrl,
   label,

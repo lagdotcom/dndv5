@@ -1,4 +1,5 @@
 import Engine from "../Engine";
+import { DiceRoll, Feet, Pixels, SideID, Url } from "../flavours";
 import { AlignmentPair } from "../types/Alignment";
 import Empty from "../types/Empty";
 import Item from "../types/Item";
@@ -12,10 +13,10 @@ import MonsterTemplate from "./MonsterTemplate";
 export type ItemCreator = (g: Engine) => Item;
 
 interface EntryBase {
-  side?: number;
-  x: number;
-  y: number;
-  initiative?: number;
+  side?: SideID;
+  x: Feet;
+  y: Feet;
+  initiative?: DiceRoll;
   alignment?: AlignmentPair;
 }
 
@@ -33,10 +34,10 @@ export interface MonsterEntry<T extends object = Empty> extends EntryBase {
 export type BattleTemplateEntry = PCEntry | MonsterEntry;
 
 export interface BattleTemplateImage extends Point {
-  src: string;
+  src: Url;
   zIndex?: number;
-  width?: number;
-  height?: number;
+  width?: Pixels;
+  height?: Pixels;
 }
 
 interface BattleTemplate {

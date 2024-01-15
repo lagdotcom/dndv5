@@ -1,7 +1,8 @@
 import { getAimOffset } from "./aim";
+import { Feet } from "./flavours";
 import Point from "./types/Point";
 
-const p = (x: number, y: number): Point => ({ x, y });
+const p = (x: Feet, y: Feet): Point => ({ x, y });
 
 it("calculates each octant properly", () => {
   const a = p(10, 10);

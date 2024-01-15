@@ -1,3 +1,4 @@
+import { Turns } from "../flavours";
 import ConditionName from "./ConditionName";
 import { EffectTag } from "./EffectTag";
 import Empty from "./Empty";
@@ -8,7 +9,7 @@ export type EffectDurationTimer = "turnStart" | "turnEnd";
 
 export type EffectConfig<T = Empty> = T & {
   conditions?: Set<ConditionName>;
-  duration: number;
+  duration: Turns;
 };
 
 export default interface EffectType<T = Empty> extends Source {

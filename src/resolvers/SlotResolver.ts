@@ -1,11 +1,12 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { SpellSlot } from "../flavours";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 
-export default class SlotResolver implements Resolver<number> {
+export default class SlotResolver implements Resolver<SpellSlot> {
   name: string;
   type: "SpellSlot";
 

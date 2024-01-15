@@ -1,7 +1,8 @@
 import SimpleFeature from "../../features/SimpleFeature";
+import { PCClassLevel } from "../../flavours";
 import { ChannelDivinityResource } from "../common";
 
-function getChannelCount(level: number) {
+function getChannelCount(level: PCClassLevel) {
   if (level < 6) return 1;
   if (level < 18) return 2;
   return 3;
@@ -15,7 +16,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
   (g, me) => {
     me.initResource(
       ChannelDivinityResource,
-      getChannelCount(me.classLevels.get("Cleric") ?? 1),
+      getChannelCount(me.getClassLevel("Cleric", 1)),
     );
   },
 );

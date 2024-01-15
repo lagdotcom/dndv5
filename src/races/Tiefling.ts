@@ -3,6 +3,7 @@ import {
   bonusSpellsFeature,
   Darkvision60,
 } from "../features/common";
+import { PCLevel } from "../flavours";
 import { LongRestResource } from "../resources";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
@@ -34,7 +35,7 @@ const HellishRebukeResource = new LongRestResource(
 );
 const DarknessResource = new LongRestResource("Infernal Legacy: Darkness", 1);
 
-const InfernalLegacySpells: BonusSpellEntry[] = [
+const InfernalLegacySpells: BonusSpellEntry<PCLevel>[] = [
   { level: 1, spell: Thaumaturgy },
   { level: 3, spell: HellishRebuke, resource: HellishRebukeResource },
   { level: 5, spell: Darkness, resource: DarknessResource },

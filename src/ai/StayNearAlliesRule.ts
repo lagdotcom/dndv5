@@ -1,5 +1,6 @@
 import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
+import { Feet } from "../flavours";
 import AIRule from "../types/AIRule";
 import Combatant from "../types/Combatant";
 import Point from "../types/Point";
@@ -7,7 +8,7 @@ import { getDistanceBetween } from "../utils/units";
 import { StayNearAllies } from "./coefficients";
 
 export default class StayNearAlliesRule implements AIRule {
-  constructor(public range: number) {}
+  constructor(public range: Feet) {}
 
   evaluatePosition(
     g: Engine,

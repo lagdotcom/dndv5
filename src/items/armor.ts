@@ -1,4 +1,5 @@
 import Engine from "../Engine";
+import { Url } from "../flavours";
 import ArmorBase from "./ArmorBase";
 
 export class PaddedArmor extends ArmorBase {
@@ -74,7 +75,7 @@ export class PlateArmor extends ArmorBase {
 }
 
 export class Shield extends ArmorBase {
-  constructor(g: Engine, iconUrl?: string) {
+  constructor(g: Engine, iconUrl?: Url) {
     super(g, "shield", "shield", 2, true, false, undefined, iconUrl);
     this.hands = 1;
   }

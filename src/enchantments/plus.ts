@@ -1,13 +1,14 @@
 import { ItemRarityColours } from "../colours";
 import Engine from "../Engine";
 import { Listener } from "../events/Dispatcher";
+import { Modifier } from "../flavours";
 import Enchantment from "../types/Enchantment";
 import { AmmoItem, ItemRarity, WeaponItem } from "../types/Item";
 import Source from "../types/Source";
 
 export function getWeaponPlusHandler(
   item: WeaponItem | AmmoItem,
-  value: number,
+  value: Modifier,
   source: Source,
 ): Listener<"BeforeAttack" | "GatherDamage"> {
   return ({ detail: { weapon, ammo, bonus } }) => {
@@ -16,7 +17,7 @@ export function getWeaponPlusHandler(
 }
 
 const weaponPlus = (
-  value: number,
+  value: Modifier,
   rarity: ItemRarity,
 ): Enchantment<"weapon" | "ammo"> => ({
   name: `+${value} bonus`,
@@ -37,7 +38,7 @@ export const weaponPlus2 = weaponPlus(2, "Rare");
 export const weaponPlus3 = weaponPlus(3, "Very Rare");
 
 const armorPlus = (
-  value: number,
+  value: Modifier,
   rarity: ItemRarity,
 ): Enchantment<"armor"> => ({
   name: `+${value} bonus`,

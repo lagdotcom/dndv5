@@ -1,5 +1,6 @@
 import AbstractAction from "../actions/AbstractAction";
 import Engine from "../Engine";
+import { Description, Url } from "../flavours";
 import Combatant from "../types/Combatant";
 import ImplementationStatus from "../types/ImplementationStatus";
 import { ItemRarity, PotionItem } from "../types/Item";
@@ -44,8 +45,8 @@ export default abstract class AbstractPotion
     name: string,
     public rarity: ItemRarity,
     public status: ImplementationStatus = "missing",
-    public description?: string,
-    iconUrl?: string,
+    public description?: Description,
+    iconUrl?: Url,
   ) {
     super(g, "potion", name, 0, iconUrl);
 

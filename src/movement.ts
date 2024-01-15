@@ -1,4 +1,5 @@
 import BeforeMoveEvent from "./events/BeforeMoveEvent";
+import { Feet } from "./flavours";
 import Combatant from "./types/Combatant";
 import MoveHandler from "./types/MoveHandler";
 import Source from "./types/Source";
@@ -18,7 +19,7 @@ export const getDefaultMovement = (who: Combatant): MoveHandler => ({
 });
 
 export const getTeleportation = (
-  maximum: number,
+  maximum: Feet,
   name = "Teleport",
   turnMovement = false,
 ): MoveHandler => ({
@@ -36,7 +37,7 @@ type BoundedMoveConfig = Omit<MoveHandler, "maximum" | "onMove" | "name">;
 
 export class BoundedMove implements MoveHandler {
   name: string;
-  used: number;
+  used: Feet;
   forced: boolean;
   mustUseAll: boolean;
   provokesOpportunityAttacks: boolean;
@@ -46,7 +47,7 @@ export class BoundedMove implements MoveHandler {
 
   constructor(
     public source: Source,
-    public maximum: number,
+    public maximum: Feet,
     {
       check,
       forced = false,
@@ -66,7 +67,7 @@ export class BoundedMove implements MoveHandler {
     this.turnMovement = turnMovement;
   }
 
-  onMove(who: Combatant, cost: number) {
+  onMove(who: Combatant, cost: Feet) {
     this.used += cost;
     return this.used >= this.maximum;
   }

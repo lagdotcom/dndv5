@@ -1,5 +1,6 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
+import { SpellSlot } from "../flavours";
 import Combatant from "../types/Combatant";
 import Empty from "../types/Empty";
 import Spell from "../types/Spell";
@@ -9,7 +10,7 @@ export interface SpellCastDetail<T extends object = Empty> {
   who: Combatant;
   spell: Spell<T>;
   method: SpellcastingMethod;
-  level: number;
+  level: SpellSlot;
   targets: Set<Combatant>;
   affected: Set<Combatant>;
   interrupt: InterruptionCollector;

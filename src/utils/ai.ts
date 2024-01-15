@@ -1,5 +1,6 @@
 import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
+import { Feet } from "../flavours";
 import { MapSquareSize } from "../MapSquare";
 import PointSet from "../PointSet";
 import { ActionEvaluation, PositionConstraint } from "../types/AIRule";
@@ -11,7 +12,7 @@ import { getDistanceBetween } from "./units";
 export const poSet = (...constraints: PositionConstraint[]) =>
   new Set(constraints);
 
-export const poWithin = (range: number, of: Combatant): PositionConstraint => ({
+export const poWithin = (range: Feet, of: Combatant): PositionConstraint => ({
   type: "within",
   range,
   of,
@@ -20,7 +21,7 @@ export const poWithin = (range: number, of: Combatant): PositionConstraint => ({
 function matchesAll(
   g: Engine,
   point: Point,
-  size: number,
+  size: Feet,
   po: Iterable<PositionConstraint>,
 ) {
   for (const co of po) {

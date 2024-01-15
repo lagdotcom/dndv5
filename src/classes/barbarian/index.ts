@@ -1,6 +1,7 @@
 import { notImplementedFeature } from "../../features/common";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import SimpleFeature from "../../features/SimpleFeature";
+import { DiceCount, PCClassLevel } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { MapSquareSize } from "../../MapSquare";
 import { BoundedMove } from "../../movement";
@@ -118,7 +119,7 @@ const InstinctivePounce = new SimpleFeature(
   },
 );
 
-const getBrutalDice = (level: number) => {
+const getBrutalDice = (level: PCClassLevel): DiceCount => {
   if (level < 13) return 1;
   if (level < 17) return 2;
   return 3;
@@ -130,7 +131,7 @@ const BrutalCritical = new SimpleFeature(
 
 This increases to two additional dice at 13th level and three additional dice at 17th level.`,
   (g, me) => {
-    const count = getBrutalDice(me.classLevels.get("Barbarian") ?? 9);
+    const count = getBrutalDice(me.getClassLevel("Barbarian", 9));
 
     g.events.on(
       "GatherDamage",

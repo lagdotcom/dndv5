@@ -1,4 +1,5 @@
 import Effect from "../Effect";
+import { DiceSize } from "../flavours";
 import AbilityName from "./AbilityName";
 import AttackTag from "./AttackTag";
 import { CheckTag } from "./CheckTag";
@@ -40,7 +41,7 @@ export interface DamageRoll {
   source: Source;
   attacker?: Combatant;
   target?: Combatant;
-  size: number;
+  size: DiceSize;
   damageType?: DamageType;
   weapon?: WeaponItem;
   ability?: AbilityName;
@@ -53,7 +54,7 @@ export interface HealRoll {
   source: Source;
   actor: Combatant;
   target?: Combatant;
-  size: number;
+  size: DiceSize;
   spell?: Spell;
   method?: SpellcastingMethod;
 }
@@ -69,7 +70,7 @@ export interface OtherRoll {
   type: "other";
   source: Source;
   who: Combatant;
-  size: number;
+  size: DiceSize;
 }
 export interface SavingThrow<T = unknown> {
   type: "save";

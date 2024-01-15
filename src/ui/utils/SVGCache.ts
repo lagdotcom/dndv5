@@ -1,17 +1,18 @@
+import { Html, Url } from "../../flavours";
 import { createContext } from "../lib";
 
 export default interface SVGCache {
-  get(src: string): Promise<string>;
+  get(src: Url): Promise<Html>;
 }
 
 export class FetchCache implements SVGCache {
-  cache: Map<string, Promise<string>>;
+  cache: Map<Url, Promise<Html>>;
 
   constructor(public init?: RequestInit) {
     this.cache = new Map();
   }
 
-  get(src: string) {
+  get(src: Url): Promise<Html> {
     const cached = this.cache.get(src);
     if (cached) return cached;
 

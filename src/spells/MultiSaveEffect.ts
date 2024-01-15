@@ -1,6 +1,7 @@
 import { HasCaster } from "../configs";
 import Effect from "../Effect";
 import Engine, { EngineSaveConfig } from "../Engine";
+import { Turns } from "../flavours";
 import Combatant from "../types/Combatant";
 import ConditionName from "../types/ConditionName";
 import { EffectConfig } from "../types/EffectType";
@@ -22,7 +23,7 @@ export default class MultiSaveEffect<
     public spellConfig: TSpell,
     public method: SpellcastingMethod,
     public effect: Effect<TEffect>,
-    public duration: number,
+    public duration: Turns,
     conditions: SetInitialiser<ConditionName>,
     public getSave: (
       target: Combatant,

@@ -5,6 +5,7 @@ import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { canSee } from "../../filters";
+import { Modifier } from "../../flavours";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { LongRestResource } from "../../resources";
@@ -62,7 +63,7 @@ You can use this feature a number of times equal to your Intelligence modifier (
       description: string,
       target: Combatant,
       interrupt: InterruptionCollector,
-      bonus: BonusCollector,
+      bonus: BonusCollector<Modifier>,
     ) => {
       const action = new FlashOfGeniusAction(g, me, bonus);
       const config = { target };

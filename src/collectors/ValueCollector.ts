@@ -7,21 +7,21 @@ const comparators: Record<Prefer, Comparator> = {
   lower: (o, n) => n < o,
 };
 
-export default class ValueCollector {
-  others: number[];
+export default class ValueCollector<T extends number = number> {
+  others: T[];
 
-  constructor(public final: number) {
+  constructor(public final: T) {
     this.others = [];
   }
 
-  add(value: number, prefer: Prefer) {
+  add(value: T, prefer: Prefer) {
     const comparator = comparators[prefer];
 
     if (comparator(this.final, value)) this.replace(value);
     else this.others.push(value);
   }
 
-  replace(value: number) {
+  replace(value: T) {
     this.others.push(this.final);
     this.final = value;
   }

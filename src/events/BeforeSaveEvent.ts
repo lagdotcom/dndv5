@@ -5,6 +5,7 @@ import ProficiencyCollector from "../collectors/ProficiencyCollector";
 import SaveDamageResponseCollector from "../collectors/SaveDamageResponseCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
 import Effect from "../Effect";
+import { DifficultyClass } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import { EffectConfig } from "../types/EffectType";
@@ -16,7 +17,7 @@ import SpellcastingMethod from "../types/SpellcastingMethod";
 export interface BeforeSaveDetail<T = unknown> {
   attacker?: Combatant;
   who: Combatant;
-  dc: number;
+  dc: DifficultyClass;
   ability?: AbilityName;
   diceType: DiceTypeCollector;
   proficiency: ProficiencyCollector;

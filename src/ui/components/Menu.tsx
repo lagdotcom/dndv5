@@ -1,3 +1,4 @@
+import { ClassName, Pixels } from "../../flavours";
 import Labelled from "./Labelled";
 import styles from "./Menu.module.scss";
 
@@ -5,15 +6,15 @@ export interface MenuItem<T> {
   label: string;
   value: T;
   disabled?: boolean;
-  className?: string;
+  className?: ClassName;
 }
 
 export interface MenuProps<T> {
   caption: string;
   items: MenuItem<T>[];
   onClick(item: T): void;
-  x: number;
-  y: number;
+  x: Pixels;
+  y: Pixels;
 }
 
 export default function Menu<T>({

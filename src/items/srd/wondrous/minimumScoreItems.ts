@@ -1,4 +1,5 @@
 import Engine from "../../../Engine";
+import { Score } from "../../../flavours";
 import AbilityName from "../../../types/AbilityName";
 import { ItemRarity } from "../../../types/Item";
 import { isEquipmentAttuned } from "../../../utils/items";
@@ -10,7 +11,7 @@ class BaseStatItem extends WondrousItemBase {
     g: Engine,
     name: string,
     ability: AbilityName,
-    score: number,
+    score: Score,
     rarity: ItemRarity = "Rare",
   ) {
     super(g, name);

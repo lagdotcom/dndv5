@@ -1,12 +1,13 @@
+import { DiceRoll, Feet } from "../flavours";
 import { MonsterName } from "./allMonsters";
 import { PCName } from "./allPCs";
 import BattleTemplate, { MonsterEntry, PCEntry } from "./BattleTemplate";
 
 export const addPC = (
   name: PCName,
-  x: number,
-  y: number,
-  initiative?: number,
+  x: Feet,
+  y: Feet,
+  initiative?: DiceRoll,
 ): PCEntry => ({
   type: "pc",
   name,
@@ -15,12 +16,12 @@ export const addPC = (
   initiative,
 });
 
-export const addMonster = <T>(
+export const addMonster = <T extends object>(
   name: MonsterName,
-  x: number,
-  y: number,
+  x: Feet,
+  y: Feet,
   config?: T,
-  initiative?: number,
+  initiative?: DiceRoll,
 ): MonsterEntry<T> => ({
   type: "monster",
   name,

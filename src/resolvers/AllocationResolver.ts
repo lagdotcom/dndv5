@@ -1,15 +1,16 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
 import { ErrorFilter } from "../filters";
+import { Feet } from "../flavours";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
 import { describeRange } from "../utils/text";
 import { distance } from "../utils/units";
 
-export interface Allocation {
+export interface Allocation<T extends number = number> {
   who: Combatant;
-  amount: number;
+  amount: T;
 }
 
 function isAllocation(value: unknown): value is Allocation {
@@ -28,15 +29,17 @@ function isAllocationArray(value: unknown): value is Allocation[] {
   return true;
 }
 
-export default class AllocationResolver implements Resolver<Allocation[]> {
+export default class AllocationResolver<T extends number = number>
+  implements Resolver<Allocation<T>[]>
+{
   type: "Allocations";
 
   constructor(
     public g: Engine,
     public rangeName: string,
-    public minimum: number,
-    public maximum: number,
-    public maxRange: number,
+    public minimum: T,
+    public maximum: T,
+    public maxRange: Feet,
     public filters: ErrorFilter<Combatant>[],
   ) {
     this.type = "Allocations";

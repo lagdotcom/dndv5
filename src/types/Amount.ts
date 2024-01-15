@@ -1,8 +1,9 @@
+import { Modifier } from "../flavours";
 import Dice from "./Dice";
 
 export interface FlatAmount {
   type: "flat";
-  amount: number;
+  amount: Modifier;
 }
 export interface DiceAmount {
   type: "dice";

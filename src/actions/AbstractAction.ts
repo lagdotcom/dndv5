@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import { Description } from "../flavours";
 import Action, {
   ActionConfig,
   ActionTag,
@@ -20,7 +21,7 @@ import { SetInitialiser } from "../utils/set";
 export interface AbstractActionOptions {
   area?: SpecifiedEffectShape[];
   damage?: DamageAmount[];
-  description?: string;
+  description?: Description;
   heal?: Amount[];
   icon?: Icon;
   resources?: MapInitialiser<Resource, number>;
@@ -36,7 +37,7 @@ export default abstract class AbstractAction<T extends object = Empty>
   subIcon?: Icon;
   area?: SpecifiedEffectShape[];
   damage?: DamageAmount[];
-  description?: string;
+  description?: Description;
   heal?: Amount[];
   resources: Map<Resource, number>;
   tags: Set<ActionTag>;

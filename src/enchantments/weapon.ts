@@ -1,4 +1,5 @@
 import { ItemRarityColours } from "../colours";
+import { DiceRoll } from "../flavours";
 import PickFromListChoice, {
   PickChoice,
 } from "../interruptions/PickFromListChoice";
@@ -22,7 +23,7 @@ const chaoticBurstTypes: DamageType[] = [
   "thunder",
 ];
 
-const getOptionFromRoll = (roll: number): PickChoice<DamageType> => {
+const getOptionFromRoll = (roll: DiceRoll): PickChoice<DamageType> => {
   const value = chaoticBurstTypes[roll - 1];
   return { label: value, value };
 };

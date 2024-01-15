@@ -1,6 +1,7 @@
 import AbstractAction from "../../actions/AbstractAction";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { ChallengeRating, PCClassLevel } from "../../flavours";
 import Combatant from "../../types/Combatant";
 import CreatureType from "../../types/CreatureType";
 import { SpecifiedWithin } from "../../types/EffectArea";
@@ -11,7 +12,7 @@ import { ChannelDivinityResource } from "../common";
 import { TurnedConfig, TurnedEffect } from "../turned";
 import { ClericSpellcasting } from ".";
 
-function getDestroyUndeadCR(level: number) {
+function getDestroyUndeadCR(level: PCClassLevel): ChallengeRating {
   if (level < 5) return -Infinity;
   if (level < 8) return 0.5;
   if (level < 11) return 1;
@@ -101,7 +102,7 @@ const TurnUndead = new SimpleFeature(
 
 A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
   (g, me) => {
-    const destroyCr = getDestroyUndeadCR(me.classLevels.get("Cleric") ?? 2);
+    const destroyCr = getDestroyUndeadCR(me.getClassLevel("Cleric", 2));
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me)

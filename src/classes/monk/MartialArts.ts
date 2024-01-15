@@ -2,6 +2,7 @@ import WeaponAttack from "../../actions/WeaponAttack";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { DiceSize, PCClassLevel } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import WeaponBase from "../../items/WeaponBase";
 import Action from "../../types/Action";
@@ -13,7 +14,7 @@ import Priority from "../../types/Priority";
 import { _dd } from "../../utils/dice";
 import { getDiceAverage } from "../../utils/dnd";
 
-export function getMartialArtsDie(level: number) {
+export function getMartialArtsDie(level: PCClassLevel) {
   if (level < 5) return 4;
   if (level < 11) return 6;
   if (level < 17) return 8;
@@ -35,7 +36,7 @@ function isMonkWeaponAttack(action: Action): action is WeaponAttack {
   return action instanceof WeaponAttack && isMonkWeapon(action.weapon);
 }
 
-function canUpgradeDamage(damage: DamageAmount, size: number) {
+function canUpgradeDamage(damage: DamageAmount, size: DiceSize) {
   const avg = getDiceAverage(1, size);
 
   if (damage.type === "flat") return avg > damage.amount;
@@ -57,7 +58,7 @@ class MonkWeaponWrapper extends WeaponBase {
   constructor(
     g: Engine,
     public weapon: WeaponItem,
-    size: number,
+    size: DiceSize,
   ) {
     super(
       g,
@@ -98,7 +99,7 @@ class MartialArtsBonusAttack extends WeaponAttack {
 export function getMonkUnarmedWeapon(g: Engine, who: Combatant) {
   const weapon = who.weapons.find((w) => w.weaponType === "unarmed strike");
   if (weapon) {
-    const diceSize = getMartialArtsDie(who.classLevels.get("Monk") ?? 0);
+    const diceSize = getMartialArtsDie(who.getClassLevel("Monk", 0));
 
     return canUpgradeDamage(weapon.damage, diceSize)
       ? new MonkWeaponWrapper(g, weapon, diceSize)
@@ -118,7 +119,7 @@ You gain the following benefits while you are unarmed or wielding only monk weap
 
 Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
   (g, me) => {
-    const diceSize = getMartialArtsDie(me.classLevels.get("Monk") ?? 0);
+    const diceSize = getMartialArtsDie(me.getClassLevel("Monk", 0));
 
     // You can use Dexterity instead of Strength for the attack and damage rolls of your unarmed strikes and monk weapons.
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

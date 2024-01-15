@@ -5,6 +5,7 @@ import BattleTemplate, {
   initialiseFromTemplate,
 } from "../../data/BattleTemplate";
 import Engine from "../../Engine";
+import { SideID } from "../../flavours";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import { exceptFor, patchAt } from "../../utils/array";
@@ -40,13 +41,13 @@ interface EditUIProps {
 }
 
 type UnitAction =
-  | { type: "side"; side: number }
+  | { type: "side"; side: SideID }
   | { type: "remove" }
   | { type: "configure" }
   | { type: "pc"; pos: Point }
   | { type: "monster"; pos: Point };
 
-const sideItem = (side: number, current: number): MenuItem<UnitAction> => ({
+const sideItem = (side: SideID, current: SideID): MenuItem<UnitAction> => ({
   label: side === 0 ? "Ally" : side === 1 ? "Enemy" : `Side #${side}`,
   value: { type: "side", side },
   disabled: side === current,

@@ -1,3 +1,4 @@
+import { Color, Pixels } from "../../flavours";
 import { MapSquareSize } from "../../MapSquare";
 import { AreaTag, SpecifiedEffectShape } from "../../types/EffectArea";
 import Point from "../../types/Point";
@@ -16,8 +17,8 @@ function getAuraColour(tags: Set<AreaTag>) {
 
 interface AffectedSquareProps {
   point: Point;
-  scaleValue: number;
-  tint: string;
+  scaleValue: Pixels;
+  tint: Color;
   top?: boolean;
 }
 export function AffectedSquare({
@@ -47,10 +48,10 @@ export function AffectedSquare({
 
 interface Props {
   name?: string;
-  scaleValue: number;
+  scaleValue: Pixels;
   shape: SpecifiedEffectShape;
   tags?: Set<AreaTag>;
-  tint?: string;
+  tint?: Color;
   top?: boolean;
 }
 export default function BattlefieldEffect({

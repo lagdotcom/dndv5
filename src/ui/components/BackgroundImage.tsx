@@ -1,11 +1,12 @@
 import { BattleTemplateImage } from "../../data/BattleTemplate";
+import { Pixels } from "../../flavours";
 import { MapSquareSize } from "../../MapSquare";
 import { CSSProperties, useMemo } from "../lib";
 import styles from "./BackgroundImage.module.scss";
 
 interface Props {
   image: BattleTemplateImage;
-  scaleValue: number;
+  scaleValue: Pixels;
 }
 
 export default function BackgroundImage({

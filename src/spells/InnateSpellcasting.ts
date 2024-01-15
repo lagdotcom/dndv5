@@ -1,3 +1,4 @@
+import { SpellSlot } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import Icon from "../types/Icon";
 import Resource from "../types/Resource";
@@ -11,7 +12,7 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     public ability: AbilityName,
     public getResourceForSpell: (
       spell: Spell,
-      level: number,
+      slot: SpellSlot,
     ) => Resource | undefined = () => undefined,
     public icon?: Icon,
   ) {}
@@ -19,12 +20,12 @@ export default class InnateSpellcasting implements SpellcastingMethod {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   addCastableSpell(): void {}
 
-  getMinSlot(spell: Spell): number {
-    return spell.level;
+  getMinSlot(spell: Spell) {
+    return spell.level as SpellSlot;
   }
 
-  getMaxSlot(spell: Spell): number {
-    return spell.level;
+  getMaxSlot(spell: Spell) {
+    return spell.level as SpellSlot;
   }
 
   getSaveType(): SaveType {

@@ -1,12 +1,13 @@
+import { Multiplier } from "../flavours";
 import { AbstractSumCollector } from "./CollectorBase";
 
 export type MultiplierType = "double" | "half" | "normal" | "zero";
 
 export default class MultiplierCollector extends AbstractSumCollector<
   MultiplierType,
-  number
+  Multiplier
 > {
-  getSum(values: MultiplierType[]) {
+  getSum(values: MultiplierType[]): Multiplier {
     let power = 0;
 
     for (const value of values) {

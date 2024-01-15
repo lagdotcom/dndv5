@@ -5,6 +5,7 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
+import { DiceCount, SpellSlot } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import OncePerTurnController from "../../OncePerTurnController";
 import PointResolver from "../../resolvers/PointResolver";
@@ -28,6 +29,9 @@ const getMoonbeamArea = (centre: Point): SpecifiedCylinder => ({
   height: 40,
   radius: 5,
 });
+
+const getMoonbeamDamage = (slot: SpellSlot) =>
+  _dd(slot as DiceCount, 10, "radiant");
 
 class MoveMoonbeamAction extends AbstractAction<HasPoint> {
   constructor(
@@ -56,7 +60,7 @@ class MoveMoonbeamAction extends AbstractAction<HasPoint> {
   }
 
   getDamage({ point }: Partial<HasPoint>) {
-    return point && [_dd(this.controller.slot, 10, "radiant")];
+    return point && [getMoonbeamDamage(this.controller.slot)];
   }
 
   getTargets() {
@@ -85,7 +89,7 @@ class MoonbeamController {
     public caster: Combatant,
     public method: SpellcastingMethod,
     public centre: Point,
-    public slot: number,
+    public slot: SpellSlot,
   ) {
     this.shape = getMoonbeamArea(centre);
     this.area = new ActiveEffectArea(
@@ -129,11 +133,15 @@ class MoonbeamController {
       if (!opt.canBeAffected(target)) return;
       opt.affect(target);
 
-      const damage = await g.rollDamage(slot, {
+      const {
+        amount: { count, size },
+        damageType,
+      } = getMoonbeamDamage(slot);
+      const damage = await g.rollDamage(count, {
         attacker,
-        damageType: "radiant",
+        damageType,
         method,
-        size: 10,
+        size,
         source: Moonbeam,
         spell: Moonbeam,
         target,
@@ -203,7 +211,7 @@ const Moonbeam = scalingSpell<HasPoint>({
 
   getConfig: (g) => ({ point: new PointResolver(g, 120) }),
   getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
-  getDamage: (g, caster, method, { slot }) => [_dd(slot ?? 2, 10, "radiant")],
+  getDamage: (g, caster, method, { slot }) => [getMoonbeamDamage(slot ?? 2)],
   getTargets: () => [],
   getAffected: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
 

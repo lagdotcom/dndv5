@@ -1,3 +1,4 @@
+import { DifficultyClass, ModifiedDiceRoll } from "../flavours";
 import DiceType from "../types/DiceType";
 import { AbilityCheck } from "../types/RollType";
 import { BeforeCheckDetail } from "./BeforeCheckEvent";
@@ -7,8 +8,8 @@ export interface AbilityCheckDetail {
   pre: BeforeCheckDetail;
   roll: DiceRolledDetail<AbilityCheck>;
   diceType: DiceType;
-  total: number;
-  dc: number;
+  total: ModifiedDiceRoll;
+  dc: DifficultyClass;
   outcome: "success" | "fail";
   forced: boolean;
 }

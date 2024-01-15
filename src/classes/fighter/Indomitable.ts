@@ -1,11 +1,12 @@
 import { notImplementedFeature } from "../../features/common";
+import { PCClassLevel } from "../../flavours";
 import { LongRestResource } from "../../resources";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const IndomitableResource = new LongRestResource("Indomitable", 1);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getIndomitableCount(level: number) {
+function getIndomitableCount(level: PCClassLevel) {
   if (level < 13) return 1;
   if (level < 17) return 2;
   return 3;

@@ -3,18 +3,18 @@ import iconUrl from "@img/spl/magic-missile.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasAllocations } from "../../configs";
 import { canSee } from "../../filters";
+import { DiceCount, ModifiedDiceRoll, SpellSlot } from "../../flavours";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import { atSet } from "../../types/AttackTag";
-import DamageAmount from "../../types/DamageAmount";
 import { _dd, _fd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getDamage = (slot: number): DamageAmount[] => [
+const getDamage = (slot: SpellSlot) => [
   _dd(slot + 2, 4, "force"),
   _fd(slot + 2, "force"),
 ];
 
-const MagicMissile = scalingSpell<HasAllocations>({
+const MagicMissile = scalingSpell<HasAllocations<DiceCount>>({
   status: "implemented",
   name: "Magic Missile",
   icon: makeIcon(iconUrl, DamageColours.force),
@@ -45,7 +45,7 @@ const MagicMissile = scalingSpell<HasAllocations>({
   getAffected: (g, caster, { targets }) => targets.map((e) => e.who),
 
   async apply({ g, method, caster: attacker }, { targets }) {
-    const perBolt =
+    const perBolt: ModifiedDiceRoll =
       (await g.rollDamage(1, {
         source: MagicMissile,
         spell: MagicMissile,

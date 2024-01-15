@@ -2,6 +2,7 @@ import { defaultAIRules } from "./ai/data";
 import CombatantBase from "./CombatantBase";
 import { ItemName } from "./data/allItems";
 import Engine from "./Engine";
+import { ChallengeRating, HitPoints, Quantity, Url } from "./flavours";
 import AIRule from "./types/AIRule";
 import CreatureType from "./types/CreatureType";
 import Item from "./types/Item";
@@ -11,11 +12,11 @@ export default class Monster extends CombatantBase {
   constructor(
     g: Engine,
     name: string,
-    cr: number,
+    cr: ChallengeRating,
     type: CreatureType,
     size: SizeCategory,
-    img: string,
-    hpMax: number,
+    img: Url,
+    hpMax: HitPoints,
     rules: AIRule[] = defaultAIRules,
   ) {
     super(g, name, {
@@ -34,7 +35,7 @@ export default class Monster extends CombatantBase {
     return super.don(item);
   }
 
-  give(item: Item, quantity = 1, giveProficiency = false) {
+  give(item: Item, quantity: Quantity = 1, giveProficiency = false) {
     if (giveProficiency) this.addProficiency(item, "proficient");
     return this.addToInventory(item, quantity);
   }

@@ -33,6 +33,6 @@ export function ordinal(n: number) {
   }
 }
 
-export function clamp(n: number, min: number, max: number) {
-  return Math.min(max, Math.max(n, min));
+export function clamp<T extends number>(n: T, min: T, max: T) {
+  return Math.min(max, Math.max(n, min)) as T;
 }

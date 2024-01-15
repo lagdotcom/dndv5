@@ -3,6 +3,7 @@ import iconUrl from "@img/spl/earth-tremor.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
+import { DiceCount } from "../../flavours";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedWithin } from "../../types/EffectArea";
 import { poSet } from "../../utils/ai";
@@ -34,7 +35,7 @@ const EarthTremor = scalingSpell({
   getConfig: () => ({}),
   getAffectedArea: (g, caster) => [getEarthTremorArea(caster)],
   getDamage: (g, caster, method, { slot }) => [
-    _dd(slot ?? 1, 6, "bludgeoning"),
+    _dd((slot as DiceCount) ?? 1, 6, "bludgeoning"),
   ],
   getTargets: () => [],
   getAffected: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),

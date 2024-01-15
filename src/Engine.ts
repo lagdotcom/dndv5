@@ -59,6 +59,17 @@ import TextEvent from "./events/TextEvent";
 import TurnEndedEvent from "./events/TurnEndedEvent";
 import TurnSkippedEvent from "./events/TurnSkippedEvent";
 import TurnStartedEvent from "./events/TurnStartedEvent";
+import {
+  ArmorClass,
+  DiceCount,
+  DiceRoll,
+  DifficultyClass,
+  Feet,
+  HitPoints,
+  ModifiedDiceRoll,
+  Modifier,
+  Multiplier,
+} from "./flavours";
 import YesNoChoice from "./interruptions/YesNoChoice";
 import { MapSquareSize } from "./MapSquare";
 import MessageBuilder from "./MessageBuilder";
@@ -134,7 +145,7 @@ export default class Engine {
     return ++this.id;
   }
 
-  place(who: Combatant, x: number, y: number) {
+  place(who: Combatant, x: Feet, y: Feet) {
     const position = { x, y };
     who.position = position;
     who.initiative = NaN;
@@ -165,25 +176,29 @@ export default class Engine {
     await this.nextTurn();
   }
 
-  async rollMany(count: number, e: RollType, critical = false) {
+  async rollMany(count: DiceCount, e: RollType, critical = false) {
     const rolls = await Promise.all(
       Array(count * (critical ? 2 : 1))
         .fill(null)
         .map(async () => await this.roll(e)),
     );
 
-    return rolls.reduce((acc, roll) => acc + roll.values.final, 0);
+    return rolls.reduce<DiceRoll>((acc, roll) => acc + roll.values.final, 0);
   }
 
   async rollDamage(
-    count: number,
+    count: DiceCount,
     e: Omit<DamageRoll, "type">,
     critical = false,
   ) {
     return this.rollMany(count, { ...e, type: "damage" }, critical);
   }
 
-  async rollHeal(count: number, e: Omit<HealRoll, "type">, critical = false) {
+  async rollHeal(
+    count: DiceCount,
+    e: Omit<HealRoll, "type">,
+    critical = false,
+  ) {
     return this.rollMany(count, { ...e, type: "heal" }, critical);
   }
 
@@ -201,7 +216,7 @@ export default class Engine {
 
     const diceType = pre.diceType.result;
     const roll = await this.roll({ type: "initiative", who }, diceType);
-    const value = roll.values.final + pre.bonus.result;
+    const value: ModifiedDiceRoll = roll.values.final + pre.bonus.result;
 
     this.fire(
       new CombatantInitiativeEvent({ who, diceType, value, pre, roll }),
@@ -223,7 +238,7 @@ export default class Engine {
   }
 
   private async savingThrow<T>(
-    dc: number,
+    dc: DifficultyClass,
     e: Omit<SavingThrow<T>, "dc" | "type">,
     {
       diceType: baseDiceType,
@@ -309,7 +324,10 @@ export default class Engine {
     };
   }
 
-  async abilityCheck(dc: number, e: Omit<AbilityCheck, "dc" | "type">) {
+  async abilityCheck(
+    dc: DifficultyClass,
+    e: Omit<AbilityCheck, "dc" | "type">,
+  ) {
     const successResponse = new SuccessResponseCollector();
     const pb = new BonusCollector();
     const proficiency = new ProficiencyCollector();
@@ -523,7 +541,7 @@ export default class Engine {
       attack?: AttackDetail;
       attacker?: Combatant;
       who: Combatant;
-      multiplier: number;
+      multiplier: Multiplier;
     },
   ) {
     const { total, healAmount, breakdown } = this.calculateDamage(damage, data);
@@ -565,7 +583,7 @@ export default class Engine {
       spell?: Spell;
       method?: SpellcastingMethod;
       who: Combatant;
-      multiplier: number;
+      multiplier: Multiplier;
       attack?: AttackDetail;
     },
   ) {
@@ -600,7 +618,7 @@ export default class Engine {
       spell?: Spell;
       method?: SpellcastingMethod;
       who: Combatant;
-      multiplier: number;
+      multiplier: Multiplier;
       attack?: AttackDetail;
     },
   ) {
@@ -635,7 +653,7 @@ export default class Engine {
   private calculateDamageAmount(
     raw: number,
     response: DamageResponse,
-    baseMultiplier: number,
+    baseMultiplier: Multiplier,
   ) {
     let amount = raw;
 
@@ -729,7 +747,7 @@ export default class Engine {
     }
   }
 
-  getAttackOutcome(ac: number, roll: number, total: number) {
+  getAttackOutcome(ac: ArmorClass, roll: DiceRoll, total: ModifiedDiceRoll) {
     // If the d20 roll for an attack is a 1, the attack misses regardless of any modifiers or the target's AC.
     return roll === 1
       ? "miss"
@@ -747,7 +765,7 @@ export default class Engine {
       BeforeAttackDetail,
       "pb" | "proficiency" | "bonus" | "diceType" | "interrupt" | "success"
     >,
-    config: { source?: Source; bonus?: number; diceType?: DiceType } = {},
+    config: { source?: Source; bonus?: Modifier; diceType?: DiceType } = {},
   ) {
     const pb = new BonusCollector();
     const proficiency = new ProficiencyCollector();
@@ -903,7 +921,7 @@ export default class Engine {
       }),
     );
 
-    return method.ac + e.detail.bonus.result;
+    return (method.ac + e.detail.bonus.result) as ArmorClass;
   }
 
   fire<T>(e: CustomEvent<T>) {
@@ -1009,7 +1027,7 @@ export default class Engine {
     );
   }
 
-  async giveTemporaryHP(who: Combatant, count: number, source: Source) {
+  async giveTemporaryHP(who: Combatant, count: HitPoints, source: Source) {
     // TODO skip this dialog if it's obvious (same source, more hp?)
     if (who.temporaryHP > 0)
       return new YesNoChoice(
@@ -1025,7 +1043,7 @@ export default class Engine {
     return true;
   }
 
-  private setTemporaryHP(who: Combatant, count: number, source?: Source) {
+  private setTemporaryHP(who: Combatant, count: HitPoints, source?: Source) {
     who.temporaryHP = count;
     who.temporaryHPSource = source;
   }
@@ -1101,12 +1119,7 @@ export default class Engine {
     this.fire(new TextEvent({ message }));
   }
 
-  async forcePush(
-    who: Combatant,
-    away: Combatant,
-    dist: number,
-    source: Source,
-  ) {
+  async forcePush(who: Combatant, away: Combatant, dist: Feet, source: Source) {
     const path = getPathAwayFrom(who.position, away.position, dist);
     const handler = new BoundedMove(source, Infinity, { forced: true });
     for (const point of path) {

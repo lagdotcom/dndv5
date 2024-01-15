@@ -3,14 +3,16 @@ import Engine from "../Engine";
 import Action from "../types/Action";
 import Resolver from "../types/Resolver";
 
-export default class NumberRangeResolver implements Resolver<number> {
+export default class NumberRangeResolver<T extends number = number>
+  implements Resolver<T>
+{
   type: "NumberRange";
 
   constructor(
     public g: Engine,
     public rangeName: string,
-    public min: number,
-    public max: number,
+    public min: T,
+    public max: T,
   ) {
     this.type = "NumberRange";
   }

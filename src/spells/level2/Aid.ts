@@ -3,13 +3,14 @@ import iconUrl from "@img/spl/aid.svg";
 import { Heal, makeIcon } from "../../colours";
 import { HasTargets } from "../../configs";
 import Effect from "../../Effect";
+import { HitPoints } from "../../flavours";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
 
 const AidIcon = makeIcon(iconUrl, Heal);
 
-const AidEffect = new Effect<{ amount: number }>(
+const AidEffect = new Effect<{ amount: HitPoints }>(
   "Aid",
   "turnStart",
   (g) => {
@@ -40,7 +41,7 @@ const Aid = scalingSpell<HasTargets>({
   getAffected: (g, caster, { targets }) => targets,
 
   async apply({ g, caster: actor }, { slot, targets }) {
-    const amount = (slot - 1) * 5;
+    const amount: HitPoints = (slot - 1) * 5;
     const duration = hours(8);
 
     for (const target of targets) {

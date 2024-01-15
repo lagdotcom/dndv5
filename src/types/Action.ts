@@ -1,4 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { Description } from "../flavours";
 import ActionTime from "./ActionTime";
 import { PositionConstraint } from "./AIRule";
 import Amount from "./Amount";
@@ -41,7 +42,7 @@ export default interface Action<T extends object = Empty> extends Source {
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape[] | undefined;
   getConfig(config: Partial<T>): ActionConfig<T>;
   getDamage(config: Partial<T>): DamageAmount[] | undefined;
-  getDescription(config: Partial<T>): string | undefined;
+  getDescription(config: Partial<T>): Description | undefined;
   getHeal(config: Partial<T>): Amount[] | undefined;
   getResources(config: Partial<T>): Map<Resource, number>;
   getTargets(config: Partial<T>): Combatant[] | undefined;

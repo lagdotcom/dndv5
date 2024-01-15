@@ -1,3 +1,4 @@
+import { Quantity } from "../flavours";
 import { EnchantmentName } from "./allEnchantments";
 import { ItemName } from "./allItems";
 
@@ -5,6 +6,6 @@ export default interface InventoryItem {
   name: ItemName;
   equip?: boolean;
   attune?: boolean;
-  quantity?: number;
+  quantity?: Quantity;
   enchantments?: EnchantmentName[];
 }

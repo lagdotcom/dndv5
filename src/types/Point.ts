@@ -1,4 +1,6 @@
+import { Feet } from "../flavours";
+
 export default interface Point {
-  x: number;
-  y: number;
+  x: Feet;
+  y: Feet;
 }

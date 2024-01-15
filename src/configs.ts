@@ -1,11 +1,12 @@
+import { SpellSlot } from "./flavours";
 import { Allocation } from "./resolvers/AllocationResolver";
 import Combatant from "./types/Combatant";
 import Item, { WeaponItem } from "./types/Item";
 import Point from "./types/Point";
 import SpellcastingMethod from "./types/SpellcastingMethod";
 
-export interface HasAllocations {
-  targets: Allocation[];
+export interface HasAllocations<T extends number = number> {
+  targets: Allocation<T>[];
 }
 
 export interface HasCaster {
@@ -32,7 +33,7 @@ export interface HasWeapon {
 }
 
 export interface Scales {
-  slot: number;
+  slot: SpellSlot;
 }
 
 export interface HasItem {

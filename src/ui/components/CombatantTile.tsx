@@ -1,8 +1,9 @@
+import { Url } from "../../flavours";
 import styles from "./CombatantTile.module.scss";
 
 interface Props {
   name: string;
-  tokenUrl: string;
+  tokenUrl: Url;
 }
 
 export default function CombatantTile({ name, tokenUrl }: Props) {

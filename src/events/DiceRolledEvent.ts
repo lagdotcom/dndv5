@@ -1,13 +1,14 @@
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import ValueCollector from "../collectors/ValueCollector";
+import { DiceRoll, DiceSize } from "../flavours";
 import DiceType from "../types/DiceType";
 import RollType from "../types/RollType";
 
 export interface DiceRolledDetail<T extends RollType> {
   type: T;
   diceType: DiceType;
-  size: number;
-  values: ValueCollector;
+  size: DiceSize;
+  values: ValueCollector<DiceRoll>;
   interrupt: InterruptionCollector;
 }
 

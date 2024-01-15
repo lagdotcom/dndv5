@@ -2,6 +2,7 @@ import ErrorCollector from "../collectors/ErrorCollector";
 import CombatantBase from "../CombatantBase";
 import Engine from "../Engine";
 import { ErrorFilter } from "../filters";
+import { Feet } from "../flavours";
 import Action from "../types/Action";
 import Combatant from "../types/Combatant";
 import Resolver from "../types/Resolver";
@@ -12,7 +13,7 @@ export default class TargetResolver implements Resolver<Combatant> {
 
   constructor(
     public g: Engine,
-    public maxRange: number,
+    public maxRange: Feet,
     public filters: ErrorFilter<Combatant>[],
   ) {
     this.type = "Combatant";

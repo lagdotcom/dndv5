@@ -3,6 +3,7 @@ import Engine from "./Engine";
 import CombatantMovedEvent from "./events/CombatantMovedEvent";
 import EffectAddedEvent from "./events/EffectAddedEvent";
 import EffectRemovedEvent from "./events/EffectRemovedEvent";
+import { Color, Feet } from "./flavours";
 import SubscriptionBag from "./SubscriptionBag";
 import Combatant from "./types/Combatant";
 import { AreaTag } from "./types/EffectArea";
@@ -20,9 +21,9 @@ export default class AuraController {
     public g: Engine,
     public name: string,
     public who: Combatant,
-    public radius: number,
+    public radius: Feet,
     tags: SetInitialiser<AreaTag> = [],
-    public tint: string,
+    public tint: Color,
     public handler?: ActiveEffectAreaHandler,
     public shouldBeActive: AuraActiveChecker = () => true,
   ) {

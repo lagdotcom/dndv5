@@ -3,6 +3,7 @@ import { HasCaster, HasTargets } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import { canSee } from "../../filters";
+import { DiceCount, SpellSlot } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import OncePerTurnController from "../../OncePerTurnController";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
@@ -22,13 +23,13 @@ const getSpiritGuardiansArea = (who: Combatant): SpecifiedWithin => ({
 
 const isEvil = (who: Combatant) => who.alignGE === "Evil";
 
-const getSpiritGuardiansDamage = (caster: Combatant, slot: number) =>
-  _dd(slot, 8, isEvil(caster) ? "necrotic" : "radiant");
+const getSpiritGuardiansDamage = (caster: Combatant, slot: SpellSlot) =>
+  _dd(slot as DiceCount, 8, isEvil(caster) ? "necrotic" : "radiant");
 
 interface Config extends HasCaster {
   aura: AuraController;
   opt: OncePerTurnController;
-  slot: number;
+  slot: SpellSlot;
   immune: Set<Combatant>;
 }
 

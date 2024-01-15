@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import { Description, SpellSlot } from "../flavours";
 import SpellHelper from "../spells/SpellHelper";
 import { ActionConfig, ConfigWithPositioning } from "./Action";
 import ActionTime from "./ActionTime";
@@ -40,7 +41,7 @@ export type SpellList = (typeof SpellLists)[number];
 
 export default interface Spell<T extends object = Empty> extends Source {
   status: ImplementationStatus;
-  level: number;
+  level: SpellSlot;
   ritual: boolean;
   scaling: boolean;
   school: SpellSchool;
@@ -51,7 +52,7 @@ export default interface Spell<T extends object = Empty> extends Source {
   m?: string; // TODO [MATERIALCOST]
   lists: SpellList[];
   icon?: Icon;
-  description?: string;
+  description?: Description;
   isHarmful: boolean;
 
   apply(sh: SpellHelper<T>, config: T): Promise<void>;
@@ -83,7 +84,7 @@ export default interface Spell<T extends object = Empty> extends Source {
     method: SpellcastingMethod,
     config: Partial<T>,
   ): Amount[] | undefined;
-  getLevel(config: T): number;
+  getLevel(config: T): SpellSlot;
   getTargets(g: Engine, caster: Combatant, config: Partial<T>): Combatant[];
   getAffected(g: Engine, caster: Combatant, config: T): Combatant[];
 

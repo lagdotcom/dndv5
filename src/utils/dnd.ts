@@ -1,4 +1,12 @@
 import Engine from "../Engine";
+import {
+  ArmorClass,
+  DiceCount,
+  DiceSize,
+  Modifier,
+  PCLevel,
+  Score,
+} from "../flavours";
 import { AbilityNames } from "../types/AbilityName";
 import ACMethod from "../types/ACMethod";
 import Combatant from "../types/Combatant";
@@ -21,15 +29,15 @@ import WeaponType, {
 import { isA } from "./types";
 import { distance } from "./units";
 
-export function getAbilityModifier(ability: number) {
+export function getAbilityModifier(ability: Score): Modifier {
   return Math.floor((ability - 10) / 2);
 }
 
-export function getDiceAverage(count: number, size: number) {
+export function getDiceAverage(count: DiceCount, size: DiceSize) {
   return ((size + 1) / 2) * count;
 }
 
-export function getProficiencyBonusByLevel(level: number) {
+export function getProficiencyBonusByLevel(level: PCLevel): Modifier {
   return Math.ceil(level / 4) + 1;
 }
 
@@ -89,7 +97,7 @@ export function getProficiencyMax(...types: ProficiencyType[]) {
 
 export const getNaturalArmourMethod = (
   who: Combatant,
-  naturalAC: number,
+  naturalAC: ArmorClass,
 ): ACMethod => {
   const uses = new Set<Item>();
   let ac = naturalAC + who.dex.modifier;

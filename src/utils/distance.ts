@@ -1,3 +1,5 @@
-const FEET_PER_MILE = 5280;
+import { Feet } from "../flavours";
 
-export const miles = (n: number) => n * FEET_PER_MILE;
+const FEET_PER_MILE: Feet = 5280;
+
+export const miles = (n: Feet) => n * FEET_PER_MILE;

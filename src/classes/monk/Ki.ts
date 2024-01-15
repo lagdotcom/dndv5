@@ -129,7 +129,7 @@ Some of your ki features require your target to make a saving throw to resist th
 
 Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
   (g, me) => {
-    const charges = me.classLevels.get("Monk") ?? 2;
+    const charges = me.getClassLevel("Monk", 2);
     me.initResource(KiResource, charges);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {

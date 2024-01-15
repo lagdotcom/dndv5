@@ -1,6 +1,7 @@
 import AbstractAction from "../../actions/AbstractAction";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
+import { DiceSize } from "../../flavours";
 import Combatant from "../../types/Combatant";
 import { KiResource } from "./Ki";
 import { getMartialArtsDie } from "./MartialArts";
@@ -9,7 +10,7 @@ class QuickenedHealingAction extends AbstractAction {
   constructor(
     g: Engine,
     actor: Combatant,
-    private size: number,
+    private size: DiceSize,
   ) {
     super(
       g,
@@ -59,7 +60,7 @@ const QuickenedHealing = new SimpleFeature(
   "Quickened Healing",
   `As an action, you can spend 2 ki points and roll a Martial Arts die. You regain a number of hit points equal to the number rolled plus your proficiency bonus.`,
   (g, me) => {
-    const size = getMartialArtsDie(me.classLevels.get("Monk") ?? 4);
+    const size = getMartialArtsDie(me.getClassLevel("Monk", 4));
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       if (who === me) actions.push(new QuickenedHealingAction(g, me, size));

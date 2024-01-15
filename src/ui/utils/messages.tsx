@@ -13,6 +13,7 @@ import { EffectRemovedDetail } from "../../events/EffectRemovedEvent";
 import { ExhaustionDetail } from "../../events/ExhaustionEvent";
 import { SaveEventDetail } from "../../events/SaveEvent";
 import { SpellCastDetail } from "../../events/SpellCastEvent";
+import { Modifier, SpellSlot } from "../../flavours";
 import MessageBuilder from "../../MessageBuilder";
 import Combatant from "../../types/Combatant";
 import DamageBreakdown from "../../types/DamageBreakdown";
@@ -53,9 +54,9 @@ const msgAmmo = (a?: AmmoItem): MessagePart =>
     ? { element: <>, firing {a.name}</>, text: `, firing ${a.name}` }
     : undefined;
 
-const msgUpcast = (spell: Spell, level: number): MessagePart =>
-  level > spell.level
-    ? { element: <> at level {level}</>, text: ` at level ${level}` }
+const msgUpcast = (spell: Spell, slot: SpellSlot): MessagePart =>
+  slot > spell.level
+    ? { element: <> at level {slot}</>, text: ` at level ${slot}` }
     : undefined;
 
 const msgNonzero = (value: number, text: string): MessagePart =>
@@ -219,7 +220,7 @@ export const getBuilderMessage = ({ data }: MessageBuilder) =>
     }
   });
 
-const modAmount = (n: number) => (n < 0 ? `${n}` : `+${n}`);
+const modAmount = (n: Modifier) => (n < 0 ? `${n}` : `+${n}`);
 
 const getTextLines = (co: DiceTypeCollector | SuccessResponseCollector) => {
   const lines = co

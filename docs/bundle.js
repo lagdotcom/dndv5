@@ -779,10 +779,10 @@
     }
     getResources(config) {
       var _a;
-      const level = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
+      const slot = this.spell.scaling ? (_a = config.slot) != null ? _a : this.spell.level : this.spell.level;
       const resource = this.method.getResourceForSpell(
         this.spell,
-        level,
+        slot,
         this.actor
       );
       return new Map(resource ? [[resource, 1]] : void 0);
@@ -842,6 +842,7 @@
 
   // src/colours.ts
   var ClassColours = {
+    Artificer: "#a99c80",
     Barbarian: "#e7623e",
     Bard: "#ab6dac",
     Cleric: "#91a1b2",
@@ -2608,6 +2609,10 @@
           return true;
       }
       return false;
+    }
+    getClassLevel(name, assume) {
+      var _a;
+      return (_a = this.classLevels.get(name)) != null ? _a : assume;
     }
   };
 
@@ -6915,15 +6920,15 @@
   );
   function bonusSpellsFeature(name, text, levelType, method, entries, addAsList, additionalSetup) {
     return new SimpleFeature(name, text, (g, me) => {
-      var _a, _b;
-      const casterLevel = levelType === "level" ? me.level : (_a = me.classLevels.get(levelType)) != null ? _a : 1;
+      var _a;
+      const casterLevel = levelType === "level" ? me.level : me.getClassLevel(levelType, 1);
       const spells = entries.filter((entry) => entry.level <= casterLevel);
       for (const { resource, spell } of spells) {
         if (resource)
           me.initResource(resource);
         if (addAsList) {
           me.preparedSpells.add(spell);
-          (_b = method.addCastableSpell) == null ? void 0 : _b.call(method, spell, me);
+          (_a = method.addCastableSpell) == null ? void 0 : _a.call(method, spell, me);
         } else
           spellImplementationWarning(spell, me);
       }
@@ -8601,7 +8606,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       [4, 3, 3, 3, 2]
     ]
   };
-  var getSpellSlotResourceName = (level) => `Spell Slot (${level})`;
+  var getSpellSlotResourceName = (slot) => `Spell Slot (${slot})`;
   var SpellSlotResources = enumerate(0, 9).map(
     (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0)
   );
@@ -8624,8 +8629,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       this.icon = icon;
       this.entries = /* @__PURE__ */ new Map();
       this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
-        var _a;
-        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        this.initialise(me, me.getClassLevel(className, 1));
         me.spellcastingMethods.add(this);
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me) {
@@ -8672,9 +8676,9 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       const { resources } = this.getEntry(who);
       return resources.length;
     }
-    getResourceForSpell(spell, level, who) {
+    getResourceForSpell(spell, slot, who) {
       const { resources } = this.getEntry(who);
-      return resources[level - 1];
+      return resources[slot - 1];
     }
     getSaveType() {
       return { type: "ability", ability: this.ability };
@@ -8772,10 +8776,9 @@ If your DM allows the use of feats, you may instead take a feat.`,
 When you use your Channel Divinity, you choose which option to use. You must then finish a short or long rest to use your Channel Divinity again.
 Some Channel Divinity effects require saving throws. When you use such an effect from this class, the DC equals your paladin spell save DC.`,
     (g, me) => {
-      var _a;
       me.initResource(
         ChannelDivinityResource,
-        getChannelCount((_a = me.classLevels.get("Cleric")) != null ? _a : 1)
+        getChannelCount(me.getClassLevel("Cleric", 1))
       );
     }
   );
@@ -8848,10 +8851,9 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     "Channel Divinity: Harness Divine Power",
     `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`,
     (g, me) => {
-      var _a;
       me.initResource(
         HarnessDivinePowerResource,
-        getHarnessCount((_a = me.classLevels.get("Cleric")) != null ? _a : 2)
+        getHarnessCount(me.getClassLevel("Cleric", 2))
       );
       g.events.on("GetActions", ({ detail: { actions, who } }) => {
         if (who === me)
@@ -9004,8 +9006,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
 
 A turned creature must spend its turns trying to move as far away from you as it can, and it can't willingly move to a space within 30 feet of you. It also can't take reactions. For its action, it can use only the Dash action or try to escape from an effect that prevents it from moving. If there's nowhere to move, the creature can use the Dodge action.`,
     (g, me) => {
-      var _a;
-      const destroyCr = getDestroyUndeadCR((_a = me.classLevels.get("Cleric")) != null ? _a : 2);
+      const destroyCr = getDestroyUndeadCR(me.getClassLevel("Cleric", 2));
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(
@@ -9166,6 +9167,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       if (typeof toHit === "string")
         this.forceAbilityScore = toHit;
       else {
+        console.warn(`Natural Weapon "{name}" is modifier-based`);
       }
       if (onHit)
         g.events.on(
@@ -12446,14 +12448,13 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
         notOfCreatureType("undead", "construct")
       ])
     }),
-    getHeal: (g, caster, method, { slot }) => {
-      const modifier = method.ability ? caster[method.ability].modifier : 0;
-      const count = slot != null ? slot : 1;
-      return [
-        { type: "dice", amount: { count, size: 8 } },
-        { type: "flat", amount: modifier }
-      ];
-    },
+    getHeal: (g, caster, method, { slot }) => [
+      { type: "dice", amount: { count: slot != null ? slot : 1, size: 8 } },
+      {
+        type: "flat",
+        amount: method.ability ? caster[method.ability].modifier : 0
+      }
+    ],
     getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => [target],
     async apply(sh, { target }) {
@@ -14297,6 +14298,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     height: 40,
     radius: 5
   });
+  var getMoonbeamDamage = (slot) => _dd(slot, 10, "radiant");
   var MoveMoonbeamAction = class extends AbstractAction {
     constructor(g, controller) {
       super(
@@ -14321,7 +14323,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
         return [getMoonbeamArea(point)];
     }
     getDamage({ point }) {
-      return point && [_dd(this.controller.slot, 10, "radiant")];
+      return point && [getMoonbeamDamage(this.controller.slot)];
     }
     getTargets() {
       return [];
@@ -14380,11 +14382,15 @@ At the end of each of its turns, and each time it takes damage, the target can m
         if (!opt.canBeAffected(target))
           return;
         opt.affect(target);
-        const damage = await g.rollDamage(slot, {
+        const {
+          amount: { count, size },
+          damageType
+        } = getMoonbeamDamage(slot);
+        const damage = await g.rollDamage(count, {
           attacker,
-          damageType: "radiant",
+          damageType,
           method,
-          size: 10,
+          size,
           source: Moonbeam,
           spell: Moonbeam,
           target,
@@ -14440,7 +14446,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     // TODO: generateAttackConfigs
     getConfig: (g) => ({ point: new PointResolver(g, 120) }),
     getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
-    getDamage: (g, caster, method, { slot }) => [_dd(slot != null ? slot : 2, 10, "radiant")],
+    getDamage: (g, caster, method, { slot }) => [getMoonbeamDamage(slot != null ? slot : 2)],
     getTargets: () => [],
     getAffected: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
     async apply({ g, caster, method }, { point, slot }) {
@@ -16364,8 +16370,7 @@ You don't need advantage on the attack roll if another enemy of the target is wi
 
 The amount of the extra damage increases as you gain levels in this class, as shown in the Sneak Attack column of the Rogue table.`,
     (g, me) => {
-      var _a;
-      const count = getSneakAttackDice((_a = me.classLevels.get("Rogue")) != null ? _a : 1);
+      const count = getSneakAttackDice(me.getClassLevel("Rogue", 1));
       me.initResource(SneakAttackResource);
       g.events.on(
         "GatherDamage",
@@ -18191,8 +18196,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.gainProficiencies(...bg.skills, ...(_a = bg.tools) != null ? _a : []);
     }
     addClassLevel(cls, hpRoll) {
-      var _a, _b, _c;
-      const level = ((_a = this.classLevels.get(cls.name)) != null ? _a : 0) + 1;
+      var _a, _b;
+      const level = this.getClassLevel(cls.name, 0) + 1;
       this.classLevels.set(cls.name, level);
       this.level++;
       this.pb = getProficiencyBonusByLevel(this.level);
@@ -18203,7 +18208,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         mergeSets(this.saveProficiencies, data.save);
         mergeSets(this.weaponCategoryProficiencies, data.weaponCategory);
         mergeSets(this.weaponProficiencies, data.weapon);
-        this.gainProficiencies(...(_b = data.skill) != null ? _b : [], ...(_c = data.tool) != null ? _c : []);
+        this.gainProficiencies(...(_a = data.skill) != null ? _a : [], ...(_b = data.tool) != null ? _b : []);
       }
       this.addFeatures(cls.features.get(level));
       const sub = this.subclasses.get(cls.name);
@@ -18663,10 +18668,9 @@ While holding the object, a creature can take an action to produce the spell's e
       g.events.on(
         "GatherDamage",
         ({ detail: { attacker, attack, ability, bonus } }) => {
-          var _a;
           if (attacker && isRaging(attacker) && hasAll(attack == null ? void 0 : attack.roll.type.tags, ["melee", "weapon"]) && ability === "str")
             bonus.add(
-              getRageBonus((_a = attacker.classLevels.get("Barbarian")) != null ? _a : 0),
+              getRageBonus(attacker.getClassLevel("Barbarian", 0)),
               RageEffect
             );
         }
@@ -18798,10 +18802,9 @@ Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if
 
 Once you have raged the maximum number of times for your barbarian level, you must finish a long rest before you can rage again. You may rage 2 times at 1st level, 3 at 3rd, 4 at 6th, 5 at 12th, and 6 at 17th.`,
     (g, me) => {
-      var _a;
       me.initResource(
         RageResource,
-        getRageCount((_a = me.classLevels.get("Barbarian")) != null ? _a : 0)
+        getRageCount(me.getClassLevel("Barbarian", 0))
       );
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me && !me.hasEffect(RageEffect))
@@ -18960,8 +18963,7 @@ Additionally, if you are surprised at the beginning of combat and aren't incapac
 
 This increases to two additional dice at 13th level and three additional dice at 17th level.`,
     (g, me) => {
-      var _a;
-      const count = getBrutalDice((_a = me.classLevels.get("Barbarian")) != null ? _a : 9);
+      const count = getBrutalDice(me.getClassLevel("Barbarian", 9));
       g.events.on(
         "GatherDamage",
         ({
@@ -19259,8 +19261,7 @@ You learn two additional spells from any classes at 14th level and again at 18th
 
 Once you use this feature, you must finish a short or long rest before you can use it again. Starting at 17th level, you can use it twice before a rest, but only once on the same turn.`,
     (g, me) => {
-      var _a;
-      const charges = getActionSurgeCount((_a = me.classLevels.get("Fighter")) != null ? _a : 2);
+      const charges = getActionSurgeCount(me.getClassLevel("Fighter", 2));
       me.initResource(ActionSurgeResource, charges);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -19321,8 +19322,7 @@ You can use this feature twice between long rests starting at 13th level and thr
 
 Once you use this feature, you must finish a short or long rest before you can use it again.`,
     (g, me) => {
-      var _a;
-      const bonus = (_a = me.classLevels.get("Fighter")) != null ? _a : 1;
+      const bonus = me.getClassLevel("Fighter", 1);
       me.initResource(SecondWindResource);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
@@ -19474,10 +19474,9 @@ Once you use this feature, you must finish a short or long rest before you can u
     }
   };
   function getMonkUnarmedWeapon(g, who) {
-    var _a;
     const weapon = who.weapons.find((w) => w.weaponType === "unarmed strike");
     if (weapon) {
-      const diceSize = getMartialArtsDie((_a = who.classLevels.get("Monk")) != null ? _a : 0);
+      const diceSize = getMartialArtsDie(who.getClassLevel("Monk", 0));
       return canUpgradeDamage(weapon.damage, diceSize) ? new MonkWeaponWrapper(g, weapon, diceSize) : weapon;
     }
   }
@@ -19493,8 +19492,7 @@ You gain the following benefits while you are unarmed or wielding only monk weap
 
 Certain monasteries use specialized forms of the monk weapons. For example, you might use a club that is two lengths of wood connected by a short chain (called a nunchaku) or a sickle with a shorter, straighter blade (called a kama).`,
     (g, me) => {
-      var _a;
-      const diceSize = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 0);
+      const diceSize = getMartialArtsDie(me.getClassLevel("Monk", 0));
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who !== me || !canUseMartialArts(me))
           return;
@@ -19623,8 +19621,7 @@ Some of your ki features require your target to make a saving throw to resist th
 
 Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
     (g, me) => {
-      var _a;
-      const charges = (_a = me.classLevels.get("Monk")) != null ? _a : 2;
+      const charges = me.getClassLevel("Monk", 2);
       me.initResource(KiResource, charges);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me) {
@@ -19710,8 +19707,7 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
     "Quickened Healing",
     `As an action, you can spend 2 ki points and roll a Martial Arts die. You regain a number of hit points equal to the number rolled plus your proficiency bonus.`,
     (g, me) => {
-      var _a;
-      const size = getMartialArtsDie((_a = me.classLevels.get("Monk")) != null ? _a : 4);
+      const size = getMartialArtsDie(me.getClassLevel("Monk", 4));
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new QuickenedHealingAction(g, me, size));
@@ -19738,8 +19734,7 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
 
 At 9th level, you gain the ability to move along vertical surfaces and across liquids on your turn without falling during the move.`,
     (g, me) => {
-      var _a;
-      const level = (_a = me.classLevels.get("Monk")) != null ? _a : 2;
+      const level = me.getClassLevel("Monk", 2);
       if (level >= 9)
         featureNotComplete(UnarmoredMovement, me);
       const speed = getUnarmoredMovementBonus(level);
@@ -19917,8 +19912,7 @@ Additionally, you can spend 8 ki points to cast the astral projection spell, wit
 
 At 18th level, the range of this aura increases to 30 feet.`,
     (g, me) => {
-      var _a;
-      const radius = getPaladinAuraRadius((_a = me.classLevels.get("Paladin")) != null ? _a : 6);
+      const radius = getPaladinAuraRadius(me.getClassLevel("Paladin", 6));
       const aura = new AuraController(
         g,
         `Paladin Aura (${me.name})`,
@@ -20019,10 +20013,9 @@ At 18th level, the range of this aura increases to 30 feet.`,
     "Channel Divinity: Harness Divine Power",
     `You can expend a use of your Channel Divinity to fuel your spells. As a bonus action, you touch your holy symbol, utter a prayer, and regain one expended spell slot, the level of which can be no higher than half your proficiency bonus (rounded up). The number of times you can use this feature is based on the level you've reached in this class: 3rd level, once; 7th level, twice; and 15th level, thrice. You regain all expended uses when you finish a long rest.`,
     (g, me) => {
-      var _a;
       me.initResource(
         HarnessDivinePowerResource2,
-        getHarnessCount2((_a = me.classLevels.get("Paladin")) != null ? _a : 3)
+        getHarnessCount2(me.getClassLevel("Paladin", 3))
       );
       g.events.on("GetActions", ({ detail: { actions, who } }) => {
         if (who === me)
@@ -20231,8 +20224,7 @@ Alternatively, you can expend 5 hit points from your pool of healing to cure the
 
 This feature has no effect on undead and constructs.`,
     (g, me) => {
-      var _a;
-      const max = ((_a = me.classLevels.get("Paladin")) != null ? _a : 1) * 5;
+      const max = me.getClassLevel("Paladin", 1) * 5;
       me.initResource(LayOnHandsResource, max, max);
       g.events.on("GetActions", ({ detail: { actions, who } }) => {
         if (who === me)
@@ -20477,9 +20469,8 @@ You choose additional favored terrain types at 6th and 10th level.`
     "Deft Explorer",
     `You are an unsurpassed explorer and survivor, both in the wilderness and in dealing with others on your travels. You gain the Canny benefit below, and you gain an additional benefit below when you reach 6th level and 10th level in this class.`,
     (g, me) => {
-      var _a;
       me.addFeature(Canny);
-      const level = (_a = me.classLevels.get("Ranger")) != null ? _a : 1;
+      const level = me.getClassLevel("Ranger", 1);
       if (level >= 6)
         me.addFeature(Roving);
       if (level >= 10)
@@ -20750,8 +20741,7 @@ You can use only one Metamagic option on a spell when you cast it, unless otherw
       this.icon = icon;
       this.entries = /* @__PURE__ */ new Map();
       this.feature = new SimpleFeature(`Pact Magic ${name}`, text, (g, me) => {
-        var _a;
-        this.initialise(me, (_a = me.classLevels.get(className)) != null ? _a : 1);
+        this.initialise(me, me.getClassLevel(className, 1));
         me.spellcastingMethods.add(this);
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me) {
@@ -20795,8 +20785,8 @@ You can use only one Metamagic option on a spell when you cast it, unless otherw
         return 0;
       return this.getEntry(caster).level;
     }
-    getResourceForSpell(spell, level) {
-      if (level > 0)
+    getResourceForSpell(spell, slot) {
+      if (slot > 0)
         return PactMagicResource;
     }
     getSaveType() {
@@ -22352,11 +22342,10 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
           if (attacker === me && who.side !== me.side && who.hp < 1)
             interrupt.add(
               new EvaluateLater(me, DarkOnesBlessing, Priority_default.Late, async () => {
-                var _a;
                 if (who.hp < 1) {
                   const amount = Math.max(
                     1,
-                    me.cha.modifier + ((_a = me.classLevels.get("Warlock")) != null ? _a : 1)
+                    me.cha.modifier + me.getClassLevel("Warlock", 1)
                   );
                   await g.giveTemporaryHP(me, amount, DarkOnesBlessing);
                 }
@@ -24221,10 +24210,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ", firing ",
     a.name
   ] }), text: `, firing ${a.name}` } : void 0;
-  var msgUpcast = (spell, level) => level > spell.level ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
+  var msgUpcast = (spell, slot) => slot > spell.level ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: [
     " at level ",
-    level
-  ] }), text: ` at level ${level}` } : void 0;
+    slot
+  ] }), text: ` at level ${slot}` } : void 0;
   var msgNonzero = (value, text) => value ? { element: /* @__PURE__ */ u(import_preact3.Fragment, { children: text }), text } : void 0;
   function getDamageEntryText([type, entry]) {
     return `${entry.amount} ${type}${entry.response !== "normal" ? ` ${entry.response}` : ""}`;

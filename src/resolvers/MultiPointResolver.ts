@@ -1,5 +1,6 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import Engine from "../Engine";
+import { Feet } from "../flavours";
 import Action from "../types/Action";
 import Point from "../types/Point";
 import Resolver from "../types/Resolver";
@@ -14,7 +15,7 @@ export default class MultiPointResolver implements Resolver<Point[]> {
     public g: Engine,
     public minimum: number,
     public maximum: number,
-    public maxRange: number,
+    public maxRange: Feet,
   ) {
     this.type = "Points";
   }

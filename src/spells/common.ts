@@ -2,6 +2,7 @@ import { MarkOptional } from "ts-essentials";
 
 import { Scales } from "../configs";
 import Engine from "../Engine";
+import { SpellSlot } from "../flavours";
 import SlotResolver from "../resolvers/SlotResolver";
 import { ActionConfig, ConfigWithPositioning } from "../types/Action";
 import Combatant from "../types/Combatant";
@@ -88,13 +89,13 @@ export const simpleSpell = <T extends object = Empty>({
   getDamage,
   getHeal,
   getLevel() {
-    return level;
+    return level as SpellSlot;
   },
   getTargets,
 });
 
 type ConfigGenerator<T> = (
-  slot: number,
+  slot: SpellSlot,
   targets: Combatant[],
   g: Engine,
   caster: Combatant,

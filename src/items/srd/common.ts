@@ -1,3 +1,4 @@
+import { Score } from "../../flavours";
 import { ItemRarity } from "../../types/Item";
 
 const GiantTypes = [
@@ -11,7 +12,7 @@ const GiantTypes = [
 export type GiantType = (typeof GiantTypes)[number];
 export const GiantStats: Record<
   GiantType,
-  { str: number; potionRarity: ItemRarity; beltRarity: ItemRarity }
+  { str: Score; potionRarity: ItemRarity; beltRarity: ItemRarity }
 > = {
   Hill: { str: 21, potionRarity: "Uncommon", beltRarity: "Rare" },
   Stone: { str: 23, potionRarity: "Rare", beltRarity: "Very Rare" },

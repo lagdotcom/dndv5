@@ -1,5 +1,6 @@
 import CastSpell from "../actions/CastSpell";
 import Engine from "../Engine";
+import { DifficultyClass } from "../flavours";
 import { ItemRarity } from "../types/Item";
 import Resource from "../types/Resource";
 import Spell from "../types/Spell";
@@ -16,7 +17,7 @@ export default class WandBase extends WondrousItemBase {
     public maxCharges: number,
     public resource: Resource,
     public spell: Spell,
-    public saveDC: number,
+    public saveDC: DifficultyClass,
     public method: SpellcastingMethod = {
       name,
       getResourceForSpell: () => resource,

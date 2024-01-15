@@ -1,6 +1,7 @@
 import AbstractAction from "../../actions/AbstractAction";
 import Effect from "../../Effect";
 import Engine, { EngineSaveConfig } from "../../Engine";
+import { DifficultyClass } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import { DawnResource } from "../../resources";
 import Combatant from "../../types/Combatant";
@@ -15,13 +16,13 @@ const RingOfAweResource = new DawnResource("Ring of Awe", 1);
 
 interface Config {
   actor: Combatant;
-  dc: number;
+  dc: DifficultyClass;
 }
 
 const getRingOfAweSave = (
   who: Combatant,
   attacker: Combatant,
-  dc: number,
+  dc: DifficultyClass,
   config: EffectConfig<Config>,
 ): EngineSaveConfig<Config> => ({
   source: RingOfAweEffect,
@@ -71,7 +72,7 @@ class RingOfAweAction extends AbstractAction {
     g: Engine,
     actor: Combatant,
     item: RingOfAwe,
-    private dc = 13,
+    private dc: DifficultyClass = 13,
   ) {
     super(
       g,

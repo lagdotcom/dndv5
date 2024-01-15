@@ -1,5 +1,6 @@
 import EvaluationCollector from "../collectors/EvaluationCollector";
 import Engine from "../Engine";
+import { Feet } from "../flavours";
 import Action from "./Action";
 import Combatant from "./Combatant";
 import Empty from "./Empty";
@@ -7,7 +8,7 @@ import Point from "./Point";
 
 export interface PositionConstraint {
   type: "within";
-  range: number;
+  range: Feet;
   of: Combatant;
 }
 

@@ -1,6 +1,7 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
 import SuccessResponseCollector from "../collectors/SuccessResponseCollector";
+import { Feet } from "../flavours";
 import Combatant from "../types/Combatant";
 import MoveDirection from "../types/MoveDirection";
 import MoveHandler from "../types/MoveHandler";
@@ -11,7 +12,7 @@ export interface BeforeMoveDetail {
   who: Combatant;
   from: Point;
   to: Point;
-  cost: number;
+  cost: Feet;
   direction?: MoveDirection;
   handler: MoveHandler;
   type: MovementType;

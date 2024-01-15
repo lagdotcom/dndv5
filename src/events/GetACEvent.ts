@@ -1,5 +1,6 @@
 import BonusCollector from "../collectors/BonusCollector";
 import InterruptionCollector from "../collectors/InterruptionCollector";
+import { ArmorClass } from "../flavours";
 import ACMethod from "../types/ACMethod";
 import Combatant from "../types/Combatant";
 import { BeforeAttackDetail } from "./BeforeAttackEvent";
@@ -7,7 +8,7 @@ import { BeforeAttackDetail } from "./BeforeAttackEvent";
 export interface GetACDetail {
   who: Combatant;
   method: ACMethod;
-  bonus: BonusCollector;
+  bonus: BonusCollector<ArmorClass>;
   interrupt: InterruptionCollector;
   pre?: BeforeAttackDetail;
 }

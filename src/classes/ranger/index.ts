@@ -69,7 +69,7 @@ export const DeftExplorer = new SimpleFeature(
   (g, me) => {
     me.addFeature(Canny);
 
-    const level = me.classLevels.get("Ranger") ?? 1;
+    const level = me.getClassLevel("Ranger", 1);
     if (level >= 6) me.addFeature(Roving);
     if (level >= 10) me.addFeature(Tireless);
   },

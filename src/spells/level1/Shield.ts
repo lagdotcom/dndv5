@@ -4,6 +4,7 @@ import { isCastSpell } from "../../actions/CastSpell";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
+import { Description } from "../../flavours";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
@@ -18,7 +19,7 @@ const ShieldEffect = new Effect(
   "turnStart",
   (g) => {
     const check = (
-      message: string,
+      message: Description,
       who: Combatant,
       interrupt: InterruptionCollector,
       after?: () => Promise<void>,

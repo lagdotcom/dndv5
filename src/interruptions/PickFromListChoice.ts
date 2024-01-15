@@ -1,5 +1,6 @@
 import Engine from "../Engine";
 import ListChoiceEvent from "../events/ListChoiceEvent";
+import { Description } from "../flavours";
 import Combatant from "../types/Combatant";
 import Interruption from "../types/Interruption";
 import Priority from "../types/Priority";
@@ -16,7 +17,7 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
     public who: Combatant,
     public source: Source,
     public title: string,
-    public text: string,
+    public text: Description,
     public priority: Priority,
     public items: PickChoice<T>[],
     public chosen: (choice: T) => Promise<unknown>,

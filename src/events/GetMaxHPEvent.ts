@@ -1,10 +1,11 @@
 import BonusCollector from "../collectors/BonusCollector";
 import MultiplierCollector from "../collectors/MultiplierCollector";
+import { HitPoints } from "../flavours";
 import Combatant from "../types/Combatant";
 
 export interface GetMaxHPDetail {
   who: Combatant;
-  bonus: BonusCollector;
+  bonus: BonusCollector<HitPoints>;
   multiplier: MultiplierCollector;
 }
 

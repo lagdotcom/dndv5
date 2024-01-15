@@ -1,3 +1,4 @@
+import { SpellSlot } from "../flavours";
 import AbilityName from "./AbilityName";
 import Combatant from "./Combatant";
 import Icon from "./Icon";
@@ -11,12 +12,12 @@ export default interface SpellcastingMethod extends Source {
   icon?: Icon;
 
   addCastableSpell?(spell: Spell, caster: Combatant): void;
-  getMinSlot?(spell: Spell, caster: Combatant): number;
-  getMaxSlot?(spell: Spell, caster: Combatant): number;
+  getMinSlot?(spell: Spell, caster: Combatant): SpellSlot;
+  getMaxSlot?(spell: Spell, caster: Combatant): SpellSlot;
   getResourceForSpell(
     spell: Spell,
-    level: number,
+    slot: SpellSlot,
     caster: Combatant,
   ): Resource | undefined;
-  getSaveType(caster: Combatant, spell?: Spell, level?: number): SaveType;
+  getSaveType(caster: Combatant, spell?: Spell, slot?: SpellSlot): SaveType;
 }

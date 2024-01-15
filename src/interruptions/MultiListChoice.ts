@@ -1,5 +1,6 @@
 import Engine from "../Engine";
 import MultiListChoiceEvent from "../events/MultiListChoiceEvent";
+import { Description } from "../flavours";
 import Combatant from "../types/Combatant";
 import Interruption from "../types/Interruption";
 import Priority from "../types/Priority";
@@ -11,7 +12,7 @@ export default class MultiListChoice<T = unknown> implements Interruption {
     public who: Combatant,
     public source: Source,
     public title: string,
-    public text: string,
+    public text: Description,
     public priority: Priority,
     public items: PickChoice<T>[],
     public minimum: number,

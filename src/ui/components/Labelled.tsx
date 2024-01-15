@@ -1,3 +1,4 @@
+import { ClassName } from "../../flavours";
 import { AriaRole, ComponentChildren, useId } from "../lib";
 import classnames from "../utils/classnames";
 import styles from "./Labelled.module.scss";
@@ -5,8 +6,8 @@ import styles from "./Labelled.module.scss";
 interface Props {
   children: ComponentChildren;
   label: string;
-  labelClass?: string;
-  contentsClass?: string;
+  labelClass?: ClassName;
+  contentsClass?: ClassName;
   role?: AriaRole;
 }
 

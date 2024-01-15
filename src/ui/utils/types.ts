@@ -1,4 +1,12 @@
 import Effect from "../../Effect";
+import {
+  CombatantID,
+  Feet,
+  HitPoints,
+  SideID,
+  Turns,
+  Url,
+} from "../../flavours";
 import Combatant from "../../types/Combatant";
 import ConditionName from "../../types/ConditionName";
 import Icon from "../../types/Icon";
@@ -9,25 +17,25 @@ export interface UnitEffect<T = unknown> {
   config: T;
   name: string;
   icon?: Icon;
-  duration: number;
+  duration: Turns;
 }
 
 export interface UnitData {
   who: Combatant;
   position: Point;
 
-  id: number;
+  id: CombatantID;
   name: string;
-  img: string;
-  sizeInUnits: number;
+  img: Url;
+  sizeInUnits: Feet;
   attacksSoFar: number;
-  movedSoFar: number;
-  speed: number;
-  side: number;
+  movedSoFar: Feet;
+  speed: Feet;
+  side: SideID;
 
-  hp: number;
-  hpMax: number;
-  temporaryHP: number;
+  hp: HitPoints;
+  hpMax: HitPoints;
+  temporaryHP: HitPoints;
   effects: UnitEffect[];
   conditions: ConditionName[];
   deathSaveFailures: number;

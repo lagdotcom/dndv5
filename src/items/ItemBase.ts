@@ -1,5 +1,6 @@
 import { ItemRarityColours } from "../colours";
 import Engine from "../Engine";
+import { Hands, Url } from "../flavours";
 import Combatant from "../types/Combatant";
 import Enchantment from "../types/Enchantment";
 import Icon from "../types/Icon";
@@ -18,8 +19,8 @@ export default class ItemBase<T extends ItemType> implements Source {
     public g: Engine,
     public itemType: T,
     public name: string,
-    public hands = 0,
-    private iconUrl?: string,
+    public hands: Hands = 0,
+    private iconUrl?: Url,
   ) {
     this.enchantments = new Set();
     this.rarity = "Common";

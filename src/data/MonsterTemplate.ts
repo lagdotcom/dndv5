@@ -1,4 +1,14 @@
 import Engine from "../Engine";
+import {
+  ArmorClass,
+  ChallengeRating,
+  Feet,
+  HitPoints,
+  Modifier,
+  PCClassLevel,
+  Score,
+  Url,
+} from "../flavours";
 import Monster from "../Monster";
 import { NaturalWeaponOnHit } from "../monsters/NaturalWeapon";
 import AbilityName from "../types/AbilityName";
@@ -26,7 +36,7 @@ import InventoryItem from "./InventoryItem";
 
 export interface NaturalWeaponInfo {
   name: string;
-  toHit: number | AbilityName;
+  toHit: Modifier | AbilityName;
   damage: DamageAmount;
   onHit?: NaturalWeaponOnHit;
 }
@@ -34,32 +44,32 @@ export interface NaturalWeaponInfo {
 export default interface MonsterTemplate<T = Empty> {
   base?: Partial<MonsterTemplate<T>>;
   name: string;
-  tokenUrl: string;
-  cr?: number;
+  tokenUrl: Url;
+  cr?: ChallengeRating;
   type?: CreatureType;
   size?: SizeCategory;
-  reach?: number;
-  hpMax: number;
+  reach?: Feet;
+  hpMax: HitPoints;
   makesDeathSaves?: boolean;
-  pb?: number;
+  pb?: Modifier;
   abilities?: [
-    str: number,
-    dex: number,
-    con: number,
-    int: number,
-    wis: number,
-    cha: number,
+    str: Score,
+    dex: Score,
+    con: Score,
+    int: Score,
+    wis: Score,
+    cha: Score,
   ];
   align?: AlignmentPair;
-  naturalAC?: number;
-  movement?: Partial<Record<MovementType, number>>;
-  levels?: Partial<Record<PCClassName, number>>;
+  naturalAC?: ArmorClass;
+  movement?: Partial<Record<MovementType, Feet>>;
+  levels?: Partial<Record<PCClassName, PCClassLevel>>;
   proficiency?: Partial<Record<StringProficiency, ProficiencyType>>;
   damage?: Partial<Record<DamageType, DamageResponse>>;
   immunities?: ConditionName[];
   languages?: LanguageName[];
   items?: InventoryItem[];
-  senses?: Partial<Record<SenseName, number>>;
+  senses?: Partial<Record<SenseName, Feet>>;
   spells?: SpellName[];
   naturalWeapons?: NaturalWeaponInfo[];
   features?: Feature[];

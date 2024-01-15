@@ -1,5 +1,6 @@
 import CastSpell from "../actions/CastSpell";
 import SimpleFeature from "../features/SimpleFeature";
+import { Description, PCClassLevel, SpellSlot } from "../flavours";
 import { LongRestResource } from "../resources";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
@@ -60,8 +61,8 @@ const SpellSlots = {
   ],
 };
 
-export const getSpellSlotResourceName = (level: number) =>
-  `Spell Slot (${level})` as const;
+export const getSpellSlotResourceName = (slot: SpellSlot) =>
+  `Spell Slot (${slot})` as const;
 
 export const SpellSlotResources = enumerate(0, 9).map(
   (slot) => new LongRestResource(getSpellSlotResourceName(slot), 0),
@@ -88,7 +89,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
 
   constructor(
     public name: string,
-    public text: string,
+    public text: Description,
     public ability: AbilityName,
     public strength: SpellcastingStrength,
     public className: PCClassName,
@@ -98,7 +99,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     this.entries = new Map();
 
     this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
-      this.initialise(me, me.classLevels.get(className) ?? 1);
+      this.initialise(me, me.getClassLevel(className, 1));
       me.spellcastingMethods.add(this);
 
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
@@ -133,7 +134,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
     spells.add(spell);
   }
 
-  initialise(who: Combatant, casterLevel: number) {
+  initialise(who: Combatant, casterLevel: PCClassLevel) {
     const slots = SpellSlots[this.strength][casterLevel - 1];
     const resources: Resource[] = [];
 
@@ -147,19 +148,19 @@ export default class NormalSpellcasting implements SpellcastingMethod {
   }
 
   getMinSlot(spell: Spell) {
-    return spell.level;
+    return spell.level as SpellSlot;
   }
 
   getMaxSlot(spell: Spell, who: Combatant) {
-    if (!spell.scaling) return spell.level;
+    if (!spell.scaling) return spell.level as SpellSlot;
 
     const { resources } = this.getEntry(who);
-    return resources.length;
+    return resources.length as SpellSlot;
   }
 
-  getResourceForSpell(spell: Spell, level: number, who: Combatant) {
+  getResourceForSpell(spell: Spell, slot: SpellSlot, who: Combatant) {
     const { resources } = this.getEntry(who);
-    return resources[level - 1];
+    return resources[slot - 1];
   }
 
   getSaveType(): SaveType {

@@ -1,11 +1,12 @@
 import Engine from "../Engine";
+import { Description } from "../flavours";
 import Combatant from "../types/Combatant";
 import Feature from "../types/Feature";
 
 export default class ConfiguredFeature<T = undefined> implements Feature<T> {
   constructor(
     public name: string,
-    public text: string,
+    public text: Description,
     private apply: (g: Engine, me: Combatant, config: T) => void,
   ) {}
 

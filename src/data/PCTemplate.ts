@@ -1,3 +1,4 @@
+import { HitPoints, Score, Url } from "../flavours";
 import AbilityName from "../types/AbilityName";
 import { AlignmentPair } from "../types/Alignment";
 import HasProficiency from "../types/HasProficiency";
@@ -14,14 +15,14 @@ type FeatureConfigs = Record<string, unknown>;
 
 export default interface PCTemplate {
   name: string;
-  tokenUrl: string;
+  tokenUrl: Url;
   abilities: [
-    str: number,
-    dex: number,
-    con: number,
-    int: number,
-    wis: number,
-    cha: number,
+    str: Score,
+    dex: Score,
+    con: Score,
+    int: Score,
+    wis: Score,
+    cha: Score,
   ];
   race: {
     name: PCRaceName;
@@ -39,7 +40,7 @@ export default interface PCTemplate {
     class: PCClassName;
     subclass?: PCSubclassName;
     configs?: FeatureConfigs;
-    hpRoll?: number;
+    hpRoll?: HitPoints;
     proficiencies?: HasProficiency[];
   }[];
   proficiencies?: HasProficiency[];

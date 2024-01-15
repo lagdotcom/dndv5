@@ -1,3 +1,4 @@
+import { DifficultyClass, ModifiedDiceRoll } from "../flavours";
 import DiceType from "../types/DiceType";
 import { SavingThrow } from "../types/RollType";
 import { BeforeSaveDetail } from "./BeforeSaveEvent";
@@ -7,8 +8,8 @@ export interface SaveEventDetail {
   pre: BeforeSaveDetail;
   roll: DiceRolledDetail<SavingThrow>;
   diceType: DiceType;
-  total: number;
-  dc: number;
+  total: ModifiedDiceRoll;
+  dc: DifficultyClass;
   outcome: "success" | "fail";
   forced: boolean;
 }

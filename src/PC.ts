@@ -3,6 +3,7 @@ import punchUrl from "@img/eq/punch.svg";
 import { defaultAIRules } from "./ai/data";
 import CombatantBase from "./CombatantBase";
 import Engine from "./Engine";
+import { HitPoints, PCClassLevel, Url } from "./flavours";
 import WeaponBase from "./items/WeaponBase";
 import AIRule from "./types/AIRule";
 import Gain from "./types/Gain";
@@ -43,7 +44,7 @@ export default class PC extends CombatantBase {
   constructor(
     g: Engine,
     name: string,
-    img: string,
+    img: Url,
     rules: AIRule[] = defaultAIRules,
   ) {
     super(g, name, {
@@ -96,8 +97,8 @@ export default class PC extends CombatantBase {
     this.gainProficiencies(...bg.skills, ...(bg.tools ?? []));
   }
 
-  addClassLevel(cls: PCClass, hpRoll?: number) {
-    const level = (this.classLevels.get(cls.name) ?? 0) + 1;
+  addClassLevel(cls: PCClass, hpRoll?: HitPoints) {
+    const level: PCClassLevel = this.getClassLevel(cls.name, 0) + 1;
     this.classLevels.set(cls.name, level);
     this.level++;
     this.pb = getProficiencyBonusByLevel(this.level);
