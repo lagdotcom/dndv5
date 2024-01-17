@@ -1,3 +1,5 @@
+import { objectEntries } from "../../utils/objects";
+
 type ClassnamesItem = string | Record<string, boolean> | undefined;
 
 export default function classnames(...items: ClassnamesItem[]) {
@@ -7,7 +9,7 @@ export default function classnames(...items: ClassnamesItem[]) {
     if (typeof item === "undefined") continue;
     else if (typeof item === "string") names.push(item);
     else {
-      for (const [key, value] of Object.entries(item)) {
+      for (const [key, value] of objectEntries(item)) {
         if (value) names.push(key);
       }
     }

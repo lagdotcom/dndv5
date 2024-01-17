@@ -5,6 +5,7 @@ const externals = {
   "preact/hooks": "preactHooks",
   "@preact/signals-core": "preactSignalsCore",
   "@preact/signals": "preactSignals",
+  "@ungap/structured-clone": "StructuredJSON",
 };
 
 const filter = new RegExp(

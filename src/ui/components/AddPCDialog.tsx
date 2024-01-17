@@ -1,12 +1,13 @@
 import allPCs, { PCName } from "../../data/allPCs";
+import { objectEntries } from "../../utils/objects";
 import CombatantTile from "./CombatantTile";
 import Dialog from "./Dialog";
 import SearchableList, { ListItem } from "./SearchableList";
 
-const pcItems = Object.entries(allPCs)
+const pcItems = objectEntries(allPCs)
   .sort(([, a], [, b]) => a.name.localeCompare(b.name))
-  .map<ListItem<PCName>>(([key, t]) => ({
-    value: key as PCName,
+  .map<ListItem<PCName>>(([value, t]) => ({
+    value,
     component: <CombatantTile name={t.name} tokenUrl={t.tokenUrl} />,
   }));
 

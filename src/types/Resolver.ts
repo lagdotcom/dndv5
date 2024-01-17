@@ -3,6 +3,7 @@ import Action from "./Action";
 
 export default interface Resolver<T> {
   type: string;
+  initialValue?: T;
   check(
     value: T | unknown,
     action: Action,

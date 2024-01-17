@@ -1,6 +1,6 @@
 import Engine from "../Engine";
-import Action from "../types/Action";
-import Resolver from "../types/Resolver";
+import Action, { ActionConfig } from "../types/Action";
+import { objectEntries } from "./objects";
 
 export function getConfigErrors<T extends object>(
   g: Engine,
@@ -9,9 +9,11 @@ export function getConfigErrors<T extends object>(
 ) {
   const ec = g.check(action, config);
 
-  for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-    const value = config[key as keyof T] as unknown;
-    (resolver as Resolver<unknown>).check(value, action, ec);
+  for (const [key, resolver] of objectEntries<ActionConfig<T>>(
+    action.getConfig(config),
+  )) {
+    const value = config[key] as unknown;
+    resolver.check(value, action, ec);
   }
 
   return ec;

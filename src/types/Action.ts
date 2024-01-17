@@ -14,6 +14,7 @@ import Resource from "./Resource";
 import Source from "./Source";
 
 export type ActionConfig<T> = { [K in keyof T]: Resolver<T[K]> };
+export type GetActionConfig<T> = (config: Partial<T>) => ActionConfig<T>;
 
 export interface ConfigWithPositioning<T> {
   config: T;
@@ -40,7 +41,7 @@ export default interface Action<T extends object = Empty> extends Source {
   check(config: Partial<T>, collector: ErrorCollector): ErrorCollector;
   getAffected(config: T): Combatant[];
   getAffectedArea(config: Partial<T>): SpecifiedEffectShape[] | undefined;
-  getConfig(config: Partial<T>): ActionConfig<T>;
+  getConfig: GetActionConfig<T>;
   getDamage(config: Partial<T>): DamageAmount[] | undefined;
   getDescription(config: Partial<T>): Description | undefined;
   getHeal(config: Partial<T>): Amount[] | undefined;

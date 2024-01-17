@@ -19,6 +19,10 @@ export default class SlotResolver implements Resolver<SpellSlot> {
     this.type = "SpellSlot";
   }
 
+  get initialValue() {
+    return this.min;
+  }
+
   get min() {
     return this.method.getMinSlot?.(this.spell, this.actor) ?? this.spell.level;
   }

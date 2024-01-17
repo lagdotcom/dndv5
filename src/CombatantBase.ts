@@ -200,6 +200,7 @@ export default class CombatantBase implements Combatant {
       groups,
       alignGE,
       alignLC,
+      movement = [["speed", 30]],
     }: {
       diesAtZero?: boolean;
       hands?: Hands;
@@ -225,6 +226,7 @@ export default class CombatantBase implements Combatant {
       groups?: SetInitialiser<CombatantGroup>;
       alignGE?: GEAlignment;
       alignLC?: LCAlignment;
+      movement?: MapInitialiser<MovementType, Feet>;
     },
   ) {
     this.id = g.nextId();
@@ -250,7 +252,7 @@ export default class CombatantBase implements Combatant {
     this.wis = new AbilityScore(wisScore);
     this.cha = new AbilityScore(chaScore);
 
-    this.movement = new Map([["speed", 30]]);
+    this.movement = new Map(movement);
     this.skills = new Map();
     this.languages = new Set();
     this.equipment = new Set();

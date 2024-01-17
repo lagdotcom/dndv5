@@ -8,17 +8,11 @@ import Engine from "../../Engine";
 import { SideID } from "../../flavours";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
-import { exceptFor, patchAt } from "../../utils/array";
+import { PatcherAccepter } from "../../utils/immutable";
 import { enumerate } from "../../utils/numbers";
 import { isDefined } from "../../utils/types";
 import useMenu from "../hooks/useMenu";
-import {
-  StateUpdater,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "../lib";
+import { useCallback, useEffect, useMemo, useState } from "../lib";
 import {
   allCombatants,
   canDragUnits,
@@ -37,7 +31,7 @@ import Menu, { MenuItem } from "./Menu";
 interface EditUIProps {
   g: Engine;
   template: BattleTemplate;
-  onUpdate: StateUpdater<BattleTemplate>;
+  onUpdate: PatcherAccepter<BattleTemplate>;
 }
 
 type UnitAction =
@@ -58,7 +52,7 @@ const isConfigurable = (entry: BattleTemplateEntry) =>
 
 function useConfiguring(
   template: BattleTemplate,
-  onUpdate: StateUpdater<BattleTemplate>,
+  onUpdate: PatcherAccepter<BattleTemplate>,
 ) {
   const [index, select] = useState<number>();
   const finish = () => select(undefined);
@@ -70,20 +64,13 @@ function useConfiguring(
     }
   }, [index, template.combatants]);
 
-  const patch = useCallback(
-    (key: string, value: unknown) => {
+  const patch = useCallback<PatcherAccepter<object>>(
+    (patcher) => {
       if (isDefined(index))
-        onUpdate((old) => ({
-          ...old,
-          combatants: patchAt(old.combatants, index, (entry) =>
-            entry.type === "monster"
-              ? {
-                  ...entry,
-                  config: { ...(entry.config ?? {}), [key]: value },
-                }
-              : entry,
-          ),
-        }));
+        onUpdate((t) => {
+          const config = t.combatants[index].config ?? {};
+          patcher(config as object);
+        });
     },
     [index, onUpdate],
   );
@@ -112,28 +99,26 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
   const onCancelAdd = () => setAdd(undefined);
   const onAddMonster = (name: MonsterName) => {
     setAdd(undefined);
-    onUpdate((old) => ({
-      ...old,
-      combatants: old.combatants.concat({
+    onUpdate((t) =>
+      t.combatants.push({
         type: "monster",
         name,
         x: destination.x,
         y: destination.y,
         config: allMonsters[name].config?.initial,
       }),
-    }));
+    );
   };
   const onAddPC = (name: PCName) => {
     setAdd(undefined);
-    onUpdate((old) => ({
-      ...old,
-      combatants: old.combatants.concat({
+    onUpdate((t) =>
+      t.combatants.push({
         type: "pc",
         name,
         x: destination.x,
         y: destination.y,
       }),
-    }));
+    );
   };
 
   const {
@@ -149,19 +134,9 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
       (action, index) => {
         switch (action.type) {
           case "side":
-            return onUpdate((old) => ({
-              ...old,
-              combatants: patchAt(old.combatants, index, (e) => ({
-                ...e,
-                side: action.side,
-              })),
-            }));
-
+            return onUpdate((t) => (t.combatants[index].side = action.side));
           case "remove":
-            return onUpdate((old) => ({
-              ...old,
-              combatants: exceptFor(old.combatants, index),
-            }));
+            return onUpdate((t) => t.combatants.splice(index, 1));
 
           case "monster":
           case "pc":
@@ -206,16 +181,11 @@ export default function EditUI({ g, template, onUpdate }: EditUIProps) {
   );
 
   const onDragCombatant = useCallback(
-    (who: Combatant, { x, y }: Point) => {
-      onUpdate((old) => ({
-        ...old,
-        combatants: patchAt(old.combatants, who.id - 1, (e) => ({
-          ...e,
-          x,
-          y,
-        })),
-      }));
-    },
+    (who: Combatant, { x, y }: Point) =>
+      onUpdate((t) => {
+        t.combatants[who.id - 1].x = x;
+        t.combatants[who.id - 1].y = y;
+      }),
     [onUpdate],
   );
 

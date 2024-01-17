@@ -26,6 +26,13 @@
     mod
   ));
 
+  // globalExternal:@ungap/structured-clone
+  var require_structured_clone = __commonJS({
+    "globalExternal:@ungap/structured-clone"(exports, module) {
+      module.exports = globalThis.StructuredJSON;
+    }
+  });
+
   // globalExternal:@preact/signals
   var require_signals = __commonJS({
     "globalExternal:@preact/signals"(exports, module) {
@@ -374,13 +381,21 @@
   };
 
   // src/utils/objects.ts
+  var import_structured_clone = __toESM(require_structured_clone());
+  var objectEntries = Object.entries;
   function matches(object, match) {
-    for (const [field, value] of Object.entries(match)) {
+    for (const [field, value] of objectEntries(match)) {
       if (object[field] !== value)
         return false;
     }
     return true;
   }
+  function getStructuredClone() {
+    if (globalThis.structuredClone)
+      return globalThis.structuredClone;
+    return (thing) => (0, import_structured_clone.deserialize)((0, import_structured_clone.serialize)(thing));
+  }
+  var clone = getStructuredClone();
 
   // src/DiceBag.ts
   function sizeOfDice(rt) {
@@ -1891,6 +1906,9 @@
       this.name = "spell slot";
       this.type = "SpellSlot";
     }
+    get initialValue() {
+      return this.min;
+    }
     get min() {
       var _a, _b, _c;
       return (_c = (_b = (_a = this.method).getMinSlot) == null ? void 0 : _b.call(_a, this.spell, this.actor)) != null ? _c : this.spell.level;
@@ -2149,7 +2167,8 @@
       coefficients,
       groups,
       alignGE,
-      alignLC
+      alignLC,
+      movement = [["speed", 30]]
     }) {
       this.g = g;
       this.name = name;
@@ -2174,7 +2193,7 @@
       this.int = new AbilityScore(intScore);
       this.wis = new AbilityScore(wisScore);
       this.cha = new AbilityScore(chaScore);
-      this.movement = /* @__PURE__ */ new Map([["speed", 30]]);
+      this.movement = new Map(movement);
       this.skills = /* @__PURE__ */ new Map();
       this.languages = /* @__PURE__ */ new Set();
       this.equipment = /* @__PURE__ */ new Set();
@@ -2659,7 +2678,9 @@
   // src/utils/config.ts
   function getConfigErrors(g, action, config) {
     const ec = g.check(action, config);
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
+    for (const [key, resolver] of objectEntries(
+      action.getConfig(config)
+    )) {
       const value = config[key];
       resolver.check(value, action, ec);
     }
@@ -2678,8 +2699,6 @@
   });
 
   // src/utils/array.ts
-  var patchAt = (items, index, transformer) => items.slice(0, index).concat(transformer(items[index]), ...items.slice(index + 1));
-  var exceptFor = (items, index) => items.slice(0, index).concat(...items.slice(index + 1));
   var sieve = (...items) => items.filter(isDefined);
   var uniq = (items) => Array.from(new Set(items));
 
@@ -5694,6 +5713,20 @@
     const setFalse = () => setValue(false);
     const toggle = () => setValue((old) => !old);
     return [value, setTrue, setFalse, toggle];
+  }
+
+  // src/utils/immutable.ts
+  var producer = (patcher) => (old) => {
+    const newObj = clone(old);
+    patcher(newObj);
+    return newObj;
+  };
+
+  // src/ui/hooks/usePatcher.ts
+  function usePatcher(initialState) {
+    const [state, setState] = (0, import_hooks.useState)(initialState);
+    const patchState = (patcher) => setState(producer(patcher));
+    return [state, patchState];
   }
 
   // src/ui/components/App.module.scss
@@ -16025,18 +16058,18 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     if (t.naturalAC)
       m.naturalAC = t.naturalAC;
     if (t.movement)
-      for (const [type, distance2] of Object.entries(t.movement))
+      for (const [type, distance2] of objectEntries(t.movement))
         m.movement.set(type, distance2);
     if (t.levels)
-      for (const [name, level] of Object.entries(t.levels)) {
+      for (const [name, level] of objectEntries(t.levels)) {
         m.level += level;
         m.classLevels.set(name, level);
       }
     if (t.proficiency)
-      for (const [thing, type] of Object.entries(t.proficiency))
+      for (const [thing, type] of objectEntries(t.proficiency))
         m.addProficiency(thing, type);
     if (t.damage)
-      for (const [type, response] of Object.entries(t.damage))
+      for (const [type, response] of objectEntries(t.damage))
         m.damageResponses.set(type, response);
     if (t.immunities)
       for (const name of t.immunities)
@@ -16060,7 +16093,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
           m.give(item, quantity, true);
       }
     if (t.senses)
-      for (const [sense, distance2] of Object.entries(t.senses))
+      for (const [sense, distance2] of objectEntries(t.senses))
         m.senses.set(sense, distance2);
     if (t.spells)
       for (const spell of t.spells) {
@@ -20066,6 +20099,9 @@ At 18th level, the range of this aura increases to 30 feet.`,
       this.max = max;
       this.type = "NumberRange";
     }
+    get initialValue() {
+      return this.min;
+    }
     get name() {
       const range = this.max === Infinity ? `${this.min}+` : `${this.min}-${this.max}`;
       return `${this.rangeName} ${range}`;
@@ -21989,7 +22025,7 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
     ]
   };
   var bonusSpellsFeatures = new Map(
-    Object.entries(bonusSpells).map(([type, entries]) => [
+    objectEntries(bonusSpells).map(([type, entries]) => [
       type,
       bonusSpellsFeature(
         "Circle Spells",
@@ -22523,7 +22559,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   function initialisePC(g, t) {
     var _a, _b, _c, _d;
     const pc = new PC(g, t.name, t.tokenUrl);
-    const addConfigs = (list = {}) => Object.entries(list).forEach(([key, value]) => pc.configs.set(key, value));
+    const addConfigs = (list = {}) => objectEntries(list).forEach(([key, value]) => pc.configs.set(key, value));
     const addLanguages = (list = []) => list.forEach((lang) => pc.languages.add(lang));
     const addProfs = (list = []) => list.forEach((prof) => pc.addProficiency(prof, "proficient"));
     pc.setAbilityScores(...t.abilities);
@@ -22936,7 +22972,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       else if (typeof item === "string")
         names.push(item);
       else {
-        for (const [key, value] of Object.entries(item)) {
+        for (const [key, value] of objectEntries(item)) {
           if (value)
             names.push(key);
         }
@@ -23661,13 +23697,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/ConfigComponents.tsx
-  function ChooseTarget({ field, value, onChange }) {
+  function ChooseTarget({ value, onChange }) {
     const setTarget = (0, import_hooks.useCallback)(
       (who) => {
-        onChange(field, who);
+        onChange(who);
         wantsCombatant.value = void 0;
       },
-      [field, onChange]
+      [onChange]
     );
     const onClick = (0, import_hooks.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== setTarget ? setTarget : void 0;
@@ -23690,7 +23726,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChooseTargets({
-    field,
     resolver,
     value,
     onChange
@@ -23699,20 +23734,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const addTarget = (0, import_hooks.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).includes(who))
-          onChange(field, (value != null ? value : []).concat(who));
+          onChange((value != null ? value : []).concat(who));
         wantsCombatant.value = void 0;
       },
-      [field, onChange, value]
+      [onChange, value]
     );
     const onClick = (0, import_hooks.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
     const remove = (0, import_hooks.useCallback)(
-      (who) => onChange(
-        field,
-        (value != null ? value : []).filter((x) => x !== who)
-      ),
-      [field, onChange, value]
+      (who) => onChange((value != null ? value : []).filter((x) => x !== who)),
+      [onChange, value]
     );
     return /* @__PURE__ */ u("div", { children: [
       /* @__PURE__ */ u("div", { children: [
@@ -23741,13 +23773,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       )
     ] });
   }
-  function ChoosePoint({ field, value, onChange }) {
+  function ChoosePoint({ value, onChange }) {
     const setTarget = (0, import_hooks.useCallback)(
       (p) => {
-        onChange(field, p);
+        onChange(p);
         wantsPoint.value = void 0;
       },
-      [field, onChange]
+      [onChange]
     );
     const onClick = (0, import_hooks.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== setTarget ? setTarget : void 0;
@@ -23770,7 +23802,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChoosePoints({
-    field,
     resolver,
     value,
     onChange
@@ -23778,20 +23809,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const addPoint = (0, import_hooks.useCallback)(
       (p) => {
         if (p)
-          onChange(field, (value != null ? value : []).concat(p));
+          onChange((value != null ? value : []).concat(p));
         wantsPoint.value = void 0;
       },
-      [field, onChange, value]
+      [onChange, value]
     );
     const onClick = (0, import_hooks.useCallback)(() => {
       wantsPoint.value = wantsPoint.value !== addPoint ? addPoint : void 0;
     }, [addPoint]);
     const remove = (0, import_hooks.useCallback)(
-      (p) => onChange(
-        field,
-        (value != null ? value : []).filter((x) => x !== p)
-      ),
-      [field, onChange, value]
+      (p) => onChange((value != null ? value : []).filter((x) => x !== p)),
+      [onChange, value]
     );
     return /* @__PURE__ */ u("div", { children: [
       /* @__PURE__ */ u("div", { children: [
@@ -23819,7 +23847,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChooseSlot({
-    field,
     resolver,
     value,
     onChange
@@ -23834,7 +23861,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         {
           className: classnames({ [button_module_default.active]: value === slot }),
           "aria-pressed": value === slot,
-          onClick: () => onChange(field, slot),
+          onClick: () => onChange(slot),
           children: slot
         },
         slot
@@ -23842,7 +23869,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChooseText({
-    field,
     resolver,
     value,
     onChange
@@ -23853,11 +23879,11 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
     const choose = (e2) => () => {
       if (e2.value === value) {
-        onChange(field, void 0);
+        onChange(void 0);
         setLabel("NONE");
         return;
       }
-      onChange(field, e2.value);
+      onChange(e2.value);
       setLabel(e2.label);
     };
     return /* @__PURE__ */ u("div", { children: [
@@ -23879,7 +23905,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChooseMany({
-    field,
     resolver,
     value,
     onChange
@@ -23888,21 +23913,18 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const add = (0, import_hooks.useCallback)(
       (ch) => {
         if (!(value != null ? value : []).find((x) => x === ch)) {
-          onChange(field, (value != null ? value : []).concat(ch.value));
+          onChange((value != null ? value : []).concat(ch.value));
           setLabels((old) => old.concat(ch.label));
         }
       },
-      [field, onChange, value]
+      [onChange, value]
     );
     const remove = (0, import_hooks.useCallback)(
       (ch) => {
-        onChange(
-          field,
-          (value != null ? value : []).filter((x) => x !== ch.value)
-        );
+        onChange((value != null ? value : []).filter((x) => x !== ch.value));
         setLabels((old) => old.filter((x) => x !== ch.label));
       },
-      [field, onChange, value]
+      [onChange, value]
     );
     return /* @__PURE__ */ u("div", { children: [
       /* @__PURE__ */ u("div", { children: [
@@ -23927,7 +23949,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     ] });
   }
   function ChooseNumber({
-    field,
     resolver,
     value,
     onChange
@@ -23944,13 +23965,12 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
           min: resolver.min,
           max: resolver.max,
           value: value != null ? value : 0,
-          onChange: (v) => onChange(field, v)
+          onChange
         }
       )
     ] });
   }
   function ChooseAllocations({
-    field,
     resolver,
     value,
     onChange
@@ -23958,20 +23978,17 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const addTarget = (0, import_hooks.useCallback)(
       (who) => {
         if (who && !(value != null ? value : []).find((e2) => e2.who === who))
-          onChange(field, (value != null ? value : []).concat({ amount: 1, who }));
+          onChange((value != null ? value : []).concat({ amount: 1, who }));
         wantsCombatant.value = void 0;
       },
-      [field, onChange, value]
+      [onChange, value]
     );
     const onClick = (0, import_hooks.useCallback)(() => {
       wantsCombatant.value = wantsCombatant.value !== addTarget ? addTarget : void 0;
     }, [addTarget]);
     const remove = (0, import_hooks.useCallback)(
-      (who) => onChange(
-        field,
-        (value != null ? value : []).filter((x) => x.who !== who)
-      ),
-      [field, onChange, value]
+      (who) => onChange((value != null ? value : []).filter((x) => x.who !== who)),
+      [onChange, value]
     );
     return /* @__PURE__ */ u("div", { children: [
       /* @__PURE__ */ u("div", { children: [
@@ -23993,7 +24010,6 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
               max: resolver.maximum,
               value: amount,
               onChange: (amount2) => onChange(
-                field,
                 (value != null ? value : []).map(
                   (x) => x.who === who ? { amount: amount2, who } : x
                 )
@@ -24020,53 +24036,56 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     patchConfig
   }) {
     const elements = (0, import_hooks.useMemo)(
-      () => Object.entries(getConfig(config)).map(([key, resolver]) => {
-        const subProps = {
-          key,
-          field: key,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          resolver,
-          onChange: patchConfig,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: config[key]
-        };
-        if (resolver instanceof TargetResolver)
-          return /* @__PURE__ */ u(ChooseTarget, { ...subProps });
-        else if (resolver instanceof MultiTargetResolver)
-          return /* @__PURE__ */ u(ChooseTargets, { ...subProps });
-        else if (resolver instanceof PointResolver || resolver instanceof PointToPointResolver)
-          return /* @__PURE__ */ u(ChoosePoint, { ...subProps });
-        else if (resolver instanceof MultiPointResolver)
-          return /* @__PURE__ */ u(ChoosePoints, { ...subProps });
-        else if (resolver instanceof SlotResolver)
-          return /* @__PURE__ */ u(ChooseSlot, { ...subProps });
-        else if (resolver instanceof ChoiceResolver)
-          return /* @__PURE__ */ u(ChooseText, { ...subProps });
-        else if (resolver instanceof MultiChoiceResolver)
-          return /* @__PURE__ */ u(ChooseMany, { ...subProps });
-        else if (resolver instanceof NumberRangeResolver)
-          return /* @__PURE__ */ u(ChooseNumber, { ...subProps });
-        else if (resolver instanceof AllocationResolver)
-          return /* @__PURE__ */ u(ChooseAllocations, { ...subProps });
-        else
-          return /* @__PURE__ */ u("div", { children: [
-            "(no frontend for resolver type [",
-            subProps.resolver.type,
-            "] yet)"
-          ] });
-      }),
+      () => objectEntries(getConfig(config)).map(
+        ([key, resolver]) => {
+          const subProps = {
+            key,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            resolver,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onChange: (value) => patchConfig((old) => old[key] = value),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            value: config[key]
+          };
+          if (resolver instanceof TargetResolver)
+            return /* @__PURE__ */ u(ChooseTarget, { ...subProps });
+          else if (resolver instanceof MultiTargetResolver)
+            return /* @__PURE__ */ u(ChooseTargets, { ...subProps });
+          else if (resolver instanceof PointResolver || resolver instanceof PointToPointResolver)
+            return /* @__PURE__ */ u(ChoosePoint, { ...subProps });
+          else if (resolver instanceof MultiPointResolver)
+            return /* @__PURE__ */ u(ChoosePoints, { ...subProps });
+          else if (resolver instanceof SlotResolver)
+            return /* @__PURE__ */ u(ChooseSlot, { ...subProps });
+          else if (resolver instanceof ChoiceResolver)
+            return /* @__PURE__ */ u(ChooseText, { ...subProps });
+          else if (resolver instanceof MultiChoiceResolver)
+            return /* @__PURE__ */ u(ChooseMany, { ...subProps });
+          else if (resolver instanceof NumberRangeResolver)
+            return /* @__PURE__ */ u(ChooseNumber, { ...subProps });
+          else if (resolver instanceof AllocationResolver)
+            return /* @__PURE__ */ u(ChooseAllocations, { ...subProps });
+          else
+            return /* @__PURE__ */ u("div", { children: [
+              "(no frontend for resolver type [",
+              subProps.resolver.type,
+              "] yet)"
+            ] });
+        }
+      ),
       [config, getConfig, patchConfig]
     );
     return /* @__PURE__ */ u("div", { children: elements });
   }
 
   // src/ui/components/ChooseActionConfigPanel.tsx
-  function getInitialConfig(action, initial) {
+  function getInitialConfig(getConfig, initial) {
     const config = { ...initial };
-    for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-      if ((resolver instanceof SlotResolver || resolver instanceof NumberRangeResolver) && !config[key])
-        config[key] = resolver.min;
-    }
+    for (const [key, resolver] of objectEntries(
+      getConfig(config)
+    ))
+      if (typeof resolver.initialValue !== "undefined")
+        config[key] = resolver.initialValue;
     return config;
   }
   function AmountElement({ a, type }) {
@@ -24086,37 +24105,55 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     onCancel,
     onExecute
   }) {
-    const [config, setConfig] = (0, import_hooks.useState)(getInitialConfig(action, initialConfig));
-    const patchConfig = (0, import_hooks.useCallback)(
-      (key, value) => setConfig((old) => ({ ...old, [key]: value })),
-      []
-    );
     const getConfig = (0, import_hooks.useMemo)(() => action.getConfig.bind(action), [action]);
+    const [config, patchConfig] = usePatcher(
+      getInitialConfig(getConfig, initialConfig)
+    );
     (0, import_hooks.useEffect)(() => {
       actionAreas.value = action.getAffectedArea(config);
     }, [action, active, config]);
-    const errors = (0, import_hooks.useMemo)(
-      () => getConfigErrors(g, action, config).messages,
-      [g, action, config]
-    );
-    const disabled = (0, import_hooks.useMemo)(() => errors.length > 0, [errors]);
-    const damage = (0, import_hooks.useMemo)(() => action.getDamage(config), [action, config]);
-    const description = (0, import_hooks.useMemo)(
-      () => action.getDescription(config),
-      [action, config]
-    );
-    const heal = (0, import_hooks.useMemo)(() => action.getHeal(config), [action, config]);
-    const time = (0, import_hooks.useMemo)(() => action.getTime(config), [action, config]);
-    const isReaction = time === "reaction";
+    const {
+      name,
+      errors,
+      disabled,
+      damage,
+      description,
+      heal,
+      isReaction,
+      time
+    } = (0, import_hooks.useMemo)(() => {
+      const name2 = action.name;
+      const errors2 = getConfigErrors(g, action, config).messages;
+      const disabled2 = errors2.length > 0;
+      const damage2 = action.getDamage(config);
+      const description2 = action.getDescription(config);
+      const heal2 = action.getHeal(config);
+      const rawTime = action.getTime(config);
+      const time2 = action.tags.has("costs attack") ? "attack" : rawTime != null ? rawTime : "no cost";
+      const isReaction2 = rawTime === "reaction";
+      return {
+        name: name2,
+        errors: errors2,
+        disabled: disabled2,
+        damage: damage2,
+        description: description2,
+        heal: heal2,
+        time: time2,
+        isReaction: isReaction2
+      };
+    }, [action, config, g]);
     const execute = (0, import_hooks.useCallback)(() => {
       if (checkConfig(g, action, config))
         onExecute(action, config);
     }, [g, action, config, onExecute]);
-    const statusWarning = action.status === "incomplete" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null;
+    const statusWarning = (0, import_hooks.useMemo)(
+      () => action.status === "incomplete" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Incomplete implementation" }) : action.status === "missing" ? /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.warning, children: "Not implemented" }) : null,
+      [action.status]
+    );
     return /* @__PURE__ */ u("aside", { className: common_module_default.panel, "aria-label": "Action Options", children: [
       /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.namePanel, children: [
-        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.name, children: action.name }),
-        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.time, children: action.tags.has("costs attack") ? "attack" : time != null ? time : "no cost" })
+        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.name, children: name }),
+        /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.time, children: time })
       ] }),
       statusWarning,
       description && /* @__PURE__ */ u("div", { className: ChooseActionConfigPanel_module_default.description, children: description.split("\n").map((p, key) => /* @__PURE__ */ u("p", { children: p }, key)) }),
@@ -24936,8 +24973,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/AddMonsterDialog.tsx
-  var monsterNames = Object.entries(allMonsters_default).sort(([, a], [, b]) => a.name.localeCompare(b.name)).map(([key, t]) => ({
-    value: key,
+  var monsterNames = objectEntries(allMonsters_default).sort(([, a], [, b]) => a.name.localeCompare(b.name)).map(([value, t]) => ({
+    value,
     component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
   }));
   function AddMonsterDialog({ onCancel, onChoose }) {
@@ -24948,8 +24985,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   }
 
   // src/ui/components/AddPCDialog.tsx
-  var pcItems = Object.entries(allPCs_default).sort(([, a], [, b]) => a.name.localeCompare(b.name)).map(([key, t]) => ({
-    value: key,
+  var pcItems = objectEntries(allPCs_default).sort(([, a], [, b]) => a.name.localeCompare(b.name)).map(([value, t]) => ({
+    value,
     component: /* @__PURE__ */ u(CombatantTile, { name: t.name, tokenUrl: t.tokenUrl })
   }));
   function AddPCDialog({ onCancel, onChoose }) {
@@ -25004,22 +25041,13 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       }
     }, [index, template.combatants]);
     const patch = (0, import_hooks.useCallback)(
-      (key, value) => {
+      (patcher) => {
         if (isDefined(index))
-          onUpdate((old) => ({
-            ...old,
-            combatants: patchAt(
-              old.combatants,
-              index,
-              (entry2) => {
-                var _a;
-                return entry2.type === "monster" ? {
-                  ...entry2,
-                  config: { ...(_a = entry2.config) != null ? _a : {}, [key]: value }
-                } : entry2;
-              }
-            )
-          }));
+          onUpdate((t) => {
+            var _a;
+            const config = (_a = t.combatants[index].config) != null ? _a : {};
+            patcher(config);
+          });
       },
       [index, onUpdate]
     );
@@ -25044,31 +25072,29 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     const onCancelAdd = () => setAdd(void 0);
     const onAddMonster = (name) => {
       setAdd(void 0);
-      onUpdate((old) => {
-        var _a2;
-        return {
-          ...old,
-          combatants: old.combatants.concat({
+      onUpdate(
+        (t) => {
+          var _a2;
+          return t.combatants.push({
             type: "monster",
             name,
             x: destination.x,
             y: destination.y,
             config: (_a2 = allMonsters_default[name].config) == null ? void 0 : _a2.initial
-          })
-        };
-      });
+          });
+        }
+      );
     };
     const onAddPC = (name) => {
       setAdd(void 0);
-      onUpdate((old) => ({
-        ...old,
-        combatants: old.combatants.concat({
+      onUpdate(
+        (t) => t.combatants.push({
           type: "pc",
           name,
           x: destination.x,
           y: destination.y
         })
-      }));
+      );
     };
     const {
       select: configure,
@@ -25082,18 +25108,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
         (action, index) => {
           switch (action.type) {
             case "side":
-              return onUpdate((old) => ({
-                ...old,
-                combatants: patchAt(old.combatants, index, (e2) => ({
-                  ...e2,
-                  side: action.side
-                }))
-              }));
+              return onUpdate((t) => t.combatants[index].side = action.side);
             case "remove":
-              return onUpdate((old) => ({
-                ...old,
-                combatants: exceptFor(old.combatants, index)
-              }));
+              return onUpdate((t) => t.combatants.splice(index, 1));
             case "monster":
             case "pc":
               setDestination(action.pos);
@@ -25134,16 +25151,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       [menu, template.combatants]
     );
     const onDragCombatant = (0, import_hooks.useCallback)(
-      (who, { x, y }) => {
-        onUpdate((old) => ({
-          ...old,
-          combatants: patchAt(old.combatants, who.id - 1, (e2) => ({
-            ...e2,
-            x,
-            y
-          }))
-        }));
-      },
+      (who, { x, y }) => onUpdate((t) => {
+        t.combatants[who.id - 1].x = x;
+        t.combatants[who.id - 1].y = y;
+      }),
       [onUpdate]
     );
     const onClickBattlefield = (0, import_hooks.useCallback)(
@@ -25193,9 +25204,9 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       return engine;
     }, []);
     const [editing, , , toggleMode] = useBool(true);
-    const [template, setTemplate] = (0, import_hooks.useState)(daviesVsFiends);
+    const [template, onUpdate] = usePatcher(daviesVsFiends);
     return /* @__PURE__ */ u("main", { className: App_module_default.container, children: [
-      editing ? /* @__PURE__ */ u(EditUI, { g, template, onUpdate: setTemplate }) : /* @__PURE__ */ u(CombatUI, { g, template }),
+      editing ? /* @__PURE__ */ u(EditUI, { g, template, onUpdate }) : /* @__PURE__ */ u(CombatUI, { g, template }),
       /* @__PURE__ */ u(
         "button",
         {

@@ -2,7 +2,8 @@ import BattleTemplate from "../../data/BattleTemplate";
 import { daviesVsFiends } from "../../data/templates";
 import Engine from "../../Engine";
 import useBool from "../hooks/useBool";
-import { useMemo, useState } from "../lib";
+import usePatcher from "../hooks/usePatcher";
+import { useMemo } from "../lib";
 import styles from "./App.module.scss";
 import CombatUI from "./CombatUI";
 import EditUI from "./EditUI";
@@ -15,12 +16,12 @@ export default function App() {
   }, []);
 
   const [editing, , , toggleMode] = useBool(true);
-  const [template, setTemplate] = useState<BattleTemplate>(daviesVsFiends);
+  const [template, onUpdate] = usePatcher<BattleTemplate>(daviesVsFiends);
 
   return (
     <main className={styles.container}>
       {editing ? (
-        <EditUI g={g} template={template} onUpdate={setTemplate} />
+        <EditUI g={g} template={template} onUpdate={onUpdate} />
       ) : (
         <CombatUI g={g} template={template} />
       )}

@@ -1,12 +1,13 @@
 import allMonsters, { MonsterName } from "../../data/allMonsters";
+import { objectEntries } from "../../utils/objects";
 import CombatantTile from "./CombatantTile";
 import Dialog from "./Dialog";
 import SearchableList, { ListItem } from "./SearchableList";
 
-const monsterNames = Object.entries(allMonsters)
+const monsterNames = objectEntries(allMonsters)
   .sort(([, a], [, b]) => a.name.localeCompare(b.name))
-  .map<ListItem<MonsterName>>(([key, t]) => ({
-    value: key as MonsterName,
+  .map<ListItem<MonsterName>>(([value, t]) => ({
+    value,
     component: <CombatantTile name={t.name} tokenUrl={t.tokenUrl} />,
   }));
 

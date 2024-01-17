@@ -17,6 +17,10 @@ export default class NumberRangeResolver<T extends number = number>
     this.type = "NumberRange";
   }
 
+  get initialValue() {
+    return this.min;
+  }
+
   get name() {
     const range =
       this.max === Infinity ? `${this.min}+` : `${this.min}-${this.max}`;

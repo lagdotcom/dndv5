@@ -1,14 +1,10 @@
 import Engine from "../Engine";
 import Monster from "../Monster";
 import NaturalWeapon from "../monsters/NaturalWeapon";
-import DamageType from "../types/DamageType";
 import Enchantment from "../types/Enchantment";
-import { StringProficiency } from "../types/HasProficiency";
 import { ItemType } from "../types/Item";
-import MovementType from "../types/MovementType";
-import PCClassName from "../types/PCClassName";
-import SenseName from "../types/SenseName";
 import SizeCategory from "../types/SizeCategory";
+import { objectEntries } from "../utils/objects";
 import { isDefined } from "../utils/types";
 import allEnchantments from "./allEnchantments";
 import allItems from "./allItems";
@@ -40,22 +36,22 @@ function applyMonsterTemplate<T>(
   if (t.naturalAC) m.naturalAC = t.naturalAC;
 
   if (t.movement)
-    for (const [type, distance] of Object.entries(t.movement))
-      m.movement.set(type as MovementType, distance);
+    for (const [type, distance] of objectEntries(t.movement))
+      m.movement.set(type, distance);
 
   if (t.levels)
-    for (const [name, level] of Object.entries(t.levels)) {
+    for (const [name, level] of objectEntries(t.levels)) {
       m.level += level;
-      m.classLevels.set(name as PCClassName, level);
+      m.classLevels.set(name, level);
     }
 
   if (t.proficiency)
-    for (const [thing, type] of Object.entries(t.proficiency))
-      m.addProficiency(thing as StringProficiency, type);
+    for (const [thing, type] of objectEntries(t.proficiency))
+      m.addProficiency(thing, type);
 
   if (t.damage)
-    for (const [type, response] of Object.entries(t.damage))
-      m.damageResponses.set(type as DamageType, response);
+    for (const [type, response] of objectEntries(t.damage))
+      m.damageResponses.set(type, response);
 
   if (t.immunities)
     for (const name of t.immunities) m.conditionImmunities.add(name);
@@ -79,8 +75,8 @@ function applyMonsterTemplate<T>(
     }
 
   if (t.senses)
-    for (const [sense, distance] of Object.entries(t.senses))
-      m.senses.set(sense as SenseName, distance);
+    for (const [sense, distance] of objectEntries(t.senses))
+      m.senses.set(sense, distance);
 
   if (t.spells)
     for (const spell of t.spells) {

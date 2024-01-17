@@ -1,6 +1,7 @@
 import allMonsters, { MonsterName } from "../../data/allMonsters";
 import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
+import { PatcherAccepter } from "../../utils/immutable";
 import { useMemo } from "../lib";
 import ConfigComponents from "./ConfigComponents";
 import Dialog from "./Dialog";
@@ -10,7 +11,7 @@ interface Props<T extends object> {
   name: MonsterName;
   config: T;
   onFinished(): void;
-  patchConfig(key: string, value: unknown): void;
+  patchConfig: PatcherAccepter<T>;
 }
 
 export default function ConfigureMonsterDialog<T extends object>({

@@ -1,12 +1,12 @@
 import Engine from "../../Engine";
-import NumberRangeResolver from "../../resolvers/NumberRangeResolver";
-import SlotResolver from "../../resolvers/SlotResolver";
-import Action from "../../types/Action";
+import Action, { ActionConfig, GetActionConfig } from "../../types/Action";
 import Amount from "../../types/Amount";
 import DamageType from "../../types/DamageType";
 import { checkConfig, getConfigErrors } from "../../utils/config";
 import { getDiceAverage } from "../../utils/dnd";
-import { useCallback, useEffect, useMemo, useState } from "../lib";
+import { objectEntries } from "../../utils/objects";
+import usePatcher from "../hooks/usePatcher";
+import { useCallback, useEffect, useMemo } from "../lib";
 import { actionAreas } from "../utils/state";
 import { UnitData } from "../utils/types";
 import styles from "./ChooseActionConfigPanel.module.scss";
@@ -15,19 +15,16 @@ import ConfigComponents from "./ConfigComponents";
 import Labelled from "./Labelled";
 
 function getInitialConfig<T extends object>(
-  action: Action<T>,
+  getConfig: GetActionConfig<T>,
   initial?: Partial<T>,
 ): Partial<T> {
   const config: Partial<T> = { ...initial };
 
-  for (const [key, resolver] of Object.entries(action.getConfig(config))) {
-    if (
-      (resolver instanceof SlotResolver ||
-        resolver instanceof NumberRangeResolver) &&
-      !config[key as keyof T]
-    )
-      (config[key as keyof T] as number) = resolver.min;
-  }
+  for (const [key, resolver] of objectEntries<ActionConfig<T>>(
+    getConfig(config),
+  ))
+    if (typeof resolver.initialValue !== "undefined")
+      config[key] = resolver.initialValue;
 
   return config;
 }
@@ -66,50 +63,68 @@ export default function ChooseActionConfigPanel<T extends object>({
   onCancel,
   onExecute,
 }: Props<T>) {
-  const [config, setConfig] = useState(getInitialConfig(action, initialConfig));
-  const patchConfig = useCallback(
-    (key: string, value: unknown) =>
-      setConfig((old) => ({ ...old, [key]: value })),
-    [],
-  );
   const getConfig = useMemo(() => action.getConfig.bind(action), [action]);
+  const [config, patchConfig] = usePatcher(
+    getInitialConfig(getConfig, initialConfig),
+  );
 
   useEffect(() => {
     actionAreas.value = action.getAffectedArea(config);
   }, [action, active, config]);
 
-  const errors = useMemo(
-    () => getConfigErrors(g, action, config).messages,
-    [g, action, config],
-  );
-  const disabled = useMemo(() => errors.length > 0, [errors]);
-  const damage = useMemo(() => action.getDamage(config), [action, config]);
-  const description = useMemo(
-    () => action.getDescription(config),
-    [action, config],
-  );
-  const heal = useMemo(() => action.getHeal(config), [action, config]);
-  const time = useMemo(() => action.getTime(config), [action, config]);
-  const isReaction = time === "reaction";
+  const {
+    name,
+    errors,
+    disabled,
+    damage,
+    description,
+    heal,
+    isReaction,
+    time,
+  } = useMemo(() => {
+    const name = action.name;
+    const errors = getConfigErrors(g, action, config).messages;
+    const disabled = errors.length > 0;
+    const damage = action.getDamage(config);
+    const description = action.getDescription(config);
+    const heal = action.getHeal(config);
+    const rawTime = action.getTime(config);
+    const time = action.tags.has("costs attack")
+      ? "attack"
+      : rawTime ?? "no cost";
+    const isReaction = rawTime === "reaction";
+
+    return {
+      name,
+      errors,
+      disabled,
+      damage,
+      description,
+      heal,
+      time,
+      isReaction,
+    };
+  }, [action, config, g]);
 
   const execute = useCallback(() => {
     if (checkConfig(g, action, config)) onExecute(action, config);
   }, [g, action, config, onExecute]);
 
-  const statusWarning =
-    action.status === "incomplete" ? (
-      <div className={styles.warning}>Incomplete implementation</div>
-    ) : action.status === "missing" ? (
-      <div className={styles.warning}>Not implemented</div>
-    ) : null;
+  const statusWarning = useMemo(
+    () =>
+      action.status === "incomplete" ? (
+        <div className={styles.warning}>Incomplete implementation</div>
+      ) : action.status === "missing" ? (
+        <div className={styles.warning}>Not implemented</div>
+      ) : null,
+    [action.status],
+  );
 
   return (
     <aside className={commonStyles.panel} aria-label="Action Options">
       <div className={styles.namePanel}>
-        <div className={styles.name}>{action.name}</div>
-        <div className={styles.time}>
-          {action.tags.has("costs attack") ? "attack" : time ?? "no cost"}
-        </div>
+        <div className={styles.name}>{name}</div>
+        <div className={styles.time}>{time}</div>
       </div>
       {statusWarning}
       {description && (

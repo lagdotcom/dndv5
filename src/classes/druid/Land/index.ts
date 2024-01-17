@@ -30,6 +30,7 @@ import Stoneskin from "../../../spells/level4/Stoneskin";
 import ConeOfCold from "../../../spells/level5/ConeOfCold";
 import { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
+import { objectEntries } from "../../../utils/objects";
 import { hasAny } from "../../../utils/set";
 import { makeLandsStride } from "../../common";
 import { DruidSpellcasting } from "..";
@@ -143,8 +144,8 @@ const bonusSpells: Record<LandType, BonusSpellEntry<PCClassLevel>[]> = {
 };
 
 const bonusSpellsFeatures = new Map(
-  Object.entries(bonusSpells).map(([type, entries]) => [
-    type as LandType,
+  objectEntries(bonusSpells).map(([type, entries]) => [
+    type,
     bonusSpellsFeature(
       "Circle Spells",
       `Your mystical connection to the land infuses you with the ability to cast certain spells.`,

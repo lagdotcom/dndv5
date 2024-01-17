@@ -4,6 +4,7 @@ import Enchantment from "../types/Enchantment";
 import HasProficiency from "../types/HasProficiency";
 import { ItemType } from "../types/Item";
 import LanguageName from "../types/LanguageName";
+import { objectEntries } from "../utils/objects";
 import allBackgrounds from "./allBackgrounds";
 import allEnchantments from "./allEnchantments";
 import allFeatures from "./allFeatures";
@@ -17,7 +18,7 @@ import PCTemplate from "./PCTemplate";
 export default function initialisePC(g: Engine, t: PCTemplate) {
   const pc = new PC(g, t.name, t.tokenUrl);
   const addConfigs = (list: Record<string, unknown> = {}) =>
-    Object.entries(list).forEach(([key, value]) => pc.configs.set(key, value));
+    objectEntries(list).forEach(([key, value]) => pc.configs.set(key, value));
   const addLanguages = (list: LanguageName[] = []) =>
     list.forEach((lang) => pc.languages.add(lang));
   const addProfs = (list: HasProficiency[] = []) =>

@@ -209,7 +209,7 @@ export const scalingSpell = <T extends object = Empty>({
     return {
       ...getConfig(g, actor, method, config),
       slot: new SlotResolver(this, actor, method),
-    };
+    } as ActionConfig<T & Scales>;
   },
   getDamage,
   getHeal,

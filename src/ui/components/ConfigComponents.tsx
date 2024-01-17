@@ -11,11 +11,13 @@ import PointResolver from "../../resolvers/PointResolver";
 import PointToPointResolver from "../../resolvers/PointToPointResolver";
 import SlotResolver from "../../resolvers/SlotResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
-import { ActionConfig } from "../../types/Action";
+import { ActionConfig, GetActionConfig } from "../../types/Action";
 import Combatant from "../../types/Combatant";
 import Point from "../../types/Point";
 import Resolver from "../../types/Resolver";
+import { PatcherAccepter } from "../../utils/immutable";
 import { enumerate } from "../../utils/numbers";
+import { objectEntries } from "../../utils/objects";
 import { describePoint, describeRange } from "../../utils/text";
 import { useCallback, useMemo, useState } from "../lib";
 import classnames from "../utils/classnames";
@@ -25,19 +27,18 @@ import CombatantRef from "./CombatantRef";
 import RangeInput from "./RangeInput";
 
 interface ChooserProps<T, R = Resolver<T>> {
-  field: string;
-  onChange(key: string, value?: T): void;
+  onChange(value?: T): void;
   resolver: R;
   value?: T;
 }
 
-function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
+function ChooseTarget({ value, onChange }: ChooserProps<Combatant>) {
   const setTarget = useCallback(
     (who?: Combatant) => {
-      onChange(field, who);
+      onChange(who);
       wantsCombatant.value = undefined;
     },
-    [field, onChange],
+    [onChange],
   );
 
   const onClick = useCallback(() => {
@@ -61,7 +62,6 @@ function ChooseTarget({ field, value, onChange }: ChooserProps<Combatant>) {
 }
 
 function ChooseTargets({
-  field,
   resolver,
   value,
   onChange,
@@ -69,10 +69,10 @@ function ChooseTargets({
   const addTarget = useCallback(
     (who?: Combatant) => {
       if (who && !(value ?? []).includes(who))
-        onChange(field, (value ?? []).concat(who));
+        onChange((value ?? []).concat(who));
       wantsCombatant.value = undefined;
     },
-    [field, onChange, value],
+    [onChange, value],
   );
 
   const onClick = useCallback(() => {
@@ -81,12 +81,8 @@ function ChooseTargets({
   }, [addTarget]);
 
   const remove = useCallback(
-    (who: Combatant) =>
-      onChange(
-        field,
-        (value ?? []).filter((x) => x !== who),
-      ),
-    [field, onChange, value],
+    (who: Combatant) => onChange((value ?? []).filter((x) => x !== who)),
+    [onChange, value],
   );
 
   return (
@@ -120,13 +116,13 @@ function ChooseTargets({
   );
 }
 
-function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
+function ChoosePoint({ value, onChange }: ChooserProps<Point>) {
   const setTarget = useCallback(
     (p?: Point) => {
-      onChange(field, p);
+      onChange(p);
       wantsPoint.value = undefined;
     },
-    [field, onChange],
+    [onChange],
   );
 
   const onClick = useCallback(() => {
@@ -149,17 +145,16 @@ function ChoosePoint({ field, value, onChange }: ChooserProps<Point>) {
 }
 
 function ChoosePoints({
-  field,
   resolver,
   value,
   onChange,
 }: ChooserProps<Point[], MultiPointResolver>) {
   const addPoint = useCallback(
     (p?: Point) => {
-      if (p) onChange(field, (value ?? []).concat(p));
+      if (p) onChange((value ?? []).concat(p));
       wantsPoint.value = undefined;
     },
-    [field, onChange, value],
+    [onChange, value],
   );
 
   const onClick = useCallback(() => {
@@ -167,12 +162,8 @@ function ChoosePoints({
   }, [addPoint]);
 
   const remove = useCallback(
-    (p: Point) =>
-      onChange(
-        field,
-        (value ?? []).filter((x) => x !== p),
-      ),
-    [field, onChange, value],
+    (p: Point) => onChange((value ?? []).filter((x) => x !== p)),
+    [onChange, value],
   );
 
   return (
@@ -208,7 +199,6 @@ function ChoosePoints({
 }
 
 function ChooseSlot({
-  field,
   resolver,
   value,
   onChange,
@@ -222,7 +212,7 @@ function ChooseSlot({
             key={slot}
             className={classnames({ [buttonStyles.active]: value === slot })}
             aria-pressed={value === slot}
-            onClick={() => onChange(field, slot)}
+            onClick={() => onChange(slot)}
           >
             {slot}
           </button>
@@ -233,7 +223,6 @@ function ChooseSlot({
 }
 
 function ChooseText<T>({
-  field,
   resolver,
   value,
   onChange,
@@ -244,12 +233,12 @@ function ChooseText<T>({
 
   const choose = (e: PickChoice<T>) => () => {
     if (e.value === value) {
-      onChange(field, undefined);
+      onChange(undefined);
       setLabel("NONE");
       return;
     }
 
-    onChange(field, e.value);
+    onChange(e.value);
     setLabel(e.label);
   };
 
@@ -274,7 +263,6 @@ function ChooseText<T>({
 }
 
 function ChooseMany<T>({
-  field,
   resolver,
   value,
   onChange,
@@ -284,22 +272,19 @@ function ChooseMany<T>({
   const add = useCallback(
     (ch: PickChoice<T>) => {
       if (!(value ?? []).find((x) => x === ch)) {
-        onChange(field, (value ?? []).concat(ch.value));
+        onChange((value ?? []).concat(ch.value));
         setLabels((old) => old.concat(ch.label));
       }
     },
-    [field, onChange, value],
+    [onChange, value],
   );
 
   const remove = useCallback(
     (ch: PickChoice<T>) => {
-      onChange(
-        field,
-        (value ?? []).filter((x) => x !== ch.value),
-      );
+      onChange((value ?? []).filter((x) => x !== ch.value));
       setLabels((old) => old.filter((x) => x !== ch.label));
     },
-    [field, onChange, value],
+    [onChange, value],
   );
 
   return (
@@ -327,7 +312,6 @@ function ChooseMany<T>({
 }
 
 function ChooseNumber({
-  field,
   resolver,
   value,
   onChange,
@@ -341,14 +325,13 @@ function ChooseNumber({
         min={resolver.min}
         max={resolver.max}
         value={value ?? 0}
-        onChange={(v) => onChange(field, v)}
+        onChange={onChange}
       />
     </div>
   );
 }
 
 function ChooseAllocations({
-  field,
   resolver,
   value,
   onChange,
@@ -356,10 +339,10 @@ function ChooseAllocations({
   const addTarget = useCallback(
     (who?: Combatant) => {
       if (who && !(value ?? []).find((e) => e.who === who))
-        onChange(field, (value ?? []).concat({ amount: 1, who }));
+        onChange((value ?? []).concat({ amount: 1, who }));
       wantsCombatant.value = undefined;
     },
-    [field, onChange, value],
+    [onChange, value],
   );
 
   const onClick = useCallback(() => {
@@ -368,12 +351,8 @@ function ChooseAllocations({
   }, [addTarget]);
 
   const remove = useCallback(
-    (who: Combatant) =>
-      onChange(
-        field,
-        (value ?? []).filter((x) => x.who !== who),
-      ),
-    [field, onChange, value],
+    (who: Combatant) => onChange((value ?? []).filter((x) => x.who !== who)),
+    [onChange, value],
   );
 
   return (
@@ -393,7 +372,6 @@ function ChooseAllocations({
                   value={amount}
                   onChange={(amount) =>
                     onChange(
-                      field,
                       (value ?? []).map((x) =>
                         x.who === who ? { amount, who } : x,
                       ),
@@ -420,9 +398,9 @@ function ChooseAllocations({
 }
 
 export interface ConfigComponentsProps<T extends object> {
-  config: T;
-  getConfig(config: Partial<T>): ActionConfig<T>;
-  patchConfig(key: string, value: unknown): void;
+  config: Partial<T>;
+  getConfig: GetActionConfig<T>;
+  patchConfig: PatcherAccepter<Partial<T>>;
 }
 
 export default function ConfigComponents<T extends object>({
@@ -432,45 +410,47 @@ export default function ConfigComponents<T extends object>({
 }: ConfigComponentsProps<T>) {
   const elements = useMemo(
     () =>
-      Object.entries(getConfig(config)).map(([key, resolver]) => {
-        const subProps = {
-          key,
-          field: key,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          resolver: resolver as any,
-          onChange: patchConfig,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: config[key as keyof T] as any,
-        };
+      objectEntries<ActionConfig<T>>(getConfig(config)).map(
+        ([key, resolver]) => {
+          const subProps = {
+            key,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            resolver: resolver as any,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onChange: (value: any) => patchConfig((old) => (old[key] = value)),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            value: config[key] as any,
+          };
 
-        if (resolver instanceof TargetResolver)
-          return <ChooseTarget {...subProps} />;
-        else if (resolver instanceof MultiTargetResolver)
-          return <ChooseTargets {...subProps} />;
-        else if (
-          resolver instanceof PointResolver ||
-          resolver instanceof PointToPointResolver
-        )
-          return <ChoosePoint {...subProps} />;
-        else if (resolver instanceof MultiPointResolver)
-          return <ChoosePoints {...subProps} />;
-        else if (resolver instanceof SlotResolver)
-          return <ChooseSlot {...subProps} />;
-        else if (resolver instanceof ChoiceResolver)
-          return <ChooseText {...subProps} />;
-        else if (resolver instanceof MultiChoiceResolver)
-          return <ChooseMany {...subProps} />;
-        else if (resolver instanceof NumberRangeResolver)
-          return <ChooseNumber {...subProps} />;
-        else if (resolver instanceof AllocationResolver)
-          return <ChooseAllocations {...subProps} />;
-        else
-          return (
-            <div>
-              (no frontend for resolver type [{subProps.resolver.type}] yet)
-            </div>
-          );
-      }),
+          if (resolver instanceof TargetResolver)
+            return <ChooseTarget {...subProps} />;
+          else if (resolver instanceof MultiTargetResolver)
+            return <ChooseTargets {...subProps} />;
+          else if (
+            resolver instanceof PointResolver ||
+            resolver instanceof PointToPointResolver
+          )
+            return <ChoosePoint {...subProps} />;
+          else if (resolver instanceof MultiPointResolver)
+            return <ChoosePoints {...subProps} />;
+          else if (resolver instanceof SlotResolver)
+            return <ChooseSlot {...subProps} />;
+          else if (resolver instanceof ChoiceResolver)
+            return <ChooseText {...subProps} />;
+          else if (resolver instanceof MultiChoiceResolver)
+            return <ChooseMany {...subProps} />;
+          else if (resolver instanceof NumberRangeResolver)
+            return <ChooseNumber {...subProps} />;
+          else if (resolver instanceof AllocationResolver)
+            return <ChooseAllocations {...subProps} />;
+          else
+            return (
+              <div>
+                (no frontend for resolver type [{subProps.resolver.type}] yet)
+              </div>
+            );
+        },
+      ),
     [config, getConfig, patchConfig],
   );
 
