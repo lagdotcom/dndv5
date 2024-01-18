@@ -31,6 +31,7 @@ import Source from "./types/Source";
 import { resolveArea } from "./utils/areas";
 import { checkConfig } from "./utils/config";
 import { getValidAmmunition, getWeaponRange } from "./utils/items";
+import { isDefined } from "./utils/types";
 import { compareDistances, distance, getSquares } from "./utils/units";
 
 export const AbilityScoreRule = new DndRule("Ability Score", (g) => {
@@ -300,7 +301,7 @@ export const LongRangeAttacksRule = new DndRule("Long Range Attacks", (g) => {
     "BeforeAttack",
     ({ detail: { who, target, weapon, diceType } }) => {
       if (
-        typeof weapon?.shortRange === "number" &&
+        isDefined(weapon?.shortRange) &&
         distance(who, target) > weapon.shortRange
       )
         diceType.add("disadvantage", LongRangeAttacksRule);

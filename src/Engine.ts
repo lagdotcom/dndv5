@@ -104,6 +104,7 @@ import SpellcastingMethod from "./types/SpellcastingMethod";
 import { resolveArea } from "./utils/areas";
 import { modulo } from "./utils/numbers";
 import { getPathAwayFrom, movePoint } from "./utils/points";
+import { isDefined } from "./utils/types";
 import { getSquares } from "./utils/units";
 
 export default class Engine {
@@ -844,7 +845,7 @@ export default class Engine {
 
     const map = new DamageMap(damageInitialiser);
     const multiplier = new MultiplierCollector();
-    if (typeof startingMultiplier !== "undefined")
+    if (isDefined(startingMultiplier))
       multiplier.add(startingMultiplier, source);
 
     const bonus = new BonusCollector();
@@ -994,7 +995,7 @@ export default class Engine {
     bonus.add(amount, source);
 
     const multiplier = new MultiplierCollector();
-    if (typeof startingMultiplier !== "undefined")
+    if (isDefined(startingMultiplier))
       multiplier.add(startingMultiplier, source);
 
     const gather = await this.resolve(

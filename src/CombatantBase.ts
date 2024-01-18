@@ -767,7 +767,7 @@ export default class CombatantBase implements Combatant {
 
   removeFromInventory(item: Item, quantity = 1) {
     const count = this.inventory.get(item);
-    if (typeof count === "undefined" || count < quantity) return false;
+    if (!isDefined(count) || count < quantity) return false;
 
     if (count === quantity) this.inventory.delete(item);
     else this.inventory.set(item, count - quantity);

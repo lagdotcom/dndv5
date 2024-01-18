@@ -8,6 +8,7 @@ import SubscriptionBag from "./SubscriptionBag";
 import Combatant from "./types/Combatant";
 import { AreaTag } from "./types/EffectArea";
 import { SetInitialiser } from "./utils/set";
+import { isDefined } from "./utils/types";
 import { distance } from "./utils/units";
 
 export type AuraActiveChecker = (who: Combatant) => boolean;
@@ -39,7 +40,7 @@ export default class AuraController {
   }
 
   get active() {
-    return typeof this.area !== "undefined";
+    return isDefined(this.area);
   }
 
   setActiveChecker(shouldBeActive: AuraActiveChecker) {

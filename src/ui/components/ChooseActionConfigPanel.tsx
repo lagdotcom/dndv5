@@ -5,6 +5,7 @@ import DamageType from "../../types/DamageType";
 import { checkConfig, getConfigErrors } from "../../utils/config";
 import { getDiceAverage } from "../../utils/dnd";
 import { objectEntries } from "../../utils/objects";
+import { isDefined } from "../../utils/types";
 import usePatcher from "../hooks/usePatcher";
 import { useCallback, useEffect, useMemo } from "../lib";
 import { actionAreas } from "../utils/state";
@@ -23,8 +24,7 @@ function getInitialConfig<T extends object>(
   for (const [key, resolver] of objectEntries<ActionConfig<T>>(
     getConfig(config),
   ))
-    if (typeof resolver.initialValue !== "undefined")
-      config[key] = resolver.initialValue;
+    if (isDefined(resolver.initialValue)) config[key] = resolver.initialValue;
 
   return config;
 }

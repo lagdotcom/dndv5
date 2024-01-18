@@ -2614,7 +2614,7 @@
     }
     removeFromInventory(item, quantity = 1) {
       const count = this.inventory.get(item);
-      if (typeof count === "undefined" || count < quantity)
+      if (!isDefined(count) || count < quantity)
         return false;
       if (count === quantity)
         this.inventory.delete(item);
@@ -4274,7 +4274,7 @@
     g.events.on(
       "BeforeAttack",
       ({ detail: { who, target, weapon, diceType } }) => {
-        if (typeof (weapon == null ? void 0 : weapon.shortRange) === "number" && distance(who, target) > weapon.shortRange)
+        if (isDefined(weapon == null ? void 0 : weapon.shortRange) && distance(who, target) > weapon.shortRange)
           diceType.add("disadvantage", LongRangeAttacksRule);
       }
     );
@@ -5440,7 +5440,7 @@
         return;
       const map = new DamageMap(damageInitialiser);
       const multiplier = new MultiplierCollector();
-      if (typeof startingMultiplier !== "undefined")
+      if (isDefined(startingMultiplier))
         multiplier.add(startingMultiplier, source);
       const bonus = new BonusCollector();
       await this.resolve(
@@ -5559,7 +5559,7 @@
       const bonus = new BonusCollector();
       bonus.add(amount, source);
       const multiplier = new MultiplierCollector();
-      if (typeof startingMultiplier !== "undefined")
+      if (isDefined(startingMultiplier))
         multiplier.add(startingMultiplier, source);
       const gather = await this.resolve(
         new GatherHealEvent({
@@ -6555,7 +6555,7 @@
       );
     }
     get active() {
-      return typeof this.area !== "undefined";
+      return isDefined(this.area);
     }
     setActiveChecker(shouldBeActive) {
       this.shouldBeActive = shouldBeActive;
@@ -6938,7 +6938,7 @@
     }
     setup(g, who) {
       const config = who.getConfig(this.name);
-      if (typeof config === "undefined") {
+      if (!isDefined(config)) {
         console.error(`${who.name} has no config for ${this.name}`);
         return;
       }
@@ -22967,7 +22967,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
   function classnames(...items) {
     const names = [];
     for (const item of items) {
-      if (typeof item === "undefined")
+      if (!isDefined(item))
         continue;
       else if (typeof item === "string")
         names.push(item);
@@ -24084,7 +24084,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     for (const [key, resolver] of objectEntries(
       getConfig(config)
     ))
-      if (typeof resolver.initialValue !== "undefined")
+      if (isDefined(resolver.initialValue))
         config[key] = resolver.initialValue;
     return config;
   }
