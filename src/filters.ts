@@ -79,6 +79,17 @@ export const hasEffect = (
     check: (g, action, value) => value.hasEffect(effect),
   });
 
+export const doesNotHaveEffect = (
+  effect: Effect<unknown>,
+  name = `not ${effect.name}`,
+  message = "affected",
+) =>
+  makeFilter<Combatant>({
+    name,
+    message,
+    check: (g, action, value) => !value.hasEffect(effect),
+  });
+
 export const hasTime = (time: ActionTime) =>
   makeFilter<Combatant>({
     name: `has ${time}`,

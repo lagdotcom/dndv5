@@ -1471,6 +1471,11 @@
     message,
     check: (g, action, value) => value.hasEffect(effect)
   });
+  var doesNotHaveEffect = (effect, name = `not ${effect.name}`, message = "affected") => makeFilter({
+    name,
+    message,
+    check: (g, action, value) => !value.hasEffect(effect)
+  });
   var hasTime = (time) => makeFilter({
     name: `has ${time}`,
     message: "no time",
@@ -11582,6 +11587,77 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   });
   var FireBolt_default = FireBolt;
 
+  // src/spells/cantrip/Guidance.ts
+  var GuidanceEffect = new Effect(
+    "Guidance",
+    "turnStart",
+    (g) => {
+      g.events.on("BeforeCheck", ({ detail: { who, interrupt, bonus } }) => {
+        const config = who.getEffectConfig(GuidanceEffect);
+        if (config)
+          interrupt.add(
+            new YesNoChoice(
+              who,
+              GuidanceEffect,
+              "Guidance",
+              `${who.name} is making an ability check. Use Guidance to gain a d4?`,
+              Priority_default.Normal,
+              async () => {
+                const value = await g.roll({
+                  type: "other",
+                  source: GuidanceEffect,
+                  size: 4,
+                  who
+                });
+                bonus.add(value.values.final, GuidanceEffect);
+                await who.removeEffect(GuidanceEffect);
+                config.affecting.delete(who);
+                if (!config.affecting.size)
+                  await config.caster.endConcentration(Guidance);
+              }
+            )
+          );
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var Guidance = simpleSpell({
+    status: "incomplete",
+    name: "Guidance",
+    level: 0,
+    school: "Divination",
+    concentration: true,
+    v: true,
+    s: true,
+    lists: ["Artificer", "Cleric", "Druid"],
+    description: `You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one ability check of its choice. It can roll the die before or after making the ability check. The spell then ends.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [isAlly])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply({ affected, caster }) {
+      const affecting = /* @__PURE__ */ new Set();
+      for (const target of affected)
+        if (await target.addEffect(
+          GuidanceEffect,
+          { duration: Infinity, caster, affecting },
+          caster
+        ))
+          affecting.add(target);
+      if (affecting.size)
+        caster.concentrateOn({
+          duration: minutes(1),
+          spell: Guidance,
+          async onSpellEnd() {
+            for (const who of affecting)
+              await who.removeEffect(GuidanceEffect);
+          }
+        });
+    }
+  });
+  var Guidance_default = Guidance;
+
   // src/spells/cantrip/Gust.ts
   var Gust = simpleSpell({
     status: "incomplete",
@@ -11995,6 +12071,78 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   });
   var RayOfFrost_default = RayOfFrost;
 
+  // src/spells/cantrip/Resistance.ts
+  var ResistanceEffect = new Effect(
+    "Resistance",
+    "turnStart",
+    (g) => {
+      g.events.on("BeforeSave", ({ detail: { who, interrupt, bonus } }) => {
+        const config = who.getEffectConfig(ResistanceEffect);
+        if (config)
+          interrupt.add(
+            new YesNoChoice(
+              who,
+              ResistanceEffect,
+              "Resistance",
+              `${who.name} is making a saving throw. Use Resistance to gain a d4?`,
+              Priority_default.Normal,
+              async () => {
+                const value = await g.roll({
+                  type: "other",
+                  source: ResistanceEffect,
+                  size: 4,
+                  who
+                });
+                bonus.add(value.values.final, ResistanceEffect);
+                await who.removeEffect(ResistanceEffect);
+                config.affecting.delete(who);
+                if (!config.affecting.size)
+                  await config.caster.endConcentration(Resistance);
+              }
+            )
+          );
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var Resistance = simpleSpell({
+    status: "implemented",
+    name: "Resistance",
+    level: 0,
+    school: "Abjuration",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a miniature cloak",
+    lists: ["Artificer", "Cleric", "Druid"],
+    description: `You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one saving throw of its choice. It can roll the die before or after making the saving throw. The spell then ends.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [isAlly])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply({ affected, caster }) {
+      const affecting = /* @__PURE__ */ new Set();
+      for (const target of affected)
+        if (await target.addEffect(
+          ResistanceEffect,
+          { duration: Infinity, caster, affecting },
+          caster
+        ))
+          affecting.add(target);
+      if (affecting.size)
+        caster.concentrateOn({
+          duration: minutes(1),
+          spell: Resistance,
+          async onSpellEnd() {
+            for (const who of affecting)
+              await who.removeEffect(ResistanceEffect);
+          }
+        });
+    }
+  });
+  var Resistance_default = Resistance;
+
   // src/img/spl/sacred-flame.svg
   var sacred_flame_default = "./sacred-flame-NBJ5YTKD.svg";
 
@@ -12162,6 +12310,34 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     }
   });
   var ShockingGrasp_default = ShockingGrasp;
+
+  // src/spells/cantrip/SpareTheDying.ts
+  var SpareTheDying = simpleSpell({
+    status: "implemented",
+    name: "Spare the Dying",
+    level: 0,
+    school: "Necromancy",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Cleric"],
+    description: `You touch a living creature that has 0 hit points. The creature becomes stable. This spell has no effect on undead or constructs.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [
+        doesNotHaveEffect(Dead),
+        hasEffect(Dying),
+        notOfCreatureType("undead", "construct")
+      ])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(sh) {
+      for (const target of sh.affected) {
+        await target.removeEffect(Dying);
+        await target.addEffect(Stable, { duration: Infinity });
+      }
+    }
+  });
+  var SpareTheDying_default = SpareTheDying;
 
   // src/spells/cantrip/Thaumaturgy.ts
   var Thaumaturgy = simpleSpell({
@@ -15946,6 +16122,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     "blade ward": BladeWard_default,
     "chill touch": ChillTouch_default,
     "fire bolt": FireBolt_default,
+    guidance: Guidance_default,
     gust: Gust_default,
     "magic stone": MagicStone_default,
     "mind sliver": MindSliver_default,
@@ -15953,9 +16130,11 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     "primal savagery": PrimalSavagery_default,
     "produce flame": ProduceFlame_default,
     "ray of frost": RayOfFrost_default,
+    resistance: Resistance_default,
     "sacred flame": SacredFlame_default,
     shillelagh: Shillelagh_default,
     "shocking grasp": ShockingGrasp_default,
+    "spare the dying": SpareTheDying_default,
     thaumaturgy: Thaumaturgy_default,
     thunderclap: Thunderclap_default,
     "vicious mockery": ViciousMockery_default,

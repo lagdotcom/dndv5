@@ -2,6 +2,7 @@ import AcidSplash from "../spells/cantrip/AcidSplash";
 import BladeWard from "../spells/cantrip/BladeWard";
 import ChillTouch from "../spells/cantrip/ChillTouch";
 import FireBolt from "../spells/cantrip/FireBolt";
+import Guidance from "../spells/cantrip/Guidance";
 import Gust from "../spells/cantrip/Gust";
 import MagicStone from "../spells/cantrip/MagicStone";
 import MindSliver from "../spells/cantrip/MindSliver";
@@ -9,9 +10,11 @@ import PoisonSpray from "../spells/cantrip/PoisonSpray";
 import PrimalSavagery from "../spells/cantrip/PrimalSavagery";
 import ProduceFlame from "../spells/cantrip/ProduceFlame";
 import RayOfFrost from "../spells/cantrip/RayOfFrost";
+import Resistance from "../spells/cantrip/Resistance";
 import SacredFlame from "../spells/cantrip/SacredFlame";
 import Shillelagh from "../spells/cantrip/Shillelagh";
 import ShockingGrasp from "../spells/cantrip/ShockingGrasp";
+import SpareTheDying from "../spells/cantrip/SpareTheDying";
 import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import Thunderclap from "../spells/cantrip/Thunderclap";
 import ViciousMockery from "../spells/cantrip/ViciousMockery";
@@ -86,6 +89,7 @@ const allSpells = {
   "blade ward": BladeWard,
   "chill touch": ChillTouch,
   "fire bolt": FireBolt,
+  guidance: Guidance,
   gust: Gust,
   "magic stone": MagicStone,
   "mind sliver": MindSliver,
@@ -93,9 +97,11 @@ const allSpells = {
   "primal savagery": PrimalSavagery,
   "produce flame": ProduceFlame,
   "ray of frost": RayOfFrost,
+  resistance: Resistance,
   "sacred flame": SacredFlame,
   shillelagh: Shillelagh,
   "shocking grasp": ShockingGrasp,
+  "spare the dying": SpareTheDying,
   thaumaturgy: Thaumaturgy,
   thunderclap: Thunderclap,
   "vicious mockery": ViciousMockery,
