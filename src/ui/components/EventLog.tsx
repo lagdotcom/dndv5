@@ -56,8 +56,8 @@ export default function EventLog({ g }: { g: Engine }) {
   const ref = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<VNode[]>([]);
 
-  const { fire } = useTimeout(
-    () => ref.current?.scrollIntoView?.({ behavior: "smooth" }),
+  const { fire } = useTimeout(() =>
+    ref.current?.scrollIntoView?.({ behavior: "smooth" }),
   );
 
   const addMessage = useCallback((el: VNode) => {
