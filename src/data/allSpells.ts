@@ -1,6 +1,7 @@
 import AcidSplash from "../spells/cantrip/AcidSplash";
 import BladeWard from "../spells/cantrip/BladeWard";
 import ChillTouch from "../spells/cantrip/ChillTouch";
+import EldritchBlast from "../spells/cantrip/EldritchBlast";
 import FireBolt from "../spells/cantrip/FireBolt";
 import Guidance from "../spells/cantrip/Guidance";
 import Gust from "../spells/cantrip/Gust";
@@ -88,6 +89,7 @@ const allSpells = {
   "acid splash": AcidSplash,
   "blade ward": BladeWard,
   "chill touch": ChillTouch,
+  "eldritch blast": EldritchBlast,
   "fire bolt": FireBolt,
   guidance: Guidance,
   gust: Gust,

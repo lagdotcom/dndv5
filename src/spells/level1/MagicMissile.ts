@@ -9,7 +9,7 @@ import { atSet } from "../../types/AttackTag";
 import { _dd, _fd } from "../../utils/dice";
 import { scalingSpell } from "../common";
 
-const getDamage = (slot: SpellSlot) => [
+const getMagicMissileDamage = (slot: SpellSlot) => [
   _dd(slot + 2, 4, "force"),
   _fd(slot + 2, "force"),
 ];
@@ -40,7 +40,7 @@ const MagicMissile = scalingSpell<HasAllocations<DiceCount>>({
       [canSee],
     ),
   }),
-  getDamage: (g, caster, method, { slot }) => getDamage(slot ?? 1),
+  getDamage: (g, caster, method, { slot }) => getMagicMissileDamage(slot ?? 1),
   getTargets: (g, caster, { targets }) => targets?.map((e) => e.who) ?? [],
   getAffected: (g, caster, { targets }) => targets.map((e) => e.who),
 

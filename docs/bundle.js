@@ -1975,7 +1975,7 @@
     getAffected,
     getAffectedArea = () => void 0,
     getConfig,
-    getDamage: getDamage2 = () => void 0,
+    getDamage = () => void 0,
     getHeal = () => void 0,
     getTargets,
     status = "missing"
@@ -2002,7 +2002,7 @@
     getAffected,
     getAffectedArea,
     getConfig,
-    getDamage: getDamage2,
+    getDamage,
     getHeal,
     getLevel() {
       return level;
@@ -2030,7 +2030,7 @@
     getAffected,
     getAffectedArea = () => void 0,
     getConfig,
-    getDamage: getDamage2 = () => void 0,
+    getDamage = () => void 0,
     getHeal = () => void 0,
     getTargets,
     status = "missing"
@@ -2090,7 +2090,7 @@
         slot: new SlotResolver(this, actor, method)
       };
     },
-    getDamage: getDamage2,
+    getDamage,
     getHeal,
     getLevel({ slot }) {
       return slot;
@@ -9991,7 +9991,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   };
 
   // src/spells/level1/MagicMissile.ts
-  var getDamage = (slot) => [
+  var getMagicMissileDamage = (slot) => [
     _dd(slot + 2, 4, "force"),
     _fd(slot + 2, "force")
   ];
@@ -10019,7 +10019,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         [canSee]
       )
     }),
-    getDamage: (g, caster, method, { slot }) => getDamage(slot != null ? slot : 1),
+    getDamage: (g, caster, method, { slot }) => getMagicMissileDamage(slot != null ? slot : 1),
     getTargets: (g, caster, { targets }) => {
       var _a;
       return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
@@ -11538,6 +11538,64 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     }
   });
   var ChillTouch_default = ChillTouch;
+
+  // src/spells/cantrip/EldritchBlast.ts
+  var getEldritchBlastDamage = (beams) => [_dd(beams, 10, "force")];
+  var EldritchBlast = simpleSpell({
+    status: "implemented",
+    name: "Eldritch Blast",
+    level: 0,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Warlock"],
+    description: `A beam of crackling energy streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 force damage.
+
+The spell creates more than one beam when you reach higher levels: two beams at 5th level, three beams at 11th level, and four beams at 17th level. You can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.`,
+    isHarmful: true,
+    getConfig: (g, caster) => ({
+      targets: new AllocationResolver(
+        g,
+        "Beams",
+        getCantripDice(caster),
+        getCantripDice(caster),
+        120,
+        []
+      )
+    }),
+    getDamage: (g, caster) => getEldritchBlastDamage(getCantripDice(caster)),
+    getTargets: (g, caster, { targets }) => {
+      var _a;
+      return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
+    },
+    getAffected: (g, caster, { targets }) => targets.map((e2) => e2.who),
+    async apply(sh, { targets }) {
+      const damage = getEldritchBlastDamage(1);
+      for (const { amount, who } of targets)
+        for (let i2 = 0; i2 < amount; i2++) {
+          const { attack, hit, critical, target } = await sh.attack({
+            target: who,
+            type: "ranged"
+          });
+          if (hit) {
+            const damageInitialiser = await sh.rollDamage({
+              critical,
+              damage,
+              target,
+              tags: ["ranged"]
+            });
+            await sh.damage({
+              attack,
+              critical,
+              damageInitialiser,
+              damageType: "force",
+              target
+            });
+          }
+        }
+    }
+  });
+  var EldritchBlast_default = EldritchBlast;
 
   // src/img/spl/fire-bolt.svg
   var fire_bolt_default = "./fire-bolt-OQ6JULT4.svg";
@@ -16121,6 +16179,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     "acid splash": AcidSplash_default,
     "blade ward": BladeWard_default,
     "chill touch": ChillTouch_default,
+    "eldritch blast": EldritchBlast_default,
     "fire bolt": FireBolt_default,
     guidance: Guidance_default,
     gust: Gust_default,
