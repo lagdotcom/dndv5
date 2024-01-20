@@ -1,14 +1,14 @@
 import {
   Amphibious,
+  BonusSpellEntry,
+  bonusSpellResourceFinder,
   bonusSpellsFeature,
   Darkvision60,
   nonCombatFeature,
 } from "../features/common";
+import { PCLevel } from "../flavours";
 import { LongRestResource } from "../resources";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
-import FogCloud from "../spells/level1/FogCloud";
-import GustOfWind from "../spells/level2/GustOfWind";
-import WallOfWater from "../spells/level3/WallOfWater";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
@@ -27,20 +27,16 @@ const WallOfWaterResource = new LongRestResource(
   1,
 );
 
-const ControlAirAndWaterSpells = [
-  { level: 1, spell: FogCloud, resource: FogCloudResource },
-  { level: 3, spell: GustOfWind, resource: GustOfWindResource },
-  { level: 5, spell: WallOfWater, resource: WallOfWaterResource },
+const ControlAirAndWaterSpells: BonusSpellEntry<PCLevel>[] = [
+  { level: 1, spell: "fog cloud", resource: FogCloudResource },
+  { level: 3, spell: "gust of wind", resource: GustOfWindResource },
+  { level: 5, spell: "wall of water", resource: WallOfWaterResource },
 ];
 
 const ControlAirAndWaterMethod = new InnateSpellcasting(
   "Control Air and Water",
   "cha",
-  (spell) => {
-    if (spell === FogCloud) return FogCloudResource;
-    if (spell === GustOfWind) return GustOfWindResource;
-    if (spell === WallOfWater) return WallOfWaterResource;
-  },
+  bonusSpellResourceFinder(ControlAirAndWaterSpells),
 );
 
 const ControlAirAndWater = bonusSpellsFeature(

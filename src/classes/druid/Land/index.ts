@@ -8,27 +8,6 @@ import {
 import ConfiguredFeature from "../../../features/ConfiguredFeature";
 import SimpleFeature from "../../../features/SimpleFeature";
 import { PCClassLevel } from "../../../flavours";
-import Barkskin from "../../../spells/level2/Barkskin";
-import Blur from "../../../spells/level2/Blur";
-import Darkness from "../../../spells/level2/Darkness";
-import HoldPerson from "../../../spells/level2/HoldPerson";
-import MirrorImage from "../../../spells/level2/MirrorImage";
-import MistyStep from "../../../spells/level2/MistyStep";
-import Silence from "../../../spells/level2/Silence";
-import SpiderClimb from "../../../spells/level2/SpiderClimb";
-import SpikeGrowth from "../../../spells/level2/SpikeGrowth";
-import Web from "../../../spells/level2/Web";
-import LightningBolt from "../../../spells/level3/LightningBolt";
-import MeldIntoStone from "../../../spells/level3/MeldIntoStone";
-import SleetStorm from "../../../spells/level3/SleetStorm";
-import Slow from "../../../spells/level3/Slow";
-import WaterBreathing from "../../../spells/level3/WaterBreathing";
-import WaterWalk from "../../../spells/level3/WaterWalk";
-import ControlWater from "../../../spells/level4/ControlWater";
-import FreedomOfMovement from "../../../spells/level4/FreedomOfMovement";
-import IceStorm from "../../../spells/level4/IceStorm";
-import Stoneskin from "../../../spells/level4/Stoneskin";
-import ConeOfCold from "../../../spells/level5/ConeOfCold";
 import { ctSet } from "../../../types/CreatureType";
 import PCSubclass from "../../../types/PCSubclass";
 import { objectEntries } from "../../../utils/objects";
@@ -63,84 +42,84 @@ type LandType =
 
 const bonusSpells: Record<LandType, BonusSpellEntry<PCClassLevel>[]> = {
   arctic: [
-    { level: 3, spell: HoldPerson },
-    { level: 3, spell: SpikeGrowth },
-    { level: 5, spell: SleetStorm },
-    { level: 5, spell: Slow },
-    { level: 7, spell: FreedomOfMovement },
-    { level: 7, spell: IceStorm },
-    // { level: 9, spell: CommuneWithNature },
-    { level: 9, spell: ConeOfCold },
+    { level: 3, spell: "hold person" },
+    { level: 3, spell: "spike growth" },
+    { level: 5, spell: "sleet storm" },
+    { level: 5, spell: "slow" },
+    { level: 7, spell: "freedom of movement" },
+    { level: 7, spell: "ice storm" },
+    // { level: 9, spell: 'commune with nature' },
+    { level: 9, spell: "cone of cold" },
   ],
   coast: [
-    { level: 3, spell: MirrorImage },
-    { level: 3, spell: MistyStep },
-    { level: 5, spell: WaterBreathing },
-    { level: 5, spell: WaterWalk },
-    { level: 7, spell: ControlWater },
-    { level: 7, spell: FreedomOfMovement },
-    // { level: 9, spell: ConjureElemental },
-    // { level: 9, spell: Scrying },
+    { level: 3, spell: "mirror image" },
+    { level: 3, spell: "misty step" },
+    { level: 5, spell: "water breathing" },
+    { level: 5, spell: "water walk" },
+    { level: 7, spell: "control water" },
+    { level: 7, spell: "freedom of movement" },
+    // { level: 9, spell: 'conjure elemental' },
+    // { level: 9, spell: 'scrying' },
   ],
   desert: [
-    { level: 3, spell: Blur },
-    { level: 3, spell: Silence },
-    // { level: 5, spell: CreateFoodAndWater },
-    // { level: 5, spell: ProtectionFromEnergy },
-    // TODO { level: 7, spell: Blight },
-    // { level: 7, spell: HallucinatoryTerrain },
-    // TODO { level: 9, spell: InsectPlague },
-    // TODO { level: 9, spell: WallOfStone },
+    { level: 3, spell: "blur" },
+    { level: 3, spell: "silence" },
+    // { level: 5, spell: 'create food and water' },
+    // TODO { level: 5, spell: 'protection from energy' },
+    // TODO { level: 7, spell: 'blight' },
+    // { level: 7, spell: 'hallucinatory terrain' },
+    // TODO { level: 9, spell: 'insect plague' },
+    // TODO { level: 9, spell: 'wall of stone' },
   ],
   forest: [
-    { level: 3, spell: Barkskin },
-    { level: 3, spell: SpiderClimb },
-    // TODO { level: 5, spell: CallLightning },
-    // { level: 5, spell: PlantGrowth },
-    // { level: 7, spell: Divination },
-    { level: 7, spell: FreedomOfMovement },
-    // { level: 9, spell: CommuneWithNature },
-    // { level: 9, spell: TreeStride },
+    { level: 3, spell: "barkskin" },
+    { level: 3, spell: "spider climb" },
+    // TODO { level: 5, spell: 'call lightning' },
+    // { level: 5, spell: 'plant growth' },
+    // { level: 7, spell: 'divination' },
+    { level: 7, spell: "freedom of movement" },
+    // { level: 9, spell: 'commune with nature' },
+    // { level: 9, spell: 'tree stride' },
   ],
   grassland: [
-    // TODO { level: 3, spell: Invisibility },
-    // { level: 3, spell: PassWithoutTrade },
-    // { level: 5, spell: Daylight },
-    // TODO { level: 5, spell: Haste },
-    // { level: 7, spell: Divination },
-    { level: 7, spell: FreedomOfMovement },
-    // { level: 9, spell: Dream },
-    // TODO { level: 9, spell: InsectPlague },
+    // TODO { level: 3, spell: 'invisibility' },
+    // { level: 3, spell: 'pass without trace' },
+    // { level: 5, spell: 'daylight' },
+    // TODO { level: 5, spell: 'haste' },
+    // { level: 7, spell: 'divination' },
+    { level: 7, spell: "freedom of movement" },
+    // { level: 9, spell: 'dream' },
+    // TODO { level: 9, spell: 'insect plague' },
   ],
   mountain: [
-    { level: 3, spell: SpiderClimb },
-    { level: 3, spell: SpikeGrowth },
-    { level: 5, spell: LightningBolt },
-    { level: 5, spell: MeldIntoStone },
-    // { level: 7, spell: StoneShape },
-    { level: 7, spell: Stoneskin },
-    // { level: 9, spell: Passwall },
-    // { level: 9, spell: WallOfStone },
+    { level: 3, spell: "spider climb" },
+    { level: 3, spell: "spike growth" },
+    { level: 5, spell: "lightning bolt" },
+    { level: 5, spell: "meld into stone" },
+    // { level: 7, spell: 'stone shape' },
+    { level: 7, spell: "stoneskin" },
+    // { level: 9, spell: 'passwall' },
+    // { level: 9, spell: 'wall of stone' },
   ],
   swamp: [
-    { level: 3, spell: Darkness },
-    // TODO { level: 3, spell: MelfsAcidArrow },
-    { level: 5, spell: WaterWalk },
-    // TODO { level: 5, spell: StinkingCloud },
-    { level: 7, spell: FreedomOfMovement },
-    // { level: 7, spell: LocateCreature },
-    // TODO { level: 9, spell: InsectPlague },
-    // { level: 9, spell: Scrying },
+    { level: 3, spell: "darkness" },
+    // TODO { level: 3, spell: "melf's acid arrow" },
+    { level: 5, spell: "water walk" },
+    // TODO { level: 5, spell: 'stinking cloud' },
+    { level: 7, spell: "freedom of movement" },
+    // { level: 7, spell: 'locate creature' },
+    // TODO { level: 9, spell: 'insect plague' },
+    // { level: 9, spell: 'scrying' },
   ],
   Underdark: [
-    { level: 3, spell: SpiderClimb },
-    { level: 3, spell: Web },
-    // { level: 5, spell: GaseousForm },
-    // TODO { level: 5, spell: StinkingCloud },
-    // TODO { level: 7, spell: GreaterInvisibility },
-    // { level: 7, spell: StoneShape },
-    // TODO { level: 9, spell: Cloudkill },
-    // TODO { level: 9, spell: InsectPlague },
+    { level: 3, spell: "spider climb" },
+    { level: 3, spell: "web" },
+    // { level: 5, spell: 'gaseous form' },
+    // TODO { level: 5, spell: 'stinking cloud' },
+    // TODO { level: 7, spell: 'greater invisibility' },
+    // { level: 7, spell: 'stoneshape' },
+    // TODO { level: 9, spell: 'cloudkill' },
+    // TODO { level: 9, spell: 'insect plague' },
   ],
 };
 

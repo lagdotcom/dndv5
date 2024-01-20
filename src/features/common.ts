@@ -1,5 +1,6 @@
 import CastSpell from "../actions/CastSpell";
 import allFeatures, { FeatureName } from "../data/allFeatures";
+import allSpells, { SpellName } from "../data/allSpells";
 import Engine from "../Engine";
 import { Description, Feet, PCClassLevel, PCLevel } from "../flavours";
 import { spellImplementationWarning } from "../spells/common";
@@ -21,8 +22,13 @@ export const Amphibious = notImplementedFeature(
 export interface BonusSpellEntry<T extends number> {
   level: T;
   resource?: Resource;
-  spell: Spell;
+  spell: SpellName;
 }
+
+export const bonusSpellResourceFinder =
+  <T extends number>(entries: BonusSpellEntry<T>[]) =>
+  (spell: Spell) =>
+    entries.find((entry) => entry.spell === spell.name)?.resource;
 
 export function bonusSpellsFeature(
   name: string,
@@ -55,13 +61,13 @@ export function bonusSpellsFeature<T extends PCClassLevel | PCLevel>(
     const casterLevel =
       levelType === "level" ? me.level : me.getClassLevel(levelType, 1);
 
-    const spells = entries.filter((entry) => entry.level <= casterLevel);
-    for (const { resource, spell } of spells) {
+    const activeEntries = entries.filter((entry) => entry.level <= casterLevel);
+    for (const { resource, spell } of activeEntries) {
       if (resource) me.initResource(resource);
       if (addAsList) {
-        me.preparedSpells.add(spell);
-        method.addCastableSpell?.(spell, me);
-      } else spellImplementationWarning(spell, me);
+        me.preparedSpells.add(allSpells[spell]);
+        method.addCastableSpell?.(allSpells[spell], me);
+      } else spellImplementationWarning(allSpells[spell], me);
     }
 
     me.spellcastingMethods.add(method);
@@ -69,8 +75,8 @@ export function bonusSpellsFeature<T extends PCClassLevel | PCLevel>(
     if (!addAsList)
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
-          for (const { spell } of spells)
-            actions.push(new CastSpell(g, me, method, spell));
+          for (const { spell } of activeEntries)
+            actions.push(new CastSpell(g, me, method, allSpells[spell]));
       });
 
     additionalSetup?.(g, me);

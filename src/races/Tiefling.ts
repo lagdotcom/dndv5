@@ -1,14 +1,12 @@
 import {
   BonusSpellEntry,
+  bonusSpellResourceFinder,
   bonusSpellsFeature,
   Darkvision60,
 } from "../features/common";
 import { PCLevel } from "../flavours";
 import { LongRestResource } from "../resources";
-import Thaumaturgy from "../spells/cantrip/Thaumaturgy";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
-import HellishRebuke from "../spells/level1/HellishRebuke";
-import Darkness from "../spells/level2/Darkness";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
@@ -36,18 +34,15 @@ const HellishRebukeResource = new LongRestResource(
 const DarknessResource = new LongRestResource("Infernal Legacy: Darkness", 1);
 
 const InfernalLegacySpells: BonusSpellEntry<PCLevel>[] = [
-  { level: 1, spell: Thaumaturgy },
-  { level: 3, spell: HellishRebuke, resource: HellishRebukeResource },
-  { level: 5, spell: Darkness, resource: DarknessResource },
+  { level: 1, spell: "thaumaturgy" },
+  { level: 3, spell: "hellish rebuke", resource: HellishRebukeResource },
+  { level: 5, spell: "darkness", resource: DarknessResource },
 ];
 
 const InfernalLegacyMethod = new InnateSpellcasting(
   "Infernal Legacy",
   "cha",
-  (spell) => {
-    if (spell === HellishRebuke) return HellishRebukeResource;
-    if (spell === Darkness) return DarknessResource;
-  },
+  bonusSpellResourceFinder(InfernalLegacySpells),
 );
 
 const InfernalLegacy = bonusSpellsFeature(

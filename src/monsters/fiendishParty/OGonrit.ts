@@ -19,8 +19,6 @@ import { isEnemy } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
-import GuidingBolt from "../../spells/level1/GuidingBolt";
-import MassHealingWord from "../../spells/level3/MassHealingWord";
 import AbilityName from "../../types/AbilityName";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
@@ -151,8 +149,8 @@ const Spellcasting = bonusSpellsFeature(
   "level",
   SpellcastingMethod,
   [
-    { level: 1, spell: GuidingBolt },
-    { level: 5, spell: MassHealingWord },
+    { level: 1, spell: "guiding bolt" },
+    { level: 5, spell: "mass healing word" },
   ],
 );
 

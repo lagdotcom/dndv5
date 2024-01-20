@@ -4,10 +4,6 @@ import {
 } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
 import EvaluateLater from "../../../interruptions/EvaluateLater";
-import BurningHands from "../../../spells/level1/BurningHands";
-import Command from "../../../spells/level1/Command";
-import Fireball from "../../../spells/level3/Fireball";
-import WallOfFire from "../../../spells/level4/WallOfFire";
 import PCSubclass from "../../../types/PCSubclass";
 import Priority from "../../../types/Priority";
 import { WarlockPactMagic } from "..";
@@ -18,16 +14,16 @@ const ExpandedSpellList = bonusSpellsFeature(
   "Warlock",
   WarlockPactMagic,
   [
-    { level: 1, spell: BurningHands },
-    { level: 1, spell: Command },
-    // { level: 2, spell: BlindnessDeafness },
-    // { level: 2, spell: ScorchingRay },
-    { level: 3, spell: Fireball },
-    // { level: 3, spell: StinkingCloud },
-    // { level: 4, spell: FireShield },
-    { level: 4, spell: WallOfFire },
-    // { level: 5, spell: FlameStrike },
-    // { level: 5, spell: Hallow },
+    { level: 1, spell: "burning hands" },
+    { level: 1, spell: "command" },
+    // TODO { level: 2, spell: 'blindness/deafness' },
+    // TODO { level: 2, spell: 'scorching ray' },
+    { level: 3, spell: "fireball" },
+    // TODO { level: 3, spell: 'stinking cloud' },
+    { level: 4, spell: "fire shield" },
+    { level: 4, spell: "wall of fire" },
+    // TODO { level: 5, spell: 'flame strike' },
+    // { level: 5, spell: 'hallow' },
   ],
   "Warlock",
 );

@@ -4,9 +4,6 @@ import {
   notImplementedFeature,
 } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
-import ProtectionFromEvilAndGood from "../../../spells/level1/ProtectionFromEvilAndGood";
-import Sanctuary from "../../../spells/level1/Sanctuary";
-import LesserRestoration from "../../../spells/level2/LesserRestoration";
 import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
 import { TurnUndeadAction } from "../../cleric/TurnUndead";
@@ -81,16 +78,16 @@ const OathSpells = bonusSpellsFeature(
   "Paladin",
   PaladinSpellcasting,
   [
-    { level: 3, spell: ProtectionFromEvilAndGood },
-    { level: 3, spell: Sanctuary },
-    { level: 5, spell: LesserRestoration },
-    // TODO { level: 5, spell: ZoneOfTruth },
-    // TODO { level: 9, spell: BeaconOfHope },
-    // TODO { level: 9, spell: DispelMagic },
-    // TODO { level: 13, spell: FreedomOfMovement },
-    // TODO { level: 13, spell: GuardianOfFaith },
-    // TODO { level: 17, spell: Commune },
-    // TODO { level: 17, spell: FlameStrike },
+    { level: 3, spell: "protection from evil and good" },
+    { level: 3, spell: "sanctuary" },
+    { level: 5, spell: "lesser restoration" },
+    // { level: 5, spell: 'zone of truth' },
+    // TODO { level: 9, spell: 'beacon of hope' },
+    // TODO { level: 9, spell: 'dispel magic' },
+    // TODO { level: 13, spell: 'freedom of movement' },
+    // TODO { level: 13, spell: 'guardian of faith' },
+    // { level: 17, spell: 'commune' },
+    // TODO { level: 17, spell: 'flame strike' },
   ],
   "Paladin",
 );

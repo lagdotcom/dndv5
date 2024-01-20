@@ -22,7 +22,6 @@ import YesNoChoice from "../../interruptions/YesNoChoice";
 import { getTeleportation } from "../../movement";
 import TargetResolver from "../../resolvers/TargetResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
-import HealingWord from "../../spells/level1/HealingWord";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import Priority from "../../types/Priority";
@@ -280,7 +279,7 @@ const YulashSpellcasting = bonusSpellsFeature(
   "Yulash can cast healing word at will.",
   "level",
   YulashSpellcastingMethod,
-  [{ level: 1, spell: HealingWord }],
+  [{ level: 1, spell: "healing word" }],
 );
 
 class DancingStepAction extends AbstractAction<HasTarget> {

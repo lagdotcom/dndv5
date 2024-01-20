@@ -1,15 +1,17 @@
 import CastSpell from "../actions/CastSpell";
 import {
+  BonusSpellEntry,
+  bonusSpellResourceFinder,
   bonusSpellsFeature,
   Darkvision60,
   notImplementedFeature,
 } from "../features/common";
 import SimpleFeature from "../features/SimpleFeature";
+import { PCLevel } from "../flavours";
 import { LongRestResource } from "../resources";
 import ProduceFlame from "../spells/cantrip/ProduceFlame";
 import { spellImplementationWarning } from "../spells/common";
 import InnateSpellcasting from "../spells/InnateSpellcasting";
-import BurningHands from "../spells/level1/BurningHands";
 import Levitate from "../spells/level2/Levitate";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
@@ -69,12 +71,16 @@ const FireResistance = resistanceFeature(
 );
 
 const ReachToTheBlazeResource = new LongRestResource("Reach to the Blaze", 1);
+
+const ReachToTheBlazeSpells: BonusSpellEntry<PCLevel>[] = [
+  { level: 1, spell: "produce flame" },
+  { level: 3, spell: "burning hands", resource: ReachToTheBlazeResource },
+];
+
 const ReachToTheBlazeMethod = new InnateSpellcasting(
   "Reach to the Blaze",
   "con",
-  (spell) => {
-    if (spell === BurningHands) return ReachToTheBlazeResource;
-  },
+  bonusSpellResourceFinder(ReachToTheBlazeSpells),
 );
 
 const ReachToTheBlaze = bonusSpellsFeature(
@@ -82,10 +88,7 @@ const ReachToTheBlaze = bonusSpellsFeature(
   `You know the produce flame cantrip. Once you reach 3rd level, you can cast the burning hands spell once with this trait as a 1st-level spell, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells.`,
   "level",
   ReachToTheBlazeMethod,
-  [
-    { level: 1, spell: ProduceFlame },
-    { level: 3, spell: BurningHands, resource: ReachToTheBlazeResource },
-  ],
+  ReachToTheBlazeSpells,
   undefined,
   (g, me) => {
     me.knownSpells.add(ProduceFlame);
