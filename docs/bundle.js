@@ -13971,6 +13971,46 @@ At the end of each of its turns, and each time it takes damage, the target can m
   });
   var Aid_default = Aid;
 
+  // src/spells/level2/Barkskin.ts
+  var BarkskinEffect = new Effect(
+    "Barkskin",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetACMethods", ({ detail: { who, methods } }) => {
+        if (who.hasEffect(BarkskinEffect))
+          methods.push({ name: "Barkskin", uses: /* @__PURE__ */ new Set(), ac: 16 });
+      });
+    },
+    { tags: ["magic"] }
+  );
+  var Barkskin = simpleSpell({
+    status: "implemented",
+    name: "Barkskin",
+    level: 2,
+    school: "Transmutation",
+    concentration: true,
+    v: true,
+    s: true,
+    m: "a handful of oak bark",
+    lists: ["Druid", "Ranger"],
+    description: `You touch a willing creature. Until the spell ends, the target's skin has a rough, bark-like appearance, and the target's AC can't be less than 16, regardless of what kind of armor it is wearing.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [isAlly])
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply({ caster }, { target }) {
+      const duration = hours(1);
+      if (await target.addEffect(BarkskinEffect, { duration }, caster))
+        caster.concentrateOn({
+          spell: Barkskin,
+          duration,
+          onSpellEnd: () => target.removeEffect(BarkskinEffect)
+        });
+    }
+  });
+  var Barkskin_default = Barkskin;
+
   // src/spells/level2/Blur.ts
   var BlurEffect = new Effect(
     "Blur",
@@ -16344,6 +16384,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     sleep: Sleep_default,
     thunderwave: Thunderwave_default,
     aid: Aid_default,
+    barkskin: Barkskin_default,
     blur: Blur_default,
     darkness: Darkness_default,
     "enlarge/reduce": EnlargeReduce_default,
@@ -17575,9 +17616,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       "entangle",
       "longstrider",
       // TODO "speak with animals",
-      "thunderwave"
+      "thunderwave",
       // TODO "animal messenger",
-      // TODO "barkskin",
+      "barkskin"
     ],
     items: [{ name: "quarterstaff", equip: true }]
   };
@@ -22327,7 +22368,7 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       // TODO { level: 9, spell: WallOfStone },
     ],
     forest: [
-      // TODO { level: 3, spell: Barkskin },
+      { level: 3, spell: Barkskin_default },
       { level: 3, spell: SpiderClimb_default },
       // TODO { level: 5, spell: CallLightning },
       // { level: 5, spell: PlantGrowth },

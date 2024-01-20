@@ -46,6 +46,7 @@ import ShieldOfFaith from "../spells/level1/ShieldOfFaith";
 import Sleep from "../spells/level1/Sleep";
 import Thunderwave from "../spells/level1/Thunderwave";
 import Aid from "../spells/level2/Aid";
+import Barkskin from "../spells/level2/Barkskin";
 import Blur from "../spells/level2/Blur";
 import Darkness from "../spells/level2/Darkness";
 import EnlargeReduce from "../spells/level2/EnlargeReduce";
@@ -137,6 +138,7 @@ const allSpells = {
   thunderwave: Thunderwave,
 
   aid: Aid,
+  barkskin: Barkskin,
   blur: Blur,
   darkness: Darkness,
   "enlarge/reduce": EnlargeReduce,

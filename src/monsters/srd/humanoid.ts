@@ -468,7 +468,7 @@ export const Druid: MonsterTemplate = {
     // TODO "speak with animals",
     "thunderwave",
     // TODO "animal messenger",
-    // TODO "barkskin",
+    "barkskin",
   ],
   items: [{ name: "quarterstaff", equip: true }],
 };

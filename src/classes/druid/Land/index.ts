@@ -8,6 +8,7 @@ import {
 import ConfiguredFeature from "../../../features/ConfiguredFeature";
 import SimpleFeature from "../../../features/SimpleFeature";
 import { PCClassLevel } from "../../../flavours";
+import Barkskin from "../../../spells/level2/Barkskin";
 import Blur from "../../../spells/level2/Blur";
 import Darkness from "../../../spells/level2/Darkness";
 import HoldPerson from "../../../spells/level2/HoldPerson";
@@ -92,7 +93,7 @@ const bonusSpells: Record<LandType, BonusSpellEntry<PCClassLevel>[]> = {
     // TODO { level: 9, spell: WallOfStone },
   ],
   forest: [
-    // TODO { level: 3, spell: Barkskin },
+    { level: 3, spell: Barkskin },
     { level: 3, spell: SpiderClimb },
     // TODO { level: 5, spell: CallLightning },
     // { level: 5, spell: PlantGrowth },
