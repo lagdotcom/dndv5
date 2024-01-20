@@ -18406,7 +18406,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         configs: {
           "Fighting Style (Fighter)": "Fighting Style: Great Weapon Fighting"
         }
-      }
+      },
+      { class: "Fighter" }
     ],
     items: [
       { name: "longsword", equip: true },
@@ -18472,11 +18473,20 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       proficiencies: ["Survival", "Investigation"],
       languages: ["Primordial", "Infernal"]
     },
-    levels: [{ class: "Paladin", proficiencies: ["Insight", "Religion"] }],
+    levels: [
+      { class: "Paladin", proficiencies: ["Insight", "Religion"] },
+      { class: "Paladin" }
+    ],
     items: [
       { name: "chain mail", equip: true },
       { name: "morningstar", equip: true },
       { name: "shield", equip: true }
+    ],
+    prepared: [
+      "command",
+      "cure wounds",
+      // TODO "detect magic",
+      "divine favor"
     ]
   };
   var Marvoril_default = Marvoril;
@@ -18510,7 +18520,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
           "Medicine",
           "Survival"
         ]
-      }
+      },
+      { class: "Bard" }
     ],
     items: [
       { name: "leather armor", equip: true },
@@ -18523,6 +18534,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       // "comprehend languages",
       "healing word",
       "hideous laughter",
+      // "illusory script",
       "sleep"
     ]
   };
@@ -19663,7 +19675,7 @@ You learn two additional spells from any classes at 14th level and again at 18th
         g,
         actor,
         "Action Surge",
-        "implemented",
+        "incomplete",
         {},
         {
           description: `On your turn, you can take one additional action.`,

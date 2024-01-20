@@ -20,11 +20,20 @@ const Marvoril: PCTemplate = {
     proficiencies: ["Survival", "Investigation"],
     languages: ["Primordial", "Infernal"],
   },
-  levels: [{ class: "Paladin", proficiencies: ["Insight", "Religion"] }],
+  levels: [
+    { class: "Paladin", proficiencies: ["Insight", "Religion"] },
+    { class: "Paladin" },
+  ],
   items: [
     { name: "chain mail", equip: true },
     { name: "morningstar", equip: true },
     { name: "shield", equip: true },
+  ],
+  prepared: [
+    "command",
+    "cure wounds",
+    // TODO "detect magic",
+    "divine favor",
   ],
 };
 export default Marvoril;

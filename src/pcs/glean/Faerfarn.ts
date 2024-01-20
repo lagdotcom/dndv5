@@ -17,6 +17,7 @@ const Faerfarn: PCTemplate = {
         "Fighting Style (Fighter)": "Fighting Style: Great Weapon Fighting",
       },
     },
+    { class: "Fighter" },
   ],
   items: [
     { name: "longsword", equip: true },

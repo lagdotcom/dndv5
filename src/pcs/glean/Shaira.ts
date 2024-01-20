@@ -28,6 +28,7 @@ const Shaira: PCTemplate = {
         "Survival",
       ],
     },
+    { class: "Bard" },
   ],
   items: [
     { name: "leather armor", equip: true },
@@ -41,6 +42,7 @@ const Shaira: PCTemplate = {
     // "comprehend languages",
     "healing word",
     "hideous laughter",
+    // "illusory script",
     "sleep",
   ],
 };

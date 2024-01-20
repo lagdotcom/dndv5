@@ -20,13 +20,14 @@ const UsedActionSurgeThisTurn = new Effect(
   { quiet: true },
 );
 
+// TODO this works with 'actions' but not 'attacks'
 class ActionSurgeAction extends AbstractAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
       actor,
       "Action Surge",
-      "implemented",
+      "incomplete",
       {},
       {
         description: `On your turn, you can take one additional action.`,
