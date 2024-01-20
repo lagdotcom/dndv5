@@ -1,13 +1,13 @@
 import iconUrl from "@img/spl/counterspell.svg";
 
-import CastSpell, { getSpellChecker } from "../../actions/CastSpell";
+import { getSpellChecker } from "../../actions/CastSpell";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { makeIcon } from "../../colours";
-import { HasTarget, Scales } from "../../configs";
+import { HasTarget } from "../../configs";
 import DndRule from "../../DndRule";
 import { canSee } from "../../filters";
 import PickFromListChoice, {
-  PickChoice,
+  makeChoice,
 } from "../../interruptions/PickFromListChoice";
 import FakeResolver from "../../resolvers/FakeResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -20,7 +20,6 @@ import { enumerate } from "../../utils/numbers";
 import { scalingSpell } from "../common";
 
 type Config = HasTarget & { spell: Spell; success: SuccessResponseCollector };
-type CastCounterspell = CastSpell<Config & Scales>;
 
 const CounterspellIcon = makeIcon(iconUrl);
 
@@ -70,10 +69,7 @@ new DndRule("Counterspell", (g) => {
       );
 
       for (const who of others) {
-        const actions: PickChoice<{
-          action: CastCounterspell;
-          config: Config & Scales;
-        }>[] = g
+        const choices = g
           .getActions(who)
           .filter(isCounterspell)
           .flatMap((action) =>
@@ -83,13 +79,15 @@ new DndRule("Counterspell", (g) => {
             )
               .map((slot) => ({ slot, target: caster, success, spell }))
               .filter((config) => checkConfig(g, action, config))
-              .map((config) => ({
-                label: `cast Counterspell at level ${config.slot}`,
-                value: { action, config },
-              })),
+              .map((config) =>
+                makeChoice(
+                  { action, config },
+                  `cast Counterspell at level ${config.slot}`,
+                ),
+              ),
           );
 
-        if (actions.length)
+        if (choices.length)
           interrupt.add(
             new PickFromListChoice(
               who,
@@ -97,7 +95,7 @@ new DndRule("Counterspell", (g) => {
               "Counterspell",
               `${caster.name} is casting a spell. Should ${who.name} cast Counterspell as a reaction?`,
               Priority.ChangesOutcome,
-              actions,
+              choices,
               async ({ action, config }) => g.act(action, config),
               true,
             ),

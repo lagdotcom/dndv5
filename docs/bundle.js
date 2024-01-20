@@ -2841,16 +2841,48 @@
   // src/types/CheckTag.ts
   var chSet = (...items) => new Set(items);
 
+  // src/events/ListChoiceEvent.ts
+  var ListChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("ListChoice", { detail });
+    }
+  };
+
+  // src/interruptions/PickFromListChoice.ts
+  var makeChoice = (value, label, disabled) => ({ value, label, disabled });
+  var makeStringChoice = (value, label = value, disabled) => ({ value, label, disabled });
+  var PickFromListChoice = class {
+    constructor(who, source, title, text, priority, items, chosen, allowNone = false, isStillValid) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.priority = priority;
+      this.items = items;
+      this.chosen = chosen;
+      this.allowNone = allowNone;
+      this.isStillValid = isStillValid;
+    }
+    async apply(g) {
+      var _a;
+      const choice = await new Promise(
+        (resolve) => g.fire(new ListChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        return (_a = this.chosen) == null ? void 0 : _a.call(this, choice);
+    }
+  };
+
   // src/actions/common.ts
   var GrappleChoices = [
-    {
-      label: "Strength (Athletics)",
-      value: { ability: "str", skill: "Athletics" }
-    },
-    {
-      label: "Dexterity (Acrobatics)",
-      value: { ability: "dex", skill: "Acrobatics" }
-    }
+    makeChoice(
+      { ability: "str", skill: "Athletics" },
+      "Strength (Athletics)"
+    ),
+    makeChoice(
+      { ability: "dex", skill: "Acrobatics" },
+      "Dexterity (Acrobatics)"
+    )
   ];
 
   // src/actions/EscapeGrappleAction.ts
@@ -2995,11 +3027,12 @@
 
   // src/interruptions/EvaluateLater.ts
   var EvaluateLater = class {
-    constructor(who, source, priority, apply) {
+    constructor(who, source, priority, apply, isStillValid) {
       this.who = who;
       this.source = source;
       this.priority = priority;
       this.apply = apply;
+      this.isStillValid = isStillValid;
     }
   };
 
@@ -3791,36 +3824,6 @@
     }
   };
 
-  // src/events/ListChoiceEvent.ts
-  var ListChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("ListChoice", { detail });
-    }
-  };
-
-  // src/interruptions/PickFromListChoice.ts
-  var PickFromListChoice = class {
-    constructor(who, source, title, text, priority, items, chosen, allowNone = false, isStillValid) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.priority = priority;
-      this.items = items;
-      this.chosen = chosen;
-      this.allowNone = allowNone;
-      this.isStillValid = isStillValid;
-    }
-    async apply(g) {
-      var _a;
-      const choice = await new Promise(
-        (resolve) => g.fire(new ListChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        return (_a = this.chosen) == null ? void 0 : _a.call(this, choice);
-    }
-  };
-
   // src/actions/GrappleAction.ts
   var isNotGrappling = (who) => ({
     name: "not grappling",
@@ -3935,8 +3938,8 @@
 
   // src/actions/ShoveAction.ts
   var shoveTypeChoices = [
-    { label: "knock prone", value: "prone" },
-    { label: "push 5 feet away", value: "push" }
+    makeChoice("prone", "knock prone"),
+    makeChoice("push", "push 5 feet away")
   ];
   var ShoveAction = class extends AbstractAttackAction {
     constructor(g, actor) {
@@ -9454,10 +9457,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     "psychic",
     "thunder"
   ];
-  var getOptionFromRoll = (roll) => {
-    const value = chaoticBurstTypes[roll - 1];
-    return { label: value, value };
-  };
+  var getOptionFromRoll = (roll) => makeStringChoice(chaoticBurstTypes[roll - 1]);
   var chaoticBurst = {
     name: "chaotic burst",
     setup(g, item) {
@@ -14963,19 +14963,21 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
           (other) => other !== caster && other.hasTime("reaction")
         );
         for (const who of others) {
-          const actions = g.getActions(who).filter(isCounterspell).flatMap(
+          const choices = g.getActions(who).filter(isCounterspell).flatMap(
             (action) => {
               var _a, _b, _c, _d, _e, _f;
               return enumerate(
                 (_c = (_b = (_a = action.method).getMinSlot) == null ? void 0 : _b.call(_a, Counterspell, caster)) != null ? _c : 3,
                 (_f = (_e = (_d = action.method).getMaxSlot) == null ? void 0 : _e.call(_d, Counterspell, caster)) != null ? _f : 3
-              ).map((slot) => ({ slot, target: caster, success, spell })).filter((config) => checkConfig(g, action, config)).map((config) => ({
-                label: `cast Counterspell at level ${config.slot}`,
-                value: { action, config }
-              }));
+              ).map((slot) => ({ slot, target: caster, success, spell })).filter((config) => checkConfig(g, action, config)).map(
+                (config) => makeChoice(
+                  { action, config },
+                  `cast Counterspell at level ${config.slot}`
+                )
+              );
             }
           );
-          if (actions.length)
+          if (choices.length)
             interrupt.add(
               new PickFromListChoice(
                 who,
@@ -14983,7 +14985,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
                 "Counterspell",
                 `${caster.name} is casting a spell. Should ${who.name} cast Counterspell as a reaction?`,
                 Priority_default.ChangesOutcome,
-                actions,
+                choices,
                 async ({ action, config }) => g.act(action, config),
                 true
               )
@@ -15669,8 +15671,8 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
 
   // src/spells/level3/WallOfWater.ts
   var shapeChoices = [
-    { label: "line", value: "line" },
-    { label: "ring", value: "ring" }
+    makeStringChoice("line"),
+    makeStringChoice("ring")
   ];
   var WallOfWater = simpleSpell({
     name: "Wall of Water",
@@ -15819,6 +15821,124 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   });
   var ControlWater_default = ControlWater;
 
+  // src/img/spl/fire-shield.svg
+  var fire_shield_default = "./fire-shield-AE25WO5X.svg";
+
+  // src/spells/level4/FireShield.ts
+  var fireShieldTypeChoices = [
+    makeStringChoice("warm"),
+    makeStringChoice("chill")
+  ];
+  var DismissFireShield = class extends AbstractAction {
+    constructor(g, actor, effect) {
+      super(
+        g,
+        actor,
+        `Dismiss ${effect.name}`,
+        "implemented",
+        {},
+        {
+          icon: makeIcon(fire_shield_default, "silver"),
+          time: "action",
+          description: `You can dismiss the fire shield early as an action.`
+        }
+      );
+      this.effect = effect;
+    }
+    getTargets() {
+      return [];
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    async apply(config) {
+      await super.apply(config);
+      await this.actor.removeEffect(this.effect);
+    }
+  };
+  var makeFireShieldEffect = (type, resist, retaliate) => {
+    const source = new Effect(
+      `Fire Shield (${type})`,
+      "turnStart",
+      (g) => {
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who.hasEffect(source))
+            actions.push(new DismissFireShield(g, who, source));
+        });
+        g.events.on(
+          "GetDamageResponse",
+          ({ detail: { who, damageType, response } }) => {
+            const config = who.getEffectConfig(source);
+            if (config && damageType === resist)
+              response.add("resist", source);
+          }
+        );
+        g.events.on("Attack", ({ detail: { pre, interrupt, outcome } }) => {
+          const config = pre.target.hasEffect(source);
+          const inRange = distance(pre.who, pre.target) <= 5;
+          const isMelee = pre.tags.has("melee");
+          if (config && inRange && isMelee)
+            interrupt.add(
+              new EvaluateLater(
+                pre.target,
+                source,
+                Priority_default.Late,
+                async () => {
+                  const rollDamage = await g.rollDamage(2, {
+                    attacker: pre.target,
+                    damageType: retaliate,
+                    size: 8,
+                    source,
+                    spell: FireShield,
+                    tags: atSet("magical")
+                  });
+                  await g.damage(
+                    source,
+                    retaliate,
+                    { attacker: pre.target, spell: FireShield, target: pre.who },
+                    [[retaliate, rollDamage]]
+                  );
+                },
+                () => outcome.hits
+              )
+            );
+        });
+      },
+      { tags: ["magic"], icon: makeIcon(fire_shield_default, DamageColours[retaliate]) }
+    );
+    return source;
+  };
+  var WarmFireShieldEffect = makeFireShieldEffect("warm", "cold", "fire");
+  var ChillFireShieldEffect = makeFireShieldEffect("chill", "fire", "cold");
+  var FireShield = simpleSpell({
+    status: "incomplete",
+    name: "Fire Shield",
+    level: 4,
+    school: "Evocation",
+    v: true,
+    s: true,
+    m: "a bit of phosphorus or a firefly",
+    lists: ["Wizard"],
+    description: `Thin and wispy flames wreathe your body for the duration, shedding bright light in a 10-foot radius and dim light for an additional 10 feet. You can end the spell early by using an action to dismiss it.
+
+The flames provide you with a warm shield or a chill shield, as you choose. The warm shield grants you resistance to cold damage, and the chill shield grants you resistance to fire damage.
+
+In addition, whenever a creature within 5 feet of you hits you with a melee attack, the shield erupts with flame. The attacker takes 2d8 fire damage from a warm shield, or 2d8 cold damage from a cold shield.`,
+    icon: makeIcon(fire_shield_default),
+    getConfig: (g) => ({
+      type: new ChoiceResolver(g, fireShieldTypeChoices)
+    }),
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster],
+    async apply({ caster }, { type }) {
+      await caster.addEffect(
+        type === "chill" ? ChillFireShieldEffect : WarmFireShieldEffect,
+        { duration: minutes(10) }
+      );
+    }
+  });
+  var FireShield_default = FireShield;
+
   // src/spells/level4/FreedomOfMovement.ts
   var FreedomOfMovement = simpleSpell({
     name: "Freedom of Movement",
@@ -15845,8 +15965,8 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   var PrimalBeast = "Primal Beast";
   var GreatTree = "Great Tree";
   var FormChoices = [
-    { label: PrimalBeast, value: PrimalBeast },
-    { label: GreatTree, value: GreatTree }
+    makeStringChoice(PrimalBeast),
+    makeStringChoice(GreatTree)
   ];
   var PrimalBeastEffect = new Effect(
     PrimalBeast,
@@ -16044,8 +16164,8 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
 
   // src/spells/level4/WallOfFire.ts
   var shapeChoices2 = [
-    { label: "line", value: "line" },
-    { label: "ring", value: "ring" }
+    makeStringChoice("line"),
+    makeStringChoice("ring")
   ];
   var WallOfFire = scalingSpell({
     name: "Wall of Fire",
@@ -16255,6 +16375,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     "water walk": WaterWalk_default,
     "charm monster": CharmMonster_default,
     "control water": ControlWater_default,
+    "fire shield": FireShield_default,
     "freedom of movement": FreedomOfMovement_default,
     "guardian of nature": GuardianOfNature_default,
     "ice storm": IceStorm_default,
@@ -17188,7 +17309,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       // TODO "fly",
       "lightning bolt",
       // TODO "banishment",
-      // TODO "fire shield",
+      "fire shield",
       "stoneskin",
       "cone of cold"
       // TODO "scrying",
@@ -20427,13 +20548,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
   function isCurable(e2) {
     return hasAny(e2.tags, ["disease", "poison"]);
   }
-  function getCurableEffects(who) {
-    const effects = [];
-    for (const [effect] of who.effects)
-      if (isCurable(effect))
-        effects.push({ value: effect, label: effect.name });
-    return effects;
-  }
+  var getCurableEffects = (who) => Array.from(who.effects.keys()).filter(isCurable).map((effect) => makeChoice(effect, effect.name));
   var LayOnHandsCureAction = class extends AbstractAction {
     constructor(g, actor) {
       super(

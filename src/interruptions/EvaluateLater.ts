@@ -9,5 +9,6 @@ export default class EvaluateLater implements Interruption {
     public source: Source,
     public priority: Priority,
     public apply: () => Promise<unknown>,
+    public isStillValid?: () => boolean,
   ) {}
 }

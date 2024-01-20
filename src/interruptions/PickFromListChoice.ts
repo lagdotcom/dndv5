@@ -12,6 +12,18 @@ export interface PickChoice<T> {
   disabled?: boolean;
 }
 
+export const makeChoice = <T>(
+  value: T,
+  label: string,
+  disabled?: boolean,
+): PickChoice<T> => ({ value, label, disabled });
+
+export const makeStringChoice = <T extends string>(
+  value: T,
+  label = value,
+  disabled?: boolean,
+): PickChoice<T> => ({ value, label, disabled });
+
 export default class PickFromListChoice<T = unknown> implements Interruption {
   constructor(
     public who: Combatant,

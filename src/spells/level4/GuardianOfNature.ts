@@ -1,6 +1,6 @@
 import Effect from "../../Effect";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import { PickChoice } from "../../interruptions/PickFromListChoice";
+import { makeStringChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { atSet } from "../../types/AttackTag";
 import Priority from "../../types/Priority";
@@ -12,10 +12,9 @@ import { simpleSpell } from "../common";
 type Form = "Primal Beast" | "Great Tree";
 const PrimalBeast: Form = "Primal Beast";
 const GreatTree: Form = "Great Tree";
-
-const FormChoices: PickChoice<Form>[] = [
-  { label: PrimalBeast, value: PrimalBeast },
-  { label: GreatTree, value: GreatTree },
+const FormChoices = [
+  makeStringChoice<Form>(PrimalBeast),
+  makeStringChoice<Form>(GreatTree),
 ];
 
 const PrimalBeastEffect = new Effect(

@@ -77,6 +77,7 @@ import WaterBreathing from "../spells/level3/WaterBreathing";
 import WaterWalk from "../spells/level3/WaterWalk";
 import CharmMonster from "../spells/level4/CharmMonster";
 import ControlWater from "../spells/level4/ControlWater";
+import FireShield from "../spells/level4/FireShield";
 import FreedomOfMovement from "../spells/level4/FreedomOfMovement";
 import GuardianOfNature from "../spells/level4/GuardianOfNature";
 import IceStorm from "../spells/level4/IceStorm";
@@ -169,6 +170,7 @@ const allSpells = {
 
   "charm monster": CharmMonster,
   "control water": ControlWater,
+  "fire shield": FireShield,
   "freedom of movement": FreedomOfMovement,
   "guardian of nature": GuardianOfNature,
   "ice storm": IceStorm,

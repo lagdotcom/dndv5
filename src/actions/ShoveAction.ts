@@ -3,7 +3,7 @@ import { Prone } from "../effects";
 import Engine from "../Engine";
 import { sizeOrLess } from "../filters";
 import PickFromListChoice, {
-  PickChoice,
+  makeChoice,
 } from "../interruptions/PickFromListChoice";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import TargetResolver from "../resolvers/TargetResolver";
@@ -18,9 +18,9 @@ type ShoveType = "prone" | "push";
 
 type Config = HasTarget & { type: ShoveType };
 
-const shoveTypeChoices: PickChoice<ShoveType>[] = [
-  { label: "knock prone", value: "prone" },
-  { label: "push 5 feet away", value: "push" },
+const shoveTypeChoices = [
+  makeChoice<ShoveType>("prone", "knock prone"),
+  makeChoice<ShoveType>("push", "push 5 feet away"),
 ];
 
 export default class ShoveAction extends AbstractAttackAction<Config> {

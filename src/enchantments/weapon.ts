@@ -1,7 +1,7 @@
 import { ItemRarityColours } from "../colours";
 import { DiceRoll } from "../flavours";
 import PickFromListChoice, {
-  PickChoice,
+  makeStringChoice,
 } from "../interruptions/PickFromListChoice";
 import { TurnResource } from "../resources";
 import { atSet } from "../types/AttackTag";
@@ -23,10 +23,8 @@ const chaoticBurstTypes: DamageType[] = [
   "thunder",
 ];
 
-const getOptionFromRoll = (roll: DiceRoll): PickChoice<DamageType> => {
-  const value = chaoticBurstTypes[roll - 1];
-  return { label: value, value };
-};
+const getOptionFromRoll = (roll: DiceRoll) =>
+  makeStringChoice<DamageType>(chaoticBurstTypes[roll - 1]);
 
 export const chaoticBurst: Enchantment<"weapon"> = {
   name: "chaotic burst",

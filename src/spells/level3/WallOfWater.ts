@@ -1,14 +1,13 @@
 import { HasPoint } from "../../configs";
-import { PickChoice } from "../../interruptions/PickFromListChoice";
+import { makeStringChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import PointResolver from "../../resolvers/PointResolver";
 import { simpleSpell } from "../common";
 
 type Shape = "line" | "ring";
-
-const shapeChoices: PickChoice<Shape>[] = [
-  { label: "line", value: "line" },
-  { label: "ring", value: "ring" },
+const shapeChoices = [
+  makeStringChoice<Shape>("line"),
+  makeStringChoice<Shape>("ring"),
 ];
 
 const WallOfWater = simpleSpell<HasPoint & { shape: Shape }>({

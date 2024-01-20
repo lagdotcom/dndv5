@@ -135,7 +135,7 @@ export const Archmage: MonsterTemplate = {
     // TODO "fly",
     "lightning bolt",
     // TODO "banishment",
-    // TODO "fire shield",
+    "fire shield",
     "stoneskin",
     "cone of cold",
     // TODO "scrying",

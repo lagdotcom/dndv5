@@ -7,7 +7,7 @@ import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { notOfCreatureType } from "../../filters";
-import { PickChoice } from "../../interruptions/PickFromListChoice";
+import { makeChoice } from "../../interruptions/PickFromListChoice";
 import MultiChoiceResolver from "../../resolvers/MultiChoiceResolver";
 import NumberRangeResolver from "../../resolvers/NumberRangeResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
@@ -103,14 +103,10 @@ function isCurable(e: EffectType<unknown>) {
   return hasAny(e.tags, ["disease", "poison"]);
 }
 
-function getCurableEffects(who: Combatant) {
-  const effects: PickChoice<EffectType<unknown>>[] = [];
-
-  for (const [effect] of who.effects)
-    if (isCurable(effect)) effects.push({ value: effect, label: effect.name });
-
-  return effects;
-}
+const getCurableEffects = (who: Combatant) =>
+  Array.from(who.effects.keys())
+    .filter(isCurable)
+    .map((effect) => makeChoice(effect, effect.name));
 
 class LayOnHandsCureAction extends AbstractAction<CureConfig> {
   constructor(g: Engine, actor: Combatant) {
