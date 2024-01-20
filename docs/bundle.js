@@ -26,13 +26,6 @@
     mod
   ));
 
-  // globalExternal:@ungap/structured-clone
-  var require_structured_clone = __commonJS({
-    "globalExternal:@ungap/structured-clone"(exports, module) {
-      module.exports = globalThis.StructuredJSON;
-    }
-  });
-
   // globalExternal:@preact/signals
   var require_signals = __commonJS({
     "globalExternal:@preact/signals"(exports, module) {
@@ -381,7 +374,6 @@
   };
 
   // src/utils/objects.ts
-  var import_structured_clone = __toESM(require_structured_clone());
   var objectEntries = Object.entries;
   function matches(object, match) {
     for (const [field, value] of objectEntries(match)) {
@@ -390,12 +382,7 @@
     }
     return true;
   }
-  function getStructuredClone() {
-    if (globalThis.structuredClone)
-      return globalThis.structuredClone;
-    return (thing) => (0, import_structured_clone.deserialize)((0, import_structured_clone.serialize)(thing));
-  }
-  var clone = getStructuredClone();
+  var clone = (object) => ({ ...object });
 
   // src/DiceBag.ts
   function sizeOfDice(rt) {

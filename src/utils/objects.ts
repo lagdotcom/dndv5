@@ -1,5 +1,3 @@
-import { deserialize, serialize } from "@ungap/structured-clone";
-
 type Entries<T> = {
   [K in keyof T]-?: [K, T[K]];
 }[keyof T][];
@@ -16,8 +14,5 @@ export function matches<T>(object: T, match: Partial<T>) {
   return true;
 }
 
-function getStructuredClone() {
-  if (globalThis.structuredClone) return globalThis.structuredClone;
-  return <T>(thing: T) => deserialize(serialize(thing)) as T;
-}
-export const clone = getStructuredClone();
+// this is good enough for my purposes
+export const clone = <T>(object: T) => ({ ...object });
