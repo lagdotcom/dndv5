@@ -78,11 +78,11 @@ new DndRule("Counterspell", (g) => {
               action.method.getMaxSlot?.(Counterspell, caster) ?? 3,
             )
               .map((slot) => ({ slot, target: caster, success, spell }))
-              .filter((config) => checkConfig(g, action, config))
               .map((config) =>
                 makeChoice(
                   { action, config },
                   `cast Counterspell at level ${config.slot}`,
+                  !checkConfig(g, action, config),
                 ),
               ),
           );

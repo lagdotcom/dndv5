@@ -1,4 +1,7 @@
+import { GiftOfTheMetallicDragon } from "../feats/DragonGifts";
 import Lucky from "../feats/Lucky";
+import Sentinel from "../feats/Sentinel";
+import Telekinetic from "../feats/Telekinetic";
 import { BoonOfVassetri } from "../features/boons";
 import FightingStyleArchery from "../features/fightingStyles/Archery";
 import BlindFighting from "../features/fightingStyles/BlindFighting";
@@ -15,7 +18,10 @@ const allFeatures = {
   "Fighting Style: Dueling": Dueling,
   "Fighting Style: Great Weapon Fighting": GreatWeaponFighting,
   "Fighting Style: Protection": Protection,
+  "Gift of the Metallic Dragon": GiftOfTheMetallicDragon,
   Lucky,
+  Sentinel,
+  Telekinetic,
 } as const;
 export default allFeatures;
 

@@ -2,6 +2,7 @@ export const AttackTags = [
   "breath weapon",
   "magical",
   "melee",
+  "opportunity",
   "ranged",
   "silvered",
   "spell",

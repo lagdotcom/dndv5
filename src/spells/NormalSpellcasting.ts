@@ -1,6 +1,6 @@
 import CastSpell from "../actions/CastSpell";
 import SimpleFeature from "../features/SimpleFeature";
-import { Description, PCClassLevel, SpellSlot } from "../flavours";
+import { CombatantID, Description, PCClassLevel, SpellSlot } from "../flavours";
 import { LongRestResource } from "../resources";
 import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
@@ -84,7 +84,7 @@ interface Entry {
 
 // TODO multiclass spellcasting is weird
 export default class NormalSpellcasting implements SpellcastingMethod {
-  entries: Map<Combatant, Entry>;
+  entries: Map<CombatantID, Entry>;
   feature: SimpleFeature;
 
   constructor(
@@ -98,25 +98,29 @@ export default class NormalSpellcasting implements SpellcastingMethod {
   ) {
     this.entries = new Map();
 
-    this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
-      this.initialise(me, me.getClassLevel(className, 1));
-      me.spellcastingMethods.add(this);
+    this.feature = new SimpleFeature(
+      `Spellcasting (${name})`,
+      text,
+      (g, me) => {
+        this.initialise(me, me.getClassLevel(className, 1));
+        me.spellcastingMethods.add(this);
 
-      g.events.on("GetActions", ({ detail: { who, actions } }) => {
-        if (who === me) {
-          // TODO [RITUAL]
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me) {
+            // TODO [RITUAL]
 
-          for (const spell of me.preparedSpells) {
-            if (this.canCast(spell, who))
-              actions.push(new CastSpell(g, me, this, spell));
+            for (const spell of me.preparedSpells) {
+              if (this.canCast(spell, who))
+                actions.push(new CastSpell(g, me, this, spell));
+            }
           }
-        }
-      });
-    });
+        });
+      },
+    );
   }
 
   private getEntry(who: Combatant) {
-    const entry = this.entries.get(who);
+    const entry = this.entries.get(who.id);
     if (!entry)
       throw new Error(
         `${who.name} has not initialised their ${this.name} spellcasting method.`,
@@ -144,7 +148,7 @@ export default class NormalSpellcasting implements SpellcastingMethod {
       resources.push(resource);
     }
 
-    this.entries.set(who, { resources, spells: new Set() });
+    this.entries.set(who.id, { resources, spells: new Set() });
   }
 
   getMinSlot(spell: Spell) {

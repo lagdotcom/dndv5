@@ -1120,8 +1120,18 @@ export default class Engine {
     this.fire(new TextEvent({ message }));
   }
 
-  async forcePush(who: Combatant, away: Combatant, dist: Feet, source: Source) {
-    const path = getPathAwayFrom(who.position, away.position, dist);
+  async forcePush(
+    who: Combatant,
+    pusher: Combatant,
+    dist: Feet,
+    source: Source,
+    pushToward = false,
+  ) {
+    const path = getPathAwayFrom(
+      who.position,
+      pusher.position,
+      pushToward ? -dist : dist,
+    );
     const handler = new BoundedMove(source, Infinity, { forced: true });
     for (const point of path) {
       const result = await this.move(who, point, handler);

@@ -9,7 +9,7 @@ import { scalingSpell } from "../common";
 const cannotHeal = ctSet("undead", "construct");
 
 const CureWounds = scalingSpell<HasTarget>({
-  status: "incomplete",
+  status: "implemented",
   name: "Cure Wounds",
   level: 1,
   school: "Evocation",

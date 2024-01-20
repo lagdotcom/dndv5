@@ -38,6 +38,8 @@ export default class PickFromListChoice<T = unknown> implements Interruption {
   ) {}
 
   async apply(g: Engine) {
+    if (!this.items.find((choice) => !choice.disabled)) return;
+
     const choice = await new Promise<T | undefined>((resolve) =>
       g.fire(new ListChoiceEvent<T>({ interruption: this, resolve })),
     );

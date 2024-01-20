@@ -33,12 +33,25 @@ const Beldalynn: PCTemplate = {
     { class: "Wizard" },
     { class: "Wizard" },
     { class: "Wizard" },
+    {
+      class: "Wizard",
+      configs: {
+        "Ability Score Improvement (Wizard 8)": {
+          type: "feat",
+          feat: "Gift of the Metallic Dragon",
+        },
+        "Gift of the Metallic Dragon": "int",
+      },
+    },
   ],
   items: [
     { name: "cloak of protection", equip: true, attune: true },
     { name: "quarterstaff", enchantments: ["chaotic burst"], equip: true },
     { name: "dragon-touched focus (slumbering)", equip: true, attune: true },
     { name: "dagger" },
+    // { name: "clockwork mouse" },
+    // { name: "dust of dryness" },
+    // { name: "dust of obeisance" },
     // TODO { name: "scroll of bestow curse" },
     // TODO { name: "scroll of dispel magic" },
     // TODO { name: "potion of clairvoyance" },
@@ -48,7 +61,7 @@ const Beldalynn: PCTemplate = {
   prepared: [
     "acid splash",
     "fire bolt",
-    "mind sliver",
+    // "message",
     "ray of frost",
 
     "ice knife",
@@ -57,13 +70,20 @@ const Beldalynn: PCTemplate = {
 
     "enlarge/reduce",
     "hold person",
-    "Melf's minute meteors",
 
     "fireball",
     "intellect fortress",
     // "Leomund's tiny hut",
+    "Melf's minute meteors",
 
+    // TODO "summon aberration",
     "wall of fire",
+  ],
+  known: [
+    // "comprehend languages",
+    // TODO "find familiar",
+    // "floating disk",
+    // TODO "identify",
   ],
 };
 export default Beldalynn;

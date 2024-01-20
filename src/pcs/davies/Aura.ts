@@ -31,12 +31,22 @@ const Aura: PCTemplate = {
     { class: "Rogue" },
     { class: "Rogue" },
     { class: "Rogue" },
+    {
+      class: "Rogue",
+      configs: {
+        "Ability Score Improvement (Rogue 8)": {
+          type: "ability",
+          abilities: ["dex", "dex"],
+        },
+      },
+    },
   ],
   feats: ["Boon of Vassetri"],
   items: [
     { name: "light crossbow", equip: true, enchantments: ["vicious"] },
     { name: "leather armor", equip: true },
     { name: "bracers of the arbalest", equip: true, attune: true },
+    { name: "cloak of elvenkind", equip: true, attune: true },
     { name: "rapier" },
     { name: "crossbow bolt", quantity: 20 },
     { name: "crossbow bolt", enchantments: ["+1 weapon"], quantity: 15 },

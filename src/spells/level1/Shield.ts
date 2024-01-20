@@ -23,6 +23,7 @@ const ShieldEffect = new Effect(
       who: Combatant,
       interrupt: InterruptionCollector,
       after?: () => Promise<void>,
+      isStillValid?: () => boolean,
     ) => {
       const shield = g
         .getActions(who)
@@ -42,6 +43,7 @@ const ShieldEffect = new Effect(
             if (after) await after();
           },
           true,
+          isStillValid,
         ),
       );
     };
@@ -50,7 +52,7 @@ const ShieldEffect = new Effect(
     g.events.on("Attack", ({ detail }) => {
       const { target, who } = detail.pre;
 
-      if (!target.hasEffect(ShieldEffect) && detail.outcome.hits)
+      if (!target.hasEffect(ShieldEffect))
         check(
           `${who.name} hit ${target.name} with an attack.`,
           target,
@@ -59,6 +61,7 @@ const ShieldEffect = new Effect(
             const ac = await g.getAC(target, detail.pre);
             detail.ac = ac;
           },
+          () => detail.outcome.hits,
         );
     });
     // ...or targeted by the magic missile spell

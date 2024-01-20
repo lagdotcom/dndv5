@@ -32,6 +32,15 @@ const Hagrond: PCTemplate = {
     { class: "Barbarian" },
     { class: "Barbarian" },
     { class: "Barbarian" },
+    {
+      class: "Barbarian",
+      configs: {
+        "Ability Score Improvement (Barbarian 8)": {
+          type: "ability",
+          abilities: ["str", "str"],
+        },
+      },
+    },
   ],
   items: [
     { name: "spear", enchantments: ["dark sun"], equip: true, attune: true },
@@ -43,6 +52,7 @@ const Hagrond: PCTemplate = {
     },
     { name: "dagger", quantity: 4 },
     { name: "handaxe" },
+    { name: "longsword" },
     { name: "spear" },
     { name: "potion of hill giant strength" },
     { name: "longsword" },

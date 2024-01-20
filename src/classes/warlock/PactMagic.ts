@@ -1,6 +1,11 @@
 import CastSpell from "../../actions/CastSpell";
 import SimpleFeature from "../../features/SimpleFeature";
-import { Description, PCClassLevel, SpellSlot } from "../../flavours";
+import {
+  CombatantID,
+  Description,
+  PCClassLevel,
+  SpellSlot,
+} from "../../flavours";
 import { ShortRestResource } from "../../resources";
 import AbilityName from "../../types/AbilityName";
 import Combatant from "../../types/Combatant";
@@ -34,7 +39,7 @@ interface Entry {
 }
 
 export default class PactMagic implements SpellcastingMethod {
-  entries: Map<Combatant, Entry>;
+  entries: Map<CombatantID, Entry>;
   feature: Feature;
 
   constructor(
@@ -65,7 +70,7 @@ export default class PactMagic implements SpellcastingMethod {
   }
 
   private getEntry(who: Combatant) {
-    const entry = this.entries.get(who);
+    const entry = this.entries.get(who.id);
     if (!entry)
       throw new Error(
         `${who.name} has not initialised their ${this.name} spellcasting method.`,
@@ -89,7 +94,7 @@ export default class PactMagic implements SpellcastingMethod {
 
     who.initResource(PactMagicResource, slots);
 
-    this.entries.set(who, { level, spells: new Set() });
+    this.entries.set(who.id, { level, spells: new Set() });
   }
 
   getMinSlot?(spell: Spell, caster: Combatant): SpellSlot {

@@ -2865,6 +2865,8 @@
     }
     async apply(g) {
       var _a;
+      if (!this.items.find((choice2) => !choice2.disabled))
+        return;
       const choice = await new Promise(
         (resolve) => g.fire(new ListChoiceEvent({ interruption: this, resolve }))
       );
@@ -3632,7 +3634,9 @@
   // src/actions/OpportunityAttack.ts
   var OpportunityAttack = class extends WeaponAttack {
     constructor(g, actor, weapon) {
-      super(g, "Opportunity Attack", actor, "melee", weapon);
+      super(g, "Opportunity Attack", actor, "melee", weapon, void 0, [
+        "opportunity"
+      ]);
       this.tags.delete("costs attack");
     }
     getTime() {
@@ -5677,8 +5681,12 @@
     text(message) {
       this.fire(new TextEvent({ message }));
     }
-    async forcePush(who, away, dist, source) {
-      const path = getPathAwayFrom(who.position, away.position, dist);
+    async forcePush(who, pusher, dist, source, pushToward = false) {
+      const path = getPathAwayFrom(
+        who.position,
+        pusher.position,
+        pushToward ? -dist : dist
+      );
       const handler = new BoundedMove(source, Infinity, { forced: true });
       for (const point of path) {
         const result = await this.move(who, point, handler);
@@ -5770,9 +5778,6 @@
       this.ability = ability;
       this.getResourceForSpell = getResourceForSpell;
       this.icon = icon;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    addCastableSpell() {
     }
     getMinSlot(spell) {
       return spell.level;
@@ -6606,6 +6611,150 @@
     }
   };
 
+  // src/features/ConfiguredFeature.ts
+  var ConfiguredFeature = class {
+    constructor(name, text, apply) {
+      this.name = name;
+      this.text = text;
+      this.apply = apply;
+    }
+    setup(g, who) {
+      const config = who.getConfig(this.name);
+      if (!isDefined(config)) {
+        console.error(`${who.name} has no config for ${this.name}`);
+        return;
+      }
+      this.apply(g, who, config);
+    }
+  };
+
+  // src/types/CreatureType.ts
+  var ctSet = (...items) => new Set(items);
+
+  // src/spells/level1/CureWounds.ts
+  var cannotHeal = ctSet("undead", "construct");
+  var CureWounds = scalingSpell({
+    status: "implemented",
+    name: "Cure Wounds",
+    level: 1,
+    school: "Evocation",
+    v: true,
+    s: true,
+    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+    description: `A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, [
+        notOfCreatureType("undead", "construct")
+      ])
+    }),
+    getHeal: (g, caster, method, { slot }) => [
+      { type: "dice", amount: { count: slot != null ? slot : 1, size: 8 } },
+      {
+        type: "flat",
+        amount: method.ability ? caster[method.ability].modifier : 0
+      }
+    ],
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target],
+    async apply(sh, { target }) {
+      if (cannotHeal.has(target.type))
+        return;
+      const amount = await sh.rollHeal({ target });
+      await sh.heal({ amount, target });
+    }
+  });
+  var CureWounds_default = CureWounds;
+
+  // src/feats/DragonGifts.ts
+  var ProtectiveWingsResource = new LongRestResource("Protective Wings", 2);
+  var ProtectiveWings = class extends AbstractAction {
+    constructor(g, actor, detail) {
+      super(
+        g,
+        actor,
+        "Protective Wings",
+        "implemented",
+        { target: new TargetResolver(g, 5, [canSee]) },
+        {
+          description: `You can manifest protective wings that can shield you or others. When you or another creature you can see within 5 feet of you is hit by an attack roll, you can use your reaction to manifest spectral wings from your back for a moment. You grant a bonus to the target's AC equal to your proficiency bonus against that attack roll, potentially causing it to miss. You can use this reaction a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`,
+          resources: [[ProtectiveWingsResource, 1]],
+          time: "reaction"
+        }
+      );
+      this.detail = detail;
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply(config) {
+      await super.apply(config);
+      const { g, actor, detail } = this;
+      if (!detail)
+        throw new Error(`ProtectiveWings.apply() without AttackDetail`);
+      g.text(
+        new MessageBuilder().co(actor).text(" uses Protective Wings on ").sp().co(config.target)
+      );
+      detail.ac += actor.pb;
+    }
+  };
+  var GiftOfTheMetallicDragonResource = new LongRestResource(
+    "Gift of the Metallic Dragon",
+    1
+  );
+  var GiftOfTheMetallicDragon = new ConfiguredFeature(
+    "Gift of the Metallic Dragon",
+    `You've manifested some of the power of metallic dragons, granting you the following benefits:
+- Draconic Healing. You learn the cure wounds spell. You can cast this spell without expending a spell slot. Once you cast this spell in this way, you can't do so again until you finish a long rest. You can also cast this spell using spell slots you have. The spell's spellcasting ability is Intelligence, Wisdom, or Charisma when you cast it with this feat (choose when you gain the feat).
+- Protective Wings. You can manifest protective wings that can shield you or others. When you or another creature you can see within 5 feet of you is hit by an attack roll, you can use your reaction to manifest spectral wings from your back for a moment. You grant a bonus to the target's AC equal to your proficiency bonus against that attack roll, potentially causing it to miss. You can use this reaction a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.`,
+    (g, me, ability) => {
+      me.initResource(GiftOfTheMetallicDragonResource);
+      const giftMethod = new InnateSpellcasting(
+        "Gift of the Metallic Dragon",
+        ability,
+        () => GiftOfTheMetallicDragonResource
+      );
+      me.spellcastingMethods.add(giftMethod);
+      me.preparedSpells.add(CureWounds_default);
+      me.knownSpells.add(CureWounds_default);
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        var _a;
+        if (who === me)
+          for (const method of me.spellcastingMethods)
+            (_a = method.addCastableSpell) == null ? void 0 : _a.call(method, CureWounds_default, me);
+      });
+      me.initResource(ProtectiveWingsResource, me.pb);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(
+            new CastSpell(g, me, giftMethod, CureWounds_default),
+            new ProtectiveWings(g, me)
+          );
+      });
+      g.events.on("Attack", ({ detail }) => {
+        const { target, who } = detail.pre;
+        const action = new ProtectiveWings(g, me, detail);
+        if (checkConfig(g, action, { target }))
+          detail.interrupt.add(
+            new YesNoChoice(
+              me,
+              GiftOfTheMetallicDragon,
+              "Protective Wings",
+              `${who.name} hit ${target.name} with an attack. Use Protective Wings to grant +${me.pb} AC?`,
+              Priority_default.Late,
+              () => action.apply({ target }),
+              void 0,
+              () => detail.outcome.hits
+            )
+          );
+      });
+    }
+  );
+
   // src/feats/Lucky.ts
   var LuckPoint = new LongRestResource("Luck Point", 3);
   function addLuckyOpportunity(g, who, message, interrupt, callback) {
@@ -6647,6 +6796,148 @@
     }
   );
   var Lucky_default = Lucky;
+
+  // src/feats/Sentinel.ts
+  var SentinelEffect = new Effect("Sentinel", "turnEnd", (g) => {
+    g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+      if (who.hasEffect(SentinelEffect))
+        multiplier.add("zero", SentinelEffect);
+    });
+  });
+  var SentinelRetaliation = class extends OpportunityAttack {
+    constructor(g, actor, weapon) {
+      super(g, actor, weapon);
+      this.attackTags = [];
+    }
+  };
+  var Sentinel = new SimpleFeature(
+    "Sentinel",
+    `You have mastered techniques to take advantage of every drop in any enemy's guard, gaining the following benefits:
+- When you hit a creature with an opportunity attack, the creature's speed becomes 0 for the rest of the turn.
+- Creatures provoke opportunity attacks from you even if they take the Disengage action before leaving your reach.
+- When a creature within 5 feet of you makes an attack against a target other than you (and that target doesn't have this feat), you can use your reaction to make a melee weapon attack against the attacking creature.`,
+    (g, me) => {
+      g.events.on("Attack", ({ detail: { pre, interrupt, outcome } }) => {
+        if (pre.who === me && pre.tags.has("opportunity"))
+          interrupt.add(
+            new EvaluateLater(
+              me,
+              Sentinel,
+              Priority_default.Late,
+              () => pre.target.addEffect(SentinelEffect, { duration: 1 }),
+              () => outcome.hits
+            )
+          );
+      });
+      g.events.on("CheckAction", ({ detail: { action, error } }) => {
+        if (action instanceof OpportunityAttack && action.actor === me)
+          error.ignore(DisengageEffect);
+      });
+      g.events.on(
+        "Attack",
+        ({
+          detail: {
+            pre: { who: attacker, target },
+            interrupt
+          }
+        }) => {
+          const inRange = distance(attacker, me) <= 5;
+          const notAgainstMe = target !== me;
+          const notSentinel = !target.features.has(Sentinel.name);
+          if (inRange && notAgainstMe && notSentinel) {
+            const config = { target: attacker };
+            const choices = me.weapons.filter((weapon) => weapon.rangeCategory === "melee").map((weapon) => new SentinelRetaliation(g, me, weapon)).map(
+              (action) => makeChoice(
+                action,
+                `attack with ${action.weaponName}`,
+                !checkConfig(g, action, config)
+              )
+            );
+            interrupt.add(
+              new PickFromListChoice(
+                me,
+                Sentinel,
+                "Sentinel",
+                `${attacker.name} made an attack against ${target.name}. Use ${me.name}'s reaction to retaliate?`,
+                Priority_default.Normal,
+                choices,
+                (action) => action.apply(config),
+                true
+              )
+            );
+          }
+        }
+      );
+    }
+  );
+  var Sentinel_default = Sentinel;
+
+  // src/feats/Telekinetic.ts
+  var telekineticShoveChoices = [
+    makeStringChoice("toward"),
+    makeStringChoice("away")
+  ];
+  var TelekineticShove = class extends AbstractAction {
+    constructor(g, actor, ability) {
+      super(
+        g,
+        actor,
+        "Telekinetic Shove",
+        "incomplete",
+        {
+          target: new TargetResolver(g, 30, [canSee]),
+          type: new ChoiceResolver(g, telekineticShoveChoices)
+        },
+        {
+          description: `As a bonus action, you can try to telekinetically shove one creature you can see within 30 feet of you. When you do so, the target must succeed on a Strength saving throw (DC 8 + your proficiency bonus + the ability modifier of the score increased by this feat) or be moved 5 feet toward you or away from you. A creature can willingly fail this save.`,
+          time: "bonus action"
+        }
+      );
+      this.ability = ability;
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply(config) {
+      await super.apply(config);
+      const { g, ability, actor } = this;
+      const { target, type } = config;
+      const { outcome } = await g.save({
+        source: this,
+        type: { type: "ability", ability },
+        ability: "str",
+        attacker: actor,
+        save: "zero",
+        tags: ["forced movement"],
+        who: target
+      });
+      if (outcome === "fail") {
+        g.text(
+          new MessageBuilder().co(actor).text(" telekinetically shoves ").sp().co(target).text(type === "toward" ? " toward them." : " away from them.")
+        );
+        await g.forcePush(target, actor, 5, this, type === "toward");
+      }
+    }
+  };
+  var Telekinetic = new ConfiguredFeature(
+    "Telekinetic",
+    `You learn to move things with your mind, granting you the following benefits:
+- Increase your Intelligence, Wisdom, or Charisma by 1, to a maximum of 20.
+- You learn the mage hand cantrip. You can cast it without verbal or somatic components, and you can make the spectral hand invisible. If you already know this spell, its range increases by 30 feet when you cast it. Its spellcasting ability is the ability increased by this feat.
+- As a bonus action, you can try to telekinetically shove one creature you can see within 30 feet of you. When you do so, the target must succeed on a Strength saving throw (DC 8 + your proficiency bonus + the ability modifier of the score increased by this feat) or be moved 5 feet toward you or away from you. A creature can willingly fail this save.`,
+    (g, me, ability) => {
+      me[ability].score++;
+      implementationWarning("Feat", "Not Complete", Telekinetic.name, me.name);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new TelekineticShove(g, me, ability));
+      });
+    }
+  );
+  var Telekinetic_default = Telekinetic;
 
   // src/img/act/hiss.svg
   var hiss_default = "./hiss-4J2EPM5H.svg";
@@ -6933,7 +7224,10 @@
     "Fighting Style: Dueling": Dueling_default,
     "Fighting Style: Great Weapon Fighting": GreatWeaponFighting_default,
     "Fighting Style: Protection": Protection_default,
-    Lucky: Lucky_default
+    "Gift of the Metallic Dragon": GiftOfTheMetallicDragon,
+    Lucky: Lucky_default,
+    Sentinel: Sentinel_default,
+    Telekinetic: Telekinetic_default
   };
   var allFeatures_default = allFeatures;
 
@@ -8366,45 +8660,6 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
   });
   var Command_default = Command;
 
-  // src/types/CreatureType.ts
-  var ctSet = (...items) => new Set(items);
-
-  // src/spells/level1/CureWounds.ts
-  var cannotHeal = ctSet("undead", "construct");
-  var CureWounds = scalingSpell({
-    status: "incomplete",
-    name: "Cure Wounds",
-    level: 1,
-    school: "Evocation",
-    v: true,
-    s: true,
-    lists: ["Artificer", "Bard", "Cleric", "Druid", "Paladin", "Ranger"],
-    description: `A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
-
-  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [
-        notOfCreatureType("undead", "construct")
-      ])
-    }),
-    getHeal: (g, caster, method, { slot }) => [
-      { type: "dice", amount: { count: slot != null ? slot : 1, size: 8 } },
-      {
-        type: "flat",
-        amount: method.ability ? caster[method.ability].modifier : 0
-      }
-    ],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    async apply(sh, { target }) {
-      if (cannotHeal.has(target.type))
-        return;
-      const amount = await sh.rollHeal({ target });
-      await sh.heal({ amount, target });
-    }
-  });
-  var CureWounds_default = CureWounds;
-
   // src/spells/level1/DivineFavor.ts
   var DivineFavorEffect = new Effect(
     "Divine Favor",
@@ -9487,7 +9742,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     "Shield",
     "turnStart",
     (g) => {
-      const check = (message, who, interrupt, after) => {
+      const check = (message, who, interrupt, after, isStillValid) => {
         const shield = g.getActions(who).filter((a) => isCastSpell(a, Shield) && checkConfig(g, a, {}));
         if (!shield.length)
           return;
@@ -9504,13 +9759,14 @@ At the end of each of its turns, and each time it takes damage, the target can m
               if (after)
                 await after();
             },
-            true
+            true,
+            isStillValid
           )
         );
       };
       g.events.on("Attack", ({ detail }) => {
         const { target, who } = detail.pre;
-        if (!target.hasEffect(ShieldEffect) && detail.outcome.hits)
+        if (!target.hasEffect(ShieldEffect))
           check(
             `${who.name} hit ${target.name} with an attack.`,
             target,
@@ -9518,7 +9774,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
             async () => {
               const ac = await g.getAC(target, detail.pre);
               detail.ac = ac;
-            }
+            },
+            () => detail.outcome.hits
           );
       });
       g.events.on(
@@ -11084,10 +11341,11 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
               return enumerate(
                 (_c = (_b = (_a = action.method).getMinSlot) == null ? void 0 : _b.call(_a, Counterspell, caster)) != null ? _c : 3,
                 (_f = (_e = (_d = action.method).getMaxSlot) == null ? void 0 : _e.call(_d, Counterspell, caster)) != null ? _f : 3
-              ).map((slot) => ({ slot, target: caster, success, spell })).filter((config) => checkConfig(g, action, config)).map(
+              ).map((slot) => ({ slot, target: caster, success, spell })).map(
                 (config) => makeChoice(
                   { action, config },
-                  `cast Counterspell at level ${config.slot}`
+                  `cast Counterspell at level ${config.slot}`,
+                  !checkConfig(g, action, config)
                 )
               );
             }
@@ -12558,23 +12816,6 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     "meteor swarm": MeteorSwarm_default
   };
   var allSpells_default = allSpells;
-
-  // src/features/ConfiguredFeature.ts
-  var ConfiguredFeature = class {
-    constructor(name, text, apply) {
-      this.name = name;
-      this.text = text;
-      this.apply = apply;
-    }
-    setup(g, who) {
-      const config = who.getConfig(this.name);
-      if (!isDefined(config)) {
-        console.error(`${who.name} has no config for ${this.name}`);
-        return;
-      }
-      this.apply(g, who, config);
-    }
-  };
 
   // src/features/common.ts
   var Amphibious = notImplementedFeature(
@@ -14066,21 +14307,25 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
       this.spellList = spellList;
       this.icon = icon;
       this.entries = /* @__PURE__ */ new Map();
-      this.feature = new SimpleFeature(`Spellcasting ${name}`, text, (g, me) => {
-        this.initialise(me, me.getClassLevel(className, 1));
-        me.spellcastingMethods.add(this);
-        g.events.on("GetActions", ({ detail: { who, actions } }) => {
-          if (who === me) {
-            for (const spell of me.preparedSpells) {
-              if (this.canCast(spell, who))
-                actions.push(new CastSpell(g, me, this, spell));
+      this.feature = new SimpleFeature(
+        `Spellcasting (${name})`,
+        text,
+        (g, me) => {
+          this.initialise(me, me.getClassLevel(className, 1));
+          me.spellcastingMethods.add(this);
+          g.events.on("GetActions", ({ detail: { who, actions } }) => {
+            if (who === me) {
+              for (const spell of me.preparedSpells) {
+                if (this.canCast(spell, who))
+                  actions.push(new CastSpell(g, me, this, spell));
+              }
             }
-          }
-        });
-      });
+          });
+        }
+      );
     }
     getEntry(who) {
-      const entry = this.entries.get(who);
+      const entry = this.entries.get(who.id);
       if (!entry)
         throw new Error(
           `${who.name} has not initialised their ${this.name} spellcasting method.`
@@ -14103,7 +14348,7 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
         who.initResource(resource, slots[i2]);
         resources.push(resource);
       }
-      this.entries.set(who, { resources, spells: /* @__PURE__ */ new Set() });
+      this.entries.set(who.id, { resources, spells: /* @__PURE__ */ new Set() });
     }
     getMinSlot(spell) {
       return spell.level;
@@ -14157,8 +14402,13 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     if (config.type === "ability")
       for (const ability of config.abilities)
         me[ability].score++;
-    else
-      me.addFeature(allFeatures_default[config.feat]);
+    else {
+      const feat = allFeatures_default[config.feat];
+      if (!feat)
+        implementationWarning("Feat", "Missing", config.feat, me.name);
+      else
+        me.addFeature(feat);
+    }
   }
   function makeASI(className, level) {
     return new ConfiguredFeature(
@@ -18091,13 +18341,23 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       },
       { class: "Rogue" },
       { class: "Rogue" },
-      { class: "Rogue" }
+      { class: "Rogue" },
+      {
+        class: "Rogue",
+        configs: {
+          "Ability Score Improvement (Rogue 8)": {
+            type: "ability",
+            abilities: ["dex", "dex"]
+          }
+        }
+      }
     ],
     feats: ["Boon of Vassetri"],
     items: [
       { name: "light crossbow", equip: true, enchantments: ["vicious"] },
       { name: "leather armor", equip: true },
       { name: "bracers of the arbalest", equip: true, attune: true },
+      { name: "cloak of elvenkind", equip: true, attune: true },
       { name: "rapier" },
       { name: "crossbow bolt", quantity: 20 },
       { name: "crossbow bolt", enchantments: ["+1 weapon"], quantity: 15 }
@@ -18142,13 +18402,26 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       },
       { class: "Wizard" },
       { class: "Wizard" },
-      { class: "Wizard" }
+      { class: "Wizard" },
+      {
+        class: "Wizard",
+        configs: {
+          "Ability Score Improvement (Wizard 8)": {
+            type: "feat",
+            feat: "Gift of the Metallic Dragon"
+          },
+          "Gift of the Metallic Dragon": "int"
+        }
+      }
     ],
     items: [
       { name: "cloak of protection", equip: true, attune: true },
       { name: "quarterstaff", enchantments: ["chaotic burst"], equip: true },
       { name: "dragon-touched focus (slumbering)", equip: true, attune: true },
       { name: "dagger" }
+      // { name: "clockwork mouse" },
+      // { name: "dust of dryness" },
+      // { name: "dust of obeisance" },
       // TODO { name: "scroll of bestow curse" },
       // TODO { name: "scroll of dispel magic" },
       // TODO { name: "potion of clairvoyance" },
@@ -18158,18 +18431,25 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     prepared: [
       "acid splash",
       "fire bolt",
-      "mind sliver",
+      // "message",
       "ray of frost",
       "ice knife",
       "magic missile",
       "shield",
       "enlarge/reduce",
       "hold person",
-      "Melf's minute meteors",
       "fireball",
       "intellect fortress",
       // "Leomund's tiny hut",
+      "Melf's minute meteors",
+      // TODO "summon aberration",
       "wall of fire"
+    ],
+    known: [
+      // "comprehend languages",
+      // TODO "find familiar",
+      // "floating disk",
+      // TODO "identify",
     ]
   };
   var Beldalynn_default = Beldalynn;
@@ -18211,7 +18491,16 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       },
       { class: "Paladin" },
       { class: "Paladin" },
-      { class: "Paladin" }
+      { class: "Paladin" },
+      {
+        class: "Paladin",
+        configs: {
+          "Ability Score Improvement (Paladin 8)": {
+            type: "feat",
+            feat: "Sentinel"
+          }
+        }
+      }
     ],
     items: [
       { name: "longsword", equip: true },
@@ -18226,7 +18515,14 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       { name: "light hammer" },
       { name: "greatsword" }
     ],
-    prepared: ["bless", "divine favor", "shield of faith", "aid", "magic weapon"]
+    prepared: [
+      "bless",
+      // "ceremony",
+      "divine favor",
+      "shield of faith",
+      "aid",
+      "magic weapon"
+    ]
   };
   var Galilea_default = Galilea;
 
@@ -18263,7 +18559,16 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       },
       { class: "Barbarian" },
       { class: "Barbarian" },
-      { class: "Barbarian" }
+      { class: "Barbarian" },
+      {
+        class: "Barbarian",
+        configs: {
+          "Ability Score Improvement (Barbarian 8)": {
+            type: "ability",
+            abilities: ["str", "str"]
+          }
+        }
+      }
     ],
     items: [
       { name: "spear", enchantments: ["dark sun"], equip: true, attune: true },
@@ -18275,6 +18580,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       },
       { name: "dagger", quantity: 4 },
       { name: "handaxe" },
+      { name: "longsword" },
       { name: "spear" },
       { name: "potion of hill giant strength" },
       { name: "longsword" },
@@ -18322,17 +18628,26 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       },
       { class: "Druid" },
       { class: "Druid" },
-      { class: "Druid" }
+      { class: "Druid" },
+      {
+        class: "Druid",
+        configs: {
+          "Ability Score Improvement (Druid 8)": {
+            type: "feat",
+            feat: "Telekinetic"
+          },
+          Telekinetic: "cha"
+        }
+      }
     ],
     items: [
       { name: "arrow-catching shield", equip: true, attune: true },
       { name: "boots of the winterlands", equip: true, attune: true },
-      { name: "cloak of elvenkind", equip: true, attune: true },
       { name: "spear", equip: true },
       { name: "hide armor", equip: true },
       { name: "handaxe" },
       { name: "shortsword", enchantments: ["silvered"] }
-      // TODO { name: "Ioun stone of reserve", equip: true, attune: true },
+      // TODO { name: "Ioun stone of reserve", equip: true, attune: true, config: 'fly' },
       // TODO { name: "potion of speed" },
       // TODO { name: "pale mushroom poison", quantity: 4 },
       // TODO { name: "potion of necrotic resistance" },
@@ -18341,16 +18656,18 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       // "druidcraft",
       // "mending",
       // "mold earth",
+      "cure wounds",
       // "detect magic",
       "earth tremor",
-      "healing word",
+      // "purify food and drink",
       // "speak with animals",
       "lesser restoration",
       // "locate object",
       "moonbeam",
-      "erupting earth",
-      "charm monster",
-      "guardian of nature"
+      // TODO "protection from poison",
+      // TODO "dispel magic",
+      "guardian of nature",
+      "stoneskin"
     ]
   };
   var Salgar_default = Salgar;
@@ -20605,7 +20922,9 @@ At 18th level, the range of this aura increases to 30 feet.`,
   function isCurable(e2) {
     return hasAny(e2.tags, ["disease", "poison"]);
   }
-  var getCurableEffects = (who) => Array.from(who.effects.keys()).filter(isCurable).map((effect) => makeChoice(effect, effect.name));
+  var getCurableEffects = (who) => Array.from(who.effects.keys()).map(
+    (effect) => makeChoice(effect, effect.name, !isCurable(effect))
+  );
   var LayOnHandsCureAction = class extends AbstractAction {
     constructor(g, actor) {
       super(
@@ -21200,7 +21519,7 @@ You can use only one Metamagic option on a spell when you cast it, unless otherw
       });
     }
     getEntry(who) {
-      const entry = this.entries.get(who);
+      const entry = this.entries.get(who.id);
       if (!entry)
         throw new Error(
           `${who.name} has not initialised their ${this.name} spellcasting method.`
@@ -21219,7 +21538,7 @@ You can use only one Metamagic option on a spell when you cast it, unless otherw
       const level = getPactMagicLevel(casterLevel);
       const slots = getPactMagicSlots(casterLevel);
       who.initResource(PactMagicResource, slots);
-      this.entries.set(who, { level, spells: /* @__PURE__ */ new Set() });
+      this.entries.set(who.id, { level, spells: /* @__PURE__ */ new Set() });
     }
     getMinSlot(spell, caster) {
       if (spell.level === 0)

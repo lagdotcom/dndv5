@@ -8,7 +8,9 @@ import WeaponAttack from "./WeaponAttack";
 
 export default class OpportunityAttack extends WeaponAttack {
   constructor(g: Engine, actor: Combatant, weapon: WeaponItem) {
-    super(g, "Opportunity Attack", actor, "melee", weapon);
+    super(g, "Opportunity Attack", actor, "melee", weapon, undefined, [
+      "opportunity",
+    ]);
     this.tags.delete("costs attack");
   }
 

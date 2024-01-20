@@ -9,7 +9,7 @@ import AbilityName from "../types/AbilityName";
 import Combatant from "../types/Combatant";
 import { MundaneDifficultTerrainTypes } from "../types/DifficultTerrainType";
 import PCClassName from "../types/PCClassName";
-import { featureNotComplete } from "../utils/env";
+import { featureNotComplete, implementationWarning } from "../utils/env";
 import { ordinal } from "../utils/numbers";
 import { hasAll } from "../utils/set";
 
@@ -20,7 +20,11 @@ type ASIConfig =
 function asiSetup(g: Engine, me: Combatant, config: ASIConfig) {
   if (config.type === "ability")
     for (const ability of config.abilities) me[ability].score++;
-  else me.addFeature(allFeatures[config.feat]);
+  else {
+    const feat = allFeatures[config.feat];
+    if (!feat) implementationWarning("Feat", "Missing", config.feat, me.name);
+    else me.addFeature(feat);
+  }
 }
 
 export function makeASI(className: PCClassName, level: PCClassLevel) {

@@ -104,9 +104,9 @@ function isCurable(e: EffectType<unknown>) {
 }
 
 const getCurableEffects = (who: Combatant) =>
-  Array.from(who.effects.keys())
-    .filter(isCurable)
-    .map((effect) => makeChoice(effect, effect.name));
+  Array.from(who.effects.keys()).map((effect) =>
+    makeChoice(effect, effect.name, !isCurable(effect)),
+  );
 
 class LayOnHandsCureAction extends AbstractAction<CureConfig> {
   constructor(g: Engine, actor: Combatant) {

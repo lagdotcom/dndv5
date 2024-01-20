@@ -36,16 +36,25 @@ const Salgar: PCTemplate = {
     { class: "Druid" },
     { class: "Druid" },
     { class: "Druid" },
+    {
+      class: "Druid",
+      configs: {
+        "Ability Score Improvement (Druid 8)": {
+          type: "feat",
+          feat: "Telekinetic",
+        },
+        Telekinetic: "cha",
+      },
+    },
   ],
   items: [
     { name: "arrow-catching shield", equip: true, attune: true },
     { name: "boots of the winterlands", equip: true, attune: true },
-    { name: "cloak of elvenkind", equip: true, attune: true },
     { name: "spear", equip: true },
     { name: "hide armor", equip: true },
     { name: "handaxe" },
     { name: "shortsword", enchantments: ["silvered"] },
-    // TODO { name: "Ioun stone of reserve", equip: true, attune: true },
+    // TODO { name: "Ioun stone of reserve", equip: true, attune: true, config: 'fly' },
     // TODO { name: "potion of speed" },
     // TODO { name: "pale mushroom poison", quantity: 4 },
     // TODO { name: "potion of necrotic resistance" },
@@ -55,19 +64,21 @@ const Salgar: PCTemplate = {
     // "mending",
     // "mold earth",
 
+    "cure wounds",
     // "detect magic",
     "earth tremor",
-    "healing word",
+    // "purify food and drink",
     // "speak with animals",
 
     "lesser restoration",
     // "locate object",
     "moonbeam",
+    // TODO "protection from poison",
 
-    "erupting earth",
+    // TODO "dispel magic",
 
-    "charm monster",
     "guardian of nature",
+    "stoneskin",
   ],
 };
 export default Salgar;

@@ -36,6 +36,15 @@ const Galilea: PCTemplate = {
     { class: "Paladin" },
     { class: "Paladin" },
     { class: "Paladin" },
+    {
+      class: "Paladin",
+      configs: {
+        "Ability Score Improvement (Paladin 8)": {
+          type: "feat",
+          feat: "Sentinel",
+        },
+      },
+    },
   ],
   items: [
     { name: "longsword", equip: true },
@@ -50,6 +59,13 @@ const Galilea: PCTemplate = {
     { name: "light hammer" },
     { name: "greatsword" },
   ],
-  prepared: ["bless", "divine favor", "shield of faith", "aid", "magic weapon"],
+  prepared: [
+    "bless",
+    // "ceremony",
+    "divine favor",
+    "shield of faith",
+    "aid",
+    "magic weapon",
+  ],
 };
 export default Galilea;

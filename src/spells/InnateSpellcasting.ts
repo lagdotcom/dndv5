@@ -17,9 +17,6 @@ export default class InnateSpellcasting implements SpellcastingMethod {
     public icon?: Icon,
   ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  addCastableSpell(): void {}
-
   getMinSlot(spell: Spell) {
     return spell.level as SpellSlot;
   }
