@@ -98,6 +98,8 @@ function applyMonsterTemplate<T>(
 
   if (t.aiGroups) for (const group of t.aiGroups) m.groups.add(group);
 
+  if (t.tags) for (const tag of t.tags) m.tags.add(tag);
+
   if (t.config) t.config.apply.apply(m, [config ?? t.config.initial]);
 
   if (t.setup) t.setup.apply(m);

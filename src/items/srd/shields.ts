@@ -1,20 +1,20 @@
 import acsUrl from "@img/eq/arrow-catching-shield.svg";
 
-import AbstractAction from "../actions/AbstractAction";
-import { ItemRarityColours, makeIcon } from "../colours";
-import { HasTarget } from "../configs";
-import Engine from "../Engine";
-import { BeforeAttackDetail } from "../events/BeforeAttackEvent";
-import { notSelf } from "../filters";
-import YesNoChoice from "../interruptions/YesNoChoice";
-import MessageBuilder from "../MessageBuilder";
-import TargetResolver from "../resolvers/TargetResolver";
-import Combatant from "../types/Combatant";
-import Priority from "../types/Priority";
-import { sieve } from "../utils/array";
-import { checkConfig } from "../utils/config";
-import { isEquipmentAttuned } from "../utils/items";
-import { Shield } from "./armor";
+import AbstractAction from "../../actions/AbstractAction";
+import { ItemRarityColours, makeIcon } from "../../colours";
+import { HasTarget } from "../../configs";
+import Engine from "../../Engine";
+import { BeforeAttackDetail } from "../../events/BeforeAttackEvent";
+import { notSelf } from "../../filters";
+import YesNoChoice from "../../interruptions/YesNoChoice";
+import MessageBuilder from "../../MessageBuilder";
+import TargetResolver from "../../resolvers/TargetResolver";
+import Combatant from "../../types/Combatant";
+import Priority from "../../types/Priority";
+import { sieve } from "../../utils/array";
+import { checkConfig } from "../../utils/config";
+import { isEquipmentAttuned } from "../../utils/items";
+import { Shield } from "../armor";
 
 const acsIcon = makeIcon(acsUrl, ItemRarityColours.Rare);
 

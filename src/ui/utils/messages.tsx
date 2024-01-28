@@ -3,7 +3,7 @@ import DiceTypeCollector from "../../collectors/DiceTypeCollector";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import ValueCollector from "../../collectors/ValueCollector";
 import { AbilityCheckDetail } from "../../events/AbilityCheckEvent";
-import { AttackDetail } from "../../events/AttackEvent";
+import { AfterAttackDetail } from "../../events/AfterAttackEvent";
 import { CombatantDamagedDetail } from "../../events/CombatantDamagedEvent";
 import { CombatantDiedDetail } from "../../events/CombatantDiedEvent";
 import { CombatantHealedDetail } from "../../events/CombatantHealedEvent";
@@ -87,20 +87,24 @@ const dmgBreakdown = (breakdown: Map<DamageType, DamageBreakdown>) => ({
 });
 
 export const getAttackMessage = ({
-  pre: { who, target, weapon, ammo, spell },
-  roll,
-  total,
-  ac,
+  attack: {
+    ac,
+    total,
+    roll: {
+      diceType,
+      type: { who, target, weapon, spell, ammo },
+    },
+  },
   outcome,
-}: AttackDetail) => [
+}: AfterAttackDetail) => [
   msgCombatant(who),
-  outcome.result === "miss"
+  outcome === "miss"
     ? " misses "
-    : outcome.result === "hit"
+    : outcome === "hit"
       ? " hits "
       : " CRITICALLY hits ",
   msgCombatant(target, true),
-  msgDiceType(roll.diceType),
+  msgDiceType(diceType),
   msgWeapon(weapon),
   msgSpell(spell),
   msgAmmo(ammo),
@@ -262,7 +266,7 @@ export const getInitiativeInfo = ({ pre, roll }: CombatantInitiativeDetail) =>
     .filter(isDefined)
     .join("\n");
 
-export const getAttackInfo = ({ pre, roll }: AttackDetail) =>
+export const getAttackInfo = ({ attack: { pre, roll } }: AfterAttackDetail) =>
   [
     getTextLines(pre.success),
     getTextLines(pre.diceType),

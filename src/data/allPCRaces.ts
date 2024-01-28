@@ -1,3 +1,8 @@
+import {
+  FallenAasimar,
+  ProtectorAasimar,
+  ScourgeAasimar,
+} from "../races/Aasimar_VGM";
 import { BronzeDragonborn, GoldDragonborn } from "../races/Dragonborn_FTD";
 import { HillDwarf, MountainDwarf } from "../races/Dwarf";
 import { HighElf } from "../races/Elf";
@@ -11,6 +16,10 @@ import { Asmodeus } from "../races/Tiefling";
 import Triton from "../races/Triton";
 
 const allPCRaces = {
+  "Fallen Aasimar": FallenAasimar,
+  "Protector Aasimar": ProtectorAasimar,
+  "Scourge Aasimar": ScourgeAasimar,
+
   "Bronze Dragonborn": BronzeDragonborn,
   "Gold Dragonborn": GoldDragonborn,
 

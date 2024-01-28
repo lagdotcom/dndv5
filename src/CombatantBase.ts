@@ -44,6 +44,7 @@ import { GEAlignment, LCAlignment } from "./types/Alignment";
 import Combatant from "./types/Combatant";
 import CombatantGroup from "./types/CombatantGroup";
 import CombatantScore from "./types/CombatantScore";
+import { CombatantTag } from "./types/CombatantTag";
 import Concentration from "./types/Concentration";
 import ConditionName from "./types/ConditionName";
 import CreatureType from "./types/CreatureType";
@@ -171,6 +172,7 @@ export default class CombatantBase implements Combatant {
   coefficients: Map<AICoefficient, number>;
   groups: Set<CombatantGroup>;
   spellsSoFar: Spell[];
+  tags: Set<CombatantTag>;
 
   constructor(
     public g: Engine,
@@ -201,6 +203,7 @@ export default class CombatantBase implements Combatant {
       alignGE,
       alignLC,
       movement = [["speed", 30]],
+      tags,
     }: {
       diesAtZero?: boolean;
       hands?: Hands;
@@ -227,6 +230,7 @@ export default class CombatantBase implements Combatant {
       alignGE?: GEAlignment;
       alignLC?: LCAlignment;
       movement?: MapInitialiser<MovementType, Feet>;
+      tags?: SetInitialiser<CombatantTag>;
     },
   ) {
     this.id = g.nextId();
@@ -291,6 +295,7 @@ export default class CombatantBase implements Combatant {
     this.spellsSoFar = [];
     this.alignGE = alignGE;
     this.alignLC = alignLC;
+    this.tags = new Set(tags);
   }
 
   get baseACMethod(): ACMethod {
@@ -624,6 +629,10 @@ export default class CombatantBase implements Combatant {
     this.concentratingOn.add(entry);
   }
 
+  protected finaliseHP() {
+    this.hp = this.hpMax;
+  }
+
   finalise() {
     for (const feature of this.features.values())
       feature.setup(this.g, this, this.getConfig(feature.name));
@@ -631,7 +640,7 @@ export default class CombatantBase implements Combatant {
     // this is where items should apply stuff
     this.g.fire(new CombatantFinalisingEvent({ who: this }));
 
-    this.hp = this.hpMax;
+    this.finaliseHP();
 
     for (const spell of this.preparedSpells)
       spellImplementationWarning(spell, this);

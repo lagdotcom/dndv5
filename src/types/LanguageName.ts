@@ -14,6 +14,7 @@ export const ExoticLanguages = [
   "Celestial",
   "Draconic",
   "Deep Speech",
+  "Gith",
   "Infernal",
   "Primordial",
   "Sylvan",

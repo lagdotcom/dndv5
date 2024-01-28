@@ -94,7 +94,7 @@ const OathSpells = bonusSpellsFeature(
 
 const Devotion: PCSubclass = {
   className: "Paladin",
-  name: "Oath ofDevotion",
+  name: "Oath of Devotion",
   features: new Map([
     [3, [OathSpells, SacredWeapon, TurnTheUnholy]],
     [7, [AuraOfDevotion]],

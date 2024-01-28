@@ -1,13 +1,35 @@
+import DndRule from "../../DndRule";
+import Engine from "../../Engine";
+import { AttackDetail } from "../../events/AttackEvent";
 import SimpleFeature from "../../features/SimpleFeature";
-import { DiceCount, PCClassLevel } from "../../flavours";
+import { CombatantID, DiceCount, PCClassLevel } from "../../flavours";
 import YesNoChoice from "../../interruptions/YesNoChoice";
 import { TurnResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
+import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
 import { getFlanker } from "../../utils/dnd";
 
 function getSneakAttackDice(level: PCClassLevel): DiceCount {
   return Math.ceil(level / 2);
+}
+
+export type SneakAttackMethod = (
+  g: Engine,
+  target: Combatant,
+  attack: AttackDetail,
+) => boolean;
+const SneakAttackConfigs = new Map<CombatantID, Set<SneakAttackMethod>>();
+new DndRule("Sneak Attack", () => {
+  SneakAttackConfigs.clear();
+});
+export function addSneakAttackMethod(
+  who: Combatant,
+  method: SneakAttackMethod,
+) {
+  const methods = SneakAttackConfigs.get(who.id) ?? new Set();
+  methods.add(method);
+  SneakAttackConfigs.set(who.id, methods);
 }
 
 const SneakAttackResource = new TurnResource("Sneak Attack", 1);
@@ -22,6 +44,13 @@ The amount of the extra damage increases as you gain levels in this class, as sh
   (g, me) => {
     const count = getSneakAttackDice(me.getClassLevel("Rogue", 1));
     me.initResource(SneakAttackResource);
+    addSneakAttackMethod(me, (g, target, attack) => {
+      const noDisadvantage = !attack.pre.diceType
+        .getValues()
+        .includes("disadvantage");
+
+      return !!getFlanker(g, me, target) && noDisadvantage;
+    });
 
     g.events.on(
       "GatherDamage",
@@ -47,13 +76,11 @@ The amount of the extra damage increases as you gain levels in this class, as sh
             weapon.properties.has("finesse") ||
             weapon.rangeCategory === "ranged";
           const advantage = attack.roll.diceType === "advantage";
-          const noDisadvantage = !attack.pre.diceType
-            .getValues()
-            .includes("disadvantage");
+          const methods = Array.from(SneakAttackConfigs.get(me.id) ?? []);
 
           if (
             isFinesseOrRangedWeapon &&
-            (advantage || (getFlanker(g, me, target) && noDisadvantage))
+            (advantage || methods.find((method) => method(g, target, attack)))
           ) {
             interrupt.add(
               new YesNoChoice(

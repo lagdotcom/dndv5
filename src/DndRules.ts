@@ -179,6 +179,10 @@ export const DeafenedRule = new DndRule("Deafened", (g) => {
     if (tags.has("hearing") && who.conditions.has("Deafened"))
       successResponse.add("fail", DeafenedRule);
   });
+
+  g.events.on("CheckHearing", ({ detail: { who, error } }) => {
+    if (who.conditions.has("Deafened")) error.add("deaf", DeafenedRule);
+  });
 });
 
 export const DifficultTerrainRule: Source = { name: "Difficult Terrain" };

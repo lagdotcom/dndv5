@@ -88,6 +88,8 @@ export default class PC extends CombatantBase {
     for (const language of race?.languages ?? []) this.languages.add(language);
 
     for (const feature of race?.features ?? []) this.addFeature(feature);
+
+    for (const tag of race?.tags ?? []) this.tags.add(tag);
   }
 
   setBackground(bg: PCBackground) {
@@ -105,9 +107,7 @@ export default class PC extends CombatantBase {
 
     // TODO multi class ability requirements
 
-    this.baseHpMax +=
-      (hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize)) +
-      this.con.modifier;
+    this.baseHpMax += hpRoll ?? getDefaultHPRoll(this.level, cls.hitDieSize);
 
     if (level === 1) {
       const data = this.level === 1 ? cls : cls.multi;
@@ -128,5 +128,12 @@ export default class PC extends CombatantBase {
 
   addSubclass(sub: PCSubclass) {
     this.subclasses.set(sub.className, sub);
+  }
+
+  finaliseHP() {
+    // apply CON bonus
+    this.baseHpMax += this.level * this.con.modifier;
+
+    super.finaliseHP();
   }
 }

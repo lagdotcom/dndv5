@@ -27,6 +27,12 @@ const makeFilter = <T>({
   check,
 });
 
+export const canBeHeardBy = makeFilter<Combatant>({
+  name: "can be heard by",
+  message: "not audible",
+  check: (g, action, value) => g.canHear(value, action.actor),
+});
+
 export const canSee = makeFilter<Combatant>({
   name: "can see",
   message: "not visible",

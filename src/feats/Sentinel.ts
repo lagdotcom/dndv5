@@ -34,15 +34,12 @@ const Sentinel = new SimpleFeature(
 - When a creature within 5 feet of you makes an attack against a target other than you (and that target doesn't have this feat), you can use your reaction to make a melee weapon attack against the attacking creature.`,
   (g, me) => {
     // When you hit a creature with an opportunity attack, the creature's speed becomes 0 for the rest of the turn.
-    g.events.on("Attack", ({ detail: { pre, interrupt, outcome } }) => {
-      if (pre.who === me && pre.tags.has("opportunity"))
+    g.events.on("AfterAttack", ({ detail: { attack, interrupt, hit } }) => {
+      const { who, tags, target } = attack.roll.type;
+      if (who === me && tags.has("opportunity") && hit)
         interrupt.add(
-          new EvaluateLater(
-            me,
-            Sentinel,
-            Priority.Late,
-            () => pre.target.addEffect(SentinelEffect, { duration: 1 }),
-            () => outcome.hits,
+          new EvaluateLater(me, Sentinel, Priority.Normal, () =>
+            target.addEffect(SentinelEffect, { duration: 1 }),
           ),
         );
     });
@@ -54,45 +51,38 @@ const Sentinel = new SimpleFeature(
     });
 
     // When a creature within 5 feet of you makes an attack against a target other than you (and that target doesn't have this feat), you can use your reaction to make a melee weapon attack against the attacking creature.
-    g.events.on(
-      "Attack",
-      ({
-        detail: {
-          pre: { who: attacker, target },
-          interrupt,
-        },
-      }) => {
-        const inRange = distance(attacker, me) <= 5;
-        const notAgainstMe = target !== me;
-        const notSentinel = !target.features.has(Sentinel.name);
+    g.events.on("AfterAttack", ({ detail: { attack, interrupt } }) => {
+      const { who: attacker, target } = attack.roll.type;
+      const inRange = distance(attacker, me) <= 5;
+      const notAgainstMe = target !== me;
+      const notSentinel = !target.features.has(Sentinel.name);
 
-        if (inRange && notAgainstMe && notSentinel) {
-          const config = { target: attacker };
-          const choices = me.weapons
-            .filter((weapon) => weapon.rangeCategory === "melee")
-            .map((weapon) => new SentinelRetaliation(g, me, weapon))
-            .map((action) =>
-              makeChoice(
-                action,
-                `attack with ${action.weaponName}`,
-                !checkConfig(g, action, config),
-              ),
-            );
-          interrupt.add(
-            new PickFromListChoice(
-              me,
-              Sentinel,
-              "Sentinel",
-              `${attacker.name} made an attack against ${target.name}. Use ${me.name}'s reaction to retaliate?`,
-              Priority.Normal,
-              choices,
-              (action) => action.apply(config),
-              true,
+      if (inRange && notAgainstMe && notSentinel) {
+        const config = { target: attacker };
+        const choices = me.weapons
+          .filter((weapon) => weapon.rangeCategory === "melee")
+          .map((weapon) => new SentinelRetaliation(g, me, weapon))
+          .map((action) =>
+            makeChoice(
+              action,
+              `attack with ${action.weaponName}`,
+              !checkConfig(g, action, config),
             ),
           );
-        }
-      },
-    );
+        interrupt.add(
+          new PickFromListChoice(
+            me,
+            Sentinel,
+            "Sentinel",
+            `${attacker.name} made an attack against ${target.name}. Use ${me.name}'s reaction to retaliate?`,
+            Priority.Normal,
+            choices,
+            (action) => action.apply(config),
+            true,
+          ),
+        );
+      }
+    });
   },
 );
 export default Sentinel;

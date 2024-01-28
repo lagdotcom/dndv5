@@ -21,6 +21,7 @@ import Effect from "./Effect";
 import { Dead, Dying, Stable } from "./effects";
 import AbilityCheckEvent from "./events/AbilityCheckEvent";
 import AfterActionEvent from "./events/AfterActionEvent";
+import AfterAttackEvent from "./events/AfterAttackEvent";
 import AreaPlacedEvent from "./events/AreaPlacedEvent";
 import AreaRemovedEvent from "./events/AreaRemovedEvent";
 import AttackEvent, { AttackDetail } from "./events/AttackEvent";
@@ -33,6 +34,7 @@ import BeforeMoveEvent from "./events/BeforeMoveEvent";
 import BeforeSaveEvent from "./events/BeforeSaveEvent";
 import StartBoundedMoveEvent from "./events/BoundedMoveEvent";
 import CheckActionEvent from "./events/CheckActionEvent";
+import CheckHearingEvent from "./events/CheckHearingEvent";
 import CheckVisionEvent from "./events/CheckVisionEvent";
 import CombatantDamagedEvent from "./events/CombatantDamagedEvent";
 import CombatantDiedEvent from "./events/CombatantDiedEvent";
@@ -821,13 +823,18 @@ export default class Engine {
     const attack = await this.resolve(event);
     const outcome = outcomeCollector.result;
 
-    return {
-      outcome,
-      attack: attack.detail,
-      hit: outcome === "hit" || outcome === "critical",
-      critical: outcome === "critical",
-      target: roll.type.target,
-    } as const;
+    return (
+      await this.resolve(
+        new AfterAttackEvent({
+          outcome,
+          attack: attack.detail,
+          hit: outcome === "hit" || outcome === "critical",
+          critical: outcome === "critical",
+          target: roll.type.target,
+          interrupt: new InterruptionCollector(),
+        }),
+      )
+    ).detail;
   }
 
   async damage(
@@ -1047,6 +1054,12 @@ export default class Engine {
   private setTemporaryHP(who: Combatant, count: HitPoints, source?: Source) {
     who.temporaryHP = count;
     who.temporaryHPSource = source;
+  }
+
+  canHear(who: Combatant, target: Combatant) {
+    return this.fire(
+      new CheckHearingEvent({ who, target, error: new ErrorCollector() }),
+    ).detail.error.result;
   }
 
   canSee(who: Combatant, target: Combatant) {

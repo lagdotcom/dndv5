@@ -23,6 +23,7 @@ import AIRule from "./AIRule";
 import { GEAlignment, LCAlignment } from "./Alignment";
 import CombatantGroup from "./CombatantGroup";
 import CombatantScore from "./CombatantScore";
+import { CombatantTag } from "./CombatantTag";
 import Concentration from "./Concentration";
 import ConditionName from "./ConditionName";
 import CreatureType from "./CreatureType";
@@ -121,6 +122,7 @@ export default interface Combatant extends Source {
   frightenedBy: Set<Combatant>;
   spellsSoFar: Spell[];
   grappling: Set<Combatant>;
+  tags: Set<CombatantTag>;
 
   weapons: WeaponItem[];
   armor?: ArmorItem;

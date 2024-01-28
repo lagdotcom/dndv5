@@ -19,15 +19,19 @@ import {
   SplintArmor,
   StuddedLeatherArmor,
 } from "../items/armor";
-import { ArrowCatchingShield } from "../items/shields";
+import { GauntletsOfFlamingFury } from "../items/bgdia";
+import { PariahsShield } from "../items/ggr";
 import { ElvenChain } from "../items/srd/armor";
 import { PotionOfGiantStrength, PotionOfHealing } from "../items/srd/potions";
+import { ArrowCatchingShield } from "../items/srd/shields";
+import BeltOfDwarvenkind from "../items/srd/wondrous/BeltOfDwarvenkind";
 import BootsOfTheWinterlands from "../items/srd/wondrous/BootsOfTheWinterlands";
 import BracersOfArchery from "../items/srd/wondrous/BracersOfArchery";
 import BracersOfDefense from "../items/srd/wondrous/BracersOfDefense";
 import BroochOfShielding from "../items/srd/wondrous/BroochOfShielding";
 import CloakOfElvenkind from "../items/srd/wondrous/CloakOfElvenkind";
 import CloakOfProtection from "../items/srd/wondrous/CloakOfProtection";
+import DimensionalShackles from "../items/srd/wondrous/DimensionalShackles";
 import FigurineOfWondrousPower from "../items/srd/wondrous/FigurineOfWondrousPower";
 import {
   iounStoneOfAgility,
@@ -183,6 +187,7 @@ const srdItems = {
 
   // wondrous
   "amulet of health": (g) => new AmuletOfHealth(g),
+  "belt of dwarvenkind": (g) => new BeltOfDwarvenkind(g),
   "belt of hill giant strength": (g) => new BeltOfGiantStrength(g, "Hill"),
   "belt of stone giant strength": (g) => new BeltOfGiantStrength(g, "Stone"),
   "belt of frost giant strength": (g) => new BeltOfGiantStrength(g, "Frost"),
@@ -195,6 +200,7 @@ const srdItems = {
   "brooch of shielding": (g) => new BroochOfShielding(g),
   "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
   "cloak of protection": (g) => new CloakOfProtection(g),
+  "dimensional shackles": (g) => new DimensionalShackles(g),
   "elven chain": (g) => new ElvenChain(g),
   "figurine of wondrous power, bronze griffin": (g) =>
     new FigurineOfWondrousPower(g, "Bronze Griffin"),
@@ -228,6 +234,12 @@ const srdItems = {
 
 const allItems = {
   ...srdItems,
+
+  // BGDIA
+  "gauntlets of flaming fury": (g) => new GauntletsOfFlamingFury(g),
+
+  // GGR
+  "pariah's shield": (g) => new PariahsShield(g),
 
   // TCE
   "dragon-touched focus (slumbering)": (g) =>

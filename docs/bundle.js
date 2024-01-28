@@ -1419,6 +1419,11 @@
     message,
     check
   });
+  var canBeHeardBy = makeFilter({
+    name: "can be heard by",
+    message: "not audible",
+    check: (g, action, value) => g.canHear(value, action.actor)
+  });
   var canSee = makeFilter({
     name: "can see",
     message: "not visible",
@@ -2160,7 +2165,8 @@
       groups,
       alignGE,
       alignLC,
-      movement = [["speed", 30]]
+      movement = [["speed", 30]],
+      tags
     }) {
       this.g = g;
       this.name = name;
@@ -2224,6 +2230,7 @@
       this.spellsSoFar = [];
       this.alignGE = alignGE;
       this.alignLC = alignLC;
+      this.tags = new Set(tags);
     }
     get baseACMethod() {
       return getNaturalArmourMethod(this, this.naturalAC);
@@ -2490,11 +2497,14 @@
       await this.endConcentration();
       this.concentratingOn.add(entry);
     }
+    finaliseHP() {
+      this.hp = this.hpMax;
+    }
     finalise() {
       for (const feature of this.features.values())
         feature.setup(this.g, this, this.getConfig(feature.name));
       this.g.fire(new CombatantFinalisingEvent({ who: this }));
-      this.hp = this.hpMax;
+      this.finaliseHP();
       for (const spell of this.preparedSpells)
         spellImplementationWarning(spell, this);
     }
@@ -4177,6 +4187,10 @@
       if (tags.has("hearing") && who.conditions.has("Deafened"))
         successResponse.add("fail", DeafenedRule);
     });
+    g.events.on("CheckHearing", ({ detail: { who, error } }) => {
+      if (who.conditions.has("Deafened"))
+        error.add("deaf", DeafenedRule);
+    });
   });
   var DifficultTerrainRule = { name: "Difficult Terrain" };
   var EffectsRule = new DndRule("Effects", (g) => {
@@ -4576,6 +4590,13 @@
     }
   };
 
+  // src/events/AfterAttackEvent.ts
+  var AfterAttackEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("AfterAttack", { detail });
+    }
+  };
+
   // src/events/AreaPlacedEvent.ts
   var AreaPlacedEvent = class extends CustomEvent {
     constructor(detail) {
@@ -4643,6 +4664,13 @@
   var CheckActionEvent = class extends CustomEvent {
     constructor(detail) {
       super("CheckAction", { detail });
+    }
+  };
+
+  // src/events/CheckHearingEvent.ts
+  var CheckHearingEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("CheckHearing", { detail });
     }
   };
 
@@ -5426,13 +5454,16 @@
       );
       const attack = await this.resolve(event);
       const outcome = outcomeCollector.result;
-      return {
-        outcome,
-        attack: attack.detail,
-        hit: outcome === "hit" || outcome === "critical",
-        critical: outcome === "critical",
-        target: roll.type.target
-      };
+      return (await this.resolve(
+        new AfterAttackEvent({
+          outcome,
+          attack: attack.detail,
+          hit: outcome === "hit" || outcome === "critical",
+          critical: outcome === "critical",
+          target: roll.type.target,
+          interrupt: new InterruptionCollector()
+        })
+      )).detail;
     }
     async damage(source, damageType, e2, damageInitialiser = [], startingMultiplier) {
       if (startingMultiplier === "zero")
@@ -5603,6 +5634,11 @@
     setTemporaryHP(who, count, source) {
       who.temporaryHP = count;
       who.temporaryHPSource = source;
+    }
+    canHear(who, target) {
+      return this.fire(
+        new CheckHearingEvent({ who, target, error: new ErrorCollector() })
+      ).detail.error.result;
     }
     canSee(who, target) {
       return this.fire(
@@ -6804,15 +6840,15 @@
 - Creatures provoke opportunity attacks from you even if they take the Disengage action before leaving your reach.
 - When a creature within 5 feet of you makes an attack against a target other than you (and that target doesn't have this feat), you can use your reaction to make a melee weapon attack against the attacking creature.`,
     (g, me) => {
-      g.events.on("Attack", ({ detail: { pre, interrupt, outcome } }) => {
-        if (pre.who === me && pre.tags.has("opportunity"))
+      g.events.on("AfterAttack", ({ detail: { attack, interrupt, hit } }) => {
+        const { who, tags, target } = attack.roll.type;
+        if (who === me && tags.has("opportunity") && hit)
           interrupt.add(
             new EvaluateLater(
               me,
               Sentinel,
-              Priority_default.Late,
-              () => pre.target.addEffect(SentinelEffect, { duration: 1 }),
-              () => outcome.hits
+              Priority_default.Normal,
+              () => target.addEffect(SentinelEffect, { duration: 1 })
             )
           );
       });
@@ -6820,41 +6856,34 @@
         if (action instanceof OpportunityAttack && action.actor === me)
           error.ignore(DisengageEffect);
       });
-      g.events.on(
-        "Attack",
-        ({
-          detail: {
-            pre: { who: attacker, target },
-            interrupt
-          }
-        }) => {
-          const inRange = distance(attacker, me) <= 5;
-          const notAgainstMe = target !== me;
-          const notSentinel = !target.features.has(Sentinel.name);
-          if (inRange && notAgainstMe && notSentinel) {
-            const config = { target: attacker };
-            const choices = me.weapons.filter((weapon) => weapon.rangeCategory === "melee").map((weapon) => new SentinelRetaliation(g, me, weapon)).map(
-              (action) => makeChoice(
-                action,
-                `attack with ${action.weaponName}`,
-                !checkConfig(g, action, config)
-              )
-            );
-            interrupt.add(
-              new PickFromListChoice(
-                me,
-                Sentinel,
-                "Sentinel",
-                `${attacker.name} made an attack against ${target.name}. Use ${me.name}'s reaction to retaliate?`,
-                Priority_default.Normal,
-                choices,
-                (action) => action.apply(config),
-                true
-              )
-            );
-          }
+      g.events.on("AfterAttack", ({ detail: { attack, interrupt } }) => {
+        const { who: attacker, target } = attack.roll.type;
+        const inRange = distance(attacker, me) <= 5;
+        const notAgainstMe = target !== me;
+        const notSentinel = !target.features.has(Sentinel.name);
+        if (inRange && notAgainstMe && notSentinel) {
+          const config = { target: attacker };
+          const choices = me.weapons.filter((weapon) => weapon.rangeCategory === "melee").map((weapon) => new SentinelRetaliation(g, me, weapon)).map(
+            (action) => makeChoice(
+              action,
+              `attack with ${action.weaponName}`,
+              !checkConfig(g, action, config)
+            )
+          );
+          interrupt.add(
+            new PickFromListChoice(
+              me,
+              Sentinel,
+              "Sentinel",
+              `${attacker.name} made an attack against ${target.name}. Use ${me.name}'s reaction to retaliate?`,
+              Priority_default.Normal,
+              choices,
+              (action) => action.apply(config),
+              true
+            )
+          );
         }
-      );
+      });
     }
   );
   var Sentinel_default = Sentinel;
@@ -12290,34 +12319,29 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
               response.add("resist", source);
           }
         );
-        g.events.on("Attack", ({ detail: { pre, interrupt, outcome } }) => {
-          const config = pre.target.hasEffect(source);
-          const inRange = distance(pre.who, pre.target) <= 5;
-          const isMelee = pre.tags.has("melee");
-          if (config && inRange && isMelee)
+        g.events.on("AfterAttack", ({ detail: { attack, interrupt, hit } }) => {
+          const { tags, target, who } = attack.roll.type;
+          const config = target.hasEffect(source);
+          const inRange = distance(who, target) <= 5;
+          const isMelee = tags.has("melee");
+          if (config && inRange && isMelee && hit)
             interrupt.add(
-              new EvaluateLater(
-                pre.target,
-                source,
-                Priority_default.Late,
-                async () => {
-                  const rollDamage = await g.rollDamage(2, {
-                    attacker: pre.target,
-                    damageType: retaliate,
-                    size: 8,
-                    source,
-                    spell: FireShield,
-                    tags: atSet("magical")
-                  });
-                  await g.damage(
-                    source,
-                    retaliate,
-                    { attacker: pre.target, spell: FireShield, target: pre.who },
-                    [[retaliate, rollDamage]]
-                  );
-                },
-                () => outcome.hits
-              )
+              new EvaluateLater(target, source, Priority_default.Late, async () => {
+                const rollDamage = await g.rollDamage(2, {
+                  attacker: target,
+                  damageType: retaliate,
+                  size: 8,
+                  source,
+                  spell: FireShield,
+                  tags: atSet("magical")
+                });
+                await g.damage(
+                  source,
+                  retaliate,
+                  { attacker: target, spell: FireShield, target: who },
+                  [[retaliate, rollDamage]]
+                );
+              })
             );
         });
       },
@@ -15270,73 +15294,154 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     }
   };
 
-  // src/img/eq/arrow-catching-shield.svg
-  var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
+  // src/resolvers/MultiChoiceResolver.ts
+  var MultiChoiceResolver = class {
+    constructor(g, entries, minimum, maximum) {
+      this.g = g;
+      this.entries = entries;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.type = "Choices";
+    }
+    get name() {
+      if (this.entries.length === 0)
+        return "empty";
+      return `${describeRange(this.minimum, this.maximum)}: ${this.entries.map((e2) => e2.label).join(", ")}`;
+    }
+    check(value, action, ec) {
+      if (this.entries.length === 0)
+        ec.add("No valid choices", this);
+      else if (!Array.isArray(value))
+        ec.add("No choices", this);
+      else {
+        if (value.length < this.minimum)
+          ec.add(`At least ${this.minimum} choices`, this);
+        if (value.length > this.maximum)
+          ec.add(`At most ${this.maximum} choices`, this);
+      }
+      return ec;
+    }
+  };
 
-  // src/items/shields.ts
-  var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
-  var ArrowCatchingShieldAction = class extends AbstractAction {
-    constructor(g, actor, attack) {
+  // src/items/WondrousItemBase.ts
+  var WondrousItemBase = class extends ItemBase {
+    constructor(g, name, hands = 0, iconUrl) {
+      super(g, "wondrous", name, hands, iconUrl);
+    }
+  };
+
+  // src/items/bgdia.ts
+  var GauntletsOfFlamingFuryEffect = new Effect(
+    "Gauntlets of Flaming Fury",
+    "turnEnd",
+    (g) => {
+      g.events.on(
+        "GatherDamage",
+        ({ detail: { attacker, target, weapon, interrupt, map } }) => {
+          const config = attacker == null ? void 0 : attacker.getEffectConfig(GauntletsOfFlamingFuryEffect);
+          if (attacker && weapon && (config == null ? void 0 : config.weapons.has(weapon)))
+            interrupt.add(
+              new EvaluateLater(
+                attacker,
+                config.gauntlet,
+                Priority_default.Normal,
+                async () => {
+                  const amount = await g.rollDamage(1, {
+                    size: 6,
+                    attacker,
+                    damageType: "fire",
+                    source: config.gauntlet,
+                    tags: atSet("magical"),
+                    target
+                  });
+                  map.add("fire", amount);
+                }
+              )
+            );
+        }
+      );
+    },
+    { tags: ["magic"] }
+  );
+  var GauntletsOfFlamingFuryResource = new DawnResource(
+    "Gauntlets of Flaming Fury",
+    1
+  );
+  var GauntletsOfFlamingFuryAction = class extends AbstractAction {
+    constructor(g, actor, gauntlet) {
       super(
         g,
         actor,
-        "Arrow-Catching Shield",
+        "Gauntlets of Flaming Fury",
         "implemented",
-        { target: new TargetResolver(g, 5, [notSelf]) },
-        // TODO isAlly?
         {
-          time: "reaction",
-          icon: acsIcon,
-          description: `Whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.`
+          items: new MultiChoiceResolver(
+            g,
+            actor.weapons.filter(
+              (w) => w.category !== "natural" && w.rangeCategory === "melee"
+            ).map((value) => ({ label: value.name, value })),
+            1,
+            2
+          )
+        },
+        {
+          description: `As a bonus action, you can use the gauntlets to cause magical flames to envelop one or two melee weapons in your grasp. Each flaming weapon deals an extra 1d6 fire damage on a hit. The flames last until you sheath or let go of either weapon. Once used, this property can't be used again until the next dawn.`,
+          resources: [[GauntletsOfFlamingFuryResource, 1]],
+          time: "bonus action"
         }
       );
-      this.attack = attack;
+      this.gauntlet = gauntlet;
     }
-    getAffected({ target }) {
-      return [target];
+    getTargets() {
+      return [];
     }
-    getTargets({ target }) {
-      return sieve(target);
+    getAffected() {
+      return [this.actor];
     }
-    async apply({ target }) {
-      await super.apply({ target });
-      if (!this.attack)
-        throw new Error(`No attack to modify.`);
-      this.g.text(
-        new MessageBuilder().co(this.actor).text(" redirects the attack on").sp().co(this.attack.target).text(" to themselves.")
-      );
-      this.attack.target = this.actor;
+    async apply(config) {
+      await super.apply(config);
+      const { gauntlet, actor } = this;
+      await actor.addEffect(GauntletsOfFlamingFuryEffect, {
+        duration: Infinity,
+        gauntlet,
+        weapons: new Set(config.items)
+      });
     }
   };
-  var ArrowCatchingShield = class extends Shield2 {
+  var GauntletsOfFlamingFury = class extends WondrousItemBase {
     constructor(g) {
-      super(g, arrow_catching_shield_default);
-      this.name = "Arrow-Catching Shield";
+      super(g, "gauntlets of flaming fury");
       this.attunement = true;
       this.rarity = "Rare";
-      g.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
-        if (isEquipmentAttuned(this, who) && (pre == null ? void 0 : pre.tags.has("ranged")))
-          bonus.add(2, this);
+      g.events.on("BeforeAttack", ({ detail: { who, weapon, tags } }) => {
+        if (isEquipmentAttuned(this, who) && (weapon == null ? void 0 : weapon.category) !== "natural")
+          tags.add("magical");
+      });
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who))
+          who.initResource(GauntletsOfFlamingFuryResource);
       });
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (isEquipmentAttuned(this, who))
-          actions.push(new ArrowCatchingShieldAction(g, who));
+          actions.push(new GauntletsOfFlamingFuryAction(g, who, this));
       });
-      g.events.on("BeforeAttack", ({ detail }) => {
-        if (isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
-          const config = { target: detail.target };
-          const action = new ArrowCatchingShieldAction(g, this.possessor, detail);
-          if (checkConfig(g, action, config))
-            detail.interrupt.add(
-              new YesNoChoice(
-                this.possessor,
-                this,
-                this.name,
-                `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
-                Priority_default.ChangesTarget,
-                () => g.act(action, config)
-              )
-            );
+    }
+  };
+
+  // src/items/ggr.ts
+  var PariahsShield = class extends Shield2 {
+    constructor(g) {
+      super(g);
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("GetAC", ({ detail: { who, bonus } }) => {
+        if (isEquipmentAttuned(this, who)) {
+          const allies = Array.from(g.combatants).filter(
+            (other) => other.side === who.side && other !== who && distance(who, other) <= 5
+          ).length;
+          const value = clamp(Math.floor(allies / 2), 0, 3);
+          if (value)
+            bonus.add(value, this);
         }
       });
     }
@@ -15475,10 +15580,262 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     }
   };
 
-  // src/items/WondrousItemBase.ts
-  var WondrousItemBase = class extends ItemBase {
-    constructor(g, name, hands = 0, iconUrl) {
-      super(g, "wondrous", name, hands, iconUrl);
+  // src/img/eq/arrow-catching-shield.svg
+  var arrow_catching_shield_default = "./arrow-catching-shield-KQXUUCHG.svg";
+
+  // src/items/srd/shields.ts
+  var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
+  var ArrowCatchingShieldAction = class extends AbstractAction {
+    constructor(g, actor, attack) {
+      super(
+        g,
+        actor,
+        "Arrow-Catching Shield",
+        "implemented",
+        { target: new TargetResolver(g, 5, [notSelf]) },
+        // TODO isAlly?
+        {
+          time: "reaction",
+          icon: acsIcon,
+          description: `Whenever an attacker makes a ranged attack against a target within 5 feet of you, you can use your reaction to become the target of the attack instead.`
+        }
+      );
+      this.attack = attack;
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      if (!this.attack)
+        throw new Error(`No attack to modify.`);
+      this.g.text(
+        new MessageBuilder().co(this.actor).text(" redirects the attack on").sp().co(this.attack.target).text(" to themselves.")
+      );
+      this.attack.target = this.actor;
+    }
+  };
+  var ArrowCatchingShield = class extends Shield2 {
+    constructor(g) {
+      super(g, arrow_catching_shield_default);
+      this.name = "Arrow-Catching Shield";
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("GetAC", ({ detail: { who, pre, bonus } }) => {
+        if (isEquipmentAttuned(this, who) && (pre == null ? void 0 : pre.tags.has("ranged")))
+          bonus.add(2, this);
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new ArrowCatchingShieldAction(g, who));
+      });
+      g.events.on("BeforeAttack", ({ detail }) => {
+        if (isEquipmentAttuned(this, this.possessor) && detail.tags.has("ranged")) {
+          const config = { target: detail.target };
+          const action = new ArrowCatchingShieldAction(g, this.possessor, detail);
+          if (checkConfig(g, action, config))
+            detail.interrupt.add(
+              new YesNoChoice(
+                this.possessor,
+                this,
+                this.name,
+                `${detail.who.name} is attacking ${detail.target.name} at range. Use ${this.possessor.name}'s reaction to become the target of the attack instead?`,
+                Priority_default.ChangesTarget,
+                () => g.act(action, config)
+              )
+            );
+        }
+      });
+    }
+  };
+
+  // src/types/CombatantTag.ts
+  var coSet2 = (...items) => new Set(items);
+
+  // src/types/LanguageName.ts
+  var StandardLanguages = [
+    "Common",
+    "Dwarvish",
+    "Elvish",
+    "Giant",
+    "Gnomish",
+    "Goblin",
+    "Halfling",
+    "Orc"
+  ];
+  var ExoticLanguages = [
+    "Abyssal",
+    "Celestial",
+    "Draconic",
+    "Deep Speech",
+    "Gith",
+    "Infernal",
+    "Primordial",
+    "Sylvan",
+    "Undercommon"
+  ];
+  var PrimordialDialects = [
+    "Aquan",
+    "Auran",
+    "Ignan",
+    "Terran"
+  ];
+  var LanguageNames = [
+    ...StandardLanguages,
+    ...ExoticLanguages,
+    ...PrimordialDialects,
+    "Druidic",
+    "Thieves' Cant"
+  ];
+  var laSet = (...items) => new Set(items);
+
+  // src/races/common.ts
+  function poisonResistanceFeature(name, text) {
+    const feature = new SimpleFeature(name, text, (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, diceType, tags } }) => {
+        if (who === me && tags.has("poison"))
+          diceType.add("advantage", feature);
+      });
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response } }) => {
+          if (who === me && damageType === "poison")
+            response.add("resist", feature);
+        }
+      );
+    });
+    return feature;
+  }
+  function resistanceFeature(name, text, types) {
+    const feature = new SimpleFeature(name, text, (g, me) => {
+      g.events.on(
+        "GetDamageResponse",
+        ({ detail: { who, damageType, response: result } }) => {
+          if (who === me && types.includes(damageType))
+            result.add("resist", feature);
+        }
+      );
+    });
+    return feature;
+  }
+  var ExtraLanguage = new ConfiguredFeature(
+    "Extra Language",
+    `You can speak, read, and write one extra language of your choice.`,
+    (g, me, language) => {
+      me.languages.add(language);
+    }
+  );
+  var FeyAncestry = new SimpleFeature(
+    "Fey Ancestry",
+    `You have advantage on saving throws against being charmed, and magic can't put you to sleep.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
+        var _a;
+        if (who === me && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")))
+          diceType.add("advantage", FeyAncestry);
+      });
+      g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
+        if (who === me && effect.tags.has("magic") && effect.tags.has("sleep"))
+          success.add("fail", FeyAncestry);
+      });
+    }
+  );
+
+  // src/races/Dwarf.ts
+  var DwarvenResilience = poisonResistanceFeature(
+    "Dwarven Resilience",
+    `You have advantage on saving throws against poison, and you have resistance against poison damage.`
+  );
+  var DwarvenCombatTraining = new SimpleFeature(
+    "Dwarven Combat Training",
+    `You have proficiency with the battleaxe, handaxe, light hammer, and warhammer.`,
+    (g, me) => {
+      for (const weapon of ["battleaxe", "handaxe", "light hammer", "warhammer"])
+        me.weaponProficiencies.add(weapon);
+    }
+  );
+  var ToolProficiency = new ConfiguredFeature(
+    "Tool Proficiency",
+    `You gain proficiency with the artisan's tools of your choice: Smith's tools, brewer's supplies, or mason's tools.`,
+    (g, me, tool) => {
+      me.addProficiency(tool, "proficient");
+    }
+  );
+  var Stonecunning = nonCombatFeature(
+    "Stonecunning",
+    `Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus.`
+  );
+  var Dwarf = {
+    name: "Dwarf",
+    abilities: /* @__PURE__ */ new Map([["con", 2]]),
+    size: SizeCategory_default.Medium,
+    movement: /* @__PURE__ */ new Map([["speed", 25]]),
+    features: /* @__PURE__ */ new Set([
+      Darkvision60,
+      DwarvenResilience,
+      DwarvenCombatTraining,
+      ToolProficiency,
+      Stonecunning
+    ]),
+    languages: laSet("Common", "Dwarvish"),
+    tags: coSet2("dwarf")
+  };
+  var DwarvenToughness = new SimpleFeature(
+    "Dwarven Toughness",
+    `Your hit point maximum increases by 1, and it increases by 1 every time you gain a level.`,
+    (g, me) => {
+      me.baseHpMax += me.level;
+    }
+  );
+  var HillDwarf = {
+    parent: Dwarf,
+    name: "Hill Dwarf",
+    abilities: /* @__PURE__ */ new Map([["wis", 1]]),
+    size: SizeCategory_default.Medium,
+    features: /* @__PURE__ */ new Set([DwarvenToughness])
+  };
+  var DwarvenArmorTraining = new SimpleFeature(
+    "Dwarven Armor Training",
+    `You have proficiency with light and medium armor.`,
+    (g, me) => {
+      me.armorProficiencies.add("light");
+      me.armorProficiencies.add("medium");
+    }
+  );
+  var MountainDwarf = {
+    parent: Dwarf,
+    name: "Mountain Dwarf",
+    abilities: /* @__PURE__ */ new Map([["str", 2]]),
+    size: SizeCategory_default.Medium,
+    features: /* @__PURE__ */ new Set([DwarvenArmorTraining])
+  };
+
+  // src/items/srd/wondrous/BeltOfDwarvenkind.ts
+  var BeltOfDwarvenkind = class extends WondrousItemBase {
+    constructor(g) {
+      super(g, "belt of dwarvenkind");
+      this.attunement = true;
+      this.rarity = "Rare";
+      g.events.on("CombatantFinalising", ({ detail: { who } }) => {
+        if (isEquipmentAttuned(this, who)) {
+          who.con.score += 2;
+          if (!who.tags.has("dwarf")) {
+            who.addFeature(DwarvenResilience);
+            who.addFeature(Darkvision60);
+            who.languages.add("Dwarvish");
+          }
+        }
+      });
+      g.events.on(
+        "BeforeCheck",
+        ({ detail: { skill, ability, who, diceType, target } }) => {
+          if (isEquipmentAttuned(this, who) && skill === "Persuasion" && ability === "cha" && (target == null ? void 0 : target.tags.has("dwarf")))
+            diceType.add("advantage", this);
+        }
+      );
     }
   };
 
@@ -15626,6 +15983,14 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         if (isEquipmentAttuned(this, who))
           bonus.add(1, this);
       });
+    }
+  };
+
+  // src/items/srd/wondrous/DimensionalShackles.ts
+  var DimensionalShackles = class extends WondrousItemBase {
+    constructor(g) {
+      super(g, "dimensional shackles");
+      this.rarity = "Rare";
     }
   };
 
@@ -16621,6 +16986,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     "wand of web": (g) => new WandOfWeb(g),
     // wondrous
     "amulet of health": (g) => new AmuletOfHealth(g),
+    "belt of dwarvenkind": (g) => new BeltOfDwarvenkind(g),
     "belt of hill giant strength": (g) => new BeltOfGiantStrength(g, "Hill"),
     "belt of stone giant strength": (g) => new BeltOfGiantStrength(g, "Stone"),
     "belt of frost giant strength": (g) => new BeltOfGiantStrength(g, "Frost"),
@@ -16633,6 +16999,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     "brooch of shielding": (g) => new BroochOfShielding(g),
     "cloak of elvenkind": (g) => new CloakOfElvenkind(g),
     "cloak of protection": (g) => new CloakOfProtection(g),
+    "dimensional shackles": (g) => new DimensionalShackles(g),
     "elven chain": (g) => new ElvenChain(g),
     "figurine of wondrous power, bronze griffin": (g) => new FigurineOfWondrousPower(g, "Bronze Griffin"),
     "figurine of wondrous power, ebony fly": (g) => new FigurineOfWondrousPower(g, "Ebony Fly"),
@@ -16656,6 +17023,10 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   };
   var allItems = {
     ...srdItems,
+    // BGDIA
+    "gauntlets of flaming fury": (g) => new GauntletsOfFlamingFury(g),
+    // GGR
+    "pariah's shield": (g) => new PariahsShield(g),
     // TCE
     "dragon-touched focus (slumbering)": (g) => new DragonTouchedFocus(g, "Slumbering"),
     "dragon-touched focus (stirring)": (g) => new DragonTouchedFocus(g, "Stirring"),
@@ -16756,6 +17127,9 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     if (t.aiGroups)
       for (const group of t.aiGroups)
         m.groups.add(group);
+    if (t.tags)
+      for (const tag of t.tags)
+        m.tags.add(tag);
     if (t.config)
       t.config.apply.apply(m, [config != null ? config : t.config.initial]);
     if (t.setup)
@@ -17035,6 +17409,16 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   function getSneakAttackDice(level) {
     return Math.ceil(level / 2);
   }
+  var SneakAttackConfigs = /* @__PURE__ */ new Map();
+  new DndRule("Sneak Attack", () => {
+    SneakAttackConfigs.clear();
+  });
+  function addSneakAttackMethod(who, method) {
+    var _a;
+    const methods = (_a = SneakAttackConfigs.get(who.id)) != null ? _a : /* @__PURE__ */ new Set();
+    methods.add(method);
+    SneakAttackConfigs.set(who.id, methods);
+  }
   var SneakAttackResource = new TurnResource("Sneak Attack", 1);
   var SneakAttack = new SimpleFeature(
     "Sneak Attack",
@@ -17046,6 +17430,10 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     (g, me) => {
       const count = getSneakAttackDice(me.getClassLevel("Rogue", 1));
       me.initResource(SneakAttackResource);
+      addSneakAttackMethod(me, (g2, target, attack) => {
+        const noDisadvantage = !attack.pre.diceType.getValues().includes("disadvantage");
+        return !!getFlanker(g2, me, target) && noDisadvantage;
+      });
       g.events.on(
         "GatherDamage",
         ({
@@ -17060,11 +17448,12 @@ The amount of the extra damage increases as you gain levels in this class, as sh
             weapon
           }
         }) => {
+          var _a;
           if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
             const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
             const advantage = attack.roll.diceType === "advantage";
-            const noDisadvantage = !attack.pre.diceType.getValues().includes("disadvantage");
-            if (isFinesseOrRangedWeapon && (advantage || getFlanker(g, me, target) && noDisadvantage)) {
+            const methods = Array.from((_a = SneakAttackConfigs.get(me.id)) != null ? _a : []);
+            if (isFinesseOrRangedWeapon && (advantage || methods.find((method) => method(g, target, attack)))) {
               interrupt.add(
                 new YesNoChoice(
                   attacker,
@@ -18844,6 +19233,77 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   };
   var Shaira_default = Shaira;
 
+  // src/img/tok/pc/dandelion.png
+  var dandelion_default = "./dandelion-VCFEFB2F.png";
+
+  // src/pcs/kythera/Dandelion.ts
+  var Dandelion = {
+    name: "Dandelion",
+    tokenUrl: dandelion_default,
+    abilities: [13, 16, 14, 8, 9, 15],
+    race: { name: "Protector Aasimar" },
+    alignment: ["Lawful", "Neutral"],
+    background: {
+      name: "Outlander",
+      proficiencies: ["horn"],
+      languages: ["Gith"]
+    },
+    levels: [
+      {
+        class: "Rogue",
+        proficiencies: ["Persuasion", "Performance", "Insight", "Perception"],
+        configs: { Expertise: ["Persuasion", "Insight"] }
+      },
+      { class: "Rogue", hpRoll: 7 },
+      { class: "Rogue", hpRoll: 1, subclass: "Swashbuckler" },
+      { class: "Paladin", hpRoll: 9 },
+      {
+        class: "Paladin",
+        hpRoll: 1,
+        configs: { "Fighting Style (Paladin)": "Fighting Style: Defense" }
+      },
+      { class: "Paladin", hpRoll: 9, subclass: "Crown" },
+      {
+        class: "Paladin",
+        hpRoll: 9,
+        configs: {
+          "Ability Score Improvement (Paladin 4)": {
+            type: "feat",
+            feat: "War Caster"
+          }
+        }
+      },
+      { class: "Paladin", hpRoll: 9 },
+      { class: "Paladin", hpRoll: 9 }
+    ],
+    items: [
+      // TODO { name: "Colonel Marsoc Mcflucky" },
+      { name: "belt of dwarvenkind", equip: true, attune: true },
+      // TODO { name: "Francis Scott Lockpick" },
+      { name: "gauntlets of flaming fury", equip: true, attune: true },
+      { name: "pariah's shield", equip: true, attune: true },
+      { name: "rapier", enchantments: ["+2 weapon"], equip: true },
+      { name: "potion of greater healing", quantity: 2 },
+      { name: "dagger", quantity: 2 },
+      { name: "half plate armor", equip: true },
+      { name: "shortbow" },
+      { name: "dimensional shackles" },
+      // { name: "calligrapher's supplies" },
+      // TODO { name: "hunting trap" },
+      // { name: "thieves' tools" },
+      { name: "arrow", quantity: 28 }
+    ],
+    prepared: [
+      "bless",
+      "divine favor",
+      "protection from evil and good",
+      "aid"
+      // "find steed",
+      // "prayer of healing",
+    ]
+  };
+  var Dandelion_default = Dandelion;
+
   // src/img/tok/pc/tethilssethanar.png
   var tethilssethanar_default = "./tethilssethanar-7GNDRUAR.png";
 
@@ -18881,7 +19341,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     Faerfarn: Faerfarn_default,
     Litt: Litt_default,
     Marvoril: Marvoril_default,
-    Shaira: Shaira_default
+    Shaira: Shaira_default,
+    Dandelion: Dandelion_default
   };
   var allPCs_default = allPCs;
 
@@ -18928,7 +19389,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
           this.addProficiency(gain.value, "proficient");
     }
     setRace(race) {
-      var _a, _b, _c, _d;
+      var _a, _b, _c, _d, _e;
       if (race.parent)
         this.setRace(race.parent);
       this.race = race;
@@ -18941,6 +19402,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         this.languages.add(language);
       for (const feature of (_d = race == null ? void 0 : race.features) != null ? _d : [])
         this.addFeature(feature);
+      for (const tag of (_e = race == null ? void 0 : race.tags) != null ? _e : [])
+        this.tags.add(tag);
     }
     setBackground(bg) {
       var _a;
@@ -18954,7 +19417,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       this.classLevels.set(cls.name, level);
       this.level++;
       this.pb = getProficiencyBonusByLevel(this.level);
-      this.baseHpMax += (hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize)) + this.con.modifier;
+      this.baseHpMax += hpRoll != null ? hpRoll : getDefaultHPRoll(this.level, cls.hitDieSize);
       if (level === 1) {
         const data = this.level === 1 ? cls : cls.multi;
         mergeSets(this.armorProficiencies, data.armor);
@@ -18970,43 +19433,11 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     addSubclass(sub) {
       this.subclasses.set(sub.className, sub);
     }
+    finaliseHP() {
+      this.baseHpMax += this.level * this.con.modifier;
+      super.finaliseHP();
+    }
   };
-
-  // src/types/LanguageName.ts
-  var StandardLanguages = [
-    "Common",
-    "Dwarvish",
-    "Elvish",
-    "Giant",
-    "Gnomish",
-    "Goblin",
-    "Halfling",
-    "Orc"
-  ];
-  var ExoticLanguages = [
-    "Abyssal",
-    "Celestial",
-    "Draconic",
-    "Deep Speech",
-    "Infernal",
-    "Primordial",
-    "Sylvan",
-    "Undercommon"
-  ];
-  var PrimordialDialects = [
-    "Aquan",
-    "Auran",
-    "Ignan",
-    "Terran"
-  ];
-  var LanguageNames = [
-    ...StandardLanguages,
-    ...ExoticLanguages,
-    ...PrimordialDialects,
-    "Druidic",
-    "Thieves' Cant"
-  ];
-  var laSet = (...items) => new Set(items);
 
   // src/backgrounds/Acolyte.ts
   var Acolyte2 = {
@@ -20781,35 +21212,6 @@ At 18th level, the range of this aura increases to 30 feet.`,
   // src/img/act/lay-on-hands.svg
   var lay_on_hands_default = "./lay-on-hands-F5ZGB5B6.svg";
 
-  // src/resolvers/MultiChoiceResolver.ts
-  var MultiChoiceResolver = class {
-    constructor(g, entries, minimum, maximum) {
-      this.g = g;
-      this.entries = entries;
-      this.minimum = minimum;
-      this.maximum = maximum;
-      this.type = "Choices";
-    }
-    get name() {
-      if (this.entries.length === 0)
-        return "empty";
-      return `${describeRange(this.minimum, this.maximum)}: ${this.entries.map((e2) => e2.label).join(", ")}`;
-    }
-    check(value, action, ec) {
-      if (this.entries.length === 0)
-        ec.add("No valid choices", this);
-      else if (!Array.isArray(value))
-        ec.add("No choices", this);
-      else {
-        if (value.length < this.minimum)
-          ec.add(`At least ${this.minimum} choices`, this);
-        if (value.length > this.maximum)
-          ec.add(`At most ${this.maximum} choices`, this);
-      }
-      return ec;
-    }
-  };
-
   // src/resolvers/NumberRangeResolver.ts
   var NumberRangeResolver = class {
     constructor(g, rangeName, min, max) {
@@ -21673,63 +22075,87 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
   };
   var allPCClasses_default = allPCClasses;
 
+  // src/races/Aasimar_VGM.ts
+  var CelestialResistance = resistanceFeature(
+    "Celestial Resistance",
+    `You have resistance to necrotic damage and radiant damage.`,
+    ["necrotic", "radiant"]
+  );
+  var HealingHands = notImplementedFeature(
+    "Healing Hands",
+    `As an action, you can touch a creature and cause it to regain a number of hit points equal to your level. Once you use this trait, you can't use it again until you finish a long rest.`
+  );
+  var LightBearerMethod = new InnateSpellcasting("Light Bearer", "cha");
+  var LightBearer = bonusSpellsFeature(
+    "Light Bearer",
+    `You know the light cantrip. Charisma is your spellcasting ability for it.`,
+    "level",
+    LightBearerMethod,
+    [
+      // TODO { level: 1, spell: "light" }
+    ]
+  );
+  var Aasimar = {
+    name: "Aasimar",
+    abilities: /* @__PURE__ */ new Map([["cha", 2]]),
+    size: SizeCategory_default.Medium,
+    movement: /* @__PURE__ */ new Map([["speed", 30]]),
+    features: /* @__PURE__ */ new Set([
+      Darkvision60,
+      CelestialResistance,
+      HealingHands,
+      LightBearer
+    ]),
+    languages: /* @__PURE__ */ new Set(["Common", "Celestial"])
+  };
+  var NecroticShroud = notImplementedFeature(
+    "Necrotic Shroud",
+    `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to turn into pools of darkness and two skeletal, ghostly, flightless wings to sprout from your back. The instant you transform, other creatures within 10 feet of you that can see you must succeed on a Charisma saving throw (DC 8 + your proficiency bonus + your Charisma modifier) or become frightened of you until the end of your next turn.
+Your transformation lasts for 1 minute or until you end it as a bonus action. During it, once on each of your turns, you can deal extra necrotic damage to one target when you deal damage to it with an attack or a spell. The extra necrotic damage equals your level.
+
+Once you use this trait, you can't use it again until you finish a long rest.`
+  );
+  var FallenAasimar = {
+    parent: Aasimar,
+    name: "Fallen Aasimar",
+    size: SizeCategory_default.Medium,
+    abilities: /* @__PURE__ */ new Map([["str", 1]]),
+    features: /* @__PURE__ */ new Set([NecroticShroud])
+  };
+  var RadiantSoul = notImplementedFeature(
+    "Radiant Soul",
+    `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to glimmer and two luminous, incorporeal wings to sprout from your back.
+Your transformation lasts for 1 minute or until you end it as a bonus action. During it, you have a flying speed of 30 feet, and once on each of your turns, you can deal extra radiant damage to one target when you deal damage to it with an attack or a spell. The extra radiant damage equals your level.
+
+Once you use this trait, you can't use it again until you finish a long rest.`
+  );
+  var ProtectorAasimar = {
+    parent: Aasimar,
+    name: "Protector Aasimar",
+    size: SizeCategory_default.Medium,
+    abilities: /* @__PURE__ */ new Map([["wis", 1]]),
+    features: /* @__PURE__ */ new Set([RadiantSoul])
+  };
+  var RadiantConsumption = notImplementedFeature(
+    "Radiant Consumption",
+    `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing a searing light to radiate from you, pour out of your eyes and mouth, and threaten to char you.
+Your transformation lasts for 1 minute or until you end it as a bonus action. During it, you shed bright light in a 10-foot radius and dim light for an additional 10 feet, and at the end of each of your turns, you and each creature within 10 feet of you take radiant damage equal to half your level (rounded up). In addition, once on each of your turns, you can deal extra radiant damage to one target when you deal damage to it with an attack or a spell. The extra radiant damage equals your level.
+
+Once you use this trait, you can't use it again until you finish a long rest.`
+  );
+  var ScourgeAasimar = {
+    parent: Aasimar,
+    name: "Scourge Aasimar",
+    size: SizeCategory_default.Medium,
+    abilities: /* @__PURE__ */ new Map([["con", 1]]),
+    features: /* @__PURE__ */ new Set([RadiantConsumption])
+  };
+
   // src/img/act/breath.svg
   var breath_default = "./breath-5T2EAE3T.svg";
 
   // src/img/act/special-breath.svg
   var special_breath_default = "./special-breath-PGWJ2QD5.svg";
-
-  // src/races/common.ts
-  function poisonResistanceFeature(name, text) {
-    const feature = new SimpleFeature(name, text, (g, me) => {
-      g.events.on("BeforeSave", ({ detail: { who, diceType, tags } }) => {
-        if (who === me && tags.has("poison"))
-          diceType.add("advantage", feature);
-      });
-      g.events.on(
-        "GetDamageResponse",
-        ({ detail: { who, damageType, response } }) => {
-          if (who === me && damageType === "poison")
-            response.add("resist", feature);
-        }
-      );
-    });
-    return feature;
-  }
-  function resistanceFeature(name, text, types) {
-    const feature = new SimpleFeature(name, text, (g, me) => {
-      g.events.on(
-        "GetDamageResponse",
-        ({ detail: { who, damageType, response: result } }) => {
-          if (who === me && types.includes(damageType))
-            result.add("resist", feature);
-        }
-      );
-    });
-    return feature;
-  }
-  var ExtraLanguage = new ConfiguredFeature(
-    "Extra Language",
-    `You can speak, read, and write one extra language of your choice.`,
-    (g, me, language) => {
-      me.languages.add(language);
-    }
-  );
-  var FeyAncestry = new SimpleFeature(
-    "Fey Ancestry",
-    `You have advantage on saving throws against being charmed, and magic can't put you to sleep.`,
-    (g, me) => {
-      g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
-        var _a;
-        if (who === me && ((_a = config == null ? void 0 : config.conditions) == null ? void 0 : _a.has("Charmed")))
-          diceType.add("advantage", FeyAncestry);
-      });
-      g.events.on("BeforeEffect", ({ detail: { who, effect, success } }) => {
-        if (who === me && effect.tags.has("magic") && effect.tags.has("sleep"))
-          success.add("fail", FeyAncestry);
-      });
-    }
-  );
 
   // src/races/Dragonborn_FTD.ts
   var MetallicDragonborn = {
@@ -21973,74 +22399,6 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
   }
   var BronzeDragonborn = makeAncestry("Bronze", "lightning");
   var GoldDragonborn = makeAncestry("Gold", "fire");
-
-  // src/races/Dwarf.ts
-  var DwarvenResilience = poisonResistanceFeature(
-    "Dwarven Resilience",
-    `You have advantage on saving throws against poison, and you have resistance against poison damage.`
-  );
-  var DwarvenCombatTraining = new SimpleFeature(
-    "Dwarven Combat Training",
-    `You have proficiency with the battleaxe, handaxe, light hammer, and warhammer.`,
-    (g, me) => {
-      for (const weapon of ["battleaxe", "handaxe", "light hammer", "warhammer"])
-        me.weaponProficiencies.add(weapon);
-    }
-  );
-  var ToolProficiency = new ConfiguredFeature(
-    "Tool Proficiency",
-    `You gain proficiency with the artisan's tools of your choice: Smith's tools, brewer's supplies, or mason's tools.`,
-    (g, me, tool) => {
-      me.addProficiency(tool, "proficient");
-    }
-  );
-  var Stonecunning = nonCombatFeature(
-    "Stonecunning",
-    `Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus.`
-  );
-  var Dwarf = {
-    name: "Dwarf",
-    abilities: /* @__PURE__ */ new Map([["con", 2]]),
-    size: SizeCategory_default.Medium,
-    movement: /* @__PURE__ */ new Map([["speed", 25]]),
-    features: /* @__PURE__ */ new Set([
-      Darkvision60,
-      DwarvenResilience,
-      DwarvenCombatTraining,
-      ToolProficiency,
-      Stonecunning
-    ]),
-    languages: laSet("Common", "Dwarvish")
-  };
-  var DwarvenToughness = new SimpleFeature(
-    "Dwarven Toughness",
-    `Your hit point maximum increases by 1, and it increases by 1 every time you gain a level.`,
-    (g, me) => {
-      me.baseHpMax += me.level;
-    }
-  );
-  var HillDwarf = {
-    parent: Dwarf,
-    name: "Hill Dwarf",
-    abilities: /* @__PURE__ */ new Map([["wis", 1]]),
-    size: SizeCategory_default.Medium,
-    features: /* @__PURE__ */ new Set([DwarvenToughness])
-  };
-  var DwarvenArmorTraining = new SimpleFeature(
-    "Dwarven Armor Training",
-    `You have proficiency with light and medium armor.`,
-    (g, me) => {
-      me.armorProficiencies.add("light");
-      me.armorProficiencies.add("medium");
-    }
-  );
-  var MountainDwarf = {
-    parent: Dwarf,
-    name: "Mountain Dwarf",
-    abilities: /* @__PURE__ */ new Map([["str", 2]]),
-    size: SizeCategory_default.Medium,
-    features: /* @__PURE__ */ new Set([DwarvenArmorTraining])
-  };
 
   // src/races/Elf.ts
   var KeenSenses = new SimpleFeature(
@@ -22510,6 +22868,9 @@ When you create a device, choose one of the following options:
 
   // src/data/allPCRaces.ts
   var allPCRaces = {
+    "Fallen Aasimar": FallenAasimar,
+    "Protector Aasimar": ProtectorAasimar,
+    "Scourge Aasimar": ScourgeAasimar,
     "Bronze Dragonborn": BronzeDragonborn,
     "Gold Dragonborn": GoldDragonborn,
     "Hill Dwarf": HillDwarf,
@@ -22793,6 +23154,117 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var Land_default = Land;
 
+  // src/classes/paladin/Crown/index.ts
+  var OathSpells = bonusSpellsFeature(
+    "Oath Spells",
+    `You gain oath spells at the paladin levels listed.`,
+    "Paladin",
+    PaladinSpellcasting,
+    [
+      { level: 3, spell: "command" },
+      // TODO { level: 3, spell: "compelled duel" },
+      // TODO { level: 5, spell: "warding bond" },
+      // { level: 5, spell: "zone of truth" },
+      // TODO { level: 9, spell: "aura of vitality" },
+      { level: 9, spell: "spirit guardians" }
+      // TODO { level: 13, spell: "banishment" },
+      // TODO { level: 13, spell: "guardian of faith" },
+      // TODO { level: 17, spell: "circle of power" },
+      // { level: 17, spell: "geas" },
+    ],
+    "Paladin"
+  );
+  var ChampionChallenge = notImplementedFeature(
+    "Channel Divinity: Champion Challenge",
+    `As a bonus action, you issue a challenge that compels other creatures to do battle with you. Each creature of your choice that you can see within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature can't willingly move more than 30 feet away from you. This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.`
+  );
+  var noMoreThanHalfHitPoints = {
+    name: "no more than half hit points",
+    message: "too healthy",
+    check(g, action, value) {
+      const ratio = value.hp / value.hpMax;
+      return ratio <= 0.5;
+    }
+  };
+  var TurnTheTideAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Channel Divinity: Turn the Tide",
+        "implemented",
+        {
+          targets: new MultiTargetResolver(g, 1, Infinity, 30, [
+            canBeHeardBy,
+            noMoreThanHalfHitPoints
+          ])
+        },
+        {
+          heal: [
+            { type: "dice", amount: { count: 1, size: 6 } },
+            { type: "flat", amount: Math.max(1, actor.cha.modifier) }
+          ],
+          resources: [[ChannelDivinityResource, 1]],
+          subIcon: PaladinIcon,
+          tags: ["vocal"],
+          time: "bonus action",
+          description: `As a bonus action, you can bolster injured creatures with your Channel Divinity. Each creature of your choice that can hear you within 30 feet of you regains hit points equal to 1d6 + your Charisma modifier (minimum of 1) if it has no more than half of its hit points.`
+        }
+      );
+    }
+    getTargets({ targets }) {
+      return targets != null ? targets : [];
+    }
+    getAffected({ targets }) {
+      return targets;
+    }
+    async apply(config) {
+      await super.apply(config);
+      const { g, actor } = this;
+      const heal = Math.max(1, actor.cha.modifier) + await g.rollHeal(1, { size: 6, actor, source: this });
+      for (const target of config.targets)
+        await g.heal(this, heal, { action: this, actor, target });
+    }
+  };
+  var TurnTheTide = new SimpleFeature(
+    "Channel Divinity: Turn the Tide",
+    `As a bonus action, you can bolster injured creatures with your Channel Divinity. Each creature of your choice that can hear you within 30 feet of you regains hit points equal to 1d6 + your Charisma modifier (minimum of 1) if it has no more than half of its hit points.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new TurnTheTideAction(g, me));
+      });
+    }
+  );
+  var DivineAllegiance = notImplementedFeature(
+    "Divine Allegiance",
+    `Starting at 7th level, when a creature within 5 feet of you takes damage, you can use your reaction to magically substitute your own health for that of the target creature, causing that creature not to take the damage. Instead, you take the damage. This damage to you can't be reduced or prevented in any way.`
+  );
+  var UnyieldingSpirit = notImplementedFeature(
+    "Unyielding Spirit",
+    `Starting at 15th level, you have advantage on saving throws to avoid becoming paralyzed or stunned.`
+  );
+  var ExaltedChampion = notImplementedFeature(
+    "Exalted Champion",
+    `At 20th level, your presence on the field of battle is an inspiration to those dedicated to your cause. You can use your action to gain the following benefits for 1 hour:
+
+You have resistance to bludgeoning, piercing, and slashing damage from nonmagical weapons.
+Your allies have advantage on death saving throws while within 30 feet of you.
+You have advantage on Wisdom saving throws, as do your allies within 30 feet of you.
+This effect ends early if you are incapacitated or die. Once you use this feature, you can't use it again until you finish a long rest.`
+  );
+  var Crown = {
+    className: "Paladin",
+    name: "Oath of the Crown",
+    features: /* @__PURE__ */ new Map([
+      [3, [OathSpells, ChampionChallenge, TurnTheTide]],
+      [7, [DivineAllegiance]],
+      [15, [UnyieldingSpirit]],
+      [20, [ExaltedChampion]]
+    ])
+  };
+  var Crown_default = Crown;
+
   // src/img/act/sacred-weapon.svg
   var sacred_weapon_default = "./sacred-weapon-FZX73WYV.svg";
 
@@ -22924,7 +23396,7 @@ In addition, for the duration, you have advantage on saving throws against spell
 
 Once you use this feature, you can't use it again until you finish a long rest.`
   );
-  var OathSpells = bonusSpellsFeature(
+  var OathSpells2 = bonusSpellsFeature(
     "Oath Spells",
     `You gain oath spells at the paladin levels listed.`,
     "Paladin",
@@ -22945,9 +23417,9 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   );
   var Devotion = {
     className: "Paladin",
-    name: "Oath ofDevotion",
+    name: "Oath of Devotion",
     features: /* @__PURE__ */ new Map([
-      [3, [OathSpells, SacredWeapon_default, TurnTheUnholy]],
+      [3, [OathSpells2, SacredWeapon_default, TurnTheUnholy]],
       [7, [AuraOfDevotion]],
       [15, [PurityOfSpirit]],
       [20, [HolyNimbus]]
@@ -23049,6 +23521,100 @@ You have advantage on initiative rolls. In addition, the first creature you hit 
     ])
   };
   var Scout_default = Scout2;
+
+  // src/classes/rogue/Swashbuckler/index.ts
+  var FancyFootworkEffect = new Effect(
+    "Fancy Footwork",
+    "turnStart",
+    (g) => {
+      g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
+        const ffConfig = action.actor.getEffectConfig(FancyFootworkEffect);
+        if (action instanceof OpportunityAttack && ffConfig && config.target === (ffConfig == null ? void 0 : ffConfig.target))
+          error.add("unable", FancyFootworkEffect);
+      });
+    }
+  );
+  var FancyFootwork = new SimpleFeature(
+    "Fancy Footwork",
+    `When you choose this archetype at 3rd level, you learn how to land a strike and then slip away without reprisal. During your turn, if you make a melee attack against a creature, that creature can't make opportunity attacks against you for the rest of your turn.`,
+    (g, me) => {
+      g.events.on("AfterAttack", ({ detail: { attack, interrupt, target } }) => {
+        if (attack.roll.type.who === me && attack.roll.type.tags.has("melee"))
+          interrupt.add(
+            new EvaluateLater(
+              me,
+              FancyFootwork,
+              Priority_default.Normal,
+              () => target.addEffect(
+                FancyFootworkEffect,
+                { duration: 1, target: me },
+                me
+              )
+            )
+          );
+      });
+      g.events.on("TurnEnded", ({ detail: { who, interrupt } }) => {
+        var _a;
+        if (who === me) {
+          for (const other of g.combatants)
+            if (((_a = other.getEffectConfig(FancyFootworkEffect)) == null ? void 0 : _a.target) === me)
+              interrupt.add(
+                new EvaluateLater(
+                  me,
+                  FancyFootwork,
+                  Priority_default.Normal,
+                  () => other.removeEffect(FancyFootworkEffect)
+                )
+              );
+        }
+      });
+    }
+  );
+  var RakishAudacity = new SimpleFeature(
+    "Rakish Audacity",
+    `Starting at 3rd level, your confidence propels you into battle. You can give yourself a bonus to your initiative rolls equal to your Charisma modifier.
+
+You also gain an additional way to use your Sneak Attack; you don't need advantage on your attack roll to use Sneak Attack against a creature if you are within 5 feet of it, no other creatures are within 5 feet of you, and you don't have disadvantage on the attack roll. All the other rules for Sneak Attack still apply to you.`,
+    (g, me) => {
+      g.events.on("GetInitiative", ({ detail: { who, bonus } }) => {
+        if (who === me && me.cha.modifier > 0)
+          bonus.add(me.cha.modifier, RakishAudacity);
+      });
+      addSneakAttackMethod(me, (g2, target, attack) => {
+        const inRange = distance(me, target) <= 5;
+        const justUs = Array.from(g2.combatants).filter((other) => distance(me, other) <= 5).length === 2;
+        const noDisadvantage = !attack.pre.diceType.getValues().includes("disadvantage");
+        return inRange && justUs && noDisadvantage;
+      });
+    }
+  );
+  var Panache = notImplementedFeature(
+    "Panache",
+    `At 9th level, your charm becomes extraordinarily beguiling. As an action, you can make a Charisma (Persuasion) check contested by a creature's Wisdom (Insight) check. The creature must be able to hear you, and the two of you must share a language.
+
+If you succeed on the check and the creature is hostile to you, it has disadvantage on attack rolls against targets other than you and can't make opportunity attacks against targets other than you. This effect lasts for 1 minute, until one of your companions attacks the target or affects it with a spell, or until you and the target are more than 60 feet apart.
+
+If you succeed on the check and the creature isn't hostile to you, it is charmed by you for 1 minute. While charmed, it regards you as a friendly acquaintance. This effect ends immediately if you or your companions do anything harmful to it.`
+  );
+  var ElegantManeuver = notImplementedFeature(
+    "Elegant Maneuver",
+    `Starting at 13th level, you can use a bonus action on your turn to gain advantage on the next Dexterity (Acrobatics) or Strength (Athletics) check you make during the same turn.`
+  );
+  var MasterDuelist = notImplementedFeature(
+    "Master Duelist",
+    `Beginning at 17th level, your mastery of the blade lets you turn failure into success in combat. If you miss with an attack roll, you can roll it again with advantage. Once you do so, you can't use this feature again until you finish a short or long rest.`
+  );
+  var Swashbuckler = {
+    name: "Swashbuckler",
+    className: "Rogue",
+    features: /* @__PURE__ */ new Map([
+      [3, [FancyFootwork, RakishAudacity]],
+      [9, [Panache]],
+      [13, [ElegantManeuver]],
+      [17, [MasterDuelist]]
+    ])
+  };
+  var Swashbuckler_default = Swashbuckler;
 
   // src/classes/warlock/Fiend/index.ts
   var ExpandedSpellList = bonusSpellsFeature(
@@ -23247,8 +23813,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     // Druid
     Land: Land_default,
     // Paladin
+    Crown: Crown_default,
     Devotion: Devotion_default,
     // Rogue
+    Swashbuckler: Swashbuckler_default,
     Scout: Scout_default,
     // Warlock
     Fiend: Fiend_default,
@@ -24966,16 +25534,20 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     text: `(${Array.from(breakdown, getDamageEntryText).join(", ")})`
   });
   var getAttackMessage = ({
-    pre: { who, target, weapon, ammo, spell },
-    roll,
-    total,
-    ac,
+    attack: {
+      ac,
+      total,
+      roll: {
+        diceType,
+        type: { who, target, weapon, spell, ammo }
+      }
+    },
     outcome
   }) => [
     msgCombatant(who),
-    outcome.result === "miss" ? " misses " : outcome.result === "hit" ? " hits " : " CRITICALLY hits ",
+    outcome === "miss" ? " misses " : outcome === "hit" ? " hits " : " CRITICALLY hits ",
     msgCombatant(target, true),
-    msgDiceType(roll.diceType),
+    msgDiceType(diceType),
     msgWeapon(weapon),
     msgSpell(spell),
     msgAmmo(ammo),
@@ -25098,7 +25670,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     getBonusLines(pre.bonus),
     getRollLine(roll.values)
   ].filter(isDefined).join("\n");
-  var getAttackInfo = ({ pre, roll }) => [
+  var getAttackInfo = ({ attack: { pre, roll } }) => [
     getTextLines(pre.success),
     getTextLines(pre.diceType),
     getBonusLines(pre.bonus),
@@ -25147,10 +25719,10 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     }, []);
     (0, import_hooks.useEffect)(() => {
       g.events.on(
-        "Attack",
+        "AfterAttack",
         ({ detail }) => detail.interrupt.add(
           new UIResponse(
-            detail.roll.type.who,
+            detail.attack.roll.type.who,
             async () => addMessage(
               /* @__PURE__ */ u(
                 LogMessage,

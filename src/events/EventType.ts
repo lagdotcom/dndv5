@@ -1,5 +1,6 @@
 import AbilityCheckEvent from "./AbilityCheckEvent";
 import AfterActionEvent from "./AfterActionEvent";
+import AfterAttackEvent from "./AfterAttackEvent";
 import AreaPlacedEvent from "./AreaPlacedEvent";
 import AreaRemovedEvent from "./AreaRemovedEvent";
 import AttackEvent from "./AttackEvent";
@@ -11,6 +12,7 @@ import BeforeMoveEvent from "./BeforeMoveEvent";
 import BeforeSaveEvent from "./BeforeSaveEvent";
 import BoundedMoveEvent from "./BoundedMoveEvent";
 import CheckActionEvent from "./CheckActionEvent";
+import CheckHearingEvent from "./CheckHearingEvent";
 import CheckVisionEvent from "./CheckVisionEvent";
 import CombatantDamagedEvent from "./CombatantDamagedEvent";
 import CombatantDiedEvent from "./CombatantDiedEvent";
@@ -49,6 +51,7 @@ import YesNoChoiceEvent from "./YesNoChoiceEvent";
 export interface EventTypes {
   AbilityCheck: AbilityCheckEvent;
   AfterAction: AfterActionEvent;
+  AfterAttack: AfterAttackEvent;
   AreaPlaced: AreaPlacedEvent;
   AreaRemoved: AreaRemovedEvent;
   Attack: AttackEvent;
@@ -60,6 +63,7 @@ export interface EventTypes {
   BeforeSave: BeforeSaveEvent;
   BoundedMove: BoundedMoveEvent;
   CheckAction: CheckActionEvent;
+  CheckHearing: CheckHearingEvent;
   CheckVision: CheckVisionEvent;
   CombatantDamaged: CombatantDamagedEvent;
   CombatantDied: CombatantDiedEvent;

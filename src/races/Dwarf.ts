@@ -1,12 +1,13 @@
 import { Darkvision60, nonCombatFeature } from "../features/common";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
+import { coSet } from "../types/CombatantTag";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
 import { poisonResistanceFeature } from "./common";
 
-const DwarvenResilience = poisonResistanceFeature(
+export const DwarvenResilience = poisonResistanceFeature(
   "Dwarven Resilience",
   `You have advantage on saving throws against poison, and you have resistance against poison damage.`,
 );
@@ -47,6 +48,7 @@ const Dwarf: PCRace = {
     Stonecunning,
   ]),
   languages: laSet("Common", "Dwarvish"),
+  tags: coSet("dwarf"),
 };
 
 const DwarvenToughness = new SimpleFeature(

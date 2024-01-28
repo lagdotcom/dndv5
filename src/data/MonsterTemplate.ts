@@ -17,6 +17,7 @@ import AICoefficient from "../types/AICoefficient";
 import AIRule from "../types/AIRule";
 import { AlignmentPair } from "../types/Alignment";
 import CombatantGroup from "../types/CombatantGroup";
+import { CombatantTag } from "../types/CombatantTag";
 import ConditionName from "../types/ConditionName";
 import CreatureType from "../types/CreatureType";
 import DamageAmount from "../types/DamageAmount";
@@ -77,6 +78,7 @@ export default interface MonsterTemplate<T = Empty> {
   aiCoefficients?: Map<AICoefficient, number>;
   aiGroups?: CombatantGroup[];
   setup?: (this: Monster) => void;
+  tags?: CombatantTag[];
 
   config?: {
     initial: T;

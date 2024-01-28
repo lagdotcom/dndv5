@@ -86,35 +86,30 @@ const makeFireShieldEffect = (
       );
 
       // In addition, whenever a creature within 5 feet of you hits you with a melee attack, the shield erupts with flame. The attacker takes 2d8 fire damage from a warm shield, or 2d8 cold damage from a cold shield.
-      g.events.on("Attack", ({ detail: { pre, interrupt, outcome } }) => {
-        const config = pre.target.hasEffect(source);
-        const inRange = distance(pre.who, pre.target) <= 5;
-        const isMelee = pre.tags.has("melee");
+      g.events.on("AfterAttack", ({ detail: { attack, interrupt, hit } }) => {
+        const { tags, target, who } = attack.roll.type;
+        const config = target.hasEffect(source);
+        const inRange = distance(who, target) <= 5;
+        const isMelee = tags.has("melee");
 
-        if (config && inRange && isMelee)
+        if (config && inRange && isMelee && hit)
           interrupt.add(
-            new EvaluateLater(
-              pre.target,
-              source,
-              Priority.Late,
-              async () => {
-                const rollDamage = await g.rollDamage(2, {
-                  attacker: pre.target,
-                  damageType: retaliate,
-                  size: 8,
-                  source,
-                  spell: FireShield,
-                  tags: atSet("magical"),
-                });
-                await g.damage(
-                  source,
-                  retaliate,
-                  { attacker: pre.target, spell: FireShield, target: pre.who },
-                  [[retaliate, rollDamage]],
-                );
-              },
-              () => outcome.hits,
-            ),
+            new EvaluateLater(target, source, Priority.Late, async () => {
+              const rollDamage = await g.rollDamage(2, {
+                attacker: target,
+                damageType: retaliate,
+                size: 8,
+                source,
+                spell: FireShield,
+                tags: atSet("magical"),
+              });
+              await g.damage(
+                source,
+                retaliate,
+                { attacker: target, spell: FireShield, target: who },
+                [[retaliate, rollDamage]],
+              );
+            }),
           );
       });
     },
