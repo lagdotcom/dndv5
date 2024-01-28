@@ -22081,9 +22081,45 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
     `You have resistance to necrotic damage and radiant damage.`,
     ["necrotic", "radiant"]
   );
-  var HealingHands = notImplementedFeature(
+  var HealingHandsResource = new LongRestResource("Healing Hands", 1);
+  var HealingHandsAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Healing Hands",
+        "implemented",
+        { target: new TargetResolver(g, actor.reach, []) },
+        {
+          heal: [{ type: "flat", amount: actor.level }],
+          resources: [[HealingHandsResource, 1]],
+          time: "action",
+          description: `As an action, you can touch a creature and cause it to regain a number of hit points equal to your level. Once you use this trait, you can't use it again until you finish a long rest.`
+        }
+      );
+    }
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+    async apply({ target }) {
+      await super.apply({ target });
+      const { g, actor } = this;
+      await g.heal(HealingHands, actor.level, { action: this, actor, target });
+    }
+  };
+  var HealingHands = new SimpleFeature(
     "Healing Hands",
-    `As an action, you can touch a creature and cause it to regain a number of hit points equal to your level. Once you use this trait, you can't use it again until you finish a long rest.`
+    `As an action, you can touch a creature and cause it to regain a number of hit points equal to your level. Once you use this trait, you can't use it again until you finish a long rest.`,
+    (g, me) => {
+      me.initResource(HealingHandsResource);
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new HealingHandsAction(g, me));
+      });
+    }
   );
   var LightBearerMethod = new InnateSpellcasting("Light Bearer", "cha");
   var LightBearer = bonusSpellsFeature(
@@ -22108,6 +22144,10 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
     ]),
     languages: /* @__PURE__ */ new Set(["Common", "Celestial"])
   };
+  var AasimarTransformationResource = new LongRestResource(
+    "Aasimar Transformation",
+    1
+  );
   var NecroticShroud = notImplementedFeature(
     "Necrotic Shroud",
     `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to turn into pools of darkness and two skeletal, ghostly, flightless wings to sprout from your back. The instant you transform, other creatures within 10 feet of you that can see you must succeed on a Charisma saving throw (DC 8 + your proficiency bonus + your Charisma modifier) or become frightened of you until the end of your next turn.
@@ -22122,12 +22162,104 @@ Once you use this trait, you can't use it again until you finish a long rest.`
     abilities: /* @__PURE__ */ new Map([["str", 1]]),
     features: /* @__PURE__ */ new Set([NecroticShroud])
   };
-  var RadiantSoul = notImplementedFeature(
+  var EndRadiantSoulAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "End Transformation",
+        "implemented",
+        {},
+        {
+          time: "bonus action",
+          description: `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to glimmer and two luminous, incorporeal wings to sprout from your back.
+      Your transformation lasts for 1 minute or until you end it as a bonus action.`
+        }
+      );
+    }
+    getTargets() {
+      return [];
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    async apply(config) {
+      await super.apply(config);
+      await this.actor.removeEffect(RadiantSoulEffect);
+    }
+  };
+  var RadiantSoulEffect = new Effect("Radiant Soul", "turnStart", (g) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who.hasEffect(RadiantSoulEffect))
+        actions.push(new EndRadiantSoulAction(g, who));
+    });
+    const opt = new OncePerTurnController(g);
+    g.events.on(
+      "GatherDamage",
+      ({ detail: { attacker, attack, spell, interrupt, map } }) => {
+        if ((attacker == null ? void 0 : attacker.hasEffect(RadiantSoulEffect)) && (attack || spell) && opt.canBeAffected(attacker)) {
+          const amount = attacker.level;
+          interrupt.add(
+            new YesNoChoice(
+              attacker,
+              RadiantSoul,
+              "Radiant Soul",
+              `Add ${amount} bonus radiant damage to this attack or spell?`,
+              Priority_default.Normal,
+              async () => {
+                opt.affect(attacker);
+                map.add("radiant", amount);
+              }
+            )
+          );
+        }
+      }
+    );
+  });
+  var RadiantSoulAction = class extends AbstractAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Radiant Soul",
+        "implemented",
+        {},
+        {
+          resources: [[AasimarTransformationResource, 1]],
+          time: "action",
+          description: `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to glimmer and two luminous, incorporeal wings to sprout from your back.
+        Your transformation lasts for 1 minute or until you end it as a bonus action. During it, you have a flying speed of 30 feet, and once on each of your turns, you can deal extra radiant damage to one target when you deal damage to it with an attack or a spell. The extra radiant damage equals your level.
+        
+        Once you use this trait, you can't use it again until you finish a long rest.`
+        }
+      );
+    }
+    getTargets() {
+      return [];
+    }
+    getAffected() {
+      return [this.actor];
+    }
+    async apply(config) {
+      await super.apply(config);
+      await this.actor.addEffect(RadiantSoulEffect, { duration: minutes(1) });
+    }
+  };
+  var RadiantSoul = new SimpleFeature(
     "Radiant Soul",
     `Starting at 3rd level, you can use your action to unleash the divine energy within yourself, causing your eyes to glimmer and two luminous, incorporeal wings to sprout from your back.
 Your transformation lasts for 1 minute or until you end it as a bonus action. During it, you have a flying speed of 30 feet, and once on each of your turns, you can deal extra radiant damage to one target when you deal damage to it with an attack or a spell. The extra radiant damage equals your level.
 
-Once you use this trait, you can't use it again until you finish a long rest.`
+Once you use this trait, you can't use it again until you finish a long rest.`,
+    (g, me) => {
+      if (me.level >= 3) {
+        me.initResource(AasimarTransformationResource);
+        g.events.on("GetActions", ({ detail: { who, actions } }) => {
+          if (who === me)
+            actions.push(new RadiantSoulAction(g, me));
+        });
+      }
+    }
   );
   var ProtectorAasimar = {
     parent: Aasimar,
