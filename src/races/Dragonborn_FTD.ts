@@ -16,7 +16,6 @@ import { atSet } from "../types/AttackTag";
 import Combatant from "../types/Combatant";
 import { coSet } from "../types/ConditionName";
 import DamageType from "../types/DamageType";
-import { SpecifiedEffectShape } from "../types/EffectArea";
 import ImplementationStatus from "../types/ImplementationStatus";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
@@ -45,7 +44,19 @@ function getBreathArea(me: Combatant, point: Point) {
   return aimCone(me.position, size, point, 15);
 }
 
-class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
+abstract class BreathAction extends AbstractAttackAction<HasPoint> {
+  getAffectedArea({ point }: Partial<HasPoint>) {
+    if (point) return [getBreathArea(this.actor, point)];
+  }
+  getAffected({ point }: HasPoint) {
+    return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
+  }
+  getTargets() {
+    return [];
+  }
+}
+
+class BreathWeaponAction extends BreathAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -70,18 +81,7 @@ class BreathWeaponAction extends AbstractAttackAction<HasPoint> {
     );
   }
 
-  getAffectedArea({ point }: Partial<HasPoint>) {
-    if (point) return [getBreathArea(this.actor, point)];
-  }
-  getAffected({ point }: HasPoint) {
-    return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply({ point }: HasPoint) {
-    await super.apply({ point });
+  async applyEffect({ point }: HasPoint) {
     const { actor: attacker, g, damageDice, damageType } = this;
 
     const damage = await g.rollDamage(damageDice, {
@@ -119,7 +119,7 @@ function getBreathWeaponDamageDice(level: PCLevel): DiceCount {
   return 4;
 }
 
-class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
+abstract class MetallicBreathAction extends BreathAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -142,18 +142,6 @@ class MetallicBreathAction extends AbstractAttackAction<HasPoint> {
         icon: makeIcon(specialBreathUrl, iconColour),
       },
     );
-  }
-
-  getAffectedArea({
-    point,
-  }: Partial<HasPoint>): SpecifiedEffectShape[] | undefined {
-    if (point) return [getBreathArea(this.actor, point)];
-  }
-  getAffected({ point }: HasPoint) {
-    return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
-  }
-  getTargets() {
-    return [];
   }
 }
 
@@ -180,9 +168,7 @@ class EnervatingBreathAction extends MetallicBreathAction {
     );
   }
 
-  async apply({ point }: HasPoint) {
-    await super.apply({ point });
-
+  async applyEffect({ point }: HasPoint) {
     const { g, actor } = this;
     const config = { conditions: coSet("Incapacitated"), duration: 2 };
 
@@ -215,8 +201,7 @@ class RepulsionBreathAction extends MetallicBreathAction {
     );
   }
 
-  async apply({ point }: HasPoint) {
-    await super.apply({ point });
+  async applyEffect({ point }: HasPoint) {
     const { g, actor } = this;
     for (const target of g.getInside(getBreathArea(actor, point))) {
       const config = { duration: Infinity };

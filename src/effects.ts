@@ -2,7 +2,7 @@ import dyingUrl from "@img/act/dying.svg";
 import proneUrl from "@img/act/prone.svg";
 import charmedUrl from "@img/spl/charm-monster.svg";
 
-import AbstractAction from "./actions/AbstractAction";
+import { AbstractSingleTargetAction } from "./actions/AbstractAction";
 import DropProneAction from "./actions/DropProneAction";
 import EscapeGrappleAction from "./actions/EscapeGrappleAction";
 import StabilizeAction from "./actions/StabilizeAction";
@@ -20,7 +20,6 @@ import Combatant from "./types/Combatant";
 import { EffectConfig } from "./types/EffectType";
 import Point from "./types/Point";
 import Priority from "./types/Priority";
-import { sieve } from "./utils/array";
 import { addPoints, subPoints } from "./utils/points";
 import { distance } from "./utils/units";
 
@@ -299,7 +298,7 @@ export const Grappled = new Effect<{ by: Combatant }>(
   },
 );
 
-class DouseFireAction extends AbstractAction<HasTarget> {
+class DouseFireAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -314,15 +313,7 @@ class DouseFireAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     await target.removeEffect(OnFire);
   }
 }

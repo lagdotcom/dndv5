@@ -1,4 +1,4 @@
-import AbstractAttackAction from "../actions/AbstractAttackAction";
+import { AbstractSingleTargetAttackAction } from "../actions/AbstractAttackAction";
 import { TwoWeaponAttack } from "../actions/TwoWeaponAttack";
 import { OneAttackPerTurnRule } from "../DndRules";
 import SimpleFeature from "../features/SimpleFeature";
@@ -16,7 +16,7 @@ interface AttackSpec {
 type AttackMatcher = Partial<AttackSpec>;
 
 function getAttackSpec(action: Action): AttackSpec {
-  if (!(action instanceof AbstractAttackAction))
+  if (!(action instanceof AbstractSingleTargetAttackAction))
     throw new Error(`getAttackSpec(${action.name})`);
 
   return { weapon: action.weaponName, range: action.rangeCategory };

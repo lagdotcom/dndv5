@@ -1,6 +1,6 @@
 import iconUrl from "@img/spl/fire-shield.svg";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import { DamageColours, makeIcon } from "../../colours";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
@@ -26,7 +26,7 @@ interface Config {
   type: FireShieldType;
 }
 
-class DismissFireShield extends AbstractAction {
+class DismissFireShield extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -46,15 +46,7 @@ class DismissFireShield extends AbstractAction {
     );
   }
 
-  getTargets() {
-    return [];
-  }
-  getAffected() {
-    return [this.actor];
-  }
-
-  async apply(config: never) {
-    await super.apply(config);
+  async applyEffect() {
     await this.actor.removeEffect(this.effect);
   }
 }

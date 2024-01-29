@@ -1,4 +1,4 @@
-import AbstractAction from "../actions/AbstractAction";
+import { AbstractSelfAction } from "../actions/AbstractAction";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import EvaluateLater from "../interruptions/EvaluateLater";
@@ -56,11 +56,11 @@ const GauntletsOfFlamingFuryResource = new DawnResource(
   1,
 );
 
-interface ItemsConfig {
-  items: WeaponItem[];
+interface HasWeapons {
+  weapons: WeaponItem[];
 }
 
-class GauntletsOfFlamingFuryAction extends AbstractAction<ItemsConfig> {
+class GauntletsOfFlamingFuryAction extends AbstractSelfAction<HasWeapons> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -72,7 +72,7 @@ class GauntletsOfFlamingFuryAction extends AbstractAction<ItemsConfig> {
       "Gauntlets of Flaming Fury",
       "implemented",
       {
-        items: new MultiChoiceResolver(
+        weapons: new MultiChoiceResolver(
           g,
           actor.weapons
             .filter(
@@ -91,21 +91,13 @@ class GauntletsOfFlamingFuryAction extends AbstractAction<ItemsConfig> {
     );
   }
 
-  getTargets() {
-    return [];
-  }
-  getAffected() {
-    return [this.actor];
-  }
-
-  async apply(config: ItemsConfig) {
-    await super.apply(config);
+  async applyEffect({ weapons }: HasWeapons) {
     const { gauntlet, actor } = this;
 
     await actor.addEffect(GauntletsOfFlamingFuryEffect, {
       duration: Infinity,
       gauntlet,
-      weapons: new Set(config.items),
+      weapons: new Set(weapons),
     });
   }
 }

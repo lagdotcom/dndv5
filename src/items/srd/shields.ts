@@ -1,6 +1,6 @@
 import acsUrl from "@img/eq/arrow-catching-shield.svg";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../../actions/AbstractAction";
 import { ItemRarityColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
@@ -11,14 +11,13 @@ import MessageBuilder from "../../MessageBuilder";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { isEquipmentAttuned } from "../../utils/items";
 import { Shield } from "../armor";
 
 const acsIcon = makeIcon(acsUrl, ItemRarityColours.Rare);
 
-class ArrowCatchingShieldAction extends AbstractAction<HasTarget> {
+class ArrowCatchingShieldAction extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -38,16 +37,7 @@ class ArrowCatchingShieldAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-
+  async applyEffect() {
     if (!this.attack) throw new Error(`No attack to modify.`);
 
     this.g.text(

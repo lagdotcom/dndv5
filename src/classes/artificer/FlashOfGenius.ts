@@ -1,7 +1,6 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../../actions/AbstractAction";
 import BonusCollector from "../../collectors/BonusCollector";
 import InterruptionCollector from "../../collectors/InterruptionCollector";
-import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { canSee } from "../../filters";
@@ -11,13 +10,12 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { LongRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { describeCheck, describeSave } from "../../utils/text";
 
 const FlashOfGeniusResource = new LongRestResource("Flash of Genius", 1);
 
-class FlashOfGeniusAction extends AbstractAction<HasTarget> {
+class FlashOfGeniusAction extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -37,15 +35,7 @@ class FlashOfGeniusAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect() {
     this.bonus.add(this.actor.int.modifier, FlashOfGenius);
   }
 }

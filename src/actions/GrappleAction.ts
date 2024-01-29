@@ -8,8 +8,7 @@ import TargetResolver from "../resolvers/TargetResolver";
 import { chSet } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
 import Priority from "../types/Priority";
-import { sieve } from "../utils/array";
-import AbstractAttackAction from "./AbstractAttackAction";
+import { AbstractSingleTargetAttackAction } from "./AbstractAttackAction";
 import { GrappleChoices } from "./common";
 
 const isNotGrappling = (who: Combatant): ErrorFilter<Combatant> => ({
@@ -18,7 +17,7 @@ const isNotGrappling = (who: Combatant): ErrorFilter<Combatant> => ({
   check: (g, action, value) => !who.grappling.has(value),
 });
 
-export default class GrappleAction extends AbstractAttackAction<HasTarget> {
+export default class GrappleAction extends AbstractSingleTargetAttackAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -41,21 +40,12 @@ export default class GrappleAction extends AbstractAttackAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
   check(config: Partial<HasTarget>, ec: ErrorCollector) {
     if (this.actor.freeHands < 1) ec.add("no free hands", this);
     return super.check(config, ec);
   }
 
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-
+  async applyEffect({ target }: HasTarget) {
     const { actor, g } = this;
 
     if (target.conditions.has("Incapacitated")) {

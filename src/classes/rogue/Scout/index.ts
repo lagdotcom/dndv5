@@ -1,4 +1,4 @@
-import AbstractAction from "../../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../../actions/AbstractAction";
 import ErrorCollector from "../../../collectors/ErrorCollector";
 import { HasTarget } from "../../../configs";
 import Engine from "../../../Engine";
@@ -15,7 +15,7 @@ import Priority from "../../../types/Priority";
 import { checkConfig } from "../../../utils/config";
 import { round } from "../../../utils/numbers";
 
-class SkirmisherAction extends AbstractAction<HasTarget> {
+class SkirmisherAction extends AbstractSelfAction<HasTarget> {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -30,20 +30,12 @@ class SkirmisherAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
     if (this.actor.speed <= 0) ec.add("cannot move", this);
     return super.check({ target }, ec);
   }
 
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect() {
     await this.g.applyBoundedMove(
       this.actor,
       new BoundedMove(Skirmisher, round(this.actor.speed / 2, MapSquareSize), {

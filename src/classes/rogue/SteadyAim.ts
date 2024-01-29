@@ -1,6 +1,6 @@
 import iconUrl from "@img/act/steady-aim.svg";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
@@ -49,7 +49,7 @@ const SteadyAimAdvantageEffect = new Effect(
   { icon: SteadyAimIcon },
 );
 
-class SteadyAimAction extends AbstractAction {
+class SteadyAimAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -66,22 +66,13 @@ class SteadyAimAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: never, ec: ErrorCollector) {
     if (this.actor.movedSoFar) ec.add("Already moved this turn", this);
 
     return super.check(config, ec);
   }
 
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
     await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
   }

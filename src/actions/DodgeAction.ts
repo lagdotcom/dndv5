@@ -4,7 +4,7 @@ import { makeIcon } from "../colours";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
-import AbstractAction from "./AbstractAction";
+import { AbstractSelfAction } from "./AbstractAction";
 
 const DodgeIcon = makeIcon(iconUrl);
 
@@ -32,7 +32,7 @@ export const DodgeEffect = new Effect(
   { icon: DodgeIcon },
 );
 
-export default class DodgeAction extends AbstractAction {
+export default class DodgeAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -48,15 +48,7 @@ export default class DodgeAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply(): Promise<void> {
-    await super.apply({});
+  async applyEffect() {
     await this.actor.addEffect(DodgeEffect, { duration: 1 });
   }
 }

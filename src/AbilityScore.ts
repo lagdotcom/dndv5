@@ -1,6 +1,7 @@
 import { Score } from "./flavours";
 import CombatantScore from "./types/CombatantScore";
 import { getAbilityModifier } from "./utils/dnd";
+import { clamp } from "./utils/numbers";
 
 export default class AbilityScore implements CombatantScore {
   constructor(
@@ -10,7 +11,7 @@ export default class AbilityScore implements CombatantScore {
   ) {}
 
   get score() {
-    return Math.max(this.baseMinimum, Math.min(this.baseScore, this.maximum));
+    return clamp(this.baseScore, this.baseMinimum, this.baseMaximum);
   }
 
   set score(value: Score) {

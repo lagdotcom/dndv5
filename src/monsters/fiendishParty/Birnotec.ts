@@ -3,7 +3,7 @@ import counterspellUrl from "@img/spl/counterspell.svg";
 import rebukeUrl from "@img/spl/hellish-rebuke.svg";
 import tokenUrl from "@img/tok/boss/birnotec.png";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../../actions/AbstractAction";
 import CastSpell from "../../actions/CastSpell";
 import SuccessResponseCollector from "../../collectors/SuccessResponseCollector";
 import { DamageColours, makeIcon } from "../../colours";
@@ -143,7 +143,7 @@ const ArmorOfAgathys = new SimpleFeature(
 
 const AntimagicIcon = makeIcon(counterspellUrl);
 
-class AntimagicProdigyAction extends AbstractAction<HasTarget> {
+class AntimagicProdigyAction extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -164,15 +164,7 @@ class AntimagicProdigyAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, actor, dc, success } = this;
     const save = await g.abilityCheck(dc, {
       who: target,
@@ -224,7 +216,7 @@ const AntimagicProdigy = new SimpleFeature(
 const RebukeIcon = makeIcon(rebukeUrl, DamageColours.fire);
 
 // TODO just turn this into the actual spell
-class HellishRebukeAction extends AbstractAction<HasTarget> {
+class HellishRebukeAction extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -256,15 +248,7 @@ class HellishRebukeAction extends AbstractAction<HasTarget> {
     return [_dd(2, 10, "fire")];
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, actor: attacker, dc } = this;
 
     const damage = await g.rollDamage(2, {

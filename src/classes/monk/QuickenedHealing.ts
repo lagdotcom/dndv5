@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { DiceSize } from "../../flavours";
@@ -6,7 +6,7 @@ import Combatant from "../../types/Combatant";
 import { KiResource } from "./Ki";
 import { getMartialArtsDie } from "./MartialArts";
 
-class QuickenedHealingAction extends AbstractAction {
+class QuickenedHealingAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -30,16 +30,7 @@ class QuickenedHealingAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     const { g, actor, size } = this;
     const amount = await g.rollHeal(1, {
       source: this,

@@ -49,11 +49,8 @@ class TelekineticShove extends AbstractAction<Config> {
     return [target];
   }
 
-  async apply(config: Config) {
-    await super.apply(config);
-
+  async applyEffect({ target, type }: Config) {
     const { g, ability, actor } = this;
-    const { target, type } = config;
 
     // TODO A creature can willingly fail this save.
     const { outcome } = await g.save({

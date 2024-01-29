@@ -9,6 +9,7 @@ import MultiPointResolver from "../../resolvers/MultiPointResolver";
 import { TemporaryResource } from "../../resources";
 import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
+import Point from "../../types/Point";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
@@ -21,7 +22,7 @@ async function fireMeteors(
   g: Engine,
   attacker: Combatant,
   method: SpellcastingMethod,
-  { points }: HasPoints,
+  points: Point[],
   spendMeteors = true,
 ) {
   if (spendMeteors) attacker.spendResource(MMMResource, points.length);
@@ -124,9 +125,8 @@ class FireMeteorsAction extends AbstractAction<HasPoints> {
     );
   }
 
-  async apply(config: HasPoints) {
-    await super.apply(config);
-    return fireMeteors(this.g, this.actor, this.method, config, false);
+  async applyEffect({ points }: HasPoints) {
+    return fireMeteors(this.g, this.actor, this.method, points, false);
   }
 }
 
@@ -168,7 +168,7 @@ const MelfsMinuteMeteors = scalingSpell<HasPoints>({
       new MessageBuilder().co(caster).text(` summons ${meteors} tiny meteors.`),
     );
 
-    await fireMeteors(g, caster, method, { points });
+    await fireMeteors(g, caster, method, points);
 
     let meteorActionEnabled = false;
 

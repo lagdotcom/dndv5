@@ -99,9 +99,7 @@ class RingOfAweAction extends AbstractAction {
     return [];
   }
 
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     const { g, actor, dc } = this;
     for (const who of this.getAffected()) {
       const effect = RingOfAweEffect;

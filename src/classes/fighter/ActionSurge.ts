@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
@@ -21,7 +21,7 @@ const UsedActionSurgeThisTurn = new Effect(
 );
 
 // TODO this works with 'actions' but not 'attacks'
-class ActionSurgeAction extends AbstractAction {
+class ActionSurgeAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -36,13 +36,6 @@ class ActionSurgeAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: never, ec: ErrorCollector) {
     if (this.actor.hasEffect(UsedActionSurgeThisTurn))
       ec.add("already used this turn", this);
@@ -51,9 +44,7 @@ class ActionSurgeAction extends AbstractAction {
     return super.check({}, ec);
   }
 
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     this.actor.regainTime("action");
     await this.actor.addEffect(UsedActionSurgeThisTurn, {
       duration: 1,

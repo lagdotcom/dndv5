@@ -4,8 +4,7 @@ import Engine from "../Engine";
 import { ErrorFilter } from "../filters";
 import TargetResolver from "../resolvers/TargetResolver";
 import Combatant from "../types/Combatant";
-import { sieve } from "../utils/array";
-import AbstractAction from "./AbstractAction";
+import { AbstractSingleTargetAction } from "./AbstractAction";
 
 const isGrappling = (who: Combatant): ErrorFilter<Combatant> => ({
   name: "grappling",
@@ -13,7 +12,7 @@ const isGrappling = (who: Combatant): ErrorFilter<Combatant> => ({
   check: (g, action, value) => who.grappling.has(value),
 });
 
-export default class ReleaseGrappleAction extends AbstractAction<HasTarget> {
+export default class ReleaseGrappleAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -25,15 +24,7 @@ export default class ReleaseGrappleAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     await target.removeEffect(Grappled);
   }
 }

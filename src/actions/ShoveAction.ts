@@ -10,20 +10,21 @@ import TargetResolver from "../resolvers/TargetResolver";
 import { chSet } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
 import Priority from "../types/Priority";
-import { sieve } from "../utils/array";
-import AbstractAttackAction from "./AbstractAttackAction";
+import { AbstractSingleTargetAttackAction } from "./AbstractAttackAction";
 import { GrappleChoices } from "./common";
 
 type ShoveType = "prone" | "push";
 
-type Config = HasTarget & { type: ShoveType };
+interface HasShove {
+  type: ShoveType;
+}
 
 const shoveTypeChoices = [
   makeChoice<ShoveType>("prone", "knock prone"),
   makeChoice<ShoveType>("push", "push 5 feet away"),
 ];
 
-export default class ShoveAction extends AbstractAttackAction<Config> {
+export default class ShoveAction extends AbstractSingleTargetAttackAction<HasShove> {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -46,17 +47,7 @@ export default class ShoveAction extends AbstractAttackAction<Config> {
     );
   }
 
-  getAffected({ target }: Config) {
-    return [target];
-  }
-  getTargets({ target }: Partial<Config>) {
-    return sieve(target);
-  }
-
-  async apply(config: Config) {
-    await super.apply(config);
-
-    const { target, type } = config;
+  async applyEffect({ target, type }: HasShove & HasTarget) {
     const { g, actor } = this;
 
     if (target.conditions.has("Incapacitated")) {

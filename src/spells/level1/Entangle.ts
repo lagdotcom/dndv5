@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasCaster, HasPoint } from "../../configs";
 import Effect from "../../Effect";
@@ -14,7 +14,7 @@ import { simpleSpell } from "../common";
 
 type Config = HasCaster & { affected: Set<Combatant> };
 
-class BreakFreeFromEntangleAction extends AbstractAction {
+class BreakFreeFromEntangleAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -35,16 +35,7 @@ class BreakFreeFromEntangleAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     const type = this.method.getSaveType(this.caster, Entangle);
     const dc = await this.g.getSaveDC({ source: Entangle, type });
     const result = await this.g.abilityCheck(dc.bonus.result, {

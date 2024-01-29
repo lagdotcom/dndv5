@@ -5,9 +5,9 @@ import MessageBuilder from "../MessageBuilder";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import ActionTime from "../types/ActionTime";
 import Combatant from "../types/Combatant";
-import AbstractAction from "./AbstractAction";
+import { AbstractSelfAction } from "./AbstractAction";
 
-export default class DonAction extends AbstractAction<HasItem> {
+export default class DonAction extends AbstractSelfAction<HasItem> {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -29,13 +29,6 @@ export default class DonAction extends AbstractAction<HasItem> {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: Partial<HasItem>, ec: ErrorCollector): ErrorCollector {
     if (config.item && config.item.hands > this.actor.freeHands)
       ec.add("not enough hands", this);
@@ -50,9 +43,7 @@ export default class DonAction extends AbstractAction<HasItem> {
     return "action";
   }
 
-  async apply({ item }: HasItem) {
-    await super.apply({ item });
-
+  async applyEffect({ item }: HasItem) {
     if (this.actor.don(item))
       this.g.text(
         new MessageBuilder()

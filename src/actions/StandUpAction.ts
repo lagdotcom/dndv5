@@ -9,11 +9,11 @@ import MessageBuilder from "../MessageBuilder";
 import Combatant from "../types/Combatant";
 import Empty from "../types/Empty";
 import { round } from "../utils/numbers";
-import AbstractAction from "./AbstractAction";
+import { AbstractSelfAction } from "./AbstractAction";
 
 const StandUpIcon = makeIcon(iconUrl);
 
-export default class StandUpAction extends AbstractAction {
+export default class StandUpAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -33,13 +33,6 @@ export default class StandUpAction extends AbstractAction {
     return round(this.actor.speed / 2, MapSquareSize);
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: Empty, ec: ErrorCollector) {
     if (!this.actor.conditions.has("Prone")) ec.add("not prone", this);
 
@@ -51,9 +44,7 @@ export default class StandUpAction extends AbstractAction {
     return super.check(config, ec);
   }
 
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     this.actor.movedSoFar += this.cost;
 
     await this.actor.removeEffect(Prone);

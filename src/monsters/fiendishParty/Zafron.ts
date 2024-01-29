@@ -1,7 +1,7 @@
 import bullRushIconUrl from "@img/act/bull-rush.svg";
 import tokenUrl from "@img/tok/boss/zafron.png";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
 import MonsterTemplate from "../../data/MonsterTemplate";
@@ -67,7 +67,7 @@ const BullRushEffect = new Effect(
   { icon: BullRushIcon },
 );
 
-class BullRushAction extends AbstractAction {
+class BullRushAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -84,20 +84,12 @@ class BullRushAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: never, ec: ErrorCollector) {
     if (this.actor.speed <= 0) ec.add("cannot move", this);
     return super.check(config, ec);
   }
 
-  async apply() {
-    await super.apply({});
+  async applyEffect() {
     const { g, actor } = this;
 
     const affected = [actor];

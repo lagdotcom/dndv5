@@ -1,4 +1,4 @@
-import AbstractAction from "../../../actions/AbstractAction";
+import { AbstractMultiTargetAction } from "../../../actions/AbstractAction";
 import { HasTargets } from "../../../configs";
 import Engine from "../../../Engine";
 import {
@@ -48,7 +48,7 @@ const noMoreThanHalfHitPoints: ErrorFilter<Combatant> = {
   },
 };
 
-class TurnTheTideAction extends AbstractAction<HasTargets> {
+class TurnTheTideAction extends AbstractMultiTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -75,22 +75,14 @@ class TurnTheTideAction extends AbstractAction<HasTargets> {
     );
   }
 
-  getTargets({ targets }: Partial<HasTargets>) {
-    return targets ?? [];
-  }
-  getAffected({ targets }: HasTargets) {
-    return targets;
-  }
-
-  async apply(config: HasTargets) {
-    await super.apply(config);
+  async applyEffect({ targets }: HasTargets) {
     const { g, actor } = this;
 
     const heal =
       Math.max(1, actor.cha.modifier) +
       (await g.rollHeal(1, { size: 6, actor, source: this }));
 
-    for (const target of config.targets)
+    for (const target of targets)
       await g.heal(this, heal, { action: this, actor, target });
   }
 }

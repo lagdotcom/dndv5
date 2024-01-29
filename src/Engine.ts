@@ -795,7 +795,13 @@ export default class Engine {
       )
     ).detail;
     if (success.result === "fail")
-      return { outcome: "cancelled", hit: false } as const;
+      return {
+        outcome: "cancelled",
+        attack: undefined,
+        hit: false,
+        critical: false,
+        target: pre.target,
+      } as const;
 
     this.addProficiencyBonus(e.who, proficiency, bonus, pb);
 

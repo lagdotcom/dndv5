@@ -1,4 +1,4 @@
-import AbstractAction from "../actions/AbstractAction";
+import { AbstractSelfAction } from "../actions/AbstractAction";
 import Engine from "../Engine";
 import { Description, Url } from "../flavours";
 import Combatant from "../types/Combatant";
@@ -6,7 +6,7 @@ import ImplementationStatus from "../types/ImplementationStatus";
 import { ItemRarity, PotionItem } from "../types/Item";
 import ItemBase from "./ItemBase";
 
-class DrinkAction extends AbstractAction {
+class DrinkAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -22,15 +22,7 @@ class DrinkAction extends AbstractAction {
     );
   }
 
-  getTargets() {
-    return [];
-  }
-  getAffected() {
-    return [this.actor];
-  }
-
-  async apply() {
-    await super.apply({});
+  async applyEffect() {
     this.actor.removeFromInventory(this.item);
     await this.item.apply(this.actor, this);
   }

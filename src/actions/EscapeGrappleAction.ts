@@ -44,13 +44,12 @@ export default class EscapeGrappleAction extends AbstractAction<Config> {
     return super.check(config, ec);
   }
 
-  async apply(config: Config) {
-    await super.apply(config);
-    const { ability, skill } = config.choice;
+  async applyEffect({ choice: { ability, skill } }: Config) {
     const { g, actor, grappler } = this;
 
     if (!grappler) throw new Error("Trying to escape a non-existent grapple");
 
+    // TODO [SKILLCONTEST]
     const { total: mine } = await g.abilityCheck(NaN, {
       ability,
       skill,

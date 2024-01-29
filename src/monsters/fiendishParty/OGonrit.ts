@@ -1,7 +1,7 @@
 import bashUrl from "@img/act/shield-bash.svg";
 import tokenUrl from "@img/tok/boss/o-gonrit.png";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../../actions/AbstractAction";
 import { HealAllies } from "../../ai/coefficients";
 import DamageRule from "../../ai/DamageRule";
 import HealingRule from "../../ai/HealingRule";
@@ -24,7 +24,6 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { FiendishParty } from "./common";
 
 const FiendishMantleRange = 30;
@@ -90,7 +89,7 @@ const ShieldBashEffect = new Effect(
   { icon: ShieldBashIcon },
 );
 
-class ShieldBashAction extends AbstractAction<HasTarget> {
+class ShieldBashAction extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -106,16 +105,7 @@ class ShieldBashAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-
+  async applyEffect({ target }: HasTarget) {
     const { g, actor, ability } = this;
     const config = { conditions: coSet("Stunned"), duration: 1 };
     const { outcome } = await g.save({

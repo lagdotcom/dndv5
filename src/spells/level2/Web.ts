@@ -1,6 +1,6 @@
 import iconUrl from "@img/spl/web.svg";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
@@ -22,7 +22,7 @@ import { simpleSpell } from "../common";
 
 const WebIcon = makeIcon(iconUrl);
 
-class BreakFreeFromWebAction extends AbstractAction {
+class BreakFreeFromWebAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -44,16 +44,7 @@ class BreakFreeFromWebAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     const type = this.method.getSaveType(this.caster, Web);
     const dc = await this.g.getSaveDC({ source: Web, type });
     const result = await this.g.abilityCheck(dc.bonus.result, {

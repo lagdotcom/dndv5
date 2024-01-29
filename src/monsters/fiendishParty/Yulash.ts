@@ -1,7 +1,10 @@
 import songUrl from "@img/act/song.svg";
 import tokenUrl from "@img/tok/boss/yulash.png";
 
-import AbstractAction from "../../actions/AbstractAction";
+import {
+  AbstractSelfAction,
+  AbstractSingleTargetAction,
+} from "../../actions/AbstractAction";
 import { doStandardAttack } from "../../actions/WeaponAttack";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
@@ -25,7 +28,6 @@ import InnateSpellcasting from "../../spells/InnateSpellcasting";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility, getWeaponRange } from "../../utils/items";
 import { distance } from "../../utils/units";
@@ -55,7 +57,7 @@ const cheerIcon = makeIcon(songUrl, "green");
 const discordIcon = makeIcon(songUrl, "red");
 const irritationIcon = makeIcon(songUrl, "purple");
 
-class CheerAction extends AbstractAction<HasTarget> {
+class CheerAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -70,13 +72,6 @@ class CheerAction extends AbstractAction<HasTarget> {
         tags: ["vocal"],
       },
     );
-  }
-
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
@@ -94,12 +89,10 @@ class CheerAction extends AbstractAction<HasTarget> {
     );
   }
 
-  async apply({ target: attacker }: HasTarget) {
-    await super.apply({ target: attacker });
-
-    const attacks = this.getValidAttacks(attacker);
+  async applyEffect({ target }: HasTarget) {
+    const attacks = this.getValidAttacks(target);
     const choice = new PickFromListChoice(
-      attacker,
+      target,
       this,
       "Cheer",
       `Pick an attack to make.`,
@@ -111,8 +104,8 @@ class CheerAction extends AbstractAction<HasTarget> {
       async ({ target, weapon }) => {
         await doStandardAttack(this.g, {
           source: this,
-          ability: getWeaponAbility(attacker, weapon),
-          attacker,
+          ability: getWeaponAbility(target, weapon),
+          attacker: target,
           rangeCategory: "melee",
           target,
           weapon,
@@ -134,7 +127,7 @@ const Cheer = new SimpleFeature(
   },
 );
 
-class DiscordAction extends AbstractAction<HasTarget> {
+class DiscordAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -149,13 +142,6 @@ class DiscordAction extends AbstractAction<HasTarget> {
         tags: ["harmful", "vocal"],
       },
     );
-  }
-
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
   }
 
   check({ target }: Partial<HasTarget>, ec: ErrorCollector) {
@@ -176,22 +162,20 @@ class DiscordAction extends AbstractAction<HasTarget> {
     );
   }
 
-  async apply({ target: attacker }: HasTarget) {
-    await super.apply({ target: attacker });
-
+  async applyEffect({ target }: HasTarget) {
     const { outcome } = await this.g.save({
       source: this,
       type: { type: "ability", ability: "cha" },
       attacker: this.actor,
-      who: attacker,
+      who: target,
       ability: "cha",
       tags: ["charm", "magic"],
     });
     if (outcome === "success") return;
 
-    const attacks = this.getValidAttacks(attacker);
+    const attacks = this.getValidAttacks(target);
     const choice = new PickFromListChoice(
-      attacker,
+      target,
       this,
       "Discord",
       `Pick an attack to make.`,
@@ -203,8 +187,8 @@ class DiscordAction extends AbstractAction<HasTarget> {
       async ({ target, weapon }) => {
         await doStandardAttack(this.g, {
           source: this,
-          ability: getWeaponAbility(attacker, weapon),
-          attacker,
+          ability: getWeaponAbility(target, weapon),
+          attacker: target,
           rangeCategory: "melee",
           target,
           weapon,
@@ -225,7 +209,7 @@ const Discord = new SimpleFeature(
   },
 );
 
-class IrritationAction extends AbstractAction<HasTarget> {
+class IrritationAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -242,16 +226,7 @@ class IrritationAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-
+  async applyEffect({ target }: HasTarget) {
     const { outcome } = await this.g.save({
       source: this,
       type: { type: "ability", ability: "cha" },
@@ -282,7 +257,7 @@ const YulashSpellcasting = bonusSpellsFeature(
   [{ level: 1, spell: "healing word" }],
 );
 
-class DancingStepAction extends AbstractAction<HasTarget> {
+class DancingStepAction extends AbstractSelfAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -301,15 +276,7 @@ class DancingStepAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply(config: HasTarget) {
-    await super.apply(config);
+  async applyEffect() {
     await this.g.applyBoundedMove(
       this.actor,
       getTeleportation(this.distance, "Dancing Step"),

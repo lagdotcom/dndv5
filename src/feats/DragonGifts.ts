@@ -1,4 +1,4 @@
-import AbstractAction from "../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../actions/AbstractAction";
 import CastSpell from "../actions/CastSpell";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
@@ -13,12 +13,11 @@ import InnateSpellcasting from "../spells/InnateSpellcasting";
 import CureWounds from "../spells/level1/CureWounds";
 import Combatant from "../types/Combatant";
 import Priority from "../types/Priority";
-import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
 
 const ProtectiveWingsResource = new LongRestResource("Protective Wings", 2);
 
-class ProtectiveWings extends AbstractAction<HasTarget> {
+class ProtectiveWings extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -38,16 +37,7 @@ class ProtectiveWings extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply(config: HasTarget) {
-    await super.apply(config);
-
+  async applyEffect({ target }: HasTarget) {
     const { g, actor, detail } = this;
     if (!detail)
       throw new Error(`ProtectiveWings.apply() without AttackDetail`);
@@ -57,7 +47,7 @@ class ProtectiveWings extends AbstractAction<HasTarget> {
         .co(actor)
         .text(" uses Protective Wings on ")
         .sp()
-        .co(config.target),
+        .co(target),
     );
     detail.ac += actor.pb;
   }

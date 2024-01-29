@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import DashAction from "../../actions/DashAction";
 import DisengageAction from "../../actions/DisengageAction";
 import MultiplierCollector from "../../collectors/MultiplierCollector";
@@ -70,7 +70,7 @@ export const CunningAction = new SimpleFeature(
   },
 );
 
-class UncannyDodgeAction extends AbstractAction<HasTarget> {
+class UncannyDodgeAction extends AbstractSelfAction<HasTarget> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -89,15 +89,7 @@ class UncannyDodgeAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect() {
     this.multiplier.add("half", this);
   }
 }

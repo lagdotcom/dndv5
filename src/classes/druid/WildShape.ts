@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import allMonsters, { MonsterName } from "../../data/allMonsters";
 import initialiseMonster from "../../data/initialiseMonster";
 import MonsterTemplate from "../../data/MonsterTemplate";
@@ -173,7 +173,7 @@ While you are transformed, the following rules apply:
   }
 }
 
-class RevertAction extends AbstractAction {
+class RevertAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -182,20 +182,12 @@ class RevertAction extends AbstractAction {
     super(g, actor, "Revert Form", "implemented", {}, { time: "bonus action" });
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply(config: never) {
-    await super.apply(config);
+  async applyEffect() {
     this.controller.remove();
   }
 }
 
-class WildShapeAction extends AbstractAction<HasForm> {
+class WildShapeAction extends AbstractSelfAction<HasForm> {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -216,16 +208,7 @@ class WildShapeAction extends AbstractAction<HasForm> {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply({ form }: HasForm) {
-    await super.apply({ form });
-
+  async applyEffect({ form }: HasForm) {
     const controller = new WildShapeController(this.g, this.actor, form);
     await controller.apply();
   }

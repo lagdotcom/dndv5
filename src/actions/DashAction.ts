@@ -5,7 +5,7 @@ import { makeIcon } from "../colours";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
-import AbstractAction from "./AbstractAction";
+import { AbstractSelfAction } from "./AbstractAction";
 
 const DashIcon = makeIcon(iconUrl);
 
@@ -20,7 +20,7 @@ export const DashEffect = new Effect(
   { icon: DashIcon },
 );
 
-export default class DashAction extends AbstractAction {
+export default class DashAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -38,20 +38,12 @@ export default class DashAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: never, ec: ErrorCollector): ErrorCollector {
     if (this.actor.speed <= 0) ec.add("Zero speed", this);
     return super.check(config, ec);
   }
 
-  async apply(): Promise<void> {
-    await super.apply({});
+  async applyEffect() {
     await this.actor.addEffect(DashEffect, { duration: 1 });
   }
 }

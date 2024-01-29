@@ -1,3 +1,4 @@
+import { HasTarget } from "../configs";
 import { UsedAttackAction } from "../effects";
 import Engine from "../Engine";
 import { ActionConfig } from "../types/Action";
@@ -7,6 +8,7 @@ import Empty from "../types/Empty";
 import ImplementationStatus from "../types/ImplementationStatus";
 import { WeaponItem } from "../types/Item";
 import RangeCategory from "../types/RangeCategory";
+import { sieve } from "../utils/array";
 import AbstractAction, { AbstractActionOptions } from "./AbstractAction";
 
 export default abstract class AbstractAttackAction<
@@ -50,5 +52,16 @@ export default abstract class AbstractAttackAction<
       this.actor.attacksSoFar.push(this);
       await this.actor.addEffect(UsedAttackAction, { duration: 1 });
     }
+  }
+}
+
+export abstract class AbstractSingleTargetAttackAction<
+  T extends object = Empty,
+> extends AbstractAttackAction<HasTarget & T> {
+  getTargets({ target }: Partial<HasTarget & T>) {
+    return sieve(target);
+  }
+  getAffected({ target }: HasTarget & T) {
+    return [target];
   }
 }

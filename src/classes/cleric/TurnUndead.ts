@@ -62,9 +62,7 @@ export class TurnUndeadAction extends AbstractAction {
     return [];
   }
 
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     const { g, actor: attacker, method, destroyCR: destroyCR } = this;
     const type = method.getSaveType(attacker);
 

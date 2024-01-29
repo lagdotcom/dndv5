@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { Scales } from "../../configs";
 import Engine from "../../Engine";
@@ -20,7 +20,7 @@ const HarnessDivinePowerResource = new LongRestResource(
   1,
 );
 
-class HarnessDivinePowerAction extends AbstractAction<Scales> {
+class HarnessDivinePowerAction extends AbstractSelfAction<Scales> {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -58,13 +58,6 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check({ slot }: Partial<Scales>, ec: ErrorCollector): ErrorCollector {
     if (slot) {
       const resource = SpellSlotResources[slot];
@@ -78,8 +71,7 @@ class HarnessDivinePowerAction extends AbstractAction<Scales> {
     return super.check({ slot }, ec);
   }
 
-  async apply({ slot }: Scales) {
-    await super.apply({ slot });
+  async applyEffect({ slot }: Scales) {
     this.actor.giveResource(SpellSlotResources[slot], 1);
   }
 }

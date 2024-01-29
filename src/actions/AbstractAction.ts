@@ -1,4 +1,5 @@
 import ErrorCollector from "../collectors/ErrorCollector";
+import { HasTarget, HasTargets } from "../configs";
 import Engine from "../Engine";
 import { Description } from "../flavours";
 import Action, {
@@ -15,6 +16,7 @@ import Empty from "../types/Empty";
 import Icon from "../types/Icon";
 import ImplementationStatus from "../types/ImplementationStatus";
 import Resource from "../types/Resource";
+import { sieve } from "../utils/array";
 import { MapInitialiser } from "../utils/map";
 import { SetInitialiser } from "../utils/set";
 
@@ -142,8 +144,46 @@ export default abstract class AbstractAction<T extends object = Empty>
       this.actor.spendResource(resource, cost);
   }
 
+  abstract applyEffect(config: T): Promise<void>;
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async apply(config: T) {
     await this.applyCosts(config);
+    await this.applyEffect(config);
+  }
+}
+
+export abstract class AbstractSingleTargetAction<
+  T extends object = Empty,
+> extends AbstractAction<HasTarget & T> {
+  getTargets({ target }: Partial<HasTarget & T>) {
+    return sieve(target);
+  }
+  getAffected({ target }: HasTarget & T) {
+    return [target];
+  }
+}
+
+export abstract class AbstractMultiTargetAction<
+  T extends object = Empty,
+> extends AbstractAction<HasTargets & T> {
+  getTargets({ targets }: Partial<HasTargets & T>) {
+    return targets ?? [];
+  }
+  getAffected({ targets }: HasTargets & T) {
+    return targets;
+  }
+}
+
+export abstract class AbstractSelfAction<
+  T extends object = Empty,
+> extends AbstractAction<T> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getTargets(config: Partial<T>) {
+    return [];
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getAffected(config: T) {
+    return [this.actor];
   }
 }

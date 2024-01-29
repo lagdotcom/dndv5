@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { Modifier } from "../../flavours";
@@ -7,7 +7,7 @@ import Combatant from "../../types/Combatant";
 
 const SecondWindResource = new ShortRestResource("Second Wind", 1);
 
-class SecondWindAction extends AbstractAction {
+class SecondWindAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -31,20 +31,11 @@ class SecondWindAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
+  async applyEffect() {
+    const { g, actor, bonus } = this;
+    const roll = await g.rollHeal(1, { actor, size: 10, source: this });
 
-  async apply(): Promise<void> {
-    await super.apply({});
-
-    const { actor, bonus } = this;
-    const roll = await this.g.rollHeal(1, { actor, size: 10, source: this });
-
-    await this.g.heal(this, roll + bonus, { actor, target: actor });
+    await g.heal(this, roll + bonus, { actor, target: actor });
   }
 }
 

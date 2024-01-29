@@ -1,6 +1,6 @@
 import rageIconUrl from "@img/act/rage.svg";
 
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../actions/AbstractAction";
 import ErrorCollector from "../../collectors/ErrorCollector";
 import { makeIcon } from "../../colours";
 import Effect from "../../Effect";
@@ -38,7 +38,7 @@ function getRageBonus(level: PCClassLevel): Modifier {
 
 export const RageResource = new LongRestResource("Rage", 2);
 
-export class EndRageAction extends AbstractAction {
+export class EndRageAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -55,20 +55,12 @@ export class EndRageAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: never, ec: ErrorCollector) {
     if (!this.actor.hasEffect(RageEffect)) ec.add("Not raging", this);
     return super.check(config, ec);
   }
 
-  async apply() {
-    await super.apply({});
+  async applyEffect() {
     await this.actor.removeEffect(RageEffect);
   }
 }
@@ -187,7 +179,7 @@ export const RageEffect = new Effect(
   { icon: RageIcon },
 );
 
-export class RageAction extends AbstractAction {
+export class RageAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -215,15 +207,7 @@ Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply() {
-    await super.apply({});
+  async applyEffect() {
     if (await this.actor.addEffect(RageEffect, { duration: minutes(1) }))
       await this.actor.endConcentration();
   }

@@ -1,6 +1,6 @@
 import iconUrl from "@img/spl/magic-stone.svg";
 
-import AbstractAttackAction from "../../actions/AbstractAttackAction";
+import { AbstractSingleTargetAttackAction } from "../../actions/AbstractAttackAction";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Engine from "../../Engine";
@@ -13,7 +13,6 @@ import { atSet } from "../../types/AttackTag";
 import Combatant from "../../types/Combatant";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
 
@@ -21,7 +20,7 @@ const MagicStoneIcon = makeIcon(iconUrl, DamageColours.bludgeoning);
 
 const MagicStoneResource = new TemporaryResource("Magic Stone", 3);
 
-class MagicStoneAction extends AbstractAttackAction<HasTarget> {
+class MagicStoneAction extends AbstractSingleTargetAttackAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -51,15 +50,7 @@ class MagicStoneAction extends AbstractAttackAction<HasTarget> {
     }));
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, actor, method } = this;
 
     if (actor.getResource(MagicStoneResource) < 1) this.unsubscribe();

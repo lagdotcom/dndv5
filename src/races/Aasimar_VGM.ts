@@ -1,4 +1,7 @@
-import AbstractAction from "../actions/AbstractAction";
+import {
+  AbstractSelfAction,
+  AbstractSingleTargetAction,
+} from "../actions/AbstractAction";
 import { HasTarget } from "../configs";
 import Effect from "../Effect";
 import Engine from "../Engine";
@@ -18,7 +21,6 @@ import Combatant from "../types/Combatant";
 import PCRace from "../types/PCRace";
 import Priority from "../types/Priority";
 import SizeCategory from "../types/SizeCategory";
-import { sieve } from "../utils/array";
 import { minutes } from "../utils/time";
 import { resistanceFeature } from "./common";
 
@@ -30,7 +32,7 @@ const CelestialResistance = resistanceFeature(
 
 const HealingHandsResource = new LongRestResource("Healing Hands", 1);
 
-class HealingHandsAction extends AbstractAction<HasTarget> {
+class HealingHandsAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -47,17 +49,8 @@ class HealingHandsAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, actor } = this;
-
     await g.heal(HealingHands, actor.level, { action: this, actor, target });
   }
 }
@@ -120,7 +113,7 @@ export const FallenAasimar: PCRace = {
   features: new Set([NecroticShroud]),
 };
 
-class EndRadiantSoulAction extends AbstractAction {
+class EndRadiantSoulAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -136,15 +129,7 @@ class EndRadiantSoulAction extends AbstractAction {
     );
   }
 
-  getTargets() {
-    return [];
-  }
-  getAffected() {
-    return [this.actor];
-  }
-
-  async apply(config: never) {
-    await super.apply(config);
+  async applyEffect() {
     await this.actor.removeEffect(RadiantSoulEffect);
   }
 }
@@ -186,7 +171,7 @@ const RadiantSoulEffect = new Effect("Radiant Soul", "turnStart", (g) => {
   );
 });
 
-class RadiantSoulAction extends AbstractAction {
+class RadiantSoulAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -205,15 +190,7 @@ class RadiantSoulAction extends AbstractAction {
     );
   }
 
-  getTargets() {
-    return [];
-  }
-  getAffected() {
-    return [this.actor];
-  }
-
-  async apply(config: never) {
-    await super.apply(config);
+  async applyEffect() {
     await this.actor.addEffect(RadiantSoulEffect, { duration: minutes(1) });
   }
 }

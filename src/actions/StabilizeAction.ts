@@ -5,10 +5,9 @@ import { hasEffect } from "../filters";
 import TargetResolver from "../resolvers/TargetResolver";
 import { chSet } from "../types/CheckTag";
 import Combatant from "../types/Combatant";
-import { sieve } from "../utils/array";
-import AbstractAction from "./AbstractAction";
+import { AbstractSingleTargetAction } from "./AbstractAction";
 
-export default class StabilizeAction extends AbstractAction<HasTarget> {
+export default class StabilizeAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -23,16 +22,7 @@ export default class StabilizeAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-
+  async applyEffect({ target }: HasTarget) {
     const { outcome } = await this.g.abilityCheck(10, {
       ability: "wis",
       skill: "Medicine",

@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../../actions/AbstractAction";
 import DashAction from "../../actions/DashAction";
 import DisengageAction from "../../actions/DisengageAction";
 import DodgeAction from "../../actions/DodgeAction";
@@ -13,14 +13,13 @@ import { ShortRestResource } from "../../resources";
 import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { getWeaponAbility, getWeaponRange } from "../../utils/items";
 import { getMonkUnarmedWeapon } from "./MartialArts";
 
 export const KiResource = new ShortRestResource("Ki", 2);
 
-class FlurryOfBlows extends AbstractAction<HasTarget> {
+class FlurryOfBlows extends AbstractSingleTargetAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -55,16 +54,7 @@ class FlurryOfBlows extends AbstractAction<HasTarget> {
     return super.check({ target }, ec);
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
-
+  async applyEffect({ target }: HasTarget) {
     const { g, actor: attacker, weapon, ability } = this;
     await doStandardAttack(g, {
       ability,

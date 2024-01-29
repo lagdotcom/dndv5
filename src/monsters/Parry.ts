@@ -41,7 +41,7 @@ export class ParryAction extends AbstractAction<HasTarget> {
     );
   }
 
-  check(config: HasTarget, ec: ErrorCollector) {
+  check(config: never, ec: ErrorCollector) {
     const melee = this.actor.weapons.find((w) => w.rangeCategory === "melee");
     if (!melee) ec.add("not wielding a melee weapon", this);
 
@@ -55,9 +55,7 @@ export class ParryAction extends AbstractAction<HasTarget> {
     return [this.actor];
   }
 
-  async apply(config: HasTarget) {
-    await super.apply(config);
-
+  async applyEffect() {
     if (!this.detail) throw new Error(`Parry.apply() without AttackDetail`);
 
     this.detail.ac += this.actor.pb;

@@ -488,8 +488,7 @@ class ShieldBashAction extends WeaponAttack {
     super(g, "Shield Bash", actor, "melee", new ImprovisedWeapon(g, item));
   }
 
-  async apply({ target }: HasTarget): Promise<void> {
-    await super.applyCosts({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, ability, actor, weapon } = this;
 
     const { attack } = await doStandardAttack(g, {

@@ -1,4 +1,4 @@
-import AbstractAction from "../../actions/AbstractAction";
+import { AbstractSingleTargetAction } from "../../actions/AbstractAction";
 import { HasPoint, HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { Prone } from "../../effects";
@@ -13,12 +13,11 @@ import { coSet } from "../../types/ConditionName";
 import { SpecifiedSphere } from "../../types/EffectArea";
 import Point from "../../types/Point";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { distance } from "../../utils/units";
 import { scalingSpell } from "../common";
 
-class SlapAction extends AbstractAction<HasTarget> {
+class SlapAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -37,15 +36,7 @@ class SlapAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     await target.removeEffect(SleepEffect);
   }
 }

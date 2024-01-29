@@ -1,13 +1,13 @@
 import iconUrl from "@img/eq/hood.svg";
 
-import AbstractAction from "../../../actions/AbstractAction";
+import { AbstractSelfAction } from "../../../actions/AbstractAction";
 import Engine from "../../../Engine";
 import MessageBuilder from "../../../MessageBuilder";
 import Combatant from "../../../types/Combatant";
 import { isEquipmentAttuned } from "../../../utils/items";
 import WondrousItemBase from "../../WondrousItemBase";
 
-class CloakHoodAction extends AbstractAction {
+class CloakHoodAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -27,15 +27,7 @@ class CloakHoodAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply() {
-    await super.apply({});
+  async applyEffect() {
     this.cloak.hoodUp = !this.cloak.hoodUp;
 
     this.g.text(

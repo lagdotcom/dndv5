@@ -910,180 +910,175 @@
     }
   };
 
-  // src/actions/AbstractAction.ts
-  var AbstractAction = class {
-    constructor(g, actor, name, status, config, {
-      area,
-      damage,
-      description,
-      heal,
-      icon,
-      resources,
-      subIcon,
-      tags,
-      time
-    } = {}) {
-      this.g = g;
-      this.actor = actor;
-      this.name = name;
-      this.status = status;
-      this.config = config;
-      this.area = area;
-      this.damage = damage;
-      this.description = description;
-      this.heal = heal;
-      this.resources = new Map(resources);
-      this.time = time;
-      this.icon = icon;
-      this.subIcon = subIcon;
-      this.tags = new Set(tags);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    generateAttackConfigs(targets) {
-      return [];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    generateHealingConfigs(targets) {
-      return [];
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getAffectedArea(config) {
-      return this.area;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getConfig(config) {
-      return this.config;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getDamage(config) {
-      return this.damage;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getDescription(config) {
-      return this.description;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getHeal(config) {
-      return this.heal;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getResources(config) {
-      return this.resources;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getTime(config) {
-      return this.time;
-    }
-    check(config, ec) {
-      const time = this.getTime(config);
-      if (time && !this.actor.hasTime(time))
-        ec.add(`No ${time} left`, this);
-      for (const [resource, cost] of this.getResources(config))
-        if (!this.actor.hasResource(resource, cost))
-          ec.add(`Not enough ${resource.name} left`, this);
-      return ec;
-    }
-    async applyCosts(config) {
-      const time = this.getTime(config);
-      if (time)
-        this.actor.useTime(time);
-      for (const [resource, cost] of this.getResources(config))
-        this.actor.spendResource(resource, cost);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async apply(config) {
-      await this.applyCosts(config);
-    }
-  };
+  // src/types/AbilityName.ts
+  var PhysicalAbilities = ["str", "dex", "con"];
+  var MentalAbilities = ["int", "wis", "cha"];
+  var AbilityNames = [...PhysicalAbilities, ...MentalAbilities];
+  var abSet = (...items) => new Set(items);
 
-  // src/actions/DashAction.ts
-  var DashIcon = makeIcon(dash_default);
-  var DashEffect = new Effect(
-    "Dash",
-    "turnEnd",
-    (g) => {
-      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
-        if (who.hasEffect(DashEffect))
-          multiplier.add("double", DashEffect);
-      });
-    },
-    { icon: DashIcon }
-  );
-  var DashAction = class extends AbstractAction {
-    constructor(g, actor) {
-      super(
-        g,
-        actor,
-        "Dash",
-        "implemented",
-        {},
-        {
-          icon: DashIcon,
-          time: "action",
-          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
+  // src/types/Item.ts
+  var WeaponCategories = [
+    "natural",
+    "simple",
+    "martial",
+    "improvised"
+  ];
+  var wcSet = (...items) => new Set(items);
+  var ArmorCategories = ["light", "medium", "heavy", "shield"];
+  var acSet = (...items) => new Set(items);
 
-        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
-        }
-      );
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    check(config, ec) {
-      if (this.actor.speed <= 0)
-        ec.add("Zero speed", this);
-      return super.check(config, ec);
-    }
-    async apply() {
-      await super.apply({});
-      await this.actor.addEffect(DashEffect, { duration: 1 });
-    }
-  };
+  // src/types/ProficiencyType.ts
+  var ProficiencyTypes = [
+    "none",
+    "half",
+    "proficient",
+    "expertise"
+  ];
 
-  // src/img/act/disengage.svg
-  var disengage_default = "./disengage-6XMY6V34.svg";
+  // src/types/SkillName.ts
+  var SkillNames = [
+    "Acrobatics",
+    "Animal Handling",
+    "Arcana",
+    "Athletics",
+    "Deception",
+    "History",
+    "Insight",
+    "Intimidation",
+    "Investigation",
+    "Medicine",
+    "Nature",
+    "Perception",
+    "Performance",
+    "Persuasion",
+    "Religion",
+    "Sleight of Hand",
+    "Stealth",
+    "Survival"
+  ];
 
-  // src/img/act/thrown.svg
-  var thrown_default = "./thrown-ITAE47P5.svg";
+  // src/types/ToolName.ts
+  var ArtisansTools = [
+    "alchemist's supplies",
+    "brewer's supplies",
+    "calligrapher's supplies",
+    "carpenter's tools",
+    "cartographer's tools",
+    "cobbler's tools",
+    "cook's utensils",
+    "glassblower's tools",
+    "jeweler's tools",
+    "leatherworker's tools",
+    "mason's tools",
+    "painter's supplies",
+    "potter's tools",
+    "smith's tools",
+    "tinker's tools",
+    "weaver's tools",
+    "woodcarver's tools"
+  ];
+  var GamingSets = [
+    "dice set",
+    "dragonchess set",
+    "playing card set",
+    "three-dragon ante set"
+  ];
+  var Instruments = [
+    "bagpipes",
+    "birdpipes",
+    "drum",
+    "dulcimer",
+    "flute",
+    "glaur",
+    "hand drum",
+    "horn",
+    "longhorn",
+    "lute",
+    "lyre",
+    "pan flute",
+    "shawm",
+    "songborn",
+    "tantan",
+    "thelarr",
+    "tocken",
+    "viol",
+    "wargong",
+    "yarting",
+    "zulkoon"
+  ];
+  var VehicleTypes = [
+    "vehicles (air)",
+    "vehicles (land)",
+    "vehicles (space)",
+    "vehicles (water)"
+  ];
+  var ToolNames = [
+    ...ArtisansTools,
+    ...GamingSets,
+    ...Instruments,
+    ...VehicleTypes,
+    "disguise kit",
+    "forgery kit",
+    "herbalism kit",
+    "navigator's tools",
+    "poisoner's kit",
+    "thieves' tools"
+  ];
 
-  // src/types/SizeCategory.ts
-  var SizeCategory = /* @__PURE__ */ ((SizeCategory2) => {
-    SizeCategory2[SizeCategory2["Tiny"] = 1] = "Tiny";
-    SizeCategory2[SizeCategory2["Small"] = 2] = "Small";
-    SizeCategory2[SizeCategory2["Medium"] = 3] = "Medium";
-    SizeCategory2[SizeCategory2["Large"] = 4] = "Large";
-    SizeCategory2[SizeCategory2["Huge"] = 6] = "Huge";
-    SizeCategory2[SizeCategory2["Gargantuan"] = 7] = "Gargantuan";
-    return SizeCategory2;
-  })(SizeCategory || {});
-  var SizeCategory_default = SizeCategory;
-
-  // src/utils/combinatorics.ts
-  function combinations(source, size) {
-    const results = [];
-    function backtrack(start, current) {
-      if (current.length === size) {
-        results.push([...current]);
-        return;
-      }
-      for (let i2 = start; i2 < source.length; i2++) {
-        current.push(source[i2]);
-        backtrack(i2 + 1, current);
-        current.pop();
-      }
-    }
-    backtrack(0, []);
-    return results;
-  }
-  function combinationsMulti(source, min, max) {
-    const v = [];
-    for (let l = min; l <= max; l++)
-      v.push(...combinations(source, l));
-    return v;
-  }
+  // src/types/WeaponType.ts
+  var SimpleMeleeWeapons = [
+    "club",
+    "dagger",
+    "greatclub",
+    "handaxe",
+    "javelin",
+    "light hammer",
+    "mace",
+    "quarterstaff",
+    "sickle",
+    "spear"
+  ];
+  var SimpleRangedWeapons = [
+    "light crossbow",
+    "dart",
+    "shortbow",
+    "sling"
+  ];
+  var MartialMeleeWeapons = [
+    "battleaxe",
+    "flail",
+    "glaive",
+    "greataxe",
+    "greatsword",
+    "halberd",
+    "lance",
+    "longsword",
+    "maul",
+    "morningstar",
+    "pike",
+    "rapier",
+    "scimitar",
+    "shortsword",
+    "trident",
+    "war pick",
+    "warhammer",
+    "whip"
+  ];
+  var MartialRangedWeapons = [
+    "blowgun",
+    "hand crossbow",
+    "heavy crossbow",
+    "longbow",
+    "net"
+  ];
+  var WeaponTypes = [
+    ...SimpleMeleeWeapons,
+    ...SimpleRangedWeapons,
+    ...MartialMeleeWeapons,
+    ...MartialRangedWeapons,
+    "unarmed strike"
+  ];
+  var wtSet = (...items) => new Set(items);
 
   // src/Polygon.ts
   var Polygon = class {
@@ -1353,6 +1348,18 @@
     return enumerateMapSquares(minX, minY, maxX, maxY);
   }
 
+  // src/types/SizeCategory.ts
+  var SizeCategory = /* @__PURE__ */ ((SizeCategory2) => {
+    SizeCategory2[SizeCategory2["Tiny"] = 1] = "Tiny";
+    SizeCategory2[SizeCategory2["Small"] = 2] = "Small";
+    SizeCategory2[SizeCategory2["Medium"] = 3] = "Medium";
+    SizeCategory2[SizeCategory2["Large"] = 4] = "Large";
+    SizeCategory2[SizeCategory2["Huge"] = 6] = "Huge";
+    SizeCategory2[SizeCategory2["Gargantuan"] = 7] = "Gargantuan";
+    return SizeCategory2;
+  })(SizeCategory || {});
+  var SizeCategory_default = SizeCategory;
+
   // src/utils/units.ts
   var categoryUnits = {
     [SizeCategory_default.Tiny]: 1,
@@ -1407,325 +1414,6 @@
         position.y + who.sizeInUnits
       )
     );
-  }
-
-  // src/filters.ts
-  var makeFilter = ({
-    name,
-    message = name,
-    check
-  }) => ({
-    name,
-    message,
-    check
-  });
-  var canBeHeardBy = makeFilter({
-    name: "can be heard by",
-    message: "not audible",
-    check: (g, action, value) => g.canHear(value, action.actor)
-  });
-  var canSee = makeFilter({
-    name: "can see",
-    message: "not visible",
-    check: (g, action, value) => g.canSee(action.actor, value)
-  });
-  var capable = makeFilter({
-    name: "can act",
-    message: "incapacitated",
-    check: (g, action, value) => !value.conditions.has("Incapacitated")
-  });
-  var conscious = makeFilter({
-    name: "conscious",
-    message: "unconscious",
-    check: (g, action, value) => !value.conditions.has("Unconscious")
-  });
-  var isAlly = makeFilter({
-    name: "ally",
-    message: "must target ally",
-    check: (g, action, value) => action.actor.side === value.side
-  });
-  var isConcentrating = makeFilter({
-    name: "concentrating",
-    message: "target must be concentrating",
-    check: (g, action, value) => value.concentratingOn.size > 0
-  });
-  var isEnemy = makeFilter({
-    name: "enemy",
-    message: "must target enemy",
-    check: (g, action, value) => action.actor.side !== value.side
-  });
-  var notSelf = makeFilter({
-    name: "not self",
-    check: (g, action, value) => action.actor !== value
-  });
-  var hasEffect = (effect, name = effect.name, message = "no effect") => makeFilter({
-    name,
-    message,
-    check: (g, action, value) => value.hasEffect(effect)
-  });
-  var doesNotHaveEffect = (effect, name = `not ${effect.name}`, message = "affected") => makeFilter({
-    name,
-    message,
-    check: (g, action, value) => !value.hasEffect(effect)
-  });
-  var hasTime = (time) => makeFilter({
-    name: `has ${time}`,
-    message: "no time",
-    check: (g, action, value) => value.hasTime(time)
-  });
-  var ofCreatureType = (...types) => makeFilter({
-    name: types.join("/"),
-    message: "wrong creature type",
-    check: (g, action, value) => types.includes(value.type)
-  });
-  var notOfCreatureType = (...types) => makeFilter({
-    name: `not ${types.join("/")}`,
-    message: "wrong creature type",
-    check: (g, action, value) => !types.includes(value.type)
-  });
-  var sizeOrLess = (size) => makeFilter({
-    name: `up to ${SizeCategory_default[size]}`,
-    message: "too big",
-    check: (g, action, value) => value.size <= size
-  });
-  var isGrappledBy = (grappler) => makeFilter({
-    name: "grappled",
-    message: `not grappled by ${grappler.name}`,
-    check: (g, action, value) => grappler.grappling.has(value)
-  });
-  var withinRangeOfEachOther = (range) => makeFilter({
-    name: `within ${range}' of each other`,
-    message: `within ${range}' of each other`,
-    check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
-  });
-
-  // src/events/YesNoChoiceEvent.ts
-  var YesNoChoiceEvent = class extends CustomEvent {
-    constructor(detail) {
-      super("YesNoChoice", { detail });
-    }
-  };
-
-  // src/interruptions/YesNoChoice.ts
-  var YesNoChoice = class {
-    constructor(who, source, title, text, priority, yes, no, isStillValid) {
-      this.who = who;
-      this.source = source;
-      this.title = title;
-      this.text = text;
-      this.priority = priority;
-      this.yes = yes;
-      this.no = no;
-      this.isStillValid = isStillValid;
-    }
-    async apply(g) {
-      var _a, _b;
-      const choice = await new Promise(
-        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
-      );
-      if (choice)
-        await ((_a = this.yes) == null ? void 0 : _a.call(this));
-      else
-        await ((_b = this.no) == null ? void 0 : _b.call(this));
-      return choice;
-    }
-  };
-
-  // src/types/AbilityName.ts
-  var PhysicalAbilities = ["str", "dex", "con"];
-  var MentalAbilities = ["int", "wis", "cha"];
-  var AbilityNames = [...PhysicalAbilities, ...MentalAbilities];
-  var abSet = (...items) => new Set(items);
-
-  // src/types/Item.ts
-  var WeaponCategories = [
-    "natural",
-    "simple",
-    "martial",
-    "improvised"
-  ];
-  var wcSet = (...items) => new Set(items);
-  var ArmorCategories = ["light", "medium", "heavy", "shield"];
-  var acSet = (...items) => new Set(items);
-
-  // src/types/ProficiencyType.ts
-  var ProficiencyTypes = [
-    "none",
-    "half",
-    "proficient",
-    "expertise"
-  ];
-
-  // src/types/SkillName.ts
-  var SkillNames = [
-    "Acrobatics",
-    "Animal Handling",
-    "Arcana",
-    "Athletics",
-    "Deception",
-    "History",
-    "Insight",
-    "Intimidation",
-    "Investigation",
-    "Medicine",
-    "Nature",
-    "Perception",
-    "Performance",
-    "Persuasion",
-    "Religion",
-    "Sleight of Hand",
-    "Stealth",
-    "Survival"
-  ];
-
-  // src/types/ToolName.ts
-  var ArtisansTools = [
-    "alchemist's supplies",
-    "brewer's supplies",
-    "calligrapher's supplies",
-    "carpenter's tools",
-    "cartographer's tools",
-    "cobbler's tools",
-    "cook's utensils",
-    "glassblower's tools",
-    "jeweler's tools",
-    "leatherworker's tools",
-    "mason's tools",
-    "painter's supplies",
-    "potter's tools",
-    "smith's tools",
-    "tinker's tools",
-    "weaver's tools",
-    "woodcarver's tools"
-  ];
-  var GamingSets = [
-    "dice set",
-    "dragonchess set",
-    "playing card set",
-    "three-dragon ante set"
-  ];
-  var Instruments = [
-    "bagpipes",
-    "birdpipes",
-    "drum",
-    "dulcimer",
-    "flute",
-    "glaur",
-    "hand drum",
-    "horn",
-    "longhorn",
-    "lute",
-    "lyre",
-    "pan flute",
-    "shawm",
-    "songborn",
-    "tantan",
-    "thelarr",
-    "tocken",
-    "viol",
-    "wargong",
-    "yarting",
-    "zulkoon"
-  ];
-  var VehicleTypes = [
-    "vehicles (air)",
-    "vehicles (land)",
-    "vehicles (space)",
-    "vehicles (water)"
-  ];
-  var ToolNames = [
-    ...ArtisansTools,
-    ...GamingSets,
-    ...Instruments,
-    ...VehicleTypes,
-    "disguise kit",
-    "forgery kit",
-    "herbalism kit",
-    "navigator's tools",
-    "poisoner's kit",
-    "thieves' tools"
-  ];
-
-  // src/types/WeaponType.ts
-  var SimpleMeleeWeapons = [
-    "club",
-    "dagger",
-    "greatclub",
-    "handaxe",
-    "javelin",
-    "light hammer",
-    "mace",
-    "quarterstaff",
-    "sickle",
-    "spear"
-  ];
-  var SimpleRangedWeapons = [
-    "light crossbow",
-    "dart",
-    "shortbow",
-    "sling"
-  ];
-  var MartialMeleeWeapons = [
-    "battleaxe",
-    "flail",
-    "glaive",
-    "greataxe",
-    "greatsword",
-    "halberd",
-    "lance",
-    "longsword",
-    "maul",
-    "morningstar",
-    "pike",
-    "rapier",
-    "scimitar",
-    "shortsword",
-    "trident",
-    "war pick",
-    "warhammer",
-    "whip"
-  ];
-  var MartialRangedWeapons = [
-    "blowgun",
-    "hand crossbow",
-    "heavy crossbow",
-    "longbow",
-    "net"
-  ];
-  var WeaponTypes = [
-    ...SimpleMeleeWeapons,
-    ...SimpleRangedWeapons,
-    ...MartialMeleeWeapons,
-    ...MartialRangedWeapons,
-    "unarmed strike"
-  ];
-  var wtSet = (...items) => new Set(items);
-
-  // src/utils/types.ts
-  function isDefined(value) {
-    return typeof value !== "undefined";
-  }
-  function isA(value, enumeration) {
-    return enumeration.includes(value);
-  }
-  function isCombatantArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const who of value)
-      if (!(who instanceof CombatantBase))
-        return false;
-    return true;
-  }
-  function isPoint(value) {
-    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
-  }
-  function isPointArray(value) {
-    if (!Array.isArray(value))
-      return false;
-    for (const point of value)
-      if (!isPoint(point))
-        return false;
-    return true;
   }
 
   // src/utils/dnd.ts
@@ -1812,7 +1500,7 @@
       this.baseMinimum = baseMinimum;
     }
     get score() {
-      return Math.max(this.baseMinimum, Math.min(this.baseScore, this.maximum));
+      return clamp(this.baseScore, this.baseMinimum, this.baseMaximum);
     }
     set score(value) {
       this.baseScore = value;
@@ -2637,6 +2325,342 @@
     }
   };
 
+  // src/utils/types.ts
+  function isDefined(value) {
+    return typeof value !== "undefined";
+  }
+  function isA(value, enumeration) {
+    return enumeration.includes(value);
+  }
+  function isCombatantArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const who of value)
+      if (!(who instanceof CombatantBase))
+        return false;
+    return true;
+  }
+  function isPoint(value) {
+    return typeof value === "object" && typeof value.x === "number" && typeof value.y === "number";
+  }
+  function isPointArray(value) {
+    if (!Array.isArray(value))
+      return false;
+    for (const point of value)
+      if (!isPoint(point))
+        return false;
+    return true;
+  }
+
+  // src/utils/array.ts
+  var sieve = (...items) => items.filter(isDefined);
+  var uniq = (items) => Array.from(new Set(items));
+
+  // src/actions/AbstractAction.ts
+  var AbstractAction = class {
+    constructor(g, actor, name, status, config, {
+      area,
+      damage,
+      description,
+      heal,
+      icon,
+      resources,
+      subIcon,
+      tags,
+      time
+    } = {}) {
+      this.g = g;
+      this.actor = actor;
+      this.name = name;
+      this.status = status;
+      this.config = config;
+      this.area = area;
+      this.damage = damage;
+      this.description = description;
+      this.heal = heal;
+      this.resources = new Map(resources);
+      this.time = time;
+      this.icon = icon;
+      this.subIcon = subIcon;
+      this.tags = new Set(tags);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    generateAttackConfigs(targets) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    generateHealingConfigs(targets) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffectedArea(config) {
+      return this.area;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getConfig(config) {
+      return this.config;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDamage(config) {
+      return this.damage;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDescription(config) {
+      return this.description;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getHeal(config) {
+      return this.heal;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getResources(config) {
+      return this.resources;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTime(config) {
+      return this.time;
+    }
+    check(config, ec) {
+      const time = this.getTime(config);
+      if (time && !this.actor.hasTime(time))
+        ec.add(`No ${time} left`, this);
+      for (const [resource, cost] of this.getResources(config))
+        if (!this.actor.hasResource(resource, cost))
+          ec.add(`Not enough ${resource.name} left`, this);
+      return ec;
+    }
+    async applyCosts(config) {
+      const time = this.getTime(config);
+      if (time)
+        this.actor.useTime(time);
+      for (const [resource, cost] of this.getResources(config))
+        this.actor.spendResource(resource, cost);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async apply(config) {
+      await this.applyCosts(config);
+      await this.applyEffect(config);
+    }
+  };
+  var AbstractSingleTargetAction = class extends AbstractAction {
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+  };
+  var AbstractMultiTargetAction = class extends AbstractAction {
+    getTargets({ targets }) {
+      return targets != null ? targets : [];
+    }
+    getAffected({ targets }) {
+      return targets;
+    }
+  };
+  var AbstractSelfAction = class extends AbstractAction {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getTargets(config) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getAffected(config) {
+      return [this.actor];
+    }
+  };
+
+  // src/actions/DashAction.ts
+  var DashIcon = makeIcon(dash_default);
+  var DashEffect = new Effect(
+    "Dash",
+    "turnEnd",
+    (g) => {
+      g.events.on("GetSpeed", ({ detail: { who, multiplier } }) => {
+        if (who.hasEffect(DashEffect))
+          multiplier.add("double", DashEffect);
+      });
+    },
+    { icon: DashIcon }
+  );
+  var DashAction = class extends AbstractSelfAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Dash",
+        "implemented",
+        {},
+        {
+          icon: DashIcon,
+          time: "action",
+          description: `When you take the Dash action, you gain extra movement for the current turn. The increase equals your speed, after applying any modifiers. With a speed of 30 feet, for example, you can move up to 60 feet on your turn if you dash.
+
+        Any increase or decrease to your speed changes this additional movement by the same amount. If your speed of 30 feet is reduced to 15 feet, for instance, you can move up to 30 feet this turn if you dash.`
+        }
+      );
+    }
+    check(config, ec) {
+      if (this.actor.speed <= 0)
+        ec.add("Zero speed", this);
+      return super.check(config, ec);
+    }
+    async applyEffect() {
+      await this.actor.addEffect(DashEffect, { duration: 1 });
+    }
+  };
+
+  // src/img/act/disengage.svg
+  var disengage_default = "./disengage-6XMY6V34.svg";
+
+  // src/img/act/thrown.svg
+  var thrown_default = "./thrown-ITAE47P5.svg";
+
+  // src/utils/combinatorics.ts
+  function combinations(source, size) {
+    const results = [];
+    function backtrack(start, current) {
+      if (current.length === size) {
+        results.push([...current]);
+        return;
+      }
+      for (let i2 = start; i2 < source.length; i2++) {
+        current.push(source[i2]);
+        backtrack(i2 + 1, current);
+        current.pop();
+      }
+    }
+    backtrack(0, []);
+    return results;
+  }
+  function combinationsMulti(source, min, max) {
+    const v = [];
+    for (let l = min; l <= max; l++)
+      v.push(...combinations(source, l));
+    return v;
+  }
+
+  // src/filters.ts
+  var makeFilter = ({
+    name,
+    message = name,
+    check
+  }) => ({
+    name,
+    message,
+    check
+  });
+  var canBeHeardBy = makeFilter({
+    name: "can be heard by",
+    message: "not audible",
+    check: (g, action, value) => g.canHear(value, action.actor)
+  });
+  var canSee = makeFilter({
+    name: "can see",
+    message: "not visible",
+    check: (g, action, value) => g.canSee(action.actor, value)
+  });
+  var capable = makeFilter({
+    name: "can act",
+    message: "incapacitated",
+    check: (g, action, value) => !value.conditions.has("Incapacitated")
+  });
+  var conscious = makeFilter({
+    name: "conscious",
+    message: "unconscious",
+    check: (g, action, value) => !value.conditions.has("Unconscious")
+  });
+  var isAlly = makeFilter({
+    name: "ally",
+    message: "must target ally",
+    check: (g, action, value) => action.actor.side === value.side
+  });
+  var isConcentrating = makeFilter({
+    name: "concentrating",
+    message: "target must be concentrating",
+    check: (g, action, value) => value.concentratingOn.size > 0
+  });
+  var isEnemy = makeFilter({
+    name: "enemy",
+    message: "must target enemy",
+    check: (g, action, value) => action.actor.side !== value.side
+  });
+  var notSelf = makeFilter({
+    name: "not self",
+    check: (g, action, value) => action.actor !== value
+  });
+  var hasEffect = (effect, name = effect.name, message = "no effect") => makeFilter({
+    name,
+    message,
+    check: (g, action, value) => value.hasEffect(effect)
+  });
+  var doesNotHaveEffect = (effect, name = `not ${effect.name}`, message = "affected") => makeFilter({
+    name,
+    message,
+    check: (g, action, value) => !value.hasEffect(effect)
+  });
+  var hasTime = (time) => makeFilter({
+    name: `has ${time}`,
+    message: "no time",
+    check: (g, action, value) => value.hasTime(time)
+  });
+  var ofCreatureType = (...types) => makeFilter({
+    name: types.join("/"),
+    message: "wrong creature type",
+    check: (g, action, value) => types.includes(value.type)
+  });
+  var notOfCreatureType = (...types) => makeFilter({
+    name: `not ${types.join("/")}`,
+    message: "wrong creature type",
+    check: (g, action, value) => !types.includes(value.type)
+  });
+  var sizeOrLess = (size) => makeFilter({
+    name: `up to ${SizeCategory_default[size]}`,
+    message: "too big",
+    check: (g, action, value) => value.size <= size
+  });
+  var isGrappledBy = (grappler) => makeFilter({
+    name: "grappled",
+    message: `not grappled by ${grappler.name}`,
+    check: (g, action, value) => grappler.grappling.has(value)
+  });
+  var withinRangeOfEachOther = (range) => makeFilter({
+    name: `within ${range}' of each other`,
+    message: `within ${range}' of each other`,
+    check: (g, action, value) => !combinations(value, 2).find(([a, b]) => distance(a, b) > range)
+  });
+
+  // src/events/YesNoChoiceEvent.ts
+  var YesNoChoiceEvent = class extends CustomEvent {
+    constructor(detail) {
+      super("YesNoChoice", { detail });
+    }
+  };
+
+  // src/interruptions/YesNoChoice.ts
+  var YesNoChoice = class {
+    constructor(who, source, title, text, priority, yes, no, isStillValid) {
+      this.who = who;
+      this.source = source;
+      this.title = title;
+      this.text = text;
+      this.priority = priority;
+      this.yes = yes;
+      this.no = no;
+      this.isStillValid = isStillValid;
+    }
+    async apply(g) {
+      var _a, _b;
+      const choice = await new Promise(
+        (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
+      );
+      if (choice)
+        await ((_a = this.yes) == null ? void 0 : _a.call(this));
+      else
+        await ((_b = this.no) == null ? void 0 : _b.call(this));
+      return choice;
+    }
+  };
+
   // src/resolvers/TargetResolver.ts
   var TargetResolver = class {
     constructor(g, maxRange, filters) {
@@ -2719,10 +2743,6 @@
     of
   });
 
-  // src/utils/array.ts
-  var sieve = (...items) => items.filter(isDefined);
-  var uniq = (items) => Array.from(new Set(items));
-
   // src/utils/text.ts
   var niceAbilityName = {
     str: "Strength",
@@ -2797,7 +2817,7 @@
 
   // src/actions/DropProneAction.ts
   var DropProneIcon = makeIcon(prone_default);
-  var DropProneAction = class extends AbstractAction {
+  var DropProneAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -2811,19 +2831,12 @@
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (this.actor.conditions.has("Prone"))
         ec.add("already prone", this);
       return super.check(config, ec);
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       await this.actor.addEffect(Prone, {
         conditions: coSet("Prone"),
         duration: Infinity
@@ -2934,9 +2947,7 @@
         ec.add("not being grappled", this);
       return super.check(config, ec);
     }
-    async apply(config) {
-      await super.apply(config);
-      const { ability, skill } = config.choice;
+    async applyEffect({ choice: { ability, skill } }) {
       const { g, actor, grappler } = this;
       if (!grappler)
         throw new Error("Trying to escape a non-existent grapple");
@@ -2960,7 +2971,7 @@
   };
 
   // src/actions/StabilizeAction.ts
-  var StabilizeAction = class extends AbstractAction {
+  var StabilizeAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -2974,14 +2985,7 @@
         }
       );
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { outcome } = await this.g.abilityCheck(10, {
         ability: "wis",
         skill: "Medicine",
@@ -3000,7 +3004,7 @@
 
   // src/actions/StandUpAction.ts
   var StandUpIcon = makeIcon(stand_default);
-  var StandUpAction = class extends AbstractAction {
+  var StandUpAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -3019,12 +3023,6 @@
     get cost() {
       return round(this.actor.speed / 2, MapSquareSize);
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (!this.actor.conditions.has("Prone"))
         ec.add("not prone", this);
@@ -3035,8 +3033,7 @@
         ec.add("not enough movement", this);
       return super.check(config, ec);
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       this.actor.movedSoFar += this.cost;
       await this.actor.removeEffect(Prone);
       this.g.text(new MessageBuilder().co(this.actor).text(" stands up."));
@@ -3347,7 +3344,7 @@
       });
     }
   );
-  var DouseFireAction = class extends AbstractAction {
+  var DouseFireAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -3361,14 +3358,7 @@
         }
       );
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       await target.removeEffect(OnFire);
     }
   };
@@ -3428,6 +3418,14 @@
       }
     }
   };
+  var AbstractSingleTargetAttackAction = class extends AbstractAttackAction {
+    getTargets({ target }) {
+      return sieve(target);
+    }
+    getAffected({ target }) {
+      return [target];
+    }
+  };
 
   // src/actions/WeaponAttack.ts
   var thrownIcon = makeIcon(thrown_default);
@@ -3437,7 +3435,7 @@
       return `${name} (${weapon.name}, ${ammoName})`;
     return `${name} (${weapon.name})`;
   }
-  var WeaponAttack = class extends AbstractAttackAction {
+  var WeaponAttack = class extends AbstractSingleTargetAttackAction {
     constructor(g, nameBasis, actor, rangeCategory, weapon, ammo, attackTags) {
       super(
         g,
@@ -3497,19 +3495,12 @@
         " or "
       )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
     check(config, ec) {
       if (this.weapon.properties.has("two-handed") && this.actor.freeHands < 1)
         ec.add("need two hands", this);
       return super.check(config, ec);
     }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       await doStandardAttack(this.g, {
         ability: this.ability,
         ammo: this.ammo,
@@ -3678,7 +3669,7 @@
     },
     { icon: DisengageIcon }
   );
-  var DisengageAction = class extends AbstractAction {
+  var DisengageAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -3693,14 +3684,7 @@
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       await this.actor.addEffect(DisengageEffect, { duration: 1 });
     }
   };
@@ -3728,7 +3712,7 @@
     },
     { icon: DodgeIcon }
   );
-  var DodgeAction = class extends AbstractAction {
+  var DodgeAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -3743,20 +3727,13 @@
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       await this.actor.addEffect(DodgeEffect, { duration: 1 });
     }
   };
 
   // src/actions/DoffAction.ts
-  var DoffAction = class extends AbstractAction {
+  var DoffAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -3777,19 +3754,12 @@
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     getTime() {
       if (this.actor.hasTime("item interaction"))
         return "item interaction";
       return "action";
     }
-    async apply({ item }) {
-      await super.apply({ item });
+    async applyEffect({ item }) {
       if (this.actor.doff(item))
         this.g.text(
           new MessageBuilder().co(this.actor).text(" doffs their ").it(item).text(".")
@@ -3798,7 +3768,7 @@
   };
 
   // src/actions/DonAction.ts
-  var DonAction = class extends AbstractAction {
+  var DonAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -3819,12 +3789,6 @@
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (config.item && config.item.hands > this.actor.freeHands)
         ec.add("not enough hands", this);
@@ -3835,8 +3799,7 @@
         return "item interaction";
       return "action";
     }
-    async apply({ item }) {
-      await super.apply({ item });
+    async applyEffect({ item }) {
       if (this.actor.don(item))
         this.g.text(
           new MessageBuilder().co(this.actor).text(" dons their ").it(item).text(".")
@@ -3850,7 +3813,7 @@
     message: "already grappling",
     check: (g, action, value) => !who.grappling.has(value)
   });
-  var GrappleAction = class extends AbstractAttackAction {
+  var GrappleAction = class extends AbstractSingleTargetAttackAction {
     constructor(g, actor) {
       super(
         g,
@@ -3872,19 +3835,12 @@
         }
       );
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
     check(config, ec) {
       if (this.actor.freeHands < 1)
         ec.add("no free hands", this);
       return super.check(config, ec);
     }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { actor, g } = this;
       if (target.conditions.has("Incapacitated")) {
         await this.applyGrapple(target);
@@ -3933,7 +3889,7 @@
     message: "not grappling",
     check: (g, action, value) => who.grappling.has(value)
   });
-  var ReleaseGrappleAction = class extends AbstractAction {
+  var ReleaseGrappleAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -3944,14 +3900,7 @@
         { description: `You can release the target whenever you like.` }
       );
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       await target.removeEffect(Grappled);
     }
   };
@@ -3961,7 +3910,7 @@
     makeChoice("prone", "knock prone"),
     makeChoice("push", "push 5 feet away")
   ];
-  var ShoveAction = class extends AbstractAttackAction {
+  var ShoveAction = class extends AbstractSingleTargetAttackAction {
     constructor(g, actor) {
       super(
         g,
@@ -3983,15 +3932,7 @@
         }
       );
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply(config) {
-      await super.apply(config);
-      const { target, type } = config;
+    async applyEffect({ target, type }) {
       const { g, actor } = this;
       if (target.conditions.has("Incapacitated")) {
         await this.applyShove(target, type);
@@ -5450,7 +5391,13 @@
         })
       )).detail;
       if (success.result === "fail")
-        return { outcome: "cancelled", hit: false };
+        return {
+          outcome: "cancelled",
+          attack: void 0,
+          hit: false,
+          critical: false,
+          target: pre.target
+        };
       this.addProficiencyBonus(e2.who, proficiency, bonus, pb);
       const ac = await this.getAC(pre.target, pre);
       const roll = await this.roll({ type: "attack", ...pre }, diceType.result);
@@ -6028,7 +5975,7 @@
     }
   );
   var AntimagicIcon = makeIcon(counterspell_default);
-  var AntimagicProdigyAction = class extends AbstractAction {
+  var AntimagicProdigyAction = class extends AbstractSingleTargetAction {
     constructor(g, actor, dc, success) {
       super(
         g,
@@ -6045,14 +5992,7 @@
       this.dc = dc;
       this.success = success;
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor, dc, success } = this;
       const save = await g.abilityCheck(dc, {
         who: target,
@@ -6098,7 +6038,7 @@
     }
   );
   var RebukeIcon = makeIcon(hellish_rebuke_default, DamageColours.fire);
-  var HellishRebukeAction = class extends AbstractAction {
+  var HellishRebukeAction = class extends AbstractSingleTargetAction {
     constructor(g, actor, dc) {
       super(
         g,
@@ -6124,14 +6064,7 @@
     getDamage() {
       return [_dd(2, 10, "fire")];
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor: attacker, dc } = this;
       const damage = await g.rollDamage(2, {
         source: HellishRebuke,
@@ -6262,7 +6195,7 @@
 
   // src/monsters/multiattack.ts
   function getAttackSpec(action) {
-    if (!(action instanceof AbstractAttackAction))
+    if (!(action instanceof AbstractSingleTargetAttackAction))
       throw new Error(`getAttackSpec(${action.name})`);
     return { weapon: action.weaponName, range: action.rangeCategory };
   }
@@ -6711,7 +6644,7 @@
 
   // src/feats/DragonGifts.ts
   var ProtectiveWingsResource = new LongRestResource("Protective Wings", 2);
-  var ProtectiveWings = class extends AbstractAction {
+  var ProtectiveWings = class extends AbstractSingleTargetAction {
     constructor(g, actor, detail) {
       super(
         g,
@@ -6727,19 +6660,12 @@
       );
       this.detail = detail;
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect({ target }) {
       const { g, actor, detail } = this;
       if (!detail)
         throw new Error(`ProtectiveWings.apply() without AttackDetail`);
       g.text(
-        new MessageBuilder().co(actor).text(" uses Protective Wings on ").sp().co(config.target)
+        new MessageBuilder().co(actor).text(" uses Protective Wings on ").sp().co(target)
       );
       detail.ac += actor.pb;
     }
@@ -6936,10 +6862,8 @@
     getAffected({ target }) {
       return [target];
     }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect({ target, type }) {
       const { g, ability, actor } = this;
-      const { target, type } = config;
       const { outcome } = await g.save({
         source: this,
         type: { type: "ability", ability },
@@ -6979,19 +6903,12 @@
 
   // src/features/boons.ts
   var HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
-  var HissFleeAction = class extends AbstractAction {
+  var HissFleeAction = class extends AbstractSelfAction {
     constructor(g, actor, other) {
       super(g, actor, "Flee from Hiss", "implemented", {}, { time: "reaction" });
       this.other = other;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const { g, actor, other } = this;
       await g.applyBoundedMove(
         actor,
@@ -7013,7 +6930,7 @@
       );
     }
   };
-  var HissAction = class extends AbstractAction {
+  var HissAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -7029,14 +6946,7 @@
         }
       );
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor } = this;
       const action = new HissFleeAction(g, target, actor);
       if (checkConfig(g, action, {})) {
@@ -7183,7 +7093,7 @@
 
   // src/features/fightingStyles/Protection.ts
   var ProtectionIcon = makeIcon(protection_default);
-  var ProtectionAction = class extends AbstractAction {
+  var ProtectionAction = class extends AbstractSingleTargetAction {
     constructor(g, actor, diceType) {
       super(
         g,
@@ -7202,19 +7112,12 @@
       );
       this.diceType = diceType;
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
     check(config, ec) {
       if (!this.actor.shield)
         ec.add("need shield", this);
       return super.check(config, ec);
     }
-    async apply({ attacker, target }) {
-      await super.apply({ attacker, target });
+    async applyEffect() {
       this.diceType.add("disadvantage", this);
     }
   };
@@ -7728,7 +7631,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
   // src/spells/cantrip/MagicStone.ts
   var MagicStoneIcon = makeIcon(magic_stone_default, DamageColours.bludgeoning);
   var MagicStoneResource = new TemporaryResource("Magic Stone", 3);
-  var MagicStoneAction = class extends AbstractAttackAction {
+  var MagicStoneAction = class extends AbstractSingleTargetAttackAction {
     constructor(g, actor, method, unsubscribe) {
       super(
         g,
@@ -7753,14 +7656,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
         positioning: poSet(poWithin(60, target))
       }));
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor, method } = this;
       if (actor.getResource(MagicStoneResource) < 1)
         this.unsubscribe();
@@ -8827,7 +8723,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
   var EarthTremor_default = EarthTremor;
 
   // src/spells/level1/Entangle.ts
-  var BreakFreeFromEntangleAction = class extends AbstractAction {
+  var BreakFreeFromEntangleAction = class extends AbstractSelfAction {
     constructor(g, actor, caster, method) {
       super(
         g,
@@ -8844,14 +8740,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
       this.caster = caster;
       this.method = method;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const type = this.method.getSaveType(this.caster, Entangle);
       const dc = await this.g.getSaveDC({ source: Entangle, type });
       const result = await this.g.abilityCheck(dc.bonus.result, {
@@ -9901,7 +9790,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
   var ShieldOfFaith_default = ShieldOfFaith;
 
   // src/spells/level1/Sleep.ts
-  var SlapAction = class extends AbstractAction {
+  var SlapAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -9919,14 +9808,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
         }
       );
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       await target.removeEffect(SleepEffect);
     }
   };
@@ -10831,8 +10713,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getAffected({ point }) {
       return this.g.getInside(getMoonbeamArea(point));
     }
-    async apply({ point }) {
-      await super.apply({ point });
+    async applyEffect({ point }) {
       this.controller.move(point);
     }
   };
@@ -11143,7 +11024,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
 
   // src/spells/level2/Web.ts
   var WebIcon = makeIcon(web_default);
-  var BreakFreeFromWebAction = class extends AbstractAction {
+  var BreakFreeFromWebAction = class extends AbstractSelfAction {
     constructor(g, actor, caster, method) {
       super(
         g,
@@ -11161,14 +11042,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
       this.caster = caster;
       this.method = method;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const type = this.method.getSaveType(this.caster, Web);
       const dc = await this.g.getSaveDC({ source: Web, type });
       const result = await this.g.abilityCheck(dc.bonus.result, {
@@ -11779,7 +11653,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   // src/spells/level3/MelfsMinuteMeteors.ts
   var MMMIcon = makeIcon(melfs_minute_meteors_default, DamageColours.fire);
   var MMMResource = new TemporaryResource("Melf's Minute Meteors", 6);
-  async function fireMeteors(g, attacker, method, { points }, spendMeteors = true) {
+  async function fireMeteors(g, attacker, method, points, spendMeteors = true) {
     if (spendMeteors)
       attacker.spendResource(MMMResource, points.length);
     const damage = await g.rollDamage(2, {
@@ -11867,9 +11741,8 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       var _a, _b;
       return (_b = (_a = this.getAffectedArea(config)) == null ? void 0 : _a.flatMap((area) => this.g.getInside(area))) != null ? _b : [];
     }
-    async apply(config) {
-      await super.apply(config);
-      return fireMeteors(this.g, this.actor, this.method, config, false);
+    async applyEffect({ points }) {
+      return fireMeteors(this.g, this.actor, this.method, points, false);
     }
   };
   var MelfsMinuteMeteors = scalingSpell({
@@ -11902,7 +11775,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       g.text(
         new MessageBuilder().co(caster).text(` summons ${meteors} tiny meteors.`)
       );
-      await fireMeteors(g, caster, method, { points });
+      await fireMeteors(g, caster, method, points);
       let meteorActionEnabled = false;
       const removeMeteorAction = g.events.on(
         "GetActions",
@@ -12289,7 +12162,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     makeStringChoice("warm"),
     makeStringChoice("chill")
   ];
-  var DismissFireShield = class extends AbstractAction {
+  var DismissFireShield = class extends AbstractSelfAction {
     constructor(g, actor, effect) {
       super(
         g,
@@ -12305,14 +12178,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
       );
       this.effect = effect;
     }
-    getTargets() {
-      return [];
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect() {
       await this.actor.removeEffect(this.effect);
     }
   };
@@ -12973,7 +12839,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     },
     { icon: ShieldBashIcon }
   );
-  var ShieldBashAction = class extends AbstractAction {
+  var ShieldBashAction = class extends AbstractSingleTargetAction {
     constructor(g, actor, ability) {
       super(
         g,
@@ -12985,14 +12851,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
       );
       this.ability = ability;
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor, ability } = this;
       const config = { conditions: coSet("Stunned"), duration: 1 };
       const { outcome } = await g.save({
@@ -13090,7 +12949,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
   var cheerIcon = makeIcon(song_default, "green");
   var discordIcon = makeIcon(song_default, "red");
   var irritationIcon = makeIcon(song_default, "purple");
-  var CheerAction = class extends AbstractAction {
+  var CheerAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -13106,12 +12965,6 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
         }
       );
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
     check({ target }, ec) {
       if (target && !this.getValidAttacks(target).length)
         ec.add("no valid attack", this);
@@ -13124,11 +12977,10 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
         (target) => attacker.side !== target.side
       );
     }
-    async apply({ target: attacker }) {
-      await super.apply({ target: attacker });
-      const attacks = this.getValidAttacks(attacker);
+    async applyEffect({ target }) {
+      const attacks = this.getValidAttacks(target);
       const choice = new PickFromListChoice(
-        attacker,
+        target,
         this,
         "Cheer",
         `Pick an attack to make.`,
@@ -13137,13 +12989,13 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
           value,
           label: `attack ${value.target.name} with ${value.weapon.name}`
         })),
-        async ({ target, weapon }) => {
+        async ({ target: target2, weapon }) => {
           await doStandardAttack(this.g, {
             source: this,
-            ability: getWeaponAbility(attacker, weapon),
-            attacker,
+            ability: getWeaponAbility(target2, weapon),
+            attacker: target2,
             rangeCategory: "melee",
-            target,
+            target: target2,
             weapon
           });
         },
@@ -13162,7 +13014,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
       });
     }
   );
-  var DiscordAction = class extends AbstractAction {
+  var DiscordAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -13177,12 +13029,6 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
           tags: ["harmful", "vocal"]
         }
       );
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
     }
     check({ target }, ec) {
       if (target) {
@@ -13200,21 +13046,20 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
         (target) => attacker.side === target.side
       );
     }
-    async apply({ target: attacker }) {
-      await super.apply({ target: attacker });
+    async applyEffect({ target }) {
       const { outcome } = await this.g.save({
         source: this,
         type: { type: "ability", ability: "cha" },
         attacker: this.actor,
-        who: attacker,
+        who: target,
         ability: "cha",
         tags: ["charm", "magic"]
       });
       if (outcome === "success")
         return;
-      const attacks = this.getValidAttacks(attacker);
+      const attacks = this.getValidAttacks(target);
       const choice = new PickFromListChoice(
-        attacker,
+        target,
         this,
         "Discord",
         `Pick an attack to make.`,
@@ -13223,13 +13068,13 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
           value,
           label: `attack ${value.target.name} with ${value.weapon.name}`
         })),
-        async ({ target, weapon }) => {
+        async ({ target: target2, weapon }) => {
           await doStandardAttack(this.g, {
             source: this,
-            ability: getWeaponAbility(attacker, weapon),
-            attacker,
+            ability: getWeaponAbility(target2, weapon),
+            attacker: target2,
             rangeCategory: "melee",
-            target,
+            target: target2,
             weapon
           });
         }
@@ -13247,7 +13092,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
       });
     }
   );
-  var IrritationAction = class extends AbstractAction {
+  var IrritationAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -13263,14 +13108,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
         }
       );
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { outcome } = await this.g.save({
         source: this,
         type: { type: "ability", ability: "cha" },
@@ -13301,7 +13139,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     YulashSpellcastingMethod,
     [{ level: 1, spell: "healing word" }]
   );
-  var DancingStepAction = class extends AbstractAction {
+  var DancingStepAction = class extends AbstractSelfAction {
     constructor(g, actor, distance2 = 20) {
       super(
         g,
@@ -13316,14 +13154,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
       );
       this.distance = distance2;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect() {
       await this.g.applyBoundedMove(
         this.actor,
         getTeleportation(this.distance, "Dancing Step")
@@ -13425,7 +13256,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     },
     { icon: BullRushIcon }
   );
-  var BullRushAction = class extends AbstractAction {
+  var BullRushAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -13441,19 +13272,12 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (this.actor.speed <= 0)
         ec.add("cannot move", this);
       return super.check(config, ec);
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const { g, actor } = this;
       const affected = [actor];
       const promises = [];
@@ -13640,7 +13464,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
   );
 
   // src/monsters/srd/aberration.ts
-  var TentaclesAction = class extends AbstractAttackAction {
+  var TentaclesAction = class extends AbstractSingleTargetAttackAction {
     constructor(g, actor, dc = 13) {
       super(
         g,
@@ -13656,14 +13480,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
       );
       this.dc = dc;
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor, dc } = this;
       const type = { type: "flat", dc };
       const ability = "con";
@@ -14502,7 +14319,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     "Harness Divine Power",
     1
   );
-  var HarnessDivinePowerAction = class extends AbstractAction {
+  var HarnessDivinePowerAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -14534,12 +14351,6 @@ Some Channel Divinity effects require saving throws. When you use such an effect
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check({ slot }, ec) {
       if (slot) {
         const resource = SpellSlotResources[slot];
@@ -14548,8 +14359,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
       }
       return super.check({ slot }, ec);
     }
-    async apply({ slot }) {
-      await super.apply({ slot });
+    async applyEffect({ slot }) {
       this.actor.giveResource(SpellSlotResources[slot], 1);
     }
   };
@@ -14684,8 +14494,7 @@ Some Channel Divinity effects require saving throws. When you use such an effect
     getTargets() {
       return [];
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const { g, actor: attacker, method, destroyCR } = this;
       const type = method.getSaveType(attacker);
       for (const who of this.getAffected()) {
@@ -15381,7 +15190,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     "Gauntlets of Flaming Fury",
     1
   );
-  var GauntletsOfFlamingFuryAction = class extends AbstractAction {
+  var GauntletsOfFlamingFuryAction = class extends AbstractSelfAction {
     constructor(g, actor, gauntlet) {
       super(
         g,
@@ -15389,7 +15198,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         "Gauntlets of Flaming Fury",
         "implemented",
         {
-          items: new MultiChoiceResolver(
+          weapons: new MultiChoiceResolver(
             g,
             actor.weapons.filter(
               (w) => w.category !== "natural" && w.rangeCategory === "melee"
@@ -15406,19 +15215,12 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       );
       this.gauntlet = gauntlet;
     }
-    getTargets() {
-      return [];
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect({ weapons }) {
       const { gauntlet, actor } = this;
       await actor.addEffect(GauntletsOfFlamingFuryEffect, {
         duration: Infinity,
         gauntlet,
-        weapons: new Set(config.items)
+        weapons: new Set(weapons)
       });
     }
   };
@@ -15475,7 +15277,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   };
 
   // src/items/AbstractPotion.ts
-  var DrinkAction = class extends AbstractAction {
+  var DrinkAction = class extends AbstractSelfAction {
     constructor(g, actor, item) {
       super(
         g,
@@ -15487,14 +15289,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       );
       this.item = item;
     }
-    getTargets() {
-      return [];
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       this.actor.removeFromInventory(this.item);
       await this.item.apply(this.actor, this);
     }
@@ -15599,7 +15394,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
 
   // src/items/srd/shields.ts
   var acsIcon = makeIcon(arrow_catching_shield_default, ItemRarityColours.Rare);
-  var ArrowCatchingShieldAction = class extends AbstractAction {
+  var ArrowCatchingShieldAction = class extends AbstractSingleTargetAction {
     constructor(g, actor, attack) {
       super(
         g,
@@ -15616,14 +15411,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       );
       this.attack = attack;
     }
-    getAffected({ target }) {
-      return [target];
-    }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect() {
       if (!this.attack)
         throw new Error(`No attack to modify.`);
       this.g.text(
@@ -15925,7 +15713,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   var hood_default = "./hood-7E4VG7WM.svg";
 
   // src/items/srd/wondrous/CloakOfElvenkind.ts
-  var CloakHoodAction = class extends AbstractAction {
+  var CloakHoodAction = class extends AbstractSelfAction {
     constructor(g, actor, cloak) {
       super(
         g,
@@ -15941,14 +15729,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       );
       this.cloak = cloak;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       this.cloak.hoodUp = !this.cloak.hoodUp;
       this.g.text(
         new MessageBuilder().co(this.actor).text(
@@ -16854,8 +16635,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     getTargets() {
       return [];
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const { g, actor, dc } = this;
       for (const who of this.getAffected()) {
         const effect = RingOfAweEffect;
@@ -17265,23 +17045,16 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       g.text(new MessageBuilder().co(me).text(" returns to their normal form."));
     }
   };
-  var RevertAction = class extends AbstractAction {
+  var RevertAction = class extends AbstractSelfAction {
     constructor(g, actor, controller) {
       super(g, actor, "Revert Form", "implemented", {}, { time: "bonus action" });
       this.controller = controller;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect() {
       this.controller.remove();
     }
   };
-  var WildShapeAction = class extends AbstractAction {
+  var WildShapeAction = class extends AbstractSelfAction {
     constructor(g, actor, forms) {
       super(
         g,
@@ -17298,14 +17071,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       );
       this.forms = forms;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply({ form }) {
-      await super.apply({ form });
+    async applyEffect({ form }) {
       const controller = new WildShapeController(this.g, this.actor, form);
       await controller.apply();
     }
@@ -17538,7 +17304,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
     },
     { icon: SteadyAimIcon }
   );
-  var SteadyAimAction = class extends AbstractAction {
+  var SteadyAimAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -17554,19 +17320,12 @@ The amount of the extra damage increases as you gain levels in this class, as sh
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (this.actor.movedSoFar)
         ec.add("Already moved this turn", this);
       return super.check(config, ec);
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       await this.actor.addEffect(SteadyAimNoMoveEffect, { duration: 1 });
       await this.actor.addEffect(SteadyAimAdvantageEffect, { duration: 1 });
     }
@@ -17621,7 +17380,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       });
     }
   );
-  var UncannyDodgeAction = class extends AbstractAction {
+  var UncannyDodgeAction = class extends AbstractSelfAction {
     constructor(g, actor, multiplier) {
       super(
         g,
@@ -17636,14 +17395,7 @@ In addition, you understand a set of secret signs and symbols used to convey sho
       );
       this.multiplier = multiplier;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect() {
       this.multiplier.add("half", this);
     }
   };
@@ -17876,8 +17628,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     getAffected() {
       return [this.actor];
     }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect() {
       if (!this.detail)
         throw new Error(`Parry.apply() without AttackDetail`);
       this.detail.ac += this.actor.pb;
@@ -18272,8 +18023,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       super(g, "Shield Bash", actor, "melee", new ImprovisedWeapon(g, item));
       this.item = item;
     }
-    async apply({ target }) {
-      await super.applyCosts({ target });
+    async applyEffect({ target }) {
       const { g, ability, actor, weapon } = this;
       const { attack } = await doStandardAttack(g, {
         ability,
@@ -19588,7 +19338,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
 
   // src/classes/artificer/FlashOfGenius.ts
   var FlashOfGeniusResource = new LongRestResource("Flash of Genius", 1);
-  var FlashOfGeniusAction = class extends AbstractAction {
+  var FlashOfGeniusAction = class extends AbstractSingleTargetAction {
     constructor(g, actor, bonus) {
       super(
         g,
@@ -19604,14 +19354,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       );
       this.bonus = bonus;
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect() {
       this.bonus.add(this.actor.int.modifier, FlashOfGenius);
     }
   };
@@ -19805,7 +19548,7 @@ While holding the object, a creature can take an action to produce the spell's e
     return 4;
   }
   var RageResource = new LongRestResource("Rage", 2);
-  var EndRageAction = class extends AbstractAction {
+  var EndRageAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -19821,19 +19564,12 @@ While holding the object, a creature can take an action to produce the spell's e
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (!this.actor.hasEffect(RageEffect))
         ec.add("Not raging", this);
       return super.check(config, ec);
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       await this.actor.removeEffect(RageEffect);
     }
   };
@@ -19941,7 +19677,7 @@ While holding the object, a creature can take an action to produce the spell's e
     },
     { icon: RageIcon }
   );
-  var RageAction = class extends AbstractAction {
+  var RageAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -19968,14 +19704,7 @@ Your rage lasts for 1 minute. It ends early if you are knocked unconscious or if
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       if (await this.actor.addEffect(RageEffect, { duration: minutes(1) }))
         await this.actor.endConcentration();
     }
@@ -20414,7 +20143,7 @@ You learn two additional spells from any classes at 14th level and again at 18th
     void 0,
     { quiet: true }
   );
-  var ActionSurgeAction = class extends AbstractAction {
+  var ActionSurgeAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -20428,12 +20157,6 @@ You learn two additional spells from any classes at 14th level and again at 18th
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (this.actor.hasEffect(UsedActionSurgeThisTurn))
         ec.add("already used this turn", this);
@@ -20441,8 +20164,7 @@ You learn two additional spells from any classes at 14th level and again at 18th
         ec.add("still has action", this);
       return super.check({}, ec);
     }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       this.actor.regainTime("action");
       await this.actor.addEffect(UsedActionSurgeThisTurn, {
         duration: 1
@@ -20477,7 +20199,7 @@ You can use this feature twice between long rests starting at 13th level and thr
 
   // src/classes/fighter/SecondWind.ts
   var SecondWindResource = new ShortRestResource("Second Wind", 1);
-  var SecondWindAction = class extends AbstractAction {
+  var SecondWindAction = class extends AbstractSelfAction {
     constructor(g, actor, bonus) {
       super(
         g,
@@ -20497,17 +20219,10 @@ You can use this feature twice between long rests starting at 13th level and thr
       );
       this.bonus = bonus;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
-      const { actor, bonus } = this;
-      const roll = await this.g.rollHeal(1, { actor, size: 10, source: this });
-      await this.g.heal(this, roll + bonus, { actor, target: actor });
+    async applyEffect() {
+      const { g, actor, bonus } = this;
+      const roll = await g.rollHeal(1, { actor, size: 10, source: this });
+      await g.heal(this, roll + bonus, { actor, target: actor });
     }
   };
   var SecondWind = new SimpleFeature(
@@ -20721,7 +20436,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
 
   // src/classes/monk/Ki.ts
   var KiResource = new ShortRestResource("Ki", 2);
-  var FlurryOfBlows = class extends AbstractAction {
+  var FlurryOfBlows = class extends AbstractSingleTargetAction {
     constructor(g, actor, weapon, available, ability = getWeaponAbility(actor, weapon)) {
       super(
         g,
@@ -20751,14 +20466,7 @@ Certain monasteries use specialized forms of the monk weapons. For example, you 
         ec.add("must use immediately after Attack action", this);
       return super.check({ target }, ec);
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor: attacker, weapon, ability } = this;
       await doStandardAttack(g, {
         ability,
@@ -20855,7 +20563,7 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
   var Ki_default = Ki;
 
   // src/classes/monk/QuickenedHealing.ts
-  var QuickenedHealingAction = class extends AbstractAction {
+  var QuickenedHealingAction = class extends AbstractSelfAction {
     constructor(g, actor, size) {
       super(
         g,
@@ -20875,14 +20583,7 @@ Ki save DC = 8 + your proficiency bonus + your Wisdom modifier`,
       );
       this.size = size;
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
-    async apply() {
-      await super.apply({});
+    async applyEffect() {
       const { g, actor, size } = this;
       const amount = await g.rollHeal(1, {
         source: this,
@@ -21144,7 +20845,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
     "Harness Divine Power",
     1
   );
-  var HarnessDivinePowerAction2 = class extends AbstractAction {
+  var HarnessDivinePowerAction2 = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -21177,12 +20878,6 @@ At 18th level, the range of this aura increases to 30 feet.`,
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check({ slot }, ec) {
       if (slot) {
         const resource = SpellSlotResources[slot];
@@ -21191,8 +20886,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       }
       return super.check({ slot }, ec);
     }
-    async apply({ slot }) {
-      await super.apply({ slot });
+    async applyEffect({ slot }) {
       this.actor.giveResource(SpellSlotResources[slot], 1);
     }
   };
@@ -21309,11 +21003,10 @@ At 18th level, the range of this aura increases to 30 feet.`,
         resources.set(LayOnHandsResource, cost);
       return resources;
     }
-    async apply(config) {
-      await super.apply(config);
-      await this.g.heal(this, config.cost, {
+    async applyEffect({ cost, target }) {
+      await this.g.heal(this, cost, {
         action: this,
-        target: config.target,
+        target,
         actor: this.actor
       });
     }
@@ -21370,8 +21063,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       }
       return super.check({ target }, ec);
     }
-    async apply({ target, effects }) {
-      await super.apply({ target, effects });
+    async applyEffect({ target, effects }) {
       const cost = effects.length * 5;
       this.actor.spendResource(LayOnHandsResource, cost);
       for (const effect of effects)
@@ -22092,7 +21784,7 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
     ["necrotic", "radiant"]
   );
   var HealingHandsResource = new LongRestResource("Healing Hands", 1);
-  var HealingHandsAction = class extends AbstractAction {
+  var HealingHandsAction = class extends AbstractSingleTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -22108,14 +21800,7 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
         }
       );
     }
-    getTargets({ target }) {
-      return sieve(target);
-    }
-    getAffected({ target }) {
-      return [target];
-    }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect({ target }) {
       const { g, actor } = this;
       await g.heal(HealingHands, actor.level, { action: this, actor, target });
     }
@@ -22172,7 +21857,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
     abilities: /* @__PURE__ */ new Map([["str", 1]]),
     features: /* @__PURE__ */ new Set([NecroticShroud])
   };
-  var EndRadiantSoulAction = class extends AbstractAction {
+  var EndRadiantSoulAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -22187,14 +21872,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
         }
       );
     }
-    getTargets() {
-      return [];
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect() {
       await this.actor.removeEffect(RadiantSoulEffect);
     }
   };
@@ -22226,7 +21904,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
       }
     );
   });
-  var RadiantSoulAction = class extends AbstractAction {
+  var RadiantSoulAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -22244,14 +21922,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
         }
       );
     }
-    getTargets() {
-      return [];
-    }
-    getAffected() {
-      return [this.actor];
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect() {
       await this.actor.addEffect(RadiantSoulEffect, { duration: minutes(1) });
     }
   };
@@ -22315,7 +21986,19 @@ Once you use this trait, you can't use it again until you finish a long rest.`
     const size = me.sizeInUnits;
     return aimCone(me.position, size, point, 15);
   }
-  var BreathWeaponAction = class extends AbstractAttackAction {
+  var BreathAction = class extends AbstractAttackAction {
+    getAffectedArea({ point }) {
+      if (point)
+        return [getBreathArea(this.actor, point)];
+    }
+    getAffected({ point }) {
+      return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
+    }
+    getTargets() {
+      return [];
+    }
+  };
+  var BreathWeaponAction = class extends BreathAction {
     constructor(g, actor, damageType, damageDice) {
       super(
         g,
@@ -22336,18 +22019,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
       this.damageType = damageType;
       this.damageDice = damageDice;
     }
-    getAffectedArea({ point }) {
-      if (point)
-        return [getBreathArea(this.actor, point)];
-    }
-    getAffected({ point }) {
-      return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
-    }
-    getTargets() {
-      return [];
-    }
-    async apply({ point }) {
-      await super.apply({ point });
+    async applyEffect({ point }) {
       const { actor: attacker, g, damageDice, damageType } = this;
       const damage = await g.rollDamage(damageDice, {
         source: this,
@@ -22383,7 +22055,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
       return 3;
     return 4;
   }
-  var MetallicBreathAction = class extends AbstractAttackAction {
+  var MetallicBreathAction = class extends BreathAction {
     constructor(g, actor, name, status = "missing", description, iconColour) {
       super(
         g,
@@ -22399,18 +22071,6 @@ Once you use this trait, you can't use it again until you finish a long rest.`
           icon: makeIcon(special_breath_default, iconColour)
         }
       );
-    }
-    getAffectedArea({
-      point
-    }) {
-      if (point)
-        return [getBreathArea(this.actor, point)];
-    }
-    getAffected({ point }) {
-      return this.g.getInside(getBreathArea(this.actor, point), [this.actor]);
-    }
-    getTargets() {
-      return [];
     }
   };
   var EnervatingBreathEffect = new Effect(
@@ -22434,8 +22094,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
       Each creature in the cone must succeed on a Constitution saving throw or become incapacitated until the start of your next turn.`
       );
     }
-    async apply({ point }) {
-      await super.apply({ point });
+    async applyEffect({ point }) {
       const { g, actor } = this;
       const config = { conditions: coSet("Incapacitated"), duration: 2 };
       for (const target of g.getInside(getBreathArea(actor, point))) {
@@ -22464,8 +22123,7 @@ Once you use this trait, you can't use it again until you finish a long rest.`
       Each creature in the cone must succeed on a Strength saving throw or be pushed 20 feet away from you and be knocked prone.`
       );
     }
-    async apply({ point }) {
-      await super.apply({ point });
+    async applyEffect({ point }) {
       const { g, actor } = this;
       for (const target of g.getInside(getBreathArea(actor, point))) {
         const config = { duration: Infinity };
@@ -23328,7 +22986,7 @@ The creature is aware of this effect before it makes its attack against you.`
       return ratio <= 0.5;
     }
   };
-  var TurnTheTideAction = class extends AbstractAction {
+  var TurnTheTideAction = class extends AbstractMultiTargetAction {
     constructor(g, actor) {
       super(
         g,
@@ -23354,17 +23012,10 @@ The creature is aware of this effect before it makes its attack against you.`
         }
       );
     }
-    getTargets({ targets }) {
-      return targets != null ? targets : [];
-    }
-    getAffected({ targets }) {
-      return targets;
-    }
-    async apply(config) {
-      await super.apply(config);
+    async applyEffect({ targets }) {
       const { g, actor } = this;
       const heal = Math.max(1, actor.cha.modifier) + await g.rollHeal(1, { size: 6, actor, source: this });
-      for (const target of config.targets)
+      for (const target of targets)
         await g.heal(this, heal, { action: this, actor, target });
     }
   };
@@ -23426,7 +23077,7 @@ This effect ends early if you are incapacitated or die. Once you use this featur
     },
     { icon: SacredWeaponIcon }
   );
-  var SacredWeaponAction = class extends AbstractAction {
+  var SacredWeaponAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -23449,19 +23100,12 @@ This effect ends early if you are incapacitated or die. Once you use this featur
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check(config, ec) {
       if (this.actor.hasEffect(SacredWeaponEffect))
         ec.add("already active", this);
       return super.check(config, ec);
     }
-    async apply({ weapon }) {
-      await super.apply({ weapon });
+    async applyEffect({ weapon }) {
       this.g.text(
         new MessageBuilder().co(this.actor).nosp().text("'s ").it(weapon).text(" glows with holy light.")
       );
@@ -23570,7 +23214,7 @@ Once you use this feature, you can't use it again until you finish a long rest.`
   var Devotion_default = Devotion;
 
   // src/classes/rogue/Scout/index.ts
-  var SkirmisherAction = class extends AbstractAction {
+  var SkirmisherAction = class extends AbstractSelfAction {
     constructor(g, actor) {
       super(
         g,
@@ -23584,19 +23228,12 @@ Once you use this feature, you can't use it again until you finish a long rest.`
         }
       );
     }
-    getAffected() {
-      return [this.actor];
-    }
-    getTargets() {
-      return [];
-    }
     check({ target }, ec) {
       if (this.actor.speed <= 0)
         ec.add("cannot move", this);
       return super.check({ target }, ec);
     }
-    async apply({ target }) {
-      await super.apply({ target });
+    async applyEffect() {
       await this.g.applyBoundedMove(
         this.actor,
         new BoundedMove(Skirmisher, round(this.actor.speed / 2, MapSquareSize), {

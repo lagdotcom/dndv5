@@ -87,11 +87,10 @@ class LayOnHandsHealAction extends AbstractAction<HealConfig> {
     return resources;
   }
 
-  async apply(config: HealConfig) {
-    await super.apply(config);
-    await this.g.heal(this, config.cost, {
+  async applyEffect({ cost, target }: HealConfig) {
+    await this.g.heal(this, cost, {
       action: this,
-      target: config.target,
+      target,
       actor: this.actor,
     });
   }
@@ -159,9 +158,7 @@ class LayOnHandsCureAction extends AbstractAction<CureConfig> {
     return super.check({ target }, ec);
   }
 
-  async apply({ target, effects }: CureConfig) {
-    await super.apply({ target, effects });
-
+  async applyEffect({ target, effects }: CureConfig) {
     const cost = effects.length * 5;
     this.actor.spendResource(LayOnHandsResource, cost);
 

@@ -16,12 +16,11 @@ import Priority from "../types/Priority";
 import RangeCategory from "../types/RangeCategory";
 import Source from "../types/Source";
 import { poSet, poWithin } from "../utils/ai";
-import { sieve } from "../utils/array";
 import { getWeaponAbility, getWeaponRange } from "../utils/items";
 import { SetInitialiser } from "../utils/set";
 import { describeDice } from "../utils/text";
 import { isDefined } from "../utils/types";
-import AbstractAttackAction from "./AbstractAttackAction";
+import { AbstractSingleTargetAttackAction } from "./AbstractAttackAction";
 
 const thrownIcon = makeIcon(thrownUrl);
 
@@ -41,7 +40,7 @@ export function getWeaponAttackName(
   return `${name} (${weapon.name})`;
 }
 
-export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
+export default class WeaponAttack extends AbstractSingleTargetAttackAction<HasTarget> {
   ability: AbilityName;
 
   constructor(
@@ -120,14 +119,6 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     )}, one target. Hit: ${Math.ceil(average)} (${list}) ${damageType} damage.`;
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-
   check(config: Partial<HasTarget>, ec: ErrorCollector) {
     if (this.weapon.properties.has("two-handed") && this.actor.freeHands < 1)
       ec.add("need two hands", this);
@@ -135,8 +126,7 @@ export default class WeaponAttack extends AbstractAttackAction<HasTarget> {
     return super.check(config, ec);
   }
 
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     await doStandardAttack(this.g, {
       ability: this.ability,
       ammo: this.ammo,

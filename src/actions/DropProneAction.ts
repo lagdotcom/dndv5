@@ -6,11 +6,11 @@ import { Prone } from "../effects";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
 import { coSet } from "../types/ConditionName";
-import AbstractAction from "./AbstractAction";
+import { AbstractSelfAction } from "./AbstractAction";
 
 const DropProneIcon = makeIcon(iconUrl);
 
-export default class DropProneAction extends AbstractAction {
+export default class DropProneAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -25,22 +25,13 @@ export default class DropProneAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
   check(config: never, ec: ErrorCollector) {
     if (this.actor.conditions.has("Prone")) ec.add("already prone", this);
 
     return super.check(config, ec);
   }
 
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     await this.actor.addEffect(Prone, {
       conditions: coSet("Prone"),
       duration: Infinity,

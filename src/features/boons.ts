@@ -1,6 +1,9 @@
 import hissIconUrl from "@img/act/hiss.svg";
 
-import AbstractAction from "../actions/AbstractAction";
+import {
+  AbstractSelfAction,
+  AbstractSingleTargetAction,
+} from "../actions/AbstractAction";
 import { makeIcon } from "../colours";
 import { HasTarget } from "../configs";
 import Engine from "../Engine";
@@ -10,7 +13,6 @@ import { BoundedMove } from "../movement";
 import TargetResolver from "../resolvers/TargetResolver";
 import { ShortRestResource } from "../resources";
 import Combatant from "../types/Combatant";
-import { sieve } from "../utils/array";
 import { checkConfig } from "../utils/config";
 import { featureNotComplete } from "../utils/env";
 import { round } from "../utils/numbers";
@@ -19,7 +21,7 @@ import SimpleFeature from "./SimpleFeature";
 
 const HissResource = new ShortRestResource("Hiss (Boon of Vassetri)", 1);
 
-class HissFleeAction extends AbstractAction {
+class HissFleeAction extends AbstractSelfAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -28,16 +30,7 @@ class HissFleeAction extends AbstractAction {
     super(g, actor, "Flee from Hiss", "implemented", {}, { time: "reaction" });
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply() {
-    await super.apply({});
-
+  async applyEffect() {
     const { g, actor, other } = this;
     await g.applyBoundedMove(
       actor,
@@ -61,7 +54,7 @@ class HissFleeAction extends AbstractAction {
   }
 }
 
-class HissAction extends AbstractAction<HasTarget> {
+class HissAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -78,15 +71,7 @@ class HissAction extends AbstractAction<HasTarget> {
     );
   }
 
-  getAffected({ target }: HasTarget) {
-    return [target];
-  }
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, actor } = this;
 
     const action = new HissFleeAction(g, target, actor);

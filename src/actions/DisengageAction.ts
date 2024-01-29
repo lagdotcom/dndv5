@@ -5,7 +5,7 @@ import { HasTarget } from "../configs";
 import Effect from "../Effect";
 import Engine from "../Engine";
 import Combatant from "../types/Combatant";
-import AbstractAction from "./AbstractAction";
+import { AbstractSelfAction } from "./AbstractAction";
 import OpportunityAttack from "./OpportunityAttack";
 
 const DisengageIcon = makeIcon(iconUrl, "darkgrey");
@@ -25,7 +25,7 @@ export const DisengageEffect = new Effect(
   { icon: DisengageIcon },
 );
 
-export default class DisengageAction extends AbstractAction {
+export default class DisengageAction extends AbstractSelfAction {
   constructor(g: Engine, actor: Combatant) {
     super(
       g,
@@ -41,15 +41,7 @@ export default class DisengageAction extends AbstractAction {
     );
   }
 
-  getAffected() {
-    return [this.actor];
-  }
-  getTargets() {
-    return [];
-  }
-
-  async apply(): Promise<void> {
-    await super.apply({});
+  async applyEffect() {
     await this.actor.addEffect(DisengageEffect, { duration: 1 });
   }
 }

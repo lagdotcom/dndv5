@@ -1,6 +1,6 @@
 import chuulUrl from "@img/tok/chuul.png";
 
-import AbstractAttackAction from "../../actions/AbstractAttackAction";
+import { AbstractSingleTargetAttackAction } from "../../actions/AbstractAttackAction";
 import { HasTarget } from "../../configs";
 import MonsterTemplate, { NaturalWeaponInfo } from "../../data/MonsterTemplate";
 import { Grappled } from "../../effects";
@@ -14,13 +14,12 @@ import { coSet } from "../../types/ConditionName";
 import { EffectConfig } from "../../types/EffectType";
 import SaveType from "../../types/SaveType";
 import SizeCategory from "../../types/SizeCategory";
-import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { makeBagMultiattack } from "../multiattack";
 import { CanRecover, ParalyzingPoisonEffect } from "../poisons";
 
-class TentaclesAction extends AbstractAttackAction<HasTarget> {
+class TentaclesAction extends AbstractSingleTargetAttackAction {
   constructor(
     g: Engine,
     actor: Combatant,
@@ -40,15 +39,7 @@ class TentaclesAction extends AbstractAttackAction<HasTarget> {
     );
   }
 
-  getTargets({ target }: Partial<HasTarget>) {
-    return sieve(target);
-  }
-  getAffected({ target }: HasTarget): Combatant[] {
-    return [target];
-  }
-
-  async apply({ target }: HasTarget) {
-    await super.apply({ target });
+  async applyEffect({ target }: HasTarget) {
     const { g, actor, dc } = this;
 
     const type: SaveType = { type: "flat", dc };

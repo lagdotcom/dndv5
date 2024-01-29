@@ -11,6 +11,7 @@
     "analyse": "node analyse.mjs",
     "lint": "eslint src",
     "syntax": "tsc --noEmit",
+    "duplicates": "npx jscpd src",
     "test": "jest"
   },
   "author": "Lag.Com <lagdotcom@gmail.com>",
