@@ -2,6 +2,7 @@ import Effect from "../../Effect";
 import { MundaneDamageTypes } from "../../types/DamageType";
 import { isA } from "../../utils/types";
 import { simpleSpell } from "../common";
+import { selfTarget } from "../helpers";
 
 const BladeWardEffect = new Effect(
   "Blade Ward",
@@ -32,9 +33,7 @@ const BladeWard = simpleSpell({
   lists: ["Bard", "Sorcerer", "Warlock", "Wizard"],
   description: `You extend your hand and trace a sigil of warding in the air. Until the end of your next turn, you have resistance against bludgeoning, piercing, and slashing damage dealt by weapon attacks.`,
 
-  getConfig: () => ({}),
-  getAffected: (g, caster) => [caster],
-  getTargets: () => [],
+  ...selfTarget,
 
   async apply({ caster }) {
     await caster.addEffect(BladeWardEffect, { duration: 1 });

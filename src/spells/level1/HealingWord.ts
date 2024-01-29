@@ -1,11 +1,10 @@
 import { HasTarget } from "../../configs";
 import { canSee, notOfCreatureType } from "../../filters";
 import { DiceCount } from "../../flavours";
-import TargetResolver from "../../resolvers/TargetResolver";
 import { ctSet } from "../../types/CreatureType";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
 import { scalingSpell } from "../common";
+import { singleTarget } from "../helpers";
 
 const cannotHeal = ctSet("undead", "construct");
 
@@ -21,18 +20,13 @@ const HealingWord = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
 
+  ...singleTarget(60, [canSee, notOfCreatureType("undead", "construct")]),
+
   generateHealingConfigs: (slot, targets) =>
     targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target)),
     })),
-
-  getConfig: (g) => ({
-    target: new TargetResolver(g, 60, [
-      canSee,
-      notOfCreatureType("undead", "construct"),
-    ]),
-  }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot as DiceCount) ?? 1, size: 4 } },
     {
@@ -40,8 +34,6 @@ const HealingWord = scalingSpell<HasTarget>({
       amount: method.ability ? caster[method.ability].modifier : 0,
     },
   ],
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
 
   check(g, { target }, ec) {
     if (target && cannotHeal.has(target.type))

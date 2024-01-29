@@ -1,13 +1,7 @@
-import Combatant from "../../types/Combatant";
-import { SpecifiedWithin } from "../../types/EffectArea";
-import { _dd } from "../../utils/dice";
-import { getCantripDice, simpleSpell } from "../common";
-
-const getThunderclapArea = (who: Combatant): SpecifiedWithin => ({
-  type: "within",
-  who,
-  radius: 5,
-});
+import { poSet, poWithin } from "../../utils/ai";
+import { combinationsMulti } from "../../utils/combinatorics";
+import { simpleSpell } from "../common";
+import { damagingCantrip, requiresSave, simpleArea } from "../helpers";
 
 const Thunderclap = simpleSpell({
   status: "implemented",
@@ -19,15 +13,17 @@ const Thunderclap = simpleSpell({
   description: `You create a burst of thunderous sound that can be heard up to 100 feet away. Each creature within range, other than you, must make a Constitution saving throw or take 1d6 thunder damage.
 
 The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
-  isHarmful: true,
 
-  // TODO generateAttackConfigs
+  ...requiresSave("con"),
+  ...damagingCantrip(6, "thunder"),
+  ...simpleArea((who) => ({ type: "within", who, radius: 5 })),
 
-  getConfig: () => ({}),
-  getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "thunder")],
-  getTargets: () => [],
-  getAffectedArea: (g, caster) => [getThunderclapArea(caster)],
-  getAffected: (g, caster) => g.getInside(getThunderclapArea(caster), [caster]),
+  // TODO this is kinda cheating; relies on AI code to get rid of all the invalid positioning sets
+  generateAttackConfigs: (g, caster, method, targets) =>
+    combinationsMulti(targets, 0, targets.length).map((targets) => ({
+      config: {},
+      positioning: poSet(...targets.map((target) => poWithin(5, target))),
+    })),
 
   async apply(sh) {
     const damageInitialiser = await sh.rollDamage();

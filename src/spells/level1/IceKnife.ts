@@ -4,13 +4,12 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
 import { SpellSlot } from "../../flavours";
-import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { SpecifiedWithin } from "../../types/EffectArea";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import { singleTarget } from "../helpers";
 
 const getIceKnifeArea = (who: Combatant): SpecifiedWithin => ({
   type: "within",
@@ -35,13 +34,13 @@ const IceKnife = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
 
+  ...singleTarget(60, [notSelf]),
+
   generateAttackConfigs: (slot, targets) =>
     targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target)),
     })),
-
-  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
 
   getAffectedArea: (g, caster, { target }) =>
     target && [getIceKnifeArea(target)],
@@ -50,7 +49,6 @@ const IceKnife = scalingSpell<HasTarget>({
     piercingRoll,
     getColdRoll(slot ?? 1),
   ],
-  getTargets: (g, caster, { target }) => sieve(target),
   getAffected: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
 
   async apply(sh, { slot }) {

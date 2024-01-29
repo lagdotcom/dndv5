@@ -1,16 +1,6 @@
 import { HasPoint } from "../../configs";
-import PointResolver from "../../resolvers/PointResolver";
-import { SpecifiedCone } from "../../types/EffectArea";
-import Point from "../../types/Point";
-import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-
-const getBurningHandsArea = (centre: Point, target: Point): SpecifiedCone => ({
-  type: "cone",
-  radius: 15,
-  centre,
-  target,
-});
+import { pointedArea, scalingDamage } from "../helpers";
 
 const BurningHands = scalingSpell<HasPoint>({
   status: "incomplete",
@@ -25,20 +15,16 @@ const BurningHands = scalingSpell<HasPoint>({
   The fire ignites any flammable objects in the area that aren't being worn or carried.
   
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
-  isHarmful: true,
 
-  getConfig: (g) => ({
-    point: new PointResolver(g, 15),
-  }),
+  ...pointedArea(15, (centre, target) => ({
+    type: "cone",
+    radius: 15,
+    centre,
+    target,
+  })),
+  ...scalingDamage(1, 2, 6, "fire"),
 
   // TODO generateAttackConfigs,
-
-  getAffectedArea: (g, caster, { point }) =>
-    point && [getBurningHandsArea(caster.position, point)],
-  getAffected: (g, caster, { point }) =>
-    g.getInside(getBurningHandsArea(caster.position, point), [caster]),
-  getTargets: () => [],
-  getDamage: (g, caster, method, { slot }) => [_dd((slot ?? 1) + 2, 6, "fire")],
 
   async apply(sh) {
     const damageInitialiser = await sh.rollDamage();

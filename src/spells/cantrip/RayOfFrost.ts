@@ -3,12 +3,9 @@ import iconUrl from "@img/spl/ray-of-frost.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import { notSelf } from "../../filters";
-import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
-import { _dd } from "../../utils/dice";
-import { getCantripDice, simpleSpell } from "../common";
+import { simpleSpell } from "../common";
+import { damagingCantrip, singleTarget, spellAttack } from "../helpers";
 
 const RayOfFrostIcon = makeIcon(iconUrl, DamageColours.cold);
 
@@ -33,21 +30,19 @@ const RayOfFrost = simpleSpell<HasTarget>({
   v: true,
   s: true,
   lists: ["Artificer", "Sorcerer", "Wizard"],
-  isHarmful: true,
   description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+
+  ...singleTarget(60, []),
+  ...spellAttack("ranged"),
+  ...damagingCantrip(8, "cold"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target)),
     })),
-
-  getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
-  getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "cold")],
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
 
   async apply(sh) {
     const { attack, critical, hit, target } = await sh.attack({

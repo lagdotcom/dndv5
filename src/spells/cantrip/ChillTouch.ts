@@ -1,10 +1,9 @@
 import { HasCaster, HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
+import { singleTarget } from "../helpers";
 
 const ChillTouchEffect = new Effect<HasCaster>(
   "Chill Touch",
@@ -39,18 +38,16 @@ const ChillTouch = simpleSpell<HasTarget>({
   If you hit an undead target, it also has disadvantage on attack rolls against you until the end of your next turn.
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-  isHarmful: true,
 
+  ...singleTarget(120, []),
+
+  isHarmful: true,
+  getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(120, target)),
     })),
-
-  getConfig: (g) => ({ target: new TargetResolver(g, 120, []) }),
-  getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
 
   async apply(sh) {
     const { caster, method } = sh;

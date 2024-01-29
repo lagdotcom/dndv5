@@ -1,9 +1,7 @@
 import { HasTarget } from "../../configs";
-import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
-import { _dd } from "../../utils/dice";
-import { getCantripDice, simpleSpell } from "../common";
+import { simpleSpell } from "../common";
+import { damagingCantrip, singleTarget, spellAttack } from "../helpers";
 
 // TODO this isn't just a normal attack spell, though it can be used as one
 
@@ -20,19 +18,16 @@ const ProduceFlame = simpleSpell<HasTarget>({
   You can also attack with the flame, although doing so ends the spell. When you cast this spell, or as an action on a later turn, you can hurl the flame at a creature within 30 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 fire damage.
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-  isHarmful: true,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+  ...singleTarget(30, []),
+  ...spellAttack("ranged"),
+  ...damagingCantrip(8, "fire"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(30, target)),
     })),
-
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
-  getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "fire")],
 
   async apply(sh) {
     // TODO

@@ -2,12 +2,11 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { isAlly } from "../../filters";
 import YesNoChoice from "../../interruptions/YesNoChoice";
-import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { touchTarget } from "../helpers";
 
 interface Config {
   caster: Combatant;
@@ -61,11 +60,7 @@ const Guidance = simpleSpell<HasTarget>({
   lists: ["Artificer", "Cleric", "Druid"],
   description: `You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one ability check of its choice. It can roll the die before or after making the ability check. The spell then ends.`,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, [isAlly]),
-  }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...touchTarget([isAlly]),
 
   async apply({ affected, caster }) {
     const affecting = new Set<Combatant>();

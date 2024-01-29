@@ -1,12 +1,10 @@
 import { HasTarget } from "../../configs";
 import { sizeOrLess } from "../../filters";
-import TargetResolver from "../../resolvers/TargetResolver";
 import SizeCategory from "../../types/SizeCategory";
-import { sieve } from "../../utils/array";
 import { simpleSpell } from "../common";
+import { singleTarget } from "../helpers";
 
 // TODO only does push effect
-
 const Gust = simpleSpell<HasTarget>({
   status: "incomplete",
   name: "Gust",
@@ -21,12 +19,7 @@ const Gust = simpleSpell<HasTarget>({
   - You create a small blast of air capable of moving one object that is neither held nor carried and that weighs no more than 5 pounds. The object is pushed up to 10 feet away from you. It isn't pushed with enough force to cause damage.
   - You create a harmless sensory effect using air, such as causing leaves to rustle, wind to slam shutters closed, or your clothing to ripple in a breeze.`,
 
-  getConfig: (g) => ({
-    target: new TargetResolver(g, 30, [sizeOrLess(SizeCategory.Medium)]),
-  }),
-
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...singleTarget(30, [sizeOrLess(SizeCategory.Medium)]),
 
   async apply(sh, { target }) {
     const { outcome } = await sh.save({

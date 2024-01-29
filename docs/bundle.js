@@ -5787,6 +5787,134 @@
   var minutes = (n) => n * TURNS_PER_MINUTE;
   var hours = (n) => minutes(n * 60);
 
+  // src/resolvers/MultiTargetResolver.ts
+  var MultiTargetResolver = class {
+    constructor(g, minimum, maximum, maxRange, filters, allFilters = []) {
+      this.g = g;
+      this.minimum = minimum;
+      this.maximum = maximum;
+      this.maxRange = maxRange;
+      this.filters = filters;
+      this.allFilters = allFilters;
+      this.type = "Combatants";
+    }
+    get name() {
+      let name = `${describeRange(this.minimum, this.maximum)} targets${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
+      for (const filter of this.filters)
+        name += `, ${filter.name}`;
+      return name;
+    }
+    check(rawValue, action, ec) {
+      const getErrors = (filters, v) => filters.filter((filter) => !filter.check(this.g, action, v)).map((filter) => filter.message);
+      const value = isCombatantArray(rawValue) ? rawValue : [];
+      if (value.length < this.minimum)
+        ec.add(`At least ${this.minimum} targets`, this);
+      if (value.length > this.maximum)
+        ec.add(`At most ${this.maximum} targets`, this);
+      for (const who of value) {
+        const isOutOfRange = distance(action.actor, who) > this.maxRange;
+        const errors = getErrors(this.filters, who).map(
+          (error) => `${who.name}: ${error}`
+        );
+        if (isOutOfRange)
+          ec.add(`${who.name}: Out of range`, this);
+        ec.addMany(errors, this);
+      }
+      ec.addMany(getErrors(this.allFilters, value), this);
+      return ec;
+    }
+  };
+
+  // src/resolvers/PointResolver.ts
+  var PointResolver = class {
+    constructor(g, maxRange) {
+      this.g = g;
+      this.maxRange = maxRange;
+      this.type = "Point";
+    }
+    get name() {
+      if (this.maxRange === Infinity)
+        return "any point";
+      return `point within ${this.maxRange}'`;
+    }
+    check(value, action, ec) {
+      if (!isPoint(value))
+        ec.add("No target", this);
+      else {
+        if (distanceTo(action.actor, value) > this.maxRange)
+          ec.add("Out of range", this);
+      }
+      return ec;
+    }
+  };
+
+  // src/utils/dice.ts
+  var _fd = (amount, damageType) => ({
+    type: "flat",
+    amount,
+    damageType
+  });
+  var _dd = (count, size, damageType) => ({ type: "dice", amount: { count, size }, damageType });
+  function getDefaultHPRoll(level, hitDieSize) {
+    if (level === 1)
+      return hitDieSize;
+    return Math.ceil(getDiceAverage(1, hitDieSize));
+  }
+
+  // src/spells/helpers.ts
+  var damagingCantrip = (size, damageType) => ({
+    isHarmful: true,
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), size, damageType)]
+  });
+  var scalingDamage = (level, diceMinusSlot, size, damageType) => ({
+    level,
+    isHarmful: true,
+    getDamage: (g, caster, method, { slot }) => [
+      _dd((slot != null ? slot : level) + diceMinusSlot, size, damageType)
+    ]
+  });
+  var requiresSave = (ability) => ({});
+  var spellAttack = (category) => ({});
+  var selfTarget = {
+    getConfig: () => ({}),
+    getTargets: () => [],
+    getAffected: (g, caster) => [caster]
+  };
+  var touchTarget = (filters) => ({
+    getConfig: (g, caster) => ({
+      target: new TargetResolver(g, caster.reach, filters)
+    }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target]
+  });
+  var singleTarget = (range, filters) => ({
+    getConfig: (g) => ({ target: new TargetResolver(g, range, filters) }),
+    getTargets: (g, caster, { target }) => sieve(target),
+    getAffected: (g, caster, { target }) => [target]
+  });
+  var multiTarget = (min, max, range, filters, allFilters) => ({
+    getConfig: (g) => ({
+      targets: new MultiTargetResolver(g, min, max, range, filters, allFilters)
+    }),
+    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
+    getAffected: (g, caster, { targets }) => targets
+  });
+  var simpleArea = (getArea, ignoreCaster = true) => ({
+    getConfig: () => ({}),
+    getTargets: () => [],
+    getAffectedArea: (g, caster) => [getArea(caster)],
+    getAffected: (g, caster) => g.getInside(getArea(caster), ignoreCaster ? [caster] : void 0)
+  });
+  var pointedArea = (range, getArea, ignoreCaster = true) => ({
+    getConfig: (g) => ({ point: new PointResolver(g, range) }),
+    getTargets: () => [],
+    getAffectedArea: (g, caster, { point }) => point && [getArea(caster.position, point)],
+    getAffected: (g, caster, { point }) => g.getInside(
+      getArea(caster.position, point),
+      ignoreCaster ? [caster] : void 0
+    )
+  });
+
   // src/spells/level1/ArmorOfAgathys.ts
   var ArmorOfAgathysIcon = makeIcon(armor_of_agathys_default, DamageColours.cold);
   var ArmorOfAgathysEffect = new Effect(
@@ -5850,9 +5978,7 @@
     description: `A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
-    getConfig: () => ({}),
-    getTargets: () => [],
-    getAffected: (g, caster) => [caster],
+    ...selfTarget,
     async apply({ g, caster }, { slot }) {
       const count = slot * 5;
       if (await g.giveTemporaryHP(caster, count, ArmorOfAgathysEffect)) {
@@ -5862,19 +5988,6 @@
     }
   });
   var ArmorOfAgathys_default = ArmorOfAgathys;
-
-  // src/utils/dice.ts
-  var _fd = (amount, damageType) => ({
-    type: "flat",
-    amount,
-    damageType
-  });
-  var _dd = (count, size, damageType) => ({ type: "dice", amount: { count, size }, damageType });
-  function getDefaultHPRoll(level, hitDieSize) {
-    if (level === 1)
-      return hitDieSize;
-    return Math.ceil(getDiceAverage(1, hitDieSize));
-  }
 
   // src/monsters/fiendishParty/Birnotec.ts
   var getEldritchBurstArea = (who) => ({
@@ -7172,44 +7285,6 @@
   // src/img/spl/acid-splash.svg
   var acid_splash_default = "./acid-splash-55N3773S.svg";
 
-  // src/resolvers/MultiTargetResolver.ts
-  var MultiTargetResolver = class {
-    constructor(g, minimum, maximum, maxRange, filters, allFilters = []) {
-      this.g = g;
-      this.minimum = minimum;
-      this.maximum = maximum;
-      this.maxRange = maxRange;
-      this.filters = filters;
-      this.allFilters = allFilters;
-      this.type = "Combatants";
-    }
-    get name() {
-      let name = `${describeRange(this.minimum, this.maximum)} targets${this.maxRange < Infinity ? ` within ${this.maxRange}'` : ""}`;
-      for (const filter of this.filters)
-        name += `, ${filter.name}`;
-      return name;
-    }
-    check(rawValue, action, ec) {
-      const getErrors = (filters, v) => filters.filter((filter) => !filter.check(this.g, action, v)).map((filter) => filter.message);
-      const value = isCombatantArray(rawValue) ? rawValue : [];
-      if (value.length < this.minimum)
-        ec.add(`At least ${this.minimum} targets`, this);
-      if (value.length > this.maximum)
-        ec.add(`At most ${this.maximum} targets`, this);
-      for (const who of value) {
-        const isOutOfRange = distance(action.actor, who) > this.maxRange;
-        const errors = getErrors(this.filters, who).map(
-          (error) => `${who.name}: ${error}`
-        );
-        if (isOutOfRange)
-          ec.add(`${who.name}: Out of range`, this);
-        ec.addMany(errors, this);
-      }
-      ec.addMany(getErrors(this.allFilters, value), this);
-      return ec;
-    }
-  };
-
   // src/spells/cantrip/AcidSplash.ts
   var AcidSplash = simpleSpell({
     status: "implemented",
@@ -7220,7 +7295,6 @@
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
-    isHarmful: true,
     description: `You hurl a bubble of acid. Choose one creature you can see within range, or choose two creatures you can see within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.
 
   This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
@@ -7232,19 +7306,9 @@
       config: { targets },
       positioning: new Set(targets.map((target) => poWithin(60, target)))
     })),
-    getConfig: (g) => ({
-      targets: new MultiTargetResolver(
-        g,
-        1,
-        2,
-        60,
-        [canSee],
-        [withinRangeOfEachOther(5)]
-      )
-    }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
-    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
-    getAffected: (g, caster, { targets }) => targets,
+    ...damagingCantrip(5, "acid"),
+    ...requiresSave("dex"),
+    ...multiTarget(1, 2, 60, [canSee], [withinRangeOfEachOther(5)]),
     async apply(sh, { targets }) {
       const damageInitialiser = await sh.rollDamage();
       for (const target of targets) {
@@ -7288,9 +7352,7 @@
     s: true,
     lists: ["Bard", "Sorcerer", "Warlock", "Wizard"],
     description: `You extend your hand and trace a sigil of warding in the air. Until the end of your next turn, you have resistance against bludgeoning, piercing, and slashing damage dealt by weapon attacks.`,
-    getConfig: () => ({}),
-    getAffected: (g, caster) => [caster],
-    getTargets: () => [],
+    ...selfTarget,
     async apply({ caster }) {
       await caster.addEffect(BladeWardEffect, { duration: 1 });
     }
@@ -7327,15 +7389,13 @@
   If you hit an undead target, it also has disadvantage on attack rolls against you until the end of your next turn.
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    ...singleTarget(120, []),
     isHarmful: true,
+    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(120, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 120, []) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh) {
       const { caster, method } = sh;
       const { attack, critical, hit, target } = await sh.attack({
@@ -7431,6 +7491,7 @@
 
 The spell creates more than one beam when you reach higher levels: two beams at 5th level, three beams at 11th level, and four beams at 17th level. You can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.`,
     isHarmful: true,
+    ...spellAttack("ranged"),
     getConfig: (g, caster) => ({
       targets: new AllocationResolver(
         g,
@@ -7488,18 +7549,16 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
-    isHarmful: true,
     description: `You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
+    ...singleTarget(60, [notSelf]),
+    ...spellAttack("ranged"),
+    ...damagingCantrip(10, "fire"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "fire")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh) {
       const { critical, hit, attack, target } = await sh.attack({
         target: sh.config.target,
@@ -7567,11 +7626,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     s: true,
     lists: ["Artificer", "Cleric", "Druid"],
     description: `You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one ability check of its choice. It can roll the die before or after making the ability check. The spell then ends.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [isAlly])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...touchTarget([isAlly]),
     async apply({ affected, caster }) {
       const affecting = /* @__PURE__ */ new Set();
       for (const target of affected)
@@ -7608,11 +7663,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
   - One Medium or smaller creature that you choose must succeed on a Strength saving throw or be pushed up to 5 feet away from you.
   - You create a small blast of air capable of moving one object that is neither held nor carried and that weighs no more than 5 pounds. The object is pushed up to 10 feet away from you. It isn't pushed with enough force to cause damage.
   - You create a harmless sensory effect using air, such as causing leaves to rustle, wind to slam shutters closed, or your clothing to ripple in a breeze.`,
-    getConfig: (g) => ({
-      target: new TargetResolver(g, 30, [sizeOrLess(SizeCategory_default.Medium)])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...singleTarget(30, [sizeOrLess(SizeCategory_default.Medium)]),
     async apply(sh, { target }) {
       const { outcome } = await sh.save({
         who: target,
@@ -7714,9 +7765,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     description: `You touch one to three pebbles and imbue them with magic. You or someone else can make a ranged spell attack with one of the pebbles by throwing it or hurling it with a sling. If thrown, a pebble has a range of 60 feet. If someone else attacks with a pebble, that attacker adds your spellcasting ability modifier, not the attacker's, to the attack roll. On a hit, the target takes bludgeoning damage equal to 1d6 + your spellcasting ability modifier. Whether the attack hits or misses, the spell then ends on the stone.
 
   If you cast this spell again, the spell ends on any pebbles still affected by your previous casting.`,
-    getConfig: () => ({}),
-    getTargets: (g, caster) => [caster],
-    getAffected: (g, caster) => [caster],
+    ...selfTarget,
     async apply({ g, caster, method }) {
       caster.initResource(MagicStoneResource);
       g.text(
@@ -7762,18 +7811,16 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     school: "Enchantment",
     v: true,
     lists: ["Sorcerer", "Warlock", "Wizard"],
-    isHarmful: true,
     description: `You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
+    ...singleTarget(60, [canSee, notSelf]),
+    ...requiresSave("int"),
+    ...damagingCantrip(6, "psychic"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee, notSelf]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "psychic")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh, { target }) {
       const { damageResponse, outcome } = await sh.save({
         who: target,
@@ -7820,18 +7867,16 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     v: true,
     s: true,
     lists: ["Artificer", "Druid", "Sorcerer", "Warlock", "Wizard"],
-    isHarmful: true,
     description: `You extend your hand toward a creature you can see within range and project a puff of noxious gas from your palm. The creature must succeed on a Constitution saving throw or take 1d12 poison damage.
 
   This spell's damage increases by 1d12 when you reach 5th level (2d12), 11th level (3d12), and 17th level (4d12).`,
+    ...singleTarget(10, [canSee]),
+    ...requiresSave("con"),
+    ...damagingCantrip(6, "acid"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(10, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 10, [canSee]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "acid")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh, { target }) {
       const { damageResponse } = await sh.save({
         who: target,
@@ -7858,18 +7903,16 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     school: "Transmutation",
     s: true,
     lists: ["Druid"],
-    isHarmful: true,
     description: `You channel primal magic to cause your teeth or fingernails to sharpen, ready to deliver a corrosive attack. Make a melee spell attack against one creature within 5 feet of you. On a hit, the target takes 1d10 acid damage. After you make the attack, your teeth or fingernails return to normal.
 
   The spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
+    ...singleTarget(5, [notSelf]),
+    ...spellAttack("melee"),
+    ...damagingCantrip(10, "acid"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(5, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 5, [notSelf]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 10, "acid")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -7907,15 +7950,13 @@ The spell creates more than one beam when you reach higher levels: two beams at 
   You can also attack with the flame, although doing so ends the spell. When you cast this spell, or as an action on a later turn, you can hurl the flame at a creature within 30 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 fire damage.
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-    isHarmful: true,
-    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
+    ...singleTarget(30, []),
+    ...spellAttack("ranged"),
+    ...damagingCantrip(8, "fire"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(30, target))
     })),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "fire")],
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -7964,18 +8005,16 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     v: true,
     s: true,
     lists: ["Artificer", "Sorcerer", "Wizard"],
-    isHarmful: true,
     description: `A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    ...singleTarget(60, []),
+    ...spellAttack("ranged"),
+    ...damagingCantrip(8, "cold"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "cold")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -8045,11 +8084,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     m: "a miniature cloak",
     lists: ["Artificer", "Cleric", "Druid"],
     description: `You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one saving throw of its choice. It can roll the die before or after making the saving throw. The spell then ends.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [isAlly])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...touchTarget([isAlly]),
     async apply({ affected, caster }) {
       const affecting = /* @__PURE__ */ new Set();
       for (const target of affected)
@@ -8085,18 +8120,16 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     v: true,
     s: true,
     lists: ["Cleric"],
-    isHarmful: true,
     description: `Flame-like radiance descends on a creature that you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
+    ...singleTarget(60, [canSee]),
+    ...requiresSave("dex"),
+    ...damagingCantrip(8, "radiant"),
     generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf, canSee]) }),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "radiant")],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     async apply(sh, { target }) {
       const damageInitialiser = await sh.rollDamage({ target });
       const { damageResponse } = await sh.save({
@@ -8145,6 +8178,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     m: "mistletoe, a shamrock leaf, and a club or quarterstaff",
     lists: ["Druid"],
     description: `The wood of a club or quarterstaff you are holding is imbued with nature's power. For the duration, you can use your spellcasting ability instead of Strength for the attack and damage rolls of melee attacks using that weapon, and the weapon's damage die becomes a d8. The weapon also becomes magical, if it isn't already. The spell ends if you cast it again or if you let go of the weapon.`,
+    ...selfTarget,
     getConfig: (g, caster) => ({
       item: new ChoiceResolver(
         g,
@@ -8153,8 +8187,6 @@ The spell creates more than one beam when you reach higher levels: two beams at 
         ).map((value) => ({ label: value.name, value }))
       )
     }),
-    getTargets: () => [],
-    getAffected: () => [],
     async apply({ g, caster, method }, { item }) {
       const { name, magical, damage, forceAbilityScore } = item;
       const versatile = item.properties.has("versatile");
@@ -8207,13 +8239,9 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     description: `Lightning springs from your hand to deliver a shock to a creature you try to touch. Make a melee spell attack against the target. You have advantage on the attack roll if the target is wearing armor made of metal. On a hit, the target takes 1d8 lightning damage, and it can't take reactions until the start of its next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-    isHarmful: true,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "lightning")],
+    ...touchTarget([]),
+    ...spellAttack("melee"),
+    ...damagingCantrip(8, "lightning"),
     async apply(sh, { target: originalTarget }) {
       var _a;
       const { attack, critical, hit, target } = await sh.attack({
@@ -8250,15 +8278,11 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     s: true,
     lists: ["Artificer", "Cleric"],
     description: `You touch a living creature that has 0 hit points. The creature becomes stable. This spell has no effect on undead or constructs.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [
-        doesNotHaveEffect(Dead),
-        hasEffect(Dying),
-        notOfCreatureType("undead", "construct")
-      ])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...touchTarget([
+      doesNotHaveEffect(Dead),
+      hasEffect(Dying),
+      notOfCreatureType("undead", "construct")
+    ]),
     async apply(sh) {
       for (const target of sh.affected) {
         await target.removeEffect(Dying);
@@ -8293,11 +8317,6 @@ The spell creates more than one beam when you reach higher levels: two beams at 
   var Thaumaturgy_default = Thaumaturgy;
 
   // src/spells/cantrip/Thunderclap.ts
-  var getThunderclapArea = (who) => ({
-    type: "within",
-    who,
-    radius: 5
-  });
   var Thunderclap = simpleSpell({
     status: "implemented",
     name: "Thunderclap",
@@ -8308,13 +8327,14 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     description: `You create a burst of thunderous sound that can be heard up to 100 feet away. Each creature within range, other than you, must make a Constitution saving throw or take 1d6 thunder damage.
 
 The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
-    isHarmful: true,
-    // TODO generateAttackConfigs
-    getConfig: () => ({}),
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 6, "thunder")],
-    getTargets: () => [],
-    getAffectedArea: (g, caster) => [getThunderclapArea(caster)],
-    getAffected: (g, caster) => g.getInside(getThunderclapArea(caster), [caster]),
+    ...requiresSave("con"),
+    ...damagingCantrip(6, "thunder"),
+    ...simpleArea((who) => ({ type: "within", who, radius: 5 })),
+    // TODO this is kinda cheating; relies on AI code to get rid of all the invalid positioning sets
+    generateAttackConfigs: (g, caster, method, targets) => combinationsMulti(targets, 0, targets.length).map((targets2) => ({
+      config: {},
+      positioning: poSet(...targets2.map((target) => poWithin(5, target)))
+    })),
     async apply(sh) {
       const damageInitialiser = await sh.rollDamage();
       for (const target of sh.affected) {
@@ -8367,11 +8387,9 @@ The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (
     description: `You unleash a string of insults laced with subtle enchantments at a creature you can see within range. If the target can hear you (though it need not understand you), it must succeed on a Wisdom saving throw or take 1d4 psychic damage and have disadvantage on the next attack roll it makes before the end of its next turn.
 
 This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level (3d4), and 17th level (4d4).`,
-    isHarmful: true,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [canSee]) }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 4, "psychic")],
+    ...singleTarget(60, [canSee, canBeHeardBy]),
+    ...requiresSave("wis"),
+    ...damagingCantrip(4, "psychic"),
     async apply(sh, { target }) {
       const config = { duration: 1 };
       const { outcome, damageResponse } = await sh.save({
@@ -8434,11 +8452,10 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
     description: `You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
+    ...multiTarget(1, 3, 30, []),
     getConfig: (g, caster, method, { slot }) => ({
       targets: new MultiTargetResolver(g, 1, (slot != null ? slot : 1) + 2, 30, [])
     }),
-    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
-    getAffected: (g, caster, { targets }) => targets,
     async apply({ caster }, { targets }) {
       const duration = minutes(1);
       for (const target of targets)
@@ -8455,36 +8472,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
   });
   var Bless_default = Bless;
 
-  // src/resolvers/PointResolver.ts
-  var PointResolver = class {
-    constructor(g, maxRange) {
-      this.g = g;
-      this.maxRange = maxRange;
-      this.type = "Point";
-    }
-    get name() {
-      if (this.maxRange === Infinity)
-        return "any point";
-      return `point within ${this.maxRange}'`;
-    }
-    check(value, action, ec) {
-      if (!isPoint(value))
-        ec.add("No target", this);
-      else {
-        if (distanceTo(action.actor, value) > this.maxRange)
-          ec.add("Out of range", this);
-      }
-      return ec;
-    }
-  };
-
   // src/spells/level1/BurningHands.ts
-  var getBurningHandsArea = (centre, target) => ({
-    type: "cone",
-    radius: 15,
-    centre,
-    target
-  });
   var BurningHands = scalingSpell({
     status: "incomplete",
     name: "Burning Hands",
@@ -8498,15 +8486,14 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
   The fire ignites any flammable objects in the area that aren't being worn or carried.
   
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
-    isHarmful: true,
-    getConfig: (g) => ({
-      point: new PointResolver(g, 15)
-    }),
+    ...pointedArea(15, (centre, target) => ({
+      type: "cone",
+      radius: 15,
+      centre,
+      target
+    })),
+    ...scalingDamage(1, 2, 6, "fire"),
     // TODO generateAttackConfigs,
-    getAffectedArea: (g, caster, { point }) => point && [getBurningHandsArea(caster.position, point)],
-    getAffected: (g, caster, { point }) => g.getInside(getBurningHandsArea(caster.position, point), [caster]),
-    getTargets: () => [],
-    getDamage: (g, caster, method, { slot }) => [_dd((slot != null ? slot : 1) + 2, 6, "fire")],
     async apply(sh) {
       const damageInitialiser = await sh.rollDamage();
       for (const target of sh.affected) {
@@ -8998,16 +8985,11 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
     description: `A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
+    ...singleTarget(60, [canSee, notOfCreatureType("undead", "construct")]),
     generateHealingConfigs: (slot, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({
-      target: new TargetResolver(g, 60, [
-        canSee,
-        notOfCreatureType("undead", "construct")
-      ])
-    }),
     getHeal: (g, caster, method, { slot }) => [
       { type: "dice", amount: { count: slot != null ? slot : 1, size: 4 } },
       {
@@ -9015,8 +8997,6 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
         amount: method.ability ? caster[method.ability].modifier : 0
       }
     ],
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     check(g, { target }, ec) {
       if (target && cannotHeal2.has(target.type))
         ec.add(`Cannot heal a ${target.type}`, HealingWord);
@@ -9081,10 +9061,8 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.`,
     icon: makeIcon(hellish_rebuke_default, DamageColours.fire),
+    ...singleTarget(60, []),
     isHarmful: true,
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
     getDamage: (g, caster, method, { slot }) => [
       _dd(1 + (slot != null ? slot : 1), 10, "fire")
     ],
@@ -9221,17 +9199,16 @@ At the end of each of its turns, and each time it takes damage, the target can m
     description: `You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 cold damage.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
+    ...singleTarget(60, [notSelf]),
     generateAttackConfigs: (slot, targets) => targets.map((target) => ({
       config: { target },
       positioning: poSet(poWithin(60, target))
     })),
-    getConfig: (g) => ({ target: new TargetResolver(g, 60, [notSelf]) }),
     getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(target)],
     getDamage: (g, caster, method, { slot }) => [
       piercingRoll,
       getColdRoll(slot != null ? slot : 1)
     ],
-    getTargets: (g, caster, { target }) => sieve(target),
     getAffected: (g, caster, { target }) => g.getInside(getIceKnifeArea(target)),
     async apply(sh, { slot }) {
       const { attack, hit, critical, target } = await sh.attack({
@@ -9381,6 +9358,11 @@ At the end of each of its turns, and each time it takes damage, the target can m
     },
     { tags: ["magic"] }
   );
+  var notWearingArmor = {
+    name: "no armor",
+    message: "wearing armor",
+    check: (g, action, value) => !value.armor
+  };
   var MageArmor = simpleSpell({
     status: "implemented",
     name: "Mage Armor",
@@ -9392,17 +9374,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     m: "a piece of cured leather",
     lists: ["Sorcerer", "Wizard"],
     description: `You touch a willing creature who isn't wearing armor, and a protective magical force surrounds it until the spell ends. The target's base AC becomes 13 + its Dexterity modifier. The spell ends if the target dons armor or if you dismiss the spell as an action.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [
-        {
-          name: "no armor",
-          message: "wearing armor",
-          check: (g2, action, value) => !value.armor
-        }
-      ])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...touchTarget([notWearingArmor]),
     async apply({ caster, method }, { target }) {
       await target.addEffect(MageArmorEffect, {
         duration: hours(8),
@@ -9639,9 +9611,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     description: `You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball.
 
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
-    getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...singleTarget(30, []),
     async apply({ caster, method }, { target }) {
       await target.addEffect(
         SanctuaryEffect,
@@ -12041,11 +12011,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     m: "a short reed or piece of straw",
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
     description: `This spell grants up to ten willing creatures you can see within range the ability to breathe underwater until the spell ends. Affected creatures also retain their normal mode of respiration.`,
-    getConfig: (g) => ({
-      targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
-    }),
-    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
-    getAffected: (g, caster, { targets }) => targets,
+    ...multiTarget(1, 10, 30, [canSee]),
     async apply() {
     }
   });
@@ -12064,11 +12030,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
     description: `This spell grants the ability to move across any liquid surface\u2014such as water, acid, mud, snow, quicksand, or lava\u2014as if it were harmless solid ground (creatures crossing molten lava can still take damage from the heat). Up to ten willing creatures you can see within range gain this ability for the duration.
 
   If you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.`,
-    getConfig: (g) => ({
-      targets: new MultiTargetResolver(g, 1, 10, 30, [canSee])
-    }),
-    getTargets: (g, caster, { targets }) => targets != null ? targets : [],
-    getAffected: (g, caster, { targets }) => targets,
+    ...multiTarget(1, 10, 30, [canSee]),
     async apply() {
     }
   });
@@ -12272,11 +12234,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     description: `You touch a willing creature. For the duration, the target's movement is unaffected by difficult terrain, and spells and other magical effects can neither reduce the target's speed nor cause the target to be paralyzed or restrained.
 
   The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [isAlly])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...touchTarget([isAlly]),
     async apply() {
     }
   });
@@ -12461,11 +12419,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     m: "diamond dust worth 100gp, which the spell consumes",
     lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
     description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
-    getConfig: (g, caster) => ({
-      target: new TargetResolver(g, caster.reach, [isAlly])
-    }),
-    getTargets: (g, caster, { target }) => sieve(target),
-    getAffected: (g, caster, { target }) => [target],
+    ...touchTarget([isAlly]),
     async apply({ caster }, { target }) {
       const duration = hours(1);
       await target.addEffect(StoneskinEffect, { duration }, caster);

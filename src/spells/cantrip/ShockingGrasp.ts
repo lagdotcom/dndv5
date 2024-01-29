@@ -3,10 +3,8 @@ import iconUrl from "@img/spl/shocking-grasp.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import TargetResolver from "../../resolvers/TargetResolver";
-import { sieve } from "../../utils/array";
-import { _dd } from "../../utils/dice";
-import { getCantripDice, simpleSpell } from "../common";
+import { simpleSpell } from "../common";
+import { damagingCantrip, spellAttack, touchTarget } from "../helpers";
 
 const ShockingGraspIcon = makeIcon(iconUrl, DamageColours.lightning);
 
@@ -37,17 +35,13 @@ const ShockingGrasp = simpleSpell<HasTarget>({
   description: `Lightning springs from your hand to deliver a shock to a creature you try to touch. Make a melee spell attack against the target. You have advantage on the attack roll if the target is wearing armor made of metal. On a hit, the target takes 1d8 lightning damage, and it can't take reactions until the start of its next turn.
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
-  isHarmful: true,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, []),
-  }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
-
-  getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "lightning")],
+  ...touchTarget([]),
+  ...spellAttack("melee"),
+  ...damagingCantrip(8, "lightning"),
 
   async apply(sh, { target: originalTarget }) {
+    // TODO this obviously doesn't switch target well
     const { attack, critical, hit, target } = await sh.attack({
       target: originalTarget,
       diceType: originalTarget.armor?.metal ? "advantage" : undefined,

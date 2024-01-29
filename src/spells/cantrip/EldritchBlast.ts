@@ -2,6 +2,7 @@ import { HasAllocations } from "../../configs";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
+import { spellAttack } from "../helpers";
 
 const getEldritchBlastDamage = (beams: number) => [_dd(beams, 10, "force")];
 
@@ -17,6 +18,8 @@ const EldritchBlast = simpleSpell<HasAllocations>({
 
 The spell creates more than one beam when you reach higher levels: two beams at 5th level, three beams at 11th level, and four beams at 17th level. You can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.`,
   isHarmful: true,
+
+  ...spellAttack("ranged"),
 
   getConfig: (g, caster) => ({
     targets: new AllocationResolver(

@@ -5,13 +5,12 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import DndRule from "../../DndRule";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
-import TargetResolver from "../../resolvers/TargetResolver";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { _dd } from "../../utils/dice";
 import { enumerate } from "../../utils/numbers";
 import { scalingSpell } from "../common";
+import { singleTarget } from "../helpers";
 
 new DndRule("Hellish Rebuke", (g) => {
   g.events.on(
@@ -67,11 +66,10 @@ const HellishRebuke = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.`,
   icon: makeIcon(iconUrl, DamageColours.fire),
-  isHarmful: true,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...singleTarget(60, []),
+
+  isHarmful: true,
   getDamage: (g, caster, method, { slot }) => [
     _dd(1 + (slot ?? 1), 10, "fire"),
   ],

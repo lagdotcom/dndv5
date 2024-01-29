@@ -1,10 +1,11 @@
 import { HasCaster, HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import TargetResolver from "../../resolvers/TargetResolver";
+import { ErrorFilter } from "../../filters";
+import Combatant from "../../types/Combatant";
 import Item from "../../types/Item";
-import { sieve } from "../../utils/array";
 import { hours } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { touchTarget } from "../helpers";
 
 const MageArmorEffect = new Effect<HasCaster>(
   "Mage Armor",
@@ -26,6 +27,12 @@ const MageArmorEffect = new Effect<HasCaster>(
   { tags: ["magic"] },
 );
 
+const notWearingArmor: ErrorFilter<Combatant> = {
+  name: "no armor",
+  message: "wearing armor",
+  check: (g, action, value) => !value.armor,
+};
+
 const MageArmor = simpleSpell<HasTarget>({
   status: "implemented",
   name: "Mage Armor",
@@ -38,18 +45,7 @@ const MageArmor = simpleSpell<HasTarget>({
   lists: ["Sorcerer", "Wizard"],
   description: `You touch a willing creature who isn't wearing armor, and a protective magical force surrounds it until the spell ends. The target's base AC becomes 13 + its Dexterity modifier. The spell ends if the target dons armor or if you dismiss the spell as an action.`,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, [
-      {
-        name: "no armor",
-        message: "wearing armor",
-        check: (g, action, value) => !value.armor,
-      },
-    ]),
-  }),
-
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...touchTarget([notWearingArmor]),
 
   async apply({ caster, method }, { target }) {
     await target.addEffect(MageArmorEffect, {

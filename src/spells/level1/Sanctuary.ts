@@ -4,12 +4,11 @@ import Effect from "../../Effect";
 import { CombatantID } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
-import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { singleTarget } from "../helpers";
 
 const sanctuaryEffects = new DefaultingMap<CombatantID, Set<CombatantID>>(
   () => new Set(),
@@ -118,9 +117,7 @@ const Sanctuary = simpleSpell<HasTarget>({
 
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 30, []) }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...singleTarget(30, []),
 
   async apply({ caster, method }, { target }) {
     await target.addEffect(
