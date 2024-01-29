@@ -1,3 +1,4 @@
+import DefaultingMap from "../../DefaultingMap";
 import DndRule from "../../DndRule";
 import Engine from "../../Engine";
 import { AttackDetail } from "../../events/AttackEvent";
@@ -19,17 +20,18 @@ export type SneakAttackMethod = (
   target: Combatant,
   attack: AttackDetail,
 ) => boolean;
-const SneakAttackConfigs = new Map<CombatantID, Set<SneakAttackMethod>>();
+const sneakAttackMethods = new DefaultingMap<
+  CombatantID,
+  Set<SneakAttackMethod>
+>(() => new Set());
 new DndRule("Sneak Attack", () => {
-  SneakAttackConfigs.clear();
+  sneakAttackMethods.clear();
 });
 export function addSneakAttackMethod(
   who: Combatant,
   method: SneakAttackMethod,
 ) {
-  const methods = SneakAttackConfigs.get(who.id) ?? new Set();
-  methods.add(method);
-  SneakAttackConfigs.set(who.id, methods);
+  sneakAttackMethods.get(who.id).add(method);
 }
 
 const SneakAttackResource = new TurnResource("Sneak Attack", 1);
@@ -76,7 +78,7 @@ The amount of the extra damage increases as you gain levels in this class, as sh
             weapon.properties.has("finesse") ||
             weapon.rangeCategory === "ranged";
           const advantage = attack.roll.diceType === "advantage";
-          const methods = Array.from(SneakAttackConfigs.get(me.id) ?? []);
+          const methods = Array.from(sneakAttackMethods.get(me.id));
 
           if (
             isFinesseOrRangedWeapon &&

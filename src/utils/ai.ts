@@ -1,4 +1,5 @@
 import EvaluationCollector from "../collectors/EvaluationCollector";
+import DefaultingMap from "../DefaultingMap";
 import Engine from "../Engine";
 import { Feet } from "../flavours";
 import { MapSquareSize } from "../MapSquare";
@@ -92,7 +93,9 @@ export function* getAllEvaluations(
 
     const v = rule.evaluateActions(g, me, actions);
     for (const o of v) {
-      const positionMap = new Map<number, PointSet>();
+      const positionMap = new DefaultingMap<number, PointSet>(
+        () => new PointSet(),
+      );
       let best = -Infinity;
       let bestScore: EvaluationCollector | undefined;
 
@@ -113,9 +116,7 @@ export function* getAllEvaluations(
         }
 
         const total = score.result;
-        const points = positionMap.get(total) ?? new PointSet();
-        points.add(position);
-        if (!positionMap.has(total)) positionMap.set(total, points);
+        positionMap.get(total).add(position);
 
         if (total > best) {
           best = total;

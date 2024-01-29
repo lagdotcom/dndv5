@@ -2677,6 +2677,25 @@
   })(Priority || {});
   var Priority_default = Priority;
 
+  // src/DefaultingMap.ts
+  var DefaultingMap = class extends Map {
+    constructor(makeDefault, data) {
+      super(data);
+      this.makeDefault = makeDefault;
+    }
+    /**
+     * @returns {V} Returns the element associated with the specified key. If no element is associated with the specified key, a new one is generated.
+     */
+    get(key) {
+      const value = super.get(key);
+      if (typeof value !== "undefined")
+        return value;
+      const replacement = this.makeDefault(key);
+      this.set(key, replacement);
+      return replacement;
+    }
+  };
+
   // src/utils/config.ts
   function getConfigErrors(g, action, config) {
     const ec = g.check(action, config);
@@ -9641,14 +9660,9 @@ At the end of each of its turns, and each time it takes damage, the target can m
   var ProtectionFromEvilAndGood_default = ProtectionFromEvilAndGood;
 
   // src/spells/level1/Sanctuary.ts
-  var sanctuaryEffects = /* @__PURE__ */ new Map();
-  var getSanctuaryEffects = (attacker) => {
-    var _a;
-    const set = (_a = sanctuaryEffects.get(attacker.id)) != null ? _a : /* @__PURE__ */ new Set();
-    if (!sanctuaryEffects.has(attacker.id))
-      sanctuaryEffects.set(attacker.id, set);
-    return set;
-  };
+  var sanctuaryEffects = new DefaultingMap(
+    () => /* @__PURE__ */ new Set()
+  );
   var SanctuaryEffect = new Effect(
     "Sanctuary",
     "turnStart",
@@ -9658,13 +9672,13 @@ At the end of each of its turns, and each time it takes damage, the target can m
       });
       g.events.on(
         "TurnStarted",
-        ({ detail: { who } }) => getSanctuaryEffects(who).clear()
+        ({ detail: { who } }) => sanctuaryEffects.get(who.id).clear()
       );
       g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
         var _a, _b;
         if (!action.tags.has("harmful"))
           return;
-        const effects = getSanctuaryEffects(action.actor);
+        const effects = sanctuaryEffects.get(action.actor.id);
         const targets = (_b = (_a = action.getTargets(config)) == null ? void 0 : _a.filter((who) => who.hasEffect(SanctuaryEffect))) != null ? _b : [];
         for (const target of targets) {
           if (effects.has(target.id))
@@ -9691,7 +9705,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
                   g.text(
                     new MessageBuilder().co(who).text(" fails to break ").co(target).nosp().text("'s Sanctuary.")
                   );
-                  getSanctuaryEffects(who).add(target.id);
+                  sanctuaryEffects.get(who.id).add(target.id);
                 }
               }
             )
@@ -17409,15 +17423,12 @@ Additionally, you can ignore the verbal and somatic components of your druid spe
   function getSneakAttackDice(level) {
     return Math.ceil(level / 2);
   }
-  var SneakAttackConfigs = /* @__PURE__ */ new Map();
+  var sneakAttackMethods = new DefaultingMap(() => /* @__PURE__ */ new Set());
   new DndRule("Sneak Attack", () => {
-    SneakAttackConfigs.clear();
+    sneakAttackMethods.clear();
   });
   function addSneakAttackMethod(who, method) {
-    var _a;
-    const methods = (_a = SneakAttackConfigs.get(who.id)) != null ? _a : /* @__PURE__ */ new Set();
-    methods.add(method);
-    SneakAttackConfigs.set(who.id, methods);
+    sneakAttackMethods.get(who.id).add(method);
   }
   var SneakAttackResource = new TurnResource("Sneak Attack", 1);
   var SneakAttack = new SimpleFeature(
@@ -17448,11 +17459,10 @@ The amount of the extra damage increases as you gain levels in this class, as sh
             weapon
           }
         }) => {
-          var _a;
           if (attacker === me && me.hasResource(SneakAttackResource) && attack && weapon) {
             const isFinesseOrRangedWeapon = weapon.properties.has("finesse") || weapon.rangeCategory === "ranged";
             const advantage = attack.roll.diceType === "advantage";
-            const methods = Array.from((_a = SneakAttackConfigs.get(me.id)) != null ? _a : []);
+            const methods = Array.from(sneakAttackMethods.get(me.id));
             if (isFinesseOrRangedWeapon && (advantage || methods.find((method) => method(g, target, attack)))) {
               interrupt.add(
                 new YesNoChoice(

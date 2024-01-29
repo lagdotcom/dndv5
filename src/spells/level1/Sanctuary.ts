@@ -1,4 +1,5 @@
 import { HasCaster, HasTarget } from "../../configs";
+import DefaultingMap from "../../DefaultingMap";
 import Effect from "../../Effect";
 import { CombatantID } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
@@ -10,15 +11,9 @@ import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
 
-const sanctuaryEffects = new Map<CombatantID, Set<CombatantID>>();
-
-const getSanctuaryEffects = (attacker: Combatant) => {
-  const set = sanctuaryEffects.get(attacker.id) ?? new Set();
-  if (!sanctuaryEffects.has(attacker.id))
-    sanctuaryEffects.set(attacker.id, set);
-  return set;
-};
-
+const sanctuaryEffects = new DefaultingMap<CombatantID, Set<CombatantID>>(
+  () => new Set(),
+);
 const SanctuaryEffect = new Effect<HasCaster>(
   "Sanctuary",
   "turnStart",
@@ -30,13 +25,13 @@ const SanctuaryEffect = new Effect<HasCaster>(
     /* TODO [CANCELATTACK] Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball. */
 
     g.events.on("TurnStarted", ({ detail: { who } }) =>
-      getSanctuaryEffects(who).clear(),
+      sanctuaryEffects.get(who.id).clear(),
     );
 
     g.events.on("CheckAction", ({ detail: { action, config, error } }) => {
       if (!action.tags.has("harmful")) return;
 
-      const effects = getSanctuaryEffects(action.actor);
+      const effects = sanctuaryEffects.get(action.actor.id);
       const targets =
         action
           .getTargets(config)
@@ -74,7 +69,7 @@ const SanctuaryEffect = new Effect<HasCaster>(
                     .text("'s Sanctuary."),
                 );
 
-                getSanctuaryEffects(who).add(target.id);
+                sanctuaryEffects.get(who.id).add(target.id);
 
                 // TODO [ROLLBACKATTACK] ...the creature must choose a new target or lose the attack or spell.
               }
