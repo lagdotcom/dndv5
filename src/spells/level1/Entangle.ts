@@ -3,14 +3,13 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasCaster, HasPoint } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
-import PointResolver from "../../resolvers/PointResolver";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
-import { arSet, SpecifiedCube } from "../../types/EffectArea";
-import Point from "../../types/Point";
+import { arSet } from "../../types/EffectArea";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { affectsByPoint, requiresSave } from "../helpers";
 
 type Config = HasCaster & { affected: Set<Combatant> };
 
@@ -69,13 +68,6 @@ const EntangleEffect = new Effect<Config>(
   { tags: ["magic"] },
 );
 
-// TODO this should be 'square' on the ground...
-const getEntangleArea = (centre: Point): SpecifiedCube => ({
-  type: "cube",
-  centre,
-  length: 20,
-});
-
 const Entangle = simpleSpell<HasPoint>({
   status: "implemented",
   name: "Entangle",
@@ -91,11 +83,9 @@ const Entangle = simpleSpell<HasPoint>({
   
   When the spell ends, the conjured plants wilt away.`,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 90) }),
-
-  getTargets: () => [],
-  getAffectedArea: (g, caster, { point }) => point && [getEntangleArea(point)],
-  getAffected: (g, caster, { point }) => g.getInside(getEntangleArea(point)),
+  // TODO this should be 'square' on the ground...
+  ...affectsByPoint(90, (centre) => ({ type: "cube", centre, length: 20 })),
+  ...requiresSave("str"),
 
   async apply(sh) {
     const areas = new Set<ActiveEffectArea>();

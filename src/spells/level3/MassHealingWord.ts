@@ -1,12 +1,9 @@
 import { HasTargets } from "../../configs";
-import { canSee } from "../../filters";
-import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
-import { ctSet } from "../../types/CreatureType";
+import { canSee, notOfCreatureType } from "../../filters";
 import { poWithin } from "../../utils/ai";
 import { combinationsMulti } from "../../utils/combinatorics";
-import { scalingSpell } from "../common";
-
-const cannotHeal = ctSet("undead", "construct");
+import { cannotHealConventionally, scalingSpell } from "../common";
+import { targetsMany } from "../helpers";
 
 const MassHealingWord = scalingSpell<HasTargets>({
   status: "implemented",
@@ -20,20 +17,18 @@ const MassHealingWord = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the healing increases by 1d4 for each slot level above 3rd.`,
 
-  generateHealingConfigs(slot, allTargets, g, caster) {
-    return combinationsMulti(
+  ...targetsMany(1, 6, 60, [canSee, notOfCreatureType("undead", "construct")]),
+
+  generateHealingConfigs: (slot, allTargets, g, caster) =>
+    combinationsMulti(
       allTargets.filter((co) => co.side === caster.side),
       1,
       6,
     ).map((targets) => ({
       config: { targets },
       positioning: new Set(targets.map((target) => poWithin(60, target))),
-    }));
-  },
+    })),
 
-  getConfig: (g) => ({
-    targets: new MultiTargetResolver(g, 1, 6, 60, [canSee]),
-  }),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot ?? 3) - 2, size: 4 } },
     {
@@ -41,26 +36,11 @@ const MassHealingWord = scalingSpell<HasTargets>({
       amount: method.ability ? caster[method.ability].modifier : 0,
     },
   ],
-  getTargets: (g, caster, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
-
-  check(g, { targets }, ec) {
-    if (targets) {
-      for (const target of targets)
-        if (cannotHeal.has(target.type))
-          ec.add(
-            `Cannot heal ${target.name}, they are a ${target.type}`,
-            MassHealingWord,
-          );
-    }
-
-    return ec;
-  },
 
   async apply(sh, { targets }) {
     const amount = await sh.rollHeal();
     for (const target of targets) {
-      if (cannotHeal.has(target.type)) continue;
+      if (cannotHealConventionally.has(target.type)) continue;
       await sh.heal({ amount, target });
     }
   },

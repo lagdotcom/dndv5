@@ -3,14 +3,14 @@ import iconUrl from "@img/spl/protection-evil-good.svg";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import TargetResolver from "../../resolvers/TargetResolver";
+import { isAlly } from "../../filters";
 import Combatant from "../../types/Combatant";
 import { ctSet } from "../../types/CreatureType";
 import { EffectConfig } from "../../types/EffectType";
-import { sieve } from "../../utils/array";
 import { hasAny } from "../../utils/set";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { targetsByTouch } from "../helpers";
 
 const ProtectionEvilGoodIcon = makeIcon(iconUrl);
 
@@ -80,11 +80,7 @@ const ProtectionFromEvilAndGood = simpleSpell<HasTarget>({
 
   The protection grants several benefits. Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them. If the target is already charmed, frightened, or possessed by such a creature, the target has advantage on any new saving throw against the relevant effect.`,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, []),
-  }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...targetsByTouch([isAlly]),
 
   async apply({ caster }, { target }) {
     const duration = minutes(10);

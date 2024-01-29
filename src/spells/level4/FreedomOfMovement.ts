@@ -1,7 +1,7 @@
 import { HasTarget } from "../../configs";
 import { isAlly } from "../../filters";
 import { simpleSpell } from "../common";
-import { touchTarget } from "../helpers";
+import { targetsByTouch } from "../helpers";
 
 const FreedomOfMovement = simpleSpell<HasTarget>({
   name: "Freedom of Movement",
@@ -15,7 +15,7 @@ const FreedomOfMovement = simpleSpell<HasTarget>({
 
   The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.`,
 
-  ...touchTarget([isAlly]),
+  ...targetsByTouch([isAlly]),
 
   async apply() {
     // TODO [TERRAIN] [CANCELCOLLECTOR] [CANCELCONDITION]

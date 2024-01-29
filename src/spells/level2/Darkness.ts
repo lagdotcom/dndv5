@@ -1,14 +1,6 @@
 import { HasPoint } from "../../configs";
-import PointResolver from "../../resolvers/PointResolver";
-import { SpecifiedSphere } from "../../types/EffectArea";
-import Point from "../../types/Point";
 import { simpleSpell } from "../common";
-
-const getDarknessArea = (centre: Point): SpecifiedSphere => ({
-  type: "sphere",
-  centre,
-  radius: 15,
-});
+import { affectsByPoint } from "../helpers";
 
 const Darkness = simpleSpell<HasPoint>({
   name: "Darkness",
@@ -24,11 +16,7 @@ const Darkness = simpleSpell<HasPoint>({
   
   If any of this spell's area overlaps with an area of light created by a spell of 2nd level or lower, the spell that created the light is dispelled.`,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-
-  getTargets: () => [],
-  getAffectedArea: (g, caster, { point }) => point && [getDarknessArea(point)],
-  getAffected: (g, caster, { point }) => g.getInside(getDarknessArea(point)),
+  ...affectsByPoint(60, (centre) => ({ type: "sphere", centre, radius: 15 })),
 
   async apply() {
     // TODO

@@ -7,23 +7,20 @@ import { EngineSaveConfig } from "../../Engine";
 import { canSee } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
-import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
 import DiceType from "../../types/DiceType";
 import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
-import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-
-type Config = HasCaster;
+import { requiresSave, targetsOne } from "../helpers";
 
 const getHideousLaughterSave = (
   who: Combatant,
-  config: EffectConfig<Config>,
+  config: EffectConfig<HasCaster>,
   diceType: DiceType = "normal",
-): EngineSaveConfig<Config> => ({
+): EngineSaveConfig<HasCaster> => ({
   source: HideousLaughter,
   type: config.method.getSaveType(config.caster, HideousLaughter),
   who,
@@ -36,7 +33,7 @@ const getHideousLaughterSave = (
   method: config.method,
 });
 
-const LaughterEffect = new Effect<Config>(
+const LaughterEffect = new Effect<HasCaster>(
   "Hideous Laughter",
   "turnStart",
   (g) => {
@@ -56,7 +53,7 @@ const LaughterEffect = new Effect<Config>(
     const resave = (
       i: InterruptionCollector,
       who: Combatant,
-      config: EffectConfig<Config>,
+      config: EffectConfig<HasCaster>,
       diceType: DiceType = "normal",
     ) =>
       i.add(
@@ -97,9 +94,8 @@ const HideousLaughter = simpleSpell<HasTarget>({
 At the end of each of its turns, and each time it takes damage, the target can make another Wisdom saving throw. The target has advantage on the saving throw if it's triggered by damage. On a success, the spell ends.`,
   isHarmful: true,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 30, [canSee]) }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...targetsOne(30, [canSee]),
+  ...requiresSave("wis"),
 
   async apply({ g, caster, method }, { target }) {
     if (target.int.score <= 4) {
@@ -110,7 +106,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     }
 
     const effect = LaughterEffect;
-    const config: EffectConfig<Config> = {
+    const config: EffectConfig<HasCaster> = {
       caster,
       method,
       conditions: coSet("Incapacitated"),

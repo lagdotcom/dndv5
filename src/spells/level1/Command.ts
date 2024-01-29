@@ -1,6 +1,13 @@
 import { HasTargets } from "../../configs";
-import { withinRangeOfEachOther } from "../../filters";
+import {
+  canBeHeardBy,
+  canSee,
+  notOfCreatureType,
+  withinRangeOfEachOther,
+} from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
+import { poSet, poWithin } from "../../utils/ai";
+import { combinationsMulti } from "../../utils/combinatorics";
 import { scalingSpell } from "../common";
 
 const Command = scalingSpell<HasTargets>({
@@ -28,12 +35,16 @@ const Command = scalingSpell<HasTargets>({
       1,
       slot ?? 1,
       60,
-      [],
+      [canSee, canBeHeardBy, notOfCreatureType("undead")], // TODO if it doesn't understand your language
       [withinRangeOfEachOther(30)],
     ),
   }),
 
-  // TODO generateAttackConfigs,
+  generateAttackConfigs: (slot, allTargets) =>
+    combinationsMulti(allTargets, 1, slot).map((targets) => ({
+      config: { targets },
+      positioning: poSet(...targets.map((target) => poWithin(60, target))),
+    })),
 
   getTargets: (g, caster, { targets }) => targets ?? [],
   getAffected: (g, caster, { targets }) => targets,

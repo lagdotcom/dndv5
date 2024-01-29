@@ -1,6 +1,7 @@
 import Effect from "../../Effect";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { affectsSelf } from "../helpers";
 
 const BlurEffect = new Effect(
   "Blur",
@@ -24,9 +25,7 @@ const Blur = simpleSpell({
   lists: ["Artificer", "Sorcerer", "Wizard"],
   description: `Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight.`,
 
-  getConfig: () => ({}),
-  getTargets: () => [],
-  getAffected: (g, caster) => [caster],
+  ...affectsSelf,
 
   async apply({ caster }) {
     const duration = minutes(1);

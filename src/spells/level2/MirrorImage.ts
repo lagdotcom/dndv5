@@ -1,4 +1,5 @@
 import { simpleSpell } from "../common";
+import { affectsSelf } from "../helpers";
 
 const MirrorImage = simpleSpell({
   name: "Mirror Image",
@@ -17,9 +18,7 @@ const MirrorImage = simpleSpell({
 
   A creature is unaffected by this spell if it can't see, if it relies on senses other than sight, such as blindsight, or if it can perceive illusions as false, as with truesight.`,
 
-  getConfig: () => ({}),
-  getTargets: () => [],
-  getAffected: (g, caster) => [caster],
+  ...affectsSelf,
 
   async apply() {
     /* TODO [CANCELATTACK] */

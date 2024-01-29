@@ -1,6 +1,6 @@
 import { HasPoint } from "../../configs";
 import { scalingSpell } from "../common";
-import { pointedArea, scalingDamage } from "../helpers";
+import { affectsCone, doesScalingDamage } from "../helpers";
 
 const BurningHands = scalingSpell<HasPoint>({
   status: "incomplete",
@@ -16,13 +16,8 @@ const BurningHands = scalingSpell<HasPoint>({
   
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
-  ...pointedArea(15, (centre, target) => ({
-    type: "cone",
-    radius: 15,
-    centre,
-    target,
-  })),
-  ...scalingDamage(1, 2, 6, "fire"),
+  ...affectsCone(15),
+  ...doesScalingDamage(1, 2, 6, "fire"),
 
   // TODO generateAttackConfigs,
 

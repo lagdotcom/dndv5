@@ -9,7 +9,7 @@ import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import Combatant from "../../types/Combatant";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
-import { multiTarget } from "../helpers";
+import { targetsMany } from "../helpers";
 
 const BlessIcon = makeIcon(iconUrl);
 
@@ -49,7 +49,7 @@ const Bless = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
 
-  ...multiTarget(1, 3, 30, []),
+  ...targetsMany(1, 3, 30, []),
   getConfig: (g, caster, method, { slot }) => ({
     targets: new MultiTargetResolver(g, 1, (slot ?? 1) + 2, 30, []),
   }),

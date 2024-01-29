@@ -10,6 +10,7 @@ import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
 import { checkConfig } from "../../utils/config";
 import { simpleSpell } from "../common";
+import { affectsSelf } from "../helpers";
 import MagicMissile from "./MagicMissile";
 
 const ShieldIcon = makeIcon(iconUrl);
@@ -106,9 +107,7 @@ const Shield = simpleSpell({
   lists: ["Sorcerer", "Wizard"],
   description: `An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.`,
 
-  getConfig: () => ({}),
-  getTargets: () => [],
-  getAffected: (g, caster) => [caster],
+  ...affectsSelf,
 
   async apply({ caster }) {
     await caster.addEffect(ShieldEffect, { duration: 1 });

@@ -5,7 +5,7 @@ import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, singleTarget, spellAttack } from "../helpers";
+import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
 
 const RayOfFrostIcon = makeIcon(iconUrl, DamageColours.cold);
 
@@ -34,9 +34,9 @@ const RayOfFrost = simpleSpell<HasTarget>({
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
 
-  ...singleTarget(60, []),
-  ...spellAttack("ranged"),
-  ...damagingCantrip(8, "cold"),
+  ...targetsOne(60, []),
+  ...isSpellAttack("ranged"),
+  ...doesCantripDamage(8, "cold"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

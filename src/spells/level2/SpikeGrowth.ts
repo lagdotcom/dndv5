@@ -4,20 +4,13 @@ import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import PointResolver from "../../resolvers/PointResolver";
 import { atSet } from "../../types/AttackTag";
-import { arSet, SpecifiedSphere } from "../../types/EffectArea";
-import Point from "../../types/Point";
+import { arSet } from "../../types/EffectArea";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
-
-const getSpikeGrowthArea = (centre: Point): SpecifiedSphere => ({
-  type: "sphere",
-  centre,
-  radius: 20,
-});
+import { affectsByPoint } from "../helpers";
 
 const SpikeGrowth = simpleSpell<HasPoint>({
   status: "incomplete",
@@ -35,18 +28,14 @@ const SpikeGrowth = simpleSpell<HasPoint>({
 
   The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it.`,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-  getAffectedArea: (g, caster, { point }) =>
-    point && [getSpikeGrowthArea(point)],
-  getTargets: () => [],
-  getAffected: (g, caster, { point }) => g.getInside(getSpikeGrowthArea(point)),
+  ...affectsByPoint(150, (centre) => ({ type: "sphere", centre, radius: 20 })),
 
-  async apply({ g, caster: attacker, method }, { point }) {
+  async apply({ g, caster: attacker, method, affectedArea }) {
     /* TODO [SIGHT] The transformation of the ground is camouflaged to look natural. Any creature that can't see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it. */
 
     const area = new ActiveEffectArea(
       "Spike Growth",
-      getSpikeGrowthArea(point),
+      affectedArea[0],
       arSet("difficult terrain", "plants"),
       "green",
       ({ detail: { where, difficult } }) => {

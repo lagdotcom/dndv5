@@ -8,7 +8,7 @@ import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import { singleTarget } from "../helpers";
+import { targetsOne } from "../helpers";
 
 const sanctuaryEffects = new DefaultingMap<CombatantID, Set<CombatantID>>(
   () => new Set(),
@@ -117,7 +117,7 @@ const Sanctuary = simpleSpell<HasTarget>({
 
   If the warded creature makes an attack, casts a spell that affects an enemy, or deals damage to another creature, this spell ends.`,
 
-  ...singleTarget(30, []),
+  ...targetsOne(30, []),
 
   async apply({ caster, method }, { target }) {
     await target.addEffect(

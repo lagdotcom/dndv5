@@ -10,9 +10,9 @@ import Combatant from "../../types/Combatant";
 import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
 import SizeCategory from "../../types/SizeCategory";
-import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { targetsOne } from "../helpers";
 
 const EnlargeEffect = new Effect(
   "Enlarge",
@@ -172,6 +172,7 @@ const EnlargeReduce = simpleSpell<Config>({
   - Enlarge. The target's size doubles in all dimensions, and its weight is multiplied by eight. This growth increases its size by one category—from Medium to Large, for example. If there isn't enough room for the target to double its size, the creature or object attains the maximum possible size in the space available. Until the spell ends, the target also has advantage on Strength checks and Strength saving throws. The target's weapons also grow to match its new size. While these weapons are enlarged, the target's attacks with them deal 1d4 extra damage.
   - Reduce. The target's size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category—from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target's weapons also shrink to match its new size. While these weapons are reduced, the target's attacks with them deal 1d4 less damage (this can't reduce the damage below 1).`,
 
+  ...targetsOne(30, [canSee]),
   getConfig: (g) => ({
     target: new TargetResolver(g, 30, [canSee]),
     mode: new ChoiceResolver(g, [
@@ -179,8 +180,6 @@ const EnlargeReduce = simpleSpell<Config>({
       { label: "reduce", value: "reduce" },
     ]),
   }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
 
   async apply({ g, caster, method }, { mode, target }) {
     const effect = mode === "enlarge" ? EnlargeEffect : ReduceEffect;

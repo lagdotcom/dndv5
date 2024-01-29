@@ -1,7 +1,6 @@
-import { poSet, poWithin } from "../../utils/ai";
-import { combinationsMulti } from "../../utils/combinatorics";
+import { poSet } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, requiresSave, simpleArea } from "../helpers";
+import { affectsStaticArea, doesCantripDamage, requiresSave } from "../helpers";
 
 const Thunderclap = simpleSpell({
   status: "implemented",
@@ -15,15 +14,10 @@ const Thunderclap = simpleSpell({
 The spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
   ...requiresSave("con"),
-  ...damagingCantrip(6, "thunder"),
-  ...simpleArea((who) => ({ type: "within", who, radius: 5 })),
+  ...doesCantripDamage(6, "thunder"),
+  ...affectsStaticArea((who) => ({ type: "within", who, radius: 5 })),
 
-  // TODO this is kinda cheating; relies on AI code to get rid of all the invalid positioning sets
-  generateAttackConfigs: (g, caster, method, targets) =>
-    combinationsMulti(targets, 0, targets.length).map((targets) => ({
-      config: {},
-      positioning: poSet(...targets.map((target) => poWithin(5, target))),
-    })),
+  generateAttackConfigs: () => [{ config: {}, positioning: poSet() }],
 
   async apply(sh) {
     const damageInitialiser = await sh.rollDamage();

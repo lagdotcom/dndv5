@@ -1,8 +1,7 @@
 import { HasTarget } from "../../configs";
 import { isAlly } from "../../filters";
-import TargetResolver from "../../resolvers/TargetResolver";
-import { sieve } from "../../utils/array";
 import { simpleSpell } from "../common";
+import { targetsByTouch } from "../helpers";
 
 const SpiderClimb = simpleSpell<HasTarget>({
   name: "Spider Climb",
@@ -15,11 +14,7 @@ const SpiderClimb = simpleSpell<HasTarget>({
   lists: ["Artificer", "Sorcerer", "Warlock", "Wizard"],
   description: `Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.`,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, [isAlly]),
-  }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...targetsByTouch([isAlly]),
 
   async apply() {
     // TODO [TERRAIN]

@@ -1,7 +1,7 @@
 import { HasTargets } from "../../configs";
 import { canSee } from "../../filters";
 import { simpleSpell } from "../common";
-import { multiTarget } from "../helpers";
+import { targetsMany } from "../helpers";
 
 const WaterWalk = simpleSpell<HasTargets>({
   name: "Water Walk",
@@ -16,7 +16,7 @@ const WaterWalk = simpleSpell<HasTargets>({
 
   If you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.`,
 
-  ...multiTarget(1, 10, 30, [canSee]),
+  ...targetsMany(1, 10, 30, [canSee]),
 
   async apply() {
     // TODO [TERRAIN]

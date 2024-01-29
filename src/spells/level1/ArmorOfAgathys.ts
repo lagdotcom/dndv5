@@ -6,7 +6,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import Priority from "../../types/Priority";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
-import { selfTarget } from "../helpers";
+import { affectsSelf } from "../helpers";
 
 const ArmorOfAgathysIcon = makeIcon(iconUrl, DamageColours.cold);
 
@@ -80,7 +80,7 @@ const ArmorOfAgathys = scalingSpell({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, both the temporary hit points and the cold damage increase by 5 for each slot level above 1st.`,
 
-  ...selfTarget,
+  ...affectsSelf,
 
   async apply({ g, caster }, { slot }) {
     const count = slot * 5;

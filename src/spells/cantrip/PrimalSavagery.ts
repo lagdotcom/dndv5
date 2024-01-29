@@ -2,7 +2,7 @@ import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, singleTarget, spellAttack } from "../helpers";
+import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
 
 const PrimalSavagery = simpleSpell<HasTarget>({
   status: "implemented",
@@ -15,9 +15,9 @@ const PrimalSavagery = simpleSpell<HasTarget>({
 
   The spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
 
-  ...singleTarget(5, [notSelf]),
-  ...spellAttack("melee"),
-  ...damagingCantrip(10, "acid"),
+  ...targetsOne(5, [notSelf]),
+  ...isSpellAttack("melee"),
+  ...doesCantripDamage(10, "acid"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

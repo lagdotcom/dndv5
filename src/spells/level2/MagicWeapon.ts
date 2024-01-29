@@ -11,6 +11,7 @@ import Combatant from "../../types/Combatant";
 import { WeaponItem } from "../../types/Item";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { affectsSelf } from "../helpers";
 
 function slotToBonus(slot: SpellSlot) {
   if (slot >= 6) return 3;
@@ -82,6 +83,7 @@ const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the bonus increases to +2. When you use a spell slot of 6th level or higher, the bonus increases to +3.`,
 
+  ...affectsSelf,
   getConfig: (g, caster) => ({
     item: new ChoiceResolver(
       g,
@@ -90,8 +92,6 @@ const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
         .map((value) => ({ label: value.name, value })),
     ),
   }),
-  getTargets: (g, caster) => [caster],
-  getAffected: (g, caster) => [caster],
 
   async apply({ g, caster }, { slot, item }) {
     const controller = new MagicWeaponController(g, caster, slot, item);

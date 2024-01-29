@@ -3,10 +3,9 @@ import iconUrl from "@img/spl/shield-of-faith.svg";
 import { makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import TargetResolver from "../../resolvers/TargetResolver";
-import { sieve } from "../../utils/array";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { targetsOne } from "../helpers";
 
 const ShieldOfFaithIcon = makeIcon(iconUrl);
 
@@ -34,9 +33,7 @@ const ShieldOfFaith = simpleSpell<HasTarget>({
   lists: ["Cleric", "Paladin"],
   description: `A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.`,
 
-  getConfig: (g) => ({ target: new TargetResolver(g, 60, []) }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...targetsOne(60, []),
 
   async apply({ caster }, { target }) {
     await target.addEffect(

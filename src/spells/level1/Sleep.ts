@@ -6,7 +6,6 @@ import Engine from "../../Engine";
 import { hasEffect } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import MessageBuilder from "../../MessageBuilder";
-import PointResolver from "../../resolvers/PointResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import Combatant from "../../types/Combatant";
 import { coSet } from "../../types/ConditionName";
@@ -16,6 +15,7 @@ import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { distance } from "../../utils/units";
 import { scalingSpell } from "../common";
+import { affectsByPoint } from "../helpers";
 
 class SlapAction extends AbstractSingleTargetAction {
   constructor(g: Engine, actor: Combatant) {
@@ -96,15 +96,13 @@ const Sleep = scalingSpell<HasPoint>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, roll an additional 2d8 for each slot level above 1st.`,
   isHarmful: true,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 90) }),
-  getAffectedArea: (g, caster, { point }) => point && [getSleepArea(point)],
-  getTargets: () => [],
+  ...affectsByPoint(90, getSleepArea),
   getAffected: (g, caster, { point }) =>
     g
       .getInside(getSleepArea(point))
       .filter((co) => !co.conditions.has("Unconscious")),
 
-  async apply({ g, caster }, { slot, point }) {
+  async apply({ g, caster, affected }, { slot }) {
     const dice = 3 + slot * 2;
     let affectedHp = await g.rollMany(dice, {
       type: "other",
@@ -113,11 +111,7 @@ const Sleep = scalingSpell<HasPoint>({
       size: 8,
     });
 
-    const affected = g
-      .getInside(getSleepArea(point))
-      .filter((co) => !co.conditions.has("Unconscious"))
-      .sort((a, b) => a.hp - b.hp);
-    for (const target of affected) {
+    for (const target of affected.sort((a, b) => a.hp - b.hp)) {
       if (target.hp > affectedHp) return;
 
       if (target.type === "undead") {

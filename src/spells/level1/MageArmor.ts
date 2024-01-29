@@ -5,7 +5,7 @@ import Combatant from "../../types/Combatant";
 import Item from "../../types/Item";
 import { hours } from "../../utils/time";
 import { simpleSpell } from "../common";
-import { touchTarget } from "../helpers";
+import { targetsByTouch } from "../helpers";
 
 const MageArmorEffect = new Effect<HasCaster>(
   "Mage Armor",
@@ -45,7 +45,7 @@ const MageArmor = simpleSpell<HasTarget>({
   lists: ["Sorcerer", "Wizard"],
   description: `You touch a willing creature who isn't wearing armor, and a protective magical force surrounds it until the spell ends. The target's base AC becomes 13 + its Dexterity modifier. The spell ends if the target dons armor or if you dismiss the spell as an action.`,
 
-  ...touchTarget([notWearingArmor]),
+  ...targetsByTouch([notWearingArmor]),
 
   async apply({ caster, method }, { target }) {
     await target.addEffect(MageArmorEffect, {

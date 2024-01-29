@@ -1,9 +1,9 @@
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
-import PointResolver from "../../resolvers/PointResolver";
 import { arSet } from "../../types/EffectArea";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { affectsByPoint } from "../helpers";
 
 const FogCloud = scalingSpell<HasPoint>({
   status: "incomplete",
@@ -18,11 +18,9 @@ const FogCloud = scalingSpell<HasPoint>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st.`,
 
+  ...affectsByPoint(120, (centre) => ({ type: "sphere", radius: 20, centre })),
   getAffectedArea: (g, caster, { point, slot }) =>
     point && [{ type: "sphere", radius: 20 * (slot ?? 1), centre: point }],
-  getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-  getTargets: () => [],
-  getAffected: () => [],
 
   async apply({ g, affectedArea, caster }) {
     /* TODO [DISPERSAL] You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners, and its area is heavily obscured. It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it.

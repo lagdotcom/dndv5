@@ -5,7 +5,7 @@ import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, singleTarget, spellAttack } from "../helpers";
+import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
 
 const FireBolt = simpleSpell<HasTarget>({
   status: "implemented",
@@ -20,9 +20,9 @@ const FireBolt = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).`,
 
-  ...singleTarget(60, [notSelf]),
-  ...spellAttack("ranged"),
-  ...damagingCantrip(10, "fire"),
+  ...targetsOne(60, [notSelf]),
+  ...isSpellAttack("ranged"),
+  ...doesCantripDamage(10, "fire"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

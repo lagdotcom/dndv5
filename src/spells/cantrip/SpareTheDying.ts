@@ -2,7 +2,7 @@ import { HasTarget } from "../../configs";
 import { Dead, Dying, Stable } from "../../effects";
 import { doesNotHaveEffect, hasEffect, notOfCreatureType } from "../../filters";
 import { simpleSpell } from "../common";
-import { touchTarget } from "../helpers";
+import { targetsByTouch } from "../helpers";
 
 const SpareTheDying = simpleSpell<HasTarget>({
   status: "implemented",
@@ -14,7 +14,7 @@ const SpareTheDying = simpleSpell<HasTarget>({
   lists: ["Artificer", "Cleric"],
   description: `You touch a living creature that has 0 hit points. The creature becomes stable. This spell has no effect on undead or constructs.`,
 
-  ...touchTarget([
+  ...targetsByTouch([
     doesNotHaveEffect(Dead),
     hasEffect(Dying),
     notOfCreatureType("undead", "construct"),

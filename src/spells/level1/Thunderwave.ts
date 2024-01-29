@@ -1,14 +1,5 @@
-import Combatant from "../../types/Combatant";
-import { SpecifiedWithin } from "../../types/EffectArea";
-import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-
-// TODO the spell says cube, but this makes no sense...
-const getThunderwaveArea = (who: Combatant): SpecifiedWithin => ({
-  type: "within",
-  who,
-  radius: 5,
-});
+import { affectsStaticArea, doesScalingDamage, requiresSave } from "../helpers";
 
 const Thunderwave = scalingSpell({
   status: "implemented",
@@ -24,16 +15,10 @@ const Thunderwave = scalingSpell({
   
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.`,
 
-  getConfig: () => ({}),
-
-  getTargets: () => [],
-  getAffectedArea: (g, caster) => [getThunderwaveArea(caster)],
-  getAffected: (g, caster) => g.getInside(getThunderwaveArea(caster), [caster]),
-
-  isHarmful: true,
-  getDamage: (g, caster, method, { slot }) => [
-    _dd(1 + (slot ?? 1), 8, "thunder"),
-  ],
+  // TODO the spell says cube, but this makes no sense...
+  ...affectsStaticArea((who) => ({ type: "within", who, radius: 5 })),
+  ...requiresSave("con"),
+  ...doesScalingDamage(1, 1, 8, "thunder"),
 
   async apply(sh) {
     const damageInitialiser = await sh.rollDamage();

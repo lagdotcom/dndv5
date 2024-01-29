@@ -7,7 +7,6 @@ import { HasPoint } from "../../configs";
 import Effect from "../../Effect";
 import Engine from "../../Engine";
 import EvaluateLater from "../../interruptions/EvaluateLater";
-import PointResolver from "../../resolvers/PointResolver";
 import SubscriptionBag from "../../SubscriptionBag";
 import { chSet } from "../../types/CheckTag";
 import Combatant from "../../types/Combatant";
@@ -19,6 +18,7 @@ import Priority from "../../types/Priority";
 import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { hours, minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { affectsByPoint, requiresSave } from "../helpers";
 
 const WebIcon = makeIcon(iconUrl);
 
@@ -188,10 +188,8 @@ const Web = simpleSpell<HasPoint>({
 
   The webs are flammable. Any 5-foot cube of webs exposed to fire burns away in 1 round, dealing 2d4 fire damage to any creature that starts its turn in the fire.`,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-  getTargets: () => [],
-  getAffectedArea: (g, caster, { point }) => point && [getWebArea(point)],
-  getAffected: (g, caster, { point }) => g.getInside(getWebArea(point)),
+  ...affectsByPoint(60, getWebArea),
+  ...requiresSave("dex"),
 
   async apply({ g, caster, method }, { point }) {
     // TODO [TERRAIN] If the webs aren't anchored between two solid masses (such as walls or trees) or layered across a floor, wall, or ceiling, the conjured web collapses on itself, and the spell ends at the start of your next turn. Webs layered over a flat surface have a depth of 5 feet.

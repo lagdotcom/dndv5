@@ -1,26 +1,22 @@
 import { HasCaster, HasPoint } from "../../configs";
 import Effect from "../../Effect";
-import PointResolver from "../../resolvers/PointResolver";
-import { SpecifiedCube } from "../../types/EffectArea";
-import Point from "../../types/Point";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-
-const getFaerieFireArea = (centre: Point): SpecifiedCube => ({
-  type: "cube",
-  centre,
-  length: 20,
-});
+import { affectsByPoint, requiresSave } from "../helpers";
 
 const FaerieFireEffect = new Effect<HasCaster>(
   "Faerie Fire",
   "turnEnd",
   (g) => {
-    g.events.on("BeforeAttack", ({ detail: { target, diceType } }) => {
-      if (target.hasEffect(FaerieFireEffect))
+    // TODO [LIGHT] For the duration, objects and affected creatures shed dim light in a 10-foot radius.
+
+    // Any attack roll against an affected creature or object has advantage if the attacker can see it
+    g.events.on("BeforeAttack", ({ detail: { who, target, diceType } }) => {
+      if (target.hasEffect(FaerieFireEffect) && g.canSee(who, target))
         diceType.add("advantage", FaerieFireEffect);
     });
 
+    // [...]and the affected creature or object can't benefit from being invisible
     g.events.on("GetConditions", ({ detail: { who, conditions } }) => {
       // close enough
       if (who.hasEffect(FaerieFireEffect)) conditions.ignoreValue("Invisible");
@@ -42,11 +38,8 @@ const FaerieFire = simpleSpell<HasPoint>({
   Any attack roll against an affected creature or object has advantage if the attacker can see it, and the affected creature or object can't benefit from being invisible.`,
   isHarmful: true,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-  getAffectedArea: (g, caster, { point }) =>
-    point && [getFaerieFireArea(point)],
-  getAffected: (g, caster, { point }) => g.getInside(getFaerieFireArea(point)),
-  getTargets: () => [],
+  ...affectsByPoint(60, (centre) => ({ type: "cube", centre, length: 20 })),
+  ...requiresSave("dex"),
 
   async apply(sh) {
     const mse = sh.getMultiSave({

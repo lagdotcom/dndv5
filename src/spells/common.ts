@@ -6,11 +6,14 @@ import { SpellSlot } from "../flavours";
 import SlotResolver from "../resolvers/SlotResolver";
 import { ActionConfig, ConfigWithPositioning } from "../types/Action";
 import Combatant from "../types/Combatant";
+import { ctSet } from "../types/CreatureType";
 import Empty from "../types/Empty";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { implementationWarning } from "../utils/env";
 import { enumerate } from "../utils/numbers";
+
+export const cannotHealConventionally = ctSet("undead", "construct");
 
 export function getCantripDice(who: Combatant) {
   if (who.level < 5) return 1;

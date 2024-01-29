@@ -1,12 +1,8 @@
 import { HasTarget } from "../../configs";
 import { notOfCreatureType } from "../../filters";
 import { DiceCount } from "../../flavours";
-import TargetResolver from "../../resolvers/TargetResolver";
-import { ctSet } from "../../types/CreatureType";
-import { sieve } from "../../utils/array";
-import { scalingSpell } from "../common";
-
-const cannotHeal = ctSet("undead", "construct");
+import { cannotHealConventionally, scalingSpell } from "../common";
+import { targetsByTouch } from "../helpers";
 
 const CureWounds = scalingSpell<HasTarget>({
   status: "implemented",
@@ -20,11 +16,8 @@ const CureWounds = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, [
-      notOfCreatureType("undead", "construct"),
-    ]),
-  }),
+  ...targetsByTouch([notOfCreatureType("undead", "construct")]),
+
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot as DiceCount) ?? 1, size: 8 } },
     {
@@ -32,11 +25,9 @@ const CureWounds = scalingSpell<HasTarget>({
       amount: method.ability ? caster[method.ability].modifier : 0,
     },
   ],
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
 
   async apply(sh, { target }) {
-    if (cannotHeal.has(target.type)) return;
+    if (cannotHealConventionally.has(target.type)) return;
 
     const amount = await sh.rollHeal({ target });
     await sh.heal({ amount, target });

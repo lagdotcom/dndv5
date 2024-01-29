@@ -3,18 +3,10 @@ import iconUrl from "@img/spl/earth-tremor.svg";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { DamageColours, makeIcon } from "../../colours";
 import { Prone } from "../../effects";
-import { DiceCount } from "../../flavours";
-import Combatant from "../../types/Combatant";
-import { arSet, SpecifiedWithin } from "../../types/EffectArea";
+import { arSet } from "../../types/EffectArea";
 import { poSet } from "../../utils/ai";
-import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-
-const getEarthTremorArea = (who: Combatant): SpecifiedWithin => ({
-  type: "within",
-  radius: 10,
-  who,
-});
+import { affectsStaticArea, doesScalingDamage, requiresSave } from "../helpers";
 
 const EarthTremor = scalingSpell({
   status: "incomplete",
@@ -25,20 +17,15 @@ const EarthTremor = scalingSpell({
   v: true,
   s: true,
   lists: ["Bard", "Druid", "Sorcerer", "Wizard"],
-  isHarmful: true,
   description: `You cause a tremor in the ground within range. Each creature other than you in that area must make a Dexterity saving throw. On a failed save, a creature takes 1d6 bludgeoning damage and is knocked prone. If the ground in that area is loose earth or stone, it becomes difficult terrain until cleared, with each 5-foot-diameter portion requiring at least 1 minute to clear by hand.
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.`,
 
   generateAttackConfigs: () => [{ config: {}, positioning: poSet() }],
 
-  getConfig: () => ({}),
-  getAffectedArea: (g, caster) => [getEarthTremorArea(caster)],
-  getDamage: (g, caster, method, { slot }) => [
-    _dd((slot as DiceCount) ?? 1, 6, "bludgeoning"),
-  ],
-  getTargets: () => [],
-  getAffected: (g, caster) => g.getInside(getEarthTremorArea(caster), [caster]),
+  ...affectsStaticArea((who) => ({ type: "within", radius: 10, who })),
+  ...requiresSave("dex"),
+  ...doesScalingDamage(1, 0, 6, "bludgeoning"),
 
   async apply(sh) {
     const damageInitialiser = await sh.rollDamage();

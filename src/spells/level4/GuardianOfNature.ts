@@ -8,6 +8,7 @@ import { hasAll } from "../../utils/set";
 import { minutes } from "../../utils/time";
 import { distanceTo } from "../../utils/units";
 import { simpleSpell } from "../common";
+import { affectsSelf } from "../helpers";
 
 type Form = "Primal Beast" | "Great Tree";
 const PrimalBeast: Form = "Primal Beast";
@@ -129,9 +130,8 @@ const GuardianOfNature = simpleSpell<{ form: Form }>({
   - You make Dexterity- and Wisdom-based attack rolls with advantage.
   - While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.`,
 
+  ...affectsSelf,
   getConfig: (g) => ({ form: new ChoiceResolver(g, FormChoices) }),
-  getTargets: () => [],
-  getAffected: (g, caster) => [caster],
 
   async apply({ g, caster }, { form }) {
     const duration = minutes(1);

@@ -4,6 +4,7 @@ import { atSet } from "../../types/AttackTag";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { affectsSelf } from "../helpers";
 
 const DivineFavorEffect = new Effect(
   "Divine Favor",
@@ -54,9 +55,7 @@ const DivineFavor = simpleSpell({
   lists: ["Paladin"],
   description: `Your prayer empowers you with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit.`,
 
-  getConfig: () => ({}),
-  getTargets: () => [],
-  getAffected: (g, caster) => [caster],
+  ...affectsSelf,
 
   async apply({ caster }) {
     const duration = minutes(1);

@@ -2,7 +2,6 @@ import { isCastSpell } from "../../actions/CastSpell";
 import ActiveEffectArea from "../../ActiveEffectArea";
 import { HasPoint } from "../../configs";
 import Engine from "../../Engine";
-import PointResolver from "../../resolvers/PointResolver";
 import SubscriptionBag from "../../SubscriptionBag";
 import Combatant from "../../types/Combatant";
 import { arSet, SpecifiedSphere } from "../../types/EffectArea";
@@ -11,6 +10,7 @@ import { resolveArea } from "../../utils/areas";
 import { minutes } from "../../utils/time";
 import { getSquares } from "../../utils/units";
 import { simpleSpell } from "../common";
+import { affectsByPoint } from "../helpers";
 
 const getSilenceArea = (centre: Point): SpecifiedSphere => ({
   type: "sphere",
@@ -82,10 +82,7 @@ const Silence = simpleSpell<HasPoint>({
   isHarmful: true, // TODO is it?
   description: `For the duration, no sound can be created within or pass through a 20-foot-radius sphere centered on a point you choose within range. Any creature or object entirely inside the sphere is immune to thunder damage, and creatures are deafened while entirely inside it. Casting a spell that includes a verbal component is impossible there.`,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-  getAffectedArea: (g, caster, { point }) => point && [getSilenceArea(point)],
-  getTargets: () => [],
-  getAffected: (g, caster, { point }) => g.getInside(getSilenceArea(point)),
+  ...affectsByPoint(120, getSilenceArea),
 
   async apply({ g, caster }, { point }) {
     const controller = new SilenceController(g, point);

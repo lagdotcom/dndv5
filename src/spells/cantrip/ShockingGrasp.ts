@@ -4,7 +4,7 @@ import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { simpleSpell } from "../common";
-import { damagingCantrip, spellAttack, touchTarget } from "../helpers";
+import { doesCantripDamage, isSpellAttack, targetsByTouch } from "../helpers";
 
 const ShockingGraspIcon = makeIcon(iconUrl, DamageColours.lightning);
 
@@ -36,9 +36,9 @@ const ShockingGrasp = simpleSpell<HasTarget>({
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
 
-  ...touchTarget([]),
-  ...spellAttack("melee"),
-  ...damagingCantrip(8, "lightning"),
+  ...targetsByTouch([]),
+  ...isSpellAttack("melee"),
+  ...doesCantripDamage(8, "lightning"),
 
   async apply(sh, { target: originalTarget }) {
     // TODO this obviously doesn't switch target well

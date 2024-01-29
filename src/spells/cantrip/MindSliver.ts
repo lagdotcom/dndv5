@@ -5,7 +5,7 @@ import EvaluateLater from "../../interruptions/EvaluateLater";
 import Priority from "../../types/Priority";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, requiresSave, singleTarget } from "../helpers";
+import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
 
 const MindSliverEffect = new Effect(
   "Mind Sliver",
@@ -38,9 +38,9 @@ const MindSliver = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
 
-  ...singleTarget(60, [canSee, notSelf]),
+  ...targetsOne(60, [canSee, notSelf]),
   ...requiresSave("int"),
-  ...damagingCantrip(6, "psychic"),
+  ...doesCantripDamage(6, "psychic"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

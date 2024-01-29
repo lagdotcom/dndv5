@@ -9,7 +9,7 @@ import { SpecifiedWithin } from "../../types/EffectArea";
 import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-import { singleTarget } from "../helpers";
+import { targetsOne } from "../helpers";
 
 const getIceKnifeArea = (who: Combatant): SpecifiedWithin => ({
   type: "within",
@@ -34,7 +34,7 @@ const IceKnife = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
 
-  ...singleTarget(60, [notSelf]),
+  ...targetsOne(60, [notSelf]),
 
   generateAttackConfigs: (slot, targets) =>
     targets.map((target) => ({

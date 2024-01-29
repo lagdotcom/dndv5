@@ -8,7 +8,7 @@ import { WeaponItem } from "../../types/Item";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import { selfTarget } from "../helpers";
+import { affectsSelf } from "../helpers";
 
 const shillelaghWeapons = new Set(["club", "quarterstaff"]);
 
@@ -53,7 +53,7 @@ const Shillelagh = simpleSpell<{ item: WeaponItem }>({
   lists: ["Druid"],
   description: `The wood of a club or quarterstaff you are holding is imbued with nature's power. For the duration, you can use your spellcasting ability instead of Strength for the attack and damage rolls of melee attacks using that weapon, and the weapon's damage die becomes a d8. The weapon also becomes magical, if it isn't already. The spell ends if you cast it again or if you let go of the weapon.`,
 
-  ...selfTarget,
+  ...affectsSelf,
 
   getConfig: (g, caster) => ({
     item: new ChoiceResolver(

@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { targetsMany } from "../helpers";
 
 const LongstriderEffect = new Effect(
   "Longstrider",
@@ -28,12 +29,10 @@ const Longstrider = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.`,
 
+  ...targetsMany(1, 1, 5, []),
   getConfig: (g, caster, method, { slot }) => ({
     targets: new MultiTargetResolver(g, 1, slot ?? 1, caster.reach, []),
   }),
-
-  getTargets: (g, caster, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
 
   async apply(sh, { targets }) {
     for (const target of targets)

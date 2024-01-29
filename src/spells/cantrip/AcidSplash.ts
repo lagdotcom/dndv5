@@ -6,7 +6,7 @@ import { canSee, withinRangeOfEachOther } from "../../filters";
 import { poWithin } from "../../utils/ai";
 import { combinationsMulti } from "../../utils/combinatorics";
 import { simpleSpell } from "../common";
-import { damagingCantrip, multiTarget, requiresSave } from "../helpers";
+import { doesCantripDamage, requiresSave, targetsMany } from "../helpers";
 
 const AcidSplash = simpleSpell<HasTargets>({
   status: "implemented",
@@ -30,9 +30,9 @@ const AcidSplash = simpleSpell<HasTargets>({
       config: { targets },
       positioning: new Set(targets.map((target) => poWithin(60, target))),
     })),
-  ...damagingCantrip(5, "acid"),
+  ...doesCantripDamage(5, "acid"),
   ...requiresSave("dex"),
-  ...multiTarget(1, 2, 60, [canSee], [withinRangeOfEachOther(5)]),
+  ...targetsMany(1, 2, 60, [canSee], [withinRangeOfEachOther(5)]),
 
   async apply(sh, { targets }) {
     const damageInitialiser = await sh.rollDamage();

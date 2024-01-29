@@ -1,10 +1,9 @@
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
 import { isAlly } from "../../filters";
-import TargetResolver from "../../resolvers/TargetResolver";
-import { sieve } from "../../utils/array";
 import { hours } from "../../utils/time";
 import { simpleSpell } from "../common";
+import { targetsByTouch } from "../helpers";
 
 const BarkskinEffect = new Effect(
   "Barkskin",
@@ -30,11 +29,7 @@ const Barkskin = simpleSpell<HasTarget>({
   lists: ["Druid", "Ranger"],
   description: `You touch a willing creature. Until the spell ends, the target's skin has a rough, bark-like appearance, and the target's AC can't be less than 16, regardless of what kind of armor it is wearing.`,
 
-  getConfig: (g, caster) => ({
-    target: new TargetResolver(g, caster.reach, [isAlly]),
-  }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
+  ...targetsByTouch([isAlly]),
 
   async apply({ caster }, { target }) {
     const duration = hours(1);

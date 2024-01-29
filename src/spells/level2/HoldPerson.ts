@@ -9,6 +9,7 @@ import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { requiresSave, targetsMany } from "../helpers";
 
 type Config = HasCaster & { affected: Set<Combatant> };
 
@@ -88,6 +89,8 @@ const HoldPerson = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd. The humanoids must be within 30 feet of each other when you target them.`,
 
+  ...targetsMany(1, 1, 60, [canSee, ofCreatureType("humanoid")]),
+  ...requiresSave("wis"),
   getConfig: (g, actor, method, { slot }) => ({
     targets: new MultiTargetResolver(
       g,
@@ -98,8 +101,6 @@ const HoldPerson = scalingSpell<HasTargets>({
       [withinRangeOfEachOther(30)],
     ),
   }),
-  getTargets: (g, caster, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
 
   async apply(sh) {
     const mse = sh.getMultiSave({

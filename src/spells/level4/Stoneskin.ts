@@ -5,7 +5,7 @@ import { MundaneDamageTypes } from "../../types/DamageType";
 import { hours } from "../../utils/time";
 import { isA } from "../../utils/types";
 import { simpleSpell } from "../common";
-import { touchTarget } from "../helpers";
+import { targetsByTouch } from "../helpers";
 
 const StoneskinEffect = new Effect(
   "Stoneskin",
@@ -38,7 +38,7 @@ const Stoneskin = simpleSpell<HasTarget>({
   lists: ["Artificer", "Druid", "Ranger", "Sorcerer", "Wizard"],
   description: `This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.`,
 
-  ...touchTarget([isAlly]),
+  ...targetsByTouch([isAlly]),
 
   async apply({ caster }, { target }) {
     const duration = hours(1);

@@ -1,6 +1,6 @@
 import { HasPoint } from "../../configs";
-import PointResolver from "../../resolvers/PointResolver";
 import { simpleSpell } from "../common";
+import { affectsLine } from "../helpers";
 
 const GustOfWind = simpleSpell<HasPoint>({
   name: "Gust of Wind",
@@ -19,9 +19,7 @@ const GustOfWind = simpleSpell<HasPoint>({
 
   As a bonus action on each of your turns before the spell ends, you can change the direction in which the line blasts from you.`,
 
-  getConfig: (g) => ({ point: new PointResolver(g, 60) }),
-  getTargets: () => [],
-  getAffected: () => [],
+  ...affectsLine(60, 10),
 
   async apply() {
     /* TODO [FORCEMOVE] [GETMOVECOST] [DISPERSAL] [FLAMMABLE] */

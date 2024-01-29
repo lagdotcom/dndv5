@@ -8,6 +8,7 @@ import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { coSet } from "../../types/ConditionName";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { requiresSave, targetsMany } from "../helpers";
 
 const CharmMonster = scalingSpell<HasTargets>({
   status: "implemented",
@@ -23,6 +24,8 @@ const CharmMonster = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 5th level or higher, you can target one additional creature for each slot level above 4th. The creatures must be within 30 feet of each other when you target them.`,
 
+  ...targetsMany(1, 1, 30, [canSee]),
+  ...requiresSave("wis"),
   getConfig: (g, actor, method, { slot }) => ({
     targets: new MultiTargetResolver(
       g,
@@ -33,8 +36,6 @@ const CharmMonster = scalingSpell<HasTargets>({
       [withinRangeOfEachOther(30)],
     ),
   }),
-  getTargets: (g, actor, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
 
   async apply({ g, caster, method }, { slot, targets }) {
     for (const target of targets) {

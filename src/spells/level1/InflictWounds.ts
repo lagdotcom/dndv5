@@ -2,11 +2,9 @@ import iconUrl from "@img/spl/inflict-wounds.svg";
 
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
-import TargetResolver from "../../resolvers/TargetResolver";
 import { poSet, poWithin } from "../../utils/ai";
-import { sieve } from "../../utils/array";
-import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
+import { doesScalingDamage, isSpellAttack, targetsByTouch } from "../helpers";
 
 const InflictWounds = scalingSpell<HasTarget>({
   status: "implemented",
@@ -21,21 +19,15 @@ const InflictWounds = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.`,
 
-  getConfig: (g, actor) => ({ target: new TargetResolver(g, actor.reach, []) }),
+  ...targetsByTouch([]),
+  ...isSpellAttack("melee"),
+  ...doesScalingDamage(1, 2, 10, "necrotic"),
 
   generateAttackConfigs: (slot, targets, g, caster) =>
     targets.map((target) => ({
       config: { slot, target },
       positioning: poSet(poWithin(caster.reach, target)),
     })),
-
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
-
-  isHarmful: true,
-  getDamage: (g, caster, method, { slot }) => [
-    _dd(2 + (slot ?? 1), 10, "necrotic"),
-  ],
 
   async apply(sh) {
     const { attack, critical, hit, target } = await sh.attack({

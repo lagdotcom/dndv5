@@ -7,6 +7,7 @@ import { HitPoints } from "../../flavours";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { hours } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { targetsMany } from "../helpers";
 
 const AidIcon = makeIcon(iconUrl, Heal);
 
@@ -36,9 +37,8 @@ const Aid = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, a target's hit points increase by an additional 5 for each slot level above 2nd.`,
 
+  ...targetsMany(1, 3, 30, []),
   getConfig: (g) => ({ targets: new MultiTargetResolver(g, 1, 3, 30, []) }),
-  getTargets: (g, caster, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
 
   async apply({ g, caster: actor }, { slot, targets }) {
     const amount: HitPoints = (slot - 1) * 5;

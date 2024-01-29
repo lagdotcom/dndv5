@@ -7,10 +7,9 @@ import DndRule from "../../DndRule";
 import PickFromListChoice from "../../interruptions/PickFromListChoice";
 import Priority from "../../types/Priority";
 import { checkConfig } from "../../utils/config";
-import { _dd } from "../../utils/dice";
 import { enumerate } from "../../utils/numbers";
 import { scalingSpell } from "../common";
-import { singleTarget } from "../helpers";
+import { doesScalingDamage, targetsOne } from "../helpers";
 
 new DndRule("Hellish Rebuke", (g) => {
   g.events.on(
@@ -67,12 +66,8 @@ const HellishRebuke = scalingSpell<HasTarget>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.`,
   icon: makeIcon(iconUrl, DamageColours.fire),
 
-  ...singleTarget(60, []),
-
-  isHarmful: true,
-  getDamage: (g, caster, method, { slot }) => [
-    _dd(1 + (slot ?? 1), 10, "fire"),
-  ],
+  ...targetsOne(60, []),
+  ...doesScalingDamage(1, 1, 10, "fire"),
 
   async apply(sh, { target }) {
     const damageInitialiser = await sh.rollDamage({ target, tags: ["ranged"] });

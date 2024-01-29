@@ -6,6 +6,7 @@ import { MentalAbilities } from "../../types/AbilityName";
 import { hours } from "../../utils/time";
 import { isA } from "../../utils/types";
 import { scalingSpell } from "../common";
+import { targetsMany } from "../helpers";
 
 const IntellectFortressEffect = new Effect(
   "Intellect Fortress",
@@ -42,6 +43,7 @@ const IntellectFortress = scalingSpell<HasTargets>({
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd. The creatures must be within 30 feet of each other when you target them.`,
 
+  ...targetsMany(1, 1, 30, [canSee]),
   getConfig: (g, caster, method, { slot }) => ({
     targets: new MultiTargetResolver(
       g,
@@ -52,8 +54,6 @@ const IntellectFortress = scalingSpell<HasTargets>({
       [withinRangeOfEachOther(30)],
     ),
   }),
-  getTargets: (g, caster, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
 
   async apply({ caster }, { targets }) {
     const duration = hours(1);

@@ -1,12 +1,9 @@
 import { HasTarget } from "../../configs";
 import { canSee, notOfCreatureType } from "../../filters";
 import { DiceCount } from "../../flavours";
-import { ctSet } from "../../types/CreatureType";
 import { poSet, poWithin } from "../../utils/ai";
-import { scalingSpell } from "../common";
-import { singleTarget } from "../helpers";
-
-const cannotHeal = ctSet("undead", "construct");
+import { cannotHealConventionally, scalingSpell } from "../common";
+import { targetsOne } from "../helpers";
 
 const HealingWord = scalingSpell<HasTarget>({
   status: "implemented",
@@ -20,7 +17,7 @@ const HealingWord = scalingSpell<HasTarget>({
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
 
-  ...singleTarget(60, [canSee, notOfCreatureType("undead", "construct")]),
+  ...targetsOne(60, [canSee, notOfCreatureType("undead", "construct")]),
 
   generateHealingConfigs: (slot, targets) =>
     targets.map((target) => ({
@@ -36,13 +33,13 @@ const HealingWord = scalingSpell<HasTarget>({
   ],
 
   check(g, { target }, ec) {
-    if (target && cannotHeal.has(target.type))
+    if (target && cannotHealConventionally.has(target.type))
       ec.add(`Cannot heal a ${target.type}`, HealingWord);
     return ec;
   },
 
   async apply(sh, { target }) {
-    if (cannotHeal.has(target.type)) return;
+    if (cannotHealConventionally.has(target.type)) return;
 
     const amount = await sh.rollHeal({ target });
     await sh.heal({ amount, target });

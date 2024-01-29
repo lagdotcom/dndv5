@@ -1,15 +1,6 @@
 import { HasPoint } from "../../configs";
-import PointResolver from "../../resolvers/PointResolver";
-import { SpecifiedCylinder } from "../../types/EffectArea";
-import Point from "../../types/Point";
 import { simpleSpell } from "../common";
-
-const getSleetStormArea = (centre: Point): SpecifiedCylinder => ({
-  type: "cylinder",
-  centre,
-  radius: 40,
-  height: 20,
-});
+import { affectsByPoint, requiresSave } from "../helpers";
 
 const SleetStorm = simpleSpell<HasPoint>({
   name: "Sleet Storm",
@@ -27,13 +18,15 @@ const SleetStorm = simpleSpell<HasPoint>({
 
   If a creature starts its turn in the spell's area and is concentrating on a spell, the creature must make a successful Constitution saving throw against your spell save DC or lose concentration.`,
 
-  // TODO: generateAttackConfigs
+  ...affectsByPoint(150, (centre) => ({
+    type: "cylinder",
+    centre,
+    radius: 40,
+    height: 20,
+  })),
+  ...requiresSave("dex"),
 
-  getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-  getAffectedArea: (g, caster, { point }) =>
-    point && [getSleetStormArea(point)],
-  getTargets: () => [],
-  getAffected: (g, caster, { point }) => g.getInside(getSleetStormArea(point)),
+  // TODO: generateAttackConfigs
 
   async apply() {
     // TODO [TERRAIN]

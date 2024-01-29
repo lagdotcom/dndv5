@@ -1,3 +1,4 @@
+import { aimCone, aimLine } from "../aim";
 import { HasPoint, HasTarget, HasTargets, Scales } from "../configs";
 import { ErrorFilter } from "../filters";
 import { DiceCount, DiceSize, Feet, SpellSlot } from "../flavours";
@@ -15,7 +16,7 @@ import { sieve } from "../utils/array";
 import { _dd } from "../utils/dice";
 import { getCantripDice } from "./common";
 
-export const damagingCantrip = (
+export const doesCantripDamage = (
   size: DiceSize,
   damageType: DamageType,
 ): Pick<Spell, "isHarmful" | "getDamage"> => ({
@@ -23,7 +24,7 @@ export const damagingCantrip = (
   getDamage: (g, caster) => [_dd(getCantripDice(caster), size, damageType)],
 });
 
-export const scalingDamage = (
+export const doesScalingDamage = (
   level: SpellSlot,
   diceMinusSlot: DiceCount,
   size: DiceSize,
@@ -42,9 +43,9 @@ export const requiresSave = (ability: AbilityName) => ({});
 
 // TODO show attack info
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const spellAttack = (category: RangeCategory) => ({});
+export const isSpellAttack = (category: RangeCategory) => ({});
 
-export const selfTarget: Pick<
+export const affectsSelf: Pick<
   Spell,
   "getConfig" | "getTargets" | "getAffected"
 > = {
@@ -53,7 +54,7 @@ export const selfTarget: Pick<
   getAffected: (g, caster) => [caster],
 };
 
-export const touchTarget = (
+export const targetsByTouch = (
   filters: ErrorFilter<Combatant>[],
 ): Pick<Spell<HasTarget>, "getConfig" | "getTargets" | "getAffected"> => ({
   getConfig: (g, caster) => ({
@@ -63,7 +64,7 @@ export const touchTarget = (
   getAffected: (g, caster, { target }) => [target],
 });
 
-export const singleTarget = (
+export const targetsOne = (
   range: Feet,
   filters: ErrorFilter<Combatant>[],
 ): Pick<Spell<HasTarget>, "getConfig" | "getTargets" | "getAffected"> => ({
@@ -72,7 +73,7 @@ export const singleTarget = (
   getAffected: (g, caster, { target }) => [target],
 });
 
-export const multiTarget = (
+export const targetsMany = (
   min: number,
   max: number,
   range: Feet,
@@ -86,7 +87,7 @@ export const multiTarget = (
   getAffected: (g, caster, { targets }) => targets,
 });
 
-export const simpleArea = (
+export const affectsStaticArea = (
   getArea: (caster: Combatant) => SpecifiedEffectShape,
   ignoreCaster = true,
 ): Pick<
@@ -100,9 +101,42 @@ export const simpleArea = (
     g.getInside(getArea(caster), ignoreCaster ? [caster] : undefined),
 });
 
-export const pointedArea = (
+export const affectsCone = (
   range: Feet,
-  getArea: (centre: Point, point: Point) => SpecifiedEffectShape,
+  ignoreCaster = true,
+  getArea = (caster: Combatant, point: Point) =>
+    aimCone(caster.position, caster.sizeInUnits, point, range),
+): Pick<
+  Spell<HasPoint>,
+  "getConfig" | "getTargets" | "getAffectedArea" | "getAffected"
+> => ({
+  getConfig: (g) => ({ point: new PointResolver(g, range) }),
+  getTargets: () => [],
+  getAffectedArea: (g, caster, { point }) => point && [getArea(caster, point)],
+  getAffected: (g, caster, { point }) =>
+    g.getInside(getArea(caster, point), ignoreCaster ? [caster] : undefined),
+});
+
+export const affectsLine = (
+  length: Feet,
+  width: Feet,
+  ignoreCaster = true,
+  getArea = (caster: Combatant, point: Point) =>
+    aimLine(caster.position, caster.sizeInUnits, point, length, width),
+): Pick<
+  Spell<HasPoint>,
+  "getConfig" | "getTargets" | "getAffectedArea" | "getAffected"
+> => ({
+  getConfig: (g) => ({ point: new PointResolver(g, length) }),
+  getTargets: () => [],
+  getAffectedArea: (g, caster, { point }) => point && [getArea(caster, point)],
+  getAffected: (g, caster, { point }) =>
+    g.getInside(getArea(caster, point), ignoreCaster ? [caster] : undefined),
+});
+
+export const affectsByPoint = (
+  range: Feet,
+  getArea: (point: Point) => SpecifiedEffectShape,
   ignoreCaster = true,
 ): Pick<
   Spell<HasPoint>,
@@ -110,11 +144,7 @@ export const pointedArea = (
 > => ({
   getConfig: (g) => ({ point: new PointResolver(g, range) }),
   getTargets: () => [],
-  getAffectedArea: (g, caster, { point }) =>
-    point && [getArea(caster.position, point)],
+  getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
   getAffected: (g, caster, { point }) =>
-    g.getInside(
-      getArea(caster.position, point),
-      ignoreCaster ? [caster] : undefined,
-    ),
+    g.getInside(getArea(point), ignoreCaster ? [caster] : undefined),
 });

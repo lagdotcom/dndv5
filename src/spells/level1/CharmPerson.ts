@@ -1,7 +1,8 @@
 import { HasTargets } from "../../configs";
-import { withinRangeOfEachOther } from "../../filters";
+import { canSee, withinRangeOfEachOther } from "../../filters";
 import MultiTargetResolver from "../../resolvers/MultiTargetResolver";
 import { scalingSpell } from "../common";
+import { targetsMany } from "../helpers";
 
 const CharmPerson = scalingSpell<HasTargets>({
   name: "Charm Person",
@@ -14,21 +15,19 @@ const CharmPerson = scalingSpell<HasTargets>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st. The creatures must be within 30 feet of each other when you target them.`,
   isHarmful: true,
 
+  ...targetsMany(1, 1, 60, [canSee]),
   getConfig: (g, actor, method, { slot }) => ({
     targets: new MultiTargetResolver(
       g,
       1,
       slot ?? 1,
       60,
-      [],
+      [canSee],
       [withinRangeOfEachOther(30)],
     ),
   }),
 
   // TODO generateAttackConfigs,
-
-  getTargets: (g, caster, { targets }) => targets ?? [],
-  getAffected: (g, caster, { targets }) => targets,
 
   async apply() {
     // TODO

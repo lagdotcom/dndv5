@@ -2,17 +2,8 @@ import iconUrl from "@img/spl/fireball.svg";
 
 import { DamageColours, makeIcon } from "../../colours";
 import { HasPoint } from "../../configs";
-import PointResolver from "../../resolvers/PointResolver";
-import { SpecifiedSphere } from "../../types/EffectArea";
-import Point from "../../types/Point";
-import { _dd } from "../../utils/dice";
 import { scalingSpell } from "../common";
-
-const getFireballArea = (centre: Point): SpecifiedSphere => ({
-  type: "sphere",
-  centre,
-  radius: 20,
-});
+import { affectsByPoint, doesScalingDamage, requiresSave } from "../helpers";
 
 const Fireball = scalingSpell<HasPoint>({
   status: "implemented",
@@ -24,7 +15,6 @@ const Fireball = scalingSpell<HasPoint>({
   s: true,
   m: "a tiny ball of bat guano and sulfur",
   lists: ["Sorcerer", "Wizard"],
-  isHarmful: true,
   description: `A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much damage on a successful one.
 
   The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.
@@ -33,11 +23,9 @@ const Fireball = scalingSpell<HasPoint>({
 
   // TODO: generateAttackConfigs
 
-  getConfig: (g) => ({ point: new PointResolver(g, 150) }),
-  getAffectedArea: (g, caster, { point }) => point && [getFireballArea(point)],
-  getDamage: (g, caster, method, { slot }) => [_dd(5 + (slot ?? 3), 6, "fire")],
-  getTargets: () => [],
-  getAffected: (g, caster, { point }) => g.getInside(getFireballArea(point)),
+  ...affectsByPoint(150, (centre) => ({ type: "sphere", centre, radius: 20 })),
+  ...requiresSave("dex"),
+  ...doesScalingDamage(3, 5, 6, "fire"),
 
   async apply(sh) {
     // TODO [FLAMMABLE] The fire spreads around corners. It ignites flammable objects in the area that aren't being worn or carried.

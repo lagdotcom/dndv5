@@ -1,7 +1,7 @@
 import { HasTarget } from "../../configs";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, singleTarget, spellAttack } from "../helpers";
+import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
 
 // TODO this isn't just a normal attack spell, though it can be used as one
 
@@ -19,9 +19,9 @@ const ProduceFlame = simpleSpell<HasTarget>({
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
 
-  ...singleTarget(30, []),
-  ...spellAttack("ranged"),
-  ...damagingCantrip(8, "fire"),
+  ...targetsOne(30, []),
+  ...isSpellAttack("ranged"),
+  ...doesCantripDamage(8, "fire"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

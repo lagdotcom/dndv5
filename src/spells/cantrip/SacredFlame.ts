@@ -5,7 +5,7 @@ import { HasTarget } from "../../configs";
 import { canSee } from "../../filters";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, requiresSave, singleTarget } from "../helpers";
+import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
 
 const SacredFlame = simpleSpell<HasTarget>({
   status: "incomplete",
@@ -20,9 +20,9 @@ const SacredFlame = simpleSpell<HasTarget>({
 
   The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
 
-  ...singleTarget(60, [canSee]),
+  ...targetsOne(60, [canSee]),
   ...requiresSave("dex"),
-  ...damagingCantrip(8, "radiant"),
+  ...doesCantripDamage(8, "radiant"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

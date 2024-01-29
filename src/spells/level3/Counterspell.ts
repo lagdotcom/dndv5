@@ -14,10 +14,10 @@ import TargetResolver from "../../resolvers/TargetResolver";
 import { chSet } from "../../types/CheckTag";
 import Priority from "../../types/Priority";
 import Spell from "../../types/Spell";
-import { sieve } from "../../utils/array";
 import { checkConfig } from "../../utils/config";
 import { enumerate } from "../../utils/numbers";
 import { scalingSpell } from "../common";
+import { targetsOne } from "../helpers";
 
 type Config = HasTarget & { spell: Spell; success: SuccessResponseCollector };
 
@@ -36,13 +36,12 @@ const Counterspell = scalingSpell<Config>({
 
 At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the interrupted spell has no effect if its level is less than or equal to the level of the spell slot you used.`,
 
+  ...targetsOne(60, [canSee]),
   getConfig: (g) => ({
     target: new TargetResolver(g, 60, [canSee]),
     spell: new FakeResolver("spell"),
     success: new FakeResolver("success"),
   }),
-  getTargets: (g, caster, { target }) => sieve(target),
-  getAffected: (g, caster, { target }) => [target],
 
   async apply({ g, caster: who, method }, { slot, spell, success }) {
     if (spell.level > slot) {

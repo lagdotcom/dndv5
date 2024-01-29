@@ -14,6 +14,7 @@ import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { distance } from "../../utils/units";
 import { simpleSpell } from "../common";
+import { affectsSelf } from "../helpers";
 
 type FireShieldType = "warm" | "chill";
 
@@ -128,11 +129,10 @@ The flames provide you with a warm shield or a chill shield, as you choose. The 
 In addition, whenever a creature within 5 feet of you hits you with a melee attack, the shield erupts with flame. The attacker takes 2d8 fire damage from a warm shield, or 2d8 cold damage from a cold shield.`,
   icon: makeIcon(iconUrl),
 
+  ...affectsSelf,
   getConfig: (g) => ({
     type: new ChoiceResolver(g, fireShieldTypeChoices),
   }),
-  getTargets: () => [],
-  getAffected: (g, caster) => [caster],
 
   async apply({ caster }, { type }) {
     await caster.addEffect(

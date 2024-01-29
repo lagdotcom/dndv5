@@ -2,7 +2,7 @@ import { HasTarget } from "../../configs";
 import { canSee } from "../../filters";
 import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { damagingCantrip, requiresSave, singleTarget } from "../helpers";
+import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
 
 const PoisonSpray = simpleSpell<HasTarget>({
   status: "implemented",
@@ -16,9 +16,9 @@ const PoisonSpray = simpleSpell<HasTarget>({
 
   This spell's damage increases by 1d12 when you reach 5th level (2d12), 11th level (3d12), and 17th level (4d12).`,
 
-  ...singleTarget(10, [canSee]),
+  ...targetsOne(10, [canSee]),
   ...requiresSave("con"),
-  ...damagingCantrip(6, "acid"),
+  ...doesCantripDamage(6, "acid"),
 
   generateAttackConfigs: (g, caster, method, targets) =>
     targets.map((target) => ({

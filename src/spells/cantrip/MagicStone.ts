@@ -15,7 +15,7 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { poSet, poWithin } from "../../utils/ai";
 import { _dd } from "../../utils/dice";
 import { simpleSpell } from "../common";
-import { selfTarget } from "../helpers";
+import { affectsSelf } from "../helpers";
 
 const MagicStoneIcon = makeIcon(iconUrl, DamageColours.bludgeoning);
 
@@ -115,7 +115,7 @@ const MagicStone = simpleSpell({
 
   If you cast this spell again, the spell ends on any pebbles still affected by your previous casting.`,
 
-  ...selfTarget,
+  ...affectsSelf,
 
   async apply({ g, caster, method }) {
     caster.initResource(MagicStoneResource);

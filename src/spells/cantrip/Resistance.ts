@@ -6,7 +6,7 @@ import Combatant from "../../types/Combatant";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import { touchTarget } from "../helpers";
+import { targetsByTouch } from "../helpers";
 
 interface Config {
   caster: Combatant;
@@ -60,7 +60,7 @@ const Resistance = simpleSpell<HasTarget>({
   lists: ["Artificer", "Cleric", "Druid"],
   description: `You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one saving throw of its choice. It can roll the die before or after making the saving throw. The spell then ends.`,
 
-  ...touchTarget([isAlly]),
+  ...targetsByTouch([isAlly]),
 
   async apply({ affected, caster }) {
     const affecting = new Set<Combatant>();

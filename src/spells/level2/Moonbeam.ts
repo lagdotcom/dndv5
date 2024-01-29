@@ -8,7 +8,6 @@ import Engine from "../../Engine";
 import { DiceCount, SpellSlot } from "../../flavours";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import OncePerTurnController from "../../OncePerTurnController";
-import PointResolver from "../../resolvers/PointResolver";
 import PointToPointResolver from "../../resolvers/PointToPointResolver";
 import SubscriptionBag from "../../SubscriptionBag";
 import { atSet } from "../../types/AttackTag";
@@ -20,6 +19,7 @@ import SpellcastingMethod from "../../types/SpellcastingMethod";
 import { _dd } from "../../utils/dice";
 import { minutes } from "../../utils/time";
 import { scalingSpell } from "../common";
+import { affectsByPoint, doesScalingDamage, requiresSave } from "../helpers";
 
 const MoonbeamIcon = makeIcon(iconUrl, DamageColours.radiant);
 
@@ -147,7 +147,6 @@ class MoonbeamController {
         tags: atSet("magical", "spell"),
       });
 
-      // TODO A shapechanger makes its saving throw with disadvantage.
       const { damageResponse } = await g.save({
         source: Moonbeam,
         type: method.getSaveType(attacker, Moonbeam),
@@ -157,6 +156,7 @@ class MoonbeamController {
         spell: Moonbeam,
         who: target,
         tags: ["magic"],
+        diceType: target.tags.has("shapechanger") ? "disadvantage" : "normal",
       });
 
       await g.damage(
@@ -195,7 +195,6 @@ const Moonbeam = scalingSpell<HasPoint>({
   s: true,
   m: "several seeds of any moonseed plant and a piece of opalescent feldspar",
   lists: ["Druid"],
-  isHarmful: true,
   description: `A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high cylinder centered on a point within range. Until the spell ends, dim light fills the cylinder.
 
   When a creature enters the spell's area for the first time on a turn or starts its turn there, it is engulfed in ghostly flames that cause searing pain, and it must make a Constitution saving throw. It takes 2d10 radiant damage on a failed save, or half as much damage on a successful one.
@@ -208,11 +207,9 @@ const Moonbeam = scalingSpell<HasPoint>({
 
   // TODO: generateAttackConfigs
 
-  getConfig: (g) => ({ point: new PointResolver(g, 120) }),
-  getAffectedArea: (g, caster, { point }) => point && [getMoonbeamArea(point)],
-  getDamage: (g, caster, method, { slot }) => [getMoonbeamDamage(slot ?? 2)],
-  getTargets: () => [],
-  getAffected: (g, caster, { point }) => g.getInside(getMoonbeamArea(point)),
+  ...affectsByPoint(120, getMoonbeamArea, false),
+  ...requiresSave("con"),
+  ...doesScalingDamage(2, 0, 10, "radiant"),
 
   async apply({ g, caster, method }, { point, slot }) {
     const controller = new MoonbeamController(g, caster, method, point, slot);
