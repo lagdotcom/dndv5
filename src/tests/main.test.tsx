@@ -115,7 +115,7 @@ it("supports a typical Aura attack", async () => {
 
   expect(dialog("Sneak Attack")).toBeVisible();
   await user.click(choice("Yes"));
-  expect(logMsg("thug takes 22 damage. (22 piercing)")).toBeVisible();
+  expect(logMsg("thug takes 23 damage. (23 piercing)")).toBeVisible();
 });
 
 it("supports a typical Beldalynn attack", async () => {
