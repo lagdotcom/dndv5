@@ -4,6 +4,7 @@ import { makeIcon } from "../../colours";
 import { getWeaponPlusHandler } from "../../enchantments/plus";
 import Engine from "../../Engine";
 import { Color, SpellSlot } from "../../flavours";
+import { makeChoice } from "../../interruptions/PickFromListChoice";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import SubscriptionBag from "../../SubscriptionBag";
@@ -87,9 +88,10 @@ const MagicWeapon = scalingSpell<{ item: WeaponItem }>({
   getConfig: (g, caster) => ({
     item: new ChoiceResolver(
       g,
+      "Weapon",
       caster.weapons
         .filter((w) => !w.magical && w.category !== "natural")
-        .map((value) => ({ label: value.name, value })),
+        .map((value) => makeChoice(value, value.name)),
     ),
   }),
 

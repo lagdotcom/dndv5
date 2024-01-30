@@ -4,6 +4,7 @@ import { Scales } from "../../configs";
 import Engine from "../../Engine";
 import SimpleFeature from "../../features/SimpleFeature";
 import { PCClassLevel } from "../../flavours";
+import { makeChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { LongRestResource } from "../../resources";
 import {
@@ -30,19 +31,18 @@ class HarnessDivinePowerAction extends AbstractSelfAction<Scales> {
       {
         slot: new ChoiceResolver(
           g,
+          "Slot",
           enumerate(1, 9)
             .filter((slot) =>
               actor.resources.has(getSpellSlotResourceName(slot)),
             )
             .map((value) => {
               const resource = SpellSlotResources[value];
-
-              return {
-                label: ordinal(value),
+              return makeChoice(
                 value,
-                disabled:
-                  actor.getResourceMax(resource) <= actor.getResource(resource),
-              };
+                ordinal(value),
+                actor.getResourceMax(resource) <= actor.getResource(resource),
+              );
             }),
         ),
       },

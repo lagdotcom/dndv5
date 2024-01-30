@@ -1,4 +1,5 @@
 import Effect from "../../Effect";
+import { makeChoice } from "../../interruptions/PickFromListChoice";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import AbilityName from "../../types/AbilityName";
@@ -58,12 +59,10 @@ const Shillelagh = simpleSpell<{ item: WeaponItem }>({
   getConfig: (g, caster) => ({
     item: new ChoiceResolver(
       g,
-      Array.from(caster.equipment)
-        .filter(
-          (it) =>
-            it.itemType === "weapon" && shillelaghWeapons.has(it.weaponType),
-        )
-        .map((value) => ({ label: value.name, value })),
+      "Weapon",
+      Array.from(caster.weapons)
+        .filter((it) => shillelaghWeapons.has(it.weaponType))
+        .map((value) => makeChoice(value, value.name)),
     ),
   }),
 

@@ -38,7 +38,7 @@ const WallOfFire = scalingSpell<HasPoint & { shape: Shape }>({
   // TODO choose dimensions of line wall
   getConfig: (g) => ({
     point: new PointResolver(g, 120),
-    shape: new ChoiceResolver(g, shapeChoices),
+    shape: new ChoiceResolver(g, "Shape", shapeChoices),
   }),
   getTargets: () => [],
   getAffected: () => [],

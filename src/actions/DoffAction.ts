@@ -1,5 +1,6 @@
 import { HasItem } from "../configs";
 import Engine from "../Engine";
+import { makeChoice } from "../interruptions/PickFromListChoice";
 import MessageBuilder from "../MessageBuilder";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import ActionTime from "../types/ActionTime";
@@ -16,10 +17,10 @@ export default class DoffAction extends AbstractSelfAction<HasItem> {
       {
         item: new ChoiceResolver(
           g,
-          Array.from(actor.equipment, (value) => ({
-            label: value.name,
-            value,
-          })).filter(({ value }) => value.hands),
+          "Item",
+          Array.from(actor.equipment, (value) =>
+            makeChoice(value, value.name),
+          ).filter(({ value }) => value.hands),
         ),
       },
       {

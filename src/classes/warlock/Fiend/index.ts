@@ -1,30 +1,34 @@
 import {
+  BonusSpellEntry,
   bonusSpellsFeature,
   notImplementedFeature,
 } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
+import { PCClassLevel } from "../../../flavours";
 import EvaluateLater from "../../../interruptions/EvaluateLater";
 import PCSubclass from "../../../types/PCSubclass";
 import Priority from "../../../types/Priority";
 import { WarlockPactMagic } from "..";
+
+const FiendExpandedSpellList: BonusSpellEntry<PCClassLevel>[] = [
+  { level: 1, spell: "burning hands" },
+  { level: 1, spell: "command" },
+  { level: 2, spell: "blindness/deafness" },
+  { level: 2, spell: "scorching ray" },
+  { level: 3, spell: "fireball" },
+  { level: 3, spell: "stinking cloud" },
+  { level: 4, spell: "fire shield" },
+  { level: 4, spell: "wall of fire" },
+  { level: 5, spell: "flame strike" },
+  { level: 5, spell: "hallow" },
+];
 
 const ExpandedSpellList = bonusSpellsFeature(
   "Expanded Spell List",
   `The Fiend lets you choose from an expanded list of spells when you learn a warlock spell. The following spells are added to the warlock spell list for you.`,
   "Warlock",
   WarlockPactMagic,
-  [
-    { level: 1, spell: "burning hands" },
-    { level: 1, spell: "command" },
-    // TODO { level: 2, spell: 'blindness/deafness' },
-    // TODO { level: 2, spell: 'scorching ray' },
-    { level: 3, spell: "fireball" },
-    // TODO { level: 3, spell: 'stinking cloud' },
-    { level: 4, spell: "fire shield" },
-    { level: 4, spell: "wall of fire" },
-    // TODO { level: 5, spell: 'flame strike' },
-    // { level: 5, spell: 'hallow' },
-  ],
+  FiendExpandedSpellList,
   "Warlock",
 );
 

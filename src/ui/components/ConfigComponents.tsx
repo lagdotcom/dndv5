@@ -244,7 +244,9 @@ function ChooseText<T>({
 
   return (
     <div>
-      <div>Choice: {label}</div>
+      <div>
+        {resolver.name}: {label}
+      </div>
       <div>
         {resolver.entries.map((e) => (
           <button
@@ -289,7 +291,9 @@ function ChooseMany<T>({
 
   return (
     <div>
-      <div>Choice: {labels.length ? labels.join(", ") : "NONE"}</div>
+      <div>
+        {resolver.name}: {labels.length ? labels.join(", ") : "NONE"}
+      </div>
       <div>
         {resolver.entries.map((e) => {
           const selected = (value ?? []).includes(e.value);

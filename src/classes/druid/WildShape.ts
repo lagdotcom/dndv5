@@ -5,13 +5,14 @@ import MonsterTemplate from "../../data/MonsterTemplate";
 import Engine from "../../Engine";
 import ConfiguredFeature from "../../features/ConfiguredFeature";
 import { Score } from "../../flavours";
+import { makeStringChoice } from "../../interruptions/PickFromListChoice";
 import MessageBuilder from "../../MessageBuilder";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import { ShortRestResource } from "../../resources";
 import SubscriptionBag from "../../SubscriptionBag";
 import Combatant from "../../types/Combatant";
 import Feature from "../../types/Feature";
-import { featureNotComplete } from "../../utils/env";
+import { featureNotComplete, implementationWarning } from "../../utils/env";
 
 interface HasForm {
   form: MonsterName;
@@ -201,10 +202,17 @@ class WildShapeAction extends AbstractSelfAction<HasForm> {
       {
         form: new ChoiceResolver(
           g,
-          forms.map((value) => ({ value, label: value })),
+          "Form",
+          forms.map((value) =>
+            makeStringChoice(value, value, !allMonsters[value]),
+          ),
         ),
       },
-      { time: "action", resources: [[WildShapeResource, 1]] },
+      {
+        description: `You can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
+        time: "action",
+        resources: [[WildShapeResource, 1]],
+      },
     );
   }
 
@@ -220,6 +228,10 @@ const WildShape = new ConfiguredFeature<MonsterName[]>(
   (g, me, forms) => {
     featureNotComplete(WildShape, me);
     me.initResource(WildShapeResource);
+
+    for (const form of forms)
+      if (!allMonsters[form])
+        implementationWarning("Monster", "Missing", form, me.name);
 
     g.events.on("GetActions", ({ detail: { who, actions } }) => {
       // TODO if you wild shape again, weird things will happen

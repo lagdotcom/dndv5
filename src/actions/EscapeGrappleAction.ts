@@ -19,7 +19,7 @@ export default class EscapeGrappleAction extends AbstractAction<Config> {
       actor,
       "Escape a Grapple",
       "implemented",
-      { choice: new ChoiceResolver(g, GrappleChoices) },
+      { choice: new ChoiceResolver(g, "Skill", GrappleChoices) },
       {
         description: `A grappled creature can use its action to escape. To do so, it must succeed on a Strength (Athletics) or Dexterity (Acrobatics) check contested by your Strength (Athletics) check.`,
         tags: ["escape move prevention"],

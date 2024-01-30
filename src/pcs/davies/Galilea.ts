@@ -61,9 +61,10 @@ const Galilea: PCTemplate = {
   ],
   prepared: [
     "bless",
-    // "ceremony",
+    "ceremony",
     "divine favor",
     "shield of faith",
+
     "aid",
     "magic weapon",
   ],

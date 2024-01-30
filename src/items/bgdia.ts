@@ -74,6 +74,7 @@ class GauntletsOfFlamingFuryAction extends AbstractSelfAction<HasWeapons> {
       {
         weapons: new MultiChoiceResolver(
           g,
+          "Weapons",
           actor.weapons
             .filter(
               (w) => w.category !== "natural" && w.rangeCategory === "melee",

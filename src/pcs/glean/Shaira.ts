@@ -36,13 +36,13 @@ const Shaira: PCTemplate = {
     { name: "dagger" },
   ],
   prepared: [
-    // "dancing lights",
+    "dancing lights",
     "thunderclap",
 
-    // "comprehend languages",
+    "comprehend languages",
     "healing word",
     "hideous laughter",
-    // "illusory script",
+    "illusory script",
     "sleep",
   ],
 };

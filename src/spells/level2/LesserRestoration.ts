@@ -1,4 +1,5 @@
 import { HasTarget } from "../../configs";
+import { makeChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { coSet } from "../../types/ConditionName";
@@ -28,6 +29,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
     target: new TargetResolver(g, caster.reach, []),
     effect: new ChoiceResolver(
       g,
+      "Effect",
       target?.effects
         ? Array.from(target.effects)
             .filter(
@@ -36,7 +38,7 @@ const LesserRestoration = simpleSpell<HasEffect & HasTarget>({
                 (config.conditions &&
                   intersects(config.conditions, validConditions)),
             )
-            .map(([value]) => ({ label: value.name, value }))
+            .map(([value]) => makeChoice(value, value.name))
         : [],
     ),
   }),

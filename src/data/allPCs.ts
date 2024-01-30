@@ -9,6 +9,7 @@ import Litt from "../pcs/glean/Litt";
 import Marvoril from "../pcs/glean/Marvoril";
 import Shaira from "../pcs/glean/Shaira";
 import Dandelion from "../pcs/kythera/Dandelion";
+import Moya from "../pcs/kythera/Moya";
 import Tethilssethanar from "../pcs/wizards/Tethilssethanar";
 import PCTemplate from "./PCTemplate";
 
@@ -28,6 +29,7 @@ const allPCs = {
   Shaira,
 
   Dandelion,
+  Moya,
 } as const;
 export default allPCs;
 

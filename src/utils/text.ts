@@ -67,3 +67,7 @@ export function describeDice(amounts: Amount[]) {
 
   return { average, list };
 }
+
+export function plural(thing: string, count: number) {
+  return count === 1 ? thing : thing + "s";
+}

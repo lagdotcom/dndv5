@@ -8,6 +8,7 @@ import { ActionConfig, ConfigWithPositioning } from "../types/Action";
 import Combatant from "../types/Combatant";
 import { ctSet } from "../types/CreatureType";
 import Empty from "../types/Empty";
+import ImplementationStatus from "../types/ImplementationStatus";
 import Spell from "../types/Spell";
 import SpellcastingMethod from "../types/SpellcastingMethod";
 import { implementationWarning } from "../utils/env";
@@ -223,7 +224,7 @@ export const scalingSpell = <T extends object = Empty>({
 });
 
 export function spellImplementationWarning(
-  spell: Spell,
+  spell: { name: string; status: ImplementationStatus },
   who: { name: string },
 ) {
   const status =

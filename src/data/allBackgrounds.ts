@@ -1,6 +1,7 @@
 import Acolyte from "../backgrounds/Acolyte";
 import Criminal from "../backgrounds/Criminal";
 import FolkHero from "../backgrounds/FolkHero";
+import Hermit from "../backgrounds/Hermit";
 import Knight from "../backgrounds/Knight";
 import Noble from "../backgrounds/Noble";
 import Outlander from "../backgrounds/Outlander";
@@ -11,6 +12,7 @@ const allBackgrounds = {
   Acolyte,
   Criminal,
   "Folk Hero": FolkHero,
+  Hermit,
   Knight,
   Noble,
   Outlander,

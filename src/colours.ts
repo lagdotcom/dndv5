@@ -34,6 +34,7 @@ export const DamageColours: Record<DamageType, Color> = {
   psychic: "#9966cc",
   radiant: "#daa520",
   thunder: "#1e90ff",
+  unpreventable: "#000000",
 };
 
 export const Heal: Color = "#50c878";

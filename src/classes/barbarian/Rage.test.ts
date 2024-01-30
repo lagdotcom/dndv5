@@ -24,7 +24,7 @@ describe("Rage Feature", () => {
     } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
-    await rageAction.apply();
+    await rageAction.apply({});
 
     expect(me.hasEffect(RageEffect)).toBeTruthy();
   });
@@ -38,8 +38,8 @@ describe("Rage Feature", () => {
     const rageAction = new RageAction(g, me);
     const endRageAction = new EndRageAction(g, me);
 
-    await rageAction.apply();
-    await endRageAction.apply();
+    await rageAction.apply({});
+    await endRageAction.apply({});
 
     expect(me.hasEffect(RageEffect)).toBeFalsy();
   });
@@ -51,7 +51,7 @@ describe("Rage Feature", () => {
     } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
-    await rageAction.apply();
+    await rageAction.apply({});
 
     const diceType = new DiceTypeCollector();
     g.events.fire(
@@ -79,7 +79,7 @@ describe("Rage Feature", () => {
     } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
-    await rageAction.apply();
+    await rageAction.apply({});
 
     const spellCastingAction = {
       actor: me,
@@ -107,7 +107,7 @@ describe("Rage Feature", () => {
     } = await setupBattleTest(plan);
 
     const rageAction = new RageAction(g, me);
-    await rageAction.apply();
+    await rageAction.apply({});
 
     await g.resolve(
       new TurnEndedEvent({

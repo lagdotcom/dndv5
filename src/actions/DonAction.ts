@@ -1,6 +1,7 @@
 import ErrorCollector from "../collectors/ErrorCollector";
 import { HasItem } from "../configs";
 import Engine from "../Engine";
+import { makeChoice } from "../interruptions/PickFromListChoice";
 import MessageBuilder from "../MessageBuilder";
 import ChoiceResolver from "../resolvers/ChoiceResolver";
 import ActionTime from "../types/ActionTime";
@@ -17,10 +18,10 @@ export default class DonAction extends AbstractSelfAction<HasItem> {
       {
         item: new ChoiceResolver(
           g,
-          Array.from(actor.inventory.keys(), (value) => ({
-            label: value.name,
-            value,
-          })).filter(({ value }) => value.hands),
+          "Item",
+          Array.from(actor.inventory.keys(), (value) =>
+            makeChoice(value, value.name),
+          ).filter(({ value }) => value.hands),
         ),
       },
       {

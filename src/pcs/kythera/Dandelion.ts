@@ -64,8 +64,8 @@ const Dandelion: PCTemplate = {
     "protection from evil and good",
 
     "aid",
-    // "find steed",
-    // "prayer of healing",
+    "find steed",
+    "prayer of healing",
   ],
 };
 

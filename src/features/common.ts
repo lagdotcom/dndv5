@@ -62,21 +62,27 @@ export function bonusSpellsFeature<T extends PCClassLevel | PCLevel>(
       levelType === "level" ? me.level : me.getClassLevel(levelType, 1);
 
     const activeEntries = entries.filter((entry) => entry.level <= casterLevel);
-    for (const { resource, spell } of activeEntries) {
+    const spells = new Set<Spell>();
+    for (const { resource, spell: name } of activeEntries) {
       if (resource) me.initResource(resource);
+
+      const spell = allSpells[name];
+      spellImplementationWarning(spell ?? { name, status: "missing" }, me);
+      if (!spell) continue;
+
       if (addAsList) {
-        me.preparedSpells.add(allSpells[spell]);
-        method.addCastableSpell?.(allSpells[spell], me);
-      } else spellImplementationWarning(allSpells[spell], me);
+        me.preparedSpells.add(spell);
+        method.addCastableSpell?.(spell, me);
+      } else spells.add(spell);
     }
 
     me.spellcastingMethods.add(method);
 
-    if (!addAsList)
+    if (spells.size)
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
-          for (const { spell } of activeEntries)
-            actions.push(new CastSpell(g, me, method, allSpells[spell]));
+          for (const spell of spells)
+            actions.push(new CastSpell(g, me, method, spell));
       });
 
     additionalSetup?.(g, me);

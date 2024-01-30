@@ -1,6 +1,7 @@
 import Engine from "../Engine";
 import Monster from "../Monster";
 import NaturalWeapon from "../monsters/NaturalWeapon";
+import { spellImplementationWarning } from "../spells/common";
 import Enchantment from "../types/Enchantment";
 import { ItemType } from "../types/Item";
 import SizeCategory from "../types/SizeCategory";
@@ -70,9 +71,15 @@ function applyMonsterTemplate<T>(
   for (const [sense, distance] of objectEntries(t.senses ?? {}))
     m.senses.set(sense, distance);
 
-  for (const spell of t.spells ?? []) {
-    m.knownSpells.add(allSpells[spell]);
-    m.preparedSpells.add(allSpells[spell]);
+  for (const name of t.spells ?? []) {
+    const spell = allSpells[name];
+    if (!spell) {
+      spellImplementationWarning({ name, status: "missing" }, m);
+      continue;
+    }
+
+    m.knownSpells.add(spell);
+    m.preparedSpells.add(spell);
   }
 
   for (const w of t.naturalWeapons ?? [])

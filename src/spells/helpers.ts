@@ -30,8 +30,7 @@ export const doesScalingDamage = (
   diceMinusSlot: DiceCount,
   size: DiceSize,
   damageType: DamageType,
-): Pick<Spell<Scales>, "level" | "isHarmful" | "getDamage"> => ({
-  level,
+): Pick<Spell<Scales>, "isHarmful" | "getDamage"> => ({
   isHarmful: true,
   getDamage: (g, caster, method, { slot }) => [
     _dd((slot ?? level) + diceMinusSlot, size, damageType),

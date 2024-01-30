@@ -37,7 +37,7 @@ export default class ShoveAction extends AbstractSingleTargetAttackAction<HasSho
         target: new TargetResolver(g, actor.reach, [
           sizeOrLess(actor.size + 1),
         ]),
-        type: new ChoiceResolver(g, shoveTypeChoices),
+        type: new ChoiceResolver(g, "Action", shoveTypeChoices),
       },
       {
         description: `Using the Attack action, you can make a special melee attack to shove a creature, either to knock it prone or push it away from you. If you're able to make multiple attacks with the Attack action, this attack replaces one of them.

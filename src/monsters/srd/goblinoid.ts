@@ -3,6 +3,7 @@ import goblinUrl from "@img/tok/goblin.png";
 import DisengageAction from "../../actions/DisengageAction";
 import MonsterTemplate from "../../data/MonsterTemplate";
 import SimpleFeature from "../../features/SimpleFeature";
+import { makeStringChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import SizeCategory from "../../types/SizeCategory";
 import { featureNotComplete } from "../../utils/env";
@@ -52,9 +53,9 @@ export const Goblin: MonsterTemplate<GoblinConfig> = {
   config: {
     initial: { weapon: "scimitar" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "scimitar/shield", value: "scimitar" },
-        { label: "shortbow", value: "shortbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("scimitar", "scimitar/shield"),
+        makeStringChoice("shortbow"),
       ]),
     }),
     apply({ weapon }) {

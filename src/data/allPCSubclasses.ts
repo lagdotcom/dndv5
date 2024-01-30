@@ -1,5 +1,6 @@
 import Berserker from "../classes/barbarian/Berserker";
 import Land from "../classes/druid/Land";
+import Shepherd from "../classes/druid/Shepherd";
 import Crown from "../classes/paladin/Crown";
 import Devotion from "../classes/paladin/Devotion";
 import Scout from "../classes/rogue/Scout";
@@ -13,6 +14,7 @@ const allPCSubclasses = {
 
   // Druid
   Land,
+  Shepherd,
 
   // Paladin
   Crown,

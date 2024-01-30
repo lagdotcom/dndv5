@@ -67,7 +67,7 @@ describe("StandUpAction", () => {
     await me.addEffect(Prone, { duration: Infinity });
 
     const action = new StandUpAction(g, me);
-    await action.apply();
+    await action.apply({});
 
     expect(me.movedSoFar).toBe(15);
     expect(me.conditions.has("Prone")).toBe(false);

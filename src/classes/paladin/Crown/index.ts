@@ -8,11 +8,13 @@ import Engine from "../../../Engine";
 import { Listener } from "../../../events/Dispatcher";
 import { GatherDamageDetail } from "../../../events/GatherDamageEvent";
 import {
+  BonusSpellEntry,
   bonusSpellsFeature,
   notImplementedFeature,
 } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
 import { canBeHeardBy, canSee, ErrorFilter, notSelf } from "../../../filters";
+import { PCClassLevel } from "../../../flavours";
 import EvaluateLater from "../../../interruptions/EvaluateLater";
 import YesNoChoice from "../../../interruptions/YesNoChoice";
 import MultiTargetResolver from "../../../resolvers/MultiTargetResolver";
@@ -29,23 +31,25 @@ import { compareDistances, distance } from "../../../utils/units";
 import { ChannelDivinityResource } from "../../common";
 import { PaladinIcon, PaladinSpellcasting } from "../common";
 
-const OathSpells = bonusSpellsFeature(
+const CrownOathSpellsList: BonusSpellEntry<PCClassLevel>[] = [
+  { level: 3, spell: "command" },
+  { level: 3, spell: "compelled duel" },
+  { level: 5, spell: "warding bond" },
+  { level: 5, spell: "zone of truth" },
+  { level: 9, spell: "aura of vitality" },
+  { level: 9, spell: "spirit guardians" },
+  { level: 13, spell: "banishment" },
+  { level: 13, spell: "guardian of faith" },
+  { level: 17, spell: "circle of power" },
+  { level: 17, spell: "geas" },
+];
+
+const CrownOathSpells = bonusSpellsFeature(
   "Oath Spells",
   `You gain oath spells at the paladin levels listed.`,
   "Paladin",
   PaladinSpellcasting,
-  [
-    { level: 3, spell: "command" },
-    // TODO { level: 3, spell: "compelled duel" },
-    // TODO { level: 5, spell: "warding bond" },
-    // { level: 5, spell: "zone of truth" },
-    // TODO { level: 9, spell: "aura of vitality" },
-    { level: 9, spell: "spirit guardians" },
-    // TODO { level: 13, spell: "banishment" },
-    // TODO { level: 13, spell: "guardian of faith" },
-    // TODO { level: 17, spell: "circle of power" },
-    // { level: 17, spell: "geas" },
-  ],
+  CrownOathSpellsList,
   "Paladin",
 );
 
@@ -309,7 +313,7 @@ const Crown: PCSubclass = {
   className: "Paladin",
   name: "Oath of the Crown",
   features: new Map([
-    [3, [OathSpells, ChampionChallenge, TurnTheTide]],
+    [3, [CrownOathSpells, ChampionChallenge, TurnTheTide]],
     [7, [DivineAllegiance]],
     [15, [UnyieldingSpirit]],
     [20, [ExaltedChampion]],

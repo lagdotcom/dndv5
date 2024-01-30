@@ -9,14 +9,10 @@ export default class ChoiceResolver<T> implements Resolver<T> {
 
   constructor(
     public g: Engine,
+    public name: string,
     public entries: PickChoice<T>[],
   ) {
     this.type = "Choice";
-  }
-
-  get name() {
-    if (this.entries.length === 0) return "empty";
-    return `One of: ${this.entries.map((e) => e.label).join(", ")}`;
   }
 
   check(value: unknown, action: Action, ec: ErrorCollector) {

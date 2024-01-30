@@ -84,7 +84,9 @@ import GuardianOfNature from "../spells/level4/GuardianOfNature";
 import IceStorm from "../spells/level4/IceStorm";
 import Stoneskin from "../spells/level4/Stoneskin";
 import WallOfFire from "../spells/level4/WallOfFire";
+import CommuneWithNature from "../spells/level5/CommuneWithNature";
 import ConeOfCold from "../spells/level5/ConeOfCold";
+import ConjureElemental from "../spells/level5/ConjureElemental";
 import MeteorSwarm from "../spells/level9/MeteorSwarm";
 
 const allSpells = {
@@ -179,7 +181,9 @@ const allSpells = {
   stoneskin: Stoneskin,
   "wall of fire": WallOfFire,
 
+  "commune with nature": CommuneWithNature,
   "cone of cold": ConeOfCold,
+  "conjure elemental": ConjureElemental,
 
   "meteor swarm": MeteorSwarm,
 } as const;

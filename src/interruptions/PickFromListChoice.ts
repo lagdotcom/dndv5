@@ -20,7 +20,7 @@ export const makeChoice = <T>(
 
 export const makeStringChoice = <T extends string>(
   value: T,
-  label = value,
+  label: string = value,
   disabled?: boolean,
 ): PickChoice<T> => ({ value, label, disabled });
 

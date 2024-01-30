@@ -1,5 +1,6 @@
 import Engine from "../Engine";
 import PC from "../PC";
+import { spellImplementationWarning } from "../spells/common";
 import Enchantment from "../types/Enchantment";
 import HasProficiency from "../types/HasProficiency";
 import { ItemType } from "../types/Item";
@@ -12,7 +13,7 @@ import allItems from "./allItems";
 import allPCClasses from "./allPCClasses";
 import allPCRaces from "./allPCRaces";
 import allPCSubclasses from "./allPCSubclasses";
-import allSpells from "./allSpells";
+import allSpells, { SpellName } from "./allSpells";
 import PCTemplate from "./PCTemplate";
 
 export default function initialisePC(g: Engine, t: PCTemplate) {
@@ -70,10 +71,21 @@ export default function initialisePC(g: Engine, t: PCTemplate) {
     if (equip) pc.don(item);
   }
 
-  for (const spell of t.known ?? []) pc.knownSpells.add(allSpells[spell]);
-  for (const spell of t.prepared ?? []) {
-    pc.knownSpells.add(allSpells[spell]);
-    pc.preparedSpells.add(allSpells[spell]);
+  const getSpell = (name: SpellName) => ({ name, spell: allSpells[name] });
+
+  for (const { name, spell } of (t.known ?? []).map(getSpell)) {
+    if (!spell) spellImplementationWarning({ name, status: "missing" }, pc);
+    else pc.knownSpells.add(spell);
+  }
+
+  for (const { name, spell } of (t.prepared ?? []).map(getSpell)) {
+    if (!spell) {
+      spellImplementationWarning({ name, status: "missing" }, pc);
+      continue;
+    }
+
+    pc.knownSpells.add(spell);
+    pc.preparedSpells.add(spell);
   }
 
   return pc;

@@ -61,7 +61,7 @@ const Beldalynn: PCTemplate = {
   prepared: [
     "acid splash",
     "fire bolt",
-    // "message",
+    "message",
     "ray of frost",
 
     "ice knife",
@@ -73,17 +73,12 @@ const Beldalynn: PCTemplate = {
 
     "fireball",
     "intellect fortress",
-    // "Leomund's tiny hut",
+    "Leomund's tiny hut",
     "Melf's minute meteors",
 
-    // TODO "summon aberration",
+    "summon aberration",
     "wall of fire",
   ],
-  known: [
-    // "comprehend languages",
-    // TODO "find familiar",
-    // "floating disk",
-    // TODO "identify",
-  ],
+  known: ["comprehend languages", "find familiar", "floating disk", "identify"],
 };
 export default Beldalynn;

@@ -7,6 +7,7 @@ import { HasWeapon } from "../../../configs";
 import Effect from "../../../Effect";
 import Engine from "../../../Engine";
 import SimpleFeature from "../../../features/SimpleFeature";
+import { makeChoice } from "../../../interruptions/PickFromListChoice";
 import MessageBuilder from "../../../MessageBuilder";
 import ChoiceResolver from "../../../resolvers/ChoiceResolver";
 import Combatant from "../../../types/Combatant";
@@ -41,9 +42,10 @@ class SacredWeaponAction extends AbstractSelfAction<HasWeapon> {
       {
         weapon: new ChoiceResolver(
           g,
+          "Weapon",
           actor.weapons
             .filter((weapon) => weapon.category !== "natural")
-            .map((value) => ({ label: value.name, value })),
+            .map((value) => makeChoice(value, value.name)),
         ),
       },
       {

@@ -29,11 +29,6 @@ const Marvoril: PCTemplate = {
     { name: "morningstar", equip: true },
     { name: "shield", equip: true },
   ],
-  prepared: [
-    "command",
-    "cure wounds",
-    // TODO "detect magic",
-    "divine favor",
-  ],
+  prepared: ["command", "cure wounds", "detect magic", "divine favor"],
 };
 export default Marvoril;

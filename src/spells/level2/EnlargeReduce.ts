@@ -3,6 +3,7 @@ import Effect from "../../Effect";
 import { Listener } from "../../events/Dispatcher";
 import { canSee } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import { makeStringChoice } from "../../interruptions/PickFromListChoice";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import TargetResolver from "../../resolvers/TargetResolver";
 import { atSet } from "../../types/AttackTag";
@@ -175,9 +176,9 @@ const EnlargeReduce = simpleSpell<Config>({
   ...targetsOne(30, [canSee]),
   getConfig: (g) => ({
     target: new TargetResolver(g, 30, [canSee]),
-    mode: new ChoiceResolver(g, [
-      { label: "enlarge", value: "enlarge" },
-      { label: "reduce", value: "reduce" },
+    mode: new ChoiceResolver(g, "Effect", [
+      makeStringChoice("enlarge"),
+      makeStringChoice("reduce"),
     ]),
   }),
 

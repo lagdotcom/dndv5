@@ -1,9 +1,11 @@
 import Engine from "../../../Engine";
 import {
+  BonusSpellEntry,
   bonusSpellsFeature,
   notImplementedFeature,
 } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
+import { PCClassLevel } from "../../../flavours";
 import Combatant from "../../../types/Combatant";
 import PCSubclass from "../../../types/PCSubclass";
 import { TurnUndeadAction } from "../../cleric/TurnUndead";
@@ -72,23 +74,25 @@ In addition, for the duration, you have advantage on saving throws against spell
 Once you use this feature, you can't use it again until you finish a long rest.`,
 );
 
-const OathSpells = bonusSpellsFeature(
+const DevotionOathSpellsList: BonusSpellEntry<PCClassLevel>[] = [
+  { level: 3, spell: "protection from evil and good" },
+  { level: 3, spell: "sanctuary" },
+  { level: 5, spell: "lesser restoration" },
+  { level: 5, spell: "zone of truth" },
+  { level: 9, spell: "beacon of hope" },
+  { level: 9, spell: "dispel magic" },
+  { level: 13, spell: "freedom of movement" },
+  { level: 13, spell: "guardian of faith" },
+  { level: 17, spell: "commune" },
+  { level: 17, spell: "flame strike" },
+];
+
+const DevotionOathSpells = bonusSpellsFeature(
   "Oath Spells",
   `You gain oath spells at the paladin levels listed.`,
   "Paladin",
   PaladinSpellcasting,
-  [
-    { level: 3, spell: "protection from evil and good" },
-    { level: 3, spell: "sanctuary" },
-    { level: 5, spell: "lesser restoration" },
-    // { level: 5, spell: 'zone of truth' },
-    // TODO { level: 9, spell: 'beacon of hope' },
-    // TODO { level: 9, spell: 'dispel magic' },
-    // TODO { level: 13, spell: 'freedom of movement' },
-    // TODO { level: 13, spell: 'guardian of faith' },
-    // { level: 17, spell: 'commune' },
-    // TODO { level: 17, spell: 'flame strike' },
-  ],
+  DevotionOathSpellsList,
   "Paladin",
 );
 
@@ -96,7 +100,7 @@ const Devotion: PCSubclass = {
   className: "Paladin",
   name: "Oath of Devotion",
   features: new Map([
-    [3, [OathSpells, SacredWeapon, TurnTheUnholy]],
+    [3, [DevotionOathSpells, SacredWeapon, TurnTheUnholy]],
     [7, [AuraOfDevotion]],
     [15, [PurityOfSpirit]],
     [20, [HolyNimbus]],

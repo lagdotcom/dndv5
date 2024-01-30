@@ -116,7 +116,7 @@ class LayOnHandsCureAction extends AbstractAction<CureConfig> {
       "implemented",
       {
         target: new TargetResolver(g, actor.reach, [isHealable]),
-        effects: new MultiChoiceResolver(g, [], 1, Infinity),
+        effects: new MultiChoiceResolver(g, "Effects", [], 1, Infinity),
       },
       {
         icon: LayOnHandsCureIcon,
@@ -138,7 +138,7 @@ class LayOnHandsCureAction extends AbstractAction<CureConfig> {
     const valid = target ? getCurableEffects(target) : [];
     return {
       target: new TargetResolver(this.g, this.actor.reach, [isHealable]),
-      effects: new MultiChoiceResolver(this.g, valid, 1, Infinity),
+      effects: new MultiChoiceResolver(this.g, "Effects", valid, 1, Infinity),
     };
   }
 

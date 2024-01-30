@@ -33,7 +33,7 @@ class TelekineticShove extends AbstractAction<Config> {
       "incomplete",
       {
         target: new TargetResolver(g, 30, [canSee]),
-        type: new ChoiceResolver(g, telekineticShoveChoices),
+        type: new ChoiceResolver(g, "Direction", telekineticShoveChoices),
       },
       {
         description: `As a bonus action, you can try to telekinetically shove one creature you can see within 30 feet of you. When you do so, the target must succeed on a Strength saving throw (DC 8 + your proficiency bonus + the ability modifier of the score increased by this feat) or be moved 5 feet toward you or away from you. A creature can willingly fail this save.`,

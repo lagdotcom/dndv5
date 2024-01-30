@@ -6,7 +6,7 @@ import {
 import { BronzeDragonborn, GoldDragonborn } from "../races/Dragonborn_FTD";
 import { HillDwarf, MountainDwarf } from "../races/Dwarf";
 import { HighElf } from "../races/Elf";
-import { AirGenasi, FireGenasi } from "../races/Genasi_EEPC";
+import { AirGenasi, FireGenasi, WaterGenasi } from "../races/Genasi_EEPC";
 import { RockGnome } from "../races/Gnome";
 import { HalfElf } from "../races/HalfElf";
 import { LightfootHalfling, StoutHalfling } from "../races/Halfling";
@@ -30,6 +30,7 @@ const allPCRaces = {
 
   "Air Genasi": AirGenasi,
   "Fire Genasi": FireGenasi,
+  "Water Genasi": WaterGenasi,
 
   "Rock Gnome": RockGnome,
 

@@ -72,9 +72,7 @@ const LightBearer = bonusSpellsFeature(
   `You know the light cantrip. Charisma is your spellcasting ability for it.`,
   "level",
   LightBearerMethod,
-  [
-    // TODO { level: 1, spell: "light" }
-  ],
+  [{ level: 1, spell: "light" }],
 );
 
 const Aasimar: PCRace = {

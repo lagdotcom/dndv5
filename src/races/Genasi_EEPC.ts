@@ -1,5 +1,6 @@
 import CastSpell from "../actions/CastSpell";
 import {
+  Amphibious,
   BonusSpellEntry,
   bonusSpellResourceFinder,
   bonusSpellsFeature,
@@ -102,4 +103,57 @@ export const FireGenasi: PCRace = {
   size: SizeCategory.Medium,
   abilities: new Map([["int", 1]]),
   features: new Set([Darkvision60, FireResistance, ReachToTheBlaze]),
+};
+
+const AcidResistance = resistanceFeature(
+  "Acid Resistance",
+  `You have resistance to acid damage.`,
+  ["acid"],
+);
+
+const CallToTheWaveResource = new LongRestResource("Call to the Wave", 1);
+
+const CallToTheWaveSpells: BonusSpellEntry<PCLevel>[] = [
+  { level: 1, spell: "shape water" },
+  {
+    level: 3,
+    spell: "create or destroy water",
+    resource: CallToTheWaveResource,
+  },
+];
+
+const CallToTheWaveMethod = new InnateSpellcasting(
+  "Call to the Wave",
+  "con",
+  bonusSpellResourceFinder(CallToTheWaveSpells),
+);
+
+const CallToTheWave = bonusSpellsFeature(
+  "Call to the Wave",
+  `You know the shape water cantrip. When you reach 3rd level, you can cast the create or destroy water spell as a 2nd-level spell once with this trait, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells.`,
+  "level",
+  CallToTheWaveMethod,
+  CallToTheWaveSpells,
+  undefined,
+  () => {
+    // me.knownSpells.add(ShapeWater);
+    // me.preparedSpells.add(ShapeWater);
+  },
+);
+
+const Swim = new SimpleFeature(
+  "Swim",
+  `You have a swimming speed of 30 feet.`,
+  (g, me) => {
+    const swimSpeed = Math.max(me.movement.get("swim") ?? 0, 30);
+    me.movement.set("swim", swimSpeed);
+  },
+);
+
+export const WaterGenasi: PCRace = {
+  parent: Genasi,
+  name: "Water Genasi",
+  size: SizeCategory.Medium,
+  abilities: new Map([["wis", 1]]),
+  features: new Set([AcidResistance, Amphibious, Swim, CallToTheWave]),
 };

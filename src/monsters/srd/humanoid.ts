@@ -39,6 +39,7 @@ import {
 import Evasion from "../../features/Evasion";
 import SimpleFeature from "../../features/SimpleFeature";
 import EvaluateLater from "../../interruptions/EvaluateLater";
+import { makeStringChoice } from "../../interruptions/PickFromListChoice";
 import { ImprovisedWeapon } from "../../items/weapons";
 import ChoiceResolver from "../../resolvers/ChoiceResolver";
 import InnateSpellcasting from "../../spells/InnateSpellcasting";
@@ -71,7 +72,7 @@ export const Acolyte: MonsterTemplate = {
   levels: { Cleric: 1 },
   features: [ClericSpellcasting.feature],
   spells: [
-    // TODO "light",
+    "light",
     "sacred flame",
     "thaumaturgy",
     "bless",
@@ -91,8 +92,8 @@ const ArchmageSpellcasting = bonusSpellsFeature(
   "Wizard",
   ArchmageSpellcastingMethod,
   [
-    // TODO { level: 0, spell: DisguiseSelf },
-    // TODO { level: 0, spell: Invisibility },
+    { level: 0, spell: "disguise self" },
+    { level: 0, spell: "invisibility" },
   ],
 );
 
@@ -120,30 +121,30 @@ export const Archmage: MonsterTemplate = {
   ],
   spells: [
     "fire bolt",
-    // TODO "light",
-    // TODO "mage hand",
-    // TODO "prestidigitation",
+    "light",
+    "mage hand",
+    "prestidigitation",
     "shocking grasp",
-    // TODO "detect magic",
-    // TODO "identify",
+    "detect magic",
+    "identify",
     "mage armor",
     "magic missile",
-    // TODO "detect thoughts",
+    "detect thoughts",
     "mirror image",
     "misty step",
     "counterspell",
-    // TODO "fly",
+    "fly",
     "lightning bolt",
-    // TODO "banishment",
+    "banishment",
     "fire shield",
     "stoneskin",
     "cone of cold",
-    // TODO "scrying",
-    // TODO "wall of force",
-    // TODO "globe of invulnerability",
-    // TODO "teleport",
-    // TODO "mind blank",
-    // TODO "time stop",
+    "scrying",
+    "wall of force",
+    "globe of invulnerability",
+    "teleport",
+    "mind blank",
+    "time stop",
   ],
   // TODO precast spells: mage armor, stoneskin, mind blank
   items: [{ name: "dagger", equip: true }],
@@ -270,9 +271,9 @@ export const Assassin: MonsterTemplate<AssassinConfig> = {
   config: {
     initial: { weapon: "shortsword" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "shortsword", value: "shortsword" },
-        { label: "light crossbow", value: "light crossbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("shortsword"),
+        makeStringChoice("light crossbow"),
       ]),
     }),
     apply({ weapon }) {
@@ -302,9 +303,9 @@ export const Bandit: MonsterTemplate<BanditConfig> = {
   config: {
     initial: { weapon: "light crossbow" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "scimitar", value: "scimitar" },
-        { label: "light crossbow", value: "light crossbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("scimitar"),
+        makeStringChoice("light crossbow"),
       ]),
     }),
     apply({ weapon }) {
@@ -429,14 +430,14 @@ export const CultFanatic: MonsterTemplate = {
   levels: { Cleric: 4 },
   features: [DarkDevotion, ClericSpellcasting.feature, CultFanaticMultiattack],
   spells: [
-    // TODO "light",
+    "light",
     "sacred flame",
     "thaumaturgy",
     "command",
     "inflict wounds",
     "shield of faith",
     "hold person",
-    // TODO "spiritual weapon",
+    "spiritual weapon",
   ],
   items: [
     { name: "leather armor", equip: true },
@@ -460,14 +461,14 @@ export const Druid: MonsterTemplate = {
   levels: { Druid: 4 },
   features: [DruidSpellcasting.feature],
   spells: [
-    // TODO "druidcraft",
+    "druidcraft",
     "produce flame",
     "shillelagh",
     "entangle",
     "longstrider",
-    // TODO "speak with animals",
+    "speak with animals",
     "thunderwave",
-    // TODO "animal messenger",
+    "animal messenger",
     "barkskin",
   ],
   items: [{ name: "quarterstaff", equip: true }],
@@ -602,9 +603,9 @@ export const Knight: MonsterTemplate<KnightConfig> = {
   config: {
     initial: { weapon: "greatsword" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "greatsword", value: "greatsword" },
-        { label: "heavy crossbow", value: "heavy crossbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("greatsword"),
+        makeStringChoice("heavy crossbow"),
       ]),
     }),
     apply({ weapon }) {
@@ -633,19 +634,19 @@ export const Mage: MonsterTemplate = {
   items: [{ name: "dagger", equip: true }],
   spells: [
     "fire bolt",
-    // TODO "light",
-    // TODO "mage hand",
-    // TODO "prestidigitation",
-    // TODO "detect magic",
+    "light",
+    "mage hand",
+    "prestidigitation",
+    "detect magic",
     "mage armor",
     "magic missile",
     "shield",
     "misty step",
-    // TODO "suggestion",
+    "suggestion",
     "counterspell",
     "fireball",
-    // TODO "fly",
-    // TODO "greater invisibility",
+    "fly",
+    "greater invisibility",
     "ice storm",
     "cone of cold",
   ],
@@ -696,15 +697,15 @@ export const Priest: MonsterTemplate = {
     { name: "mace", equip: true },
   ],
   spells: [
-    // TODO "light",
+    "light",
     "sacred flame",
     "thaumaturgy",
     "cure wounds",
     "guiding bolt",
     "sanctuary",
     "lesser restoration",
-    // TODO "spiritual weapon",
-    // TODO "dispel magic",
+    "spiritual weapon",
+    "dispel magic",
     "spirit guardians",
   ],
 };
@@ -742,9 +743,9 @@ export const Scout: MonsterTemplate<ScoutConfig> = {
   config: {
     initial: { weapon: "longbow" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "shortsword", value: "shortsword" },
-        { label: "longbow", value: "longbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("shortsword"),
+        makeStringChoice("longbow"),
       ]),
     }),
     apply({ weapon }) {
@@ -787,9 +788,9 @@ export const Spy: MonsterTemplate<SpyConfig> = {
   config: {
     initial: { weapon: "hand crossbow" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "shortsword", value: "shortsword" },
-        { label: "hand crossbow", value: "hand crossbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("shortsword"),
+        makeStringChoice("hand crossbow"),
       ]),
     }),
     apply({ weapon }) {
@@ -825,9 +826,9 @@ export const Thug: MonsterTemplate<ThugConfig> = {
   config: {
     initial: { weapon: "mace" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "mace", value: "mace" },
-        { label: "heavy crossbow", value: "heavy crossbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("mace"),
+        makeStringChoice("heavy crossbow"),
       ]),
     }),
     apply({ weapon }) {
@@ -879,9 +880,9 @@ export const Veteran: MonsterTemplate<VeteranConfig> = {
   config: {
     initial: { weapon: "swords" },
     get: (g) => ({
-      weapon: new ChoiceResolver(g, [
-        { label: "longsword/shortsword", value: "swords" },
-        { label: "heavy crossbow", value: "heavy crossbow" },
+      weapon: new ChoiceResolver(g, "Weapon", [
+        makeStringChoice("swords", "longsword/shortsword"),
+        makeStringChoice("heavy crossbow"),
       ]),
     }),
     apply({ weapon }) {

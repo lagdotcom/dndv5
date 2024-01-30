@@ -863,7 +863,8 @@
     poison: "#00ff00",
     psychic: "#9966cc",
     radiant: "#daa520",
-    thunder: "#1e90ff"
+    thunder: "#1e90ff",
+    unpreventable: "#000000"
   };
   var Heal = "#50c878";
   var ItemRarityColours = {
@@ -2811,6 +2812,9 @@
       list += ` + ${flat}`;
     return { average, list };
   }
+  function plural(thing, count) {
+    return count === 1 ? thing : thing + "s";
+  }
 
   // src/img/act/dying.svg
   var dying_default = "./dying-YUO2NF73.svg";
@@ -2855,15 +2859,11 @@
 
   // src/resolvers/ChoiceResolver.ts
   var ChoiceResolver = class {
-    constructor(g, entries) {
+    constructor(g, name, entries) {
       this.g = g;
+      this.name = name;
       this.entries = entries;
       this.type = "Choice";
-    }
-    get name() {
-      if (this.entries.length === 0)
-        return "empty";
-      return `One of: ${this.entries.map((e2) => e2.label).join(", ")}`;
     }
     check(value, action, ec) {
       if (this.entries.length === 0)
@@ -2933,7 +2933,7 @@
         actor,
         "Escape a Grapple",
         "implemented",
-        { choice: new ChoiceResolver(g, GrappleChoices) },
+        { choice: new ChoiceResolver(g, "Skill", GrappleChoices) },
         {
           description: `A grappled creature can use its action to escape. To do so, it must succeed on a Strength (Athletics) or Dexterity (Acrobatics) check contested by your Strength (Athletics) check.`,
           tags: ["escape move prevention"],
@@ -3752,10 +3752,11 @@
         {
           item: new ChoiceResolver(
             g,
-            Array.from(actor.equipment, (value) => ({
-              label: value.name,
-              value
-            })).filter(({ value }) => value.hands)
+            "Item",
+            Array.from(
+              actor.equipment,
+              (value) => makeChoice(value, value.name)
+            ).filter(({ value }) => value.hands)
           )
         },
         {
@@ -3787,10 +3788,11 @@
         {
           item: new ChoiceResolver(
             g,
-            Array.from(actor.inventory.keys(), (value) => ({
-              label: value.name,
-              value
-            })).filter(({ value }) => value.hands)
+            "Item",
+            Array.from(
+              actor.inventory.keys(),
+              (value) => makeChoice(value, value.name)
+            ).filter(({ value }) => value.hands)
           )
         },
         {
@@ -3932,7 +3934,7 @@
           target: new TargetResolver(g, actor.reach, [
             sizeOrLess(actor.size + 1)
           ]),
-          type: new ChoiceResolver(g, shoveTypeChoices)
+          type: new ChoiceResolver(g, "Action", shoveTypeChoices)
         },
         {
           description: `Using the Attack action, you can make a special melee attack to shove a creature, either to knock it prone or push it away from you. If you're able to make multiple attacks with the Attack action, this attack replaces one of them.
@@ -5929,7 +5931,6 @@
     getDamage: (g, caster) => [_dd(getCantripDice(caster), size, damageType)]
   });
   var doesScalingDamage = (level, diceMinusSlot, size, damageType) => ({
-    level,
     isHarmful: true,
     getDamage: (g, caster, method, { slot }) => [
       _dd((slot != null ? slot : level) + diceMinusSlot, size, damageType)
@@ -7034,7 +7035,7 @@
         "incomplete",
         {
           target: new TargetResolver(g, 30, [canSee]),
-          type: new ChoiceResolver(g, telekineticShoveChoices)
+          type: new ChoiceResolver(g, "Direction", telekineticShoveChoices)
         },
         {
           description: `As a bonus action, you can try to telekinetically shove one creature you can see within 30 feet of you. When you do so, the target must succeed on a Strength saving throw (DC 8 + your proficiency bonus + the ability modifier of the score increased by this feat) or be moved 5 feet toward you or away from you. A creature can willingly fail this save.`,
@@ -8231,9 +8232,8 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     getConfig: (g, caster) => ({
       item: new ChoiceResolver(
         g,
-        Array.from(caster.equipment).filter(
-          (it) => it.itemType === "weapon" && shillelaghWeapons.has(it.weaponType)
-        ).map((value) => ({ label: value.name, value }))
+        "Weapon",
+        Array.from(caster.weapons).filter((it) => shillelaghWeapons.has(it.weaponType)).map((value) => makeChoice(value, value.name))
       )
     }),
     async apply({ g, caster, method }, { item }) {
@@ -10171,9 +10171,9 @@ At the end of each of its turns, and each time it takes damage, the target can m
     ...targetsOne(30, [canSee]),
     getConfig: (g) => ({
       target: new TargetResolver(g, 30, [canSee]),
-      mode: new ChoiceResolver(g, [
-        { label: "enlarge", value: "enlarge" },
-        { label: "reduce", value: "reduce" }
+      mode: new ChoiceResolver(g, "Effect", [
+        makeStringChoice("enlarge"),
+        makeStringChoice("reduce")
       ])
     }),
     async apply({ g, caster, method }, { mode, target }) {
@@ -10341,9 +10341,10 @@ At the end of each of its turns, and each time it takes damage, the target can m
       target: new TargetResolver(g, caster.reach, []),
       effect: new ChoiceResolver(
         g,
+        "Effect",
         (target == null ? void 0 : target.effects) ? Array.from(target.effects).filter(
           ([type, config]) => type.tags.has("disease") || config.conditions && intersects(config.conditions, validConditions)
-        ).map(([value]) => ({ label: value.name, value })) : []
+        ).map(([value]) => makeChoice(value, value.name)) : []
       )
     }),
     check(g, { effect, target }, ec) {
@@ -10486,7 +10487,8 @@ At the end of each of its turns, and each time it takes damage, the target can m
     getConfig: (g, caster) => ({
       item: new ChoiceResolver(
         g,
-        caster.weapons.filter((w) => !w.magical && w.category !== "natural").map((value) => ({ label: value.name, value }))
+        "Weapon",
+        caster.weapons.filter((w) => !w.magical && w.category !== "natural").map((value) => makeChoice(value, value.name))
       )
     }),
     async apply({ g, caster }, { slot, item }) {
@@ -11817,7 +11819,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
   Any ranged weapon attack that enters the wall's space has disadvantage on the attack roll, and fire damage is halved if the fire effect passes through the wall to reach its target. Spells that deal cold damage that pass through the wall cause the area of the wall they pass through to freeze solid (at least a 5-foot-square section is frozen). Each 5-foot-square frozen section has AC 5 and 15 hit points. Reducing a frozen section to 0 hit points destroys it. When a section is destroyed, the wall's water doesn't fill it.`,
     getConfig: (g) => ({
       point: new PointResolver(g, 60),
-      shape: new ChoiceResolver(g, shapeChoices)
+      shape: new ChoiceResolver(g, "Shape", shapeChoices)
     }),
     getTargets: () => [],
     getAffected: () => [],
@@ -12036,7 +12038,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     icon: makeIcon(fire_shield_default),
     ...affectsSelf,
     getConfig: (g) => ({
-      type: new ChoiceResolver(g, fireShieldTypeChoices)
+      type: new ChoiceResolver(g, "Type", fireShieldTypeChoices)
     }),
     async apply({ caster }, { type }) {
       await caster.addEffect(
@@ -12162,7 +12164,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
   - You make Dexterity- and Wisdom-based attack rolls with advantage.
   - While you are on the ground, the ground within 15 feet of you is difficult terrain for your enemies.`,
     ...affectsSelf,
-    getConfig: (g) => ({ form: new ChoiceResolver(g, FormChoices) }),
+    getConfig: (g) => ({ form: new ChoiceResolver(g, "Form", FormChoices) }),
     async apply({ g, caster }, { form }) {
       const duration = minutes(1);
       let effect = PrimalBeastEffect;
@@ -12285,7 +12287,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     // TODO choose dimensions of line wall
     getConfig: (g) => ({
       point: new PointResolver(g, 120),
-      shape: new ChoiceResolver(g, shapeChoices2)
+      shape: new ChoiceResolver(g, "Shape", shapeChoices2)
     }),
     getTargets: () => [],
     getAffected: () => [],
@@ -12294,6 +12296,33 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     }
   });
   var WallOfFire_default = WallOfFire;
+
+  // src/spells/level5/CommuneWithNature.ts
+  var CommuneWithNature = simpleSpell({
+    name: "Commune with Nature",
+    level: 5,
+    ritual: true,
+    school: "Divination",
+    time: "long",
+    v: true,
+    s: true,
+    lists: ["Druid", "Ranger"],
+    description: `You briefly become one with nature and gain knowledge of the surrounding territory. In the outdoors, the spell gives you knowledge of the land within 3 miles of you. In caves and other natural underground settings, the radius is limited to 300 feet. The spell doesn't function where nature has been replaced by construction, such as in dungeons and towns.
+
+  You instantly gain knowledge of up to three facts of your choice about any of the following subjects as they relate to the area:
+  - terrain and bodies of water
+  - prevalent plants, minerals, animals, or peoples
+  - powerful celestials, fey, fiends, elementals, or undead
+  - influence from other planes of existence
+  - buildings
+
+  For example, you could determine the location of powerful undead in the area, the location of major sources of safe drinking water, and the location of any nearby towns.`,
+    ...affectsSelf,
+    getConfig: () => ({}),
+    async apply() {
+    }
+  });
+  var CommuneWithNature_default = CommuneWithNature;
 
   // src/spells/level5/ConeOfCold.ts
   var ConeOfCold = scalingSpell({
@@ -12331,6 +12360,42 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     }
   });
   var ConeOfCold_default = ConeOfCold;
+
+  // src/spells/level5/ConjureElemental.ts
+  var ConjureElemental = scalingSpell({
+    name: "Conjure Elemental",
+    level: 5,
+    school: "Conjuration",
+    concentration: true,
+    time: "long",
+    v: true,
+    s: true,
+    m: "burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water",
+    lists: ["Druid", "Wizard"],
+    description: `You call forth an elemental servant. Choose an area of air, earth, fire, or water that fills a 10-foot cube within range. An elemental of challenge rating 5 or lower appropriate to the area you chose appears in an unoccupied space within 10 feet of it. For example, a fire elemental emerges from a bonfire, and an earth elemental rises up from the ground. The elemental disappears when it drops to 0 hit points or when the spell ends.
+
+  The elemental is friendly to you and your companions for the duration. Roll initiative for the elemental, which has its own turns. It obeys any verbal commands that you issue to it (no action required by you). If you don't issue any commands to the elemental, it defends itself from hostile creatures but otherwise takes no actions.
+  
+  If your concentration is broken, the elemental doesn't disappear. Instead, you lose control of the elemental, it becomes hostile toward you and your companions, and it might attack. An uncontrolled elemental can't be dismissed by you, and it disappears 1 hour after you summoned it.
+  
+  The DM has the elemental's statistics.
+  
+  At Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the challenge rating increases by 1 for each slot level above 5th.`,
+    getConfig: (g) => ({
+      point: new PointResolver(g, 90),
+      type: new ChoiceResolver(g, "Element", [
+        makeStringChoice("air"),
+        makeStringChoice("earth"),
+        makeStringChoice("fire"),
+        makeStringChoice("water")
+      ])
+    }),
+    getTargets: () => [],
+    getAffected: () => [],
+    async apply() {
+    }
+  });
+  var ConjureElemental_default = ConjureElemental;
 
   // src/img/spl/meteor-swarm.svg
   var meteor_swarm_default = "./meteor-swarm-XN7NNB53.svg";
@@ -12469,7 +12534,9 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
     "ice storm": IceStorm_default,
     stoneskin: Stoneskin_default,
     "wall of fire": WallOfFire_default,
+    "commune with nature": CommuneWithNature_default,
     "cone of cold": ConeOfCold_default,
+    "conjure elemental": ConjureElemental_default,
     "meteor swarm": MeteorSwarm_default
   };
   var allSpells_default = allSpells;
@@ -12488,21 +12555,26 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
       var _a;
       const casterLevel = levelType === "level" ? me.level : me.getClassLevel(levelType, 1);
       const activeEntries = entries.filter((entry) => entry.level <= casterLevel);
-      for (const { resource, spell } of activeEntries) {
+      const spells = /* @__PURE__ */ new Set();
+      for (const { resource, spell: name2 } of activeEntries) {
         if (resource)
           me.initResource(resource);
+        const spell = allSpells_default[name2];
+        spellImplementationWarning(spell != null ? spell : { name: name2, status: "missing" }, me);
+        if (!spell)
+          continue;
         if (addAsList) {
-          me.preparedSpells.add(allSpells_default[spell]);
-          (_a = method.addCastableSpell) == null ? void 0 : _a.call(method, allSpells_default[spell], me);
+          me.preparedSpells.add(spell);
+          (_a = method.addCastableSpell) == null ? void 0 : _a.call(method, spell, me);
         } else
-          spellImplementationWarning(allSpells_default[spell], me);
+          spells.add(spell);
       }
       me.spellcastingMethods.add(method);
-      if (!addAsList)
+      if (spells.size)
         g.events.on("GetActions", ({ detail: { who, actions } }) => {
           if (who === me)
-            for (const { spell } of activeEntries)
-              actions.push(new CastSpell(g, me, method, allSpells_default[spell]));
+            for (const spell of spells)
+              actions.push(new CastSpell(g, me, method, spell));
         });
       additionalSetup == null ? void 0 : additionalSetup(g, me);
     });
@@ -13712,9 +13784,9 @@ The elemental can grapple one Large creature or up to two Medium or smaller crea
     config: {
       initial: { weapon: "scimitar" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "scimitar/shield", value: "scimitar" },
-          { label: "shortbow", value: "shortbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("scimitar", "scimitar/shield"),
+          makeStringChoice("shortbow")
         ])
       }),
       apply({ weapon }) {
@@ -14095,15 +14167,16 @@ Some Channel Divinity effects require saving throws. When you use such an effect
         {
           slot: new ChoiceResolver(
             g,
+            "Slot",
             enumerate(1, 9).filter(
               (slot) => actor.resources.has(getSpellSlotResourceName(slot))
             ).map((value) => {
               const resource = SpellSlotResources[value];
-              return {
-                label: ordinal(value),
+              return makeChoice(
                 value,
-                disabled: actor.getResourceMax(resource) <= actor.getResource(resource)
-              };
+                ordinal(value),
+                actor.getResourceMax(resource) <= actor.getResource(resource)
+              );
             })
           )
         },
@@ -14885,17 +14958,13 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
 
   // src/resolvers/MultiChoiceResolver.ts
   var MultiChoiceResolver = class {
-    constructor(g, entries, minimum, maximum) {
+    constructor(g, name, entries, minimum, maximum) {
       this.g = g;
+      this.name = name;
       this.entries = entries;
       this.minimum = minimum;
       this.maximum = maximum;
       this.type = "Choices";
-    }
-    get name() {
-      if (this.entries.length === 0)
-        return "empty";
-      return `${describeRange(this.minimum, this.maximum)}: ${this.entries.map((e2) => e2.label).join(", ")}`;
     }
     check(value, action, ec) {
       if (this.entries.length === 0)
@@ -14904,9 +14973,15 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         ec.add("No choices", this);
       else {
         if (value.length < this.minimum)
-          ec.add(`At least ${this.minimum} choices`, this);
+          ec.add(
+            `At least ${this.minimum} ${plural("choice", this.minimum)}`,
+            this
+          );
         if (value.length > this.maximum)
-          ec.add(`At most ${this.maximum} choices`, this);
+          ec.add(
+            `At most ${this.maximum} ${plural("choice", this.maximum)}`,
+            this
+          );
       }
       return ec;
     }
@@ -14966,6 +15041,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         {
           weapons: new MultiChoiceResolver(
             g,
+            "Weapons",
             actor.weapons.filter(
               (w) => w.category !== "natural" && w.rangeCategory === "melee"
             ).map((value) => ({ label: value.name, value })),
@@ -16713,9 +16789,14 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     }
     for (const [sense, distance2] of objectEntries((_h = t.senses) != null ? _h : {}))
       m.senses.set(sense, distance2);
-    for (const spell of (_i = t.spells) != null ? _i : []) {
-      m.knownSpells.add(allSpells_default[spell]);
-      m.preparedSpells.add(allSpells_default[spell]);
+    for (const name of (_i = t.spells) != null ? _i : []) {
+      const spell = allSpells_default[name];
+      if (!spell) {
+        spellImplementationWarning({ name, status: "missing" }, m);
+        continue;
+      }
+      m.knownSpells.add(spell);
+      m.preparedSpells.add(spell);
     }
     for (const w of (_j = t.naturalWeapons) != null ? _j : [])
       m.naturalWeapons.add(new NaturalWeapon(g, w.name, w.toHit, w.damage, w));
@@ -16868,10 +16949,17 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
         {
           form: new ChoiceResolver(
             g,
-            forms.map((value) => ({ value, label: value }))
+            "Form",
+            forms.map(
+              (value) => makeStringChoice(value, value, !allMonsters_default[value])
+            )
           )
         },
-        { time: "action", resources: [[WildShapeResource, 1]] }
+        {
+          description: `You can use your action to magically assume the shape of a beast that you have seen before. You can use this feature twice. You regain expended uses when you finish a short or long rest.`,
+          time: "action",
+          resources: [[WildShapeResource, 1]]
+        }
       );
       this.forms = forms;
     }
@@ -16886,6 +16974,9 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     (g, me, forms) => {
       featureNotComplete(WildShape, me);
       me.initResource(WildShapeResource);
+      for (const form of forms)
+        if (!allMonsters_default[form])
+          implementationWarning("Monster", "Missing", form, me.name);
       g.events.on("GetActions", ({ detail: { who, actions } }) => {
         if (who === me)
           actions.push(new WildShapeAction(g, me, forms));
@@ -17482,7 +17573,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     levels: { Cleric: 1 },
     features: [ClericSpellcasting.feature],
     spells: [
-      // TODO "light",
+      "light",
       "sacred flame",
       "thaumaturgy",
       "bless",
@@ -17501,8 +17592,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     "Wizard",
     ArchmageSpellcastingMethod,
     [
-      // TODO { level: 0, spell: DisguiseSelf },
-      // TODO { level: 0, spell: Invisibility },
+      { level: 0, spell: "disguise self" },
+      { level: 0, spell: "invisibility" }
     ]
   );
   var Archmage = {
@@ -17530,30 +17621,30 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     ],
     spells: [
       "fire bolt",
-      // TODO "light",
-      // TODO "mage hand",
-      // TODO "prestidigitation",
+      "light",
+      "mage hand",
+      "prestidigitation",
       "shocking grasp",
-      // TODO "detect magic",
-      // TODO "identify",
+      "detect magic",
+      "identify",
       "mage armor",
       "magic missile",
-      // TODO "detect thoughts",
+      "detect thoughts",
       "mirror image",
       "misty step",
       "counterspell",
-      // TODO "fly",
+      "fly",
       "lightning bolt",
-      // TODO "banishment",
+      "banishment",
       "fire shield",
       "stoneskin",
-      "cone of cold"
-      // TODO "scrying",
-      // TODO "wall of force",
-      // TODO "globe of invulnerability",
-      // TODO "teleport",
-      // TODO "mind blank",
-      // TODO "time stop",
+      "cone of cold",
+      "scrying",
+      "wall of force",
+      "globe of invulnerability",
+      "teleport",
+      "mind blank",
+      "time stop"
     ],
     // TODO precast spells: mage armor, stoneskin, mind blank
     items: [{ name: "dagger", equip: true }]
@@ -17624,9 +17715,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "shortsword" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "shortsword", value: "shortsword" },
-          { label: "light crossbow", value: "light crossbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("shortsword"),
+          makeStringChoice("light crossbow")
         ])
       }),
       apply({ weapon }) {
@@ -17653,9 +17744,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "light crossbow" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "scimitar", value: "scimitar" },
-          { label: "light crossbow", value: "light crossbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("scimitar"),
+          makeStringChoice("light crossbow")
         ])
       }),
       apply({ weapon }) {
@@ -17774,14 +17865,14 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     levels: { Cleric: 4 },
     features: [DarkDevotion, ClericSpellcasting.feature, CultFanaticMultiattack],
     spells: [
-      // TODO "light",
+      "light",
       "sacred flame",
       "thaumaturgy",
       "command",
       "inflict wounds",
       "shield of faith",
-      "hold person"
-      // TODO "spiritual weapon",
+      "hold person",
+      "spiritual weapon"
     ],
     items: [
       { name: "leather armor", equip: true },
@@ -17805,14 +17896,14 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     levels: { Druid: 4 },
     features: [DruidSpellcasting.feature],
     spells: [
-      // TODO "druidcraft",
+      "druidcraft",
       "produce flame",
       "shillelagh",
       "entangle",
       "longstrider",
-      // TODO "speak with animals",
+      "speak with animals",
       "thunderwave",
-      // TODO "animal messenger",
+      "animal messenger",
       "barkskin"
     ],
     items: [{ name: "quarterstaff", equip: true }]
@@ -17935,9 +18026,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "greatsword" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "greatsword", value: "greatsword" },
-          { label: "heavy crossbow", value: "heavy crossbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("greatsword"),
+          makeStringChoice("heavy crossbow")
         ])
       }),
       apply({ weapon }) {
@@ -17966,19 +18057,19 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     items: [{ name: "dagger", equip: true }],
     spells: [
       "fire bolt",
-      // TODO "light",
-      // TODO "mage hand",
-      // TODO "prestidigitation",
-      // TODO "detect magic",
+      "light",
+      "mage hand",
+      "prestidigitation",
+      "detect magic",
       "mage armor",
       "magic missile",
       "shield",
       "misty step",
-      // TODO "suggestion",
+      "suggestion",
       "counterspell",
       "fireball",
-      // TODO "fly",
-      // TODO "greater invisibility",
+      "fly",
+      "greater invisibility",
       "ice storm",
       "cone of cold"
     ]
@@ -18027,15 +18118,15 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       { name: "mace", equip: true }
     ],
     spells: [
-      // TODO "light",
+      "light",
       "sacred flame",
       "thaumaturgy",
       "cure wounds",
       "guiding bolt",
       "sanctuary",
       "lesser restoration",
-      // TODO "spiritual weapon",
-      // TODO "dispel magic",
+      "spiritual weapon",
+      "dispel magic",
       "spirit guardians"
     ]
   };
@@ -18069,9 +18160,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "longbow" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "shortsword", value: "shortsword" },
-          { label: "longbow", value: "longbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("shortsword"),
+          makeStringChoice("longbow")
         ])
       }),
       apply({ weapon }) {
@@ -18110,9 +18201,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "hand crossbow" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "shortsword", value: "shortsword" },
-          { label: "hand crossbow", value: "hand crossbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("shortsword"),
+          makeStringChoice("hand crossbow")
         ])
       }),
       apply({ weapon }) {
@@ -18144,9 +18235,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "mace" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "mace", value: "mace" },
-          { label: "heavy crossbow", value: "heavy crossbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("mace"),
+          makeStringChoice("heavy crossbow")
         ])
       }),
       apply({ weapon }) {
@@ -18193,9 +18284,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     config: {
       initial: { weapon: "swords" },
       get: (g) => ({
-        weapon: new ChoiceResolver(g, [
-          { label: "longsword/shortsword", value: "swords" },
-          { label: "heavy crossbow", value: "heavy crossbow" }
+        weapon: new ChoiceResolver(g, "Weapon", [
+          makeStringChoice("swords", "longsword/shortsword"),
+          makeStringChoice("heavy crossbow")
         ])
       }),
       apply({ weapon }) {
@@ -18371,7 +18462,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     prepared: [
       "acid splash",
       "fire bolt",
-      // "message",
+      "message",
       "ray of frost",
       "ice knife",
       "magic missile",
@@ -18380,17 +18471,12 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       "hold person",
       "fireball",
       "intellect fortress",
-      // "Leomund's tiny hut",
+      "Leomund's tiny hut",
       "Melf's minute meteors",
-      // TODO "summon aberration",
+      "summon aberration",
       "wall of fire"
     ],
-    known: [
-      // "comprehend languages",
-      // TODO "find familiar",
-      // "floating disk",
-      // TODO "identify",
-    ]
+    known: ["comprehend languages", "find familiar", "floating disk", "identify"]
   };
   var Beldalynn_default = Beldalynn;
 
@@ -18457,7 +18543,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     ],
     prepared: [
       "bless",
-      // "ceremony",
+      "ceremony",
       "divine favor",
       "shield of faith",
       "aid",
@@ -18551,7 +18637,17 @@ If you want to cast either spell at a higher level, you must expend a spell slot
         class: "Druid",
         subclass: "Land",
         configs: {
-          "Wild Shape": ["bat", "giant badger"],
+          "Wild Shape": [
+            "bat",
+            "cat",
+            "constrictor snake",
+            "crab",
+            "dolphin",
+            "giant badger",
+            "giant goat",
+            "giant wolf spider",
+            "warhorse"
+          ],
           "Circle Spells": "mountain",
           "Bonus Cantrip": "magic stone"
         }
@@ -18593,19 +18689,19 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       // TODO { name: "potion of necrotic resistance" },
     ],
     prepared: [
-      // "druidcraft",
-      // "mending",
-      // "mold earth",
+      "druidcraft",
+      "mending",
+      "mold earth",
       "cure wounds",
-      // "detect magic",
+      "detect magic",
       "earth tremor",
-      // "purify food and drink",
-      // "speak with animals",
+      "purify food and drink",
+      "speak with animals",
       "lesser restoration",
-      // "locate object",
+      "locate object",
       "moonbeam",
-      // TODO "protection from poison",
-      // TODO "dispel magic",
+      "protection from poison",
+      "dispel magic",
       "guardian of nature",
       "stoneskin"
     ]
@@ -18637,11 +18733,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       { name: "light crossbow" },
       { name: "dagger", quantity: 2 }
     ],
-    prepared: [
-      // "minor illusion",
-      "charm person",
-      "command"
-    ]
+    prepared: ["minor illusion", "charm person", "command"]
   };
   var Es_les_default = Esles;
 
@@ -18701,9 +18793,9 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     prepared: [
       "gust",
       "poison spray",
-      // "animal friendship",
-      "faerie fire"
-      // "speak with animals",
+      "animal friendship",
+      "faerie fire",
+      "speak with animals"
     ]
   };
   var Litt_default = Litt;
@@ -18739,12 +18831,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       { name: "morningstar", equip: true },
       { name: "shield", equip: true }
     ],
-    prepared: [
-      "command",
-      "cure wounds",
-      // TODO "detect magic",
-      "divine favor"
-    ]
+    prepared: ["command", "cure wounds", "detect magic", "divine favor"]
   };
   var Marvoril_default = Marvoril;
 
@@ -18786,12 +18873,12 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       { name: "dagger" }
     ],
     prepared: [
-      // "dancing lights",
+      "dancing lights",
       "thunderclap",
-      // "comprehend languages",
+      "comprehend languages",
       "healing word",
       "hideous laughter",
-      // "illusory script",
+      "illusory script",
       "sleep"
     ]
   };
@@ -18861,12 +18948,117 @@ If you want to cast either spell at a higher level, you must expend a spell slot
       "bless",
       "divine favor",
       "protection from evil and good",
-      "aid"
-      // "find steed",
-      // "prayer of healing",
+      "aid",
+      "find steed",
+      "prayer of healing"
     ]
   };
   var Dandelion_default = Dandelion;
+
+  // src/img/tok/pc/moya.png
+  var moya_default = "./moya-2LYCOCKR.png";
+
+  // src/pcs/kythera/Moya.ts
+  var Moya = {
+    name: "Moya",
+    tokenUrl: moya_default,
+    abilities: [11, 7, 15, 15, 17, 9],
+    race: { name: "Water Genasi" },
+    alignment: ["Neutral", "Good"],
+    background: {
+      name: "Hermit",
+      proficiencies: ["brewer's supplies"],
+      languages: ["Deep Speech"]
+    },
+    levels: [
+      { class: "Druid", proficiencies: ["Nature", "Animal Handling"] },
+      {
+        class: "Druid",
+        hpRoll: 8,
+        subclass: "Shepherd",
+        configs: {
+          "Wild Shape": [
+            "ape",
+            "badger",
+            "black bear",
+            "cat",
+            "constrictor snake",
+            "cow",
+            "crab",
+            "crocodile",
+            "deer",
+            "dolphin",
+            "draft horse",
+            "elk",
+            "giant crab",
+            "giant frog",
+            "giant lizard",
+            "giant poisonous snake",
+            "giant sea horse",
+            "giant wolf spider",
+            "goat",
+            "lizard",
+            "mastiff",
+            "mule",
+            "octopus",
+            "ox",
+            "quipper",
+            "reef shark",
+            "riding horse",
+            "sea horse",
+            "spider",
+            "warhorse",
+            "wolf"
+          ]
+        }
+      },
+      { class: "Druid", hpRoll: 8 },
+      {
+        class: "Druid",
+        hpRoll: 5,
+        configs: {
+          "Ability Score Improvement (Druid 4)": {
+            type: "feat",
+            feat: "Ritual Caster"
+          },
+          "Ritual Caster": {
+            list: "Wizard",
+            spells: ["comprehend languages", "identify", "unseen servant"]
+          }
+        }
+      },
+      { class: "Druid", hpRoll: 2 },
+      { class: "Druid", hpRoll: 8 }
+    ],
+    items: [
+      // TODO { name: "horseshoes of speed" },
+      // TODO { name: "tempest staff", equip: true, attune: true },
+      { name: "breastplate", equip: true },
+      // { name: "cloak of billowing", equip: true },
+      // TODO { name: "lamannian oak focus", equip: true, attune: true },
+      { name: "shield", equip: true },
+      { name: "sickle" },
+      { name: "potion of healing", quantity: 3 }
+      // { name: "brewer's supplies" },
+      // { name: "herbalism kit" },
+    ],
+    prepared: [
+      "mending",
+      "primal savagery",
+      "thorn whip",
+      "absorb elements",
+      "cure wounds",
+      "healing word",
+      "thunderwave",
+      "darkvision",
+      "lesser restoration",
+      "summon beast",
+      "conjure animals",
+      "dispel magic",
+      "tidal wave"
+    ]
+  };
+  var Moya_default = Moya;
 
   // src/img/tok/pc/tethilssethanar.png
   var tethilssethanar_default = "./tethilssethanar-7GNDRUAR.png";
@@ -18906,7 +19098,8 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     Litt: Litt_default,
     Marvoril: Marvoril_default,
     Shaira: Shaira_default,
-    Dandelion: Dandelion_default
+    Dandelion: Dandelion_default,
+    Moya: Moya_default
   };
   var allPCs_default = allPCs;
 
@@ -19042,6 +19235,22 @@ If you want to cast either spell at a higher level, you must expend a spell slot
   };
   var FolkHero_default = FolkHero;
 
+  // src/backgrounds/Hermit.ts
+  var Hermit = {
+    name: "Hermit",
+    description: `You lived in seclusion\u2013either in a sheltered community such as a monastery, or entirely alone\u2013for a formative part of your life. In your time apart from the clamor of society, you found quiet, solitude, and perhaps some of the answers you were looking for.`,
+    feature: {
+      name: "Discovery",
+      description: `The quiet seclusion of your extended hermitage gave you access to a unique and powerful discovery. The exact nature of this revelation depends on the nature of your seclusion. It might be a great truth about the cosmos, the deities, the powerful beings of the outer planes, or the forces of nature. It could be a site that no one else has ever seen. You might have uncovered a fact that has long been forgotten, or unearthed some relic of the past that could rewrite history. It might be information that would be damaging to the people who or consigned you to exile, and hence the reason for your return to society.
+
+    Work with your DM to determine the details of your discovery and its impact on the campaign.`
+    },
+    skills: gains(["Medicine", "Religion"]),
+    tools: gains(["herbalism kit"]),
+    languages: gains([], 1, LanguageNames)
+  };
+  var Hermit_default = Hermit;
+
   // src/backgrounds/Knight.ts
   var Knight2 = {
     name: "Knight",
@@ -19132,6 +19341,7 @@ If you want to cast either spell at a higher level, you must expend a spell slot
     Acolyte: Acolyte_default,
     Criminal: Criminal_default,
     "Folk Hero": FolkHero_default,
+    Hermit: Hermit_default,
     Knight: Knight_default,
     Noble: Noble_default,
     Outlander: Outlander_default,
@@ -20659,15 +20869,16 @@ At 18th level, the range of this aura increases to 30 feet.`,
         {
           slot: new ChoiceResolver(
             g,
+            "Slot",
             enumerate(1, 9).filter(
               (slot) => actor.resources.has(getSpellSlotResourceName(slot))
             ).map((value) => {
               const resource = SpellSlotResources[value];
-              return {
-                label: ordinal(value),
+              return makeChoice(
                 value,
-                disabled: actor.getResourceMax(resource) <= actor.getResource(resource)
-              };
+                ordinal(value),
+                actor.getResourceMax(resource) <= actor.getResource(resource)
+              );
             })
           )
         },
@@ -20830,7 +21041,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
         "implemented",
         {
           target: new TargetResolver(g, actor.reach, [isHealable]),
-          effects: new MultiChoiceResolver(g, [], 1, Infinity)
+          effects: new MultiChoiceResolver(g, "Effects", [], 1, Infinity)
         },
         {
           icon: LayOnHandsCureIcon,
@@ -20850,7 +21061,7 @@ At 18th level, the range of this aura increases to 30 feet.`,
       const valid = target ? getCurableEffects(target) : [];
       return {
         target: new TargetResolver(this.g, this.actor.reach, [isHealable]),
-        effects: new MultiChoiceResolver(this.g, valid, 1, Infinity)
+        effects: new MultiChoiceResolver(this.g, "Effects", valid, 1, Infinity)
       };
     }
     check({ target, effects }, ec) {
@@ -21626,9 +21837,7 @@ At higher levels, you gain more warlock spells of your choice that can be cast i
     `You know the light cantrip. Charisma is your spellcasting ability for it.`,
     "level",
     LightBearerMethod,
-    [
-      // TODO { level: 1, spell: "light" }
-    ]
+    [{ level: 1, spell: "light" }]
   );
   var Aasimar = {
     name: "Aasimar",
@@ -22135,6 +22344,51 @@ Once you use this trait, you can't use it again until you finish a long rest.`
     abilities: /* @__PURE__ */ new Map([["int", 1]]),
     features: /* @__PURE__ */ new Set([Darkvision60, FireResistance, ReachToTheBlaze])
   };
+  var AcidResistance = resistanceFeature(
+    "Acid Resistance",
+    `You have resistance to acid damage.`,
+    ["acid"]
+  );
+  var CallToTheWaveResource = new LongRestResource("Call to the Wave", 1);
+  var CallToTheWaveSpells = [
+    { level: 1, spell: "shape water" },
+    {
+      level: 3,
+      spell: "create or destroy water",
+      resource: CallToTheWaveResource
+    }
+  ];
+  var CallToTheWaveMethod = new InnateSpellcasting(
+    "Call to the Wave",
+    "con",
+    bonusSpellResourceFinder(CallToTheWaveSpells)
+  );
+  var CallToTheWave = bonusSpellsFeature(
+    "Call to the Wave",
+    `You know the shape water cantrip. When you reach 3rd level, you can cast the create or destroy water spell as a 2nd-level spell once with this trait, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells.`,
+    "level",
+    CallToTheWaveMethod,
+    CallToTheWaveSpells,
+    void 0,
+    () => {
+    }
+  );
+  var Swim = new SimpleFeature(
+    "Swim",
+    `You have a swimming speed of 30 feet.`,
+    (g, me) => {
+      var _a;
+      const swimSpeed = Math.max((_a = me.movement.get("swim")) != null ? _a : 0, 30);
+      me.movement.set("swim", swimSpeed);
+    }
+  );
+  var WaterGenasi = {
+    parent: Genasi,
+    name: "Water Genasi",
+    size: SizeCategory_default.Medium,
+    abilities: /* @__PURE__ */ new Map([["wis", 1]]),
+    features: /* @__PURE__ */ new Set([AcidResistance, Amphibious, Swim, CallToTheWave])
+  };
 
   // src/races/Gnome.ts
   var GnomeCunning = new SimpleFeature(
@@ -22482,6 +22736,7 @@ When you create a device, choose one of the following options:
     "High Elf": HighElf,
     "Air Genasi": AirGenasi,
     "Fire Genasi": FireGenasi,
+    "Water Genasi": WaterGenasi,
     "Rock Gnome": RockGnome,
     "Half-Elf": HalfElf,
     "Lightfoot Halfling": LightfootHalfling,
@@ -22617,7 +22872,7 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 5, spell: "slow" },
       { level: 7, spell: "freedom of movement" },
       { level: 7, spell: "ice storm" },
-      // { level: 9, spell: 'commune with nature' },
+      { level: 9, spell: "commune with nature" },
       { level: 9, spell: "cone of cold" }
     ],
     coast: [
@@ -22626,69 +22881,69 @@ For example, when you are a 4th-level druid, you can recover up to two levels wo
       { level: 5, spell: "water breathing" },
       { level: 5, spell: "water walk" },
       { level: 7, spell: "control water" },
-      { level: 7, spell: "freedom of movement" }
-      // { level: 9, spell: 'conjure elemental' },
-      // { level: 9, spell: 'scrying' },
+      { level: 7, spell: "freedom of movement" },
+      { level: 9, spell: "conjure elemental" },
+      { level: 9, spell: "scrying" }
     ],
     desert: [
       { level: 3, spell: "blur" },
-      { level: 3, spell: "silence" }
-      // { level: 5, spell: 'create food and water' },
-      // TODO { level: 5, spell: 'protection from energy' },
-      // TODO { level: 7, spell: 'blight' },
-      // { level: 7, spell: 'hallucinatory terrain' },
-      // TODO { level: 9, spell: 'insect plague' },
-      // TODO { level: 9, spell: 'wall of stone' },
+      { level: 3, spell: "silence" },
+      { level: 5, spell: "create food and water" },
+      { level: 5, spell: "protection from energy" },
+      { level: 7, spell: "blight" },
+      { level: 7, spell: "hallucinatory terrain" },
+      { level: 9, spell: "insect plague" },
+      { level: 9, spell: "wall of stone" }
     ],
     forest: [
       { level: 3, spell: "barkskin" },
       { level: 3, spell: "spider climb" },
-      // TODO { level: 5, spell: 'call lightning' },
-      // { level: 5, spell: 'plant growth' },
-      // { level: 7, spell: 'divination' },
-      { level: 7, spell: "freedom of movement" }
-      // { level: 9, spell: 'commune with nature' },
-      // { level: 9, spell: 'tree stride' },
+      { level: 5, spell: "call lightning" },
+      { level: 5, spell: "plant growth" },
+      { level: 7, spell: "divination" },
+      { level: 7, spell: "freedom of movement" },
+      { level: 9, spell: "commune with nature" },
+      { level: 9, spell: "tree stride" }
     ],
     grassland: [
-      // TODO { level: 3, spell: 'invisibility' },
-      // { level: 3, spell: 'pass without trace' },
-      // { level: 5, spell: 'daylight' },
-      // TODO { level: 5, spell: 'haste' },
-      // { level: 7, spell: 'divination' },
-      { level: 7, spell: "freedom of movement" }
-      // { level: 9, spell: 'dream' },
-      // TODO { level: 9, spell: 'insect plague' },
+      { level: 3, spell: "invisibility" },
+      { level: 3, spell: "pass without trace" },
+      { level: 5, spell: "daylight" },
+      { level: 5, spell: "haste" },
+      { level: 7, spell: "divination" },
+      { level: 7, spell: "freedom of movement" },
+      { level: 9, spell: "dream" },
+      { level: 9, spell: "insect plague" }
     ],
     mountain: [
       { level: 3, spell: "spider climb" },
       { level: 3, spell: "spike growth" },
       { level: 5, spell: "lightning bolt" },
       { level: 5, spell: "meld into stone" },
-      // { level: 7, spell: 'stone shape' },
-      { level: 7, spell: "stoneskin" }
-      // { level: 9, spell: 'passwall' },
-      // { level: 9, spell: 'wall of stone' },
+      { level: 7, spell: "stone shape" },
+      { level: 7, spell: "stoneskin" },
+      { level: 9, spell: "passwall" },
+      { level: 9, spell: "wall of stone" }
     ],
     swamp: [
       { level: 3, spell: "darkness" },
-      // TODO { level: 3, spell: "melf's acid arrow" },
+      { level: 3, spell: "melf's acid arrow" },
       { level: 5, spell: "water walk" },
-      // TODO { level: 5, spell: 'stinking cloud' },
-      { level: 7, spell: "freedom of movement" }
-      // { level: 7, spell: 'locate creature' },
-      // TODO { level: 9, spell: 'insect plague' },
-      // { level: 9, spell: 'scrying' },
+      { level: 5, spell: "stinking cloud" },
+      { level: 7, spell: "freedom of movement" },
+      { level: 7, spell: "locate creature" },
+      { level: 9, spell: "insect plague" },
+      { level: 9, spell: "scrying" }
     ],
     Underdark: [
       { level: 3, spell: "spider climb" },
-      { level: 3, spell: "web" }
-      // { level: 5, spell: 'gaseous form' },
-      // TODO { level: 5, spell: 'stinking cloud' },
-      // TODO { level: 7, spell: 'greater invisibility' },
-      // { level: 7, spell: 'stoneshape' },
-      // TODO { level: 9, spell: 'cloudkill' },
-      // TODO { level: 9, spell: 'insect plague' },
+      { level: 3, spell: "web" },
+      { level: 5, spell: "gaseous form" },
+      { level: 5, spell: "stinking cloud" },
+      { level: 7, spell: "greater invisibility" },
+      { level: 7, spell: "stoneshape" },
+      { level: 9, spell: "cloudkill" },
+      { level: 9, spell: "insect plague" }
     ]
   };
   var bonusSpellsFeatures = new Map(
@@ -22758,24 +23013,75 @@ The creature is aware of this effect before it makes its attack against you.`
   };
   var Land_default = Land;
 
+  // src/classes/druid/Shepherd/index.ts
+  var SpeechOfTheWoods = notImplementedFeature(
+    "Speech of the Woods",
+    `At 2nd level, you gain the ability to converse with beasts and many fey.
+
+You learn to speak, read, and write Sylvan. In addition, beasts can understand your speech, and you gain the ability to decipher their noises and motions. Most beasts lack the intelligence to convey or understand sophisticated concepts, but a friendly beast could relay what it has seen or heard in the recent past. This ability doesn't grant you friendship with beasts, though you can combine this ability with gifts to curry favor with them as you would with any nonplayer character.`
+  );
+  var SpiritTotem = notImplementedFeature(
+    "Spirit Totem",
+    `Starting at 2nd level, you can call forth nature spirits to influence the world around you. As a bonus action, you can magically summon an incorporeal spirit to a point you can see within 60 feet of you. The spirit creates an aura in a 30-foot radius around that point. It counts as neither a creature nor an object, though it has the spectral appearance of the creature it represents.
+
+As a bonus action, you can move the spirit up to 60 feet to a point you can see.
+
+The spirit persists for 1 minute or until you're incapacitated. Once you use this feature, you can't use it again until you finish a short or long rest.
+
+The effect of the spirit's aura depends on the type of spirit you summon from the options below.
+
+- Bear Spirit. The bear spirit grants you and your allies its might and endurance. Each creature of your choice in the aura when the spirit appears gains temporary hit points equal to 5 + your druid level. In addition, you and your allies gain advantage on Strength checks and Strength saving throws while in the aura.
+- Hawk Spirit. The hawk spirit is a consummate hunter, aiding you and your allies with its keen sight. When a creature makes an attack roll against a target in the spirit's aura, you can use your reaction to grant advantage to that attack roll. In addition, you and your allies have advantage on Wisdom (Perception) checks while in the aura.
+- Unicorn Spirit. The unicorn spirit lends its protection to those nearby. You and your allies gain advantage on all ability checks made to detect creatures in the spirit's aura. In addition, if you cast a spell using a spell slot that restores hit points to any creature inside or outside the aura, each creature of your choice in the aura also regains hit points equal to your druid level.`
+  );
+  var MightySummoner = notImplementedFeature(
+    "Mighty Summoner",
+    `Starting at 6th level, beasts and fey that you conjure are more resilient than normal. Any beast or fey summoned or created by a spell that you cast gains the following benefits:
+
+The creature appears with more hit points than normal: 2 extra hit points per Hit Die it has.
+The damage from its natural weapons is considered magical for the purpose of overcoming immunity and resistance to nonmagical attacks and damage.`
+  );
+  var GuardianSpirit = notImplementedFeature(
+    "Guardian Spirit",
+    `Beginning at 10th level, your Spirit Totem safeguards the beasts and fey that you call forth with your magic. When a beast or fey that you summoned or created with a spell ends its turn in your Spirit Totem aura, that creature regains a number of hit points equal to half your druid level.`
+  );
+  var FaithfulSummons = notImplementedFeature(
+    "Faithful Summons",
+    `Starting at 14th level, the nature spirits you commune with protect you when you are the most defenseless. If you are reduced to 0 hit points or are incapacitated against your will, you can immediately gain the benefits of conjure animals as if it were cast using a 9th-level spell slot. It summons four beasts of your choice that are challenge rating 2 or lower. The conjured beasts appear within 20 feet of you. If they receive no commands from you, they protect you from harm and attack your foes. The spell lasts for 1 hour, requiring no concentration, or until you dismiss it (no action required).
+
+Once you use this feature, you can't use it again until you finish a long rest.`
+  );
+  var Shepherd = {
+    className: "Druid",
+    name: "Circle of the Shepherd",
+    features: /* @__PURE__ */ new Map([
+      [2, [SpeechOfTheWoods, SpiritTotem]],
+      [6, [MightySummoner]],
+      [10, [GuardianSpirit]],
+      [14, [FaithfulSummons]]
+    ])
+  };
+  var Shepherd_default = Shepherd;
+
   // src/classes/paladin/Crown/index.ts
-  var OathSpells = bonusSpellsFeature(
+  var CrownOathSpellsList = [
+    { level: 3, spell: "command" },
+    { level: 3, spell: "compelled duel" },
+    { level: 5, spell: "warding bond" },
+    { level: 5, spell: "zone of truth" },
+    { level: 9, spell: "aura of vitality" },
+    { level: 9, spell: "spirit guardians" },
+    { level: 13, spell: "banishment" },
+    { level: 13, spell: "guardian of faith" },
+    { level: 17, spell: "circle of power" },
+    { level: 17, spell: "geas" }
+  ];
+  var CrownOathSpells = bonusSpellsFeature(
     "Oath Spells",
     `You gain oath spells at the paladin levels listed.`,
     "Paladin",
     PaladinSpellcasting,
-    [
-      { level: 3, spell: "command" },
-      // TODO { level: 3, spell: "compelled duel" },
-      // TODO { level: 5, spell: "warding bond" },
-      // { level: 5, spell: "zone of truth" },
-      // TODO { level: 9, spell: "aura of vitality" },
-      { level: 9, spell: "spirit guardians" }
-      // TODO { level: 13, spell: "banishment" },
-      // TODO { level: 13, spell: "guardian of faith" },
-      // TODO { level: 17, spell: "circle of power" },
-      // { level: 17, spell: "geas" },
-    ],
+    CrownOathSpellsList,
     "Paladin"
   );
   var ChampionChallengeEffect = new Effect(
@@ -23002,7 +23308,7 @@ This effect ends early if you are incapacitated or die. Once you use this featur
     className: "Paladin",
     name: "Oath of the Crown",
     features: /* @__PURE__ */ new Map([
-      [3, [OathSpells, ChampionChallenge, TurnTheTide]],
+      [3, [CrownOathSpells, ChampionChallenge, TurnTheTide]],
       [7, [DivineAllegiance]],
       [15, [UnyieldingSpirit]],
       [20, [ExaltedChampion]]
@@ -23039,7 +23345,8 @@ This effect ends early if you are incapacitated or die. Once you use this featur
         {
           weapon: new ChoiceResolver(
             g,
-            actor.weapons.filter((weapon) => weapon.category !== "natural").map((value) => ({ label: value.name, value }))
+            "Weapon",
+            actor.weapons.filter((weapon) => weapon.category !== "natural").map((value) => makeChoice(value, value.name))
           )
         },
         {
@@ -23134,30 +23441,31 @@ In addition, for the duration, you have advantage on saving throws against spell
 
 Once you use this feature, you can't use it again until you finish a long rest.`
   );
-  var OathSpells2 = bonusSpellsFeature(
+  var DevotionOathSpellsList = [
+    { level: 3, spell: "protection from evil and good" },
+    { level: 3, spell: "sanctuary" },
+    { level: 5, spell: "lesser restoration" },
+    { level: 5, spell: "zone of truth" },
+    { level: 9, spell: "beacon of hope" },
+    { level: 9, spell: "dispel magic" },
+    { level: 13, spell: "freedom of movement" },
+    { level: 13, spell: "guardian of faith" },
+    { level: 17, spell: "commune" },
+    { level: 17, spell: "flame strike" }
+  ];
+  var DevotionOathSpells = bonusSpellsFeature(
     "Oath Spells",
     `You gain oath spells at the paladin levels listed.`,
     "Paladin",
     PaladinSpellcasting,
-    [
-      { level: 3, spell: "protection from evil and good" },
-      { level: 3, spell: "sanctuary" },
-      { level: 5, spell: "lesser restoration" }
-      // { level: 5, spell: 'zone of truth' },
-      // TODO { level: 9, spell: 'beacon of hope' },
-      // TODO { level: 9, spell: 'dispel magic' },
-      // TODO { level: 13, spell: 'freedom of movement' },
-      // TODO { level: 13, spell: 'guardian of faith' },
-      // { level: 17, spell: 'commune' },
-      // TODO { level: 17, spell: 'flame strike' },
-    ],
+    DevotionOathSpellsList,
     "Paladin"
   );
   var Devotion = {
     className: "Paladin",
     name: "Oath of Devotion",
     features: /* @__PURE__ */ new Map([
-      [3, [OathSpells2, SacredWeapon_default, TurnTheUnholy]],
+      [3, [DevotionOathSpells, SacredWeapon_default, TurnTheUnholy]],
       [7, [AuraOfDevotion]],
       [15, [PurityOfSpirit]],
       [20, [HolyNimbus]]
@@ -23348,23 +23656,24 @@ If you succeed on the check and the creature isn't hostile to you, it is charmed
   var Swashbuckler_default = Swashbuckler;
 
   // src/classes/warlock/Fiend/index.ts
+  var FiendExpandedSpellList = [
+    { level: 1, spell: "burning hands" },
+    { level: 1, spell: "command" },
+    { level: 2, spell: "blindness/deafness" },
+    { level: 2, spell: "scorching ray" },
+    { level: 3, spell: "fireball" },
+    { level: 3, spell: "stinking cloud" },
+    { level: 4, spell: "fire shield" },
+    { level: 4, spell: "wall of fire" },
+    { level: 5, spell: "flame strike" },
+    { level: 5, spell: "hallow" }
+  ];
   var ExpandedSpellList = bonusSpellsFeature(
     "Expanded Spell List",
     `The Fiend lets you choose from an expanded list of spells when you learn a warlock spell. The following spells are added to the warlock spell list for you.`,
     "Warlock",
     WarlockPactMagic,
-    [
-      { level: 1, spell: "burning hands" },
-      { level: 1, spell: "command" },
-      // TODO { level: 2, spell: 'blindness/deafness' },
-      // TODO { level: 2, spell: 'scorching ray' },
-      { level: 3, spell: "fireball" },
-      // TODO { level: 3, spell: 'stinking cloud' },
-      { level: 4, spell: "fire shield" },
-      { level: 4, spell: "wall of fire" }
-      // TODO { level: 5, spell: 'flame strike' },
-      // { level: 5, spell: 'hallow' },
-    ],
+    FiendExpandedSpellList,
     "Warlock"
   );
   var DarkOnesBlessing = new SimpleFeature(
@@ -23543,6 +23852,7 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     Berserker: Berserker_default,
     // Druid
     Land: Land_default,
+    Shepherd: Shepherd_default,
     // Paladin
     Crown: Crown_default,
     Devotion: Devotion_default,
@@ -23606,11 +23916,20 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
       if (equip)
         pc.don(item);
     }
-    for (const spell of (_c = t.known) != null ? _c : [])
-      pc.knownSpells.add(allSpells_default[spell]);
-    for (const spell of (_d = t.prepared) != null ? _d : []) {
-      pc.knownSpells.add(allSpells_default[spell]);
-      pc.preparedSpells.add(allSpells_default[spell]);
+    const getSpell = (name) => ({ name, spell: allSpells_default[name] });
+    for (const { name, spell } of ((_c = t.known) != null ? _c : []).map(getSpell)) {
+      if (!spell)
+        spellImplementationWarning({ name, status: "missing" }, pc);
+      else
+        pc.knownSpells.add(spell);
+    }
+    for (const { name, spell } of ((_d = t.prepared) != null ? _d : []).map(getSpell)) {
+      if (!spell) {
+        spellImplementationWarning({ name, status: "missing" }, pc);
+        continue;
+      }
+      pc.knownSpells.add(spell);
+      pc.preparedSpells.add(spell);
     }
     return pc;
   }
@@ -24889,7 +25208,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     };
     return /* @__PURE__ */ u("div", { children: [
       /* @__PURE__ */ u("div", { children: [
-        "Choice: ",
+        resolver.name,
+        ": ",
         label
       ] }),
       /* @__PURE__ */ u("div", { children: resolver.entries.map((e2) => /* @__PURE__ */ u(
@@ -24929,7 +25249,8 @@ The first time you do so, you suffer no adverse effect. If you use this feature 
     );
     return /* @__PURE__ */ u("div", { children: [
       /* @__PURE__ */ u("div", { children: [
-        "Choice: ",
+        resolver.name,
+        ": ",
         labels.length ? labels.join(", ") : "NONE"
       ] }),
       /* @__PURE__ */ u("div", { children: resolver.entries.map((e2) => {

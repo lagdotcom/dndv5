@@ -22,9 +22,9 @@ const Litt: PCTemplate = {
   prepared: [
     "gust",
     "poison spray",
-    // "animal friendship",
+    "animal friendship",
     "faerie fire",
-    // "speak with animals",
+    "speak with animals",
   ],
 };
 export default Litt;

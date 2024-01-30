@@ -23,10 +23,6 @@ const Esles: PCTemplate = {
     { name: "light crossbow" },
     { name: "dagger", quantity: 2 },
   ],
-  prepared: [
-    // "minor illusion",
-    "charm person",
-    "command",
-  ],
+  prepared: ["minor illusion", "charm person", "command"],
 };
 export default Esles;

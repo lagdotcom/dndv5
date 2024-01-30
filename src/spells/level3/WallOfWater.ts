@@ -25,7 +25,7 @@ const WallOfWater = simpleSpell<HasPoint & { shape: Shape }>({
 
   getConfig: (g) => ({
     point: new PointResolver(g, 60),
-    shape: new ChoiceResolver(g, shapeChoices),
+    shape: new ChoiceResolver(g, "Shape", shapeChoices),
   }),
   getTargets: () => [],
   getAffected: () => [],

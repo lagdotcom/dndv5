@@ -131,7 +131,7 @@ In addition, whenever a creature within 5 feet of you hits you with a melee atta
 
   ...affectsSelf,
   getConfig: (g) => ({
-    type: new ChoiceResolver(g, fireShieldTypeChoices),
+    type: new ChoiceResolver(g, "Type", fireShieldTypeChoices),
   }),
 
   async apply({ caster }, { type }) {
