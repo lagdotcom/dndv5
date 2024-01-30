@@ -2,7 +2,7 @@ import { HasAllocations } from "../../configs";
 import AllocationResolver from "../../resolvers/AllocationResolver";
 import { _dd } from "../../utils/dice";
 import { getCantripDice, simpleSpell } from "../common";
-import { isSpellAttack } from "../helpers";
+import { doesCantripDamage, isSpellAttack } from "../helpers";
 
 const getEldritchBlastDamage = (beams: number) => [_dd(beams, 10, "force")];
 
@@ -17,9 +17,9 @@ const EldritchBlast = simpleSpell<HasAllocations>({
   description: `A beam of crackling energy streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 force damage.
 
 The spell creates more than one beam when you reach higher levels: two beams at 5th level, three beams at 11th level, and four beams at 17th level. You can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.`,
-  isHarmful: true,
 
   ...isSpellAttack("ranged"),
+  ...doesCantripDamage(10, "force"),
 
   getConfig: (g, caster) => ({
     targets: new AllocationResolver(
@@ -31,7 +31,6 @@ The spell creates more than one beam when you reach higher levels: two beams at 
       [],
     ),
   }),
-  getDamage: (g, caster) => getEldritchBlastDamage(getCantripDice(caster)),
   getTargets: (g, caster, { targets }) => targets?.map((e) => e.who) ?? [],
   getAffected: (g, caster, { targets }) => targets.map((e) => e.who),
 

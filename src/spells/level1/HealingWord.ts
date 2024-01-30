@@ -1,9 +1,8 @@
 import { HasTarget } from "../../configs";
 import { canSee, notOfCreatureType } from "../../filters";
 import { DiceCount } from "../../flavours";
-import { poSet, poWithin } from "../../utils/ai";
 import { cannotHealConventionally, scalingSpell } from "../common";
-import { targetsOne } from "../helpers";
+import { aiTargetsOne, targetsOne } from "../helpers";
 
 const HealingWord = scalingSpell<HasTarget>({
   status: "implemented",
@@ -18,12 +17,8 @@ const HealingWord = scalingSpell<HasTarget>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
 
   ...targetsOne(60, [canSee, notOfCreatureType("undead", "construct")]),
+  generateHealingConfigs: aiTargetsOne(60),
 
-  generateHealingConfigs: (slot, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target)),
-    })),
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot as DiceCount) ?? 1, size: 4 } },
     {

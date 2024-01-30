@@ -12,6 +12,7 @@ import { SpecifiedEffectShape } from "../types/EffectArea";
 import Point from "../types/Point";
 import RangeCategory from "../types/RangeCategory";
 import Spell from "../types/Spell";
+import { poSet, poWithin } from "../utils/ai";
 import { sieve } from "../utils/array";
 import { _dd } from "../utils/dice";
 import { getCantripDice } from "./common";
@@ -148,3 +149,20 @@ export const affectsByPoint = (
   getAffected: (g, caster, { point }) =>
     g.getInside(getArea(point), ignoreCaster ? [caster] : undefined),
 });
+
+export const aiTargetsOne =
+  (range: Feet): Spell<HasTarget>["generateAttackConfigs"] =>
+  ({ allTargets }) =>
+    allTargets.map((target) => ({
+      config: { target },
+      positioning: poSet(poWithin(range, target)),
+    }));
+
+export const aiTargetsByTouch: Spell<HasTarget>["generateAttackConfigs"] = ({
+  allTargets,
+  caster,
+}) =>
+  allTargets.map((target) => ({
+    config: { target },
+    positioning: poSet(poWithin(caster.reach, target)),
+  }));

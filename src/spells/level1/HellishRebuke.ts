@@ -9,7 +9,7 @@ import Priority from "../../types/Priority";
 import { checkConfig } from "../../utils/config";
 import { enumerate } from "../../utils/numbers";
 import { scalingSpell } from "../common";
-import { doesScalingDamage, targetsOne } from "../helpers";
+import { aiTargetsOne, doesScalingDamage, targetsOne } from "../helpers";
 
 new DndRule("Hellish Rebuke", (g) => {
   g.events.on(
@@ -68,6 +68,7 @@ const HellishRebuke = scalingSpell<HasTarget>({
 
   ...targetsOne(60, []),
   ...doesScalingDamage(1, 1, 10, "fire"),
+  generateAttackConfigs: aiTargetsOne(60),
 
   async apply(sh, { target }) {
     const damageInitialiser = await sh.rollDamage({ target, tags: ["ranged"] });

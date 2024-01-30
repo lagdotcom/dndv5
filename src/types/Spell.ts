@@ -88,16 +88,16 @@ export default interface Spell<T extends object = Empty> extends Source {
   getTargets(g: Engine, caster: Combatant, config: Partial<T>): Combatant[];
   getAffected(g: Engine, caster: Combatant, config: T): Combatant[];
 
-  generateAttackConfigs(
-    g: Engine,
-    caster: Combatant,
-    method: SpellcastingMethod,
-    targets: Combatant[],
-  ): ConfigWithPositioning<T>[];
-  generateHealingConfigs(
-    g: Engine,
-    caster: Combatant,
-    method: SpellcastingMethod,
-    targets: Combatant[],
-  ): ConfigWithPositioning<T>[];
+  generateAttackConfigs(config: {
+    g: Engine;
+    caster: Combatant;
+    method: SpellcastingMethod;
+    allTargets: Combatant[];
+  }): ConfigWithPositioning<T>[];
+  generateHealingConfigs(config: {
+    g: Engine;
+    caster: Combatant;
+    method: SpellcastingMethod;
+    allTargets: Combatant[];
+  }): ConfigWithPositioning<T>[];
 }

@@ -3,9 +3,13 @@ import Effect from "../../Effect";
 import { canSee, notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Priority from "../../types/Priority";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  requiresSave,
+  targetsOne,
+} from "../helpers";
 
 const MindSliverEffect = new Effect(
   "Mind Sliver",
@@ -41,12 +45,7 @@ const MindSliver = simpleSpell<HasTarget>({
   ...targetsOne(60, [canSee, notSelf]),
   ...requiresSave("int"),
   ...doesCantripDamage(6, "psychic"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(60),
 
   async apply(sh, { target }) {
     const { damageResponse, outcome } = await sh.save({

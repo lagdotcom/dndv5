@@ -3,9 +3,13 @@ import iconUrl from "@img/spl/ray-of-frost.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import Effect from "../../Effect";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  isSpellAttack,
+  targetsOne,
+} from "../helpers";
 
 const RayOfFrostIcon = makeIcon(iconUrl, DamageColours.cold);
 
@@ -37,12 +41,7 @@ const RayOfFrost = simpleSpell<HasTarget>({
   ...targetsOne(60, []),
   ...isSpellAttack("ranged"),
   ...doesCantripDamage(8, "cold"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(60),
 
   async apply(sh) {
     const { attack, critical, hit, target } = await sh.attack({

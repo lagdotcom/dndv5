@@ -97,13 +97,13 @@ export const simpleSpell = <T extends object = Empty>({
   getTargets,
 });
 
-type ConfigGenerator<T> = (
-  slot: SpellSlot,
-  targets: Combatant[],
-  g: Engine,
-  caster: Combatant,
-  method: SpellcastingMethod,
-) => ConfigWithPositioning<T>[];
+type ConfigGenerator<T> = (config: {
+  slot: SpellSlot;
+  allTargets: Combatant[];
+  g: Engine;
+  caster: Combatant;
+  method: SpellcastingMethod;
+}) => ConfigWithPositioning<T>[];
 
 export const scalingSpell = <T extends object = Empty>({
   name,
@@ -178,13 +178,13 @@ export const scalingSpell = <T extends object = Empty>({
   isHarmful,
   apply,
   check,
-  generateAttackConfigs(g, caster, method, targets) {
+  generateAttackConfigs({ g, allTargets, caster, method }) {
     if (!generateAttackConfigs) return [];
 
     const minSlot = method.getMinSlot?.(this, caster) ?? level;
     const maxSlot = method.getMaxSlot?.(this, caster) ?? level;
     return enumerate(minSlot, maxSlot).flatMap((slot) =>
-      generateAttackConfigs(slot, targets, g, caster, method).map(
+      generateAttackConfigs({ slot, allTargets, g, caster, method }).map(
         ({ config, positioning }) => ({
           config: { ...config, slot },
           positioning,
@@ -192,13 +192,13 @@ export const scalingSpell = <T extends object = Empty>({
       ),
     );
   },
-  generateHealingConfigs(g, caster, method, targets) {
+  generateHealingConfigs({ g, allTargets, caster, method }) {
     if (!generateHealingConfigs) return [];
 
     const minSlot = method.getMinSlot?.(this, caster) ?? level;
     const maxSlot = method.getMaxSlot?.(this, caster) ?? level;
     return enumerate(minSlot, maxSlot).flatMap((slot) =>
-      generateHealingConfigs(slot, targets, g, caster, method).map(
+      generateHealingConfigs({ slot, allTargets, g, caster, method }).map(
         ({ config, positioning }) => ({
           config: { ...config, slot },
           positioning,

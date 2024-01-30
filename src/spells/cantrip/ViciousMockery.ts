@@ -4,7 +4,12 @@ import { canBeHeardBy, canSee } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Priority from "../../types/Priority";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  requiresSave,
+  targetsOne,
+} from "../helpers";
 
 const ViciousMockeryEffect = new Effect(
   "Vicious Mockery",
@@ -42,6 +47,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
   ...targetsOne(60, [canSee, canBeHeardBy]),
   ...requiresSave("wis"),
   ...doesCantripDamage(4, "psychic"),
+  generateAttackConfigs: aiTargetsOne(60),
 
   async apply(sh, { target }) {
     const config = { duration: 1 };

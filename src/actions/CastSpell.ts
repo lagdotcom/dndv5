@@ -41,22 +41,14 @@ export default class CastSpell<T extends object> implements Action<T> {
     return this.spell.status;
   }
 
-  generateAttackConfigs(targets: Combatant[]) {
-    return this.spell.generateAttackConfigs(
-      this.g,
-      this.actor,
-      this.method,
-      targets,
-    );
+  generateAttackConfigs(allTargets: Combatant[]) {
+    const { g, actor: caster, method } = this;
+    return this.spell.generateAttackConfigs({ g, caster, method, allTargets });
   }
 
-  generateHealingConfigs(targets: Combatant[]) {
-    return this.spell.generateHealingConfigs(
-      this.g,
-      this.actor,
-      this.method,
-      targets,
-    );
+  generateHealingConfigs(allTargets: Combatant[]) {
+    const { g, actor: caster, method } = this;
+    return this.spell.generateHealingConfigs({ g, caster, method, allTargets });
   }
 
   getConfig(config: Partial<T>) {

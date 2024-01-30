@@ -748,21 +748,13 @@
     get status() {
       return this.spell.status;
     }
-    generateAttackConfigs(targets) {
-      return this.spell.generateAttackConfigs(
-        this.g,
-        this.actor,
-        this.method,
-        targets
-      );
+    generateAttackConfigs(allTargets) {
+      const { g, actor: caster, method } = this;
+      return this.spell.generateAttackConfigs({ g, caster, method, allTargets });
     }
-    generateHealingConfigs(targets) {
-      return this.spell.generateHealingConfigs(
-        this.g,
-        this.actor,
-        this.method,
-        targets
-      );
+    generateHealingConfigs(allTargets) {
+      const { g, actor: caster, method } = this;
+      return this.spell.generateHealingConfigs({ g, caster, method, allTargets });
     }
     getConfig(config) {
       return this.spell.getConfig(this.g, this.actor, this.method, config);
@@ -1736,14 +1728,14 @@
     isHarmful,
     apply,
     check,
-    generateAttackConfigs(g, caster, method, targets) {
+    generateAttackConfigs({ g, allTargets, caster, method }) {
       var _a, _b, _c, _d;
       if (!generateAttackConfigs)
         return [];
       const minSlot = (_b = (_a = method.getMinSlot) == null ? void 0 : _a.call(method, this, caster)) != null ? _b : level;
       const maxSlot = (_d = (_c = method.getMaxSlot) == null ? void 0 : _c.call(method, this, caster)) != null ? _d : level;
       return enumerate(minSlot, maxSlot).flatMap(
-        (slot) => generateAttackConfigs(slot, targets, g, caster, method).map(
+        (slot) => generateAttackConfigs({ slot, allTargets, g, caster, method }).map(
           ({ config, positioning }) => ({
             config: { ...config, slot },
             positioning
@@ -1751,14 +1743,14 @@
         )
       );
     },
-    generateHealingConfigs(g, caster, method, targets) {
+    generateHealingConfigs({ g, allTargets, caster, method }) {
       var _a, _b, _c, _d;
       if (!generateHealingConfigs)
         return [];
       const minSlot = (_b = (_a = method.getMinSlot) == null ? void 0 : _a.call(method, this, caster)) != null ? _b : level;
       const maxSlot = (_d = (_c = method.getMaxSlot) == null ? void 0 : _c.call(method, this, caster)) != null ? _d : level;
       return enumerate(minSlot, maxSlot).flatMap(
-        (slot) => generateHealingConfigs(slot, targets, g, caster, method).map(
+        (slot) => generateHealingConfigs({ slot, allTargets, g, caster, method }).map(
           ({ config, positioning }) => ({
             config: { ...config, slot },
             positioning
@@ -5980,6 +5972,17 @@
     getAffectedArea: (g, caster, { point }) => point && [getArea(point)],
     getAffected: (g, caster, { point }) => g.getInside(getArea(point), ignoreCaster ? [caster] : void 0)
   });
+  var aiTargetsOne = (range) => ({ allTargets }) => allTargets.map((target) => ({
+    config: { target },
+    positioning: poSet(poWithin(range, target))
+  }));
+  var aiTargetsByTouch = ({
+    allTargets,
+    caster
+  }) => allTargets.map((target) => ({
+    config: { target },
+    positioning: poSet(poWithin(caster.reach, target))
+  }));
 
   // src/spells/level1/ArmorOfAgathys.ts
   var ArmorOfAgathysIcon = makeIcon(armor_of_agathys_default, DamageColours.cold);
@@ -6795,6 +6798,7 @@
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
     ...targetsByTouch([notOfCreatureType("undead", "construct")]),
+    generateHealingConfigs: aiTargetsByTouch,
     getHeal: (g, caster, method, { slot }) => [
       { type: "dice", amount: { count: slot != null ? slot : 1, size: 8 } },
       {
@@ -7354,7 +7358,7 @@
     description: `You hurl a bubble of acid. Choose one creature you can see within range, or choose two creatures you can see within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.
 
   This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).`,
-    generateAttackConfigs: (g, caster, method, allTargets) => combinationsMulti(
+    generateAttackConfigs: ({ caster, allTargets }) => combinationsMulti(
       allTargets.filter((co) => co.side !== caster.side),
       1,
       2
@@ -7446,12 +7450,9 @@
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
     ...targetsOne(120, []),
+    generateAttackConfigs: aiTargetsOne(120),
     isHarmful: true,
     getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(120, target))
-    })),
     async apply(sh) {
       const { caster, method } = sh;
       const { attack, critical, hit, target } = await sh.attack({
@@ -7611,10 +7612,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(60, [notSelf]),
     ...isSpellAttack("ranged"),
     ...doesCantripDamage(10, "fire"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(60),
     async apply(sh) {
       const { critical, hit, attack, target } = await sh.attack({
         target: sh.config.target,
@@ -7873,10 +7871,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(60, [canSee, notSelf]),
     ...requiresSave("int"),
     ...doesCantripDamage(6, "psychic"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(60),
     async apply(sh, { target }) {
       const { damageResponse, outcome } = await sh.save({
         who: target,
@@ -7929,10 +7924,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(10, [canSee]),
     ...requiresSave("con"),
     ...doesCantripDamage(6, "acid"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(10, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(10),
     async apply(sh, { target }) {
       const { damageResponse } = await sh.save({
         who: target,
@@ -7965,10 +7957,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(5, [notSelf]),
     ...isSpellAttack("melee"),
     ...doesCantripDamage(10, "acid"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(5, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(5),
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -8009,10 +7998,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(30, []),
     ...isSpellAttack("ranged"),
     ...doesCantripDamage(8, "fire"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(30, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(30),
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -8067,10 +8053,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(60, []),
     ...isSpellAttack("ranged"),
     ...doesCantripDamage(8, "cold"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(60),
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -8182,10 +8165,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsOne(60, [canSee]),
     ...requiresSave("dex"),
     ...doesCantripDamage(8, "radiant"),
-    generateAttackConfigs: (g, caster, method, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(60),
     async apply(sh, { target }) {
       const damageInitialiser = await sh.rollDamage({ target });
       const { damageResponse } = await sh.save({
@@ -8298,6 +8278,7 @@ The spell creates more than one beam when you reach higher levels: two beams at 
     ...targetsByTouch([]),
     ...isSpellAttack("melee"),
     ...doesCantripDamage(8, "lightning"),
+    generateAttackConfigs: aiTargetsByTouch,
     async apply(sh, { target: originalTarget }) {
       var _a;
       const { attack, critical, hit, target } = await sh.attack({
@@ -8442,6 +8423,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
     ...targetsOne(60, [canSee, canBeHeardBy]),
     ...requiresSave("wis"),
     ...doesCantripDamage(4, "psychic"),
+    generateAttackConfigs: aiTargetsOne(60),
     async apply(sh, { target }) {
       const config = { duration: 1 };
       const { outcome, damageResponse } = await sh.save({
@@ -8617,7 +8599,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
         [withinRangeOfEachOther(30)]
       )
     }),
-    generateAttackConfigs: (slot, allTargets) => combinationsMulti(allTargets, 1, slot).map((targets) => ({
+    generateAttackConfigs: ({ slot, allTargets }) => combinationsMulti(allTargets, 1, slot).map((targets) => ({
       config: { targets },
       positioning: poSet(...targets.map((target) => poWithin(60, target)))
     })),
@@ -8963,10 +8945,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
     ...targetsOne(120, [notSelf]),
     ...isSpellAttack("ranged"),
     ...doesScalingDamage(1, 3, 6, "radiant"),
-    generateAttackConfigs: (slot, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(120, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(120),
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -9004,10 +8983,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.`,
     ...targetsOne(60, [canSee, notOfCreatureType("undead", "construct")]),
-    generateHealingConfigs: (slot, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
+    generateHealingConfigs: aiTargetsOne(60),
     getHeal: (g, caster, method, { slot }) => [
       { type: "dice", amount: { count: slot != null ? slot : 1, size: 4 } },
       {
@@ -9081,6 +9057,7 @@ This spell's damage increases by 1d4 when you reach 5th level (2d4), 11th level 
     icon: makeIcon(hellish_rebuke_default, DamageColours.fire),
     ...targetsOne(60, []),
     ...doesScalingDamage(1, 1, 10, "fire"),
+    generateAttackConfigs: aiTargetsOne(60),
     async apply(sh, { target }) {
       const damageInitialiser = await sh.rollDamage({ target, tags: ["ranged"] });
       const { damageResponse } = await sh.save({ who: target, ability: "dex" });
@@ -9157,6 +9134,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     isHarmful: true,
     ...targetsOne(30, [canSee]),
     ...requiresSave("wis"),
+    generateAttackConfigs: aiTargetsOne(30),
     async apply({ g, caster, method }, { target }) {
       if (target.int.score <= 4) {
         g.text(
@@ -9214,10 +9192,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
 
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.`,
     ...targetsOne(60, [notSelf]),
-    generateAttackConfigs: (slot, targets) => targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target))
-    })),
+    generateAttackConfigs: aiTargetsOne(60),
     getAffectedArea: (g, caster, { target }) => target && [getIceKnifeArea(target)],
     getDamage: (g, caster, method, { slot }) => [
       piercingRoll,
@@ -9282,10 +9257,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
     ...targetsByTouch([]),
     ...isSpellAttack("melee"),
     ...doesScalingDamage(1, 2, 10, "necrotic"),
-    generateAttackConfigs: (slot, targets, g, caster) => targets.map((target) => ({
-      config: { slot, target },
-      positioning: poSet(poWithin(caster.reach, target))
-    })),
+    generateAttackConfigs: aiTargetsByTouch,
     async apply(sh) {
       const { attack, critical, hit, target } = await sh.attack({
         target: sh.config.target,
@@ -11385,7 +11357,7 @@ At Higher Levels. When you cast this spell using a spell slot of 4th level or hi
 
   At Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the healing increases by 1d4 for each slot level above 3rd.`,
     ...targetsMany(1, 6, 60, [canSee, notOfCreatureType("undead", "construct")]),
-    generateHealingConfigs: (slot, allTargets, g, caster) => combinationsMulti(
+    generateHealingConfigs: ({ allTargets, caster }) => combinationsMulti(
       allTargets.filter((co) => co.side === caster.side),
       1,
       6
@@ -16616,6 +16588,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
 
   // src/data/initialiseMonster.ts
   function applyMonsterTemplate(g, m, t, config) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p2;
     if (t.base)
       applyMonsterTemplate(g, m, t.base);
     if (t.name)
@@ -16644,71 +16617,55 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
     }
     if (t.naturalAC)
       m.naturalAC = t.naturalAC;
-    if (t.movement)
-      for (const [type, distance2] of objectEntries(t.movement))
-        m.movement.set(type, distance2);
-    if (t.levels)
-      for (const [name, level] of objectEntries(t.levels)) {
-        m.level += level;
-        m.classLevels.set(name, level);
-      }
-    if (t.proficiency)
-      for (const [thing, type] of objectEntries(t.proficiency))
-        m.addProficiency(thing, type);
-    if (t.damage)
-      for (const [type, response] of objectEntries(t.damage))
-        m.damageResponses.set(type, response);
-    if (t.immunities)
-      for (const name of t.immunities)
-        m.conditionImmunities.add(name);
-    if (t.languages)
-      for (const language of t.languages)
-        m.languages.add(language);
-    if (t.items)
-      for (const { name, equip, attune, enchantments, quantity } of t.items) {
-        const item = allItems_default[name](g);
-        if (attune)
-          m.attunements.add(item);
-        if (enchantments)
-          for (const name2 of enchantments) {
-            const enchantment = allEnchantments_default[name2];
-            item.addEnchantment(enchantment);
-          }
-        if (equip)
-          m.don(item, true);
-        else
-          m.give(item, quantity, true);
-      }
-    if (t.senses)
-      for (const [sense, distance2] of objectEntries(t.senses))
-        m.senses.set(sense, distance2);
-    if (t.spells)
-      for (const spell of t.spells) {
-        m.knownSpells.add(allSpells_default[spell]);
-        m.preparedSpells.add(allSpells_default[spell]);
-      }
-    if (t.naturalWeapons)
-      for (const w of t.naturalWeapons)
-        m.naturalWeapons.add(new NaturalWeapon(g, w.name, w.toHit, w.damage, w));
-    if (t.features)
-      for (const feature of t.features)
-        m.addFeature(feature);
-    if (t.aiRules)
-      for (const rule of t.aiRules)
-        m.rules.add(rule);
-    if (t.aiCoefficients)
-      for (const [rule, value] of t.aiCoefficients)
-        m.coefficients.set(rule, value);
-    if (t.aiGroups)
-      for (const group of t.aiGroups)
-        m.groups.add(group);
-    if (t.tags)
-      for (const tag of t.tags)
-        m.tags.add(tag);
+    for (const [type, distance2] of objectEntries((_a = t.movement) != null ? _a : {}))
+      m.movement.set(type, distance2);
+    for (const [name, level] of objectEntries((_b = t.levels) != null ? _b : {})) {
+      m.level += level;
+      m.classLevels.set(name, level);
+    }
+    for (const [thing, type] of objectEntries((_c = t.proficiency) != null ? _c : {}))
+      m.addProficiency(thing, type);
+    for (const [type, response] of objectEntries((_d = t.damage) != null ? _d : {}))
+      m.damageResponses.set(type, response);
+    for (const name of (_e = t.immunities) != null ? _e : [])
+      m.conditionImmunities.add(name);
+    for (const language of (_f = t.languages) != null ? _f : [])
+      m.languages.add(language);
+    for (const { name, equip, attune, enchantments, quantity } of (_g = t.items) != null ? _g : []) {
+      const item = allItems_default[name](g);
+      if (attune)
+        m.attunements.add(item);
+      if (enchantments)
+        for (const name2 of enchantments) {
+          const enchantment = allEnchantments_default[name2];
+          item.addEnchantment(enchantment);
+        }
+      if (equip)
+        m.don(item, true);
+      else
+        m.give(item, quantity, true);
+    }
+    for (const [sense, distance2] of objectEntries((_h = t.senses) != null ? _h : {}))
+      m.senses.set(sense, distance2);
+    for (const spell of (_i = t.spells) != null ? _i : []) {
+      m.knownSpells.add(allSpells_default[spell]);
+      m.preparedSpells.add(allSpells_default[spell]);
+    }
+    for (const w of (_j = t.naturalWeapons) != null ? _j : [])
+      m.naturalWeapons.add(new NaturalWeapon(g, w.name, w.toHit, w.damage, w));
+    for (const feature of (_k = t.features) != null ? _k : [])
+      m.addFeature(feature);
+    for (const rule of (_l = t.aiRules) != null ? _l : [])
+      m.rules.add(rule);
+    for (const [rule, value] of (_m = t.aiCoefficients) != null ? _m : [])
+      m.coefficients.set(rule, value);
+    for (const group of (_n = t.aiGroups) != null ? _n : [])
+      m.groups.add(group);
+    for (const tag of (_o = t.tags) != null ? _o : [])
+      m.tags.add(tag);
     if (t.config)
       t.config.apply.apply(m, [config != null ? config : t.config.initial]);
-    if (t.setup)
-      t.setup.apply(m);
+    (_p2 = t.setup) == null ? void 0 : _p2.apply(m);
   }
   function initialiseMonster(g, t, config) {
     var _a, _b, _c, _d;

@@ -1,8 +1,12 @@
 import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  isSpellAttack,
+  targetsOne,
+} from "../helpers";
 
 const PrimalSavagery = simpleSpell<HasTarget>({
   status: "implemented",
@@ -18,12 +22,7 @@ const PrimalSavagery = simpleSpell<HasTarget>({
   ...targetsOne(5, [notSelf]),
   ...isSpellAttack("melee"),
   ...doesCantripDamage(10, "acid"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(5, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(5),
 
   async apply(sh) {
     const { attack, critical, hit, target } = await sh.attack({

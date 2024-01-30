@@ -3,9 +3,13 @@ import Effect from "../../Effect";
 import { notSelf } from "../../filters";
 import EvaluateLater from "../../interruptions/EvaluateLater";
 import Priority from "../../types/Priority";
-import { poSet, poWithin } from "../../utils/ai";
 import { scalingSpell } from "../common";
-import { doesScalingDamage, isSpellAttack, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesScalingDamage,
+  isSpellAttack,
+  targetsOne,
+} from "../helpers";
 
 const GuidingBoltEffect = new Effect(
   "Guiding Bolt",
@@ -43,12 +47,7 @@ const GuidingBolt = scalingSpell<HasTarget>({
   ...targetsOne(120, [notSelf]),
   ...isSpellAttack("ranged"),
   ...doesScalingDamage(1, 3, 6, "radiant"),
-
-  generateAttackConfigs: (slot, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(120, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(120),
 
   async apply(sh) {
     const { attack, critical, hit, target } = await sh.attack({

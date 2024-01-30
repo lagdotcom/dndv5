@@ -2,7 +2,7 @@ import { HasTarget } from "../../configs";
 import { notOfCreatureType } from "../../filters";
 import { DiceCount } from "../../flavours";
 import { cannotHealConventionally, scalingSpell } from "../common";
-import { targetsByTouch } from "../helpers";
+import { aiTargetsByTouch, targetsByTouch } from "../helpers";
 
 const CureWounds = scalingSpell<HasTarget>({
   status: "implemented",
@@ -17,6 +17,7 @@ const CureWounds = scalingSpell<HasTarget>({
   At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.`,
 
   ...targetsByTouch([notOfCreatureType("undead", "construct")]),
+  generateHealingConfigs: aiTargetsByTouch,
 
   getHeal: (g, caster, method, { slot }) => [
     { type: "dice", amount: { count: (slot as DiceCount) ?? 1, size: 8 } },

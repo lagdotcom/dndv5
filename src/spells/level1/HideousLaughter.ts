@@ -14,7 +14,7 @@ import { EffectConfig } from "../../types/EffectType";
 import Priority from "../../types/Priority";
 import { minutes } from "../../utils/time";
 import { simpleSpell } from "../common";
-import { requiresSave, targetsOne } from "../helpers";
+import { aiTargetsOne, requiresSave, targetsOne } from "../helpers";
 
 const getHideousLaughterSave = (
   who: Combatant,
@@ -96,6 +96,7 @@ At the end of each of its turns, and each time it takes damage, the target can m
 
   ...targetsOne(30, [canSee]),
   ...requiresSave("wis"),
+  generateAttackConfigs: aiTargetsOne(30),
 
   async apply({ g, caster, method }, { target }) {
     if (target.int.score <= 4) {

@@ -1,8 +1,12 @@
 import { HasTarget } from "../../configs";
 import { canSee } from "../../filters";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  requiresSave,
+  targetsOne,
+} from "../helpers";
 
 const PoisonSpray = simpleSpell<HasTarget>({
   status: "implemented",
@@ -19,12 +23,7 @@ const PoisonSpray = simpleSpell<HasTarget>({
   ...targetsOne(10, [canSee]),
   ...requiresSave("con"),
   ...doesCantripDamage(6, "acid"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(10, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(10),
 
   async apply(sh, { target }) {
     const { damageResponse } = await sh.save({

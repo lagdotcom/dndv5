@@ -3,9 +3,13 @@ import iconUrl from "@img/spl/fire-bolt.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { notSelf } from "../../filters";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  isSpellAttack,
+  targetsOne,
+} from "../helpers";
 
 const FireBolt = simpleSpell<HasTarget>({
   status: "implemented",
@@ -23,12 +27,7 @@ const FireBolt = simpleSpell<HasTarget>({
   ...targetsOne(60, [notSelf]),
   ...isSpellAttack("ranged"),
   ...doesCantripDamage(10, "fire"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(60),
 
   async apply(sh) {
     const { critical, hit, attack, target } = await sh.attack({

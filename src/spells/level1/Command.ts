@@ -40,7 +40,7 @@ const Command = scalingSpell<HasTargets>({
     ),
   }),
 
-  generateAttackConfigs: (slot, allTargets) =>
+  generateAttackConfigs: ({ slot, allTargets }) =>
     combinationsMulti(allTargets, 1, slot).map((targets) => ({
       config: { targets },
       positioning: poSet(...targets.map((target) => poWithin(60, target))),

@@ -19,7 +19,7 @@ const MassHealingWord = scalingSpell<HasTargets>({
 
   ...targetsMany(1, 6, 60, [canSee, notOfCreatureType("undead", "construct")]),
 
-  generateHealingConfigs: (slot, allTargets, g, caster) =>
+  generateHealingConfigs: ({ allTargets, caster }) =>
     combinationsMulti(
       allTargets.filter((co) => co.side === caster.side),
       1,

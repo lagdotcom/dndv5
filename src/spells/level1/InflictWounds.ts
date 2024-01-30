@@ -2,9 +2,13 @@ import iconUrl from "@img/spl/inflict-wounds.svg";
 
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
-import { poSet, poWithin } from "../../utils/ai";
 import { scalingSpell } from "../common";
-import { doesScalingDamage, isSpellAttack, targetsByTouch } from "../helpers";
+import {
+  aiTargetsByTouch,
+  doesScalingDamage,
+  isSpellAttack,
+  targetsByTouch,
+} from "../helpers";
 
 const InflictWounds = scalingSpell<HasTarget>({
   status: "implemented",
@@ -22,12 +26,7 @@ const InflictWounds = scalingSpell<HasTarget>({
   ...targetsByTouch([]),
   ...isSpellAttack("melee"),
   ...doesScalingDamage(1, 2, 10, "necrotic"),
-
-  generateAttackConfigs: (slot, targets, g, caster) =>
-    targets.map((target) => ({
-      config: { slot, target },
-      positioning: poSet(poWithin(caster.reach, target)),
-    })),
+  generateAttackConfigs: aiTargetsByTouch,
 
   async apply(sh) {
     const { attack, critical, hit, target } = await sh.attack({

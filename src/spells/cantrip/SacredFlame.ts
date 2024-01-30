@@ -3,9 +3,13 @@ import iconUrl from "@img/spl/sacred-flame.svg";
 import { DamageColours, makeIcon } from "../../colours";
 import { HasTarget } from "../../configs";
 import { canSee } from "../../filters";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, requiresSave, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  requiresSave,
+  targetsOne,
+} from "../helpers";
 
 const SacredFlame = simpleSpell<HasTarget>({
   status: "incomplete",
@@ -23,12 +27,7 @@ const SacredFlame = simpleSpell<HasTarget>({
   ...targetsOne(60, [canSee]),
   ...requiresSave("dex"),
   ...doesCantripDamage(8, "radiant"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(60, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(60),
 
   async apply(sh, { target }) {
     const damageInitialiser = await sh.rollDamage({ target });

@@ -1,7 +1,11 @@
 import { HasTarget } from "../../configs";
-import { poSet, poWithin } from "../../utils/ai";
 import { simpleSpell } from "../common";
-import { doesCantripDamage, isSpellAttack, targetsOne } from "../helpers";
+import {
+  aiTargetsOne,
+  doesCantripDamage,
+  isSpellAttack,
+  targetsOne,
+} from "../helpers";
 
 // TODO this isn't just a normal attack spell, though it can be used as one
 
@@ -22,12 +26,7 @@ const ProduceFlame = simpleSpell<HasTarget>({
   ...targetsOne(30, []),
   ...isSpellAttack("ranged"),
   ...doesCantripDamage(8, "fire"),
-
-  generateAttackConfigs: (g, caster, method, targets) =>
-    targets.map((target) => ({
-      config: { target },
-      positioning: poSet(poWithin(30, target)),
-    })),
+  generateAttackConfigs: aiTargetsOne(30),
 
   async apply(sh) {
     // TODO
