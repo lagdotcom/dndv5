@@ -1,4 +1,5 @@
 import Engine from "../Engine";
+import { GatherDamageDetail } from "../events/GatherDamageEvent";
 import {
   ArmorClass,
   DiceCount,
@@ -119,4 +120,12 @@ export function getFlanker(g: Engine, attacker: Combatant, target: Combatant) {
 
     return flanker;
   }
+}
+
+export function getTotalDamage(gather: GatherDamageDetail) {
+  let total = gather.bonus.result;
+  for (const [, amount] of gather.map) total += amount;
+  total *= gather.multiplier.result;
+
+  return total;
 }

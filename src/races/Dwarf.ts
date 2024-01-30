@@ -1,7 +1,7 @@
 import { Darkvision60, nonCombatFeature } from "../features/common";
 import ConfiguredFeature from "../features/ConfiguredFeature";
 import SimpleFeature from "../features/SimpleFeature";
-import { coSet } from "../types/CombatantTag";
+import { cmSet } from "../types/CombatantTag";
 import { laSet } from "../types/LanguageName";
 import PCRace from "../types/PCRace";
 import SizeCategory from "../types/SizeCategory";
@@ -48,7 +48,7 @@ const Dwarf: PCRace = {
     Stonecunning,
   ]),
   languages: laSet("Common", "Dwarvish"),
-  tags: coSet("dwarf"),
+  tags: cmSet("dwarf"),
 };
 
 const DwarvenToughness = new SimpleFeature(

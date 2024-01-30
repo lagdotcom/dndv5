@@ -1483,6 +1483,13 @@
       return flanker;
     }
   }
+  function getTotalDamage(gather) {
+    let total = gather.bonus.result;
+    for (const [, amount] of gather.map)
+      total += amount;
+    total *= gather.multiplier.result;
+    return total;
+  }
 
   // src/AbilityScore.ts
   var AbilityScore = class {
@@ -2644,8 +2651,14 @@
       this.no = no;
       this.isStillValid = isStillValid;
     }
+    setDynamicText(dynamicText) {
+      this.dynamicText = dynamicText;
+      return this;
+    }
     async apply(g) {
       var _a, _b;
+      if (this.dynamicText)
+        this.text = this.dynamicText();
       const choice = await new Promise(
         (resolve) => g.fire(new YesNoChoiceEvent({ interruption: this, resolve }))
       );
@@ -6372,7 +6385,8 @@
   ];
   var DamageTypes = [
     ...MundaneDamageTypes,
-    ...MagicDamageTypes
+    ...MagicDamageTypes,
+    "unpreventable"
   ];
 
   // src/monsters/multiattack.ts
@@ -7450,9 +7464,9 @@
   
   This spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).`,
     ...targetsOne(120, []),
+    ...isSpellAttack("ranged"),
+    ...doesCantripDamage(8, "necrotic"),
     generateAttackConfigs: aiTargetsOne(120),
-    isHarmful: true,
-    getDamage: (g, caster) => [_dd(getCantripDice(caster), 8, "necrotic")],
     async apply(sh) {
       const { caster, method } = sh;
       const { attack, critical, hit, target } = await sh.attack({
@@ -7547,8 +7561,8 @@
     description: `A beam of crackling energy streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 force damage.
 
 The spell creates more than one beam when you reach higher levels: two beams at 5th level, three beams at 11th level, and four beams at 17th level. You can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.`,
-    isHarmful: true,
     ...isSpellAttack("ranged"),
+    ...doesCantripDamage(10, "force"),
     getConfig: (g, caster) => ({
       targets: new AllocationResolver(
         g,
@@ -7559,7 +7573,6 @@ The spell creates more than one beam when you reach higher levels: two beams at 
         []
       )
     }),
-    getDamage: (g, caster) => getEldritchBlastDamage(getCantripDice(caster)),
     getTargets: (g, caster, { targets }) => {
       var _a;
       return (_a = targets == null ? void 0 : targets.map((e2) => e2.who)) != null ? _a : [];
@@ -14998,6 +15011,32 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   };
 
   // src/items/ggr.ts
+  var PariahsShieldAction = class extends AbstractSingleTargetAction {
+    constructor(g, actor, gather) {
+      super(
+        g,
+        actor,
+        "Pariah's Shield",
+        "implemented",
+        { target: new TargetResolver(g, 5, [canSee, notSelf]) },
+        {
+          description: `When a creature you can see within 5 feet of you takes damage, you can use your reaction to take that damage, instead of the creature taking it. When you do so, the damage type changes to force.`,
+          time: "reaction"
+        }
+      );
+      this.gather = gather;
+    }
+    async applyEffect() {
+      const { g, actor, gather } = this;
+      if (!gather)
+        throw new Error(`PariahsShield.apply() without GatherDamage`);
+      const total = getTotalDamage(gather);
+      if (total > 0) {
+        gather.multiplier.add("zero", this);
+        await g.damage(this, "force", { target: actor }, [["force", total]]);
+      }
+    }
+  };
   var PariahsShield = class extends Shield2 {
     constructor(g) {
       super(g);
@@ -15011,6 +15050,33 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
           const value = clamp(Math.floor(allies / 2), 0, 3);
           if (value)
             bonus.add(value, this);
+        }
+      });
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (isEquipmentAttuned(this, who))
+          actions.push(new PariahsShieldAction(g, who));
+      });
+      g.events.on("GatherDamage", ({ detail }) => {
+        for (const who of g.combatants) {
+          if (isEquipmentAttuned(this, who)) {
+            const action = new PariahsShieldAction(g, who, detail);
+            const config = { target: detail.target };
+            if (checkConfig(g, action, config))
+              detail.interrupt.add(
+                new YesNoChoice(
+                  who,
+                  this,
+                  "Pariah's Shield",
+                  "...",
+                  Priority_default.Late,
+                  () => g.act(action, config),
+                  void 0,
+                  () => getTotalDamage(detail) > 0
+                ).setDynamicText(
+                  () => `${detail.target.name} is about to take ${getTotalDamage(detail)} damage. Should ${action.actor.name} use their reaction to take it for them as force damage?`
+                )
+              );
+          }
         }
       });
     }
@@ -15208,7 +15274,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
   };
 
   // src/types/CombatantTag.ts
-  var coSet2 = (...items) => new Set(items);
+  var cmSet = (...items) => new Set(items);
 
   // src/types/LanguageName.ts
   var StandardLanguages = [
@@ -15336,7 +15402,7 @@ At 20th level, your call for intervention succeeds automatically, no roll requir
       Stonecunning
     ]),
     languages: laSet("Common", "Dwarvish"),
-    tags: coSet2("dwarf")
+    tags: cmSet("dwarf")
   };
   var DwarvenToughness = new SimpleFeature(
     "Dwarven Toughness",
@@ -22712,9 +22778,97 @@ The creature is aware of this effect before it makes its attack against you.`
     ],
     "Paladin"
   );
-  var ChampionChallenge = notImplementedFeature(
+  var ChampionChallengeEffect = new Effect(
+    "Champion Challenge",
+    "turnStart",
+    (g) => {
+      g.events.on("BeforeMove", ({ detail: { who, from, to, error } }) => {
+        const efConfig = who.getEffectConfig(ChampionChallengeEffect);
+        if (!efConfig)
+          return;
+        const { oldDistance, newDistance } = compareDistances(
+          efConfig.inflictor,
+          efConfig.inflictor.position,
+          who,
+          from,
+          to
+        );
+        if (oldDistance <= 30 && newDistance > 30)
+          error.add(
+            `must stay near ${efConfig.inflictor.name}`,
+            ChampionChallengeEffect
+          );
+      });
+      const cleanup = ({
+        detail: { interrupt }
+      }) => {
+        for (const who of g.combatants) {
+          const efConfig = who.getEffectConfig(ChampionChallengeEffect);
+          if (!efConfig)
+            continue;
+          if (efConfig.inflictor.conditions.has("Incapacitated") || distance(efConfig.inflictor, who) > 30)
+            interrupt.add(
+              new EvaluateLater(
+                who,
+                ChampionChallengeEffect,
+                Priority_default.Normal,
+                () => who.removeEffect(ChampionChallengeEffect)
+              )
+            );
+        }
+      };
+      g.events.on("AfterAction", cleanup);
+      g.events.on("CombatantMoved", cleanup);
+    }
+  );
+  var ChampionChallengeAction = class extends AbstractMultiTargetAction {
+    constructor(g, actor) {
+      super(
+        g,
+        actor,
+        "Channel Divinity: Champion Challenge",
+        "implemented",
+        { targets: new MultiTargetResolver(g, 1, Infinity, 30, [canSee]) },
+        {
+          description: `As a bonus action, you issue a challenge that compels other creatures to do battle with you. Each creature of your choice that you can see within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature can't willingly move more than 30 feet away from you. This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.`,
+          resources: [[ChannelDivinityResource, 1]],
+          subIcon: PaladinIcon,
+          time: "bonus action"
+        }
+      );
+    }
+    async applyEffect(actionConfig) {
+      const { g, actor } = this;
+      for (const who of this.getAffected(actionConfig)) {
+        const effect = ChampionChallengeEffect;
+        const config = {
+          inflictor: actor,
+          duration: Infinity
+        };
+        const result = await g.save({
+          source: this,
+          type: PaladinSpellcasting.getSaveType(),
+          attacker: actor,
+          who,
+          ability: "wis",
+          effect,
+          config,
+          tags: ["charm"]
+        });
+        if (result.outcome === "fail")
+          await who.addEffect(effect, config, actor);
+      }
+    }
+  };
+  var ChampionChallenge = new SimpleFeature(
     "Channel Divinity: Champion Challenge",
-    `As a bonus action, you issue a challenge that compels other creatures to do battle with you. Each creature of your choice that you can see within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature can't willingly move more than 30 feet away from you. This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.`
+    `As a bonus action, you issue a challenge that compels other creatures to do battle with you. Each creature of your choice that you can see within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature can't willingly move more than 30 feet away from you. This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new ChampionChallengeAction(g, me));
+      });
+    }
   );
   var noMoreThanHalfHitPoints = {
     name: "no more than half hit points",
@@ -22767,21 +22921,81 @@ The creature is aware of this effect before it makes its attack against you.`
       });
     }
   );
-  var DivineAllegiance = notImplementedFeature(
+  var DivineAllegianceAction = class extends AbstractSingleTargetAction {
+    constructor(g, actor, gather) {
+      super(
+        g,
+        actor,
+        "Divine Allegiance",
+        "implemented",
+        { target: new TargetResolver(g, 5, [canSee, notSelf]) },
+        {
+          description: `When a creature within 5 feet of you takes damage, you can use your reaction to magically substitute your own health for that of the target creature, causing that creature not to take the damage. Instead, you take the damage. This damage to you can't be reduced or prevented in any way.`,
+          time: "reaction"
+        }
+      );
+      this.gather = gather;
+    }
+    async applyEffect() {
+      const { g, actor, gather } = this;
+      if (!gather)
+        throw new Error(`DivineAllegiance.apply() without GatherDamage`);
+      const total = getTotalDamage(gather);
+      if (total > 0) {
+        gather.multiplier.add("zero", this);
+        await g.damage(this, "unpreventable", { target: actor }, [
+          ["unpreventable", total]
+        ]);
+      }
+    }
+  };
+  var DivineAllegiance = new SimpleFeature(
     "Divine Allegiance",
-    `Starting at 7th level, when a creature within 5 feet of you takes damage, you can use your reaction to magically substitute your own health for that of the target creature, causing that creature not to take the damage. Instead, you take the damage. This damage to you can't be reduced or prevented in any way.`
+    `Starting at 7th level, when a creature within 5 feet of you takes damage, you can use your reaction to magically substitute your own health for that of the target creature, causing that creature not to take the damage. Instead, you take the damage. This damage to you can't be reduced or prevented in any way.`,
+    (g, me) => {
+      g.events.on("GetActions", ({ detail: { who, actions } }) => {
+        if (who === me)
+          actions.push(new DivineAllegianceAction(g, who));
+      });
+      g.events.on("GatherDamage", ({ detail }) => {
+        const action = new DivineAllegianceAction(g, me, detail);
+        const config = { target: detail.target };
+        if (checkConfig(g, action, config))
+          detail.interrupt.add(
+            new YesNoChoice(
+              me,
+              DivineAllegiance,
+              "Divine Allegiance",
+              "...",
+              Priority_default.Late,
+              () => g.act(action, config),
+              void 0,
+              () => getTotalDamage(detail) > 0
+            ).setDynamicText(
+              () => `${detail.target.name} is about to take ${getTotalDamage(detail)} damage. Should ${action.actor.name} use their reaction to take it for them?`
+            )
+          );
+      });
+    }
   );
-  var UnyieldingSpirit = notImplementedFeature(
+  var unyieldingSpiritConditions = coSet("Paralyzed", "Stunned");
+  var UnyieldingSpirit = new SimpleFeature(
     "Unyielding Spirit",
-    `Starting at 15th level, you have advantage on saving throws to avoid becoming paralyzed or stunned.`
+    `Starting at 15th level, you have advantage on saving throws to avoid becoming paralyzed or stunned.`,
+    (g, me) => {
+      g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
+        if (who === me && (config == null ? void 0 : config.conditions) && intersects(config.conditions, unyieldingSpiritConditions))
+          diceType.add("advantage", UnyieldingSpirit);
+      });
+    }
   );
   var ExaltedChampion = notImplementedFeature(
     "Exalted Champion",
     `At 20th level, your presence on the field of battle is an inspiration to those dedicated to your cause. You can use your action to gain the following benefits for 1 hour:
+- You have resistance to bludgeoning, piercing, and slashing damage from nonmagical weapons.
+- Your allies have advantage on death saving throws while within 30 feet of you.
+- You have advantage on Wisdom saving throws, as do your allies within 30 feet of you.
 
-You have resistance to bludgeoning, piercing, and slashing damage from nonmagical weapons.
-Your allies have advantage on death saving throws while within 30 feet of you.
-You have advantage on Wisdom saving throws, as do your allies within 30 feet of you.
 This effect ends early if you are incapacitated or die. Once you use this feature, you can't use it again until you finish a long rest.`
   );
   var Crown = {

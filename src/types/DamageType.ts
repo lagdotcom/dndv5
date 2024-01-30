@@ -22,6 +22,7 @@ export type MagicDamageType = (typeof MagicDamageTypes)[number];
 export const DamageTypes = [
   ...MundaneDamageTypes,
   ...MagicDamageTypes,
+  "unpreventable",
 ] as const;
 type DamageType = (typeof DamageTypes)[number];
 export default DamageType;

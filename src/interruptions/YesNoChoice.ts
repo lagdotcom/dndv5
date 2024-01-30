@@ -6,7 +6,11 @@ import Interruption from "../types/Interruption";
 import Priority from "../types/Priority";
 import Source from "../types/Source";
 
+type DynamicText = () => string;
+
 export default class YesNoChoice implements Interruption {
+  dynamicText?: DynamicText;
+
   constructor(
     public who: Combatant,
     public source: Source,
@@ -18,7 +22,14 @@ export default class YesNoChoice implements Interruption {
     public isStillValid?: () => boolean,
   ) {}
 
+  setDynamicText(dynamicText: DynamicText): this {
+    this.dynamicText = dynamicText;
+    return this;
+  }
+
   async apply(g: Engine) {
+    if (this.dynamicText) this.text = this.dynamicText();
+
     const choice = await new Promise<boolean>((resolve) =>
       g.fire(new YesNoChoiceEvent({ interruption: this, resolve })),
     );

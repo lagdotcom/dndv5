@@ -1,15 +1,31 @@
-import { AbstractMultiTargetAction } from "../../../actions/AbstractAction";
+import {
+  AbstractMultiTargetAction,
+  AbstractSingleTargetAction,
+} from "../../../actions/AbstractAction";
 import { HasTargets } from "../../../configs";
+import Effect from "../../../Effect";
 import Engine from "../../../Engine";
+import { Listener } from "../../../events/Dispatcher";
+import { GatherDamageDetail } from "../../../events/GatherDamageEvent";
 import {
   bonusSpellsFeature,
   notImplementedFeature,
 } from "../../../features/common";
 import SimpleFeature from "../../../features/SimpleFeature";
-import { canBeHeardBy, ErrorFilter } from "../../../filters";
+import { canBeHeardBy, canSee, ErrorFilter, notSelf } from "../../../filters";
+import EvaluateLater from "../../../interruptions/EvaluateLater";
+import YesNoChoice from "../../../interruptions/YesNoChoice";
 import MultiTargetResolver from "../../../resolvers/MultiTargetResolver";
+import TargetResolver from "../../../resolvers/TargetResolver";
 import Combatant from "../../../types/Combatant";
+import { coSet } from "../../../types/ConditionName";
+import { EffectConfig } from "../../../types/EffectType";
 import PCSubclass from "../../../types/PCSubclass";
+import Priority from "../../../types/Priority";
+import { checkConfig } from "../../../utils/config";
+import { getTotalDamage } from "../../../utils/dnd";
+import { intersects } from "../../../utils/set";
+import { compareDistances, distance } from "../../../utils/units";
 import { ChannelDivinityResource } from "../../common";
 import { PaladinIcon, PaladinSpellcasting } from "../common";
 
@@ -33,10 +49,110 @@ const OathSpells = bonusSpellsFeature(
   "Paladin",
 );
 
-// TODO
-const ChampionChallenge = notImplementedFeature(
+interface ChallengeConfig {
+  inflictor: Combatant;
+}
+
+const ChampionChallengeEffect = new Effect<ChallengeConfig>(
+  "Champion Challenge",
+  "turnStart",
+  (g) => {
+    // On a failed save, creature can't willingly move more than 30 feet away from you
+    g.events.on("BeforeMove", ({ detail: { who, from, to, error } }) => {
+      const efConfig = who.getEffectConfig(ChampionChallengeEffect);
+      if (!efConfig) return;
+
+      const { oldDistance, newDistance } = compareDistances(
+        efConfig.inflictor,
+        efConfig.inflictor.position,
+        who,
+        from,
+        to,
+      );
+      if (oldDistance <= 30 && newDistance > 30)
+        error.add(
+          `must stay near ${efConfig.inflictor.name}`,
+          ChampionChallengeEffect,
+        );
+    });
+
+    // This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.
+    const cleanup: Listener<"AfterAction" | "CombatantMoved"> = ({
+      detail: { interrupt },
+    }) => {
+      for (const who of g.combatants) {
+        const efConfig = who.getEffectConfig(ChampionChallengeEffect);
+        if (!efConfig) continue;
+
+        if (
+          efConfig.inflictor.conditions.has("Incapacitated") ||
+          distance(efConfig.inflictor, who) > 30
+        )
+          interrupt.add(
+            new EvaluateLater(
+              who,
+              ChampionChallengeEffect,
+              Priority.Normal,
+              () => who.removeEffect(ChampionChallengeEffect),
+            ),
+          );
+      }
+    };
+    g.events.on("AfterAction", cleanup);
+    g.events.on("CombatantMoved", cleanup);
+  },
+);
+
+class ChampionChallengeAction extends AbstractMultiTargetAction {
+  constructor(g: Engine, actor: Combatant) {
+    super(
+      g,
+      actor,
+      "Channel Divinity: Champion Challenge",
+      "implemented",
+      { targets: new MultiTargetResolver(g, 1, Infinity, 30, [canSee]) },
+      {
+        description: `As a bonus action, you issue a challenge that compels other creatures to do battle with you. Each creature of your choice that you can see within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature can't willingly move more than 30 feet away from you. This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.`,
+        resources: [[ChannelDivinityResource, 1]],
+        subIcon: PaladinIcon,
+        time: "bonus action",
+      },
+    );
+  }
+
+  async applyEffect(actionConfig: never) {
+    const { g, actor } = this;
+
+    for (const who of this.getAffected(actionConfig)) {
+      const effect = ChampionChallengeEffect;
+      const config: EffectConfig<ChallengeConfig> = {
+        inflictor: actor,
+        duration: Infinity,
+      };
+
+      const result = await g.save({
+        source: this,
+        type: PaladinSpellcasting.getSaveType(),
+        attacker: actor,
+        who,
+        ability: "wis",
+        effect,
+        config,
+        tags: ["charm"],
+      });
+      if (result.outcome === "fail") await who.addEffect(effect, config, actor);
+    }
+  }
+}
+
+const ChampionChallenge = new SimpleFeature(
   "Channel Divinity: Champion Challenge",
   `As a bonus action, you issue a challenge that compels other creatures to do battle with you. Each creature of your choice that you can see within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature can't willingly move more than 30 feet away from you. This effect ends on the creature if you are incapacitated or die or if the creature is more than 30 feet away from you.`,
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new ChampionChallengeAction(g, me));
+    });
+  },
 );
 
 const noMoreThanHalfHitPoints: ErrorFilter<Combatant> = {
@@ -97,26 +213,95 @@ const TurnTheTide = new SimpleFeature(
   },
 );
 
-// TODO
-const DivineAllegiance = notImplementedFeature(
+class DivineAllegianceAction extends AbstractSingleTargetAction {
+  constructor(
+    g: Engine,
+    actor: Combatant,
+    private gather?: GatherDamageDetail,
+  ) {
+    super(
+      g,
+      actor,
+      "Divine Allegiance",
+      "implemented",
+      { target: new TargetResolver(g, 5, [canSee, notSelf]) },
+      {
+        description: `When a creature within 5 feet of you takes damage, you can use your reaction to magically substitute your own health for that of the target creature, causing that creature not to take the damage. Instead, you take the damage. This damage to you can't be reduced or prevented in any way.`,
+        time: "reaction",
+      },
+    );
+  }
+
+  async applyEffect() {
+    const { g, actor, gather } = this;
+    if (!gather)
+      throw new Error(`DivineAllegiance.apply() without GatherDamage`);
+
+    const total = getTotalDamage(gather);
+    if (total > 0) {
+      gather.multiplier.add("zero", this);
+      await g.damage(this, "unpreventable", { target: actor }, [
+        ["unpreventable", total],
+      ]);
+    }
+  }
+}
+
+const DivineAllegiance = new SimpleFeature(
   "Divine Allegiance",
   `Starting at 7th level, when a creature within 5 feet of you takes damage, you can use your reaction to magically substitute your own health for that of the target creature, causing that creature not to take the damage. Instead, you take the damage. This damage to you can't be reduced or prevented in any way.`,
+  (g, me) => {
+    g.events.on("GetActions", ({ detail: { who, actions } }) => {
+      if (who === me) actions.push(new DivineAllegianceAction(g, who));
+    });
+    g.events.on("GatherDamage", ({ detail }) => {
+      const action = new DivineAllegianceAction(g, me, detail);
+      const config = { target: detail.target };
+
+      if (checkConfig(g, action, config))
+        detail.interrupt.add(
+          new YesNoChoice(
+            me,
+            DivineAllegiance,
+            "Divine Allegiance",
+            "...",
+            Priority.Late,
+            () => g.act(action, config),
+            undefined,
+            () => getTotalDamage(detail) > 0,
+          ).setDynamicText(
+            () =>
+              `${detail.target.name} is about to take ${getTotalDamage(detail)} damage. Should ${action.actor.name} use their reaction to take it for them?`,
+          ),
+        );
+    });
+  },
 );
 
-// TODO
-const UnyieldingSpirit = notImplementedFeature(
+const unyieldingSpiritConditions = coSet("Paralyzed", "Stunned");
+const UnyieldingSpirit = new SimpleFeature(
   "Unyielding Spirit",
   `Starting at 15th level, you have advantage on saving throws to avoid becoming paralyzed or stunned.`,
+  (g, me) => {
+    g.events.on("BeforeSave", ({ detail: { who, config, diceType } }) => {
+      if (
+        who === me &&
+        config?.conditions &&
+        intersects(config.conditions, unyieldingSpiritConditions)
+      )
+        diceType.add("advantage", UnyieldingSpirit);
+    });
+  },
 );
 
 // TODO
 const ExaltedChampion = notImplementedFeature(
   "Exalted Champion",
   `At 20th level, your presence on the field of battle is an inspiration to those dedicated to your cause. You can use your action to gain the following benefits for 1 hour:
+- You have resistance to bludgeoning, piercing, and slashing damage from nonmagical weapons.
+- Your allies have advantage on death saving throws while within 30 feet of you.
+- You have advantage on Wisdom saving throws, as do your allies within 30 feet of you.
 
-You have resistance to bludgeoning, piercing, and slashing damage from nonmagical weapons.
-Your allies have advantage on death saving throws while within 30 feet of you.
-You have advantage on Wisdom saving throws, as do your allies within 30 feet of you.
 This effect ends early if you are incapacitated or die. Once you use this feature, you can't use it again until you finish a long rest.`,
 );
 
